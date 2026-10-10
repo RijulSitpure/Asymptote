@@ -1,6 +1,6 @@
 /**
  * LeetCode Pattern Companion - Content Script
- * Runs directly on https://leetcode.com/* with active session cookies
+ * Uses modern LeetCode GraphQL API with same-origin session authentication
  */
 
 const LOCAL_SERVER_URL = 'http://localhost:3001';
@@ -53,61 +53,181 @@ function showToast(message, type = 'success') {
   }, 5000);
 }
 
+function getCsrfToken() {
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : '';
+}
+
 /**
- * 1-Click Full Account Sync
- * Runs directly from leetcode.com with same-origin session cookies
+ * 1-Click Full Account Sync using Modern LeetCode GraphQL API
  */
 async function syncAllSolvedFromLeetCode() {
   showToast('Connecting to your LeetCode session...', 'info');
-  try {
-    // Relative path fetch automatically carries all cookies on leetcode.com
-    const res = await fetch('/api/problems/all/', {
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+  const csrfToken = getCsrfToken();
 
-    if (!res.ok) {
-      throw new Error(`LeetCode returned HTTP ${res.status}. Are you logged in?`);
+  try {
+    // 1. Get current logged-in user
+    let username = 'User';
+    try {
+      const userRes = await fetch('/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrftoken': csrfToken
+        },
+        body: JSON.stringify({
+          query: `query userStatus { userStatus { isSignedIn username } }`
+        })
+      });
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        if (userData?.data?.userStatus?.username) {
+          username = userData.data.userStatus.username;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read userStatus query:', e);
     }
 
-    const data = await res.json();
-    const username = data.user_name || 'LeetCode User';
+    // 2. Fetch all solved problems via questionList with status: "AC"
+    showToast(`Fetching solved problems for ${username}...`, 'info');
+    let allSolved = [];
+    let skip = 0;
+    const limit = 100;
+    let hasMore = true;
 
-    const pairs = data.stat_status_pairs || [];
-    const solved = pairs
-      .filter(p => p.status === 'ac')
-      .map(p => ({
-        frontend_id: String(p.stat.frontend_question_id || p.stat.question_id),
-        title: p.stat.question__title,
-        title_slug: p.stat.question__title_slug,
-        difficulty: p.difficulty.level === 1 ? 'Easy' : p.difficulty.level === 2 ? 'Medium' : 'Hard'
-      }));
+    while (hasMore && skip < 2000) {
+      const qRes = await fetch('/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrftoken': csrfToken
+        },
+        body: JSON.stringify({
+          query: `
+            query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
+              problemsetQuestionList: questionList(
+                categorySlug: $categorySlug
+                limit: $limit
+                skip: $skip
+                filters: $filters
+              ) {
+                total: totalNum
+                questions: data {
+                  frontendQuestionId: questionFrontendId
+                  status
+                  title
+                  titleSlug
+                  difficulty
+                  topicTags {
+                    name
+                    slug
+                  }
+                }
+              }
+            }
+          `,
+          variables: {
+            categorySlug: '',
+            limit,
+            skip,
+            filters: { status: 'AC' }
+          }
+        })
+      });
 
-    if (solved.length === 0) {
-      showToast('No accepted questions found. Please make sure you are logged in on LeetCode!', 'error');
+      const contentType = qRes.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('LeetCode session expired. Please refresh the page and sign in.');
+      }
+
+      const qData = await qRes.json();
+      const listObj = qData?.data?.problemsetQuestionList;
+      const questions = listObj?.questions || [];
+      const total = listObj?.total || 0;
+
+      for (const q of questions) {
+        allSolved.push({
+          frontend_id: String(q.frontendQuestionId),
+          title: q.title,
+          title_slug: q.titleSlug,
+          difficulty: q.difficulty || 'Medium',
+          topicTags: (q.topicTags || []).map(t => t.name)
+        });
+      }
+
+      if (allSolved.length >= total || questions.length === 0) {
+        hasMore = false;
+      } else {
+        skip += limit;
+      }
+    }
+
+    // 3. Fallback: if questionList returned 0, try recentAcSubmissionList
+    if (allSolved.length === 0 && username && username !== 'User') {
+      try {
+        const recentRes = await fetch('/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-csrftoken': csrfToken
+          },
+          body: JSON.stringify({
+            query: `
+              query recentAcSubmissions($username: String!, $limit: Int!) {
+                recentAcSubmissionList(username: $username, limit: $limit) {
+                  id
+                  title
+                  titleSlug
+                }
+              }
+            `,
+            variables: { username, limit: 50 }
+          })
+        });
+
+        if (recentRes.ok) {
+          const recentData = await recentRes.json();
+          const list = recentData?.data?.recentAcSubmissionList || [];
+          for (const item of list) {
+            allSolved.push({
+              frontend_id: '',
+              title: item.title,
+              title_slug: item.titleSlug,
+              difficulty: 'Medium'
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Fallback recentAcSubmissionList query failed:', e);
+      }
+    }
+
+    if (allSolved.length === 0) {
+      showToast('No solved problems found. Please make sure you are signed in on LeetCode!', 'error');
       return { success: false, count: 0 };
     }
 
-    showToast(`Found ${solved.length} solved problems for ${username}! Uploading to Pattern Tracker...`, 'info');
+    showToast(`Found ${allSolved.length} solved problems! Categorizing patterns...`, 'info');
 
+    // 4. Send to local Pattern Tracker server
     const syncRes = await fetch(`${LOCAL_SERVER_URL}/api/sync/batch`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username,
-        problems: solved
+        problems: allSolved
       })
     });
 
     if (!syncRes.ok) {
       const errJson = await syncRes.json().catch(() => ({}));
-      throw new Error(errJson.error || `Local server error (${syncRes.status})`);
+      throw new Error(errJson.error || `Pattern Tracker returned HTTP ${syncRes.status}`);
     }
 
     const result = await syncRes.json();
-    showToast(`✅ Successfully synced all ${solved.length} solved questions (${result.newlySynced} new, ${result.updatedCount} updated)!`, 'success');
-    return { success: true, count: solved.length, username };
+    showToast(`✅ Successfully synced all ${allSolved.length} solved questions (${result.newlySynced} new, ${result.updatedCount} updated)!`, 'success');
+    return { success: true, count: allSolved.length, username };
   } catch (err) {
     showToast(`Sync failed: ${err.message}`, 'error');
     return { success: false, error: err.message };
@@ -229,6 +349,11 @@ async function toggleHintsDrawer() {
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 style="font-size:14px; font-weight:700; color:#fff; margin:0;">💡 Socratic Pattern Clues</h3>
       <button id="lc-close-drawer" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:16px;">✕</button>
+    </div>
+    <div style="margin-bottom:12px;">
+      <button onclick="window.syncAllSolvedFromLeetCode()" style="width:100%; padding:7px 12px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); border-radius:10px; color:#34d399; font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+        <span>⚡</span> Sync All My Solved Questions Now
+      </button>
     </div>
     <div id="lc-drawer-content" style="font-size:12px; color:#94a3b8;">
       Fetching clues from local Pattern Tracker...
