@@ -159,4 +159,68 @@ export class SyncService {
     this.db.addSyncLog('extension', 'success', `Captured and auto-classified ${title}`);
     return { id: newId, status: 'created', pattern_id: classification.pattern_id };
   }
+
+  /**
+   * Batch ingest all solved problems (e.g. from Chrome extension or LeetCode export)
+   */
+  async syncBatchSolved(username, problemList = []) {
+    if (!Array.isArray(problemList) || problemList.length === 0) {
+      throw new Error('Problem list cannot be empty');
+    }
+
+    let newlySynced = 0;
+    let updatedCount = 0;
+
+    for (const item of problemList) {
+      const slug = item.title_slug || item.titleSlug;
+      const frontendId = String(item.frontend_id || item.frontendId || item.id || '');
+      const title = item.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const difficulty = item.difficulty || 'Medium';
+
+      const existing = (slug ? this.db.findProblem(slug) : null) || (frontendId ? this.db.findProblem(frontendId) : null);
+      if (existing) {
+        this.db.updateProblemDetails(existing.id, {
+          is_solved: true,
+          solved_at: item.solved_at || existing.solved_at || new Date().toISOString()
+        });
+        updatedCount++;
+      } else {
+        const classification = this.classifier.classify({
+          title,
+          titleSlug: slug,
+          topicTags: item.topicTags || []
+        });
+
+        const targetPattern = this.patterns.find(p => p.id === classification.pattern_id);
+        const progressiveHints = this.classifier.generateProgressiveHints({ title }, targetPattern);
+
+        this.db.upsertProblem({
+          frontend_id: frontendId || String(Date.now()),
+          title,
+          title_slug: slug,
+          difficulty,
+          pattern_id: classification.pattern_id,
+          twist_type: classification.twist_type,
+          constraints: '',
+          summary: `Auto-synced from LeetCode account (${username || 'User'})`,
+          trigger_clues: targetPattern?.mental_triggers.slice(0, 3) || [],
+          hints_progressive: progressiveHints,
+          solution_python: '',
+          is_solved: true,
+          solved_at: item.solved_at || new Date().toISOString(),
+          user_code: '',
+          user_notes: `Synced via LeetCode Companion`,
+          user_rating: 3,
+          review_needed: false
+        });
+        newlySynced++;
+      }
+    }
+
+    if (username) this.db.setSetting('leetcode_username', username);
+    this.db.setSetting('last_synced_at', new Date().toISOString());
+    this.db.addSyncLog('batch', 'success', `Synced ${newlySynced} new, ${updatedCount} updated (total ${problemList.length} questions) for ${username || 'User'}`);
+
+    return { total: problemList.length, newlySynced, updatedCount };
+  }
 }

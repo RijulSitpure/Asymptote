@@ -751,6 +751,56 @@ async function triggerLeetCodeSync() {
   }
 }
 
+async function importQuickProblemsList() {
+  const input = document.getElementById('quick-import-input').value.trim();
+  const statusEl = document.getElementById('sync-status-msg');
+
+  if (!input) {
+    alert('Please enter at least one problem number or slug');
+    return;
+  }
+
+  // Parse comma, space, or newline separated values
+  const tokens = input.split(/[\s,]+/).map(t => t.trim()).filter(Boolean);
+  if (!tokens.length) return;
+
+  statusEl.className = 'text-xs p-3 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 block';
+  statusEl.innerText = `Importing and classifying ${tokens.length} problems into pattern archetypes...`;
+
+  const problemList = tokens.map(token => {
+    const isNum = /^\d+$/.test(token);
+    return {
+      frontend_id: isNum ? token : '',
+      title_slug: isNum ? `problem-${token}` : token,
+      title: isNum ? `LeetCode #${token}` : token.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      difficulty: 'Medium'
+    };
+  });
+
+  try {
+    const res = await fetch('/api/sync/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: 'QuickImport',
+        problems: problemList
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Import failed');
+
+    statusEl.className = 'text-xs p-3 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 block';
+    statusEl.innerText = `Success! Imported ${data.newlySynced} new problems, updated ${data.updatedCount}.`;
+    await loadProblems();
+    await loadStats();
+    setTimeout(closeSyncModal, 1800);
+  } catch (err) {
+    statusEl.className = 'text-xs p-3 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/20 block';
+    statusEl.innerText = err.message;
+  }
+}
+
 // ==================== HELPERS ====================
 
 function copyCode(btn) {

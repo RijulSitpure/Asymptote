@@ -1,7 +1,8 @@
 /**
  * LeetCode Pattern Companion - Content Script
  * 1. Adds in-page progressive hints button on LeetCode
- * 2. Auto-detects Accepted submissions and syncs code + pattern to local server
+ * 2. 1-Click "Sync All Solved Problems" from active LeetCode session (no 20 limit!)
+ * 3. Auto-detects Accepted submissions and syncs code + pattern to local server
  */
 
 const LOCAL_SERVER_URL = 'http://localhost:3001';
@@ -42,17 +43,66 @@ function showToast(message, type = 'success') {
     document.body.appendChild(toast);
   }
 
-  const icon = type === 'success' ? '⚡' : '💡';
+  const icon = type === 'success' ? '⚡' : type === 'error' ? '❌' : '💡';
   toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
-  toast.style.borderColor = type === 'success' ? '#10b981' : '#6366f1';
+  toast.style.borderColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#6366f1';
   toast.style.opacity = '1';
   toast.style.transform = 'translateY(0)';
 
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transform = 'translateY(10px)';
-  }, 4000);
+  }, 5000);
 }
+
+/**
+ * 1-Click Full Account Sync: Pulls ALL solved questions from LeetCode session
+ */
+async function syncAllSolvedFromLeetCode() {
+  showToast('Connecting to your LeetCode session...', 'info');
+  try {
+    const res = await fetch('https://leetcode.com/api/problems/all/');
+    if (!res.ok) throw new Error('Could not access LeetCode API. Are you logged in?');
+    const data = await res.json();
+    const username = data.user_name || 'User';
+
+    const solved = (data.stat_status_pairs || [])
+      .filter(p => p.status === 'ac')
+      .map(p => ({
+        frontend_id: String(p.stat.frontend_question_id || p.stat.question_id),
+        title: p.stat.question__title,
+        title_slug: p.stat.question__title_slug,
+        difficulty: p.difficulty.level === 1 ? 'Easy' : p.difficulty.level === 2 ? 'Medium' : 'Hard'
+      }));
+
+    if (!solved.length) {
+      showToast('No solved problems found in this session.', 'error');
+      return { success: false, count: 0 };
+    }
+
+    showToast(`Found ${solved.length} solved problems! Categorizing patterns...`, 'info');
+
+    const syncRes = await fetch(`${LOCAL_SERVER_URL}/api/sync/batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        problems: solved
+      })
+    });
+
+    if (!syncRes.ok) throw new Error('Server returned error while saving');
+    const result = await syncRes.json();
+    showToast(`✅ Synced all ${solved.length} solved questions to Pattern Tracker!`, 'success');
+    return { success: true, count: solved.length, username };
+  } catch (err) {
+    showToast(`Sync failed: ${err.message}`, 'error');
+    return { success: false, error: err.message };
+  }
+}
+
+// Expose globally for buttons
+window.syncAllSolvedFromLeetCode = syncAllSolvedFromLeetCode;
 
 // Floating "Pattern Clue" Button on LeetCode
 function injectFloatingButton() {
@@ -118,14 +168,14 @@ async function toggleHintsDrawer() {
     position: fixed;
     top: 60px;
     right: 20px;
-    width: 380px;
-    max-height: 80vh;
+    width: 390px;
+    max-height: 82vh;
     background: #0f172a;
     border: 1px solid #334155;
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
     z-index: 999999;
-    padding: 20px;
+    padding: 18px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #e2e8f0;
     overflow-y: auto;
@@ -135,6 +185,11 @@ async function toggleHintsDrawer() {
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 style="font-size:14px; font-weight:700; color:#fff; margin:0;">💡 Socratic Pattern Clues</h3>
       <button id="lc-close-drawer" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:16px;">✕</button>
+    </div>
+    <div style="margin-bottom:12px;">
+      <button onclick="window.syncAllSolvedFromLeetCode()" style="width:100%; padding:7px 12px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); border-radius:10px; color:#34d399; font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+        <span>⚡</span> Sync All My Solved Questions Now
+      </button>
     </div>
     <div id="lc-drawer-content" style="font-size:12px; color:#94a3b8;">
       Fetching clues from local Pattern Tracker...
@@ -148,8 +203,13 @@ async function toggleHintsDrawer() {
     const res = await fetch(`${LOCAL_SERVER_URL}/api/hints/${slug}`);
     if (!res.ok) {
       document.getElementById('lc-drawer-content').innerHTML = `
-        <p style="color:#f59e0b;">Problem not yet indexed locally.</p>
-        <p style="margin-top:8px;">Open <a href="${LOCAL_SERVER_URL}" target="_blank" style="color:#818cf8; text-decoration:underline;">Pattern Tracker</a> to diagnose pattern via constraints.</p>
+        <div style="padding:10px; border-radius:10px; background:#1e293b; border:1px solid #334155;">
+          <p style="color:#f59e0b; font-weight:600; margin:0 0 6px 0;">Problem not yet in local catalog</p>
+          <p style="font-size:11px; color:#94a3b8; margin:0 0 10px 0;">Click below to open the Diagnostic Wizard or sync your account.</p>
+          <a href="${LOCAL_SERVER_URL}" target="_blank" style="display:inline-block; font-size:11px; background:#4f46e5; color:#fff; padding:6px 12px; border-radius:8px; text-decoration:none; font-weight:600;">
+            Open Pattern Tracker Dashboard
+          </a>
+        </div>
       `;
       return;
     }
@@ -172,10 +232,10 @@ function renderDrawerHints() {
   const hintItems = (hints || []).map((h, i) => {
     const isUnlocked = (i + 1) <= currentLevel;
     return `
-      <div style="margin-bottom:10px; padding:10px; border-radius:8px; background:${isUnlocked ? '#1e293b' : '#111827'}; border:1px solid ${isUnlocked ? '#475569' : '#1e293b'};">
+      <div style="margin-bottom:10px; padding:10px; border-radius:10px; background:${isUnlocked ? '#1e293b' : '#111827'}; border:1px solid ${isUnlocked ? '#475569' : '#1e293b'};">
         <div style="display:flex; justify-content:space-between; font-weight:600; font-size:12px; color:${isUnlocked ? '#fff' : '#64748b'}; margin-bottom:4px;">
           <span>Level ${i + 1}: ${h.title}</span>
-          ${!isUnlocked ? `<button onclick="window.unlockLevel(${i + 1})" style="background:none; border:none; color:#818cf8; cursor:pointer; font-size:11px;">Unlock</button>` : `<span style="color:#10b981; font-size:10px;">UNLOCKED</span>`}
+          ${!isUnlocked ? `<button onclick="window.unlockLevel(${i + 1})" style="background:none; border:none; color:#818cf8; cursor:pointer; font-size:11px; font-weight:600;">Unlock</button>` : `<span style="color:#10b981; font-size:10px;">UNLOCKED</span>`}
         </div>
         ${isUnlocked ? `<div style="font-size:11px; color:#cbd5e1; line-height:1.4; white-space:pre-wrap;">${h.content}</div>` : ''}
       </div>
@@ -216,7 +276,6 @@ function detectAcceptedSubmission() {
     }
   }
 
-  // Also check general status banners
   const banners = document.querySelectorAll('span, div');
   for (const b of banners) {
     if (b.innerText === 'Accepted' && (b.className.includes('text-green') || b.className.includes('success'))) {
@@ -231,7 +290,6 @@ async function handleAccepted() {
   if (!slug || slug === lastSyncedSubmission) return;
   lastSyncedSubmission = slug;
 
-  // Extract code from Monaco editor DOM or window
   let code = '';
   const lines = document.querySelectorAll('.view-lines .view-line');
   if (lines && lines.length > 0) {
@@ -252,6 +310,16 @@ async function handleAccepted() {
   } catch (err) {
     console.warn('Pattern Tracker auto-sync failed (is server running?):', err);
   }
+}
+
+// Extension message listener
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+  chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
+    if (req.action === 'sync_all_from_leetcode') {
+      syncAllSolvedFromLeetCode().then(res => sendResponse(res));
+      return true;
+    }
+  });
 }
 
 // Polling observer for submissions and DOM load

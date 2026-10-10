@@ -160,10 +160,17 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    // Extension Webhook
+    // Extension Webhook (single question submission)
     if (pathname === '/api/submissions' && req.method === 'POST') {
       const body = await parseBody(req);
       const result = await syncService.ingestFromExtension(body);
+      return sendJSON(res, { success: true, ...result });
+    }
+
+    // Full Batch Sync (e.g. all solved questions from extension)
+    if (pathname === '/api/sync/batch' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const result = await syncService.syncBatchSolved(body.username, body.problems);
       return sendJSON(res, { success: true, ...result });
     }
 

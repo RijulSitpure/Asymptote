@@ -76,33 +76,40 @@ export class DBManager {
   }
 
   seedDefaults() {
-    // Check if patterns table is empty
-    const countRow = this.db.prepare('SELECT COUNT(*) as cnt FROM patterns').get();
-    if (countRow.cnt === 0) {
-      console.log('Seeding curated patterns...');
-      const insertPattern = this.db.prepare(`
-        INSERT INTO patterns (
-          id, category, title, difficulty, short_description,
-          mental_triggers, constraint_signals, complexity,
-          base_template_py, base_template_cpp, twists
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
+    // Upsert all curated patterns
+    const upsertPattern = this.db.prepare(`
+      INSERT INTO patterns (
+        id, category, title, difficulty, short_description,
+        mental_triggers, constraint_signals, complexity,
+        base_template_py, base_template_cpp, twists
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        category = excluded.category,
+        title = excluded.title,
+        difficulty = excluded.difficulty,
+        short_description = excluded.short_description,
+        mental_triggers = excluded.mental_triggers,
+        constraint_signals = excluded.constraint_signals,
+        complexity = excluded.complexity,
+        base_template_py = excluded.base_template_py,
+        base_template_cpp = excluded.base_template_cpp,
+        twists = excluded.twists
+    `);
 
-      for (const p of PATTERNS) {
-        insertPattern.run(
-          p.id,
-          p.category,
-          p.title,
-          p.difficulty,
-          p.short_description,
-          JSON.stringify(p.mental_triggers || []),
-          JSON.stringify(p.constraint_signals || []),
-          p.complexity || '',
-          p.base_template_py || '',
-          p.base_template_cpp || '',
-          JSON.stringify(p.twists || [])
-        );
-      }
+    for (const p of PATTERNS) {
+      upsertPattern.run(
+        p.id,
+        p.category,
+        p.title,
+        p.difficulty,
+        p.short_description,
+        JSON.stringify(p.mental_triggers || []),
+        JSON.stringify(p.constraint_signals || []),
+        p.complexity || '',
+        p.base_template_py || '',
+        p.base_template_cpp || '',
+        JSON.stringify(p.twists || [])
+      );
     }
 
     // Check if problems table is empty
