@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeetCode Pattern Tracker & Socratic Aid</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            dark: {
+              bg: '#090d16',
+              surface: '#111827',
+              card: '#1e293b',
+              border: '#334155'
+            }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Menlo', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    pre code {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.85rem !important;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: #334155;
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP NAVIGATION -->
+  <header class="border-b border-slate-800 bg-[#0d1322]/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i data-lucide="layers" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+            Pattern<span class="text-indigo-400">Tracker</span>
+          </h1>
+          <p class="text-xs text-slate-400 flex items-center gap-1.5">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Algorithmic Mental Models & Socratic Aid
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab Buttons -->
+      <nav class="hidden md:flex items-center space-x-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+        <button onclick="switchTab('atlas')" id="tab-btn-atlas" class="tab-btn px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all text-white bg-indigo-600 shadow-sm flex items-center gap-1.5">
+          <i data-lucide="compass" class="w-3.5 h-3.5"></i> Pattern Atlas
+        </button>
+        <button onclick="switchTab('stuck')" id="tab-btn-stuck" class="tab-btn px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-300 hover:text-white hover:bg-slate-800 flex items-center gap-1.5">
+          <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Stuck Solver
+        </button>
+        <button onclick="switchTab('wizard')" id="tab-btn-wizard" class="tab-btn px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-300 hover:text-white hover:bg-slate-800 flex items-center gap-1.5">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Diagnostic Wizard
+        </button>
+        <button onclick="switchTab('problems')" id="tab-btn-problems" class="tab-btn px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-300 hover:text-white hover:bg-slate-800 flex items-center gap-1.5">
+          <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Solved Log
+        </button>
+        <button onclick="switchTab('mastery')" id="tab-btn-mastery" class="tab-btn px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all text-slate-300 hover:text-white hover:bg-slate-800 flex items-center gap-1.5">
+          <i data-lucide="activity" class="w-3.5 h-3.5"></i> Mastery Radar
+        </button>
+      </nav>
+
+      <!-- Sync / Action Bar -->
+      <div class="flex items-center space-x-2.5">
+        <button onclick="openSyncModal()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-200 hover:text-white flex items-center gap-1.5 transition">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span id="sync-label">Sync LeetCode</span>
+        </button>
+        <button onclick="openExtensionGuideModal()" class="px-3 py-1.5 text-xs font-medium bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg text-indigo-300 flex items-center gap-1.5 transition">
+          <i data-lucide="puzzle" class="w-3.5 h-3.5"></i> Extension
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- ==================== TAB 1: PATTERN ATLAS ==================== -->
+    <section id="tab-atlas" class="tab-content block space-y-6">
+      <!-- Header & Filter -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            Algorithmic Pattern Atlas
+            <span id="patterns-badge-count" class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">10 Patterns</span>
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Mental models, constraint triggers, canonical blueprints, and standard interview twists.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="pattern-search" placeholder="Search patterns or triggers..." oninput="filterPatterns()" 
+              class="bg-slate-800/80 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 w-64 transition">
+          </div>
+          <select id="pattern-category-filter" onchange="filterPatterns()" class="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="all">All Categories</option>
+            <option value="Graph + DP">Graph + DP</option>
+            <option value="Dynamic Programming">Dynamic Programming</option>
+            <option value="Graph Traversal">Graph Traversal</option>
+            <option value="Stacks & Queues">Stacks & Queues</option>
+            <option value="Two Pointers">Two Pointers</option>
+            <option value="Binary Search">Binary Search</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Patterns Grid -->
+      <div id="patterns-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: STUCK SOLVER (PROGRESSIVE HINTS) ==================== -->
+    <section id="tab-stuck" class="tab-content hidden space-y-6">
+      <div class="bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
+        <div class="max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium mb-3">
+            <i data-lucide="lightbulb" class="w-3.5 h-3.5"></i> Socratic Method (Zero Spoilers)
+          </div>
+          <h2 class="text-2xl font-bold text-white">Stuck on a Problem?</h2>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+            Don't jump to the full editorial or video solution. Reveal clues progressively: first train your brain to spot the pattern trigger, then formulate the state, then derive the recurrence.
+          </p>
+        </div>
+
+        <!-- Search Problem Bar -->
+        <div class="mt-6 flex flex-col sm:flex-row items-center gap-3">
+          <div class="relative flex-1 w-full">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+            <input type="text" id="stuck-problem-input" placeholder="Enter problem number or title (e.g. 787, cheapest flights, 329, burst balloons)..." 
+              class="w-full bg-slate-800/90 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition shadow-inner">
+          </div>
+          <button onclick="lookupProblemHints()" class="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition">
+            <i data-lucide="sparkles" class="w-4 h-4"></i> Get Progressive Clues
+          </button>
+        </div>
+
+        <!-- Quick Problem Pills -->
+        <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <span>Try quick examples:</span>
+          <button onclick="loadQuickProblem('787')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition">#787 Cheapest Flights</button>
+          <button onclick="loadQuickProblem('329')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition">#329 Longest Increasing Path</button>
+          <button onclick="loadQuickProblem('847')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition">#847 Shortest Path Visiting All Nodes</button>
+          <button onclick="loadQuickProblem('312')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition">#312 Burst Balloons</button>
+          <button onclick="loadQuickProblem('1368')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition">#1368 Valid Path 0/1 BFS</button>
+        </div>
+      </div>
+
+      <!-- Problem Hint View Area -->
+      <div id="stuck-result-container" class="hidden space-y-6">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: DIAGNOSTIC WIZARD ==================== -->
+    <section id="tab-wizard" class="tab-content hidden space-y-6">
+      <div class="bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
+        <div class="max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-3">
+            <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Pattern Inference Engine
+          </div>
+          <h2 class="text-2xl font-bold text-white">Pattern Diagnostic Wizard</h2>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+            Facing a completely new problem and have no idea which pattern applies? Answer these 4 diagnostic questions based on the problem statement and constraints.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <!-- Question 1: Structure -->
+          <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 space-y-2">
+            <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] font-mono">1</span>
+              Underlying Data Structure or Geometry
+            </label>
+            <select id="wiz-structure" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="graph">General Graph (nodes and edges with weights)</option>
+              <option value="dag">Directed Acyclic Graph (DAG / strict topological order)</option>
+              <option value="tree">Tree (connected, acyclic, N nodes, N-1 edges)</option>
+              <option value="grid">2D Grid / Matrix</option>
+              <option value="array">1D Array / Sequence of numbers</option>
+              <option value="string">String / Characters</option>
+            </select>
+          </div>
+
+          <!-- Question 2: Constraints -->
+          <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 space-y-2">
+            <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] font-mono">2</span>
+              What are the Constraints on N?
+            </label>
+            <select id="wiz-constraints" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="n_small">N &le; 16 (Exponential / 2^N Bitmask possible)</option>
+              <option value="n_400">N &le; 400 (O(N^3) Interval DP / Floyd-Warshall)</option>
+              <option value="n_2000">N &le; 2000 (O(N^2) 2D Dynamic Programming)</option>
+              <option value="n_10_5">N &le; 10^5 (O(N) or O(N log N) Linear / Stack / Binary Search)</option>
+              <option value="range_10_9">Answer is in range 1 to 10^9 (Binary Search on Answer Space)</option>
+            </select>
+          </div>
+
+          <!-- Question 3: Objective -->
+          <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 space-y-2">
+            <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] font-mono">3</span>
+              What is the Target Output?
+            </label>
+            <select id="wiz-goal" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="k_steps">Shortest / Cheapest path with at most K steps or time limit</option>
+              <option value="shortest_all_nodes">Visit all nodes / collect all keys / TSP</option>
+              <option value="longest_path">Longest path or sequence length</option>
+              <option value="all_roots">Calculate answer for every node as root of tree</option>
+              <option value="next_greater">Next / Previous greater or smaller element</option>
+              <option value="merge">Merge adjacent elements or burst balloons</option>
+              <option value="min_max">Minimize the maximum (or maximize the minimum)</option>
+              <option value="longest_valid_subarray">Longest / Shortest contiguous subarray</option>
+            </select>
+          </div>
+
+          <!-- Question 4: Special Properties -->
+          <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 space-y-2">
+            <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] font-mono">4</span>
+              Special Nuance / Twist Signal
+            </label>
+            <select id="wiz-property" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="limited_steps">Limited steps or restricted turns</option>
+              <option value="binary_weights">Edge weights are strictly 0 or 1</option>
+              <option value="strictly_increasing">Strictly increasing values (eliminates cycles!)</option>
+              <option value="state_machine">Mutually exclusive modes (e.g. cooldown / fee)</option>
+              <option value="none">Standard textbook problem without extra flags</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end">
+          <button onclick="runDiagnosticWizard()" class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition">
+            <i data-lucide="wand-2" class="w-4 h-4"></i> Diagnose Best Pattern
+          </button>
+        </div>
+      </div>
+
+      <!-- Diagnostic Results -->
+      <div id="wizard-results" class="hidden space-y-4">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: SOLVED PROBLEMS LOG ==================== -->
+    <section id="tab-problems" class="tab-content hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            Solved Catalog & Pattern Mastery Log
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Questions categorized by their exact pattern variation, personal confidence rating, and twist notes.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="openManualAddModal()" class="px-3.5 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl flex items-center gap-1.5 transition">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Problem
+          </button>
+        </div>
+      </div>
+
+      <!-- Problem Filter Bar -->
+      <div class="flex flex-wrap items-center gap-3">
+        <select id="filter-problem-pattern" onchange="renderProblemsTable()" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200">
+          <option value="all">All Patterns</option>
+          <!-- populated dynamically -->
+        </select>
+        <select id="filter-problem-status" onchange="renderProblemsTable()" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200">
+          <option value="all">All Statuses</option>
+          <option value="solved">Solved Only</option>
+          <option value="unsolved">Unsolved (In Review)</option>
+        </select>
+        <select id="filter-problem-diff" onchange="renderProblemsTable()" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200">
+          <option value="all">All Difficulties</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+      </div>
+
+      <!-- Problems Table -->
+      <div class="bg-slate-900/80 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 bg-slate-950/40 text-slate-400 font-semibold uppercase tracking-wider">
+                <th class="py-3 px-4">#</th>
+                <th class="py-3 px-4">Problem</th>
+                <th class="py-3 px-4">Pattern & Twist</th>
+                <th class="py-3 px-4">Difficulty</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Confidence</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="problems-table-body" class="divide-y divide-slate-800/60">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: MASTERY RADAR & WEAK SPOTS ==================== -->
+    <section id="tab-mastery" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Stat Card 1 -->
+        <div class="bg-slate-900/70 p-5 rounded-2xl border border-slate-800 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <i data-lucide="check-circle" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Solved</p>
+            <h3 id="stat-solved-count" class="text-2xl font-bold text-white mt-0.5">0</h3>
+            <p id="stat-solved-sub" class="text-[11px] text-slate-400 mt-0.5">Across 10 core patterns</p>
+          </div>
+        </div>
+
+        <!-- Stat Card 2 -->
+        <div class="bg-slate-900/70 p-5 rounded-2xl border border-slate-800 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+            <i data-lucide="brain" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Pattern Coverage</p>
+            <h3 id="stat-coverage-ratio" class="text-2xl font-bold text-white mt-0.5">0%</h3>
+            <p id="stat-coverage-sub" class="text-[11px] text-slate-400 mt-0.5">Active patterns with &ge; 1 solved</p>
+          </div>
+        </div>
+
+        <!-- Stat Card 3 -->
+        <div class="bg-slate-900/70 p-5 rounded-2xl border border-slate-800 flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+            <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Weak Spot Alerts</p>
+            <h3 id="stat-weak-count" class="text-2xl font-bold text-amber-300 mt-0.5">0</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Needs immediate practice</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weak Spots Recommendations -->
+      <div class="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i> Priority Weak-Spot Review Queue
+          </h3>
+          <span class="text-xs text-slate-400">Algorithmic gaps based on your solved history</span>
+        </div>
+        <div id="weak-spots-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Pattern Distribution Bars -->
+      <div class="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-400"></i> Pattern Distribution & Mastery Depth
+        </h3>
+        <div id="mastery-bars-container" class="space-y-3">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: LeetCode Account Sync -->
+  <div id="modal-sync" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="refresh-cw" class="w-4 h-4 text-indigo-400"></i> Sync LeetCode Account
+        </h3>
+        <button onclick="closeSyncModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Syncs your recent Accepted questions from LeetCode public GraphQL. We automatically extract the problem slug, match it to our pattern taxonomy, and classify the twist.
+      </p>
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-slate-300">LeetCode Username</label>
+        <input type="text" id="sync-username-input" placeholder="e.g. neal_wu or your username" 
+          class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+      </div>
+      <div id="sync-status-msg" class="text-xs hidden p-3 rounded-lg"></div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeSyncModal()" class="px-4 py-2 text-xs font-medium text-slate-300 hover:text-white rounded-lg">Cancel</button>
+        <button onclick="triggerLeetCodeSync()" id="btn-do-sync" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl flex items-center gap-1.5 transition">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Start Sync
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Chrome Extension Instructions -->
+  <div id="modal-extension-guide" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl custom-scroll max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="puzzle" class="w-4 h-4 text-indigo-400"></i> Companion Chrome Extension
+        </h3>
+        <button onclick="closeExtensionGuideModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
+        <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+          <strong>100% Automatic:</strong> Whenever you hit "Submit" on LeetCode and get Accepted, the extension grabs your code, matches the pattern, and syncs directly to this tracker.
+        </div>
+        <ol class="list-decimal list-inside space-y-2.5 text-slate-300">
+          <li>Open Google Chrome or Brave/Arc and go to <code class="bg-slate-800 px-1.5 py-0.5 rounded text-indigo-300">chrome://extensions</code></li>
+          <li>Turn ON <strong class="text-white">Developer mode</strong> (top-right toggle switch).</li>
+          <li>Click <strong class="text-white">Load unpacked</strong> (top-left button).</li>
+          <li>Select the <code class="bg-slate-800 px-1.5 py-0.5 rounded text-indigo-300">extension</code> folder located in this repository!</li>
+        </ol>
+        <p class="text-slate-400 text-[11px]">
+          That's it! When solving problems on LeetCode, you'll also get a floating <strong>💡 Pattern Clue</strong> button right on the page to view progressive hints without leaving LeetCode!
+        </p>
+      </div>
+      <div class="flex justify-end pt-2">
+        <button onclick="closeExtensionGuideModal()" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Problem Detail / User Notes / Code View -->
+  <div id="modal-problem-detail" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl custom-scroll max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <div>
+          <span id="detail-prob-id" class="text-xs font-mono text-indigo-400 font-bold">#787</span>
+          <h3 id="detail-prob-title" class="text-lg font-bold text-white">Cheapest Flights Within K Stops</h3>
+        </div>
+        <button onclick="closeProblemDetailModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="detail-prob-meta" class="flex flex-wrap items-center gap-2 text-xs">
+        <!-- tags -->
+      </div>
+      <div class="space-y-1">
+        <p class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">The Twist</p>
+        <p id="detail-prob-twist" class="text-xs text-slate-200 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700"></p>
+      </div>
+      <div class="space-y-1">
+        <p class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Your Notes / Takeaway</p>
+        <textarea id="detail-prob-notes" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"></textarea>
+      </div>
+      <div class="space-y-1">
+        <p class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Mastery Rating</p>
+        <div id="detail-prob-rating-picker" class="flex items-center gap-2 text-amber-400">
+          <!-- star ratings -->
+        </div>
+      </div>
+      <div class="space-y-1">
+        <p class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Solution Blueprint Code</p>
+        <pre class="rounded-xl overflow-x-auto"><code id="detail-prob-code" class="language-python"></code></pre>
+      </div>
+      <div class="flex justify-between items-center pt-2">
+        <button onclick="toggleProblemSolvedFromDetail()" id="detail-prob-btn-solved" class="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/30">
+          Mark Solved
+        </button>
+        <button onclick="saveProblemDetailEdits()" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl">
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
