@@ -1,8 +1,6 @@
 /**
  * LeetCode Pattern Companion - Content Script
- * 1. Adds in-page progressive hints button on LeetCode
- * 2. 1-Click "Sync All Solved Problems" from active LeetCode session (no 20 limit!)
- * 3. Auto-detects Accepted submissions and syncs code + pattern to local server
+ * Runs directly on https://leetcode.com/* with active session cookies
  */
 
 const LOCAL_SERVER_URL = 'http://localhost:3001';
@@ -24,7 +22,7 @@ function showToast(message, type = 'success') {
       bottom: 24px;
       right: 24px;
       padding: 12px 18px;
-      background: #111827;
+      background: #0f172a;
       color: #f8fafc;
       border: 1px solid #334155;
       border-radius: 12px;
@@ -32,10 +30,10 @@ function showToast(message, type = 'success') {
       font-size: 13px;
       font-weight: 500;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-      z-index: 999999;
+      z-index: 9999999;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       transition: all 0.3s ease;
       opacity: 0;
       transform: translateY(10px);
@@ -56,17 +54,28 @@ function showToast(message, type = 'success') {
 }
 
 /**
- * 1-Click Full Account Sync: Pulls ALL solved questions from LeetCode session
+ * 1-Click Full Account Sync
+ * Runs directly from leetcode.com with same-origin session cookies
  */
 async function syncAllSolvedFromLeetCode() {
   showToast('Connecting to your LeetCode session...', 'info');
   try {
-    const res = await fetch('https://leetcode.com/api/problems/all/');
-    if (!res.ok) throw new Error('Could not access LeetCode API. Are you logged in?');
-    const data = await res.json();
-    const username = data.user_name || 'User';
+    // Relative path fetch automatically carries all cookies on leetcode.com
+    const res = await fetch('/api/problems/all/', {
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
 
-    const solved = (data.stat_status_pairs || [])
+    if (!res.ok) {
+      throw new Error(`LeetCode returned HTTP ${res.status}. Are you logged in?`);
+    }
+
+    const data = await res.json();
+    const username = data.user_name || 'LeetCode User';
+
+    const pairs = data.stat_status_pairs || [];
+    const solved = pairs
       .filter(p => p.status === 'ac')
       .map(p => ({
         frontend_id: String(p.stat.frontend_question_id || p.stat.question_id),
@@ -75,12 +84,12 @@ async function syncAllSolvedFromLeetCode() {
         difficulty: p.difficulty.level === 1 ? 'Easy' : p.difficulty.level === 2 ? 'Medium' : 'Hard'
       }));
 
-    if (!solved.length) {
-      showToast('No solved problems found in this session.', 'error');
+    if (solved.length === 0) {
+      showToast('No accepted questions found. Please make sure you are logged in on LeetCode!', 'error');
       return { success: false, count: 0 };
     }
 
-    showToast(`Found ${solved.length} solved problems! Categorizing patterns...`, 'info');
+    showToast(`Found ${solved.length} solved problems for ${username}! Uploading to Pattern Tracker...`, 'info');
 
     const syncRes = await fetch(`${LOCAL_SERVER_URL}/api/sync/batch`, {
       method: 'POST',
@@ -91,9 +100,13 @@ async function syncAllSolvedFromLeetCode() {
       })
     });
 
-    if (!syncRes.ok) throw new Error('Server returned error while saving');
+    if (!syncRes.ok) {
+      const errJson = await syncRes.json().catch(() => ({}));
+      throw new Error(errJson.error || `Local server error (${syncRes.status})`);
+    }
+
     const result = await syncRes.json();
-    showToast(`✅ Synced all ${solved.length} solved questions to Pattern Tracker!`, 'success');
+    showToast(`✅ Successfully synced all ${solved.length} solved questions (${result.newlySynced} new, ${result.updatedCount} updated)!`, 'success');
     return { success: true, count: solved.length, username };
   } catch (err) {
     showToast(`Sync failed: ${err.message}`, 'error');
@@ -101,48 +114,79 @@ async function syncAllSolvedFromLeetCode() {
   }
 }
 
-// Expose globally for buttons
 window.syncAllSolvedFromLeetCode = syncAllSolvedFromLeetCode;
 
-// Floating "Pattern Clue" Button on LeetCode
-function injectFloatingButton() {
-  if (document.getElementById('lc-pattern-clue-btn')) return;
+// Floating Widget on LeetCode
+function injectFloatingButtons() {
+  if (document.getElementById('lc-pattern-tracker-widget')) return;
 
-  const btn = document.createElement('button');
-  btn.id = 'lc-pattern-clue-btn';
-  btn.innerHTML = '💡 Pattern Clue';
-  btn.style.cssText = `
+  const isProblemPage = window.location.pathname.includes('/problems/');
+
+  const container = document.createElement('div');
+  container.id = 'lc-pattern-tracker-widget';
+  container.style.cssText = `
     position: fixed;
     bottom: 24px;
-    right: 80px;
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 999999;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  `;
+
+  // Sync All Button
+  const syncBtn = document.createElement('button');
+  syncBtn.innerHTML = '⚡ Sync All Solved';
+  syncBtn.title = 'Sync all your solved LeetCode problems to local Pattern Tracker';
+  syncBtn.style.cssText = `
+    background: #059669;
     color: #ffffff;
     border: none;
-    padding: 9px 15px;
+    padding: 8px 14px;
     border-radius: 9999px;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    z-index: 99999;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
     display: flex;
     align-items: center;
     gap: 6px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s, background 0.2s;
   `;
+  syncBtn.onmouseover = () => { syncBtn.style.background = '#047857'; syncBtn.style.transform = 'scale(1.04)'; };
+  syncBtn.onmouseout = () => { syncBtn.style.background = '#059669'; syncBtn.style.transform = 'scale(1)'; };
+  syncBtn.onclick = syncAllSolvedFromLeetCode;
+  container.appendChild(syncBtn);
 
-  btn.onmouseover = () => {
-    btn.style.transform = 'scale(1.04)';
-    btn.style.boxShadow = '0 6px 20px rgba(99, 102, 241, 0.6)';
-  };
-  btn.onmouseout = () => {
-    btn.style.transform = 'scale(1)';
-    btn.style.boxShadow = '0 4px 15px rgba(99, 102, 241, 0.4)';
-  };
+  // Pattern Clue Button (if on problem page)
+  if (isProblemPage) {
+    const clueBtn = document.createElement('button');
+    clueBtn.id = 'lc-pattern-clue-btn';
+    clueBtn.innerHTML = '💡 Pattern Clue';
+    clueBtn.title = 'View progressive Socratic hints without spoilers';
+    clueBtn.style.cssText = `
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #ffffff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.2s;
+    `;
+    clueBtn.onmouseover = () => { clueBtn.style.transform = 'scale(1.04)'; };
+    clueBtn.onmouseout = () => { clueBtn.style.transform = 'scale(1)'; };
+    clueBtn.onclick = toggleHintsDrawer;
+    container.appendChild(clueBtn);
+  }
 
-  btn.onclick = toggleHintsDrawer;
-  document.body.appendChild(btn);
+  document.body.appendChild(container);
 }
 
 // In-Page Socratic Hints Drawer
@@ -174,7 +218,7 @@ async function toggleHintsDrawer() {
     border: 1px solid #334155;
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-    z-index: 999999;
+    z-index: 9999999;
     padding: 18px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #e2e8f0;
@@ -185,11 +229,6 @@ async function toggleHintsDrawer() {
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 style="font-size:14px; font-weight:700; color:#fff; margin:0;">💡 Socratic Pattern Clues</h3>
       <button id="lc-close-drawer" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:16px;">✕</button>
-    </div>
-    <div style="margin-bottom:12px;">
-      <button onclick="window.syncAllSolvedFromLeetCode()" style="width:100%; padding:7px 12px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); border-radius:10px; color:#34d399; font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
-        <span>⚡</span> Sync All My Solved Questions Now
-      </button>
     </div>
     <div id="lc-drawer-content" style="font-size:12px; color:#94a3b8;">
       Fetching clues from local Pattern Tracker...
@@ -205,7 +244,7 @@ async function toggleHintsDrawer() {
       document.getElementById('lc-drawer-content').innerHTML = `
         <div style="padding:10px; border-radius:10px; background:#1e293b; border:1px solid #334155;">
           <p style="color:#f59e0b; font-weight:600; margin:0 0 6px 0;">Problem not yet in local catalog</p>
-          <p style="font-size:11px; color:#94a3b8; margin:0 0 10px 0;">Click below to open the Diagnostic Wizard or sync your account.</p>
+          <p style="font-size:11px; color:#94a3b8; margin:0 0 10px 0;">Open Pattern Tracker to diagnose pattern or sync account.</p>
           <a href="${LOCAL_SERVER_URL}" target="_blank" style="display:inline-block; font-size:11px; background:#4f46e5; color:#fff; padding:6px 12px; border-radius:8px; text-decoration:none; font-weight:600;">
             Open Pattern Tracker Dashboard
           </a>
@@ -312,20 +351,18 @@ async function handleAccepted() {
   }
 }
 
-// Extension message listener
+// Extension message listener from popup
 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
   chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     if (req.action === 'sync_all_from_leetcode') {
       syncAllSolvedFromLeetCode().then(res => sendResponse(res));
-      return true;
+      return true; // Keep response channel open for async
     }
   });
 }
 
-// Polling observer for submissions and DOM load
+// Inject buttons on all LeetCode pages
 setInterval(() => {
-  if (window.location.pathname.includes('/problems/')) {
-    injectFloatingButton();
-    detectAcceptedSubmission();
-  }
+  injectFloatingButtons();
+  detectAcceptedSubmission();
 }, 2000);

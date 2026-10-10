@@ -19,20 +19,68 @@ async function checkServer() {
   }
 }
 
-async function syncAllSolved() {
+async function triggerSync() {
   const msgEl = document.getElementById('sync-msg');
   const btn = document.getElementById('sync-all-btn');
 
   msgEl.style.display = 'block';
   msgEl.style.background = '#1e293b';
   msgEl.style.color = '#94a3b8';
-  msgEl.innerText = 'Connecting to LeetCode session...';
+  msgEl.innerText = 'Finding LeetCode tab...';
   btn.disabled = true;
 
   try {
-    // Fetch directly using browser cookies
-    const res = await fetch('https://leetcode.com/api/problems/all/');
-    if (!res.ok) throw new Error('Please make sure you are logged into leetcode.com');
+    // Check if an existing tab is on leetcode.com
+    const tabs = await chrome.tabs.query({ url: '*://*.leetcode.com/*' });
+
+    if (tabs && tabs.length > 0) {
+      const targetTab = tabs[0];
+      msgEl.innerText = 'Syncing from active LeetCode tab...';
+
+      chrome.tabs.sendMessage(targetTab.id, { action: 'sync_all_from_leetcode' }, (response) => {
+        if (chrome.runtime.lastError || !response) {
+          // Fallback to direct fetch
+          fallbackDirectSync();
+          return;
+        }
+        if (response.success) {
+          msgEl.style.background = 'rgba(16, 185, 129, 0.2)';
+          msgEl.style.color = '#6ee7b7';
+          msgEl.innerText = `✅ Successfully synced all ${response.count} solved questions for ${response.username}!`;
+          checkServer();
+        } else {
+          msgEl.style.background = 'rgba(239, 68, 68, 0.2)';
+          msgEl.style.color = '#fca5a5';
+          msgEl.innerText = `Sync error: ${response.error || 'Failed'}`;
+        }
+        btn.disabled = false;
+      });
+    } else {
+      // No LeetCode tab open: prompt to open LeetCode
+      msgEl.style.background = 'rgba(99, 102, 241, 0.2)';
+      msgEl.style.color = '#c7d2fe';
+      msgEl.innerText = 'Opening LeetCode to access your signed-in session...';
+
+      chrome.tabs.create({ url: 'https://leetcode.com/problemset/' }, (newTab) => {
+        msgEl.innerText = 'Please click "⚡ Sync All Solved" on the opened LeetCode tab!';
+        btn.disabled = false;
+      });
+    }
+  } catch (err) {
+    fallbackDirectSync();
+  }
+}
+
+async function fallbackDirectSync() {
+  const msgEl = document.getElementById('sync-msg');
+  const btn = document.getElementById('sync-all-btn');
+  msgEl.innerText = 'Attempting direct session fetch...';
+
+  try {
+    const res = await fetch('https://leetcode.com/api/problems/all/', {
+      credentials: 'include'
+    });
+    if (!res.ok) throw new Error('Could not connect to LeetCode');
     const data = await res.json();
     const username = data.user_name || 'User';
 
@@ -48,12 +96,12 @@ async function syncAllSolved() {
     if (!solved.length) {
       msgEl.style.background = 'rgba(239, 68, 68, 0.2)';
       msgEl.style.color = '#fca5a5';
-      msgEl.innerText = 'No solved questions found. Are you logged in on leetcode.com?';
+      msgEl.innerText = 'No solved questions found. Please ensure you are logged into leetcode.com';
       btn.disabled = false;
       return;
     }
 
-    msgEl.innerText = `Found ${solved.length} solved questions! Uploading to Pattern Tracker...`;
+    msgEl.innerText = `Found ${solved.length} solved problems! Uploading...`;
 
     const syncRes = await fetch(`${SERVER_URL}/api/sync/batch`, {
       method: 'POST',
@@ -64,23 +112,21 @@ async function syncAllSolved() {
       })
     });
 
-    if (!syncRes.ok) throw new Error('Pattern Tracker server error');
     const result = await syncRes.json();
-
     msgEl.style.background = 'rgba(16, 185, 129, 0.2)';
     msgEl.style.color = '#6ee7b7';
     msgEl.innerText = `✅ Successfully synced ${solved.length} questions (${result.newlySynced} new, ${result.updatedCount} updated)!`;
     await checkServer();
-  } catch (err) {
+  } catch (e) {
     msgEl.style.background = 'rgba(239, 68, 68, 0.2)';
     msgEl.style.color = '#fca5a5';
-    msgEl.innerText = `Sync failed: ${err.message}`;
+    msgEl.innerText = `Sync failed: ${e.message}`;
   } finally {
     btn.disabled = false;
   }
 }
 
-document.getElementById('sync-all-btn').addEventListener('click', syncAllSolved);
+document.getElementById('sync-all-btn').addEventListener('click', triggerSync);
 
 document.getElementById('open-app-btn').addEventListener('click', () => {
   if (typeof chrome !== 'undefined' && chrome.tabs) {
