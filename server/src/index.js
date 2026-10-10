@@ -32,7 +32,8 @@ function sendJSON(res, data, statusCode = 200) {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-requested-with, Access-Control-Request-Private-Network',
+    'Access-Control-Allow-Private-Network': 'true'
   });
   res.end(JSON.stringify(data));
 }
@@ -63,12 +64,13 @@ async function parseBody(req) {
 }
 
 const server = http.createServer(async (req, res) => {
-  // Handle CORS preflight
+  // Handle CORS & Private Network preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-requested-with, Access-Control-Request-Private-Network',
+      'Access-Control-Allow-Private-Network': 'true'
     });
     res.end();
     return;

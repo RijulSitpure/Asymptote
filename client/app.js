@@ -751,6 +751,13 @@ async function triggerLeetCodeSync() {
   }
 }
 
+function fillBlind75Sample() {
+  const el = document.getElementById('quick-import-input');
+  if (el) {
+    el.value = '1, 15, 20, 21, 53, 70, 121, 141, 198, 206, 217, 238, 242, 300, 322, 329, 347, 416, 560, 739, 787, 834, 847, 1011, 1368';
+  }
+}
+
 async function importQuickProblemsList() {
   const input = document.getElementById('quick-import-input').value.trim();
   const statusEl = document.getElementById('sync-status-msg');

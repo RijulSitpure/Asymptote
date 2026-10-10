@@ -1,22 +1,16 @@
-const SERVER_URL = 'http://localhost:3001';
-
-async function checkServer() {
+function checkServer() {
   const statusEl = document.getElementById('server-status');
   const dotEl = document.getElementById('server-dot');
 
-  try {
-    const res = await fetch(`${SERVER_URL}/api/stats`);
-    if (res.ok) {
-      const data = await res.json();
-      statusEl.innerText = `Connected (${data.solvedCount || 0} solved)`;
+  chrome.runtime.sendMessage({ action: 'check_server' }, (response) => {
+    if (response && response.success) {
+      statusEl.innerText = `Connected (${response.data.solvedCount || 0} solved)`;
       dotEl.style.background = '#10b981';
     } else {
-      throw new Error();
+      statusEl.innerText = 'Server offline (run npm start)';
+      dotEl.style.background = '#ef4444';
     }
-  } catch (e) {
-    statusEl.innerText = 'Server offline (run npm start)';
-    dotEl.style.background = '#ef4444';
-  }
+  });
 }
 
 async function triggerSync() {
@@ -30,7 +24,6 @@ async function triggerSync() {
   btn.disabled = true;
 
   try {
-    // Check if an existing tab is on leetcode.com
     const tabs = await chrome.tabs.query({ url: '*://*.leetcode.com/*' });
 
     if (tabs && tabs.length > 0) {
@@ -41,7 +34,7 @@ async function triggerSync() {
         if (chrome.runtime.lastError || !response) {
           msgEl.style.background = 'rgba(239, 68, 68, 0.2)';
           msgEl.style.color = '#fca5a5';
-          msgEl.innerText = 'Please refresh your open LeetCode tab and click "⚡ Sync All Solved" on the page!';
+          msgEl.innerText = 'Please switch to your open LeetCode tab and click "⚡ Sync All Solved" on the page!';
           btn.disabled = false;
           return;
         }
@@ -59,7 +52,6 @@ async function triggerSync() {
         btn.disabled = false;
       });
     } else {
-      // No LeetCode tab open: open LeetCode in a new tab
       msgEl.style.background = 'rgba(99, 102, 241, 0.2)';
       msgEl.style.color = '#c7d2fe';
       msgEl.innerText = 'Opening LeetCode tab... Click the green "⚡ Sync All Solved" button on the page!';
@@ -78,11 +70,7 @@ async function triggerSync() {
 document.getElementById('sync-all-btn').addEventListener('click', triggerSync);
 
 document.getElementById('open-app-btn').addEventListener('click', () => {
-  if (typeof chrome !== 'undefined' && chrome.tabs) {
-    chrome.tabs.create({ url: SERVER_URL });
-  } else {
-    window.open(SERVER_URL, '_blank');
-  }
+  chrome.tabs.create({ url: 'http://localhost:3001' });
 });
 
 checkServer();

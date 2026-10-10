@@ -1,17 +1,14 @@
 /**
  * LeetCode Pattern Companion - Content Script
- * Uses modern LeetCode GraphQL API with same-origin session authentication
+ * 1. Pulls solved problems using active LeetCode session
+ * 2. Bridges data to local server via background service worker (avoiding Mixed Content / PNA blocks)
  */
 
-const LOCAL_SERVER_URL = 'http://localhost:3001';
-
-// Extract problem slug from URL
 function getProblemSlug() {
   const match = window.location.pathname.match(/\/problems\/([^/]+)/);
   return match ? match[1] : null;
 }
 
-// In-page Toast Notification
 function showToast(message, type = 'success') {
   let toast = document.getElementById('lc-pattern-toast');
   if (!toast) {
@@ -59,7 +56,7 @@ function getCsrfToken() {
 }
 
 /**
- * 1-Click Full Account Sync using Modern LeetCode GraphQL API
+ * 1-Click Full Account Sync via GraphQL
  */
 async function syncAllSolvedFromLeetCode() {
   showToast('Connecting to your LeetCode session...', 'info');
@@ -96,7 +93,7 @@ async function syncAllSolvedFromLeetCode() {
     const limit = 100;
     let hasMore = true;
 
-    while (hasMore && skip < 2000) {
+    while (hasMore && skip < 2500) {
       const qRes = await fetch('/graphql', {
         method: 'POST',
         headers: {
@@ -138,7 +135,7 @@ async function syncAllSolvedFromLeetCode() {
 
       const contentType = qRes.headers.get('content-type') || '';
       if (!contentType.includes('application/json')) {
-        throw new Error('LeetCode session expired. Please refresh the page and sign in.');
+        throw new Error('Please make sure you are signed in on LeetCode!');
       }
 
       const qData = await qRes.json();
@@ -163,7 +160,7 @@ async function syncAllSolvedFromLeetCode() {
       }
     }
 
-    // 3. Fallback: if questionList returned 0, try recentAcSubmissionList
+    // 3. Fallback: recent submissions if questionList is empty
     if (allSolved.length === 0 && username && username !== 'User') {
       try {
         const recentRes = await fetch('/graphql', {
@@ -204,30 +201,31 @@ async function syncAllSolvedFromLeetCode() {
     }
 
     if (allSolved.length === 0) {
-      showToast('No solved problems found. Please make sure you are signed in on LeetCode!', 'error');
+      showToast('No solved problems found. Please make sure you are signed into LeetCode!', 'error');
       return { success: false, count: 0 };
     }
 
-    showToast(`Found ${allSolved.length} solved problems! Categorizing patterns...`, 'info');
+    showToast(`Found ${allSolved.length} solved problems! Uploading to Pattern Tracker...`, 'info');
 
-    // 4. Send to local Pattern Tracker server
-    const syncRes = await fetch(`${LOCAL_SERVER_URL}/api/sync/batch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username,
+    // 4. Send to background worker (bypasses Mixed Content / PNA blocks)
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({
+        action: 'send_to_server',
+        username: username,
         problems: allSolved
-      })
+      }, (response) => {
+        if (response && response.success) {
+          const result = response.data;
+          showToast(`✅ Successfully synced all ${allSolved.length} solved questions (${result.newlySynced} new, ${result.updatedCount} updated)!`, 'success');
+          resolve({ success: true, count: allSolved.length, username });
+        } else {
+          const errMsg = response?.error || 'Make sure Pattern Tracker is running (npm start at localhost:3001)';
+          showToast(`Server sync error: ${errMsg}`, 'error');
+          resolve({ success: false, error: errMsg });
+        }
+      });
     });
 
-    if (!syncRes.ok) {
-      const errJson = await syncRes.json().catch(() => ({}));
-      throw new Error(errJson.error || `Pattern Tracker returned HTTP ${syncRes.status}`);
-    }
-
-    const result = await syncRes.json();
-    showToast(`✅ Successfully synced all ${allSolved.length} solved questions (${result.newlySynced} new, ${result.updatedCount} updated)!`, 'success');
-    return { success: true, count: allSolved.length, username };
   } catch (err) {
     showToast(`Sync failed: ${err.message}`, 'error');
     return { success: false, error: err.message };
@@ -363,28 +361,23 @@ async function toggleHintsDrawer() {
 
   document.getElementById('lc-close-drawer').onclick = () => drawer.remove();
 
-  try {
-    const res = await fetch(`${LOCAL_SERVER_URL}/api/hints/${slug}`);
-    if (!res.ok) {
+  chrome.runtime.sendMessage({ action: 'fetch_hints', slug }, (response) => {
+    if (response && response.success) {
+      cachedHintData = response.data;
+      currentLevel = 1;
+      renderDrawerHints();
+    } else {
       document.getElementById('lc-drawer-content').innerHTML = `
         <div style="padding:10px; border-radius:10px; background:#1e293b; border:1px solid #334155;">
           <p style="color:#f59e0b; font-weight:600; margin:0 0 6px 0;">Problem not yet in local catalog</p>
           <p style="font-size:11px; color:#94a3b8; margin:0 0 10px 0;">Open Pattern Tracker to diagnose pattern or sync account.</p>
-          <a href="${LOCAL_SERVER_URL}" target="_blank" style="display:inline-block; font-size:11px; background:#4f46e5; color:#fff; padding:6px 12px; border-radius:8px; text-decoration:none; font-weight:600;">
+          <a href="http://localhost:3001" target="_blank" style="display:inline-block; font-size:11px; background:#4f46e5; color:#fff; padding:6px 12px; border-radius:8px; text-decoration:none; font-weight:600;">
             Open Pattern Tracker Dashboard
           </a>
         </div>
       `;
-      return;
     }
-    cachedHintData = await res.json();
-    currentLevel = 1;
-    renderDrawerHints();
-  } catch (err) {
-    document.getElementById('lc-drawer-content').innerHTML = `
-      <p style="color:#ef4444;">Make sure Pattern Tracker server is running at ${LOCAL_SERVER_URL}!</p>
-    `;
-  }
+  });
 }
 
 function renderDrawerHints() {
@@ -460,20 +453,15 @@ async function handleAccepted() {
     code = Array.from(lines).map(l => l.innerText).join('\n');
   }
 
-  try {
-    const res = await fetch(`${LOCAL_SERVER_URL}/api/submissions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titleSlug: slug,
-        code
-      })
-    });
-    const result = await res.json();
-    showToast(`Synced ${slug} to Pattern Tracker!`, 'success');
-  } catch (err) {
-    console.warn('Pattern Tracker auto-sync failed (is server running?):', err);
-  }
+  chrome.runtime.sendMessage({
+    action: 'save_submission',
+    titleSlug: slug,
+    code
+  }, (res) => {
+    if (res && res.success) {
+      showToast(`Synced ${slug} to Pattern Tracker!`, 'success');
+    }
+  });
 }
 
 // Extension message listener from popup
@@ -481,7 +469,7 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
   chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     if (req.action === 'sync_all_from_leetcode') {
       syncAllSolvedFromLeetCode().then(res => sendResponse(res));
-      return true; // Keep response channel open for async
+      return true;
     }
   });
 }
