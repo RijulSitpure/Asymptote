@@ -78,24 +78,25 @@ const server = http.createServer(async (req, res) => {
 
   const urlObj = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = urlObj.pathname;
+  const cleanPath = (pathname.length > 1 && pathname.endsWith('/')) ? pathname.slice(0, -1) : pathname;
   const searchParams = urlObj.searchParams;
 
   try {
     // API Routes
-    if (pathname === '/api/patterns' && req.method === 'GET') {
+    if (cleanPath === '/api/patterns' && req.method === 'GET') {
       const all = db.getPatterns();
       return sendJSON(res, all);
     }
 
-    if (pathname.startsWith('/api/patterns/') && req.method === 'GET') {
-      const id = pathname.replace('/api/patterns/', '');
+    if (cleanPath.startsWith('/api/patterns/') && req.method === 'GET') {
+      const id = cleanPath.replace('/api/patterns/', '');
       const pattern = db.getPatternById(id);
       if (!pattern) return sendError(res, 'Pattern not found', 404);
       const linkedProblems = db.getProblems({ pattern_id: id });
       return sendJSON(res, { ...pattern, problems: linkedProblems });
     }
 
-    if (pathname === '/api/problems' && req.method === 'GET') {
+    if (cleanPath === '/api/problems' && req.method === 'GET') {
       const filters = {};
       if (searchParams.get('pattern_id')) filters.pattern_id = searchParams.get('pattern_id');
       if (searchParams.get('difficulty')) filters.difficulty = searchParams.get('difficulty');
@@ -105,30 +106,30 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, problems);
     }
 
-    if (pathname === '/api/problems' && req.method === 'POST') {
+    if (cleanPath === '/api/problems' && req.method === 'POST') {
       const body = await parseBody(req);
       if (!body.title) return sendError(res, 'Problem title is required');
       const id = db.upsertProblem(body);
       return sendJSON(res, { success: true, id }, 201);
     }
 
-    if (pathname.startsWith('/api/problems/') && req.method === 'GET') {
-      const id = pathname.replace('/api/problems/', '');
+    if (cleanPath.startsWith('/api/problems/') && req.method === 'GET') {
+      const id = cleanPath.replace('/api/problems/', '');
       const problem = db.getProblemById(Number(id));
       if (!problem) return sendError(res, 'Problem not found', 404);
       return sendJSON(res, problem);
     }
 
-    if (pathname.startsWith('/api/problems/') && req.method === 'PUT') {
-      const id = Number(pathname.replace('/api/problems/', ''));
+    if (cleanPath.startsWith('/api/problems/') && req.method === 'PUT') {
+      const id = Number(cleanPath.replace('/api/problems/', ''));
       const body = await parseBody(req);
       db.updateProblemDetails(id, body);
       return sendJSON(res, { success: true, id });
     }
 
     // Hint Finder for a problem
-    if (pathname.startsWith('/api/hints/') && req.method === 'GET') {
-      const query = decodeURIComponent(pathname.replace('/api/hints/', ''));
+    if (cleanPath.startsWith('/api/hints/') && req.method === 'GET') {
+      const query = decodeURIComponent(cleanPath.replace('/api/hints/', ''));
       const problem = db.findProblem(query);
       if (!problem) {
         return sendError(res, `No stored problem matching '${query}'. Try searching pattern library or use the Diagnostic Wizard.`, 404);
@@ -142,14 +143,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Diagnostic Wizard
-    if (pathname === '/api/wizard/diagnose' && req.method === 'POST') {
+    if (cleanPath === '/api/wizard/diagnose' && req.method === 'POST') {
       const body = await parseBody(req);
       const results = wizard.diagnose(body);
       return sendJSON(res, { results });
     }
 
     // LeetCode Sync (by username)
-    if (pathname === '/api/sync/leetcode' && req.method === 'POST') {
+    if (cleanPath === '/api/sync/leetcode' && req.method === 'POST') {
       const body = await parseBody(req);
       const username = body.username || db.getSetting('leetcode_username');
       if (!username) return sendError(res, 'Username is required');
@@ -163,21 +164,21 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Extension Webhook (single question submission)
-    if (pathname === '/api/submissions' && req.method === 'POST') {
+    if (cleanPath === '/api/submissions' && req.method === 'POST') {
       const body = await parseBody(req);
       const result = await syncService.ingestFromExtension(body);
       return sendJSON(res, { success: true, ...result });
     }
 
     // Full Batch Sync (e.g. all solved questions from extension)
-    if (pathname === '/api/sync/batch' && req.method === 'POST') {
+    if (cleanPath === '/api/sync/batch' && req.method === 'POST') {
       const body = await parseBody(req);
       const result = await syncService.syncBatchSolved(body.username, body.problems);
       return sendJSON(res, { success: true, ...result });
     }
 
     // Statistics
-    if (pathname === '/api/stats' && req.method === 'GET') {
+    if (cleanPath === '/api/stats' && req.method === 'GET') {
       const stats = db.getStats();
       const lastSync = db.getSetting('last_synced_at');
       const username = db.getSetting('leetcode_username');
@@ -188,6 +189,11 @@ const server = http.createServer(async (req, res) => {
         username,
         recentLogs
       });
+    }
+
+    // Explicit API 404 guard - NEVER fall through API calls to static index.html!
+    if (cleanPath.startsWith('/api/')) {
+      return sendError(res, `API route not found: ${req.method} ${cleanPath}`, 404);
     }
 
     // Static File Serving

@@ -52,174 +52,234 @@ function showToast(message, type = 'success') {
 
 function getCsrfToken() {
   const match = document.cookie.match(/csrftoken=([^;]+)/);
-  return match ? match[1] : '';
+  if (match) return match[1];
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (meta) return meta.getAttribute('content');
+  return '';
 }
 
 /**
- * 1-Click Full Account Sync via GraphQL
+ * Safe GraphQL runner that tries /graphql/ first, then /graphql,
+ * attaches credentials and CSRF tokens, and NEVER throws raw "Unexpected token".
+ */
+async function safeGraphqlQuery(query, variables = {}) {
+  const csrfToken = getCsrfToken();
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  if (csrfToken) {
+    headers['x-csrftoken'] = csrfToken;
+  }
+
+  // Always try /graphql/ first (canonical Django path with trailing slash!), then /graphql
+  const endpoints = ['/graphql/', '/graphql'];
+  let lastError = null;
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ query, variables })
+      });
+
+      const text = await res.text();
+      if (!text || text.trim().startsWith('<')) {
+        lastError = new Error(`LeetCode returned non-JSON (HTTP ${res.status}). Make sure you are signed into leetcode.com.`);
+        continue;
+      }
+
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch (parseErr) {
+        lastError = new Error(`LeetCode response could not be parsed: ${text.slice(0, 60)}`);
+        continue;
+      }
+
+      if (parsed.errors && !parsed.data) {
+        lastError = new Error(parsed.errors[0]?.message || 'GraphQL query error');
+        continue;
+      }
+
+      return parsed.data;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('Failed to query LeetCode GraphQL');
+}
+
+/**
+ * 1-Click Full Account Sync via GraphQL + Multi-Stage Fallback
  */
 async function syncAllSolvedFromLeetCode() {
   showToast('Connecting to your LeetCode session...', 'info');
-  const csrfToken = getCsrfToken();
 
   try {
-    // 1. Get current logged-in user
+    // 1. Get current logged-in username
     let username = 'User';
     try {
-      const userRes = await fetch('/graphql', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrftoken': csrfToken
-        },
-        body: JSON.stringify({
-          query: `query userStatus { userStatus { isSignedIn username } }`
-        })
-      });
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        if (userData?.data?.userStatus?.username) {
-          username = userData.data.userStatus.username;
-        }
+      const userData = await safeGraphqlQuery(`query userStatus { userStatus { isSignedIn username } }`);
+      if (userData?.userStatus?.username) {
+        username = userData.userStatus.username;
       }
     } catch (e) {
-      console.warn('Could not read userStatus query:', e);
+      const profileLink = document.querySelector('a[href^="/u/"]');
+      if (profileLink) {
+        const href = profileLink.getAttribute('href');
+        const match = href.match(/\/u\/([^/]+)/);
+        if (match) username = match[1];
+      }
     }
 
-    // 2. Fetch all solved problems via questionList with status: "AC"
     showToast(`Fetching solved problems for ${username}...`, 'info');
     let allSolved = [];
-    let skip = 0;
-    const limit = 100;
-    let hasMore = true;
 
-    while (hasMore && skip < 2500) {
-      const qRes = await fetch('/graphql', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrftoken': csrfToken
-        },
-        body: JSON.stringify({
-          query: `
-            query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
-              problemsetQuestionList: questionList(
-                categorySlug: $categorySlug
-                limit: $limit
-                skip: $skip
-                filters: $filters
-              ) {
-                total: totalNum
-                questions: data {
-                  frontendQuestionId: questionFrontendId
-                  status
-                  title
-                  titleSlug
-                  difficulty
-                  topicTags {
-                    name
-                    slug
-                  }
+    // Method 1: problemsetQuestionList with status: "AC"
+    try {
+      let skip = 0;
+      const limit = 100;
+      let hasMore = true;
+
+      while (hasMore && skip < 2500) {
+        const qData = await safeGraphqlQuery(`
+          query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
+            problemsetQuestionList: questionList(
+              categorySlug: $categorySlug
+              limit: $limit
+              skip: $skip
+              filters: $filters
+            ) {
+              total: totalNum
+              questions: data {
+                frontendQuestionId: questionFrontendId
+                status
+                title
+                titleSlug
+                difficulty
+                topicTags {
+                  name
+                  slug
                 }
               }
             }
-          `,
-          variables: {
-            categorySlug: '',
-            limit,
-            skip,
-            filters: { status: 'AC' }
           }
-        })
-      });
-
-      const contentType = qRes.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        throw new Error('Please make sure you are signed in on LeetCode!');
-      }
-
-      const qData = await qRes.json();
-      const listObj = qData?.data?.problemsetQuestionList;
-      const questions = listObj?.questions || [];
-      const total = listObj?.total || 0;
-
-      for (const q of questions) {
-        allSolved.push({
-          frontend_id: String(q.frontendQuestionId),
-          title: q.title,
-          title_slug: q.titleSlug,
-          difficulty: q.difficulty || 'Medium',
-          topicTags: (q.topicTags || []).map(t => t.name)
+        `, {
+          categorySlug: '',
+          limit,
+          skip,
+          filters: { status: 'AC' }
         });
-      }
 
-      if (allSolved.length >= total || questions.length === 0) {
-        hasMore = false;
-      } else {
-        skip += limit;
+        const listObj = qData?.problemsetQuestionList;
+        const questions = listObj?.questions || [];
+        const total = listObj?.total || 0;
+
+        for (const q of questions) {
+          allSolved.push({
+            frontend_id: String(q.frontendQuestionId),
+            title: q.title,
+            title_slug: q.titleSlug,
+            difficulty: q.difficulty || 'Medium',
+            topicTags: (q.topicTags || []).map(t => t.name)
+          });
+        }
+
+        if (allSolved.length >= total || questions.length === 0) {
+          hasMore = false;
+        } else {
+          skip += limit;
+        }
       }
+    } catch (listErr) {
+      console.warn('problemsetQuestionList query failed, trying recentAcSubmissions fallback:', listErr);
     }
 
-    // 3. Fallback: recent submissions if questionList is empty
+    // Method 2: Fallback to recentAcSubmissions if Method 1 found nothing
     if (allSolved.length === 0 && username && username !== 'User') {
       try {
-        const recentRes = await fetch('/graphql', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-csrftoken': csrfToken
-          },
-          body: JSON.stringify({
-            query: `
-              query recentAcSubmissions($username: String!, $limit: Int!) {
-                recentAcSubmissionList(username: $username, limit: $limit) {
-                  id
-                  title
-                  titleSlug
-                }
-              }
-            `,
-            variables: { username, limit: 50 }
-          })
-        });
-
-        if (recentRes.ok) {
-          const recentData = await recentRes.json();
-          const list = recentData?.data?.recentAcSubmissionList || [];
-          for (const item of list) {
-            allSolved.push({
-              frontend_id: '',
-              title: item.title,
-              title_slug: item.titleSlug,
-              difficulty: 'Medium'
-            });
+        const recentData = await safeGraphqlQuery(`
+          query recentAcSubmissions($username: String!, $limit: Int!) {
+            recentAcSubmissionList(username: $username, limit: $limit) {
+              id
+              title
+              titleSlug
+            }
           }
+        `, { username, limit: 50 });
+
+        const list = recentData?.recentAcSubmissionList || [];
+        for (const item of list) {
+          allSolved.push({
+            frontend_id: '',
+            title: item.title,
+            title_slug: item.titleSlug,
+            difficulty: 'Medium'
+          });
         }
-      } catch (e) {
-        console.warn('Fallback recentAcSubmissionList query failed:', e);
+      } catch (recentErr) {
+        console.warn('recentAcSubmissionList fallback failed:', recentErr);
       }
     }
 
+    // Method 3: Fallback - Extract solved problems from current page DOM
     if (allSolved.length === 0) {
-      showToast('No solved problems found. Please make sure you are signed into LeetCode!', 'error');
-      return { success: false, count: 0 };
+      const problemLinks = document.querySelectorAll('a[href*="/problems/"]');
+      const seenSlugs = new Set();
+      for (const link of problemLinks) {
+        const href = link.getAttribute('href');
+        const match = href.match(/\/problems\/([^/]+)/);
+        if (!match) continue;
+        const slug = match[1];
+        if (seenSlugs.has(slug)) continue;
+        seenSlugs.add(slug);
+
+        const row = link.closest('tr') || link.closest('[role="row"]') || link.parentElement;
+        const text = row ? row.innerText : '';
+        const html = row ? row.innerHTML : '';
+        if (text.includes('Solved') || html.includes('text-green') || html.includes('status-ac') || html.includes('CheckCircle') || html.includes('accepted')) {
+          allSolved.push({
+            frontend_id: '',
+            title: link.innerText.trim() || slug.replace(/-/g, ' '),
+            title_slug: slug,
+            difficulty: 'Medium'
+          });
+        }
+      }
     }
 
-    showToast(`Found ${allSolved.length} solved problems! Uploading to Pattern Tracker...`, 'info');
+    // Deduplicate solved problems
+    const uniqueMap = new Map();
+    for (const item of allSolved) {
+      if (item.title_slug && !uniqueMap.has(item.title_slug)) {
+        uniqueMap.set(item.title_slug, item);
+      }
+    }
+    const finalSolved = Array.from(uniqueMap.values());
 
-    // 4. Send to background worker (bypasses Mixed Content / PNA blocks)
+    if (finalSolved.length === 0) {
+      showToast('No solved problems found. Please make sure you are signed into LeetCode (visit leetcode.com/problemset/)!', 'error');
+      return { success: false, error: 'No solved problems found. Please sign into LeetCode and refresh.' };
+    }
+
+    showToast(`Found ${finalSolved.length} solved problems! Uploading to Pattern Tracker...`, 'info');
+
+    // Send to background service worker (bypasses Mixed Content / PNA blocks)
     return new Promise((resolve) => {
       chrome.runtime.sendMessage({
         action: 'send_to_server',
         username: username,
-        problems: allSolved
+        problems: finalSolved
       }, (response) => {
         if (response && response.success) {
           const result = response.data;
-          showToast(`✅ Successfully synced all ${allSolved.length} solved questions (${result.newlySynced} new, ${result.updatedCount} updated)!`, 'success');
-          resolve({ success: true, count: allSolved.length, username });
+          showToast(`✅ Successfully synced all ${finalSolved.length} solved questions (${result.newlySynced} new, ${result.updatedCount} updated)!`, 'success');
+          resolve({ success: true, count: finalSolved.length, username });
         } else {
-          const errMsg = response?.error || 'Make sure Pattern Tracker is running (npm start at localhost:3001)';
+          const errMsg = response?.error || 'Make sure Pattern Tracker is running (npm start at http://localhost:3001)';
           showToast(`Server sync error: ${errMsg}`, 'error');
           resolve({ success: false, error: errMsg });
         }

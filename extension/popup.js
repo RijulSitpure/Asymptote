@@ -34,7 +34,7 @@ async function triggerSync() {
         if (chrome.runtime.lastError || !response) {
           msgEl.style.background = 'rgba(239, 68, 68, 0.2)';
           msgEl.style.color = '#fca5a5';
-          msgEl.innerText = 'Please switch to your open LeetCode tab and click "⚡ Sync All Solved" on the page!';
+          msgEl.innerText = 'Please refresh (Cmd+R) your open LeetCode tab and click "⚡ Sync All Solved" on the page!';
           btn.disabled = false;
           return;
         }

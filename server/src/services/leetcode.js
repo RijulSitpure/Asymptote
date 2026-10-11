@@ -2,7 +2,7 @@
  * LeetCode Public Service with Fallback Mirrors & Robust Error Handling
  */
 
-const LEETCODE_GRAPHQL_ENDPOINT = 'https://leetcode.com/graphql';
+const LEETCODE_GRAPHQL_ENDPOINT = 'https://leetcode.com/graphql/';
 
 export class LeetCodeService {
   constructor(timeoutMs = 6000) {
@@ -26,11 +26,22 @@ export class LeetCodeService {
         signal: controller.signal
       });
 
+      const text = await response.text();
+      if (!text || text.trim().startsWith('<')) {
+        throw new Error(`LeetCode Cloudflare protection returned HTML (HTTP ${response.status})`);
+      }
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const json = await response.json();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (err) {
+        throw new Error(`LeetCode returned non-JSON response (HTTP ${response.status})`);
+      }
+
       if (json.errors) {
         throw new Error(json.errors[0]?.message || 'GraphQL Error');
       }
@@ -73,8 +84,9 @@ export class LeetCodeService {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         signal: AbortSignal.timeout(5000)
       });
-      if (mirrorRes.ok) {
-        const mirrorData = await mirrorRes.json();
+      const text1 = await mirrorRes.text();
+      if (mirrorRes.ok && text1 && !text1.trim().startsWith('<')) {
+        const mirrorData = JSON.parse(text1);
         const list = mirrorData?.submission || mirrorData?.recentAcSubmissionList || [];
         if (list.length > 0) {
           return list.map(item => ({
@@ -95,8 +107,9 @@ export class LeetCodeService {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         signal: AbortSignal.timeout(5000)
       });
-      if (mirror2Res.ok) {
-        const mirror2Data = await mirror2Res.json();
+      const text2 = await mirror2Res.text();
+      if (mirror2Res.ok && text2 && !text2.trim().startsWith('<')) {
+        const mirror2Data = JSON.parse(text2);
         const list = mirror2Data?.recentSubmissions || [];
         const accepted = list.filter(s => s.statusDisplay === 'Accepted');
         if (accepted.length > 0) {
