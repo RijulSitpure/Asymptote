@@ -9,6 +9,26 @@ function getProblemSlug() {
   return match ? match[1] : null;
 }
 
+function safeSendMessage(message, callback) {
+  try {
+    if (typeof chrome === 'undefined' || !chrome?.runtime?.id) {
+      if (callback) callback({ success: false, error: 'Extension context invalidated. Please refresh the page.' });
+      return;
+    }
+    chrome.runtime.sendMessage(message, (response) => {
+      if (chrome.runtime.lastError) {
+        console.warn('[OpenLeet Extension]', chrome.runtime.lastError.message);
+        if (callback) callback({ success: false, error: chrome.runtime.lastError.message });
+        return;
+      }
+      if (callback) callback(response);
+    });
+  } catch (err) {
+    console.warn('[OpenLeet Extension Context Error]:', err.message);
+    if (callback) callback({ success: false, error: 'Extension context invalidated. Please refresh the page.' });
+  }
+}
+
 function showToast(message, type = 'success') {
   let toast = document.getElementById('lc-pattern-toast');
   if (!toast) {
@@ -269,7 +289,7 @@ async function syncAllSolvedFromLeetCode() {
 
     // Send to background service worker (bypasses Mixed Content / PNA blocks)
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage({
+      safeSendMessage({
         action: 'send_to_server',
         username: username,
         problems: finalSolved
@@ -554,23 +574,36 @@ async function toggleHintsDrawer() {
   shadow.getElementById('tab-btn-solution').onclick = () => switchDrawerTab('solution');
   shadow.getElementById('tab-btn-complexity').onclick = () => switchDrawerTab('complexity');
 
-  chrome.runtime.sendMessage({ action: 'fetch_hints', slug }, (response) => {
+  safeSendMessage({ action: 'fetch_hints', slug }, (response) => {
     if (response && response.success) {
       cachedHintData = response.data;
       currentLevel = 1;
       renderDrawerTabContent();
     } else {
+      const isContextInvalidated = response?.error && response.error.includes('context invalidated');
       const content = shadow.getElementById('lc-drawer-content');
       if (content) {
-        content.innerHTML = `
-          <div class="card-surface" style="text-align:left;">
-            <p style="color:#fbbf24; font-weight:600; margin:0 0 6px 0;">Could not connect to OpenLeet server</p>
-            <p style="font-size:11px; color:#a1a1aa; margin:0 0 10px 0;">Ensure OpenLeet server is running on port 3001.</p>
-            <a href="http://localhost:3001" target="_blank" style="display:inline-block; font-size:11px; background:#4f46e5; color:#fff; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:600;">
-              Open Pattern Dashboard ↗
-            </a>
-          </div>
-        `;
+        if (isContextInvalidated) {
+          content.innerHTML = `
+            <div class="card-surface" style="text-align:left; border-color:#e2e8f0; padding:16px;">
+              <p style="color:#1e2033; font-weight:700; margin:0 0 6px 0; font-size:13px;">Extension Updated</p>
+              <p style="font-size:12px; color:#64748b; margin:0 0 12px 0; line-height:1.5;">The extension was reloaded in Chrome. Please refresh this LeetCode tab to reconnect.</p>
+              <button onclick="window.location.reload()" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; background:#1e2033; color:#fff; padding:8px 16px; border-radius:9999px; font-weight:600; border:none; cursor:pointer;">
+                ↻ Refresh Page
+              </button>
+            </div>
+          `;
+        } else {
+          content.innerHTML = `
+            <div class="card-surface" style="text-align:left; border-color:#e2e8f0; padding:16px;">
+              <p style="color:#d97706; font-weight:700; margin:0 0 6px 0; font-size:13px;">Could not connect to OpenLeet server</p>
+              <p style="font-size:12px; color:#64748b; margin:0 0 12px 0; line-height:1.5;">Ensure OpenLeet server is running (port 3001).</p>
+              <a href="http://localhost:3001" target="_blank" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; background:#1e2033; color:#fff; padding:8px 16px; border-radius:9999px; text-decoration:none; font-weight:600;">
+                Open Pattern Dashboard ↗
+              </a>
+            </div>
+          `;
+        }
       }
     }
   });
@@ -811,7 +844,7 @@ async function handleAccepted() {
     code = Array.from(lines).map(l => l.innerText).join('\n');
   }
 
-  chrome.runtime.sendMessage({
+  safeSendMessage({
     action: 'save_submission',
     titleSlug: slug,
     code
