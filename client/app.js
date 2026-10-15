@@ -220,7 +220,7 @@ function loadQuickProblem(id) {
 
 function renderProgressiveHints() {
   if (!currentStuckProblem) return;
-  const { problem, pattern, hints } = currentStuckProblem;
+  const { problem, pattern, hints, complexity } = currentStuckProblem;
   const container = document.getElementById('stuck-result-container');
 
   const triggersHtml = (problem.trigger_clues || []).map(c => `
@@ -255,6 +255,33 @@ function renderProgressiveHints() {
           ${problem.twist_type ? `<p class="text-[11px] text-amber-300 mt-1">Twist: ${problem.twist_type}</p>` : ''}
         </div>
       </div>
+
+      <!-- Complexity Targeter Section -->
+      ${complexity ? `
+        <div class="bg-slate-950/70 border border-slate-800 p-4 rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+              <i data-lucide="target" class="w-3.5 h-3.5"></i> Target Complexity & Operational Budget
+            </span>
+            <span class="text-[11px] font-mono text-slate-400">${complexity.boundsSummary}</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="bg-slate-900 p-3 rounded-lg border border-sky-500/20">
+              <div class="text-[10px] text-slate-400 uppercase font-semibold">Target Time</div>
+              <div class="text-sm font-bold text-sky-400 font-mono mt-0.5">${complexity.targetTime}</div>
+            </div>
+            <div class="bg-slate-900 p-3 rounded-lg border border-purple-500/20">
+              <div class="text-[10px] text-slate-400 uppercase font-semibold">Target Space</div>
+              <div class="text-sm font-bold text-purple-400 font-mono mt-0.5">${complexity.targetSpace}</div>
+            </div>
+          </div>
+          <div class="text-xs text-slate-300 leading-relaxed space-y-1">
+            <p><strong class="text-rose-400">Why Brute Force Fails:</strong> ${complexity.whyNaiveFails}</p>
+            <p><strong class="text-emerald-400">Space-Time Tradeoff:</strong> ${complexity.spaceTimeTradeoff}</p>
+            <p class="text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">${complexity.opsBudgetExplanation}</p>
+          </div>
+        </div>
+      ` : ''}
 
       <!-- Problem Trigger Signals -->
       ${problem.trigger_clues && problem.trigger_clues.length > 0 ? `

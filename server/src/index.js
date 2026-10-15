@@ -3,8 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DBManager } from './db/database.js';
-import { SyncService } from './services/syncService.js';
+import { SyncService, KNOWN_PROBLEMS } from './services/syncService.js';
 import { DiagnosticWizard } from './services/wizard.js';
+import { ComplexityService } from './services/complexityService.js';
+import { PatternClassifier } from './services/classifier.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +17,8 @@ const db = new DBManager();
 const patterns = db.getPatterns();
 const syncService = new SyncService(db, patterns);
 const wizard = new DiagnosticWizard(patterns);
+const complexityService = new ComplexityService();
+const classifier = new PatternClassifier(patterns);
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -127,18 +131,79 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, { success: true, id });
     }
 
-    // Hint Finder for a problem
+    // Socratic Hint Finder & Complexity Targeter
     if (cleanPath.startsWith('/api/hints/') && req.method === 'GET') {
-      const query = decodeURIComponent(cleanPath.replace('/api/hints/', ''));
-      const problem = db.findProblem(query);
+      const query = decodeURIComponent(cleanPath.replace('/api/hints/', '')).trim();
+      let problem = db.findProblem(query);
+
+      // Dynamically resolve on the fly if not yet stored
       if (!problem) {
-        return sendError(res, `No stored problem matching '${query}'. Try searching pattern library or use the Diagnostic Wizard.`, 404);
+        let frontendId = '';
+        let slug = query;
+        let title = '';
+        let tags = [];
+        let difficulty = 'Medium';
+
+        if (/^\d+$/.test(query)) {
+          frontendId = query;
+          if (KNOWN_PROBLEMS[query]) {
+            const kp = KNOWN_PROBLEMS[query];
+            title = kp.title;
+            slug = kp.slug;
+            difficulty = kp.difficulty;
+            tags = kp.tags || [];
+          } else {
+            slug = `problem-${query}`;
+            title = `LeetCode #${query}`;
+          }
+        } else {
+          for (const [id, kp] of Object.entries(KNOWN_PROBLEMS)) {
+            if (kp.slug === query) {
+              frontendId = id;
+              title = kp.title;
+              difficulty = kp.difficulty;
+              tags = kp.tags || [];
+              break;
+            }
+          }
+          if (!title) {
+            title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          }
+        }
+
+        const classification = classifier.classify({ title, titleSlug: slug, topicTags: tags });
+        const targetPattern = patterns.find(p => p.id === classification.pattern_id);
+        const progressiveHints = classifier.generateProgressiveHints({ title }, targetPattern);
+
+        const newId = db.upsertProblem({
+          frontend_id: frontendId || String(Date.now()),
+          title,
+          title_slug: slug,
+          difficulty,
+          pattern_id: classification.pattern_id,
+          twist_type: classification.twist_type,
+          constraints: '',
+          summary: `Auto-generated Socratic hints & complexity target for ${title}`,
+          trigger_clues: targetPattern?.mental_triggers.slice(0, 3) || [],
+          hints_progressive: progressiveHints,
+          solution_python: '',
+          is_solved: false,
+          user_code: '',
+          user_notes: '',
+          user_rating: 0,
+          review_needed: false
+        });
+        problem = db.getProblemById(newId);
       }
+
       const pattern = db.getPatternById(problem.pattern_id);
+      const complexity = complexityService.analyze(problem, pattern);
+
       return sendJSON(res, {
         problem,
         pattern,
-        hints: problem.hints_progressive
+        hints: problem.hints_progressive,
+        complexity
       });
     }
 

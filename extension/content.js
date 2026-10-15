@@ -304,8 +304,8 @@ function injectFloatingButtons() {
   container.id = 'lc-pattern-tracker-widget';
   container.style.cssText = `
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    bottom: 20px;
+    right: 20px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -313,61 +313,70 @@ function injectFloatingButtons() {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   `;
 
-  // Sync All Button
-  const syncBtn = document.createElement('button');
-  syncBtn.innerHTML = '⚡ Sync All Solved';
-  syncBtn.title = 'Sync all your solved LeetCode problems to local Pattern Tracker';
-  syncBtn.style.cssText = `
-    background: #059669;
-    color: #ffffff;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 9999px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: transform 0.2s, background 0.2s;
-  `;
-  syncBtn.onmouseover = () => { syncBtn.style.background = '#047857'; syncBtn.style.transform = 'scale(1.04)'; };
-  syncBtn.onmouseout = () => { syncBtn.style.background = '#059669'; syncBtn.style.transform = 'scale(1)'; };
-  syncBtn.onclick = syncAllSolvedFromLeetCode;
-  container.appendChild(syncBtn);
-
-  // Pattern Clue Button (if on problem page)
+  // On problem pages: Show sleek OpenLeet AI button
   if (isProblemPage) {
     const clueBtn = document.createElement('button');
     clueBtn.id = 'lc-pattern-clue-btn';
-    clueBtn.innerHTML = '💡 Pattern Clue';
-    clueBtn.title = 'View progressive Socratic hints without spoilers';
+    clueBtn.innerHTML = `
+      <span style="font-size:14px;">⚡</span>
+      <span style="font-weight:700; letter-spacing:0.3px;">OpenLeet AI</span>
+      <span style="font-size:10px; opacity:0.8; background:rgba(255,255,255,0.2); padding:1px 6px; border-radius:10px;">Hints & Big-O</span>
+    `;
+    clueBtn.title = 'Open Socratic hints, complexity targeter, and algorithmic intuition';
     clueBtn.style.cssText = `
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
       color: #ffffff;
-      border: none;
+      border: 1px solid rgba(129, 140, 248, 0.4);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(67, 56, 202, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+    `;
+    clueBtn.onmouseover = () => {
+      clueBtn.style.transform = 'translateY(-2px) scale(1.03)';
+      clueBtn.style.boxShadow = '0 12px 30px rgba(67, 56, 202, 0.6)';
+    };
+    clueBtn.onmouseout = () => {
+      clueBtn.style.transform = 'translateY(0) scale(1)';
+      clueBtn.style.boxShadow = '0 8px 25px rgba(67, 56, 202, 0.4)';
+    };
+    clueBtn.onclick = toggleHintsDrawer;
+    container.appendChild(clueBtn);
+  } else {
+    // Non-problem pages (e.g. /problemset/): Show clean sync button
+    const syncBtn = document.createElement('button');
+    syncBtn.innerHTML = '<span>⚡</span> <span>Sync Solved to OpenLeet</span>';
+    syncBtn.title = 'Sync all solved problems to local OpenLeet Pattern Tracker';
+    syncBtn.style.cssText = `
+      background: #0f172a;
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
       padding: 8px 14px;
       border-radius: 9999px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: transform 0.2s;
+      transition: all 0.2s;
     `;
-    clueBtn.onmouseover = () => { clueBtn.style.transform = 'scale(1.04)'; };
-    clueBtn.onmouseout = () => { clueBtn.style.transform = 'scale(1)'; };
-    clueBtn.onclick = toggleHintsDrawer;
-    container.appendChild(clueBtn);
+    syncBtn.onmouseover = () => { syncBtn.style.background = '#047857'; syncBtn.style.color = '#fff'; };
+    syncBtn.onmouseout = () => { syncBtn.style.background = '#0f172a'; syncBtn.style.color = '#34d399'; };
+    syncBtn.onclick = syncAllSolvedFromLeetCode;
+    container.appendChild(syncBtn);
   }
 
   document.body.appendChild(container);
 }
 
-// In-Page Socratic Hints Drawer
+// In-Page Socratic Hints & Complexity Drawer
 let currentLevel = 1;
 let cachedHintData = null;
 
@@ -388,33 +397,34 @@ async function toggleHintsDrawer() {
   drawer.id = 'lc-pattern-drawer';
   drawer.style.cssText = `
     position: fixed;
-    top: 60px;
-    right: 20px;
-    width: 390px;
-    max-height: 82vh;
-    background: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    top: 52px;
+    right: 18px;
+    width: 420px;
+    max-height: 88vh;
+    background: linear-gradient(180deg, #0b0f19 0%, #0f172a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 1px 1px rgba(255, 255, 255, 0.05);
     z-index: 9999999;
-    padding: 18px;
+    padding: 20px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #e2e8f0;
     overflow-y: auto;
+    backdrop-filter: blur(16px);
   `;
 
   drawer.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 style="font-size:14px; font-weight:700; color:#fff; margin:0;">💡 Socratic Pattern Clues</h3>
-      <button id="lc-close-drawer" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:16px;">✕</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-b:1px solid #1e293b; padding-bottom:10px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:16px;">⚡</span>
+        <span style="font-size:14px; font-weight:800; color:#fff; letter-spacing:0.3px;">OpenLeet AI</span>
+        <span style="font-size:10px; background:rgba(99,102,241,0.2); color:#a5b4fc; padding:2px 7px; border-radius:12px; font-weight:600;">Socratic Coach</span>
+      </div>
+      <button id="lc-close-drawer" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:18px; line-height:1; padding:4px;">✕</button>
     </div>
-    <div style="margin-bottom:12px;">
-      <button onclick="window.syncAllSolvedFromLeetCode()" style="width:100%; padding:7px 12px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); border-radius:10px; color:#34d399; font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
-        <span>⚡</span> Sync All My Solved Questions Now
-      </button>
-    </div>
-    <div id="lc-drawer-content" style="font-size:12px; color:#94a3b8;">
-      Fetching clues from local Pattern Tracker...
+    <div id="lc-drawer-content" style="font-size:12px; color:#94a3b8; text-align:center; padding:30px 0;">
+      <div style="display:inline-block; animation: spin 1s linear infinite; font-size:20px; margin-bottom:8px;">⏳</div>
+      <div>Analyzing problem constraints & Socratic hints...</div>
     </div>
   `;
   document.body.appendChild(drawer);
@@ -428,11 +438,11 @@ async function toggleHintsDrawer() {
       renderDrawerHints();
     } else {
       document.getElementById('lc-drawer-content').innerHTML = `
-        <div style="padding:10px; border-radius:10px; background:#1e293b; border:1px solid #334155;">
-          <p style="color:#f59e0b; font-weight:600; margin:0 0 6px 0;">Problem not yet in local catalog</p>
-          <p style="font-size:11px; color:#94a3b8; margin:0 0 10px 0;">Open Pattern Tracker to diagnose pattern or sync account.</p>
-          <a href="http://localhost:3001" target="_blank" style="display:inline-block; font-size:11px; background:#4f46e5; color:#fff; padding:6px 12px; border-radius:8px; text-decoration:none; font-weight:600;">
-            Open Pattern Tracker Dashboard
+        <div style="padding:14px; border-radius:12px; background:#1e293b; border:1px solid #334155; text-align:left;">
+          <p style="color:#f59e0b; font-weight:600; margin:0 0 6px 0;">Could not connect to OpenLeet server</p>
+          <p style="font-size:11px; color:#94a3b8; margin:0 0 10px 0;">Make sure your Pattern Tracker server is running on port 3001.</p>
+          <a href="http://localhost:3001" target="_blank" style="display:inline-block; font-size:11px; background:#4f46e5; color:#fff; padding:6px 14px; border-radius:8px; text-decoration:none; font-weight:600;">
+            Open Pattern Dashboard ↗
           </a>
         </div>
       `;
@@ -442,37 +452,135 @@ async function toggleHintsDrawer() {
 
 function renderDrawerHints() {
   if (!cachedHintData) return;
-  const { problem, pattern, hints } = cachedHintData;
+  const { problem, pattern, hints, complexity } = cachedHintData;
   const content = document.getElementById('lc-drawer-content');
   if (!content) return;
 
+  const diffColor = problem.difficulty === 'Easy' ? '#10b981' : problem.difficulty === 'Medium' ? '#f59e0b' : '#ef4444';
+  const diffBg = problem.difficulty === 'Easy' ? 'rgba(16,185,129,0.15)' : problem.difficulty === 'Medium' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)';
+
+  // 1. Complexity Targeter Card
+  const complexityHtml = complexity ? `
+    <div style="background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:12px; margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#38bdf8;">🎯 Target Complexity</span>
+        <span style="font-size:10px; color:#64748b; font-family:monospace;">${complexity.boundsSummary}</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+        <div style="background:#1e293b; padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.2);">
+          <div style="font-size:10px; color:#94a3b8;">Target Time</div>
+          <div style="font-size:12px; font-weight:700; color:#38bdf8; font-family:monospace; margin-top:2px;">${complexity.targetTime}</div>
+        </div>
+        <div style="background:#1e293b; padding:8px 10px; border-radius:8px; border:1px solid rgba(168,85,247,0.2);">
+          <div style="font-size:10px; color:#94a3b8;">Target Space</div>
+          <div style="font-size:12px; font-weight:700; color:#c084fc; font-family:monospace; margin-top:2px;">${complexity.targetSpace}</div>
+        </div>
+      </div>
+      <div style="font-size:11px; color:#cbd5e1; line-height:1.45; margin-bottom:6px;">
+        <strong style="color:#f87171;">Why Brute Force Fails:</strong> ${complexity.whyNaiveFails}
+      </div>
+      <div style="font-size:11px; color:#94a3b8; line-height:1.4;">
+        <strong style="color:#34d399;">Trade-off:</strong> ${complexity.spaceTimeTradeoff}
+      </div>
+    </div>
+  ` : '';
+
+  // 2. Socratic Hint Ladder
   const hintItems = (hints || []).map((h, i) => {
     const isUnlocked = (i + 1) <= currentLevel;
+    const levelColors = ['#38bdf8', '#818cf8', '#a855f7', '#ec4899'];
+    const color = levelColors[i % levelColors.length];
+
     return `
-      <div style="margin-bottom:10px; padding:10px; border-radius:10px; background:${isUnlocked ? '#1e293b' : '#111827'}; border:1px solid ${isUnlocked ? '#475569' : '#1e293b'};">
-        <div style="display:flex; justify-content:space-between; font-weight:600; font-size:12px; color:${isUnlocked ? '#fff' : '#64748b'}; margin-bottom:4px;">
-          <span>Level ${i + 1}: ${h.title}</span>
-          ${!isUnlocked ? `<button onclick="window.unlockLevel(${i + 1})" style="background:none; border:none; color:#818cf8; cursor:pointer; font-size:11px; font-weight:600;">Unlock</button>` : `<span style="color:#10b981; font-size:10px;">UNLOCKED</span>`}
+      <div style="margin-bottom:8px; border-radius:12px; background:${isUnlocked ? '#1e293b' : '#0b0f19'}; border:1px solid ${isUnlocked ? '#334155' : '#1e293b'}; overflow:hidden; transition:all 0.2s;">
+        <div style="padding:9px 12px; display:flex; justify-content:space-between; align-items:center; background:${isUnlocked ? 'rgba(255,255,255,0.02)' : 'transparent'};">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span style="font-size:10px; font-weight:700; padding:1px 6px; border-radius:6px; background:${isUnlocked ? color : '#334155'}; color:${isUnlocked ? '#000' : '#94a3b8'};">
+              L${i + 1}
+            </span>
+            <span style="font-weight:600; font-size:12px; color:${isUnlocked ? '#fff' : '#64748b'};">
+              ${h.title}
+            </span>
+          </div>
+          ${!isUnlocked ? `
+            <button onclick="window.unlockLevel(${i + 1})" style="background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.3); color:#a5b4fc; cursor:pointer; font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px;">
+              Unlock
+            </button>
+          ` : `
+            <span style="color:#10b981; font-size:10px; font-weight:700;">REVEALED</span>
+          `}
         </div>
-        ${isUnlocked ? `<div style="font-size:11px; color:#cbd5e1; line-height:1.4; white-space:pre-wrap;">${h.content}</div>` : ''}
+        ${isUnlocked ? `
+          <div style="padding:10px 12px; font-size:11px; color:#cbd5e1; line-height:1.5; border-top:1px solid #334155; background:#0f172a; white-space:pre-wrap;">${h.content}</div>
+        ` : ''}
       </div>
     `;
   }).join('');
 
-  content.innerHTML = `
-    <div style="margin-bottom:12px;">
-      <span style="display:inline-block; font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(99,102,241,0.15); color:#a5b4fc; margin-bottom:4px;">
-        ${pattern?.title || 'Algorithmic Pattern'}
-      </span>
-      <div style="font-size:13px; font-weight:700; color:#fff;">${problem.title}</div>
-      ${problem.twist_type ? `<div style="font-size:11px; color:#f59e0b; margin-top:2px;">Twist: ${problem.twist_type}</div>` : ''}
+  // 3. The Twist / Trap Callout
+  const twistHtml = problem.twist_type ? `
+    <div style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:10px 12px; margin-bottom:12px;">
+      <div style="font-size:10px; font-weight:700; text-transform:uppercase; color:#fbbf24; margin-bottom:3px;">
+        ⚠️ The Twist / Interview Trap
+      </div>
+      <div style="font-size:11px; color:#fde68a; line-height:1.4;">
+        ${problem.twist_type}
+      </div>
     </div>
+  ` : '';
+
+  content.innerHTML = `
+    <!-- Problem Header -->
+    <div style="margin-bottom:12px; text-align:left;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+        <span style="font-family:monospace; font-size:11px; font-weight:700; color:#818cf8;">#${problem.frontend_id || ''}</span>
+        <span style="font-size:10px; font-weight:700; padding:1px 7px; border-radius:10px; background:${diffBg}; color:${diffColor};">
+          ${problem.difficulty}
+        </span>
+        <span style="font-size:10px; padding:1px 7px; border-radius:10px; background:rgba(99,102,241,0.15); color:#a5b4fc;">
+          ${pattern?.title || 'Algorithmic Pattern'}
+        </span>
+      </div>
+      <div style="font-size:15px; font-weight:800; color:#fff; line-height:1.25;">
+        ${problem.title}
+      </div>
+    </div>
+
+    <!-- Complexity Targeter -->
+    ${complexityHtml}
+
+    <!-- The Twist -->
+    ${twistHtml}
+
+    <!-- Hints Header -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; text-align:left;">
+      <span style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#94a3b8;">
+        💡 Socratic Hint Ladder
+      </span>
+      <span style="font-size:10px; color:#64748b;">
+        Step ${currentLevel} of ${hints?.length || 4}
+      </span>
+    </div>
+
+    <!-- Hints List -->
     ${hintItems}
+
+    <!-- Progressive Reveal Button -->
     ${currentLevel < (hints?.length || 0) ? `
-      <button onclick="window.unlockLevel(${currentLevel + 1})" style="width:100%; margin-top:8px; padding:8px; background:#4f46e5; color:#fff; border:none; border-radius:8px; font-weight:600; font-size:12px; cursor:pointer;">
-        Reveal Next Clue (Level ${currentLevel + 1})
+      <button onclick="window.unlockLevel(${currentLevel + 1})" style="width:100%; margin-top:8px; padding:10px; background:linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color:#fff; border:none; border-radius:10px; font-weight:700; font-size:12px; cursor:pointer; box-shadow:0 4px 15px rgba(79,70,229,0.3); transition:transform 0.1s;">
+        Reveal Next Hint (Level ${currentLevel + 1}: ${hints[currentLevel]?.title || 'Next Step'})
       </button>
     ` : ''}
+
+    <!-- Footer Links -->
+    <div style="margin-top:14px; pt:10px; border-top:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#64748b;">
+      <span style="display:flex; align-items:center; gap:5px;">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span> Auto-sync active
+      </span>
+      <a href="http://localhost:3001" target="_blank" style="color:#818cf8; text-decoration:none; font-weight:600;">
+        Open Dashboard ↗
+      </a>
+    </div>
   `;
 }
 
