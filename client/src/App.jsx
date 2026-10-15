@@ -10,7 +10,7 @@ import { SyncModal } from './components/SyncModal';
 import { ExtensionModal } from './components/ExtensionModal';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'atlas' | 'socratic' | 'wizard' | 'problems'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'patterns' | 'solver' | 'wizard' | 'solved'
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [stats, setStats] = useState(null);
   const [patterns, setPatterns] = useState([]);
@@ -52,17 +52,17 @@ export default function App() {
 
   const handleSelectPattern = (patternId) => {
     setSelectedPatternId(patternId);
-    setActiveTab('atlas');
+    setActiveTab('patterns');
   };
 
   const handleGlobalSearchSubmit = () => {
     if (!quickSearch.trim()) return;
     setSocraticProblemQuery(quickSearch.trim());
-    setActiveTab('socratic');
+    setActiveTab('solver');
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex font-sans selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#fcfcfd] text-[#1e2033] flex font-sans selection:bg-[#3a3f5c] selection:text-white">
       {/* Fixed Collapsible Sidebar */}
       <Sidebar
         activeTab={activeTab}
@@ -86,7 +86,7 @@ export default function App() {
         />
 
         {/* Tab Content Canvas */}
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto overflow-y-auto">
+        <main className="flex-1 p-6 sm:p-8 max-w-6xl w-full mx-auto overflow-y-auto">
           {activeTab === 'dashboard' && (
             <StatsDashboard
               stats={stats}
@@ -96,14 +96,14 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'atlas' && (
+          {activeTab === 'patterns' && (
             <PatternAtlas
               patterns={patterns}
               selectedPatternId={selectedPatternId}
             />
           )}
 
-          {activeTab === 'socratic' && (
+          {activeTab === 'solver' && (
             <SocraticSolver
               initialProblemQuery={socraticProblemQuery}
             />
@@ -115,7 +115,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'problems' && (
+          {activeTab === 'solved' && (
             <SolvedLog
               problems={problems}
               patterns={patterns}

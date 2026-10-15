@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { RefreshCw, Zap, ClipboardList, User, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 
 export function SyncModal({ isOpen, onClose, onSyncComplete }) {
   const [quickInput, setQuickInput] = useState('');
@@ -33,7 +31,7 @@ export function SyncModal({ isOpen, onClose, onSyncComplete }) {
         })
       });
       const data = await res.json();
-      setStatusMessage({ type: 'success', text: `Imported ${items.length} problems (${data.newlySynced || 0} new, ${data.updatedCount || 0} updated)!` });
+      setStatusMessage({ type: 'success', text: `Imported ${items.length} questions (${data.newlySynced || 0} new, ${data.updatedCount || 0} updated)!` });
       setQuickInput('');
       onSyncComplete();
     } catch (err) {
@@ -66,78 +64,77 @@ export function SyncModal({ isOpen, onClose, onSyncComplete }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 max-w-lg p-6 space-y-4">
+      <DialogContent className="bg-[#ffffff] border-[#eef0f4] text-[#1e2033] max-w-lg p-6 space-y-4 rounded-2xl shadow-xl">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-indigo-400" />
-            <DialogTitle className="text-base font-bold">Sync Solved Problems</DialogTitle>
+            <div className="w-6 h-6 rounded-md bg-[#1e2033] flex items-center justify-center text-white">
+              <RefreshCw className="w-3.5 h-3.5" />
+            </div>
+            <DialogTitle className="text-base font-bold text-[#1e2033]">Sync Solved Problems</DialogTitle>
           </div>
-          <DialogDescription className="text-xs text-zinc-400">
+          <DialogDescription className="text-xs text-[#646e82]">
             Import your solved history to map them automatically into 37+ algorithmic patterns.
           </DialogDescription>
         </DialogHeader>
 
         {statusMessage && (
           <div className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
-            statusMessage.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-red-500/10 border-red-500/20 text-red-300'
+            statusMessage.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'
           }`}>
-            {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+            {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-red-600" />}
             <span>{statusMessage.text}</span>
           </div>
         )}
 
         {/* Method 1: Extension */}
-        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+        <div className="p-4 rounded-xl bg-[#f8f9fc] border border-[#eef0f4] space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5" /> Method 1: Extension 1-Click Sync (Recommended)
+            <span className="text-xs font-bold text-[#1e2033] flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-amber-500" /> Method 1: Extension 1-Click Sync (Recommended)
             </span>
-            <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">
               Zero Limits
-            </Badge>
+            </span>
           </div>
-          <p className="text-[11px] text-zinc-300 leading-relaxed">
-            Open the OpenLeet extension popup on leetcode.com and click <strong className="text-emerald-400">"⚡ Sync All Solved Questions"</strong> to pull your complete catalog instantly.
+          <p className="text-[11px] text-[#646e82] leading-relaxed">
+            Open the OpenLeet extension popup on leetcode.com and click <strong className="text-[#1e2033]">"⚡ Sync All Solved Questions"</strong> to pull your complete catalog instantly.
           </p>
         </div>
 
         {/* Method 2: Quick-Paste */}
-        <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
-              <ClipboardList className="w-3.5 h-3.5 text-indigo-400" /> Method 2: Quick-Paste Numbers or Slugs
-            </span>
-          </div>
+        <div className="p-4 rounded-xl bg-[#ffffff] border border-[#eef0f4] space-y-2.5">
+          <span className="text-xs font-semibold text-[#1e2033] flex items-center gap-1.5">
+            <ClipboardList className="w-3.5 h-3.5 text-[#1e2033]" /> Method 2: Quick-Paste Numbers
+          </span>
           <textarea
             value={quickInput}
             onChange={(e) => setQuickInput(e.target.value)}
             rows={2}
-            placeholder="1, 15, 206, 787, 329, 847, 53, 70..."
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 font-mono"
+            placeholder="1, 15, 206, 787, 329, 847..."
+            className="w-full bg-[#f8f9fc] border border-[#eef0f4] rounded-xl p-2.5 text-xs text-[#1e2033] placeholder-[#a0a8b7] focus:outline-none focus:border-[#1e2033] focus:bg-white font-mono"
           />
           <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={fillBlind75Sample}
-              className="text-[11px] text-indigo-400 hover:text-indigo-300 underline font-medium"
+              className="text-[11px] text-[#1e2033] hover:underline font-medium"
             >
               Fill Sample (25 questions)
             </button>
-            <Button
-              size="sm"
+            <button
               disabled={loading || !quickInput.trim()}
               onClick={handleQuickImport}
-              className="h-7 text-xs bg-indigo-600 hover:bg-indigo-500 text-white"
+              className="sarvam-btn-primary px-3.5 py-1 text-xs"
             >
-              Import & Classify
-            </Button>
+              Import
+            </button>
           </div>
         </div>
 
         {/* Method 3: Public Profile */}
-        <div className="p-3.5 rounded-xl bg-zinc-950/40 border border-zinc-800/80 space-y-2">
-          <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 text-zinc-500" /> Method 3: Public Username Sync
+        <div className="p-4 rounded-xl bg-[#fafafc] border border-[#eef0f4] space-y-2">
+          <span className="text-xs font-semibold text-[#646e82] flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-[#a0a8b7]" /> Method 3: Username Sync
           </span>
           <div className="flex gap-2">
             <input
@@ -145,17 +142,15 @@ export function SyncModal({ isOpen, onClose, onSyncComplete }) {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="e.g. Rijul-Sitpure"
-              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-indigo-500"
+              className="flex-1 bg-white border border-[#eef0f4] rounded-lg px-3 py-1.5 text-xs text-[#1e2033] focus:outline-none focus:border-[#1e2033]"
             />
-            <Button
-              size="sm"
-              variant="outline"
+            <button
               disabled={loading || !username.trim()}
               onClick={handleUsernameSync}
-              className="h-8 text-xs text-zinc-200 border-zinc-700"
+              className="sarvam-btn-secondary px-4 py-1.5 text-xs font-medium"
             >
               Sync
-            </Button>
+            </button>
           </div>
         </div>
       </DialogContent>

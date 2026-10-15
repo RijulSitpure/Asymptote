@@ -1,10 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
-import { Search, ExternalLink, Star, CheckCircle, Clock, Plus, X } from 'lucide-react';
-import { Card } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
+import { Search, ExternalLink, Star, CheckCircle, Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { cn } from '../lib/utils';
 
 export function SolvedLog({ problems, patterns, onRefresh }) {
   const [search, setSearch] = useState('');
@@ -58,15 +56,15 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
   return (
     <div className="space-y-5">
       {/* Search and Filters Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800/80">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" />
+      <div className="sarvam-card p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="w-4 h-4 text-[#a0a8b7] absolute left-3.5 top-2.5" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search problems by # or name..."
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 font-mono"
+            placeholder="Search solved problems..."
+            className="w-full bg-[#f8f9fc] border border-[#eef0f4] rounded-full pl-9 pr-4 py-2 text-xs text-[#1e2033] placeholder-[#a0a8b7] focus:outline-none focus:border-[#1e2033] focus:bg-white font-mono transition-all"
           />
         </div>
 
@@ -75,7 +73,7 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
           <select
             value={patternFilter}
             onChange={(e) => setPatternFilter(e.target.value)}
-            className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+            className="bg-[#f8f9fc] border border-[#eef0f4] rounded-full px-3 py-2 text-xs text-[#1e2033] focus:outline-none focus:border-[#1e2033]"
           >
             <option value="all">All Patterns</option>
             {patterns.map(p => (
@@ -87,7 +85,7 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
           <select
             value={diffFilter}
             onChange={(e) => setDiffFilter(e.target.value)}
-            className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+            className="bg-[#f8f9fc] border border-[#eef0f4] rounded-full px-3 py-2 text-xs text-[#1e2033] focus:outline-none focus:border-[#1e2033]"
           >
             <option value="all">All Difficulties</option>
             <option value="Easy">Easy</option>
@@ -99,46 +97,46 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+            className="bg-[#f8f9fc] border border-[#eef0f4] rounded-full px-3 py-2 text-xs text-[#1e2033] focus:outline-none focus:border-[#1e2033]"
           >
             <option value="all">All Statuses</option>
-            <option value="solved">Solved Only</option>
-            <option value="unsolved">In Review</option>
+            <option value="solved">Solved</option>
+            <option value="unsolved">Review</option>
           </select>
 
-          <Badge variant="outline" className="text-zinc-400 border-zinc-800 text-xs px-2.5 py-1">
-            {filteredProblems.length} Problems
-          </Badge>
+          <span className="text-xs font-mono text-[#646e82] bg-[#f8f9fc] border border-[#eef0f4] px-3 py-2 rounded-full">
+            {filteredProblems.length}
+          </span>
         </div>
       </div>
 
       {/* Problems Table */}
-      <Card className="bg-zinc-900/80 border-zinc-800/80 overflow-hidden shadow-xl">
+      <div className="sarvam-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400 font-semibold uppercase tracking-wider">
-                <th className="py-3 px-4 w-16">#</th>
-                <th className="py-3 px-4">Problem</th>
-                <th className="py-3 px-4">Pattern & Twist</th>
-                <th className="py-3 px-4 w-24">Difficulty</th>
-                <th className="py-3 px-4 w-28">Status</th>
-                <th className="py-3 px-4 w-28">Rating</th>
-                <th className="py-3 px-4 text-right w-24">Action</th>
+              <tr className="border-b border-[#eef0f4] bg-[#fbfbfc] text-[#646e82] font-semibold uppercase tracking-wider">
+                <th className="py-3.5 px-4 w-16">#</th>
+                <th className="py-3.5 px-4">Problem</th>
+                <th className="py-3.5 px-4">Pattern</th>
+                <th className="py-3.5 px-4 w-24">Difficulty</th>
+                <th className="py-3.5 px-4 w-28">Status</th>
+                <th className="py-3.5 px-4 w-28">Rating</th>
+                <th className="py-3.5 px-4 text-right w-20"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60">
+            <tbody className="divide-y divide-[#f4f5f8]">
               {filteredProblems.map(p => {
-                const diffColor = p.difficulty === 'Easy' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' :
-                                  p.difficulty === 'Medium' ? 'text-amber-400 border-amber-500/20 bg-amber-500/10' :
-                                  'text-rose-400 border-rose-500/20 bg-rose-500/10';
+                const diffBadge = p.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700' :
+                                  p.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700' :
+                                  'bg-rose-50 text-rose-700';
 
                 return (
-                  <tr key={p.id} className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-zinc-400">
+                  <tr key={p.id} className="hover:bg-[#fbfbfc] transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-[#646e82]">
                       #{p.frontend_id || p.id}
                     </td>
-                    <td className="py-3 px-4 font-semibold text-zinc-100">
+                    <td className="py-3.5 px-4 font-semibold text-[#1e2033]">
                       <div className="flex items-center gap-2">
                         <span>{p.title}</span>
                         {p.title_slug && (
@@ -146,7 +144,7 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
                             href={`https://leetcode.com/problems/${p.title_slug}/`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-zinc-500 hover:text-indigo-400"
+                            className="text-[#a0a8b7] hover:text-[#1e2033]"
                             title="Open on LeetCode"
                           >
                             <ExternalLink className="w-3 h-3" />
@@ -154,49 +152,42 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
                         )}
                       </div>
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex flex-col">
-                        <span className="text-zinc-200 font-medium">{p.pattern_title || p.pattern_id || 'Algorithmic Pattern'}</span>
-                        {p.twist_type && (
-                          <span className="text-[10px] text-zinc-500 truncate max-w-xs">{p.twist_type}</span>
-                        )}
-                      </div>
+                    <td className="py-3.5 px-4 text-[#646e82]">
+                      {p.pattern_title || p.pattern_id || 'Algorithmic Pattern'}
                     </td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline" className={`text-[10px] ${diffColor}`}>
+                    <td className="py-3.5 px-4">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${diffBadge}`}>
                         {p.difficulty}
-                      </Badge>
+                      </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3.5 px-4">
                       {p.is_solved ? (
-                        <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium">
-                          <CheckCircle className="w-3.5 h-3.5" /> Solved
+                        <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium">
+                          <CheckCircle className="w-3 h-3" /> Solved
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 text-[11px] text-amber-400 font-medium">
-                          <Clock className="w-3.5 h-3.5" /> In Review
+                        <span className="inline-flex items-center gap-1.5 text-[11px] text-amber-600 font-medium">
+                          <Clock className="w-3 h-3" /> Review
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3.5 px-4">
                       <div className="flex items-center gap-0.5 text-amber-400">
                         {[1, 2, 3, 4, 5].map(star => (
                           <Star 
                             key={star} 
-                            className={`w-3 h-3 ${star <= (p.user_rating || 3) ? 'fill-amber-400 text-amber-400' : 'text-zinc-700'}`} 
+                            className={`w-3 h-3 ${star <= (p.user_rating || 3) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} 
                           />
                         ))}
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
+                    <td className="py-3.5 px-4 text-right">
+                      <button
                         onClick={() => openDetail(p)}
-                        className="h-7 text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10"
+                        className="text-xs text-[#1e2033] hover:underline font-medium"
                       >
-                        Details
-                      </Button>
+                        Inspect
+                      </button>
                     </td>
                   </tr>
                 );
@@ -204,19 +195,19 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
             </tbody>
           </table>
         </div>
-      </Card>
+      </div>
 
       {/* Problem Detail Dialog */}
       {selectedProblem && (
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="bg-[#ffffff] border-[#eef0f4] text-[#1e2033] max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl shadow-xl">
             <DialogHeader>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-indigo-400">#{selectedProblem.frontend_id}</span>
-                <DialogTitle className="text-lg font-bold">{selectedProblem.title}</DialogTitle>
-                <Badge variant="outline" className="text-xs ml-2">
+                <span className="text-xs font-mono font-bold text-[#646e82]">#{selectedProblem.frontend_id}</span>
+                <DialogTitle className="text-lg font-bold text-[#1e2033]">{selectedProblem.title}</DialogTitle>
+                <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[#f8f9fc] border border-[#eef0f4] text-[#646e82] ml-2">
                   {selectedProblem.difficulty}
-                </Badge>
+                </span>
               </div>
             </DialogHeader>
 
@@ -224,8 +215,8 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
               {/* Twist */}
               {selectedProblem.twist_type && (
                 <div className="space-y-1">
-                  <span className="text-[11px] uppercase font-bold text-zinc-400">The Twist</span>
-                  <div className="text-xs text-zinc-200 bg-zinc-950/60 p-3 rounded-xl border border-zinc-800">
+                  <span className="text-[11px] uppercase font-bold text-[#646e82]">The Twist</span>
+                  <div className="text-xs text-[#1e2033] bg-[#f8f9fc] p-3 rounded-xl border border-[#eef0f4] leading-relaxed">
                     {selectedProblem.twist_type}
                   </div>
                 </div>
@@ -233,20 +224,20 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
 
               {/* User Notes */}
               <div className="space-y-1">
-                <span className="text-[11px] uppercase font-bold text-zinc-400">Your Takeaways & Notes</span>
+                <span className="text-[11px] uppercase font-bold text-[#646e82]">Notes & Takeaway</span>
                 <textarea
                   value={selectedProblem.user_notes || ''}
                   onChange={(e) => setSelectedProblem({ ...selectedProblem, user_notes: e.target.value })}
                   rows={2}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-100 focus:outline-none focus:border-indigo-500"
-                  placeholder="Add notes about state formulations or edge case traps..."
+                  className="w-full bg-[#f8f9fc] border border-[#eef0f4] rounded-xl p-3 text-xs text-[#1e2033] focus:outline-none focus:border-[#1e2033] focus:bg-white"
+                  placeholder="Personal takeaways..."
                 />
               </div>
 
               {/* Confidence Rating */}
               <div className="space-y-1">
-                <span className="text-[11px] uppercase font-bold text-zinc-400">Mastery Confidence</span>
-                <div className="flex items-center gap-1.5 text-amber-400">
+                <span className="text-[11px] uppercase font-bold text-[#646e82]">Confidence Rating</span>
+                <div className="flex items-center gap-1 text-amber-400">
                   {[1, 2, 3, 4, 5].map(star => (
                     <button
                       key={star}
@@ -255,20 +246,20 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
                       className="p-1 hover:scale-125 transition-transform"
                     >
                       <Star 
-                        className={`w-4 h-4 ${star <= (selectedProblem.user_rating || 3) ? 'fill-amber-400 text-amber-400' : 'text-zinc-700'}`} 
+                        className={`w-4 h-4 ${star <= (selectedProblem.user_rating || 3) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} 
                       />
                     </button>
                   ))}
-                  <span className="text-xs text-zinc-500 ml-2">({selectedProblem.user_rating || 3}/5)</span>
+                  <span className="text-xs text-[#646e82] ml-2 font-mono">({selectedProblem.user_rating || 3}/5)</span>
                 </div>
               </div>
 
-              {/* Monaco Code Preview */}
+              {/* Code Preview */}
               <div className="space-y-1">
-                <span className="text-[11px] uppercase font-bold text-zinc-400">Solution Code Preview</span>
-                <div className="rounded-xl overflow-hidden border border-zinc-800 bg-[#1e1e1e]">
+                <span className="text-[11px] uppercase font-bold text-[#646e82]">Saved Solution</span>
+                <div className="rounded-xl overflow-hidden border border-[#eef0f4]">
                   <Editor
-                    height="200px"
+                    height="180px"
                     language="python"
                     theme="vs-dark"
                     value={selectedProblem.user_code || selectedProblem.solution_python || '# No solution code recorded'}
@@ -284,23 +275,33 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-zinc-800">
-                <Button
-                  variant="outline"
-                  size="sm"
+              <div className="flex items-center justify-between pt-4 border-t border-[#f4f5f8]">
+                <button
+                  type="button"
                   onClick={() => setSelectedProblem({ ...selectedProblem, is_solved: selectedProblem.is_solved ? 0 : 1 })}
-                  className={selectedProblem.is_solved ? 'text-emerald-400 border-emerald-500/30' : 'text-amber-400 border-amber-500/30'}
+                  className={cn(
+                    "sarvam-btn-secondary px-3.5 py-1.5 text-xs",
+                    selectedProblem.is_solved ? "text-emerald-700" : "text-amber-700"
+                  )}
                 >
-                  {selectedProblem.is_solved ? 'Mark as Unsolved' : 'Mark as Solved'}
-                </Button>
+                  {selectedProblem.is_solved ? 'Mark as In Review' : 'Mark as Solved'}
+                </button>
 
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-1.5 text-xs text-[#646e82] hover:text-[#1e2033]"
+                  >
                     Cancel
-                  </Button>
-                  <Button size="sm" onClick={handleSaveProblem} className="bg-indigo-600 hover:bg-indigo-500 text-white">
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveProblem}
+                    className="sarvam-btn-primary px-4 py-1.5 text-xs"
+                  >
                     Save Changes
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
