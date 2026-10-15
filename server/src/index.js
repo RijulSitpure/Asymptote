@@ -10,7 +10,9 @@ import { PatternClassifier } from './services/classifier.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CLIENT_DIR = path.resolve(__dirname, '../../client');
+const CLIENT_DIR = fs.existsSync(path.resolve(__dirname, '../../client/dist'))
+  ? path.resolve(__dirname, '../../client/dist')
+  : path.resolve(__dirname, '../../client');
 const PORT = process.env.PORT || 3001;
 
 const db = new DBManager();
