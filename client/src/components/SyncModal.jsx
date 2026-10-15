@@ -56,7 +56,10 @@ export function SyncModal({ isOpen, onClose, onSyncComplete }) {
       setStatusMessage({ type: 'success', text: `Synced ${data.syncedCount || 0} submissions for ${username}!` });
       onSyncComplete();
     } catch (err) {
-      setStatusMessage({ type: 'error', text: `Sync failed: ${err.message}` });
+      setStatusMessage({ 
+        type: 'error', 
+        text: `Direct sync failed (LeetCode blocks cloud/server requests with Cloudflare). Please use Method 1 (1-Click Sync in Chrome Extension on leetcode.com) or Method 2 (Quick-Paste Import below)!` 
+      });
     } finally {
       setLoading(false);
     }

@@ -4,7 +4,8 @@ function checkServer() {
 
   chrome.runtime.sendMessage({ action: 'check_server' }, (response) => {
     if (response && response.success) {
-      statusEl.innerText = `Connected (${response.data.solvedCount || 0} solved)`;
+      const solved = response.data.totalSolved ?? response.data.solvedCount ?? 0;
+      statusEl.innerText = `Connected (${solved} solved)`;
       dotEl.style.background = '#10b981';
     } else {
       statusEl.innerText = 'Server offline (run npm start)';

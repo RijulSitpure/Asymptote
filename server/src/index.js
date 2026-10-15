@@ -237,8 +237,8 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, { success: true, ...result });
     }
 
-    // Full Batch Sync (e.g. all solved questions from extension)
-    if (cleanPath === '/api/sync/batch' && req.method === 'POST') {
+    // Full Batch Sync (e.g. all solved questions from extension or web modal)
+    if ((cleanPath === '/api/sync/batch' || cleanPath === '/api/sync/problems') && req.method === 'POST') {
       const body = await parseBody(req);
       const result = await syncService.syncBatchSolved(body.username, body.problems);
       return sendJSON(res, { success: true, ...result });
@@ -291,6 +291,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`🚀 LeetCode Pattern Tracker is running at: http://localhost:${PORT}`);
+  console.log(`📁 Serving frontend from: ${CLIENT_DIR}`);
   console.log(`📊 Curated patterns loaded: ${patterns.length}`);
   console.log(`🔍 Built-in diagnostic wizard and progressive hint engine active`);
 });
