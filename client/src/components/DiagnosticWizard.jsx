@@ -45,7 +45,7 @@ export function DiagnosticWizard({ onSelectPattern }) {
           {/* Question 1: Data Structure */}
           <div className="p-4 rounded-xl bg-[#f8f9fc] border border-[#eef0f4] space-y-2">
             <label className="text-xs font-semibold text-[#1e2033] flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-[#1e2033] text-white flex items-center justify-center text-[10px] font-mono">1</span>
+              <span className="w-5 h-5 rounded-full bg-[#1e2033] text-white flex items-center justify-center text-xs font-mono font-bold">1</span>
               Data Structure or Geometry
             </label>
             <select
@@ -65,7 +65,7 @@ export function DiagnosticWizard({ onSelectPattern }) {
           {/* Question 2: Constraints */}
           <div className="p-4 rounded-xl bg-[#f8f9fc] border border-[#eef0f4] space-y-2">
             <label className="text-xs font-semibold text-[#1e2033] flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-[#1e2033] text-white flex items-center justify-center text-[10px] font-mono">2</span>
+              <span className="w-5 h-5 rounded-full bg-[#1e2033] text-white flex items-center justify-center text-xs font-mono font-bold">2</span>
               Scale Constraints on N
             </label>
             <select
@@ -84,7 +84,7 @@ export function DiagnosticWizard({ onSelectPattern }) {
           {/* Question 3: Output Objective */}
           <div className="p-4 rounded-xl bg-[#f8f9fc] border border-[#eef0f4] space-y-2">
             <label className="text-xs font-semibold text-[#1e2033] flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-[#1e2033] text-white flex items-center justify-center text-[10px] font-mono">3</span>
+              <span className="w-5 h-5 rounded-full bg-[#1e2033] text-white flex items-center justify-center text-xs font-mono font-bold">3</span>
               Target Objective
             </label>
             <select
@@ -106,7 +106,7 @@ export function DiagnosticWizard({ onSelectPattern }) {
           {/* Question 4: Twist / Special Property */}
           <div className="p-4 rounded-xl bg-[#f8f9fc] border border-[#eef0f4] space-y-2">
             <label className="text-xs font-semibold text-[#1e2033] flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-[#1e2033] text-white flex items-center justify-center text-[10px] font-mono">4</span>
+              <span className="w-5 h-5 rounded-full bg-[#1e2033] text-white flex items-center justify-center text-xs font-mono font-bold">4</span>
               Special Nuance / Signal
             </label>
             <select
@@ -147,10 +147,10 @@ export function DiagnosticWizard({ onSelectPattern }) {
             {results.candidates.map((c, idx) => (
               <div key={idx} className="sarvam-card p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
                     Match: {c.score} pts
                   </span>
-                  <span className="text-[10px] font-mono text-[#a0a8b7]">Rank #{idx + 1}</span>
+                  <span className="text-xs font-mono text-[#a0a8b7]">Rank #{idx + 1}</span>
                 </div>
 
                 <div>

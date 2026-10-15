@@ -1,3 +1,8 @@
+/**
+ * @deprecated This legacy script has been superseded by the React architecture in client/src/.
+ * Maintained for reference and backwards compatibility.
+ */
+
 // LeetCode Pattern Tracker & Socratic Aid Client Application
 
 let allPatterns = [];
@@ -68,8 +73,8 @@ function renderPatterns(patterns) {
     const twistsHtml = (p.twists || []).map(tw => `
       <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 text-xs">
         <p class="font-semibold text-amber-300">${tw.title}</p>
-        <p class="text-slate-400 text-[11px] mt-0.5">${tw.explanation}</p>
-        ${tw.delta ? `<p class="text-indigo-300 text-[11px] mt-1 font-mono bg-slate-950 p-1.5 rounded">${tw.delta}</p>` : ''}
+        <p class="text-slate-400 text-xs mt-0.5">${tw.explanation}</p>
+        ${tw.delta ? `<p class="text-indigo-300 text-xs mt-1 font-mono bg-slate-950 p-1.5 rounded">${tw.delta}</p>` : ''}
       </div>
     `).join('');
 
@@ -78,23 +83,23 @@ function renderPatterns(patterns) {
         <div class="space-y-3">
           <!-- Top Category & Difficulty -->
           <div class="flex items-center justify-between">
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               ${p.category}
             </span>
-            <span class="text-[11px] font-mono text-slate-400">
+            <span class="text-xs font-mono text-slate-400">
               ${p.complexity || ''}
             </span>
           </div>
 
           <!-- Title & Description -->
           <div>
-            <h3 class="text-base font-bold text-white group-hover:text-indigo-300 transition">${p.title}</h3>
+            <h3 class="text-base font-bold text-white group-hover:text-slate-300 transition">${p.title}</h3>
             <p class="text-xs text-slate-400 mt-1 leading-relaxed">${p.short_description}</p>
           </div>
 
           <!-- Mental Triggers (How to spot it) -->
           <div class="bg-slate-800/40 p-3 rounded-xl border border-slate-800">
-            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1.5 flex items-center gap-1">
+            <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1.5 flex items-center gap-1">
               <i data-lucide="eye" class="w-3 h-3 text-indigo-400"></i> Recognition Signals & Triggers
             </p>
             <ul class="space-y-1">
@@ -105,7 +110,7 @@ function renderPatterns(patterns) {
           <!-- Twists & Variations Accordion -->
           ${(p.twists && p.twists.length > 0) ? `
             <div class="space-y-1.5">
-              <p class="text-[10px] uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1">
+              <p class="text-xs uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1">
                 <i data-lucide="shuffle" class="w-3 h-3 text-amber-400"></i> Common Interview Twists (${p.twists.length})
               </p>
               <div class="space-y-1.5">
@@ -127,7 +132,7 @@ function renderPatterns(patterns) {
 
         <!-- Code Block Container (Hidden by default) -->
         <div id="code-drawer-${p.id}" class="hidden mt-2 pt-2 border-t border-slate-800">
-          <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
             <span>Python Canonical Template</span>
             <button onclick="copyCode(this)" class="hover:text-white flex items-center gap-1">
               <i data-lucide="copy" class="w-3 h-3"></i> Copy
@@ -239,7 +244,7 @@ function renderProgressiveHints() {
         <div>
           <div class="flex items-center gap-2">
             <span class="text-xs font-mono text-indigo-400 font-bold">#${problem.frontend_id}</span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${
               problem.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400' :
               problem.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-400' :
               'bg-rose-500/10 text-rose-400'
@@ -252,7 +257,7 @@ function renderProgressiveHints() {
           <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
             ${pattern?.title || 'Matched Pattern'}
           </span>
-          ${problem.twist_type ? `<p class="text-[11px] text-amber-300 mt-1">Twist: ${problem.twist_type}</p>` : ''}
+          ${problem.twist_type ? `<p class="text-xs text-amber-300 mt-1">Twist: ${problem.twist_type}</p>` : ''}
         </div>
       </div>
 
@@ -263,22 +268,22 @@ function renderProgressiveHints() {
             <span class="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
               <i data-lucide="target" class="w-3.5 h-3.5"></i> Target Complexity & Operational Budget
             </span>
-            <span class="text-[11px] font-mono text-slate-400">${complexity.boundsSummary}</span>
+            <span class="text-xs font-mono text-slate-400">${complexity.boundsSummary}</span>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="bg-slate-900 p-3 rounded-lg border border-sky-500/20">
-              <div class="text-[10px] text-slate-400 uppercase font-semibold">Target Time</div>
+              <div class="text-xs text-slate-400 uppercase font-semibold">Target Time</div>
               <div class="text-sm font-bold text-sky-400 font-mono mt-0.5">${complexity.targetTime}</div>
             </div>
             <div class="bg-slate-900 p-3 rounded-lg border border-purple-500/20">
-              <div class="text-[10px] text-slate-400 uppercase font-semibold">Target Space</div>
+              <div class="text-xs text-slate-400 uppercase font-semibold">Target Space</div>
               <div class="text-sm font-bold text-purple-400 font-mono mt-0.5">${complexity.targetSpace}</div>
             </div>
           </div>
           <div class="text-xs text-slate-300 leading-relaxed space-y-1">
             <p><strong class="text-rose-400">Why Brute Force Fails:</strong> ${complexity.whyNaiveFails}</p>
             <p><strong class="text-emerald-400">Space-Time Tradeoff:</strong> ${complexity.spaceTimeTradeoff}</p>
-            <p class="text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">${complexity.opsBudgetExplanation}</p>
+            <p class="text-xs text-slate-400 pt-1 border-t border-slate-800/80">${complexity.opsBudgetExplanation}</p>
           </div>
         </div>
       ` : ''}
@@ -302,7 +307,7 @@ function renderProgressiveHints() {
             <i data-lucide="git-pull-request" class="w-4 h-4 text-indigo-400"></i>
             Progressive Clue Ladder (Level ${currentRevealedLevel} of ${hintLevels.length})
           </h4>
-          <span class="text-[11px] text-slate-400">Step through gradually to preserve learning</span>
+          <span class="text-xs text-slate-400">Step through gradually to preserve learning</span>
         </div>
 
         <div class="space-y-3">
@@ -324,7 +329,7 @@ function renderProgressiveHints() {
                       <i data-lucide="lock" class="w-3 h-3"></i> Unlock Level ${idx + 1}
                     </button>
                   ` : `
-                    <span class="text-[10px] text-emerald-400 font-mono font-bold uppercase tracking-wider">Unlocked</span>
+                    <span class="text-xs text-emerald-400 font-mono font-bold uppercase tracking-wider">Unlocked</span>
                   `}
                 </div>
                 ${isRevealed ? `
@@ -381,11 +386,11 @@ async function markProblemSolvedFromSolver(problemId) {
         review_needed: false
       })
     });
-    alert('Awesome! Problem marked as Solved and logged into your Pattern Tracker!');
+    console.log("[OpenLeet Notification]:", 'Awesome! Problem marked as Solved and logged into your Pattern Tracker!');
     await loadProblems();
     await loadStats();
   } catch (err) {
-    alert('Error updating problem: ' + err.message);
+    console.log("[OpenLeet Notification]:", 'Error updating problem: ' + err.message);
   }
 }
 
@@ -430,7 +435,7 @@ async function runDiagnosticWizard() {
           ${candidates.map((c, idx) => `
             <div class="bg-slate-800/80 rounded-2xl border ${idx === 0 ? 'border-emerald-500/50 shadow-lg shadow-emerald-500/10' : 'border-slate-700'} p-5 space-y-3">
               <div class="flex items-center justify-between">
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${idx === 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700 text-slate-300'}">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${idx === 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700 text-slate-300'}">
                   ${idx === 0 ? '🌟 Highest Match' : 'Alternative Candidate'} (${c.score}% Confidence)
                 </span>
                 <span class="text-xs text-slate-400 font-medium">${c.pattern?.category || ''}</span>
@@ -522,14 +527,14 @@ function renderProblemsTable() {
           <div class="hover:text-indigo-400 cursor-pointer" onclick="openProblemDetail(${pr.id})">
             ${pr.title}
           </div>
-          ${pr.summary ? `<div class="text-[11px] text-slate-400 font-normal truncate max-w-xs mt-0.5">${pr.summary}</div>` : ''}
+          ${pr.summary ? `<div class="text-xs text-slate-400 font-normal truncate max-w-xs mt-0.5">${pr.summary}</div>` : ''}
         </td>
         <td class="py-3 px-4">
           <span class="text-indigo-300 font-medium block">${patternTitle}</span>
-          ${pr.twist_type ? `<span class="text-[10px] text-amber-400/90 font-mono block mt-0.5">${pr.twist_type}</span>` : ''}
+          ${pr.twist_type ? `<span class="text-xs text-amber-400/90 font-mono block mt-0.5">${pr.twist_type}</span>` : ''}
         </td>
         <td class="py-3 px-4">
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+          <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${
             pr.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400' :
             pr.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-400' :
             'bg-rose-500/10 text-rose-400'
@@ -537,11 +542,11 @@ function renderProblemsTable() {
         </td>
         <td class="py-3 px-4">
           ${pr.is_solved ? `
-            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+            <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
               <i data-lucide="check" class="w-3 h-3"></i> Solved
             </span>
           ` : `
-            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+            <span class="inline-flex items-center gap-1 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
               <i data-lucide="clock" class="w-3 h-3"></i> In Review
             </span>
           `}
@@ -645,7 +650,7 @@ async function saveProblemDetailEdits() {
     await loadProblems();
     await loadStats();
   } catch (err) {
-    alert('Failed to save changes: ' + err.message);
+    console.log("[OpenLeet Notification]:", 'Failed to save changes: ' + err.message);
   }
 }
 
@@ -679,9 +684,9 @@ async function loadStats() {
         weakList.innerHTML = data.weakSpots.map(w => `
           <div class="bg-slate-800/80 p-4 rounded-xl border border-amber-500/20 space-y-2 flex items-center justify-between">
             <div>
-              <span class="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold">${w.category}</span>
+              <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">${w.category}</span>
               <h4 class="text-sm font-bold text-white mt-0.5">${w.pattern_title}</h4>
-              <p class="text-[11px] text-slate-400 mt-0.5">
+              <p class="text-xs text-slate-400 mt-0.5">
                 ${w.solved_problems} solved / ${w.total_problems} problems logged
               </p>
             </div>
@@ -704,7 +709,7 @@ async function loadStats() {
         return `
           <div class="space-y-1 text-xs">
             <div class="flex items-center justify-between">
-              <span class="font-medium text-slate-200">${p.pattern_title} <span class="text-slate-500 text-[11px]">(${p.category})</span></span>
+              <span class="font-medium text-slate-200">${p.pattern_title} <span class="text-slate-500 text-xs">(${p.category})</span></span>
               <span class="font-mono text-slate-400">${solved} / ${p.total_problems} solved</span>
             </div>
             <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -747,7 +752,7 @@ async function triggerLeetCodeSync() {
   const btn = document.getElementById('btn-do-sync');
 
   if (!username) {
-    alert('Please enter your LeetCode username');
+    console.log("[OpenLeet Notification]:", 'Please enter your LeetCode username');
     return;
   }
 
@@ -790,7 +795,7 @@ async function importQuickProblemsList() {
   const statusEl = document.getElementById('sync-status-msg');
 
   if (!input) {
-    alert('Please enter at least one problem number or slug');
+    console.log("[OpenLeet Notification]:", 'Please enter at least one problem number or slug');
     return;
   }
 

@@ -82,13 +82,13 @@ export function PatternAtlas({ patterns, selectedPatternId }) {
               >
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-mono font-semibold uppercase text-[#1e2033] bg-[#f4f5f9] border border-[#eef0f4] px-2.5 py-0.5 rounded-full">
+                    <span className="text-xs font-mono font-semibold uppercase text-[#1e2033] bg-[#f4f5f9] border border-[#eef0f4] px-2.5 py-0.5 rounded-full">
                       {pattern.category}
                     </span>
-                    <span className="text-[10px] font-medium text-[#646e82] bg-[#f8f9fc] border border-[#eef0f4] px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-medium text-[#646e82] bg-[#f8f9fc] border border-[#eef0f4] px-2 py-0.5 rounded-full">
                       {pattern.difficulty || 'Medium'}
                     </span>
-                    <span className="text-[11px] font-mono text-[#646e82]">{pattern.complexity}</span>
+                    <span className="text-xs font-mono text-[#646e82]">{pattern.complexity}</span>
                   </div>
                   <h4 className="text-base font-bold text-[#1e2033] tracking-tight">{pattern.title}</h4>
                   <p className="text-xs text-[#646e82] line-clamp-1">{pattern.short_description}</p>

@@ -2,9 +2,11 @@ import React, { useState, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { Search, ExternalLink, Star, CheckCircle, Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { useToast } from './Toast';
 import { cn } from '../lib/utils';
 
 export function SolvedLog({ problems, patterns, onRefresh }) {
+  const { addToast } = useToast();
   const [search, setSearch] = useState('');
   const [patternFilter, setPatternFilter] = useState('all');
   const [diffFilter, setDiffFilter] = useState('all');
@@ -47,9 +49,17 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
         })
       });
       setIsModalOpen(false);
+      addToast({
+        message: `Updated #${selectedProblem.frontend_id || selectedProblem.id} ${selectedProblem.title}`,
+        type: 'success'
+      });
       onRefresh();
     } catch (err) {
       console.error('Failed to update problem:', err);
+      addToast({
+        message: `Failed to save changes: ${err.message}`,
+        type: 'error'
+      });
     }
   };
 
@@ -205,7 +215,7 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-bold text-[#646e82]">#{selectedProblem.frontend_id}</span>
                 <DialogTitle className="text-lg font-bold text-[#1e2033]">{selectedProblem.title}</DialogTitle>
-                <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[#f8f9fc] border border-[#eef0f4] text-[#646e82] ml-2">
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f8f9fc] border border-[#eef0f4] text-[#646e82] ml-2">
                   {selectedProblem.difficulty}
                 </span>
               </div>
@@ -215,7 +225,7 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
               {/* Twist */}
               {selectedProblem.twist_type && (
                 <div className="space-y-1">
-                  <span className="text-[11px] uppercase font-bold text-[#646e82]">The Twist</span>
+                  <span className="text-xs uppercase font-bold text-[#646e82]">The Twist</span>
                   <div className="text-xs text-[#1e2033] bg-[#f8f9fc] p-3 rounded-xl border border-[#eef0f4] leading-relaxed">
                     {selectedProblem.twist_type}
                   </div>
@@ -224,7 +234,7 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
 
               {/* User Notes */}
               <div className="space-y-1">
-                <span className="text-[11px] uppercase font-bold text-[#646e82]">Notes & Takeaway</span>
+                <span className="text-xs uppercase font-bold text-[#646e82]">Notes & Takeaway</span>
                 <textarea
                   value={selectedProblem.user_notes || ''}
                   onChange={(e) => setSelectedProblem({ ...selectedProblem, user_notes: e.target.value })}
@@ -236,7 +246,7 @@ export function SolvedLog({ problems, patterns, onRefresh }) {
 
               {/* Confidence Rating */}
               <div className="space-y-1">
-                <span className="text-[11px] uppercase font-bold text-[#646e82]">Confidence Rating</span>
+                <span className="text-xs uppercase font-bold text-[#646e82]">Confidence Rating</span>
                 <div className="flex items-center gap-1 text-amber-400">
                   {[1, 2, 3, 4, 5].map(star => (
                     <button

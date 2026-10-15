@@ -34,9 +34,12 @@ export function Header({ activeTab, openSyncModal, quickProblemSearch, setQuickP
             value={quickProblemSearch}
             onChange={(e) => setQuickProblemSearch(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Quick search # (e.g. 787, 329)..."
-            className="w-full bg-[#f8f9fc] border border-[#eef0f4] rounded-full pl-8 pr-3 py-1.5 text-xs text-[#1e2033] placeholder-[#a0a8b7] focus:outline-none focus:border-[#1e2033] focus:bg-white transition-all font-mono"
+            placeholder="Search # (e.g. 787)..."
+            className="w-full bg-[#f8f9fc] border border-[#eef0f4] rounded-full pl-8 pr-12 py-1.5 text-xs text-[#1e2033] placeholder-[#a0a8b7] focus:outline-none focus:border-[#1e2033] focus:bg-white transition-all font-mono"
           />
+          <kbd className="absolute right-2.5 top-2 px-1.5 py-0.5 rounded text-[10px] font-mono bg-white border border-[#eef0f4] text-[#a0a8b7] pointer-events-none shadow-xs">
+            ⌘K
+          </kbd>
         </div>
 
         <button 

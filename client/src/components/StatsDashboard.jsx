@@ -62,11 +62,11 @@ export function StatsDashboard({ stats, patterns, onSelectPattern, onPracticeWea
 
           <div className="flex items-center gap-3">
             <div className="bg-[#f8f9fc] border border-[#eef0f4] rounded-2xl px-5 py-3 text-center">
-              <span className="text-[11px] text-[#646e82] block font-medium">Curated Archetypes</span>
+              <span className="text-xs text-[#646e82] block font-medium">Curated Archetypes</span>
               <span className="text-xl font-extrabold text-[#1e2033]">{stats.totalPatternsCount || 37}</span>
             </div>
             <div className="bg-[#f8f9fc] border border-[#eef0f4] rounded-2xl px-5 py-3 text-center">
-              <span className="text-[11px] text-[#646e82] block font-medium">Active Coverage</span>
+              <span className="text-xs text-[#646e82] block font-medium">Active Coverage</span>
               <span className="text-xl font-extrabold text-[#1e2033]">{stats.patternCoveragePercent || 0}%</span>
             </div>
           </div>
@@ -87,13 +87,13 @@ export function StatsDashboard({ stats, patterns, onSelectPattern, onPracticeWea
             </h3>
           </div>
           <div className="mt-4 pt-4 border-t border-[#f4f5f8] flex items-center gap-2 text-xs">
-            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium text-[11px]">
+            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium text-xs">
               {stats.difficultyBreakdown?.Easy || 0} Easy
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium text-[11px]">
+            <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium text-xs">
               {stats.difficultyBreakdown?.Medium || 0} Med
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-medium text-[11px]">
+            <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-medium text-xs">
               {stats.difficultyBreakdown?.Hard || 0} Hard
             </span>
           </div>
@@ -117,7 +117,7 @@ export function StatsDashboard({ stats, patterns, onSelectPattern, onPracticeWea
                 style={{ width: `${stats.patternCoveragePercent || 0}%` }}
               ></div>
             </div>
-            <span className="text-[11px] text-[#646e82] mt-1.5 block">
+            <span className="text-xs text-[#646e82] mt-1.5 block">
               {stats.patternCoveragePercent || 0}% of core patterns solved at least once
             </span>
           </div>

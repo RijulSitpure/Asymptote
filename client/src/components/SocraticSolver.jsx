@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import { Search, Sparkles, Lightbulb, AlertTriangle, ArrowRight, Lock, Unlock } from 'lucide-react';
+import { Search, Sparkles, Lightbulb, AlertTriangle, ArrowRight, Lock, Unlock, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useToast } from './Toast';
 import { cn } from '../lib/utils';
 
 export function SocraticSolver({ initialProblemQuery }) {
+  const { addToast } = useToast();
   const [query, setQuery] = useState(initialProblemQuery || '787');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [revealedLevel, setRevealedLevel] = useState(1);
+  const [isComplexityRevealed, setIsComplexityRevealed] = useState(false);
   const [error, setError] = useState(null);
+  const [isMarkingSolved, setIsMarkingSolved] = useState(false);
 
   const fetchProblemHints = async (searchQuery) => {
     if (!searchQuery) return;
@@ -17,11 +21,12 @@ export function SocraticSolver({ initialProblemQuery }) {
     try {
       const res = await fetch(`/api/hints/${encodeURIComponent(searchQuery)}`);
       if (!res.ok) {
-        throw new Error(`Problem "${searchQuery}" not found`);
+        throw new Error(`Problem "${searchQuery}" not found. Try searching by number (e.g. 787) or title slug.`);
       }
       const json = await res.json();
       setData(json);
       setRevealedLevel(1);
+      setIsComplexityRevealed(false);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -38,9 +43,51 @@ export function SocraticSolver({ initialProblemQuery }) {
     }
   }, [initialProblemQuery]);
 
+  // Keyboard shortcut: Keys 1-4 reveal clue levels
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['1', '2', '3', '4'].includes(e.key) && data && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        const level = parseInt(e.key, 10);
+        if (level <= (data.hints?.length || 4)) {
+          setRevealedLevel(level);
+          if (level >= 2) setIsComplexityRevealed(true);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [data]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     fetchProblemHints(query);
+  };
+
+  const handleMarkSolved = async () => {
+    if (!data?.problem) return;
+    setIsMarkingSolved(true);
+    try {
+      await fetch(`/api/problems/${data.problem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_solved: 1 })
+      });
+      addToast({
+        message: `Marked #${data.problem.frontend_id || data.problem.id} ${data.problem.title} as Solved!`,
+        type: 'success'
+      });
+      setData(prev => ({
+        ...prev,
+        problem: { ...prev.problem, is_solved: 1 }
+      }));
+    } catch (err) {
+      addToast({
+        message: `Failed to update status: ${err.message}`,
+        type: 'error'
+      });
+    } finally {
+      setIsMarkingSolved(false);
+    }
   };
 
   const sampleProblems = [
@@ -61,7 +108,7 @@ export function SocraticSolver({ initialProblemQuery }) {
           </span>
           <h2 className="text-2xl font-extrabold text-[#1e2033] tracking-tight">Solver</h2>
           <p className="text-xs text-[#646e82] max-w-xl">
-            Derive target Big-O bounds and reveal algorithmic clues step-by-step without spoiling the answer.
+            Derive target Big-O bounds and reveal algorithmic clues step-by-step without spoiling the answer. Press keys <kbd className="px-1.5 py-0.5 rounded bg-[#f4f5f8] border border-[#eef0f4] text-[10px] font-mono text-[#1e2033]">1</kbd>–<kbd className="px-1.5 py-0.5 rounded bg-[#f4f5f8] border border-[#eef0f4] text-[10px] font-mono text-[#1e2033]">4</kbd> to step through clues.
           </p>
         </div>
 
@@ -94,7 +141,7 @@ export function SocraticSolver({ initialProblemQuery }) {
             <button
               key={p.id}
               onClick={() => { setQuery(p.id); fetchProblemHints(p.id); }}
-              className="px-3 py-1 rounded-full bg-[#f8f9fc] hover:bg-[#f1f3f7] text-[#1e2033] border border-[#eef0f4] text-[11px] font-medium transition-all"
+              className="px-3 py-1 rounded-full bg-[#f8f9fc] hover:bg-[#f1f3f7] text-[#1e2033] border border-[#eef0f4] text-xs font-medium transition-all"
             >
               {p.title}
             </button>
@@ -104,77 +151,117 @@ export function SocraticSolver({ initialProblemQuery }) {
 
       {/* Error state */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
-          {error}
+        <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200/80 text-xs text-rose-800 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
       {/* Results Container */}
       {data && (
         <div className="space-y-6">
-          {/* Problem Header Info */}
+          {/* Problem Header Info & Quick Mark Solved Action */}
           <div className="sarvam-card p-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="text-sm font-bold font-mono text-[#1e2033]">#{data.problem.frontend_id || data.problem.id}</span>
               <h3 className="text-base font-bold text-[#1e2033]">{data.problem.title}</h3>
               <span className={cn(
-                "text-[10px] font-semibold px-2.5 py-0.5 rounded-full",
-                data.problem.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700' :
-                data.problem.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700' :
-                'bg-rose-50 text-rose-700'
+                "text-xs font-semibold px-2.5 py-0.5 rounded-full",
+                data.problem.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' :
+                data.problem.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border border-amber-200/60' :
+                'bg-rose-50 text-rose-700 border border-rose-200/60'
               )}>
                 {data.problem.difficulty}
               </span>
             </div>
-            <span className="text-xs font-medium text-[#1e2033] bg-[#f8f9fc] border border-[#eef0f4] px-3 py-1 rounded-full">
-              {data.pattern?.title || 'Algorithmic Pattern'}
-            </span>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-[#1e2033] bg-[#f8f9fc] border border-[#eef0f4] px-3 py-1 rounded-full">
+                {data.pattern?.title || 'Algorithmic Pattern'}
+              </span>
+              <button
+                onClick={handleMarkSolved}
+                disabled={isMarkingSolved || data.problem.is_solved}
+                className={cn(
+                  "px-3.5 py-1 text-xs rounded-full font-medium transition-all flex items-center gap-1.5",
+                  data.problem.is_solved 
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "sarvam-btn-secondary hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200"
+                )}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{data.problem.is_solved ? 'Solved' : 'Mark Solved'}</span>
+              </button>
+            </div>
           </div>
 
-          {/* 1. Target Complexity Card */}
+          {/* Socratic Cognitive Gate: Progressive Target Complexity */}
           {data.complexity && (
-            <div className="sarvam-card p-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-[#f4f5f8] pb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#1e2033] flex items-center gap-1.5">
-                  <span>🎯</span> Target Complexity
-                </span>
-                <span className="text-xs font-mono text-[#646e82]">{data.complexity.boundsSummary}</span>
+            <div className="sarvam-card overflow-hidden">
+              <div 
+                onClick={() => setIsComplexityRevealed(!isComplexityRevealed)}
+                className="p-5 flex items-center justify-between cursor-pointer hover:bg-[#fafafc] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-[#1e2033] text-white flex items-center justify-center text-xs font-bold font-mono">
+                    O
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-[#1e2033]">Target Complexity & Bounds Budget</h4>
+                      {!isComplexityRevealed && (
+                        <span className="text-[11px] text-[#646e82] bg-[#f4f5f8] px-2 py-0.5 rounded-full font-mono">
+                          Deduce from Constraints
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#646e82] mt-0.5">
+                      {isComplexityRevealed ? data.complexity.boundsSummary : 'Can you deduce the target Big-O before revealing the answer?'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="sarvam-btn-secondary px-3 py-1 text-xs flex items-center gap-1.5"
+                >
+                  {isComplexityRevealed ? (
+                    <>
+                      <span>Hide Bounds</span>
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Deduce & Reveal</span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </>
+                  )}
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="bg-[#f8f9fc] p-4 rounded-xl border border-[#eef0f4]">
-                  <span className="text-[11px] text-[#646e82] uppercase tracking-wider block font-medium">Target Time Bound</span>
-                  <span className="text-sm font-bold font-mono text-[#1e2033] mt-1 block">{data.complexity.targetTime}</span>
-                </div>
-                <div className="bg-[#f8f9fc] p-4 rounded-xl border border-[#eef0f4]">
-                  <span className="text-[11px] text-[#646e82] uppercase tracking-wider block font-medium">Target Space Bound</span>
-                  <span className="text-sm font-bold font-mono text-[#1e2033] mt-1 block">{data.complexity.targetSpace}</span>
-                </div>
-              </div>
+              {isComplexityRevealed && (
+                <div className="border-t border-[#f4f5f8] p-6 space-y-4 bg-[#fafafc]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-white p-4 rounded-xl border border-[#eef0f4] shadow-xs">
+                      <span className="text-xs text-[#646e82] uppercase tracking-wider block font-semibold">Target Time Bound</span>
+                      <span className="text-sm font-bold font-mono text-[#1e2033] mt-1 block">{data.complexity.targetTime}</span>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl border border-[#eef0f4] shadow-xs">
+                      <span className="text-xs text-[#646e82] uppercase tracking-wider block font-semibold">Target Space Bound</span>
+                      <span className="text-sm font-bold font-mono text-[#1e2033] mt-1 block">{data.complexity.targetSpace}</span>
+                    </div>
+                  </div>
 
-              <div className="bg-[#fafafc] p-3.5 rounded-xl border border-[#eef0f4] text-xs text-[#646e82] space-y-1">
-                <span className="font-semibold text-[#1e2033] block">Operational Budget:</span>
-                <p className="leading-relaxed">{data.complexity.opsBudgetExplanation || data.complexity.whyNaiveFails}</p>
-              </div>
+                  <div className="bg-white p-4 rounded-xl border border-[#eef0f4] text-xs text-[#646e82] space-y-1.5 shadow-xs">
+                    <span className="font-semibold text-[#1e2033] block">Online Judge Operational Budget ($10^8$ ops/sec):</span>
+                    <p className="leading-relaxed">{data.complexity.opsBudgetExplanation || data.complexity.whyNaiveFails}</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* 2. Critical Twist Alert */}
-          {data.problem.twist_type && (
-            <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/80 flex items-start gap-3">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="text-xs font-bold text-amber-900 uppercase tracking-wider block">
-                  The Twist / Critical Trap
-                </span>
-                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                  {data.problem.twist_type}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* 3. Socratic Progressive Ladder */}
+          {/* Socratic Progressive Clue Ladder */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-sm text-[#1e2033] flex items-center gap-2">
@@ -182,7 +269,7 @@ export function SocraticSolver({ initialProblemQuery }) {
                 Socratic Clue Ladder
               </h4>
               <span className="text-xs text-[#646e82]">
-                Level {revealedLevel} of {data.hints?.length || 4}
+                Level {revealedLevel} of {data.hints?.length || 4} Unlocked
               </span>
             </div>
 
@@ -201,40 +288,55 @@ export function SocraticSolver({ initialProblemQuery }) {
                     <div className="p-4 sm:p-5 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className={cn(
-                          "w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs",
+                          "w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs font-mono",
                           isUnlocked ? "bg-[#1e2033] text-white" : "bg-[#f4f5f8] text-[#a0a8b7]"
                         )}>
                           L{idx + 1}
                         </span>
                         <div>
                           <h5 className="font-bold text-xs text-[#1e2033]">{hint.title}</h5>
-                          <span className="text-[11px] text-[#646e82]">
-                            {idx === 0 ? 'Recognition & Intuition' : idx === 1 ? 'State Formulation' : idx === 2 ? 'Transitions & Gotchas' : 'Code Skeleton'}
+                          <span className="text-xs text-[#646e82]">
+                            {idx === 0 ? 'Recognition & Invariant' : idx === 1 ? 'State Formulation & Target Bounds' : idx === 2 ? 'Transitions & Critical Traps' : 'Implementation Blueprint'}
                           </span>
                         </div>
                       </div>
 
                       {isUnlocked ? (
-                        <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                        <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 rounded-full">
                           Revealed
                         </span>
                       ) : (
                         <button
-                          onClick={() => setRevealedLevel(idx + 1)}
+                          onClick={() => {
+                            setRevealedLevel(idx + 1);
+                            if (idx + 1 >= 2) setIsComplexityRevealed(true);
+                          }}
                           className="sarvam-btn-secondary px-3 py-1 text-xs flex items-center gap-1.5"
                         >
                           <Lock className="w-3 h-3 text-[#646e82]" />
-                          <span>Unlock</span>
+                          <span>Unlock L{idx + 1}</span>
                         </button>
                       )}
                     </div>
 
                     {isUnlocked && (
-                      <div className="border-t border-[#f4f5f8] p-5 bg-[#fafafc] text-xs text-[#1e2033] leading-relaxed">
+                      <div className="border-t border-[#f4f5f8] p-5 bg-[#fafafc] text-xs text-[#1e2033] leading-relaxed space-y-3">
+                        {/* If Level 3: Reveal Critical Twist alert if present */}
+                        {idx === 2 && data.problem.twist_type && (
+                          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5 text-amber-900">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                              <strong className="block font-semibold">The Twist & Edge Case Trap:</strong>
+                              <span className="mt-0.5 block">{data.problem.twist_type}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Level 4: Monaco Code Editor */}
                         {idx === 3 ? (
-                          <div className="rounded-xl overflow-hidden border border-[#eef0f4]">
+                          <div className="rounded-xl overflow-hidden border border-[#eef0f4] shadow-xs">
                             <Editor
-                              height="180px"
+                              height="200px"
                               language="python"
                               theme="vs-dark"
                               value={hint.content}
@@ -261,7 +363,11 @@ export function SocraticSolver({ initialProblemQuery }) {
             {/* Next Reveal Button */}
             {revealedLevel < (data.hints?.length || 0) && (
               <button
-                onClick={() => setRevealedLevel(revealedLevel + 1)}
+                onClick={() => {
+                  const nextLevel = revealedLevel + 1;
+                  setRevealedLevel(nextLevel);
+                  if (nextLevel >= 2) setIsComplexityRevealed(true);
+                }}
                 className="sarvam-btn-primary w-full py-3 text-xs flex items-center justify-center gap-2"
               >
                 <span>Reveal Next Clue (Level {revealedLevel + 1})</span>
