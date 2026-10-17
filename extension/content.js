@@ -34,7 +34,7 @@ function safeGetURL(path) {
     if (typeof chrome !== 'undefined' && chrome?.runtime?.id) {
       return chrome.runtime.getURL(path);
     }
-  } catch (err) {}
+  } catch (_err) {}
   return '';
 }
 
@@ -128,7 +128,7 @@ async function safeGraphqlQuery(query, variables = {}) {
       let parsed;
       try {
         parsed = JSON.parse(text);
-      } catch (parseErr) {
+      } catch (_parseErr) {
         lastError = new Error(`LeetCode response could not be parsed: ${text.slice(0, 60)}`);
         continue;
       }
@@ -161,7 +161,7 @@ async function syncAllSolvedFromLeetCode() {
       if (userData?.userStatus?.username) {
         username = userData.userStatus.username;
       }
-    } catch (e) {
+    } catch (_e) {
       const profileLink = document.querySelector('a[href^="/u/"]');
       if (profileLink) {
         const href = profileLink.getAttribute('href');
@@ -345,14 +345,13 @@ let currentFetchId = 0;
 let lastObservedUrl = typeof window !== 'undefined' ? window.location.href : '';
 let shadowRoot = null;
 let pageMutationObserver = null;
-let urlCheckIntervalId = null;
+let _urlCheckIntervalId = null;
 
 // View parameter and language selection state
 const LanguagesModule = globalThis.LanguagesModule || window.LanguagesModule || null;
 
 let activeSolutionLang = 'python3';
 let activeSolutionView = 'scaffold'; // 'scaffold' | 'twists' | 'notes'
-let activeComplexityFocus = 'all'; // 'all' | 'budget' | 'tradeoff' | 'expectations'
 
 function getSupportedLanguages(problem) {
   if (LanguagesModule && LanguagesModule.getSupportedLanguagesForProblem) {
@@ -371,37 +370,6 @@ function getSupportedLanguages(problem) {
     { id: 'java', name: 'Java', ext: '.java' },
     { id: 'typescript', name: 'TypeScript', ext: '.ts' }
   ];
-}
-
-const SOLUTION_VIEW_OPTIONS = [
-  { id: 'scaffold', label: 'Blueprint' },
-  { id: 'twists', label: 'Pattern variation' },
-  { id: 'notes', label: 'Notes' }
-];
-
-const COMPLEXITY_FOCUS_OPTIONS = [
-  { id: 'all', label: 'Complete Metrics' },
-  { id: 'budget', label: 'Time limit' },
-  { id: 'tradeoff', label: 'Space and time trade-off' },
-  { id: 'expectations', label: 'What interviewers look for' }
-];
-
-function getClueOptions(hintsCount = 4) {
-  const titles = [
-    'Level 1: Problem Identity',
-    'Level 2: Data Structure Strategy',
-    'Level 3: Algorithmic Invariant',
-    'Level 4: Code Skeleton'
-  ];
-  const list = [];
-  const max = Math.max(hintsCount, 4);
-  for (let i = 1; i <= max; i++) {
-    list.push({
-      id: String(i),
-      label: titles[i - 1] || `Level ${i}: Clue`
-    });
-  }
-  return list;
 }
 
 function getCodeForLang(langSlug, hints, pattern, problem) {
@@ -429,158 +397,6 @@ function getCodeForLang(langSlug, hints, pattern, problem) {
     return problem.solution_python || (hints && hints[3]?.content) || '';
   }
   return `No verified solution in ${langSlug} yet`;
-}
-
-/**
- * Renders an accessible flat dropdown menu component markup.
- * Absolutely positioned overlay ensures zero in-flow layout shift of adjacent text.
- */
-function renderFlatDropdownHtml({ id, label, selectedId, options, align = 'right' }) {
-  const currentOpt = options.find(o => o.id === selectedId) || options[0] || { id: '', label: '' };
-  const alignStyle = align === 'left' ? 'left:0; right:auto;' : 'right:0; left:auto;';
-
-  return `
-    <div class="flat-dropdown-wrapper" id="dropdown-${id}-wrapper">
-      <button 
-        type="button" 
-        id="dropdown-${id}-trigger" 
-        class="flat-dropdown-trigger" 
-        role="combobox" 
-        aria-haspopup="listbox" 
-        aria-expanded="false" 
-        aria-controls="dropdown-${id}-menu"
-        aria-label="${label}: ${currentOpt.label}"
-        tabindex="0">
-        <span class="dropdown-trigger-label" id="dropdown-${id}-label">${currentOpt.label}</span>
-        <svg class="dropdown-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </button>
-      <ul 
-        id="dropdown-${id}-menu" 
-        class="flat-dropdown-menu" 
-        role="listbox" 
-        tabindex="-1"
-        aria-label="${label}"
-        style="${alignStyle}">
-        ${options.map(opt => `
-          <li 
-            class="flat-dropdown-item ${opt.id === selectedId ? 'active' : ''}" 
-            role="option" 
-            data-value="${opt.id}" 
-            tabindex="0" 
-            aria-selected="${opt.id === selectedId ? 'true' : 'false'}">
-            <span>${opt.label}</span>
-            ${opt.id === selectedId ? `
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            ` : ''}
-          </li>
-        `).join('')}
-      </ul>
-    </div>
-  `;
-}
-
-/**
- * Attaches fully accessible keyboard listeners and click handlers to a flat dropdown instance.
- */
-function attachFlatDropdown(root, id, onSelect) {
-  const wrapper = root.getElementById(`dropdown-${id}-wrapper`);
-  const trigger = root.getElementById(`dropdown-${id}-trigger`);
-  const menu = root.getElementById(`dropdown-${id}-menu`);
-  if (!wrapper || !trigger || !menu) return;
-
-  const items = Array.from(menu.querySelectorAll('.flat-dropdown-item'));
-
-  function openMenu() {
-    const openMenus = root.querySelectorAll('.flat-dropdown-menu.open');
-    openMenus.forEach(m => {
-      m.classList.remove('open');
-      const prevTrigger = m.parentElement?.querySelector('.flat-dropdown-trigger');
-      if (prevTrigger) prevTrigger.setAttribute('aria-expanded', 'false');
-    });
-
-    trigger.setAttribute('aria-expanded', 'true');
-    menu.classList.add('open');
-
-    const activeItem = items.find(it => it.classList.contains('active')) || items[0];
-    if (activeItem) {
-      setTimeout(() => activeItem.focus(), 40);
-    }
-  }
-
-  function closeMenu(restoreFocus = true) {
-    trigger.setAttribute('aria-expanded', 'false');
-    menu.classList.remove('open');
-    if (restoreFocus) {
-      trigger.focus();
-    }
-  }
-
-  function toggleMenu() {
-    const isOpen = menu.classList.contains('open');
-    if (isOpen) closeMenu(false);
-    else openMenu();
-  }
-
-  trigger.onclick = (e) => {
-    e.stopPropagation();
-    toggleMenu();
-  };
-
-  trigger.onkeydown = (e) => {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      e.stopPropagation();
-      openMenu();
-    }
-  };
-
-  items.forEach((item, index) => {
-    item.onclick = (e) => {
-      e.stopPropagation();
-      const val = item.getAttribute('data-value');
-      closeMenu(true);
-      if (onSelect) onSelect(val);
-    };
-
-    item.onkeydown = (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        e.stopPropagation();
-        const val = item.getAttribute('data-value');
-        closeMenu(true);
-        if (onSelect) onSelect(val);
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        const nextIndex = (index + 1) % items.length;
-        items[nextIndex].focus();
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        const prevIndex = (index - 1 + items.length) % items.length;
-        items[prevIndex].focus();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        closeMenu(true);
-      } else if (e.key === 'Tab') {
-        closeMenu(false);
-      }
-    };
-  });
-
-  const outsideClickHandler = (e) => {
-    if (!wrapper.contains(e.target) && !menu.contains(e.target)) {
-      if (menu.classList.contains('open')) {
-        closeMenu(false);
-      }
-    }
-  };
-
-  root.addEventListener('click', outsideClickHandler);
-  document.addEventListener('click', outsideClickHandler);
 }
 
 function getShadowRoot() {
@@ -1033,7 +849,7 @@ function loadFreshProblemData(slug) {
 /**
  * Main dispatcher when a problem shift or route transition is detected.
  */
-function handleProblemShift(newSlug, prevSlug) {
+function handleProblemShift(newSlug, _prevSlug) {
   cleanupProblemState(newSlug);
 
   // If newly arrived on a problem page and drawer is currently open, fetch fresh data immediately
@@ -1714,7 +1530,7 @@ function initProblemShiftWatcher() {
       };
     }
     window.addEventListener('asymptote:urlchange', checkUrlOrSlugChange);
-  } catch (err) {
+  } catch (_err) {
     // Isolated world restriction fallback handled by MutationObserver & polling
   }
 
@@ -1736,7 +1552,7 @@ function initProblemShiftWatcher() {
   }
 
   // 4. Fast polling heartbeat fallback (every 400ms)
-  urlCheckIntervalId = setInterval(checkUrlOrSlugChange, 400);
+  _urlCheckIntervalId = setInterval(checkUrlOrSlugChange, 400);
 }
 
 // Initial widget injection & shift watcher setup

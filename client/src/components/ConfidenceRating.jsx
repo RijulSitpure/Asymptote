@@ -1,10 +1,8 @@
-import React from 'react';
-
 /**
  * ConfidenceRating
  * Spec: five 10px circles, 4px gap, emerald (#10b981) when filled and #e2e8f0 when empty.
  */
-export function ConfidenceRating({ value = 0, onChange, readonly = false, size = 10 }) {
+export function ConfidenceRating({ value = 0, onChange, readonly = false, _size = 10 }) {
   const stars = [1, 2, 3, 4, 5];
   
   return (

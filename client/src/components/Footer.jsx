@@ -1,8 +1,6 @@
-import React from 'react';
-import { ExternalLink, Terminal, ShieldCheck, Cpu, Code2 } from 'lucide-react';
+import { Terminal, Code2 } from 'lucide-react';
 
-export function Footer({ activeTab, onSelectTab }) {
-  const currentYear = new Date().getFullYear();
+export function Footer({ _activeTab, _onSelectTab } = {}) {
 
   return (
     <footer className="border-t border-[#eef0f4] bg-[#ffffff] text-[#646e82] text-xs font-mono py-6 px-6 transition-colors select-none mt-auto">

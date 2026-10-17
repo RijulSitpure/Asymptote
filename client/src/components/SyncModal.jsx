@@ -76,9 +76,9 @@ export function SyncModal({ isOpen, onClose, onSyncComplete }) {
         {/* Media area: sync-demo.gif with sync-demo-poster.png fallback for prefers-reduced-motion */}
         <div className="rounded-[10px] overflow-hidden border border-[#e2e8f0] bg-[#f6f8fa]">
           <picture>
-            <source srcSet="/sync-demo-poster.png" media="(prefers-reduced-motion: reduce)" />
+            <source srcSet="./sync-demo-poster.png" media="(prefers-reduced-motion: reduce)" />
             <img 
-              src="/sync-demo.gif" 
+              src="./sync-demo.gif" 
               alt="Demonstration of syncing solved problems from LeetCode via the Asymptote extension" 
               className="w-full h-auto block object-cover" 
             />

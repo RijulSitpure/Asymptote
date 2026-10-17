@@ -59,7 +59,7 @@
     } else if (typeof problem.languages === 'string') {
       try {
         rawLangs = JSON.parse(problem.languages);
-      } catch (e) {
+      } catch (_e) {
         rawLangs = null;
       }
     }

@@ -67,8 +67,16 @@ describe('React Dashboard Serverless Wiring & Bundle Verification', () => {
     // Must use relative base "./" for chrome extension dashboard
     expect(html).toContain('src="./assets/');
     expect(html).toContain('href="./assets/');
+    expect(html).toContain('href="./favicon.ico"');
+    expect(html).toContain('href="./asymptote-icon-small.svg"');
     expect(html).not.toContain('src="/assets/');
     expect(html).not.toContain('href="/assets/');
+    expect(html).not.toContain('href="/favicon.ico"');
+
+    // Public media files copied to extension/dashboard/
+    expect(fs.existsSync(path.resolve(process.cwd(), 'extension', 'dashboard', 'sync-demo.gif'))).toBe(true);
+    expect(fs.existsSync(path.resolve(process.cwd(), 'extension', 'dashboard', 'sync-demo-poster.png'))).toBe(true);
+    expect(fs.existsSync(path.resolve(process.cwd(), 'extension', 'dashboard', 'asymptote-icon-small.svg'))).toBe(true);
 
     // Extension data manifest
     const extManifestPath = path.resolve(process.cwd(), 'extension', 'data', 'manifest.json');

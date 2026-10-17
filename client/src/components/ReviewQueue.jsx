@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card } from './Card';
 import { Chip } from './Chip';
 import { sortPatternsByPedagogy } from '../lib/curriculum';

@@ -10,7 +10,6 @@ export default [
       '.agent/**',
       '.agents/**',
       '.gemini/**',
-      'server/data/**',
       '**/*.min.js',
       'asymptote-brand 2/**',
       'tracker.db.bak'
@@ -41,7 +40,14 @@ export default [
       },
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }
+      ],
       'no-undef': 'error'
     },
   },

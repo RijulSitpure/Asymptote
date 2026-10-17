@@ -1,5 +1,4 @@
-import React from 'react';
-import { Puzzle, CheckCircle2, Zap } from 'lucide-react';
+import { Puzzle, Zap } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 
 export function ExtensionModal({ isOpen, onClose }) {

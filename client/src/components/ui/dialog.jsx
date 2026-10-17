@@ -1,4 +1,3 @@
-import * as React from "react"
 import { cn } from "cn"
 import { XIcon } from "lucide-react"
 import { Dialog as DialogPrimitive } from "radix-ui"

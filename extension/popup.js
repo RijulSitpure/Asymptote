@@ -124,7 +124,7 @@ async function checkLeetCodeLogin() {
         }
       });
     }
-  } catch (e) {
+  } catch (_e) {
     // In preview context, fallback to server status
   }
 }
@@ -176,6 +176,7 @@ async function triggerSync() {
 
 // ==================== VIEW SWITCHING ====================
 function showSyncView() {
+  hideMessage();
   const syncView = document.getElementById('sync-view');
   const problemView = document.getElementById('problem-view');
   const backBtn = document.getElementById('view-back-to-sync-btn');
@@ -222,7 +223,7 @@ function renderPopupTabContent() {
   const contentEl = document.getElementById('popup-tab-content');
   if (!contentEl || !popupCachedData) return;
 
-  const { problem, pattern, hints, complexity, suggested_pattern } = popupCachedData;
+  const { problem, hints, complexity, suggested_pattern } = popupCachedData;
   const isVerified = Boolean(problem?.verified === 1 || problem?.verified === true);
 
   const hintTitles = [
@@ -621,7 +622,7 @@ async function autoDetectActiveLeetCodeProblem() {
     }
     // Default to sync view if not on a problem page
     showSyncView();
-  } catch (e) {
+  } catch (_e) {
     showSyncView();
   }
 }

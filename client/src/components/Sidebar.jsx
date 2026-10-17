@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   LayoutDashboard, 
   RotateCcw, 
@@ -36,7 +35,7 @@ export function Sidebar({
       <div className="h-16 flex items-center px-5 border-b border-[#e2e8f0]">
         <div className="flex items-center gap-3">
           <img 
-            src="/asymptote-icon-small.svg" 
+            src="./asymptote-icon-small.svg" 
             alt="Asymptote" 
             className="w-8 h-8 shrink-0 block" 
             width="32" 

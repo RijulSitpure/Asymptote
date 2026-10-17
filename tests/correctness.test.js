@@ -1,77 +1,27 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { DBManager } from '../server/src/db/database.js';
-import { PatternClassifier } from '../server/src/services/classifier.js';
-import { ComplexityService } from '../server/src/services/complexityService.js';
+import { describe, it, expect } from 'vitest';
+import { PatternClassifier } from '../shared/classifier.js';
+import { DiagnosticWizard } from '../shared/wizard.js';
 import '../shared/languages.js';
+import {
+  CATEGORY_PEDAGOGICAL_ORDER,
+  PATTERN_PEDAGOGICAL_ORDER,
+  getCategoryRank,
+  getPatternRank,
+  sortCategoriesByPedagogy,
+  sortPatternsByPedagogy
+} from '../client/src/lib/curriculum.js';
 
 const {
+  getLanguageMeta,
   getSupportedLanguagesForProblem,
   getProblemSolutionCode
 } = globalThis.LanguagesModule;
 
-describe('Correctness and Category Support Tests (In-Memory Fixtures)', () => {
-  let db;
-  let classifier;
-  let complexityService;
+describe('Correctness, Classification, and Pedagogical Logic Tests', () => {
+  const classifier = new PatternClassifier();
+  const wizard = new DiagnosticWizard();
 
-  beforeAll(() => {
-    // 100% in-memory database independent of local server/data/tracker.db
-    db = new DBManager(':memory:');
-    const patterns = db.getPatterns();
-    classifier = new PatternClassifier(patterns);
-    complexityService = new ComplexityService();
-
-    // Seed fixture rows for heuristic problems
-    db.upsertProblem({
-      frontend_id: '1',
-      title: 'Two Sum',
-      title_slug: 'two-sum',
-      difficulty: 'Easy',
-      pattern_id: null,
-      twist_type: null,
-      constraints: '2 <= nums.length <= 10^4',
-      summary: 'Given an array of integers nums and an integer target...',
-      trigger_clues: [],
-      hints_progressive: [],
-      solution_python: '',
-      is_solved: true,
-      solved_at: '2026-10-10T23:17:53.837Z',
-      user_code: '',
-      user_notes: 'Synced via Companion',
-      user_rating: 5,
-      review_needed: false,
-      source: 'heuristic',
-      verified: 0,
-      category: 'Algorithms',
-      languages: ['cpp', 'java', 'python3', 'python', 'javascript', 'typescript']
-    });
-
-    db.upsertProblem({
-      frontend_id: '175',
-      title: 'Combine Two Tables',
-      title_slug: 'combine-two-tables',
-      difficulty: 'Easy',
-      pattern_id: null,
-      twist_type: null,
-      constraints: '',
-      summary: 'Write a solution to report the first name, last name, city, and state...',
-      trigger_clues: [],
-      hints_progressive: [],
-      solution_python: '',
-      is_solved: true,
-      solved_at: '2026-10-11T00:13:36.860Z',
-      user_code: '',
-      user_notes: 'Synced via Companion',
-      user_rating: 3,
-      review_needed: false,
-      source: 'heuristic',
-      verified: 0,
-      category: 'Database',
-      languages: ['mysql', 'mssql', 'postgresql', 'oraclesql', 'pythondata']
-    });
-  });
-
-  describe('1. Two Sum Classification & Verification', () => {
+  describe('1. Pattern Classifier Tests', () => {
     it('must not classify Two Sum as two-pointers-opposite', () => {
       const match = classifier.classify({
         title: 'Two Sum',
@@ -86,56 +36,118 @@ describe('Correctness and Category Support Tests (In-Memory Fixtures)', () => {
       expect(match.confidence).toBe(0);
     });
 
-    it('Two Sum row in database has verified=0, null pattern_id, and empty hints', () => {
-      const twoSum = db.findProblem('two-sum');
-      expect(twoSum).toBeDefined();
-      expect(twoSum.verified).toBe(0);
-      expect(twoSum.source).toBe('heuristic');
-      expect(twoSum.pattern_id).toBeNull();
-      expect(twoSum.hints_progressive).toEqual([]);
-      expect(twoSum.trigger_clues).toEqual([]);
+    it('classifies Two Pointers Dynamic Sliding Window correctly', () => {
+      const match = classifier.classify({
+        title: 'Longest Substring Without Repeating Characters',
+        titleSlug: 'longest-substring-without-repeating-characters',
+        topicTags: [{ name: 'Hash Table' }, { name: 'String' }, { name: 'Sliding Window' }],
+        content: 'Given a string s, find the length of the longest substring...',
+        constraints: '0 <= s.length <= 5 * 10^4'
+      });
+
+      expect(match.pattern_id).toBe('two-pointers-window-dynamic');
+      expect(match.confidence).toBeGreaterThanOrEqual(0.9);
+    });
+
+    it('classifies Graph + DP K-steps correctly', () => {
+      const match = classifier.classify({
+        title: 'Cheapest Flights Within K Stops',
+        titleSlug: 'cheapest-flights-within-k-stops',
+        topicTags: [{ name: 'Dynamic Programming' }, { name: 'Depth-First Search' }, { name: 'Breadth-First Search' }, { name: 'Graph' }, { name: 'Heap (Priority Queue)' }, { name: 'Shortest Path' }],
+        content: 'There are n cities connected by some number of flights. You are given an array flights...',
+        constraints: 'at most k stops'
+      });
+
+      expect(match.pattern_id).toBe('graph-dp-k-steps');
+      expect(match.confidence).toBeGreaterThanOrEqual(0.9);
+    });
+
+    it('classifies Kadane algorithm correctly', () => {
+      const match = classifier.classify({
+        title: 'Maximum Subarray',
+        titleSlug: 'maximum-subarray',
+        topicTags: [{ name: 'Array' }, { name: 'Divide and Conquer' }, { name: 'Dynamic Programming' }],
+        content: 'Given an integer array nums, find the subarray with the largest sum and return its sum.',
+        constraints: '1 <= nums.length <= 10^5'
+      });
+
+      expect(match.pattern_id).toBe('array-kadane');
+      expect(match.confidence).toBeGreaterThanOrEqual(0.9);
     });
   });
 
-  describe('2. Combine Two Tables (Database Category)', () => {
-    it('has no pattern, returns empty hints/unverified state, and lists only database languages', () => {
-      const combineTables = db.findProblem('combine-two-tables');
-      expect(combineTables).toBeDefined();
-      expect(combineTables.category).toBe('Database');
-      expect(combineTables.pattern_id).toBeNull();
-      expect(combineTables.verified).toBe(0);
-      expect(combineTables.hints_progressive).toEqual([]);
+  describe('2. Diagnostic Wizard Deduction Scoring', () => {
+    it('deduces bitmask pattern for exponential constraints N <= 16', () => {
+      const candidates = wizard.diagnose({
+        structure: 'graph',
+        constraints: 'n_15',
+        goal: 'shortest_all_nodes',
+        properties: ['exponential_subset']
+      });
 
-      const supported = getSupportedLanguagesForProblem(combineTables);
-      const supportedSlugs = supported.map(l => l.id || l.langSlug);
+      expect(candidates.length).toBeGreaterThan(0);
+      expect(candidates[0].pattern_id).toBe('graph-bitmask-all-nodes');
+      expect(candidates[0].score).toBeGreaterThanOrEqual(95);
+    });
 
-      // Only database languages: mysql, mssql, postgresql, oraclesql, pythondata
-      expect(supportedSlugs).toEqual(['mysql', 'mssql', 'postgresql', 'oraclesql', 'pythondata']);
-      expect(supportedSlugs).not.toContain('python3');
-      expect(supportedSlugs).not.toContain('cpp');
-      expect(supportedSlugs).not.toContain('java');
+    it('deduces graph-dp-k-steps for edge-bounded / time-bounded paths', () => {
+      const candidates = wizard.diagnose({
+        structure: 'graph',
+        constraints: 'k_stops',
+        goal: 'k_steps',
+        properties: ['limited_steps']
+      });
+
+      expect(candidates.length).toBeGreaterThan(0);
+      expect(candidates[0].pattern_id).toBe('graph-dp-k-steps');
+      expect(candidates[0].score).toBeGreaterThanOrEqual(90);
+    });
+
+    it('deduces monotonic binary search on answer space', () => {
+      const candidates = wizard.diagnose({
+        structure: 'array',
+        constraints: 'n_log_n',
+        goal: 'min_max',
+        properties: ['monotonic_predicate']
+      });
+
+      expect(candidates.some(c => c.pattern_id === 'binary-search-answer')).toBe(true);
     });
   });
 
-  describe('3. Language Filtering & Solutions', () => {
-    it('returns only supported languages from problem data', () => {
-      const problem = {
-        languages: ['mysql', 'postgresql'],
-        verified: 0
-      };
-      const supported = getSupportedLanguagesForProblem(problem);
-      expect(supported.map(s => s.id)).toEqual(['mysql', 'postgresql']);
-      expect(supported[0].name).toBe('MySQL');
-      expect(supported[1].name).toBe('PostgreSQL');
+  describe('3. Language Specifications & Solution Helpers', () => {
+    it('resolves language metadata correctly', () => {
+      const py = getLanguageMeta('python3');
+      expect(py.id).toBe('python3');
+      expect(py.displayName).toBe('Python 3');
+      expect(py.monacoLang).toBe('python');
+
+      const sql = getLanguageMeta('mysql');
+      expect(sql.id).toBe('mysql');
+      expect(sql.displayName).toBe('MySQL');
+      expect(sql.monacoLang).toBe('sql');
     });
 
-    it('returns empty array when problem languages are null / unknown (nullable loading state)', () => {
-      const unknownProb = {
-        languages: null,
-        category: null,
+    it('filters supported languages for Database category problem', () => {
+      const dbProblem = {
+        category: 'Database',
+        languages: ['mysql', 'mssql', 'postgresql', 'oraclesql', 'pythondata'],
         verified: 0
       };
-      expect(getSupportedLanguagesForProblem(unknownProb)).toEqual([]);
+
+      const supported = getSupportedLanguagesForProblem(dbProblem);
+      const slugs = supported.map(s => s.id);
+
+      expect(slugs).toEqual(['mysql', 'mssql', 'postgresql', 'oraclesql', 'pythondata']);
+      expect(slugs).not.toContain('python3');
+      expect(slugs).not.toContain('cpp');
+      expect(slugs).not.toContain('java');
+    });
+
+    it('returns empty array when problem languages are null / unknown', () => {
+      expect(getSupportedLanguagesForProblem(null)).toEqual([]);
+      expect(getSupportedLanguagesForProblem({ languages: null })).toEqual([]);
+      expect(getSupportedLanguagesForProblem({ languages: [] })).toEqual([]);
     });
 
     it('returns empty solution for unverified problem', () => {
@@ -147,7 +159,7 @@ describe('Correctness and Category Support Tests (In-Memory Fixtures)', () => {
       expect(getProblemSolutionCode(unverified, 'python3')).toBe('');
     });
 
-    it('returns "No verified solution in <language> yet" when verified problem lacks requested language', () => {
+    it('returns verified python solution or appropriate placeholder for missing language', () => {
       const verified = {
         languages: ['python3', 'cpp', 'java'],
         verified: 1,
@@ -159,25 +171,38 @@ describe('Correctness and Category Support Tests (In-Memory Fixtures)', () => {
     });
   });
 
-  describe('4. Curated Problem #312 Burst Balloons', () => {
-    it('returns 4 progressive hints and verified complexity', () => {
-      const balloon = db.findProblem('312');
-      expect(balloon).toBeDefined();
-      expect(balloon.source).toBe('curated');
-      expect(balloon.verified).toBe(1);
-      expect(balloon.pattern_id).toBe('dp-interval');
+  describe('4. Curriculum Pedagogical Sorting', () => {
+    it('maintains foundational to advanced ordering in categories', () => {
+      expect(CATEGORY_PEDAGOGICAL_ORDER[0]).toBe('Arrays & Hashing');
+      expect(CATEGORY_PEDAGOGICAL_ORDER[1]).toBe('Two Pointers');
+      expect(CATEGORY_PEDAGOGICAL_ORDER).toContain('Dynamic Programming');
+      expect(CATEGORY_PEDAGOGICAL_ORDER).toContain('Graph + DP');
+      expect(PATTERN_PEDAGOGICAL_ORDER.length).toBeGreaterThan(0);
 
-      // 4 progressive hints
-      expect(balloon.hints_progressive).toHaveLength(4);
-      expect(balloon.hints_progressive[0].level).toBe(1);
-      expect(balloon.hints_progressive[3].level).toBe(4);
+      const sorted = sortCategoriesByPedagogy(['Dynamic Programming', 'Arrays & Hashing', 'Trees']);
+      expect(sorted).toEqual(['Arrays & Hashing', 'Trees', 'Dynamic Programming']);
+    });
 
-      // Verified complexity
-      const pattern = db.getPatternById(balloon.pattern_id);
-      const complexity = complexityService.analyze(balloon, pattern);
-      expect(complexity).not.toBeNull();
-      expect(complexity.targetTime).toContain('O(N³)');
-      expect(complexity.targetSpace).toContain('O(N²)');
+    it('places foundational patterns before advanced capstone patterns', () => {
+      const patterns = [
+        { id: 'dp-bitmask', title: 'Bitmask DP' },
+        { id: 'prefix-sum-hashmap', title: 'Prefix Sum + Hash Map' },
+        { id: 'two-pointers-opposite', title: 'Opposite Pointers' },
+        { id: 'graph-tree-rerooting', title: 'Tree Rerooting' }
+      ];
+
+      const sorted = sortPatternsByPedagogy(patterns);
+      const sortedIds = sorted.map(p => p.id);
+
+      expect(sortedIds.indexOf('prefix-sum-hashmap')).toBeLessThan(sortedIds.indexOf('dp-bitmask'));
+      expect(sortedIds.indexOf('two-pointers-opposite')).toBeLessThan(sortedIds.indexOf('graph-tree-rerooting'));
+    });
+
+    it('handles unknown patterns and ranks gracefully', () => {
+      expect(getCategoryRank('Unknown Category')).toBe(999);
+      expect(getCategoryRank(null)).toBe(999);
+      expect(getPatternRank('unknown-pattern')).toBe(999);
+      expect(getPatternRank(null)).toBe(999);
     });
   });
 });

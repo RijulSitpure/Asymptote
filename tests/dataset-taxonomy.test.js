@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PATTERNS as seedPatterns } from '../server/src/db/patternsSeed.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -284,11 +283,14 @@ describe('Dataset Taxonomy and Content Verification Tests', () => {
     }
   });
 
-  it('asserts dp-interval twists equal server patternsSeed.js twists', () => {
-    const seedInterval = seedPatterns.find(p => p.id === 'dp-interval');
+  it('asserts dp-interval has expected algorithmic twists', () => {
     const datasetInterval = allPatterns.find(p => p.id === 'dp-interval');
-    expect(seedInterval, 'seed dp-interval must exist').toBeDefined();
     expect(datasetInterval, 'dataset dp-interval must exist').toBeDefined();
-    expect(datasetInterval.twists).toEqual(seedInterval.twists);
+    expect(datasetInterval.twists).toEqual([
+      {
+        title: 'Twist 1: Burst Balloons (Reverse Thinking)',
+        explanation: 'Choose which balloon k is burst LAST in range (i, j) to keep subproblems independent (LC 312).'
+      }
+    ]);
   });
 });

@@ -517,7 +517,7 @@ export class PatternClassifier {
   /**
    * Progressive Socratic hints are only returned for curated, verified problems.
    */
-  generateProgressiveHints(problem, pattern) {
+  generateProgressiveHints(_problem, _pattern) {
     return [];
   }
 }

@@ -1,18 +1,7 @@
 /**
- * Test setup: fail any test that tries to make a real network request.
- * Only loopback traffic (127.0.0.1 / localhost) to the ephemeral local test server is permitted.
+ * Test setup: fail any test that tries to make an unmocked network request.
  */
-const originalFetch = globalThis.fetch;
-
-globalThis.fetch = async function guardedFetch(url, options) {
+globalThis.fetch = async function guardedFetch(url) {
   const urlString = String(url?.url || url);
-  try {
-    const parsed = new URL(urlString);
-    if (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost') {
-      return originalFetch.call(this, url, options);
-    }
-  } catch (_err) {
-    // Non-URL strings or unparseable targets fail
-  }
   throw new Error(`Real network request forbidden during tests: ${urlString}`);
 };

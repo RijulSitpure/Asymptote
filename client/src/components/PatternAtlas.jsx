@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, Copy, Check } from 'lucide-react';
 import { Card } from './Card';
 import { Chip } from './Chip';

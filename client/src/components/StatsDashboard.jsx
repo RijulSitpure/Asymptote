@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card } from './Card';
 import { Chip } from './Chip';
 import { ProgressBar } from './ProgressBar';
@@ -8,7 +7,7 @@ export function StatsDashboard({
   patterns = [], 
   problems = [], 
   onPracticeProblem,
-  onOpenQueue 
+  _onOpenQueue 
 }) {
   if (!stats) {
     return (
