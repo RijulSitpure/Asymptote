@@ -89,7 +89,30 @@ def main():
         assert actual == ref, f"Random test failed: expected {ref}, got {actual}"
         random_cases_passed += 1
 
-    # Timing benchmark
+    # Max-size tests
+    # 1. 200x200 serpentine matrix with strictly increasing path of 40,000 cells
+    serp_mat = [[0] * 200 for _ in range(200)]
+    val = 0
+    for c in range(200):
+        rows = range(200) if c % 2 == 0 else range(199, -1, -1)
+        for r in rows:
+            serp_mat[r][c] = val
+            val += 1
+    t0 = time.perf_counter()
+    serp_ans = solver.longestIncreasingPath(serp_mat)
+    t1 = time.perf_counter()
+    serp_ms = (t1 - t0) * 1000
+    assert serp_ans == 40000, f"Serpentine test failed: expected 40000, got {serp_ans}"
+
+    # 2. 200x200 random matrix
+    rand_mat = [[rng.randint(0, 1000) for _ in range(200)] for _ in range(200)]
+    t0 = time.perf_counter()
+    rand_ans = solver.longestIncreasingPath(rand_mat)
+    t1 = time.perf_counter()
+    rand_ms = (t1 - t0) * 1000
+    assert rand_ans >= 1
+
+    # Timing benchmark across sizes
     sizes = [(10, 10), (30, 30), (60, 60)]
     timings = []
     for r, c in sizes:
@@ -102,6 +125,7 @@ def main():
     timing_str = ", ".join([f"{r}x{c}: {ms:.3f}ms" for r, c, ms in timings])
     print(f"✓ Longest Increasing Path: {len(fixed_cases)} fixed cases, {random_cases_passed} random cases passed. Hint 4 code verified.")
     print(f"  Timing growth: {timing_str} (linear in cells O(M * N))")
+    print(f"  Max-size tests: 200x200 serpentine (40,000 cells): {serp_ms:.2f}ms, 200x200 random: {rand_ms:.2f}ms")
 
 if __name__ == '__main__':
     main()

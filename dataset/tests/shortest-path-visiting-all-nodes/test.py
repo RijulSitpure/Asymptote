@@ -21,7 +21,7 @@ def extract_hint_code(prob):
         raise ValueError("Could not extract Python code block from Hint 4")
     return m.group(1)
 
-def reference_shortest_path_permutations(graph: list[list[int]]) -> int:
+def reference_shortest_path(graph: list[list[int]]) -> int:
     n = len(graph)
     if n <= 1:
         return 0
@@ -38,18 +38,31 @@ def reference_shortest_path_permutations(graph: list[list[int]]) -> int:
                     dist[i][v] = dist[i][u] + 1
                     q.append(v)
 
-    # 2. Exhaustive permutation search: minimum cost across all visiting sequences
-    best = float('inf')
-    for p in itertools.permutations(range(n)):
-        cost = sum(dist[p[i]][p[i + 1]] for i in range(n - 1))
-        if cost < best:
-            best = cost
-    return best
+    # 2. Held-Karp dynamic programming reference
+    dp = {}
+    for i in range(n):
+        dp[(1 << i, i)] = 0
+
+    for mask in range(1, 1 << n):
+        for u in range(n):
+            if not (mask & (1 << u)):
+                continue
+            cur = dp.get((mask, u), float('inf'))
+            if cur == float('inf'):
+                continue
+            for v in range(n):
+                if not (mask & (1 << v)):
+                    nmask = mask | (1 << v)
+                    cost = cur + dist[u][v]
+                    if cost < dp.get((nmask, v), float('inf')):
+                        dp[(nmask, v)] = cost
+
+    target = (1 << n) - 1
+    return min(dp.get((target, u), float('inf')) for u in range(n))
 
 def generate_random_connected_graph(n: int, rng: random.Random) -> list[list[int]]:
     if n <= 1:
         return [[]]
-    # Spanning tree guarantees connectedness
     nodes = list(range(n))
     rng.shuffle(nodes)
     adj = {i: set() for i in range(n)}
@@ -59,7 +72,6 @@ def generate_random_connected_graph(n: int, rng: random.Random) -> list[list[int
         adj[u].add(v)
         adj[v].add(u)
 
-    # Add random extra edges
     extra = rng.randint(0, n)
     for _ in range(extra):
         u = rng.randint(0, n - 1)
@@ -94,28 +106,28 @@ def main():
 
     for graph, expected in fixed_cases:
         actual = solver.shortestPathLength(graph)
-        ref = reference_shortest_path_permutations(graph)
+        ref = reference_shortest_path(graph)
         assert actual == expected, f"Failed on {graph}: expected {expected}, got {actual}"
         assert ref == expected, f"Reference mismatch on {graph}: expected {expected}, got {ref}"
 
-    # Seeded random tests: connected graphs against permutation reference for small N
+    # Seeded random tests: connected graphs against DP reference for n up to 10
     rng = random.Random(42)
     random_cases_passed = 0
-    for _ in range(30):
-        n = rng.randint(2, 6)
+    for _ in range(35):
+        n = rng.randint(2, 10)
         graph = generate_random_connected_graph(n, rng)
-        ref = reference_shortest_path_permutations(graph)
+        ref = reference_shortest_path(graph)
         actual = solver.shortestPathLength(graph)
         assert actual == ref, f"Random test failed on N={n}: expected {ref}, got {actual}"
         random_cases_passed += 1
 
-    # Special required case: connected random graphs up to 12 nodes
-    for n in range(7, 13):
-        graph = generate_random_connected_graph(n, rng)
-        actual = solver.shortestPathLength(graph)
-        assert actual >= n - 1, f"Path length must be at least N-1={n-1}, got {actual}"
-        assert actual <= 2 * n, f"Path length must not exceed 2N, got {actual}"
-        random_cases_passed += 1
+    # Max-size test: N = 12 (true LeetCode maximum)
+    max_graph = generate_random_connected_graph(12, rng)
+    t0 = time.perf_counter()
+    max_ans = solver.shortestPathLength(max_graph)
+    t1 = time.perf_counter()
+    max_ms = (t1 - t0) * 1000
+    assert max_ans >= 11 and max_ans <= 24
 
     # Timing benchmark across sizes
     sizes = [4, 8, 12]
@@ -128,8 +140,9 @@ def main():
         timings.append((n, (t1 - t0) * 1000))
 
     timing_str = ", ".join([f"N={n}: {ms:.3f}ms" for n, ms in timings])
-    print(f"✓ Shortest Path Visiting All Nodes: {len(fixed_cases)} fixed cases, {random_cases_passed} random/stress cases passed. Hint 4 code verified.")
+    print(f"✓ Shortest Path Visiting All Nodes: {len(fixed_cases)} fixed cases, {random_cases_passed} random cases passed. Hint 4 code verified.")
     print(f"  Timing growth: {timing_str} (O(N^2 * 2^N))")
+    print(f"  Max-size test (N=12): {max_ms:.2f}ms")
 
 if __name__ == '__main__':
     main()

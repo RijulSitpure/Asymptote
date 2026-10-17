@@ -80,9 +80,19 @@ def main():
         t1 = time.perf_counter()
         timings.append((s, (t1 - t0) * 1000))
 
+    # Max-size test: N = 100,000 (true LeetCode maximum)
+    n_max = 100000
+    max_nums = [rng.randint(-10000, 10000) for _ in range(n_max)]
+    t0 = time.perf_counter()
+    max_ans = solver.maxSubArray(max_nums)
+    t1 = time.perf_counter()
+    max_ms = (t1 - t0) * 1000
+    assert isinstance(max_ans, int)
+
     timing_str = ", ".join([f"N={s}: {ms:.3f}ms" for s, ms in timings])
     print(f"✓ Maximum Subarray: {len(fixed_cases)} fixed cases, {random_cases_passed} random cases passed. Hint 4 code verified.")
     print(f"  Timing growth: {timing_str} (linear O(N))")
+    print(f"  Max-size test (N=100,000): {max_ms:.2f}ms")
 
 if __name__ == '__main__':
     main()

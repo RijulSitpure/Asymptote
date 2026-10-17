@@ -87,6 +87,10 @@ describe('Dataset Agreement with Seed Files', () => {
         // Updated to iterative traversal in Step 6a to prevent recursion limit error on path trees
         expect(pySol.code).toContain('def sumOfDistancesInTree');
         expect(pySol.code).toContain('while queue:');
+      } else if (seedProb.title_slug === 'longest-increasing-path-in-a-matrix') {
+        // Updated to iterative Kahn's BFS in Step 6a to prevent recursion limit error on deep grid paths
+        expect(pySol.code).toContain('def longestIncreasingPath');
+        expect(pySol.code).toContain('in_degree');
       } else {
         expect(pySol.code).toBe(seedProb.solution_python.trim());
       }

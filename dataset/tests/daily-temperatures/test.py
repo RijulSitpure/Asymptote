@@ -82,6 +82,31 @@ def main():
         assert actual == expected, f"Random test failed on size {size}: expected {expected[:10]}, got {actual[:10]}"
         random_cases_passed += 1
 
+    # Max-size tests: N = 100,000
+    n_max = 100000
+    # 1. Strictly decreasing
+    decr_temps = list(range(n_max, 0, -1))
+    t0 = time.perf_counter()
+    decr_res = solver.dailyTemperatures(decr_temps)
+    t1 = time.perf_counter()
+    decr_ms = (t1 - t0) * 1000
+    assert decr_res == [0] * n_max, "Decreasing temps must all have 0 waiting days"
+
+    # 2. Strictly increasing
+    incr_temps = list(range(n_max))
+    t0 = time.perf_counter()
+    incr_res = solver.dailyTemperatures(incr_temps)
+    t1 = time.perf_counter()
+    incr_ms = (t1 - t0) * 1000
+    assert incr_res[:5] == [1, 1, 1, 1, 1] and incr_res[-1] == 0
+
+    # 3. All-equal
+    equal_temps = [50] * n_max
+    t0 = time.perf_counter()
+    equal_res = solver.dailyTemperatures(equal_temps)
+    t1 = time.perf_counter()
+    equal_ms = (t1 - t0) * 1000
+    assert equal_res == [0] * n_max, "Equal temps must all have 0 waiting days"
     # Timing benchmark
     sizes = [100, 1000, 10000]
     timings = []
@@ -95,6 +120,7 @@ def main():
     timing_str = ", ".join([f"N={s}: {ms:.3f}ms" for s, ms in timings])
     print(f"✓ Daily Temperatures: {len(fixed_cases)} fixed cases, {random_cases_passed} random cases passed. Hint 4 code verified.")
     print(f"  Timing growth: {timing_str} (linear O(N))")
+    print(f"  Max-size tests (N=100k): decreasing={decr_ms:.2f}ms, increasing={incr_ms:.2f}ms, all-equal={equal_ms:.2f}ms")
 
 if __name__ == '__main__':
     main()

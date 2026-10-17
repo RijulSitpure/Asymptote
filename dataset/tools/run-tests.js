@@ -104,18 +104,60 @@ async function main() {
       PYTHONDONTWRITEBYTECODE: '1'
     };
 
-    const FORBIDDEN_NET_IMPORT = /(?:^|\n)\s*(?:import|from)\s+(socket|requests|urllib|http)(?:\s|\.|,|$)/m;
-    const verifySecurity = (targetPath, content) => {
-      const match = content.match(FORBIDDEN_NET_IMPORT);
-      if (match) {
-        throw new Error(`Security policy violation: forbidden network import "${match[1]}" detected in ${targetPath}`);
+    // Guardrail only, not a sandbox.
+    const DOCKER_SECURITY_ARGS = [
+      '--network', 'none',
+      '--read-only',
+      '--tmpfs', '/tmp:rw,noexec,nosuid,size=64m',
+      '--memory', '512m',
+      '--cpus', '1',
+      '--pids-limit', '256',
+      '--rm'
+    ];
+
+    const verifySecurity = (targetPath, content, isTestScript = false) => {
+      // 1. Forbidden network imports
+      const netMatch = content.match(/(?:^|\n)\s*(?:import|from)\s+(socket|requests|urllib|http)(?:\s|\.|,|$)/m);
+      if (netMatch) {
+        throw new Error(`Security guardrail: forbidden network import "${netMatch[1]}" in ${targetPath}`);
+      }
+
+      // 2. Forbidden execution, subprocess, ctypes, and OS escapes
+      const forbiddenConstructs = [
+        { name: 'subprocess', regex: /(?:^|\n)\s*(?:import|from)\s+subprocess(?:\s|\.|,|$)/m },
+        { name: 'ctypes', regex: /(?:^|\n)\s*(?:import|from)\s+ctypes(?:\s|\.|,|$)/m },
+        { name: 'os.system', regex: /\bos\.system\s*\(/ },
+        { name: 'os.popen', regex: /\bos\.popen\s*\(/ },
+        { name: '__import__', regex: /\b__import__\s*\(/ },
+        { name: 'eval(', regex: /\beval\s*\(/ },
+        { name: 'open( with write mode', regex: /\bopen\s*\([^)]*['"][wa+x]/ }
+      ];
+
+      for (const { name, regex } of forbiddenConstructs) {
+        if (regex.test(content)) {
+          throw new Error(`Security guardrail: forbidden construct "${name}" in ${targetPath}`);
+        }
+      }
+
+      // 3. exec( check: strictly forbidden in solutions; in test scripts, only allowed for test harness exec(sol_code
+      if (!isTestScript) {
+        if (/\bexec\s*\(/.test(content)) {
+          throw new Error(`Security guardrail: forbidden construct "exec(" in ${targetPath}`);
+        }
+      } else {
+        const execCalls = content.match(/\bexec\s*\([^)]*\)/g) || [];
+        for (const ec of execCalls) {
+          if (!ec.includes('sol_code')) {
+            throw new Error(`Security guardrail: forbidden arbitrary "exec(" call in ${targetPath}`);
+          }
+        }
       }
     };
 
     try {
       // Check solution code security
       for (const sol of prob.solutions || []) {
-        if (sol.code) verifySecurity(`${slug}.json solution`, sol.code);
+        if (sol.code) verifySecurity(`${slug}.json solution`, sol.code, false);
       }
 
       if (category === 'Algorithms') {
@@ -127,7 +169,7 @@ async function main() {
             detail = `Missing test.py in ${slugTestDir}`;
           } else {
             const scriptContent = fs.readFileSync(testScript, 'utf8');
-            verifySecurity(testScript, scriptContent);
+            verifySecurity(testScript, scriptContent, true);
 
             const run = spawnSync('python3', [testScript], {
               cwd: slugTestDir,

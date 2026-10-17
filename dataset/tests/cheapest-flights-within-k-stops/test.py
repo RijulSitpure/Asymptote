@@ -114,9 +114,23 @@ def main():
         t1 = time.perf_counter()
         timings.append((n, k, (t1 - t0) * 1000))
 
+    # Max-size test: V = 100, dense graph, k from 0 to 99
+    v_max = 100
+    dense_flights = []
+    for u in range(v_max):
+        for v in range(v_max):
+            if u != v and (u + v) % 3 == 0:  # dense graph (~3300 edges)
+                dense_flights.append([u, v, rng.randint(10, 500)])
+    t0 = time.perf_counter()
+    k_results = [solver.findCheapestPrice(v_max, dense_flights, 0, v_max - 1, test_k) for test_k in [0, 1, 10, 50, 99]]
+    t1 = time.perf_counter()
+    dense_ms = (t1 - t0) * 1000
+    assert len(k_results) == 5
+
     timing_str = ", ".join([f"V={n},K={k}: {ms:.3f}ms" for n, k, ms in timings])
     print(f"✓ Cheapest Flights: {len(fixed_cases)} fixed cases, {random_cases_passed} random cases passed. Hint 4 code verified.")
     print(f"  Timing growth: {timing_str} (O(K * E))")
+    print(f"  Max-size test (V=100, ~3300 edges, k in [0..99]): {dense_ms:.2f}ms")
 
 if __name__ == '__main__':
     main()

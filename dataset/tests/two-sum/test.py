@@ -114,9 +114,21 @@ def main():
         t1 = time.perf_counter()
         timings.append((s, (t1 - t0) * 1000))
 
+    # Max-size test: N = 10,000 (true LeetCode maximum)
+    n_max = 10000
+    max_nums = [rng.randint(-10**9, 10**9) for _ in range(n_max)]
+    i1, i2 = 1234, 8765
+    max_target = max_nums[i1] + max_nums[i2]
+    t0 = time.perf_counter()
+    max_ans = solver.twoSum(max_nums, max_target)
+    t1 = time.perf_counter()
+    max_ms = (t1 - t0) * 1000
+    validate_two_sum_solution(max_nums, max_target, max_ans)
+
     timing_str = ", ".join([f"N={s}: {ms:.3f}ms" for s, ms in timings])
     print(f"✓ Two Sum: {len(fixed_cases)} fixed cases, {random_cases_passed} random cases passed. Hint 4 code verified.")
     print(f"  Timing growth: {timing_str} (linear O(N))")
+    print(f"  Max-size test (N=10,000): {max_ms:.2f}ms")
 
 if __name__ == '__main__':
     main()

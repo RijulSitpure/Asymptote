@@ -125,8 +125,9 @@ def main():
         timings.append((s, (t1 - t0) * 1000))
 
     timing_str = ", ".join([f"N={s}: {ms:.2f}ms" for s, ms in timings])
-    print(f"✓ Sum of Distances in Tree: {len(fixed_cases)} fixed cases, {random_cases_passed} random/path cases passed (30k path tree verified: {t_end - t_start:.3f}s). Hint 4 code verified.")
+    print(f"✓ Sum of Distances in Tree: {len(fixed_cases)} fixed cases, {random_cases_passed} random/path cases passed. Hint 4 code verified.")
     print(f"  Timing growth: {timing_str} (strictly linear O(N), no recursion stack)")
+    print(f"  Max-size test (N=30,000 line tree): {(t_end - t_start)*1000:.2f}ms")
 
 if __name__ == '__main__':
     main()

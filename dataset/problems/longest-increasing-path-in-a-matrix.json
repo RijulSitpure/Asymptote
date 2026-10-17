@@ -13,18 +13,18 @@
     },
     {
       "level": 2,
-      "title": "Implicit DAG and Subproblem Caching",
-      "text": "Because values strictly increase along any valid path, the grid forms a directed acyclic graph where the longest path starting at any cell can be solved as an independent subproblem and memoized."
+      "title": "Implicit DAG and Topological Order",
+      "text": "Because values strictly increase along any valid path, the grid forms a directed acyclic graph where cells can be processed in topological order without recursion depth concerns."
     },
     {
       "level": 3,
-      "title": "Neighbor Exploration and Memoization",
-      "text": "Define a recursive function returning the longest path starting at cell (r, c). For each of its four neighbors with strictly larger values, recursively obtain their longest paths and take one plus their maximum, defaulting to one if no neighbor is larger. Memoize each cell and return the maximum across all cells."
+      "title": "In-Degree Calculation and Level-by-Level BFS",
+      "text": "Compute the in-degree of every cell, defined as the number of neighboring cells with strictly smaller values. Initialize a queue with all cells having zero in-degree. In each level of breadth-first search, increment the path length and decrement the in-degree of strictly larger neighbors, enqueueing any neighbor whose in-degree reaches zero."
     },
     {
       "level": 4,
       "title": "Complete Implementation",
-      "text": "```python\nfrom functools import cache\n\nclass Solution:\n    def longestIncreasingPath(self, matrix: list[list[int]]) -> int:\n        if not matrix or not matrix[0]:\n            return 0\n        m, n = len(matrix), len(matrix[0])\n\n        @cache\n        def dfs(r, c):\n            best = 1\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and matrix[nr][nc] > matrix[r][c]:\n                    best = max(best, 1 + dfs(nr, nc))\n            return best\n\n        return max(dfs(r, c) for r in range(m) for c in range(n))\n```"
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def longestIncreasingPath(self, matrix: list[list[int]]) -> int:\n        if not matrix or not matrix[0]:\n            return 0\n        m, n = len(matrix), len(matrix[0])\n        in_degree = [[0] * n for _ in range(m)]\n\n        for r in range(m):\n            for c in range(n):\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < m and 0 <= nc < n and matrix[nr][nc] < matrix[r][c]:\n                        in_degree[r][c] += 1\n\n        queue = deque([(r, c) for r in range(m) for c in range(n) if in_degree[r][c] == 0])\n        length = 0\n\n        while queue:\n            length += 1\n            for _ in range(len(queue)):\n                r, c = queue.popleft()\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < m and 0 <= nc < n and matrix[nr][nc] > matrix[r][c]:\n                        in_degree[nr][nc] -= 1\n                        if in_degree[nr][nc] == 0:\n                            queue.append((nr, nc))\n\n        return length\n```"
     }
   ],
   "complexity": {
@@ -35,13 +35,13 @@
       "M: matrix rows (M <= 200)",
       "N: matrix columns (N <= 200)"
     ],
-    "notes": "DFS with memoization on Directed Acyclic Graph formed by strictly increasing cell values."
+    "notes": "Iterative topological sort (Kahn's BFS) on DAG formed by strictly increasing cell values."
   },
   "solutions": [
     {
       "lang": "python3",
-      "code": "from functools import cache\n\nclass Solution:\n    def longestIncreasingPath(self, matrix: list[list[int]]) -> int:\n        if not matrix or not matrix[0]:\n            return 0\n        m, n = len(matrix), len(matrix[0])\n\n        @cache\n        def dfs(r, c):\n            best = 1\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and matrix[nr][nc] > matrix[r][c]:\n                    best = max(best, 1 + dfs(nr, nc))\n            return best\n\n        return max(dfs(r, c) for r in range(m) for c in range(n))",
-      "approach": "Implicit DAG on 2D Matrix (Strict Ordering eliminates cycles)",
+      "code": "from collections import deque\n\nclass Solution:\n    def longestIncreasingPath(self, matrix: list[list[int]]) -> int:\n        if not matrix or not matrix[0]:\n            return 0\n        m, n = len(matrix), len(matrix[0])\n        in_degree = [[0] * n for _ in range(m)]\n\n        for r in range(m):\n            for c in range(n):\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < m and 0 <= nc < n and matrix[nr][nc] < matrix[r][c]:\n                        in_degree[r][c] += 1\n\n        queue = deque([(r, c) for r in range(m) for c in range(n) if in_degree[r][c] == 0])\n        length = 0\n\n        while queue:\n            length += 1\n            for _ in range(len(queue)):\n                r, c = queue.popleft()\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < m and 0 <= nc < n and matrix[nr][nc] > matrix[r][c]:\n                        in_degree[nr][nc] -= 1\n                        if in_degree[nr][nc] == 0:\n                            queue.append((nr, nc))\n\n        return length",
+      "approach": "Iterative Topological Sort (Kahn's Algorithm on Grid DAG)",
       "verifiedBy": "tests",
       "testedOn": "2026-10-17"
     }

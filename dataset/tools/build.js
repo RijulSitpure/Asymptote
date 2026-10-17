@@ -8,14 +8,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
 const datasetDir = path.resolve(rootDir, 'dataset');
-const outDir = path.resolve(rootDir, 'extension', 'data');
+const outDir = process.argv[2] ? path.resolve(process.cwd(), process.argv[2]) : path.resolve(rootDir, 'extension', 'data');
 
 function sha256(content) {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
 function build() {
-  console.log('=== Compiling Dataset to extension/data/ ===\n');
+  console.log(`=== Compiling Dataset to ${outDir} ===\n`);
 
   if (!fs.existsSync(outDir)) {
     fs.mkdirSync(outDir, { recursive: true });

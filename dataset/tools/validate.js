@@ -194,6 +194,29 @@ function runValidation() {
             }
           }
 
+          // Warning if L1 contains algorithm / data structure names
+          if (hint.level === 1) {
+            const bannedPatterns = [
+              /\bhash\w*\b/i,
+              /\bheap\w*\b/i,
+              /\bstack\w*\b/i,
+              /\bqueue\w*\b/i,
+              /\bmemo\w*\b/i,
+              /\bdynamic\s+programming\b/i,
+              /\btwo\s+pointers?\b/i,
+              /\bbinary\s+search\b/i,
+              /\bbfs\b/i,
+              /\bdfs\b/i,
+              /\bdp\b/i
+            ];
+            for (const pat of bannedPatterns) {
+              const match = textOutsideCodeFences.match(pat);
+              if (match) {
+                warnings.push(`[Hint 1 Technique Leak] ${file}: Hint level 1 contains technique/structure keyword "${match[0]}"`);
+              }
+            }
+          }
+
           // Warning if L1 or L2 exceeds 300 chars
           if ((hint.level === 1 || hint.level === 2) && hint.text.length > 300) {
             warnings.push(`[Hint Length] ${file}: Hint level ${hint.level} length is ${hint.text.length} chars (exceeds 300 characters limit)`);

@@ -73,7 +73,7 @@ def main():
     rng = random.Random(42)
     random_cases_passed = 0
     for i in range(40):
-        size = rng.randint(1, 6)
+        size = rng.randint(1, 10)
         if i % 3 == 0:
             # Explicitly include zeros in input
             nums = [rng.choice([0, rng.randint(0, 15)]) for _ in range(size)]
@@ -94,9 +94,18 @@ def main():
         t1 = time.perf_counter()
         timings.append((s, (t1 - t0) * 1000))
 
+    # Max-size test: N = 300 (timing only, true LeetCode maximum)
+    max_nums = [rng.randint(1, 100) for _ in range(300)]
+    t0 = time.perf_counter()
+    max_coins = solver.maxCoins(max_nums)
+    t1 = time.perf_counter()
+    max_ms = (t1 - t0) * 1000
+    assert max_coins > 0
+
     timing_str = ", ".join([f"N={s}: {ms:.3f}ms" for s, ms in timings])
     print(f"✓ Burst Balloons: {len(fixed_cases)} fixed cases, {random_cases_passed} random cases passed. Hint 4 code verified.")
     print(f"  Timing growth: {timing_str} (cubic O(N^3))")
+    print(f"  Max-size test (N=300): {max_ms:.2f}ms")
 
 if __name__ == '__main__':
     main()

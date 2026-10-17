@@ -105,9 +105,18 @@ def main():
         t1 = time.perf_counter()
         timings.append((s_size, (t1 - t0) * 1000))
 
+    # Max-size test: L = 10,000 (true LeetCode maximum)
+    max_valid_s = ("(" * 5000) + (")" * 5000)
+    t0 = time.perf_counter()
+    max_res = solver.isValid(max_valid_s)
+    t1 = time.perf_counter()
+    max_ms = (t1 - t0) * 1000
+    assert max_res is True
+
     timing_str = ", ".join([f"N={s}: {ms:.3f}ms" for s, ms in timings])
     print(f"✓ Valid Parentheses: {len(fixed_cases)} fixed cases, {random_cases_passed} random cases passed. Hint 4 code verified.")
     print(f"  Timing growth: {timing_str} (linear O(N))")
+    print(f"  Max-size test (L=10,000 nested brackets): {max_ms:.2f}ms")
 
 if __name__ == '__main__':
     main()

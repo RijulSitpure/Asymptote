@@ -95,9 +95,18 @@ def main():
         t1 = time.perf_counter()
         timings.append((r, c, (t1 - t0) * 1000))
 
+    # Max-size test: 100x100 grid (10,000 cells, true LeetCode maximum)
+    max_grid = [[rng.randint(1, 4) for _ in range(100)] for _ in range(100)]
+    t0 = time.perf_counter()
+    max_res = solver.minCost(max_grid)
+    t1 = time.perf_counter()
+    max_ms = (t1 - t0) * 1000
+    assert max_res >= 0
+
     timing_str = ", ".join([f"{r}x{c}: {ms:.3f}ms" for r, c, ms in timings])
     print(f"✓ Minimum Cost Valid Path Grid: {len(fixed_cases)} fixed cases, {random_cases_passed} random cases passed. Hint 4 code verified.")
     print(f"  Timing growth: {timing_str} (linear in cells O(M * N))")
+    print(f"  Max-size test (100x100 grid): {max_ms:.2f}ms")
 
 if __name__ == '__main__':
     main()
