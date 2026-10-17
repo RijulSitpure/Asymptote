@@ -271,15 +271,15 @@ describe('Dataset Taxonomy and Content Verification Tests', () => {
     ).toBe(false);
   });
 
-  it('asserts problem files draft review status and unverified solutions', () => {
-    expect(allProblems.length).toBe(7);
+  it('asserts problem files tested review status and verified solutions', () => {
+    expect(allProblems.length).toBe(10);
     for (const { file, data } of allProblems) {
-      expect(data.review?.status, `${file} review.status must be "draft"`).toBe('draft');
+      expect(data.review?.status, `${file} review.status must be "tested"`).toBe('tested');
       expect(Array.isArray(data.solutions), `${file} must have solutions array`).toBe(true);
       expect(data.solutions.length).toBeGreaterThan(0);
       for (const sol of data.solutions) {
-        expect(sol.verifiedBy, `${file} solution verifiedBy must be "none"`).toBe('none');
-        expect(sol.testedOn, `${file} solution testedOn must be null`).toBeNull();
+        expect(sol.verifiedBy, `${file} solution verifiedBy must be "tests"`).toBe('tests');
+        expect(sol.testedOn, `${file} solution testedOn must be set`).toBe('2026-10-17');
       }
     }
   });
