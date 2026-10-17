@@ -1,0 +1,243 @@
+[
+  {
+    "id": "join-filter",
+    "category": "Database",
+    "title": "Inner and Outer Join Filtering",
+    "difficulty": "Easy-Medium",
+    "short_description": "Combines rows from two or more tables based on related keys, using WHERE or ON predicates to isolate matched relational entities.",
+    "mental_triggers": [
+      "Combine attributes from multiple related relational tables",
+      "Match primary key in one table with foreign key in another",
+      "Preserve all rows from left table while filtering right table matches (LEFT JOIN)"
+    ],
+    "constraint_signals": [
+      "Tables indexed on join keys allow nested loop or hash join in O(M + N)",
+      "Missing records should be filled with NULL (requires LEFT JOIN)"
+    ],
+    "complexity": "Query Time: O(M log N) or O(M + N) with index on join key | Space: O(M + N)"
+  },
+  {
+    "id": "anti-join",
+    "category": "Database",
+    "title": "Anti-Join (Exclusion Filtering)",
+    "difficulty": "Easy-Medium",
+    "short_description": "Identifies rows in a primary table that have no corresponding match in a secondary table using LEFT JOIN with IS NULL, NOT EXISTS, or NOT IN.",
+    "mental_triggers": [
+      "Find customers who never placed an order",
+      "Identify entities present in table A but missing in table B",
+      "Detect orphaned foreign keys or unused reference entries"
+    ],
+    "constraint_signals": [
+      "Nullable columns in secondary table can make NOT IN fail; NOT EXISTS or LEFT JOIN ... IS NULL is safer and index-friendly"
+    ],
+    "complexity": "Query Time: O(M + N) with index-backed foreign key | Space: O(M) temporary set"
+  },
+  {
+    "id": "group-aggregate",
+    "category": "Database",
+    "title": "Grouped Aggregation",
+    "difficulty": "Easy-Medium",
+    "short_description": "Partitions table rows by one or more dimension columns and computes summary statistics (COUNT, SUM, AVG, MIN, MAX) per group.",
+    "mental_triggers": [
+      "Calculate total sales per department or user",
+      "Find maximum transaction amount per day",
+      "Count distinct activities grouped by account status"
+    ],
+    "constraint_signals": [
+      "High-cardinality grouping requires memory hash table; pre-sorted input or index on GROUP BY keys avoids temporary files"
+    ],
+    "complexity": "Query Time: O(N log N) or O(N) with index grouping | Space: O(K) where K is number of groups"
+  },
+  {
+    "id": "having-filter",
+    "category": "Database",
+    "title": "Aggregate Filtering (HAVING)",
+    "difficulty": "Easy-Medium",
+    "short_description": "Applies selection criteria to post-aggregation bucket metrics, filtering out aggregated groups that fail threshold conditions.",
+    "mental_triggers": [
+      "Find classes with at least 5 students",
+      "Identify users whose total transaction sum exceeds $1,000",
+      "Select duplicate emails appearing more than once"
+    ],
+    "constraint_signals": [
+      "Filter conditions reference aggregate functions (COUNT, SUM, AVG) rather than raw individual row attributes"
+    ],
+    "complexity": "Query Time: O(N log N) for grouping + O(K) bucket filter | Space: O(K) groups"
+  },
+  {
+    "id": "window-ranking",
+    "category": "Database",
+    "title": "Window Ranking Functions",
+    "difficulty": "Medium",
+    "short_description": "Computes positional ordinal ranks across partitions without collapsing rows, distinguishing between ROW_NUMBER(), RANK(), and DENSE_RANK().",
+    "mental_triggers": [
+      "Find top 3 highest-earning employees in each department",
+      "Rank students by test score handling ties without skipping ranks (DENSE_RANK)",
+      "Assign sequential IDs to events per session"
+    ],
+    "constraint_signals": [
+      "Result requires retaining individual row identity while assigning rank values partitioned by department or category"
+    ],
+    "complexity": "Query Time: O(N log N) for window sorting | Space: O(N) window frame buffer"
+  },
+  {
+    "id": "window-offset",
+    "category": "Database",
+    "title": "Window Offset Access (LEAD and LAG)",
+    "difficulty": "Medium",
+    "short_description": "Accesses values from preceding (LAG) or subsequent (LEAD) rows within an ordered partition without requiring self-joins.",
+    "mental_triggers": [
+      "Compare current day temperature to previous day",
+      "Detect consecutive logons within 5 minutes of previous logon",
+      "Calculate day-over-day percentage change in revenue"
+    ],
+    "constraint_signals": [
+      "Chronological row comparisons where each row must inspect adjacent previous/next row within partition"
+    ],
+    "complexity": "Query Time: O(N log N) for ordered partitioning | Space: O(N) window frame buffer"
+  },
+  {
+    "id": "running-total",
+    "category": "Database",
+    "title": "Running Total and Moving Aggregates",
+    "difficulty": "Medium",
+    "short_description": "Computes cumulative sums, moving averages, or bounded range sums over ordered rows using window frames (ROWS BETWEEN).",
+    "mental_triggers": [
+      "Calculate cumulative bank balance across transaction history",
+      "Compute 7-day rolling average of daily user signups",
+      "Running total of items purchased over time per user"
+    ],
+    "constraint_signals": [
+      "ORDER BY inside OVER() creates cumulative frame (RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) by default"
+    ],
+    "complexity": "Query Time: O(N log N) for sorting | Space: O(N) window buffer"
+  },
+  {
+    "id": "top-n-per-group",
+    "category": "Database",
+    "title": "Top N Records per Group",
+    "difficulty": "Medium-Hard",
+    "short_description": "Extracts the top or bottom N records within each category or partition using window ranking inside a CTE or derived table.",
+    "mental_triggers": [
+      "Find top 3 highest paid employees in each department",
+      "Select most recent 2 orders for each customer",
+      "Identify top selling product in each category"
+    ],
+    "constraint_signals": [
+      "Requires subquery or CTE because window functions cannot appear directly in WHERE clause"
+    ],
+    "complexity": "Query Time: O(N log N) window sort + O(N) outer predicate | Space: O(N) CTE materialization"
+  },
+  {
+    "id": "self-join",
+    "category": "Database",
+    "title": "Self-Join Relationships",
+    "difficulty": "Medium",
+    "short_description": "Joins a table to itself to compare rows within the same dataset, such as manager-employee hierarchies or consecutive date entries.",
+    "mental_triggers": [
+      "Find employees who earn more than their direct manager",
+      "Compare records with their own previous date entry without window functions",
+      "Graph or tree node relationships stored in a single table"
+    ],
+    "constraint_signals": [
+      "Single table contains both the entity and a foreign key pointing to another row in the same table"
+    ],
+    "complexity": "Query Time: O(N log N) or O(N^2) unindexed | Space: O(N) intermediate join table"
+  },
+  {
+    "id": "gaps-and-islands",
+    "category": "Database",
+    "title": "Gaps and Islands Detection",
+    "difficulty": "Hard",
+    "short_description": "Groups consecutive sequential rows into contiguous islands or detects missing intervals (gaps) using ROW_NUMBER difference techniques.",
+    "mental_triggers": [
+      "Find users with 3 or more consecutive days of active logins",
+      "Identify contiguous date ranges during which a machine was operational",
+      "Detect missing invoice numbers in a sequential sequence"
+    ],
+    "constraint_signals": [
+      "Subtracting ROW_NUMBER() from a date or sequence number yields a constant invariant for all rows in the same contiguous island"
+    ],
+    "complexity": "Query Time: O(N log N) window sort + O(N) group aggregation | Space: O(N) window tracking buffer"
+  },
+  {
+    "id": "recursive-cte",
+    "category": "Database",
+    "title": "Recursive Common Table Expressions",
+    "difficulty": "Hard",
+    "short_description": "Iteratively evaluates anchor and recursive member queries to traverse graphs, hierarchies, or generate numerical sequences.",
+    "mental_triggers": [
+      "Traverse multi-level organizational charts (CEO down to entry-level)",
+      "Generate a sequence of dates between start_date and end_date",
+      "Find all indirect connections or prerequisites in a graph"
+    ],
+    "constraint_signals": [
+      "Depth of tree or chain is arbitrary and not known at query authoring time; requires termination condition"
+    ],
+    "complexity": "Query Time: O(V + E) for tree traversal | Space: O(D) recursion stack/queue"
+  },
+  {
+    "id": "conditional-pivot",
+    "category": "Database",
+    "title": "Conditional Aggregation and Pivoting",
+    "difficulty": "Medium",
+    "short_description": "Transforms row-level categorical data into column-level summaries using CASE WHEN expressions nested inside aggregate functions.",
+    "mental_triggers": [
+      "Transpose row-based monthly sales into 12 distinct month columns",
+      "Count occurrences of different statuses in separate columns in a single row",
+      "Calculate proportion or ratio of specific events to total events"
+    ],
+    "constraint_signals": [
+      "Input is tall/narrow and target output is wide with fixed column headers for each category value"
+    ],
+    "complexity": "Query Time: O(N) single-pass aggregate over groups | Space: O(K) where K is distinct groups"
+  },
+  {
+    "id": "date-time",
+    "category": "Database",
+    "title": "Date and Time Arithmetic",
+    "difficulty": "Easy-Medium",
+    "short_description": "Performs interval manipulation, boundary extraction, and difference calculations across temporal fields using engine-specific date functions.",
+    "mental_triggers": [
+      "Find records created within the last 30 days",
+      "Calculate duration in days or hours between order_date and ship_date",
+      "Group transactions by year-month or day of week"
+    ],
+    "constraint_signals": [
+      "Comparing dates must handle leap years, month boundaries, and timestamp vs date casting (e.g. DATEDIFF)"
+    ],
+    "complexity": "Query Time: O(N) linear evaluation; can use index range scan if function is not wrapped on column | Space: O(1)"
+  },
+  {
+    "id": "string-handling",
+    "category": "Database",
+    "title": "String Manipulation and Pattern Matching",
+    "difficulty": "Easy-Medium",
+    "short_description": "Performs pattern matching, case conversion, token concatenation, and regex validation on text columns.",
+    "mental_triggers": [
+      "Find users with valid email format starting with a letter",
+      "Capitalize first character of names and lowercase remaining characters",
+      "Group comma-separated lists of products per user (GROUP_CONCAT)"
+    ],
+    "constraint_signals": [
+      "LIKE wildcards with leading % cannot use B-tree index; regex functions evaluate per row"
+    ],
+    "complexity": "Query Time: O(N * L) where L is string length | Space: O(L) output buffer"
+  },
+  {
+    "id": "set-operations",
+    "category": "Database",
+    "title": "Set Operations (UNION, INTERSECT, EXCEPT)",
+    "difficulty": "Easy-Medium",
+    "short_description": "Combines or compares row sets from multiple SELECT queries using set union, intersection, or difference semantics.",
+    "mental_triggers": [
+      "Combine customers from active and archived regional databases",
+      "Find IDs that appear in both table A and table B (INTERSECT)",
+      "Find all items present in catalogue but never appearing in orders (EXCEPT)"
+    ],
+    "constraint_signals": [
+      "UNION removes duplicates with sorting/hashing; UNION ALL preserves all rows without duplicate removal overhead"
+    ],
+    "complexity": "Query Time: O(N log N) for UNION / INTERSECT / EXCEPT; O(N) for UNION ALL | Space: O(N)"
+  }
+]
