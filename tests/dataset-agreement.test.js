@@ -9,6 +9,30 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
+function mapSeedCategoryToFamily(seedCategory, patternId) {
+  if (patternId === 'sliding-window-fixed' || patternId === 'two-pointers-window-dynamic') {
+    return 'Sliding Window';
+  }
+  if (patternId === 'graph-tree-rerooting') {
+    return 'Dynamic Programming';
+  }
+  const map = {
+    'Arrays & Hashing': 'Arrays & Hashing',
+    'Two Pointers': 'Two Pointers',
+    'Binary Search': 'Binary Search',
+    'Stacks & Queues': 'Stack & Queue',
+    'Trees': 'Trees',
+    'Heap / Priority Queue': 'Heap',
+    'Backtracking': 'Backtracking',
+    'Greedy & Intervals': 'Greedy',
+    'Graph Traversal': 'Graphs',
+    'Bit Manipulation': 'Bit Manipulation',
+    'Dynamic Programming': 'Dynamic Programming',
+    'Graph + DP': 'Graphs'
+  };
+  return map[seedCategory] || seedCategory;
+}
+
 describe('Dataset Agreement with Seed Files', () => {
   it('dataset/patterns/algorithms.json agrees with server/src/db/patternsSeed.js', () => {
     const algorithmsPath = path.join(rootDir, 'dataset', 'patterns', 'algorithms.json');
@@ -23,7 +47,8 @@ describe('Dataset Agreement with Seed Files', () => {
       const datasetP = datasetPatterns[i];
 
       expect(datasetP.id).toBe(seedP.id);
-      expect(datasetP.category).toBe(seedP.category);
+      expect(datasetP.domain).toBe('Algorithms');
+      expect(datasetP.family).toBe(mapSeedCategoryToFamily(seedP.category, seedP.id));
       expect(datasetP.title).toBe(seedP.title);
       expect(datasetP.short_description).toBe(seedP.short_description);
       expect(datasetP.complexity).toBe(seedP.complexity);
