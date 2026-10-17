@@ -80,11 +80,11 @@ export function StatsDashboard({
           </div>
         </Card>
 
-        {/* Card 2: Pattern coverage */}
+        {/* Card 2: Verified pattern coverage */}
         <Card className="flex flex-col justify-between">
           <div>
             <div className="text-[14px] font-medium text-[#475569]">
-              Pattern coverage
+              Verified pattern coverage
             </div>
             <div className="font-heading text-[40px] font-bold text-[#1e2033] mt-2 leading-none">
               {coveredPatternsCount} of {totalPatternsCount}
@@ -94,6 +94,9 @@ export function StatsDashboard({
             <ProgressBar value={patternCoveragePercent} max={100} />
             <div className="text-[14px] text-[#475569]">
               {patternCoveragePercent}%
+            </div>
+            <div className="text-[13px] text-[#64748b]">
+              Counts problems with verified hints. More are added with each release.
             </div>
           </div>
         </Card>
