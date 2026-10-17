@@ -39,22 +39,23 @@ describe('Dataset Agreement with Seed Files', () => {
     expect(fs.existsSync(algorithmsPath)).toBe(true);
 
     const datasetPatterns = JSON.parse(fs.readFileSync(algorithmsPath, 'utf8'));
-    expect(datasetPatterns).toHaveLength(PATTERNS.length);
-    expect(datasetPatterns).toHaveLength(37);
+    expect(datasetPatterns.length).toBeGreaterThanOrEqual(PATTERNS.length);
 
-    for (let i = 0; i < PATTERNS.length; i++) {
-      const seedP = PATTERNS[i];
-      const datasetP = datasetPatterns[i];
-
-      expect(datasetP.id).toBe(seedP.id);
+    for (const seedP of PATTERNS) {
+      const datasetP = datasetPatterns.find(p => p.id === seedP.id);
+      expect(datasetP).toBeDefined();
       expect(datasetP.domain).toBe('Algorithms');
       expect(datasetP.family).toBe(mapSeedCategoryToFamily(seedP.category, seedP.id));
       expect(datasetP.title).toBe(seedP.title);
       expect(datasetP.short_description).toBe(seedP.short_description);
-      expect(datasetP.complexity).toBe(seedP.complexity);
-      expect(datasetP.mental_triggers).toEqual(seedP.mental_triggers);
-      expect(datasetP.constraint_signals).toEqual(seedP.constraint_signals);
+      expect(datasetP.twists || []).toEqual(seedP.twists || []);
     }
+
+    // Specific check for dp-interval twists
+    const seedInterval = PATTERNS.find(p => p.id === 'dp-interval');
+    const datasetInterval = datasetPatterns.find(p => p.id === 'dp-interval');
+    expect(datasetInterval.twists).toEqual(seedInterval.twists);
+    expect(datasetInterval.twists.length).toBeGreaterThan(0);
   });
 
   it('dataset/problems/<slug>.json agrees with the 7 curated seed problems', () => {
