@@ -4,7 +4,6 @@ export default [
   {
     ignores: [
       'client/dist/**',
-      'client/app.js',
       'node_modules/**',
       '.agent/**',
       '.agents/**',
