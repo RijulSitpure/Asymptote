@@ -56,6 +56,8 @@ function build() {
   };
 
   const slugIndex = {};
+  const bySlug = {};
+  const byNumber = {};
 
   for (const f of problemFiles) {
     const prob = JSON.parse(fs.readFileSync(path.join(problemsDir, f), 'utf8'));
@@ -69,12 +71,16 @@ function build() {
       : 'algorithms';
 
     domainProblems[targetKey].push(prob);
-    slugIndex[prob.slug] = {
+    const entry = {
+      slug: prob.slug,
       number: prob.number,
       category: prob.category,
       patterns: prob.patterns,
       shard: `${targetKey}.json`
     };
+    slugIndex[prob.slug] = entry;
+    bySlug[prob.slug] = entry;
+    byNumber[String(prob.number)] = prob.slug;
   }
 
   const checksums = {};
@@ -95,11 +101,16 @@ function build() {
     console.log(`✓ Sharded ${fileName}: ${shardData.patterns.length} patterns, ${shardData.problems.length} problems`);
   }
 
-  // Write slug index
-  const indexMinified = JSON.stringify(slugIndex);
+  // Write index with bySlug and byNumber mappings
+  const indexObject = {
+    bySlug,
+    byNumber,
+    ...slugIndex
+  };
+  const indexMinified = JSON.stringify(indexObject);
   fs.writeFileSync(path.join(outDir, 'index.json'), indexMinified);
   checksums['index.json'] = sha256(indexMinified);
-  console.log(`✓ Generated index.json: ${Object.keys(slugIndex).length} indexed problem slugs`);
+  console.log(`✓ Generated index.json: ${Object.keys(slugIndex).length} problems indexed by slug and number`);
 
   // Read package.json for version
   const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
