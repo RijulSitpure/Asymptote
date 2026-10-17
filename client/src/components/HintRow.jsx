@@ -1,20 +1,30 @@
-import React from 'react';
-
 /**
  * HintRow
  * Spec Section 3 & 5.4:
  * Locked: white, 1px border, radius 10, level badge (#e2e8f0 background, #475569 text), title, Unlock action (amber outlined button with #92400e text).
  * Unlocked: #f0fdf4 background, #a7f3d0 border, level badge in slate with white text, title, clue text 15px.
  */
+const GENERIC_HINT_TITLES = {
+  1: 'Recognize the obstacle',
+  2: 'Identify the core insight',
+  3: 'Outline the procedure',
+  4: 'See the blueprint'
+};
+
 export function HintRow({ 
   level, 
   title, 
+  realTitle,
+  genericTitle,
   clue, 
   isUnlocked, 
   onUnlock,
   unlockDisabled = false,
   unlockLabel = 'Unlock'
 }) {
+  const generic = genericTitle || GENERIC_HINT_TITLES[level] || `Hint ${level}`;
+  const displayTitle = isUnlocked ? (realTitle || title || generic) : generic;
+
   if (isUnlocked) {
     return (
       <div className="bg-[#f0fdf4] border border-[#a7f3d0] rounded-[10px] p-[18px] transition-all">
@@ -23,7 +33,7 @@ export function HintRow({
             L{level}
           </span>
           <h4 className="font-heading text-[16px] font-bold text-[#1e2033]">
-            {title}
+            {displayTitle}
           </h4>
         </div>
         {clue && (
@@ -42,7 +52,7 @@ export function HintRow({
           L{level}
         </span>
         <span className="text-[15px] font-medium text-[#475569]">
-          {title}
+          {displayTitle}
         </span>
       </div>
 

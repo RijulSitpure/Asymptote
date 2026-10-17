@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Copy, Check, HelpCircle } from 'lucide-react';
 import { Card } from './Card';
 import { Chip } from './Chip';
-import { HintRow } from './HintRow';
 import { useToast } from './Toast';
 import { SHOW_HEURISTIC_PATTERNS, getSupportedLanguagesForProblem, getProblemSolutionCode } from '../lib/codeTemplates';
+import { fetchProblemHints } from '../lib/engineClient';
 
-const HINT_TITLES = {
-  1: 'Recognize the pattern',
-  2: 'Define the state',
-  3: 'Write the transition',
+const GENERIC_HINT_TITLES = {
+  1: 'Recognize the obstacle',
+  2: 'Identify the core insight',
+  3: 'Outline the procedure',
   4: 'See the blueprint'
 };
 
@@ -22,8 +22,15 @@ const RECENT_PROBLEMS = [
 ];
 
 export function SocraticSolver({ initialProblemQuery }) {
-  const { addToast } = useToast();
-  const [query, setQuery] = useState(initialProblemQuery || '787');
+  const { addToast: _addToast } = useToast();
+  const [query, setQuery] = useState(() => {
+    if (initialProblemQuery) return initialProblemQuery;
+    if (typeof window !== 'undefined') {
+      const q = new URLSearchParams(window.location.search).get('q');
+      if (q) return q;
+    }
+    return '787';
+  });
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [revealedLevel, setRevealedLevel] = useState(1);
@@ -33,8 +40,11 @@ export function SocraticSolver({ initialProblemQuery }) {
 
   const isVerified = Boolean(data?.problem?.verified === 1 || data?.problem?.verified === true);
   const supportedLangs = useMemo(() => {
+    if (Array.isArray(data?.supported_languages) && data.supported_languages.length > 0) {
+      return data.supported_languages;
+    }
     return getSupportedLanguagesForProblem(data?.problem);
-  }, [data?.problem]);
+  }, [data]);
 
   useEffect(() => {
     if (supportedLangs && supportedLangs.length > 0) {
@@ -44,16 +54,15 @@ export function SocraticSolver({ initialProblemQuery }) {
     }
   }, [supportedLangs, solverLang]);
 
-  const fetchProblemHints = async (searchQuery) => {
+  const loadProblemHints = async (searchQuery) => {
     if (!searchQuery) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/hints/${encodeURIComponent(searchQuery)}`);
-      if (!res.ok) {
+      const json = await fetchProblemHints(searchQuery);
+      if (!json || !json.problem) {
         throw new Error(`Problem "${searchQuery}" not found. Try searching by number (e.g. 787) or title slug.`);
       }
-      const json = await res.json();
       setData(json);
       setRevealedLevel(1);
     } catch (err) {
@@ -64,11 +73,12 @@ export function SocraticSolver({ initialProblemQuery }) {
   };
 
   useEffect(() => {
-    if (initialProblemQuery) {
-      setQuery(initialProblemQuery);
-      fetchProblemHints(initialProblemQuery);
+    const targetQ = initialProblemQuery || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('q') : null);
+    if (targetQ) {
+      setQuery(targetQ);
+      loadProblemHints(targetQ);
     } else {
-      fetchProblemHints('787');
+      loadProblemHints('787');
     }
   }, [initialProblemQuery]);
 
@@ -88,7 +98,7 @@ export function SocraticSolver({ initialProblemQuery }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    fetchProblemHints(query);
+    loadProblemHints(query);
   };
 
   const unlockLevel = (level) => {
@@ -148,7 +158,7 @@ export function SocraticSolver({ initialProblemQuery }) {
               type="button"
               onClick={() => {
                 setQuery(prob.id);
-                fetchProblemHints(prob.id);
+                loadProblemHints(prob.id);
               }}
               className="chip hover:border-[#cbd5e1] hover:text-[#1e2033] cursor-pointer transition-colors"
             >
@@ -192,11 +202,88 @@ export function SocraticSolver({ initialProblemQuery }) {
                   Suggested pattern: {data.suggested_pattern.title} (unverified)
                 </Chip>
               ) : null}
+              {isVerified && (
+                <span className="chip text-[12px] font-semibold bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0]">
+                  {(data.problem.verification_tier || data.problem.review?.status) === 'reviewed' ? 'Reviewed' : 'Tested'}
+                </span>
+              )}
               <Chip variant={data.problem.is_solved ? 'solved' : 'unsolved'}>
                 {data.problem.is_solved ? 'Solved' : 'Unsolved'}
               </Chip>
             </div>
           </Card>
+
+          {/* Complexity budget card if verified and present */}
+          {isVerified && data.complexity && (
+            <Card className="space-y-4">
+              <div className="flex items-center justify-between pb-1 border-b border-[#e2e8f0]">
+                <h3 className="font-heading text-[18px] font-bold text-[#1e2033]">
+                  Complexity budget
+                </h3>
+                <span className="text-[12px] font-medium text-[#64748b] bg-[#f1f5f9] px-2.5 py-0.5 rounded-full border border-[#e2e8f0]">
+                  {data.complexity.kind === 'query-notes' ? 'SQL Query Notes' : data.complexity.kind === 'none' ? 'Concurrency Coordination' : 'Big-O Analysis'}
+                </span>
+              </div>
+
+              {data.complexity.kind === 'query-notes' ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
+                      <div className="text-[12px] font-medium text-[#64748b]">Execution / Cost</div>
+                      <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">{data.complexity.time || data.complexity.targetTime || 'O(N)'}</div>
+                    </div>
+                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
+                      <div className="text-[12px] font-medium text-[#64748b]">Auxiliary memory</div>
+                      <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">{data.complexity.space || data.complexity.targetSpace || 'O(1)'}</div>
+                    </div>
+                  </div>
+                  {Array.isArray(data.complexity.variables) && data.complexity.variables.length > 0 && (
+                    <div className="p-3 bg-white rounded-lg border border-[#e2e8f0] text-[13px] text-[#475569]">
+                      <strong className="text-[#1e2033]">Variables:</strong> {data.complexity.variables.join('; ')}
+                    </div>
+                  )}
+                  <div className="p-3 bg-[#fff1f2] border border-[#fecdd3] rounded-lg text-[13px] text-[#9f1239] leading-relaxed">
+                    <strong className="block mb-0.5 font-bold">Execution & Indexing Notes</strong>
+                    {data.complexity.notes || 'Single pass query execution without unnecessary intermediate table materialization.'}
+                  </div>
+                </div>
+              ) : data.complexity.kind === 'none' ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
+                      <div className="text-[12px] font-medium text-[#64748b]">Coordination</div>
+                      <div className="font-heading text-[16px] font-bold text-[#1e2033] mt-1">Synchronized</div>
+                    </div>
+                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
+                      <div className="text-[12px] font-medium text-[#64748b]">Space overhead</div>
+                      <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">{data.complexity.space || 'O(1)'}</div>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-[#fff1f2] border border-[#fecdd3] rounded-lg text-[13px] text-[#9f1239] leading-relaxed">
+                    <strong className="block mb-0.5 font-bold">Synchronization Notes</strong>
+                    {data.complexity.notes || 'Thread synchronization / concurrency coordination.'}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
+                      <div className="text-[12px] font-medium text-[#64748b]">Target time</div>
+                      <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">{data.complexity.targetTime || data.complexity.time || 'O(N)'}</div>
+                    </div>
+                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
+                      <div className="text-[12px] font-medium text-[#64748b]">Target space</div>
+                      <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">{data.complexity.targetSpace || data.complexity.space || 'O(1)'}</div>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-[#fff1f2] border border-[#fecdd3] rounded-lg text-[13px] text-[#9f1239] leading-relaxed">
+                    <strong className="block mb-0.5 font-bold">Time limit</strong>
+                    {data.complexity.opsBudgetExplanation || data.complexity.whyNaiveFails || 'N <= 10^5 operations requires O(N) or O(N log N) time.'}
+                  </div>
+                </div>
+              )}
+            </Card>
+          )}
 
           {/* If NOT verified: Show empty-state pattern tile from spec 8.3 */}
           {!isVerified ? (
@@ -230,12 +317,14 @@ export function SocraticSolver({ initialProblemQuery }) {
                 </span>
               </div>
 
-              {/* Four rows: L1 Recognize the pattern, L2 Define the state, L3 Write the transition, L4 See the blueprint */}
+              {/* Four rows: L1-L4 with generic titles when locked, real titles when unlocked */}
               <div className="space-y-3">
                 {[1, 2, 3, 4].map((level) => {
                   const isUnlocked = level <= revealedLevel;
-                  const title = HINT_TITLES[level] || `Hint ${level}`;
                   const rawHint = data.hints && data.hints[level - 1];
+                  const genericTitle = rawHint?.genericTitle || GENERIC_HINT_TITLES[level] || `Hint ${level}`;
+                  const realTitle = rawHint?.realTitle || rawHint?.title || genericTitle;
+                  const title = isUnlocked ? realTitle : genericTitle;
 
                   if (!isUnlocked) {
                     return (

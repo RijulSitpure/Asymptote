@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import { Card } from './Card';
 import { Chip } from './Chip';
@@ -6,6 +6,7 @@ import { ConfidenceRating } from './ConfidenceRating';
 import { useToast } from './Toast';
 import { sortPatternsByPedagogy } from '../lib/curriculum';
 import { SHOW_HEURISTIC_PATTERNS } from '../lib/codeTemplates';
+import { updateProblem } from '../lib/engineClient';
 
 export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
   const { addToast } = useToast();
@@ -59,15 +60,11 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
   const handleSaveProblem = async () => {
     if (!selectedProblem) return;
     try {
-      await fetch(`/api/problems/${selectedProblem.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_notes: selectedProblem.user_notes,
-          user_rating: selectedProblem.user_rating,
-          is_solved: selectedProblem.is_solved ? 1 : 0,
-          review_needed: selectedProblem.review_needed ? 1 : 0
-        })
+      await updateProblem(selectedProblem.slug || selectedProblem.id, {
+        user_notes: selectedProblem.user_notes,
+        user_rating: selectedProblem.user_rating,
+        is_solved: selectedProblem.is_solved ? 1 : 0,
+        review_needed: selectedProblem.review_needed ? 1 : 0
       });
       setIsModalOpen(false);
       addToast({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { StatsDashboard } from './components/StatsDashboard';
@@ -10,6 +10,12 @@ import { ReviewQueue } from './components/ReviewQueue';
 import { SyncModal } from './components/SyncModal';
 import { ExtensionModal } from './components/ExtensionModal';
 import { ToastProvider } from './components/Toast';
+import {
+  fetchPatterns,
+  fetchProblems,
+  fetchStats,
+  subscribeToStorageChanges
+} from './lib/engineClient';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -26,34 +32,38 @@ export default function App() {
   const [patterns, setPatterns] = useState([]);
   const [problems, setProblems] = useState([]);
   const [selectedPatternId, setSelectedPatternId] = useState(null);
-  const [socraticProblemQuery, setSocraticProblemQuery] = useState('');
+  const [socraticProblemQuery, setSocraticProblemQuery] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('q') || '';
+    }
+    return '';
+  });
   const [quickSearch, setQuickSearch] = useState('');
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sync') === '1');
   const [isExtensionModalOpen, setIsExtensionModalOpen] = useState(false);
 
   const loadData = async () => {
     try {
-      const results = await Promise.allSettled([
-        fetch('/api/patterns').then(async r => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          return r.json();
+      const [patternsData, problemsData, statsData] = await Promise.all([
+        fetchPatterns().catch(err => {
+          console.error('Failed to load patterns:', err);
+          return null;
         }),
-        fetch('/api/problems').then(async r => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          return r.json();
+        fetchProblems().catch(err => {
+          console.error('Failed to load problems:', err);
+          return null;
         }),
-        fetch('/api/stats').then(async r => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          return r.json();
+        fetchStats().catch(err => {
+          console.error('Failed to load stats:', err);
+          return null;
         })
       ]);
 
       const isEmptyTest = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('empty') === '1';
 
-      if (results[0].status === 'fulfilled' && results[0].value) {
-        setPatterns(results[0].value);
-      } else if (results[0].status === 'rejected') {
-        console.error('Failed to load patterns:', results[0].reason);
+      if (patternsData) {
+        setPatterns(patternsData);
       }
 
       if (isEmptyTest) {
@@ -66,30 +76,32 @@ export default function App() {
           patternDistribution: [],
           weakSpots: [],
           coveredPatternsCount: 0,
-          totalPatternsCount: results[0]?.value?.length || 37,
+          totalPatternsCount: patternsData?.length || 37,
           patternCoveragePercent: 0
         });
         return;
       }
 
-      if (results[1].status === 'fulfilled' && results[1].value) {
-        setProblems(results[1].value);
-      } else if (results[1].status === 'rejected') {
-        console.error('Failed to load problems:', results[1].reason);
+      if (problemsData) {
+        setProblems(problemsData);
       }
 
-      if (results[2].status === 'fulfilled' && results[2].value) {
-        setStats(results[2].value);
-      } else if (results[2].status === 'rejected') {
-        console.error('Failed to load stats:', results[2].reason);
+      if (statsData) {
+        setStats(statsData);
       }
     } catch (err) {
-      console.error('Error loading initial data:', err);
+      console.error('Error loading initial data from engine:', err);
     }
   };
 
   useEffect(() => {
     loadData();
+    const unsubscribe = subscribeToStorageChanges(() => {
+      loadData();
+    });
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, []);
 
   const handleSelectPattern = (patternId) => {

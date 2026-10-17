@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from './Card';
 import { Chip } from './Chip';
+import { diagnoseWizard } from '../lib/engineClient';
 
 const STRUCTURE_OPTIONS = [
   { value: 'graph', label: 'General Graph (nodes & weighted edges)' },
@@ -51,23 +52,13 @@ export function DiagnosticWizard({ onSelectPattern }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/wizard/diagnose', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          structure, 
-          constraints, 
-          goal, 
-          property,
-          properties: [property]
-        })
+      const data = await diagnoseWizard({ 
+        structure, 
+        constraints, 
+        goal, 
+        property,
+        properties: [property]
       });
-
-      if (!res.ok) {
-        throw new Error(`Inference engine returned HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
       setResults(data);
     } catch (err) {
       console.error('Diagnosis failed:', err);

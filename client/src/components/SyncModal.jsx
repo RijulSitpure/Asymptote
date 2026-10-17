@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
+import { fetchStats } from '../lib/engineClient';
 
 export function SyncModal({ isOpen, onClose, onSyncComplete }) {
   const [statusMessage, setStatusMessage] = useState(null);
@@ -11,8 +12,7 @@ export function SyncModal({ isOpen, onClose, onSyncComplete }) {
     let initialCount = null;
     const checkCount = async () => {
       try {
-        const res = await fetch('/api/stats');
-        const data = await res.json();
+        const data = await fetchStats();
         const solved = data.total_solved || data.totalSolved || 0;
         if (initialCount === null) {
           initialCount = solved;
@@ -25,7 +25,7 @@ export function SyncModal({ isOpen, onClose, onSyncComplete }) {
           initialCount = solved;
           if (onSyncComplete) onSyncComplete();
         }
-      } catch (e) {
+      } catch {
         // Polling fail silent
       }
     };
