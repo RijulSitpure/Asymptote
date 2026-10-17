@@ -71,7 +71,7 @@ def main():
     # Seeded random tests against Dijkstra reference
     rng = random.Random(42)
     random_cases_passed = 0
-    for _ in range(40):
+    for i in range(60):
         n = rng.randint(4, 15)
         m = rng.randint(n - 1, n * 2)
         flights = []
@@ -85,7 +85,15 @@ def main():
         dst = rng.randint(0, n - 1)
         while dst == src:
             dst = rng.randint(0, n - 1)
-        k = rng.randint(0, 5)
+
+        if i % 4 == 0:
+            # Unreachable destination: remove all incoming edges to dst
+            flights = [f for f in flights if f[1] != dst]
+
+        if i % 3 == 0:
+            k = 0  # Specifically test k = 0
+        else:
+            k = rng.randint(0, 5)
 
         ref = reference_find_cheapest_price(n, flights, src, dst, k)
         actual = solver.findCheapestPrice(n, flights, src, dst, k)

@@ -67,9 +67,32 @@ def main():
     # Seeded random tests against reference
     rng = random.Random(42)
     random_cases_passed = 0
-    for _ in range(50):
+    for i in range(60):
         size = rng.randint(2, 60)
-        nums = [rng.randint(-1000, 1000) for _ in range(size)]
+        if i % 3 == 0:
+            # Explicitly generate negative numbers with guaranteed duplicates
+            base_vals = [rng.randint(-500, -1) for _ in range(size // 2)]
+            nums = (base_vals + base_vals)[:size]
+            while len(nums) < size:
+                nums.append(rng.randint(-500, 500))
+            rng.shuffle(nums)
+        elif i % 3 == 1:
+            # Case with target formed by identical duplicate values
+            dup_val = rng.randint(-1000, 1000)
+            nums = [rng.randint(-1000, 1000) for _ in range(size - 2)] + [dup_val, dup_val]
+            rng.shuffle(nums)
+            idx1 = nums.index(dup_val)
+            idx2 = nums.index(dup_val, idx1 + 1)
+            target = 2 * dup_val
+            ref_ans = reference_two_sum(nums, target)
+            validate_two_sum_solution(nums, target, ref_ans)
+            sol_ans = solver.twoSum(nums, target)
+            validate_two_sum_solution(nums, target, sol_ans)
+            random_cases_passed += 1
+            continue
+        else:
+            nums = [rng.randint(-1000, 1000) for _ in range(size)]
+
         idx1, idx2 = rng.sample(range(size), 2)
         target = nums[idx1] + nums[idx2]
 

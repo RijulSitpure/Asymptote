@@ -72,9 +72,13 @@ def main():
     # Seeded random tests against forward-time reference
     rng = random.Random(42)
     random_cases_passed = 0
-    for _ in range(35):
+    for i in range(40):
         size = rng.randint(1, 6)
-        nums = [rng.randint(1, 20) for _ in range(size)]
+        if i % 3 == 0:
+            # Explicitly include zeros in input
+            nums = [rng.choice([0, rng.randint(0, 15)]) for _ in range(size)]
+        else:
+            nums = [rng.randint(0, 20) for _ in range(size)]
         expected = reference_max_coins(nums)
         actual = solver.maxCoins(nums)
         assert actual == expected, f"Random test failed on {nums}: expected {expected}, got {actual}"

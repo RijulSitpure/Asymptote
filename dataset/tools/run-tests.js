@@ -95,70 +95,106 @@ async function main() {
     let passed = false;
     let detail = '';
 
-    if (category === 'Algorithms') {
-      if (!runtimes.python3) {
-        detail = 'python3 runtime missing';
-      } else {
-        const testScript = path.join(slugTestDir, 'test.py');
-        if (!fs.existsSync(testScript)) {
-          detail = `Missing test.py in ${slugTestDir}`;
+    const DEFAULT_TIMEOUT_MS = 60000;
+    const minimalEnv = {
+      PATH: process.env.PATH || '',
+      HOME: process.env.HOME || '',
+      TMPDIR: process.env.TMPDIR || '/tmp',
+      LANG: process.env.LANG || 'en_US.UTF-8',
+      PYTHONDONTWRITEBYTECODE: '1'
+    };
+
+    const FORBIDDEN_NET_IMPORT = /(?:^|\n)\s*(?:import|from)\s+(socket|requests|urllib|http)(?:\s|\.|,|$)/m;
+    const verifySecurity = (targetPath, content) => {
+      const match = content.match(FORBIDDEN_NET_IMPORT);
+      if (match) {
+        throw new Error(`Security policy violation: forbidden network import "${match[1]}" detected in ${targetPath}`);
+      }
+    };
+
+    try {
+      // Check solution code security
+      for (const sol of prob.solutions || []) {
+        if (sol.code) verifySecurity(`${slug}.json solution`, sol.code);
+      }
+
+      if (category === 'Algorithms') {
+        if (!runtimes.python3) {
+          detail = 'python3 runtime missing';
         } else {
-          const run = spawnSync('python3', [testScript], {
-            cwd: slugTestDir,
-            timeout: 30000,
-            stdio: 'pipe',
-            env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' }
-          });
-          if (run.status === 0) {
-            passed = true;
-            console.log(run.stdout ? run.stdout.toString().trim() : 'Passed');
+          const testScript = path.join(slugTestDir, 'test.py');
+          if (!fs.existsSync(testScript)) {
+            detail = `Missing test.py in ${slugTestDir}`;
           } else {
-            detail = run.stderr ? run.stderr.toString().trim() : `Exited with code ${run.status}`;
+            const scriptContent = fs.readFileSync(testScript, 'utf8');
+            verifySecurity(testScript, scriptContent);
+
+            const run = spawnSync('python3', [testScript], {
+              cwd: slugTestDir,
+              timeout: DEFAULT_TIMEOUT_MS,
+              stdio: 'pipe',
+              env: minimalEnv
+            });
+            if (run.status === 0) {
+              passed = true;
+              console.log(run.stdout ? run.stdout.toString().trim() : 'Passed');
+            } else {
+              detail = run.stderr ? run.stderr.toString().trim() : `Exited with code ${run.status}`;
+            }
           }
         }
-      }
-    } else if (category === 'Database') {
-      if (!runtimes.docker && !runtimes.mysql) {
-        console.log(`[SKIP] #${prob.number} ${slug}: Docker and local MySQL client unavailable`);
-        continue;
-      }
-      // Runner implementation for Database
-    } else if (category === 'pandas') {
-      if (!runtimes.pandas) {
-        console.log(`[SKIP] #${prob.number} ${slug}: Python pandas module unavailable`);
-        continue;
-      }
-      const testScript = path.join(slugTestDir, 'test.py');
-      if (fs.existsSync(testScript)) {
-        const run = spawnSync('python3', [testScript], { cwd: slugTestDir, timeout: 10000, stdio: 'pipe' });
-        passed = run.status === 0;
-        if (!passed) detail = run.stderr ? run.stderr.toString().trim() : 'pandas test failed';
-      }
-    } else if (category === 'Shell') {
-      const testScript = path.join(slugTestDir, 'test.sh');
-      if (fs.existsSync(testScript)) {
-        const run = spawnSync('bash', [testScript], { cwd: slugTestDir, timeout: 5000, stdio: 'pipe' });
-        passed = run.status === 0;
-        if (!passed) detail = run.stderr ? run.stderr.toString().trim() : 'shell test failed';
-      }
-    } else if (category === 'Concurrency') {
-      const testScript = path.join(slugTestDir, 'test.py');
-      if (fs.existsSync(testScript)) {
-        const run = spawnSync('python3', [testScript], { cwd: slugTestDir, timeout: 15000, stdio: 'pipe' });
-        passed = run.status === 0;
-        if (passed) {
-          console.log(`[tested (stress)] 200/200 runs passed without deadlocks or race conditions`);
-        } else {
-          detail = run.stderr ? run.stderr.toString().trim() : 'concurrency stress test failed';
+      } else if (category === 'Database') {
+        if (!runtimes.docker && !runtimes.mysql) {
+          console.log(`[SKIP] #${prob.number} ${slug}: Docker and local MySQL client unavailable`);
+          continue;
+        }
+        // Runner implementation for Database
+      } else if (category === 'pandas') {
+        if (!runtimes.pandas) {
+          console.log(`[SKIP] #${prob.number} ${slug}: Python pandas module unavailable`);
+          continue;
+        }
+        const testScript = path.join(slugTestDir, 'test.py');
+        if (fs.existsSync(testScript)) {
+          const scriptContent = fs.readFileSync(testScript, 'utf8');
+          verifySecurity(testScript, scriptContent);
+          const run = spawnSync('python3', [testScript], { cwd: slugTestDir, timeout: DEFAULT_TIMEOUT_MS, stdio: 'pipe', env: minimalEnv });
+          passed = run.status === 0;
+          if (!passed) detail = run.stderr ? run.stderr.toString().trim() : 'pandas test failed';
+        }
+      } else if (category === 'Shell') {
+        const testScript = path.join(slugTestDir, 'test.sh');
+        if (fs.existsSync(testScript)) {
+          const run = spawnSync('bash', [testScript], { cwd: slugTestDir, timeout: DEFAULT_TIMEOUT_MS, stdio: 'pipe', env: minimalEnv });
+          passed = run.status === 0;
+          if (!passed) detail = run.stderr ? run.stderr.toString().trim() : 'shell test failed';
+        }
+      } else if (category === 'Concurrency') {
+        const testScript = path.join(slugTestDir, 'test.py');
+        if (fs.existsSync(testScript)) {
+          const scriptContent = fs.readFileSync(testScript, 'utf8');
+          verifySecurity(testScript, scriptContent);
+          const run = spawnSync('python3', [testScript], { cwd: slugTestDir, timeout: DEFAULT_TIMEOUT_MS, stdio: 'pipe', env: minimalEnv });
+          passed = run.status === 0;
+          if (passed) {
+            console.log(`[tested (stress)] 200/200 runs passed without deadlocks or race conditions`);
+          } else {
+            detail = run.stderr ? run.stderr.toString().trim() : 'concurrency stress test failed';
+          }
+        }
+      } else if (category === 'JavaScript') {
+        const testScript = path.join(slugTestDir, 'test.js');
+        if (fs.existsSync(testScript)) {
+          const scriptContent = fs.readFileSync(testScript, 'utf8');
+          verifySecurity(testScript, scriptContent);
+          const run = spawnSync('node', [testScript], { cwd: slugTestDir, timeout: DEFAULT_TIMEOUT_MS, stdio: 'pipe', env: minimalEnv });
+          passed = run.status === 0;
+          if (!passed) detail = run.stderr ? run.stderr.toString().trim() : 'javascript test failed';
         }
       }
-    } else if (category === 'JavaScript') {
-      const testScript = path.join(slugTestDir, 'test.js');
-      if (fs.existsSync(testScript)) {
-        const run = spawnSync('node', [testScript], { cwd: slugTestDir, timeout: 5000, stdio: 'pipe' });
-        passed = run.status === 0;
-        if (!passed) detail = run.stderr ? run.stderr.toString().trim() : 'javascript test failed';
-      }
+    } catch (err) {
+      passed = false;
+      detail = err.message;
     }
 
     if (passed) {

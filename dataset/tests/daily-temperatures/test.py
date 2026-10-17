@@ -62,9 +62,21 @@ def main():
     # Seeded random tests against reference
     rng = random.Random(42)
     random_cases_passed = 0
-    for _ in range(50):
+    for i in range(60):
         size = rng.randint(1, 100)
-        temps = [rng.randint(30, 100) for _ in range(size)]
+        if i % 3 == 0:
+            # Completely flat (all temperatures equal)
+            val = rng.randint(30, 100)
+            temps = [val] * size
+        elif i % 3 == 1:
+            # Sequences with plateaus of equal temperatures
+            temps = []
+            while len(temps) < size:
+                run_len = rng.randint(2, 10)
+                val = rng.randint(30, 100)
+                temps.extend([val] * min(run_len, size - len(temps)))
+        else:
+            temps = [rng.randint(30, 100) for _ in range(size)]
         expected = reference_daily_temperatures(temps)
         actual = solver.dailyTemperatures(temps)
         assert actual == expected, f"Random test failed on size {size}: expected {expected[:10]}, got {actual[:10]}"

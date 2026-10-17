@@ -163,7 +163,8 @@ function runValidation() {
       }
     }
 
-    // Hint rubric enforcement
+    // Hint rubric and tone enforcement
+    const ALLOWED_ALL_CAPS = new Set(['BFS', 'DFS', 'DAG', 'DP', 'BST', 'NULL', 'SQL', 'JSON', 'CTE']);
     if (Array.isArray(problem.hints)) {
       for (const hint of problem.hints) {
         if (hint.level >= 1 && hint.level <= 3) {
@@ -173,6 +174,29 @@ function runValidation() {
         } else if (hint.level === 4) {
           if (!hint.text || (!hint.text.includes('```') && !hint.text.includes('def ') && !hint.text.includes('class ') && !hint.text.includes('SELECT') && !hint.text.includes('return '))) {
             warnings.push(`[Hint Rubric] ${file}: Hint level 4 should contain blueprint code or code fences`);
+          }
+        }
+
+        if (hint.text) {
+          // Strip code fences before tone checks
+          const textOutsideCodeFences = hint.text.replace(/```[\s\S]*?```/g, '');
+
+          // Check for exclamation marks
+          if (textOutsideCodeFences.includes('!')) {
+            errors.push(`[Hint Tone] ${file}: Hint level ${hint.level} contains exclamation mark (!) outside code fences`);
+          }
+
+          // Check for unapproved ALL-CAPS words (>= 4 letters)
+          const allCapsWords = textOutsideCodeFences.match(/\b[A-Z]{4,}\b/g) || [];
+          for (const word of allCapsWords) {
+            if (!ALLOWED_ALL_CAPS.has(word)) {
+              errors.push(`[Hint Tone] ${file}: Hint level ${hint.level} contains unapproved ALL-CAPS word "${word}". Allowed: ${Array.from(ALLOWED_ALL_CAPS).join(', ')}`);
+            }
+          }
+
+          // Warning if L1 or L2 exceeds 300 chars
+          if ((hint.level === 1 || hint.level === 2) && hint.text.length > 300) {
+            warnings.push(`[Hint Length] ${file}: Hint level ${hint.level} length is ${hint.text.length} chars (exceeds 300 characters limit)`);
           }
         }
       }
