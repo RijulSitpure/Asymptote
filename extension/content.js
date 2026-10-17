@@ -320,8 +320,8 @@ async function syncAllSolvedFromLeetCode() {
           showToast(`Successfully synced all ${finalSolved.length} solved questions (${result.newlySynced} new, ${result.updatedCount} updated)!`, 'success');
           resolve({ success: true, count: finalSolved.length, username });
         } else {
-          const errMsg = response?.error || 'Make sure Pattern Tracker is running (npm start at http://localhost:3001)';
-          showToast(`Server sync error: ${errMsg}`, 'error');
+          const errMsg = response?.error || 'Could not sync solved questions with local pattern tracker.';
+          showToast(`Sync error: ${errMsg}`, 'error');
           resolve({ success: false, error: errMsg });
         }
       });
@@ -415,6 +415,15 @@ function getCodeForLang(langSlug, hints, pattern, problem) {
   if (typeof LanguagesModule !== 'undefined' && LanguagesModule?.getProblemSolutionCode) {
     const code = LanguagesModule.getProblemSolutionCode(problem, langSlug);
     if (code) return code;
+  }
+  if (Array.isArray(problem.solutions)) {
+    const sol = problem.solutions.find(s => 
+      s.lang === langSlug || 
+      s.language === langSlug || 
+      (langSlug === 'python' && (s.lang === 'python3' || s.language === 'python3')) || 
+      (langSlug === 'python3' && (s.lang === 'python' || s.language === 'python'))
+    );
+    if (sol && sol.code) return sol.code;
   }
   if (langSlug === 'python3' || langSlug === 'python') {
     return problem.solution_python || (hints && hints[3]?.content) || '';
@@ -996,20 +1005,24 @@ function loadFreshProblemData(slug) {
           content.innerHTML = `
             <div class="card-surface" style="text-align:left; border-color:#eef0f4; padding:16px;">
               <p style="color:#b45309; font-weight:700; margin:0 0 6px 0; font-size:13px;">Could not load pattern analysis</p>
-              <p style="font-size:12px; color:#646e82; margin:0 0 12px 0; line-height:1.5;">${response?.error || 'Make sure your Asymptote server is running on port 3001 (npm start).'}</p>
+              <p style="font-size:12px; color:#646e82; margin:0 0 12px 0; line-height:1.5;">${response?.error || 'Could not load pattern analysis for this problem.'}</p>
               <div style="display:flex; align-items:center; gap:8px;">
                 <button id="lc-retry-hints-btn" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; background:#1e2033; color:#fff; padding:8px 16px; border-radius:9999px; font-weight:600; border:none; cursor:pointer;">
                   ↻ Retry
                 </button>
-                <a href="http://localhost:3001" target="_blank" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; background:#f4f5f9; color:#1e2033; padding:8px 16px; border-radius:9999px; text-decoration:none; font-weight:600; border:1px solid #eef0f4;">
+                <button id="lc-open-dashboard-btn" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; background:#f4f5f9; color:#1e2033; padding:8px 16px; border-radius:9999px; font-weight:600; border:1px solid #eef0f4; cursor:pointer;">
                   Open Pattern Dashboard ↗
-                </a>
+                </button>
               </div>
             </div>
           `;
           const retryBtn = shadow.getElementById('lc-retry-hints-btn');
           if (retryBtn) {
             retryBtn.onclick = () => loadFreshProblemData(slug);
+          }
+          const dashBtn = shadow.getElementById('lc-open-dashboard-btn');
+          if (dashBtn) {
+            dashBtn.onclick = () => safeSendMessage({ action: 'open_dashboard' });
           }
         }
       }
@@ -1159,6 +1172,11 @@ function renderDrawerTabContent() {
     ? `<span class="chip-pattern">${pattern?.title || 'Algorithmic Pattern'}</span>`
     : (showHeuristic && problem.suggested_pattern ? `<span class="chip-pattern" style="background:#f1f5f9; color:#475569; border:1px solid #e2e8f0;">Suggested: ${problem.suggested_pattern.title} (unverified)</span>` : '');
 
+  const tier = problem.verification_tier || problem.review?.status || (isVerified ? 'tested' : 'unverified');
+  const tierBadge = isVerified
+    ? `<span class="chip-pattern" style="background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; font-weight:600;">${tier === 'reviewed' ? 'Reviewed' : 'Tested'}</span>`
+    : '';
+
   const headerHtml = `
     <div style="margin-bottom:18px; text-align:left;">
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
@@ -1166,6 +1184,7 @@ function renderDrawerTabContent() {
         <span class="chip-diff ${diffClass}">${problem.difficulty}</span>
         <span class="chip-pattern" style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0;">${problem.category || 'Algorithms'}</span>
         ${patternChipHtml}
+        ${tierBadge}
       </div>
       <h2 style="font-family:'Space Grotesk', sans-serif; font-size:22px; font-weight:700; color:#1e2033; line-height:1.25; margin:0;">
         ${problem.title}
@@ -1203,16 +1222,17 @@ function renderDrawerTabContent() {
       `;
       return;
     }
-    const hintTitles = [
-      'Recognize the pattern',
-      'Define the state',
-      'Write the transition',
+    const genericHintTitles = [
+      'Recognize the obstacle',
+      'Identify the core insight',
+      'Outline the procedure',
       'See the blueprint'
     ];
 
     const hintRowsHtml = (hints || []).map((h, i) => {
       const isUnlocked = (i + 1) <= currentLevel;
-      const title = hintTitles[i] || h.title;
+      const genericTitle = h.genericTitle || genericHintTitles[i] || `Hint ${i + 1}`;
+      const title = isUnlocked ? (h.realTitle || h.title) : genericTitle;
 
       if (isUnlocked) {
         return `
@@ -1226,7 +1246,7 @@ function renderDrawerTabContent() {
               </span>
             </div>
             <div style="font-size:13px; color:#334155; line-height:1.55; white-space:pre-wrap;">
-              ${h.content.trim()}
+              ${(h.content || h.text || '').trim()}
             </div>
           </div>
         `;
@@ -1250,7 +1270,8 @@ function renderDrawerTabContent() {
     }).join('');
 
     const nextHintIdx = currentLevel;
-    const nextHintTitle = hintTitles[nextHintIdx] || (hints && hints[currentLevel] ? hints[currentLevel].title : 'Next step');
+    const nextLockedHint = hints && hints[nextHintIdx];
+    const nextGenericTitle = nextLockedHint?.genericTitle || genericHintTitles[nextHintIdx] || 'Next step';
     const hasMoreHints = currentLevel < (hints?.length || 4);
 
     content.innerHTML = `
@@ -1261,7 +1282,7 @@ function renderDrawerTabContent() {
         </div>
         ${hasMoreHints ? `
           <button id="btn-reveal-next" class="btn-amber-reveal">
-            Reveal hint ${currentLevel + 1}: ${nextHintTitle}
+            Reveal hint ${currentLevel + 1}: ${nextGenericTitle}
           </button>
         ` : `
           <div style="text-align:center; padding:12px; color:#047857; font-size:13px; font-weight:500; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px;">
@@ -1351,12 +1372,22 @@ function renderDrawerTabContent() {
         ${isScaffold ? codeCardHtml : isTwist ? twistHtml : notesHtml}
 
         <div style="text-align:center; margin-top:16px;">
-          <a href="http://localhost:5173/?tab=solver" target="_blank" style="font-size:13px; color:#1e2033; font-weight:600; text-decoration:none;">
+          <button id="lc-open-solver-btn" type="button" style="background:none; border:none; padding:0; font-size:13px; color:#1e2033; font-weight:600; cursor:pointer; text-decoration:none; font-family:inherit;">
             Open in dashboard editor ↗
-          </a>
+          </button>
         </div>
       </div>
     `;
+
+    const solverBtn = shadow.getElementById('lc-open-solver-btn');
+    if (solverBtn) {
+      solverBtn.onclick = () => {
+        safeSendMessage({
+          action: 'open_dashboard',
+          query: '?tab=solver&q=' + encodeURIComponent(problem?.slug || getProblemSlug() || '')
+        });
+      };
+    }
 
     const viewSelect = shadow.getElementById('solution-view-select');
     if (viewSelect) {
@@ -1419,22 +1450,128 @@ function renderDrawerTabContent() {
       return;
     }
 
-    content.innerHTML = `
-      <div class="tab-content-pane">
-        ${headerHtml}
-        
+    const compKind = complexity?.kind || (problem?.category === 'Database' ? 'query-notes' : (problem?.category === 'Concurrency' ? 'none' : 'big-o'));
+
+    let complexityBodyHtml = '';
+
+    if (compKind === 'query-notes') {
+      const varsHtml = Array.isArray(complexity?.variables) && complexity.variables.length > 0
+        ? `<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:12px; font-size:12px; color:#475569;">
+             <strong style="color:#1e2033;">Variables:</strong> ${complexity.variables.join('; ')}
+           </div>`
+        : '';
+
+      complexityBodyHtml = `
+        <!-- Two side-by-side cards: Execution / Cost, Auxiliary memory -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px;">
+            <div style="font-size:13px; color:#64748b; font-weight:500;">Execution / Cost</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; color:#1e2033; margin-top:4px;">
+              ${complexity?.time || complexity?.targetTime || 'O(N)'}
+            </div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px;">
+            <div style="font-size:13px; color:#64748b; font-weight:500;">Auxiliary memory</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; color:#1e2033; margin-top:4px;">
+              ${complexity?.space || complexity?.targetSpace || 'O(1)'}
+            </div>
+          </div>
+        </div>
+
+        ${varsHtml}
+
+        <!-- Panel 1: Execution & Indexing notes (rose style) -->
+        <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:14px; font-weight:700; color:#9f1239; margin-bottom:4px;">
+            Execution & Indexing Notes
+          </div>
+          <div style="font-size:13px; color:#9f1239; line-height:1.55;">
+            ${complexity?.notes || 'Single pass query execution without unnecessary intermediate table materialization.'}
+          </div>
+        </div>
+
+        <!-- Panel 2: Memory & Working Set (white style) -->
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:14px; font-weight:700; color:#1e2033; margin-bottom:4px;">
+            Memory & Working Set
+          </div>
+          <div style="font-size:13px; color:#334155; line-height:1.55;">
+            ${complexity?.spaceTimeTradeoff || 'Minimal intermediate tables required; memory bounded by hash or sort buffers.'}
+          </div>
+        </div>
+
+        <!-- Panel 3: Query Optimization (white style) -->
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:14px; font-weight:700; color:#1e2033; margin-bottom:4px;">
+            Query Optimization
+          </div>
+          <div style="font-size:13px; color:#334155; line-height:1.55;">
+            ${complexity?.interviewerExpectation || 'Proper join ordering, index utilization on predicate keys, and index-supported grouping.'}
+          </div>
+        </div>
+      `;
+    } else if (compKind === 'none') {
+      complexityBodyHtml = `
+        <!-- Two side-by-side cards: Coordination, Space overhead -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px;">
+            <div style="font-size:13px; color:#64748b; font-weight:500;">Coordination</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; color:#1e2033; margin-top:4px;">
+              Synchronized
+            </div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px;">
+            <div style="font-size:13px; color:#64748b; font-weight:500;">Space overhead</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; color:#1e2033; margin-top:4px;">
+              ${complexity?.space || complexity?.targetSpace || 'O(1)'}
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 1: Synchronization notes (rose style) -->
+        <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:14px; font-weight:700; color:#9f1239; margin-bottom:4px;">
+            Synchronization Notes
+          </div>
+          <div style="font-size:13px; color:#9f1239; line-height:1.55;">
+            ${complexity?.notes || 'Thread synchronization / concurrency coordination.'}
+          </div>
+        </div>
+
+        <!-- Panel 2: Thread Safety (white style) -->
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:14px; font-weight:700; color:#1e2033; margin-bottom:4px;">
+            Thread Safety
+          </div>
+          <div style="font-size:13px; color:#334155; line-height:1.55;">
+            Thread-safe synchronization primitives ensure deadlock-free interleaving and prevent race conditions.
+          </div>
+        </div>
+
+        <!-- Panel 3: Invariant Guarantees (white style) -->
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:12px;">
+          <div style="font-size:14px; font-weight:700; color:#1e2033; margin-bottom:4px;">
+            Invariant Guarantees
+          </div>
+          <div style="font-size:13px; color:#334155; line-height:1.55;">
+            Orderly signaling between concurrent threads with guaranteed progress and no busy-waiting.
+          </div>
+        </div>
+      `;
+    } else {
+      complexityBodyHtml = `
         <!-- Two side-by-side cards: Target time, Target space in Space Grotesk 18px bold -->
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
           <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px;">
             <div style="font-size:13px; color:#64748b; font-weight:500;">Target time</div>
             <div style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; color:#1e2033; margin-top:4px;">
-              ${complexity?.targetTime || 'O(N)'}
+              ${complexity?.targetTime || complexity?.time || 'O(N)'}
             </div>
           </div>
           <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px;">
             <div style="font-size:13px; color:#64748b; font-weight:500;">Target space</div>
             <div style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; color:#1e2033; margin-top:4px;">
-              ${complexity?.targetSpace || 'O(1)'}
+              ${complexity?.targetSpace || complexity?.space || 'O(1)'}
             </div>
           </div>
         </div>
@@ -1468,6 +1605,13 @@ function renderDrawerTabContent() {
             ${complexity?.interviewerExpectation || 'Articulate the recurrence relation and invariant bounds before writing code.'}
           </div>
         </div>
+      `;
+    }
+
+    content.innerHTML = `
+      <div class="tab-content-pane">
+        ${headerHtml}
+        ${complexityBodyHtml}
       </div>
     `;
   }

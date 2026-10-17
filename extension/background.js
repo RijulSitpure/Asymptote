@@ -1,95 +1,121 @@
 /**
- * LeetCode Pattern Companion - Background Service Worker
- * Bridges communication between LeetCode web pages and the local Pattern Tracker server (http://localhost:3001)
- * Bypasses Chrome's Mixed Content & Private Network Access restrictions.
+ * Asymptote - Background Service Worker
+ * Powered by the embedded serverless data engine.
+ * Fully offline & independent of a local backend server.
  */
 
-const LOCAL_SERVER_URL = 'http://localhost:3001';
+import {
+  createAsymptoteEngine,
+  loadDatasetFromFetch,
+  createChromeStorageAdapter
+} from './asymptote-engine.js';
 
-async function safeFetchJson(url, options = {}) {
-  try {
-    const res = await fetch(url, options);
-    const text = await res.text();
+let engineInstance = null;
+let engineInitPromise = null;
 
-    if (!res.ok) {
-      try {
-        const errObj = JSON.parse(text);
-        throw new Error(errObj.error || `HTTP ${res.status}`);
-      } catch (parseErr) {
-        if (text.trim().startsWith('<')) {
-          throw new Error(`Server returned HTML error (HTTP ${res.status}). Make sure Pattern Tracker server is running on port 3001.`);
-        }
-        throw new Error(`Server error (HTTP ${res.status}): ${text.slice(0, 100)}`);
-      }
-    }
-
-    try {
-      return JSON.parse(text);
-    } catch (parseErr) {
-      throw new Error(`Invalid JSON from server (${text.slice(0, 60)}...)`);
-    }
-  } catch (netErr) {
-    if (netErr.message && netErr.message.includes('Failed to fetch')) {
-      throw new Error('Pattern Tracker server is offline. Please start it with "npm start" in your terminal!');
-    }
-    throw netErr;
+async function getEngine() {
+  if (engineInstance) return engineInstance;
+  if (!engineInitPromise) {
+    engineInitPromise = (async () => {
+      const baseUrl = chrome.runtime.getURL('data');
+      const dataset = await loadDatasetFromFetch(baseUrl);
+      const storage = createChromeStorageAdapter();
+      engineInstance = createAsymptoteEngine({ dataset, storage });
+      return engineInstance;
+    })();
   }
+  return engineInitPromise;
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // 1. Batch sync of all solved problems
-  if (request.action === 'send_to_server') {
-    safeFetchJson(`${LOCAL_SERVER_URL}/api/sync/batch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: request.username,
-        problems: request.problems
-      })
-    })
-      .then(data => sendResponse({ success: true, data }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
+  if (!request || !request.action) return false;
 
-    return true; // Keep channel open for async response
-  }
+  (async () => {
+    try {
+      const engine = await getEngine();
 
-  // 2. Single submission capture
-  if (request.action === 'save_submission') {
-    safeFetchJson(`${LOCAL_SERVER_URL}/api/submissions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titleSlug: request.titleSlug,
-        code: request.code
-      })
-    })
-      .then(data => sendResponse({ success: true, data }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
+      switch (request.action) {
+        case 'fetch_hints': {
+          const data = await engine.getProblemHints(request.slug);
+          sendResponse({ success: true, data });
+          break;
+        }
 
-    return true;
-  }
+        case 'save_submission': {
+          const data = await engine.recordSubmission(request);
+          sendResponse({ success: true, data });
+          break;
+        }
 
-  // 3. Fetch progressive hints for a problem
-  if (request.action === 'fetch_hints') {
-    safeFetchJson(`${LOCAL_SERVER_URL}/api/hints/${encodeURIComponent(request.slug)}`)
-      .then(data => sendResponse({ success: true, data }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
+        case 'send_to_server':
+        case 'sync_batch': {
+          if (Array.isArray(request.problems)) {
+            const data = await engine.syncBatch({
+              username: request.username,
+              problems: request.problems
+            });
+            sendResponse({ success: true, data });
+          } else {
+            const data = await engine.recordSubmission(request);
+            sendResponse({ success: true, data });
+          }
+          break;
+        }
 
-    return true;
-  }
+        case 'check_server':
+        case 'get_stats': {
+          const data = await engine.getStats();
+          sendResponse({ success: true, data });
+          break;
+        }
 
-  // 4. Check server status
-  if (request.action === 'check_server') {
-    safeFetchJson(`${LOCAL_SERVER_URL}/api/stats`)
-      .then(data => sendResponse({ success: true, data }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
+        case 'get_patterns': {
+          const data = engine.getPatterns();
+          sendResponse({ success: true, data });
+          break;
+        }
 
-    return true;
-  }
+        case 'get_problems': {
+          const data = await engine.getProblems(request.filters);
+          sendResponse({ success: true, data });
+          break;
+        }
+
+        case 'update_problem': {
+          const data = await engine.updateProblemUserState(request.id, request.updates);
+          sendResponse({ success: true, data });
+          break;
+        }
+
+        case 'diagnose_wizard': {
+          const data = engine.diagnoseWizard(request.payload);
+          sendResponse({ success: true, data });
+          break;
+        }
+
+        case 'open_dashboard': {
+          const query = request.query || '';
+          const url = chrome.runtime.getURL('dashboard/index.html' + query);
+          chrome.tabs.create({ url });
+          sendResponse({ success: true, url });
+          break;
+        }
+
+        default:
+          sendResponse({ success: false, error: `Unknown action: ${request.action}` });
+          break;
+      }
+    } catch (err) {
+      console.error(`[Background] Error handling action "${request.action}":`, err);
+      sendResponse({ success: false, error: err.message });
+    }
+  })();
+
+  return true; // Keep channel open for async response
 });
 
 // Monitor SPA navigation on LeetCode tabs and notify content script immediately
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.url && changeInfo.url.includes('leetcode.com')) {
     chrome.tabs.sendMessage(tabId, {
       action: 'url_changed',
@@ -99,4 +125,3 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     });
   }
 });
-

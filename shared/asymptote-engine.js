@@ -657,7 +657,9 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
         };
       });
 
-      const languages = cp.languages || (Array.isArray(cp.solutions) ? cp.solutions.map(s => s.lang) : []);
+      const languages = (Array.isArray(cp.solutions) && cp.solutions.length > 0)
+        ? cp.solutions.map(s => s.lang)
+        : (cp.languages || []);
       const problemObj = {
         id: cp.number,
         frontend_id: String(cp.number),
@@ -685,9 +687,12 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
         complexity
       };
 
-      const supportedLanguages = LanguagesModule
-        ? LanguagesModule.getSupportedLanguagesForProblem(problemObj)
-        : languages.map(slugId => ({ id: slugId, name: slugId }));
+      const supportedLanguages = languages.map(slugId => {
+        if (LanguagesModule?.getLanguageMeta) {
+          return LanguagesModule.getLanguageMeta(slugId);
+        }
+        return { id: slugId, name: slugId, langSlug: slugId, displayName: slugId };
+      }).filter(Boolean);
 
       problemObj.supported_languages = supportedLanguages;
 

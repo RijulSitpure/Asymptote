@@ -10,8 +10,6 @@ const {
   getProblemSolutionCode
 } = (globalThis.LanguagesModule || window.LanguagesModule || {});
 
-const LOCAL_SERVER_URL = 'http://localhost:3001';
-
 function showMessage(text, type = 'info') {
   const msgEl = document.getElementById('sync-msg');
   if (!msgEl) return;
@@ -30,10 +28,10 @@ function updateServerStatus(isConnected, stats = null) {
   const dotEl = document.getElementById('server-dot');
 
   if (isConnected && stats) {
-    statusEl.innerText = 'Connected';
+    statusEl.innerText = 'Local Engine Ready';
     dotEl.style.background = '#10b981';
 
-    const username = stats.username || 'Rijul-Sitpure';
+    const username = stats.username || 'LeetCode User';
     const totalSolved = stats.totalSolved ?? stats.solvedCount ?? 0;
     const coverage = stats.patternCoveragePercent ?? 0;
     const diff = stats.difficultyBreakdown || { Easy: 0, Medium: 0, Hard: 0 };
@@ -47,18 +45,23 @@ function updateServerStatus(isConnected, stats = null) {
     document.getElementById('badge-med').innerText = `${diff.Medium || 0} Med`;
     document.getElementById('badge-hard').innerText = `${diff.Hard || 0} Hard`;
   } else {
-    statusEl.innerText = 'Offline';
-    dotEl.style.background = '#ef4444';
-    document.getElementById('user-stats-meta').innerText = 'Start server at port 3001';
+    statusEl.innerText = 'Local Engine';
+    dotEl.style.background = '#10b981';
+    document.getElementById('user-stats-meta').innerText = 'Local dataset ready';
   }
 }
 
 function checkServer() {
-  chrome.runtime.sendMessage({ action: 'check_server' }, (response) => {
+  chrome.runtime.sendMessage({ action: 'get_stats' }, (response) => {
     if (response && response.success && response.data) {
       updateServerStatus(true, response.data);
     } else {
-      updateServerStatus(false);
+      updateServerStatus(true, {
+        username: 'LeetCode User',
+        totalSolved: 0,
+        patternCoveragePercent: 0,
+        difficultyBreakdown: { Easy: 0, Medium: 0, Hard: 0 }
+      });
     }
   });
 }
@@ -358,12 +361,21 @@ function renderPopupTabContent() {
         </div>
         <pre class="code-preview"><code>${activeCode}</code></pre>
         <div style="text-align:center; margin-top:12px;">
-          <a href="${LOCAL_SERVER_URL}" target="_blank" style="font-size:12px; color:#1e2033; font-weight:600; text-decoration:none;">
+          <button id="popup-open-editor-btn" type="button" style="background:none; border:none; padding:0; font-size:12px; color:#1e2033; font-weight:600; cursor:pointer; text-decoration:none; font-family:inherit;">
             Open in dashboard editor ↗
-          </a>
+          </button>
         </div>
       </div>
     `;
+
+    const editorBtn = document.getElementById('popup-open-editor-btn');
+    if (editorBtn) {
+      editorBtn.onclick = () => {
+        chrome.tabs.create({
+          url: chrome.runtime.getURL('dashboard/index.html?tab=solver&q=' + encodeURIComponent(problem?.slug || ''))
+        });
+      };
+    }
 
     const langSelect = document.getElementById('popup-lang-select');
     if (langSelect) {
@@ -410,25 +422,93 @@ function renderPopupTabContent() {
       return;
     }
 
-    contentEl.innerHTML = `
-      <div class="tab-content-pane">
+    const compKind = complexity?.kind || (problem?.category === 'Database' ? 'query-notes' : (problem?.category === 'Concurrency' ? 'none' : 'big-o'));
+
+    let compHtml = '';
+    if (compKind === 'query-notes') {
+      const varsHtml = Array.isArray(complexity?.variables) && complexity.variables.length > 0
+        ? `<div style="padding:6px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:11px; color:#475569; margin-bottom:8px;">
+             <strong style="color:#1e2033;">Variables:</strong> ${complexity.variables.join('; ')}
+           </div>`
+        : '';
+
+      compHtml = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+          <div style="background:#ffffff; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+            <div style="font-size:11px; color:#64748b; font-weight:500;">Execution / Cost</div>
+            <div style="font-size:16px; font-weight:700; color:#1e2033; font-family:'Space Grotesk',sans-serif; margin-top:2px;">
+              ${complexity?.time || complexity?.targetTime || 'O(N)'}
+            </div>
+          </div>
+          <div style="background:#ffffff; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+            <div style="font-size:11px; color:#64748b; font-weight:500;">Auxiliary memory</div>
+            <div style="font-size:16px; font-weight:700; color:#1e2033; font-family:'Space Grotesk',sans-serif; margin-top:2px;">
+              ${complexity?.space || complexity?.targetSpace || 'O(1)'}
+            </div>
+          </div>
+        </div>
+        ${varsHtml}
+        <div style="padding:10px 12px; background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; font-size:12px; color:#9f1239; line-height:1.45; margin-bottom:8px;">
+          <div style="font-weight:700; font-size:12px; margin-bottom:2px;">Execution & Indexing Notes</div>
+          ${complexity?.notes || 'Single pass query execution without unnecessary intermediate table materialization.'}
+        </div>
+        <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45; margin-bottom:8px;">
+          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Memory & Working Set</div>
+          ${complexity?.spaceTimeTradeoff || 'Minimal intermediate tables required.'}
+        </div>
+        <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45;">
+          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Query Optimization</div>
+          ${complexity?.interviewerExpectation || 'Proper join ordering and predicate indexing.'}
+        </div>
+      `;
+    } else if (compKind === 'none') {
+      compHtml = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+          <div style="background:#ffffff; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+            <div style="font-size:11px; color:#64748b; font-weight:500;">Coordination</div>
+            <div style="font-size:16px; font-weight:700; color:#1e2033; font-family:'Space Grotesk',sans-serif; margin-top:2px;">
+              Synchronized
+            </div>
+          </div>
+          <div style="background:#ffffff; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+            <div style="font-size:11px; color:#64748b; font-weight:500;">Space overhead</div>
+            <div style="font-size:16px; font-weight:700; color:#1e2033; font-family:'Space Grotesk',sans-serif; margin-top:2px;">
+              ${complexity?.space || 'O(1)'}
+            </div>
+          </div>
+        </div>
+        <div style="padding:10px 12px; background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; font-size:12px; color:#9f1239; line-height:1.45; margin-bottom:8px;">
+          <div style="font-weight:700; font-size:12px; margin-bottom:2px;">Synchronization Notes</div>
+          ${complexity?.notes || 'Thread synchronization / concurrency coordination.'}
+        </div>
+        <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45; margin-bottom:8px;">
+          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Thread Safety</div>
+          Thread-safe synchronization primitives ensure deadlock-free interleaving and prevent race conditions.
+        </div>
+        <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45;">
+          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Invariant Guarantees</div>
+          Orderly signaling between concurrent threads with guaranteed progress and no busy-waiting.
+        </div>
+      `;
+    } else {
+      compHtml = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
           <div style="background:#ffffff; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
             <div style="font-size:11px; color:#64748b; font-weight:500;">Target time</div>
             <div style="font-size:16px; font-weight:700; color:#1e2033; font-family:'Space Grotesk',sans-serif; margin-top:2px;">
-              ${complexity?.targetTime || 'O(N)'}
+              ${complexity?.targetTime || complexity?.time || 'O(N)'}
             </div>
           </div>
           <div style="background:#ffffff; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
             <div style="font-size:11px; color:#64748b; font-weight:500;">Target space</div>
             <div style="font-size:16px; font-weight:700; color:#1e2033; font-family:'Space Grotesk',sans-serif; margin-top:2px;">
-              ${complexity?.targetSpace || 'O(1)'}
+              ${complexity?.targetSpace || complexity?.space || 'O(1)'}
             </div>
           </div>
         </div>
         <div style="padding:10px 12px; background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; font-size:12px; color:#9f1239; line-height:1.45; margin-bottom:8px;">
           <div style="font-weight:700; font-size:12px; margin-bottom:2px;">Time limit</div>
-          ${complexity?.opsBudgetExplanation || 'LeetCode runtime limit is ~1.0s. Submissions execute cleanly within time bounds.'}
+          ${complexity?.opsBudgetExplanation || complexity?.whyNaiveFails || 'LeetCode runtime limit is ~1.0s. Submissions execute cleanly within time bounds.'}
         </div>
         <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45; margin-bottom:8px;">
           <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Space and time trade-off</div>
@@ -438,6 +518,12 @@ function renderPopupTabContent() {
           <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">What interviewers look for</div>
           ${complexity?.interviewerExpectation || 'Articulate time and space tradeoffs and establish recurrence bounds clearly.'}
         </div>
+      `;
+    }
+
+    contentEl.innerHTML = `
+      <div class="tab-content-pane">
+        ${compHtml}
       </div>
     `;
   }
@@ -514,7 +600,7 @@ async function lookupProblem(query) {
       if (contentEl) {
         contentEl.innerHTML = `
           <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:12px; color:#9f1239; font-size:12px;">
-            Could not find hints for "${query}". Ensure the local server is running on port 3001.
+            Could not find hints for "${query}".
           </div>
         `;
       }
@@ -544,11 +630,12 @@ async function autoDetectActiveLeetCodeProblem() {
 document.getElementById('sync-all-btn').addEventListener('click', triggerSync);
 
 document.getElementById('open-app-btn').addEventListener('click', async () => {
-  const tabs = await chrome.tabs.query({ url: `${LOCAL_SERVER_URL}/*` });
+  const dashboardUrl = chrome.runtime.getURL('dashboard/index.html');
+  const tabs = await chrome.tabs.query({ url: `${dashboardUrl}*` });
   if (tabs && tabs.length > 0) {
     chrome.tabs.update(tabs[0].id, { active: true });
   } else {
-    chrome.tabs.create({ url: LOCAL_SERVER_URL });
+    chrome.tabs.create({ url: dashboardUrl });
   }
 });
 
