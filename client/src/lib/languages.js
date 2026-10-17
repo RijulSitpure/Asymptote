@@ -96,9 +96,19 @@
 
   const SHOW_HEURISTIC_PATTERNS = false;
 
+  const CATEGORY_ALLOWED_LANGUAGES = {
+    Algorithms: ['python3', 'python', 'cpp', 'java', 'javascript', 'typescript', 'csharp', 'c', 'golang', 'kotlin', 'swift', 'rust', 'ruby', 'php', 'dart', 'scala', 'elixir', 'erlang', 'racket'],
+    Database: ['mysql', 'mssql', 'postgresql', 'oraclesql', 'pythondata'],
+    pandas: ['pythondata', 'python3'],
+    Shell: ['bash'],
+    Concurrency: ['cpp', 'java', 'python', 'python3', 'c', 'csharp'],
+    JavaScript: ['javascript', 'typescript']
+  };
+
   const api = {
     SHOW_HEURISTIC_PATTERNS,
     LEETCODE_LANGUAGES,
+    CATEGORY_ALLOWED_LANGUAGES,
     getLanguageMeta,
     getSupportedLanguagesForProblem,
     getProblemSolutionCode

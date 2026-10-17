@@ -1,0 +1,59 @@
+name: Dataset Validation & Tests
+
+on:
+  push:
+    branches: [ master, main, phase-1a-dataset, phase-0-correctness ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: leetcode_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: 'npm'
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Node dependencies
+      run: npm ci
+
+    - name: Install Python dependencies
+      run: pip install pandas
+
+    - name: Validate dataset schemas & referential integrity
+      run: node dataset/tools/validate.js
+
+    - name: Run sandboxed problem tests
+      run: node dataset/tools/run-tests.js
+      env:
+        MYSQL_HOST: 127.0.0.1
+        MYSQL_PORT: 3306
+        MYSQL_USER: root
+        MYSQL_PASSWORD: root
+        MYSQL_DATABASE: leetcode_test
+
+    - name: Verify dataset build produces deterministic output
+      run: |
+        node dataset/tools/build.js
+        git status --porcelain

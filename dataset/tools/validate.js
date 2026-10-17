@@ -1,0 +1,231 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import Ajv2020 from 'ajv/dist/2020.js';
+import '../../shared/languages.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '../..');
+const datasetDir = path.resolve(rootDir, 'dataset');
+
+const { CATEGORY_ALLOWED_LANGUAGES } = globalThis.LanguagesModule;
+
+const ALGORITHMS_ALLOWED_FAMILIES = new Set([
+  'Arrays & Hashing',
+  'Two Pointers',
+  'Sliding Window',
+  'Binary Search',
+  'Stack & Queue',
+  'Linked List',
+  'Trees',
+  'Heap',
+  'Backtracking',
+  'Greedy',
+  'Graphs',
+  'Dynamic Programming',
+  'Bit Manipulation',
+  'Strings',
+  'Math',
+  'Data Structures',
+  'Design',
+  'Sorting',
+  'Matrix'
+]);
+
+function runValidation() {
+  const errors = [];
+  const warnings = [];
+
+  console.log('=== Asymptote Dataset Validation ===\n');
+
+  // 1. Load schemas
+  const patternSchemaPath = path.join(datasetDir, 'schema', 'pattern.schema.json');
+  const problemSchemaPath = path.join(datasetDir, 'schema', 'problem.schema.json');
+
+  if (!fs.existsSync(patternSchemaPath)) {
+    console.error('Fatal: pattern.schema.json missing');
+    process.exit(1);
+  }
+  if (!fs.existsSync(problemSchemaPath)) {
+    console.error('Fatal: problem.schema.json missing');
+    process.exit(1);
+  }
+
+  const patternSchema = JSON.parse(fs.readFileSync(patternSchemaPath, 'utf8'));
+  const problemSchema = JSON.parse(fs.readFileSync(problemSchemaPath, 'utf8'));
+
+  const ajv = new Ajv2020({ allErrors: true });
+  const validatePatternFile = ajv.compile(patternSchema);
+  const validateProblemFile = ajv.compile(problemSchema);
+
+  // 2. Validate Pattern Files
+  const patternsDir = path.join(datasetDir, 'patterns');
+  const patternFiles = fs.readdirSync(patternsDir).filter(f => f.endsWith('.json'));
+
+  const patternMap = new Map(); // id -> pattern
+  let totalPatterns = 0;
+
+  for (const file of patternFiles) {
+    const filePath = path.join(patternsDir, file);
+    let patterns;
+    try {
+      patterns = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (e) {
+      errors.push(`Pattern file ${file} is not valid JSON: ${e.message}`);
+      continue;
+    }
+
+    const valid = validatePatternFile(patterns);
+    if (!valid) {
+      for (const err of validatePatternFile.errors) {
+        errors.push(`[Schema] ${file}: ${err.instancePath} ${err.message}`);
+      }
+    }
+
+    if (!Array.isArray(patterns)) {
+      errors.push(`${file} must export a top-level array of pattern objects`);
+      continue;
+    }
+
+    for (const p of patterns) {
+      totalPatterns++;
+      if (patternMap.has(p.id)) {
+        errors.push(`[Duplicate Pattern ID] ID "${p.id}" in ${file} was already defined in ${patternMap.get(p.id).file}`);
+      } else {
+        patternMap.set(p.id, { ...p, file });
+      }
+
+      // Check Algorithms family
+      if (p.domain === 'Algorithms') {
+        if (!ALGORITHMS_ALLOWED_FAMILIES.has(p.family)) {
+          errors.push(`[Pattern Family] Pattern "${p.id}" in ${file} has invalid family "${p.family}". Allowed families: ${Array.from(ALGORITHMS_ALLOWED_FAMILIES).join(', ')}`);
+        }
+      }
+    }
+  }
+
+  console.log(`✓ Loaded and checked ${patternFiles.length} pattern files (${totalPatterns} patterns across all domains)`);
+
+  // 3. Validate Problem Files
+  const problemsDir = path.join(datasetDir, 'problems');
+  const problemFiles = fs.existsSync(problemsDir) ? fs.readdirSync(problemsDir).filter(f => f.endsWith('.json')) : [];
+
+  const seenNumbers = new Map(); // number -> slug
+  let totalProblems = 0;
+
+  for (const file of problemFiles) {
+    const filePath = path.join(problemsDir, file);
+    const expectedSlug = path.basename(file, '.json');
+
+    let problem;
+    try {
+      problem = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (e) {
+      errors.push(`Problem file ${file} is not valid JSON: ${e.message}`);
+      continue;
+    }
+
+    totalProblems++;
+
+    // Schema check
+    const valid = validateProblemFile(problem);
+    if (!valid) {
+      for (const err of validateProblemFile.errors) {
+        errors.push(`[Schema] ${file}: ${err.instancePath} ${err.message}`);
+      }
+    }
+
+    // Filename equals slug
+    if (problem.slug !== expectedSlug) {
+      errors.push(`[Filename Mismatch] ${file}: slug "${problem.slug}" does not match filename "${expectedSlug}"`);
+    }
+
+    // Unique number
+    if (seenNumbers.has(problem.number)) {
+      errors.push(`[Duplicate Problem Number] ${file}: problem number #${problem.number} already used by "${seenNumbers.get(problem.number)}"`);
+    } else {
+      seenNumbers.set(problem.number, problem.slug);
+    }
+
+    // Pattern referential integrity
+    if (Array.isArray(problem.patterns)) {
+      for (const patId of problem.patterns) {
+        if (!patternMap.has(patId)) {
+          errors.push(`[Referential Integrity] ${file}: referenced pattern "${patId}" does not exist in any pattern file`);
+        } else {
+          const pat = patternMap.get(patId);
+          if (pat.domain !== problem.category) {
+            errors.push(`[Domain Mismatch] ${file}: problem category "${problem.category}" does not match pattern "${patId}" domain "${pat.domain}"`);
+          }
+        }
+      }
+    }
+
+    // Hint rubric enforcement
+    if (Array.isArray(problem.hints)) {
+      for (const hint of problem.hints) {
+        if (hint.level >= 1 && hint.level <= 3) {
+          if (hint.text && hint.text.includes('```')) {
+            errors.push(`[Hint Rubric] ${file}: Hint level ${hint.level} must not contain code fences (\`\`\`)`);
+          }
+        } else if (hint.level === 4) {
+          if (!hint.text || (!hint.text.includes('```') && !hint.text.includes('def ') && !hint.text.includes('class ') && !hint.text.includes('SELECT') && !hint.text.includes('return '))) {
+            warnings.push(`[Hint Rubric] ${file}: Hint level 4 should contain blueprint code or code fences`);
+          }
+        }
+      }
+    }
+
+    // Solutions language check
+    if (Array.isArray(problem.solutions)) {
+      const allowedLangs = CATEGORY_ALLOWED_LANGUAGES[problem.category] || [];
+      for (const sol of problem.solutions) {
+        if (!allowedLangs.includes(sol.lang)) {
+          errors.push(`[Category Language] ${file}: language "${sol.lang}" is not supported for category "${problem.category}". Allowed: ${allowedLangs.join(', ')}`);
+        }
+      }
+    }
+
+    // Review tier rules
+    if (problem.review) {
+      if (problem.review.status === 'tested') {
+        const hasVerifiedSol = (problem.solutions || []).some(s => s.verifiedBy === 'tests' || s.verifiedBy === 'both');
+        if (!hasVerifiedSol) {
+          errors.push(`[Review Tier] ${file}: status is 'tested' but no solution has verifiedBy: 'tests' or 'both'`);
+        }
+        const testDir = path.join(datasetDir, 'tests', problem.slug);
+        if (!fs.existsSync(testDir)) {
+          errors.push(`[Review Tier] ${file}: status is 'tested' but test directory dataset/tests/${problem.slug} does not exist`);
+        }
+      } else if (problem.review.status === 'reviewed') {
+        if (!problem.review.acceptedOnLeetCode) {
+          errors.push(`[Review Tier] ${file}: status is 'reviewed' but acceptedOnLeetCode is null or empty`);
+        }
+        if (!problem.review.reviewer || !problem.review.reviewer.trim()) {
+          errors.push(`[Review Tier] ${file}: status is 'reviewed' but reviewer is missing`);
+        }
+      }
+    }
+  }
+
+  console.log(`✓ Loaded and checked ${totalProblems} problem files`);
+
+  // Summary
+  console.log('\n--- Validation Results ---');
+  if (warnings.length > 0) {
+    console.log(`\nWarnings (${warnings.length}):`);
+    warnings.forEach(w => console.log('  ⚠ ' + w));
+  }
+
+  if (errors.length > 0) {
+    console.error(`\nValidation Failed with ${errors.length} error(s):`);
+    errors.forEach(e => console.error('  ✖ ' + e));
+    process.exit(1);
+  } else {
+    console.log(`\nAll checks passed successfully! (0 errors, ${warnings.length} warnings)\n`);
+  }
+}
+
+runValidation();
