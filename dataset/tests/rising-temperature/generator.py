@@ -46,4 +46,40 @@ for i in range(20):
     tuples = [f"({eid}, '{d}', {temp})" for eid, d, temp in entries]
     cases.append({'name': f'random_case_{i+1}', 'inserts': f"INSERT INTO Weather VALUES {', '.join(tuples)};"})
 
+# Scale case: 2,000 Weather records in 4 batches of 500
+# Contains ties (same temp consecutive days), gaps in dates, NULL temperatures, and duplicates
+scale_statements = []
+cur_date = date(2018, 1, 1)
+weather_records = []
+
+for idx in range(1, 2001):
+    # Step forward: usually 1 day, occasionally gap of 2-3 days
+    if idx % 15 == 0:
+        cur_date += timedelta(days=random.randint(2, 4))
+    else:
+        cur_date += timedelta(days=1)
+    
+    if idx % 45 == 0:
+        temp = "NULL"
+    elif idx % 10 == 0:
+        temp = "25" # Frequent ties
+    else:
+        temp = str(random.randint(-20, 42))
+    
+    weather_records.append((idx, str(cur_date), temp))
+
+# Shuffle records so dates are not inserted strictly in ascending order (tests non-ordered inputs)
+random.shuffle(weather_records)
+
+for b in range(4):
+    chunk = weather_records[b * 500 : (b + 1) * 500]
+    tuples = [f"({eid}, '{d}', {temp})" for eid, d, temp in chunk]
+    scale_statements.append(f"INSERT INTO Weather VALUES {', '.join(tuples)};")
+
+cases.append({
+    'name': 'scale_case_2000_rows',
+    'rowCount': 2000,
+    'inserts': '\n'.join(scale_statements)
+})
+
 print(json.dumps(cases))

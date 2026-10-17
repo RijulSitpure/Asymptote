@@ -26,4 +26,26 @@ for i in range(20):
     tuples = [f"({eid+1}, '{random.choice(pool)}')" for eid in range(n)]
     cases.append({'name': f'random_case_{i+1}', 'inserts': f"INSERT INTO Person VALUES {', '.join(tuples)};"})
 
+# Scale case: 2,000 Person rows in 4 batches of 500
+# Contains ties, duplicate emails across multiple IDs, and NULLs
+scale_statements = []
+scale_email_pool = [f'member_{k:03d}@asymptote.ai' for k in range(40)]
+
+for b in range(4):
+    batch_vals = []
+    for j in range(500):
+        eid = b * 500 + j + 1
+        if eid % 100 == 0:
+            email = "NULL"
+        else:
+            email = f"'{scale_email_pool[eid % len(scale_email_pool)]}'"
+        batch_vals.append(f"({eid}, {email})")
+    scale_statements.append(f"INSERT INTO Person VALUES {', '.join(batch_vals)};")
+
+cases.append({
+    'name': 'scale_case_2000_rows',
+    'rowCount': 2000,
+    'inserts': '\n'.join(scale_statements)
+})
+
 print(json.dumps(cases))

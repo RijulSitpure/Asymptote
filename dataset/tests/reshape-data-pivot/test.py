@@ -1,5 +1,6 @@
 import os, sys, json, time, random
 import pandas as pd
+from pandas.testing import assert_frame_equal
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(script_dir, '../../problems/reshape-data-pivot.json')) as f:
@@ -7,15 +8,6 @@ with open(os.path.join(script_dir, '../../problems/reshape-data-pivot.json')) as
 sol_code = prob['solutions'][0]['code']
 
 exec(sol_code, globals())
-
-def assert_frame_equal(df_act, df_exp):
-    assert list(df_act.columns) == list(df_exp.columns), f'Cols: {df_act.columns} vs {df_exp.columns}'
-    assert list(df_act.index) == list(df_exp.index), f'Index: {df_act.index} vs {df_exp.index}'
-    assert len(df_act) == len(df_exp), f'Len: {len(df_act)} vs {len(df_exp)}'
-    for c in df_act.columns:
-        for v1, v2 in zip(df_act[c], df_exp[c]):
-            if pd.isna(v1) and pd.isna(v2): continue
-            assert v1 == v2, f'Val in {c}: {v1} != {v2}'
 
 def ref_pivot(df):
     months = sorted(list(set(df['month'])))
@@ -41,7 +33,10 @@ f1 = pd.DataFrame({
 })
 act1 = pivotTable(f1.copy())
 exp1 = ref_pivot(f1)
-assert_frame_equal(act1, exp1)
+# LeetCode does not specify row/column order for pivot result; sort index and columns before strict assertion
+act1_sorted = act1.sort_index().reindex(sorted(act1.columns), axis=1)
+exp1_sorted = exp1.sort_index().reindex(sorted(exp1.columns), axis=1)
+assert_frame_equal(act1_sorted, exp1_sorted, check_dtype=True, check_index_type=True, check_column_type=True, check_names=True)
 
 # Random Cases
 random.seed(42)
@@ -58,11 +53,10 @@ for _ in range(25):
     df_rand = pd.DataFrame(rows)
     act = pivotTable(df_rand.copy())
     exp = ref_pivot(df_rand)
-    # When pivotTable runs, index and column ordering may match unique occurrences
-    # Normalize by sorting index and columns for robust comparison
+    # LeetCode does not specify row/column order for pivot result; sort index and columns before strict assertion
     act_sorted = act.sort_index().reindex(sorted(act.columns), axis=1)
     exp_sorted = exp.sort_index().reindex(sorted(exp.columns), axis=1)
-    assert_frame_equal(act_sorted, exp_sorted)
+    assert_frame_equal(act_sorted, exp_sorted, check_dtype=True, check_index_type=True, check_column_type=True, check_names=True)
 
 # Max Size
 t0 = time.perf_counter()

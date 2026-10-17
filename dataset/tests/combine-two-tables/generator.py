@@ -47,4 +47,46 @@ for i in range(20):
         'inserts': ins_sql
     })
 
+# Scale case: 2,000 Person rows + 2,000 Address rows (batches of 500)
+# Contains NULLs, ties (repeated names), and duplicates
+scale_statements = []
+
+# 2000 Persons in 4 batches of 500
+for b in range(4):
+    batch_vals = []
+    for j in range(500):
+        pid = b * 500 + j + 1
+        fn = "NULL" if pid % 40 == 0 else f"'{random.choice(first_names)}'"
+        ln = "NULL" if pid % 50 == 0 else f"'{random.choice(last_names)}'"
+        batch_vals.append(f"({pid}, {ln}, {fn})")
+    scale_statements.append(f"INSERT INTO Person VALUES {', '.join(batch_vals)};")
+
+# 2000 Addresses in 4 batches of 500
+# In LeetCode 175, each person has at most 1 address.
+# We select 1000 distinct personIds from 1..2000 to have addresses.
+# The remaining 1000 address records have personId pointing to IDs outside 1..2000 or NULL.
+assigned_pids = list(range(1, 1001))
+unmatched_pids = [3000 + k for k in range(1000)]
+for idx in range(0, 1000, 25):
+    unmatched_pids[idx] = "NULL"
+
+all_address_pids = assigned_pids + unmatched_pids
+random.shuffle(all_address_pids)
+
+for b in range(4):
+    batch_vals = []
+    for j in range(500):
+        aid = b * 500 + j + 1
+        pid = all_address_pids[aid - 1]
+        city = "NULL" if aid % 45 == 0 else f"'{random.choice(cities)}'"
+        state = "NULL" if aid % 55 == 0 else f"'{random.choice(states)}'"
+        batch_vals.append(f"({aid}, {pid}, {city}, {state})")
+    scale_statements.append(f"INSERT INTO Address VALUES {', '.join(batch_vals)};")
+
+cases.append({
+    'name': 'scale_case_2000_rows',
+    'rowCount': 4000,
+    'inserts': '\n'.join(scale_statements)
+})
+
 print(json.dumps(cases))

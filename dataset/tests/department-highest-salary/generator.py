@@ -30,7 +30,7 @@ INSERT INTO Employee VALUES (1, 'Mark', 50000, 1);"""
 ]
 
 random.seed(42)
-dept_names = ['IT', 'HR', 'Finance', 'Marketing', 'Engineering']
+dept_names = ['IT', 'HR', 'Finance', 'Marketing', 'Engineering', 'Operations', 'Legal', 'Product']
 emp_names = ['Alex', 'Chris', 'Taylor', 'Jordan', 'Morgan', 'Casey', 'Sam', 'Jamie', 'Robin']
 
 for i in range(20):
@@ -49,5 +49,37 @@ for i in range(20):
     if e_inserts:
         ins_sql += f"INSERT INTO Employee VALUES {', '.join(e_inserts)};"
     cases.append({'name': f'random_case_{i+1}', 'inserts': ins_sql})
+
+# Scale case: 8 Departments + 2,000 Employees in 4 batches of 500
+# Contains ties for highest salary in departments, duplicate salaries, and NULL departmentId
+scale_statements = []
+d_inserts = [f"({did}, '{dept_names[did - 1]}')" for did in range(1, 9)]
+scale_statements.append(f"INSERT INTO Department VALUES {', '.join(d_inserts)};")
+
+salary_levels = [40000, 50000, 60000, 70000, 80000, 90000, 100000, 120000]
+
+for b in range(4):
+    batch_vals = []
+    for j in range(500):
+        eid = b * 500 + j + 1
+        name = f"'{random.choice(emp_names)}_{eid % 20}'"
+        if eid % 60 == 0:
+            did = "NULL" # Employee without department
+            sal = 50000
+        else:
+            did = str((eid % 8) + 1)
+            # Create guaranteed ties for max salary (120000) in each department
+            if eid % 25 == 0:
+                sal = 120000 # Tied max
+            else:
+                sal = random.choice(salary_levels[:6])
+        batch_vals.append(f"({eid}, {name}, {sal}, {did})")
+    scale_statements.append(f"INSERT INTO Employee VALUES {', '.join(batch_vals)};")
+
+cases.append({
+    'name': 'scale_case_2000_rows',
+    'rowCount': 2008,
+    'inserts': '\n'.join(scale_statements)
+})
 
 print(json.dumps(cases))

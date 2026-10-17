@@ -1,6 +1,6 @@
 import os, sys, json, time, random
 import pandas as pd
-import numpy as np
+from pandas.testing import assert_frame_equal
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(script_dir, '../../problems/drop-duplicate-rows.json')) as f:
@@ -9,15 +9,6 @@ sol_code = prob['solutions'][0]['code']
 
 exec(sol_code, globals())
 
-def assert_frame_equal(df_act, df_exp):
-    assert list(df_act.columns) == list(df_exp.columns), f'Cols: {df_act.columns} vs {df_exp.columns}'
-    assert list(df_act.index) == list(df_exp.index), f'Index: {df_act.index} vs {df_exp.index}'
-    assert len(df_act) == len(df_exp), f'Len: {len(df_act)} vs {len(df_exp)}'
-    for c in df_act.columns:
-        for v1, v2 in zip(df_act[c], df_exp[c]):
-            if pd.isna(v1) and pd.isna(v2): continue
-            assert v1 == v2, f'Val in {c}: {v1} != {v2}'
-
 def ref_drop_duplicates(df):
     seen = set()
     keep_indices = []
@@ -25,6 +16,8 @@ def ref_drop_duplicates(df):
         if email not in seen:
             seen.add(email)
             keep_indices.append(idx)
+    if len(keep_indices) == len(df):
+        return df.copy()
     return df.iloc[keep_indices]
 
 # Fixed Cases
@@ -48,7 +41,7 @@ f4 = pd.DataFrame({
 for df in [f1, f2, f3, f4]:
     act = dropDuplicateEmails(df.copy())
     exp = ref_drop_duplicates(df)
-    assert_frame_equal(act, exp)
+    assert_frame_equal(act, exp, check_dtype=True, check_index_type=True, check_column_type=True, check_names=True)
 
 # Random Cases
 random.seed(42)
@@ -63,13 +56,14 @@ for _ in range(25):
     df_rand = pd.DataFrame(rows, columns=['customer_id', 'name', 'email'])
     act = dropDuplicateEmails(df_rand.copy())
     exp = ref_drop_duplicates(df_rand)
-    assert_frame_equal(act, exp)
+    assert_frame_equal(act, exp, check_dtype=True, check_index_type=True, check_column_type=True, check_names=True)
 
-# Max Size
+# 100,000-row Scale Test Case
 t0 = time.perf_counter()
-max_rows = [{'customer_id': i, 'name': f'Cust_{i}', 'email': f'cust_{i % 500}@test.com'} for i in range(10000)]
-df_max = pd.DataFrame(max_rows)
-act_max = dropDuplicateEmails(df_max)
+scale_rows = [{'customer_id': i, 'name': f'Cust_{i}', 'email': f'cust_{i % 5000}@test.com'} for i in range(100000)]
+df_scale = pd.DataFrame(scale_rows)
+act_scale = dropDuplicateEmails(df_scale)
 t1 = time.perf_counter()
-assert len(act_max) == 500
-print(f'Passed 4 fixed, 25 random, and 1 max-size (10,000 rows in {t1 - t0:.4f}s) tests')
+scale_runtime = t1 - t0
+assert len(act_scale) == 5000
+print(f'Passed 4 fixed, 25 random, and 1 scale (100,000 rows in {scale_runtime:.4f}s) tests')

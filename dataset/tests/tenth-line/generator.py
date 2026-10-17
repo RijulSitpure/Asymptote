@@ -33,4 +33,12 @@ for i in range(20):
         'content': ('\n'.join(lines) + '\n') if lines else ''
     })
 
+# Scale fixture: exactly 5,000 lines
+scale_5000 = '\n'.join([f'Scale payload record {i} for asymptotic verification' for i in range(1, 5001)]) + '\n'
+cases.append({
+    'name': 'scale_5000_lines',
+    'lineCount': 5000,
+    'content': scale_5000
+})
+
 print(json.dumps(cases))

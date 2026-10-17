@@ -39,4 +39,18 @@ for i in range(20):
         'content': ' '.join(words) + '\n'
     })
 
+# Scale fixture: 5,000 words
+scale_vocab = ['algorithmic', 'asymptote', 'invariant', 'graph', 'frontier', 'traversal', 'matrix', 'interval', 'bitwise', 'monotonic']
+scale_words = []
+for i in range(5000):
+    scale_words.append(scale_vocab[i % len(scale_vocab)])
+    if (i + 1) % 10 == 0:
+        scale_words.append('\n')
+
+cases.append({
+    'name': 'scale_5000_words',
+    'wordCount': 5000,
+    'content': ' '.join(scale_words) + '\n'
+})
+
 print(json.dumps(cases))

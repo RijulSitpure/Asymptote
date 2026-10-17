@@ -1,5 +1,6 @@
 import os, sys, json, time, random
 import pandas as pd
+from pandas.testing import assert_frame_equal
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(script_dir, '../../problems/create-a-dataframe-from-list.json')) as f:
@@ -7,15 +8,6 @@ with open(os.path.join(script_dir, '../../problems/create-a-dataframe-from-list.
 sol_code = prob['solutions'][0]['code']
 
 exec(sol_code, globals())
-
-def assert_frame_equal(df_act, df_exp):
-    assert list(df_act.columns) == list(df_exp.columns), f'Cols: {df_act.columns} vs {df_exp.columns}'
-    assert list(df_act.index) == list(df_exp.index), f'Index: {df_act.index} vs {df_exp.index}'
-    assert len(df_act) == len(df_exp), f'Len: {len(df_act)} vs {len(df_exp)}'
-    for c in df_act.columns:
-        for v1, v2 in zip(df_act[c], df_exp[c]):
-            if pd.isna(v1) and pd.isna(v2): continue
-            assert v1 == v2, f'Val in {c}: {v1} != {v2}'
 
 # Fixed Cases
 fixed_cases = [
@@ -27,11 +19,9 @@ fixed_cases = [
 
 for data in fixed_cases:
     act = createDataframe(data)
-    # Reference in pure python list logic
     exp_cols = ['student_id', 'age']
-    exp_data = {col: [row[i] for row in data] for i, col in enumerate(exp_cols)}
-    exp = pd.DataFrame(exp_data, columns=exp_cols)
-    assert_frame_equal(act, exp)
+    exp = pd.DataFrame(data, columns=exp_cols)
+    assert_frame_equal(act, exp, check_dtype=True, check_index_type=True, check_column_type=True, check_names=True)
 
 # Random Cases
 random.seed(42)
@@ -40,7 +30,7 @@ for i in range(25):
     data = [[random.randint(1, 10000), random.randint(10, 80)] for _ in range(n)]
     act = createDataframe(data)
     exp = pd.DataFrame(data, columns=['student_id', 'age'])
-    assert_frame_equal(act, exp)
+    assert_frame_equal(act, exp, check_dtype=True, check_index_type=True, check_column_type=True, check_names=True)
 
 # Max Size
 t0 = time.perf_counter()

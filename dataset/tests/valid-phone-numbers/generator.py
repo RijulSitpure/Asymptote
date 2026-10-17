@@ -55,4 +55,24 @@ for i in range(20):
         'content': '\n'.join(lines) + '\n'
     })
 
+# Scale fixture: 5,000 lines
+scale_lines = []
+for i in range(1, 5001):
+    kind = i % 4
+    a, b, c = 100 + (i % 900), 200 + (i % 800), 1000 + (i % 9000)
+    if kind == 0:
+        scale_lines.append(f'{a:03d}-{b:03d}-{c:04d}')
+    elif kind == 1:
+        scale_lines.append(f'({a:03d}) {b:03d}-{c:04d}')
+    elif kind == 2:
+        scale_lines.append(f'({a:03d}){b:03d}-{c:04d}') # invalid
+    else:
+        scale_lines.append(f'{a:03d} {b:03d} {c:04d}') # invalid
+
+cases.append({
+    'name': 'scale_5000_lines',
+    'lineCount': 5000,
+    'content': '\n'.join(scale_lines) + '\n'
+})
+
 print(json.dumps(cases))

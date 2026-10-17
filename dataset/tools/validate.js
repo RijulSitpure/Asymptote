@@ -34,7 +34,7 @@ const ALGORITHMS_ALLOWED_FAMILIES = new Set([
   'Matrix'
 ]);
 
-function runValidation() {
+function runValidation(exitOnFailure = false) {
   const errors = [];
   const warnings = [];
 
@@ -164,66 +164,9 @@ function runValidation() {
     }
 
     // Hint rubric and tone enforcement
-    const ALLOWED_ALL_CAPS = new Set(['BFS', 'DFS', 'DAG', 'DP', 'BST', 'NULL', 'SQL', 'JSON', 'CTE']);
-    if (Array.isArray(problem.hints)) {
-      for (const hint of problem.hints) {
-        if (hint.level >= 1 && hint.level <= 3) {
-          if (hint.text && hint.text.includes('```')) {
-            errors.push(`[Hint Rubric] ${file}: Hint level ${hint.level} must not contain code fences (\`\`\`)`);
-          }
-        } else if (hint.level === 4) {
-          if (!hint.text || (!hint.text.includes('```') && !hint.text.includes('def ') && !hint.text.includes('class ') && !hint.text.includes('SELECT') && !hint.text.includes('return '))) {
-            warnings.push(`[Hint Rubric] ${file}: Hint level 4 should contain blueprint code or code fences`);
-          }
-        }
-
-        if (hint.text) {
-          // Strip code fences before tone checks
-          const textOutsideCodeFences = hint.text.replace(/```[\s\S]*?```/g, '');
-
-          // Check for exclamation marks
-          if (textOutsideCodeFences.includes('!')) {
-            errors.push(`[Hint Tone] ${file}: Hint level ${hint.level} contains exclamation mark (!) outside code fences`);
-          }
-
-          // Check for unapproved ALL-CAPS words (>= 4 letters)
-          const allCapsWords = textOutsideCodeFences.match(/\b[A-Z]{4,}\b/g) || [];
-          for (const word of allCapsWords) {
-            if (!ALLOWED_ALL_CAPS.has(word)) {
-              errors.push(`[Hint Tone] ${file}: Hint level ${hint.level} contains unapproved ALL-CAPS word "${word}". Allowed: ${Array.from(ALLOWED_ALL_CAPS).join(', ')}`);
-            }
-          }
-
-          // Warning if L1 contains algorithm / data structure names
-          if (hint.level === 1) {
-            const bannedPatterns = [
-              /\bhash\w*\b/i,
-              /\bheap\w*\b/i,
-              /\bstack\w*\b/i,
-              /\bqueue\w*\b/i,
-              /\bmemo\w*\b/i,
-              /\bdynamic\s+programming\b/i,
-              /\btwo\s+pointers?\b/i,
-              /\bbinary\s+search\b/i,
-              /\bbfs\b/i,
-              /\bdfs\b/i,
-              /\bdp\b/i
-            ];
-            for (const pat of bannedPatterns) {
-              const match = textOutsideCodeFences.match(pat);
-              if (match) {
-                warnings.push(`[Hint 1 Technique Leak] ${file}: Hint level 1 contains technique/structure keyword "${match[0]}"`);
-              }
-            }
-          }
-
-          // Warning if L1 or L2 exceeds 300 chars
-          if ((hint.level === 1 || hint.level === 2) && hint.text.length > 300) {
-            warnings.push(`[Hint Length] ${file}: Hint level ${hint.level} length is ${hint.text.length} chars (exceeds 300 characters limit)`);
-          }
-        }
-      }
-    }
+    const { errors: hErrors, warnings: hWarnings } = lintHints(problem, file);
+    errors.push(...hErrors);
+    warnings.push(...hWarnings);
 
     // Solutions language check
     if (Array.isArray(problem.solutions)) {
@@ -269,10 +212,98 @@ function runValidation() {
   if (errors.length > 0) {
     console.error(`\nValidation Failed with ${errors.length} error(s):`);
     errors.forEach(e => console.error('  ✖ ' + e));
-    process.exit(1);
+    if (exitOnFailure) process.exit(1);
   } else {
     console.log(`\nAll checks passed successfully! (0 errors, ${warnings.length} warnings)\n`);
   }
+
+  return { errors, warnings };
 }
 
-runValidation();
+export const ALLOWED_ALL_CAPS = new Set(['BFS', 'DFS', 'DAG', 'DP', 'BST', 'NULL', 'SQL', 'JSON', 'CTE']);
+
+export const HINT1_TECHNIQUE_PATTERNS = [
+  { name: 'priority queue', regex: /\bpriority\s+queue\w*\b/i },
+  { name: 'hash map', regex: /\bhash\s*map\w*\b/i },
+  { name: 'hash', regex: /\bhash\w*\b/i },
+  { name: 'heap', regex: /\bheap\w*\b/i },
+  { name: 'stack', regex: /\bstack\w*\b/i },
+  { name: 'queue', regex: /\bqueue\w*\b/i },
+  { name: 'memo', regex: /\bmemo\w*\b/i },
+  { name: 'dynamic programming', regex: /\bdynamic\s+programming\b/i },
+  { name: 'two pointer', regex: /\btwo\s+pointers?\b/i },
+  { name: 'binary search', regex: /\bbinary\s+search\b/i },
+  { name: 'BFS', regex: /\bbfs\b/i },
+  { name: 'DFS', regex: /\bdfs\b/i },
+  { name: 'DP', regex: /\bdp\b/i }
+];
+
+export function lintHints(problem, file = 'problem.json') {
+  const errors = [];
+  const warnings = [];
+
+  if (Array.isArray(problem.hints)) {
+    for (const hint of problem.hints) {
+      if (hint.level >= 1 && hint.level <= 3) {
+        if (hint.text && hint.text.includes('```')) {
+          errors.push(`[Hint Rubric] ${file}: Hint level ${hint.level} must not contain code fences (\`\`\`)`);
+        }
+      } else if (hint.level === 4) {
+        if (!hint.text || (!hint.text.includes('```') && !hint.text.includes('def ') && !hint.text.includes('class ') && !hint.text.includes('SELECT') && !hint.text.includes('return '))) {
+          warnings.push(`[Hint Rubric] ${file}: Hint level 4 should contain blueprint code or code fences`);
+        }
+      }
+
+      if (hint.text) {
+        // Strip code fences before tone checks
+        const textOutsideCodeFences = hint.text.replace(/```[\s\S]*?```/g, '');
+
+        // Check for exclamation marks
+        if (textOutsideCodeFences.includes('!')) {
+          errors.push(`[Hint Tone] ${file}: Hint level ${hint.level} contains exclamation mark (!) outside code fences`);
+        }
+
+        // Check for unapproved ALL-CAPS words (>= 3 letters for strict checking against allowed list)
+        const allCapsWords = textOutsideCodeFences.match(/\b[A-Z]{3,}\b/g) || [];
+        for (const word of allCapsWords) {
+          if (!ALLOWED_ALL_CAPS.has(word)) {
+            errors.push(`[Hint Tone] ${file}: Hint level ${hint.level} contains unapproved ALL-CAPS word "${word}". Allowed: ${Array.from(ALLOWED_ALL_CAPS).join(', ')}`);
+          }
+        }
+
+        // Warning if L1 contains algorithm / data structure names
+        if (hint.level === 1) {
+          for (const { regex } of HINT1_TECHNIQUE_PATTERNS) {
+            const match = textOutsideCodeFences.match(regex);
+            if (match) {
+              warnings.push(`[Hint 1 Technique Leak] ${file}: Hint level 1 contains technique/structure keyword "${match[0]}"`);
+              break;
+            }
+          }
+        }
+
+        // Warning if L1 or L2 exceeds 300 chars
+        if ((hint.level === 1 || hint.level === 2) && hint.text.length > 300) {
+          warnings.push(`[Hint Length] ${file}: Hint level ${hint.level} length is ${hint.text.length} chars (exceeds 300 characters limit)`);
+        }
+      }
+    }
+
+    // Hint 4 must match solution
+    const h4 = problem.hints.find(h => h.level === 4);
+    if (h4 && Array.isArray(problem.solutions) && problem.solutions.length > 0) {
+      const match = (h4.text || '').match(/```[a-z0-9_-]*\n([\s\S]*?)\n?```/i);
+      const h4Code = match ? match[1].trim() : (h4.text || '').trim();
+      const solCode = (problem.solutions[0].code || '').trim();
+      if (h4Code !== solCode) {
+        errors.push(`[Hint 4 Solution Mismatch] ${file}: Hint level 4 code does not match primary solution code`);
+      }
+    }
+  }
+
+  return { errors, warnings };
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  runValidation(true);
+}

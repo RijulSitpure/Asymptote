@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
 const datasetDir = path.resolve(rootDir, 'dataset');
 const testsDir = path.resolve(datasetDir, 'tests');
+const toolsDir = path.resolve(datasetDir, 'tools');
 
 function checkRuntime(cmd, args = ['--version']) {
   try {
@@ -113,9 +114,10 @@ function ensureMySQLAvailable() {
   }
   if (checkDockerRunning()) {
     if (!mysqlContainerName) {
-      mysqlContainerName = `asymptote-mysql-runner-${Date.now()}`;
+      mysqlContainerName = `asymptote-mysql-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
       const run = spawnSync('docker', [
         'run', '-d', '--name', mysqlContainerName,
+        '--network', 'none',
         '-e', 'MYSQL_ALLOW_EMPTY_PASSWORD=yes',
         '--tmpfs', '/tmp:rw,noexec,nosuid,size=64m',
         '--memory', '512m',
@@ -157,10 +159,28 @@ function runSqlBatch(mode, sql, maxAttempts = 3) {
       const port = process.env.MYSQL_PORT || '3306';
       const user = process.env.MYSQL_USER || 'root';
       const pass = process.env.MYSQL_PASSWORD || 'root';
-      res = spawnSync('mysql', [
-        '-h', host, '-P', port, '-u', user, `-p${pass}`,
-        '--batch', '--raw'
-      ], { input: sql, encoding: 'utf8', timeout: 30000 });
+
+      const hasMysqlCli = spawnSync('which', ['mysql']).status === 0;
+      if (hasMysqlCli) {
+        res = spawnSync('mysql', [
+          '-h', host, '-P', port, '-u', user, `-p${pass}`,
+          '--batch', '--raw'
+        ], { input: sql, encoding: 'utf8', timeout: 30000 });
+      } else {
+        const clientPath = path.join(toolsDir, 'mysql-client.js');
+        res = spawnSync('node', [clientPath], {
+          input: sql,
+          encoding: 'utf8',
+          timeout: 30000,
+          env: {
+            ...process.env,
+            MYSQL_HOST: host,
+            MYSQL_PORT: port,
+            MYSQL_USER: user,
+            MYSQL_PASSWORD: pass
+          }
+        });
+      }
     } else if (mode === 'docker') {
       res = spawnSync('docker', [
         'exec', '-i', mysqlContainerName,
@@ -175,7 +195,7 @@ function runSqlBatch(mode, sql, maxAttempts = 3) {
     }
 
     const err = res.stderr ? res.stderr.toString() : '';
-    if (attempt < maxAttempts && (err.includes('ERROR 2002') || err.includes("Can't connect"))) {
+    if (attempt < maxAttempts && (err.includes('ERROR 2002') || err.includes("Can't connect") || err.includes('ECONNREFUSED'))) {
       spawnSync('sleep', ['1']);
       continue;
     }
@@ -313,6 +333,7 @@ async function main() {
             for (const tc of testCases) {
               const dbName = `db_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
               const refDbName = `${dbName}_ref`;
+              const t0 = performance.now();
 
               try {
                 if (meta.mutation) {
@@ -335,6 +356,7 @@ async function main() {
                     ${schemaSql}
                     ${tc.inserts}
                     ${refSql}
+                    ${meta.checkQuery || `SELECT * FROM ${meta.checkTable} ORDER BY id;`}
                   `;
                   const refRes = runSqlBatch(mode, setupRef);
                   if (refRes.status !== 0) {
@@ -399,6 +421,11 @@ async function main() {
               } finally {
                 runSqlBatch(mode, `DROP DATABASE IF EXISTS ${dbName}; DROP DATABASE IF EXISTS ${refDbName};`);
               }
+
+              const durationMs = (performance.now() - t0).toFixed(1);
+              if (tc.name.includes('scale') || (tc.rowCount && tc.rowCount >= 2000)) {
+                console.log(`    ↳ Scale case "${tc.name}" (${tc.rowCount} rows) passed in ${durationMs}ms`);
+              }
             }
 
             passed = true;
@@ -453,6 +480,8 @@ async function main() {
               const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'asymptote-shell-'));
               const fixtureFile = meta.fixtureFile || 'file.txt';
               fs.writeFileSync(path.join(tempDir, fixtureFile), tc.content, 'utf8');
+              const t0 = performance.now();
+              const shellContainerName = `asymptote-shell-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
               try {
                 const refRun = spawnSync('python3', [refPath, tempDir], { encoding: 'utf8', timeout: 10000 });
@@ -462,6 +491,7 @@ async function main() {
 
                 const dockerRun = spawnSync('docker', [
                   'run',
+                  '--name', shellContainerName,
                   ...DOCKER_SECURITY_ARGS,
                   '-v', `${tempDir}:/workspace:ro`,
                   '--workdir', '/workspace',
@@ -511,7 +541,14 @@ async function main() {
                   }
                 }
               } finally {
+                spawnSync('docker', ['rm', '-f', shellContainerName], { stdio: 'pipe' });
                 fs.rmSync(tempDir, { recursive: true, force: true });
+              }
+
+              const durationMs = (performance.now() - t0).toFixed(1);
+              if (tc.name.includes('scale') || tc.lineCount || tc.wordCount) {
+                const countDesc = tc.lineCount ? `${tc.lineCount} lines` : `${tc.wordCount} words`;
+                console.log(`    ↳ Scale case "${tc.name}" (${countDesc}) passed in ${durationMs}ms`);
               }
             }
 
