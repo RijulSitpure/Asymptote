@@ -7,6 +7,8 @@ import { SyncService, KNOWN_PROBLEMS } from './services/syncService.js';
 import { DiagnosticWizard } from './services/wizard.js';
 import { ComplexityService } from './services/complexityService.js';
 import { PatternClassifier } from './services/classifier.js';
+import '../../shared/languages.js';
+const { getSupportedLanguagesForProblem } = globalThis.LanguagesModule;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,12 +17,13 @@ const CLIENT_DIR = fs.existsSync(path.resolve(__dirname, '../../client/dist'))
   : path.resolve(__dirname, '../../client');
 const PORT = process.env.PORT || 3001;
 
-const db = new DBManager();
-const patterns = db.getPatterns();
-const syncService = new SyncService(db, patterns);
-const wizard = new DiagnosticWizard(patterns);
-const complexityService = new ComplexityService();
-const classifier = new PatternClassifier(patterns);
+export function createServer(customDb = null, customLeetCode = null) {
+  const db = customDb || new DBManager();
+  const patterns = db.getPatterns();
+  const syncService = new SyncService(db, patterns, customLeetCode);
+  const wizard = new DiagnosticWizard(patterns);
+  const complexityService = new ComplexityService();
+  const classifier = new PatternClassifier(patterns);
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -98,7 +101,7 @@ const server = http.createServer(async (req, res) => {
       const id = cleanPath.replace('/api/patterns/', '');
       const pattern = db.getPatternById(id);
       if (!pattern) return sendError(res, 'Pattern not found', 404);
-      const linkedProblems = db.getProblems({ pattern_id: id });
+      const linkedProblems = db.getProblems({ pattern_id: id, verified: true });
       return sendJSON(res, { ...pattern, problems: linkedProblems });
     }
 
@@ -145,18 +148,22 @@ const server = http.createServer(async (req, res) => {
         let title = '';
         let tags = [];
         let difficulty = 'Medium';
+        let category = null;
+        let languages = null;
 
         if (/^\d+$/.test(query)) {
-          frontendId = query;
           if (KNOWN_PROBLEMS[query]) {
             const kp = KNOWN_PROBLEMS[query];
+            frontendId = query;
             title = kp.title;
             slug = kp.slug;
             difficulty = kp.difficulty;
             tags = kp.tags || [];
+            if (kp.category) category = kp.category;
           } else {
-            slug = `problem-${query}`;
-            title = `LeetCode #${query}`;
+            frontendId = query;
+            slug = '';
+            title = '';
           }
         } else {
           for (const [id, kp] of Object.entries(KNOWN_PROBLEMS)) {
@@ -165,46 +172,149 @@ const server = http.createServer(async (req, res) => {
               title = kp.title;
               difficulty = kp.difficulty;
               tags = kp.tags || [];
+              if (kp.category) category = kp.category;
               break;
             }
           }
-          if (!title) {
+          if (!title && slug) {
             title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
           }
         }
 
-        const classification = classifier.classify({ title, titleSlug: slug, topicTags: tags });
-        const targetPattern = patterns.find(p => p.id === classification.pattern_id);
-        const progressiveHints = classifier.generateProgressiveHints({ title }, targetPattern);
+        if (slug) {
+          try {
+            const details = await syncService.leetcode.getQuestionDetails(slug);
+            if (details) {
+              if (details.title) title = details.title;
+              if (details.questionFrontendId) frontendId = details.questionFrontendId;
+              if (details.difficulty) difficulty = details.difficulty;
+              if (details.categoryTitle) category = details.categoryTitle;
+              if (details.codeSnippets && Array.isArray(details.codeSnippets)) {
+                languages = details.codeSnippets.map(s => s.langSlug);
+              }
+              if (details.topicTags && Array.isArray(details.topicTags)) {
+                tags = details.topicTags.map(t => t.name || t);
+              }
+            }
+          } catch (e) {
+            // Ignore network errors in dynamic lookup
+          }
+        }
 
-        const newId = db.upsertProblem({
-          frontend_id: frontendId || String(Date.now()),
-          title,
-          title_slug: slug,
-          difficulty,
-          pattern_id: classification.pattern_id,
-          twist_type: classification.twist_type,
-          constraints: '',
-          summary: `Auto-generated Socratic hints & complexity target for ${title}`,
-          trigger_clues: targetPattern?.mental_triggers.slice(0, 3) || [],
-          hints_progressive: progressiveHints,
-          solution_python: '',
-          is_solved: false,
-          user_code: '',
-          user_notes: '',
-          user_rating: 0,
-          review_needed: false
-        });
-        problem = db.getProblemById(newId);
+        const isRealId = frontendId && /^\d+$/.test(frontendId) && slug;
+        if (isRealId && (title || slug)) {
+          const classification = classifier.classify({ title: title || slug, titleSlug: slug, topicTags: tags });
+          const newId = db.upsertProblem({
+            frontend_id: frontendId,
+            title: title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            title_slug: slug,
+            difficulty,
+            pattern_id: classification.pattern_id || null,
+            twist_type: classification.twist_type || '',
+            constraints: '',
+            summary: `Auto-generated profile for ${title || slug}`,
+            trigger_clues: [],
+            hints_progressive: [],
+            solution_python: '',
+            is_solved: false,
+            user_code: '',
+            user_notes: '',
+            user_rating: 0,
+            review_needed: false,
+            source: 'heuristic',
+            verified: 0,
+            category,
+            languages
+          });
+          problem = db.getProblemById(newId);
+        } else {
+          // If real ID cannot be fetched, return in-memory representation without saving to database
+          problem = {
+            id: null,
+            frontend_id: (frontendId && /^\d+$/.test(frontendId)) ? frontendId : null,
+            title: title || (slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : `Problem #${query}`),
+            title_slug: slug || null,
+            difficulty,
+            pattern_id: null,
+            twist_type: '',
+            constraints: '',
+            summary: '',
+            trigger_clues: [],
+            hints_progressive: [],
+            solution_python: '',
+            is_solved: false,
+            user_code: '',
+            user_notes: '',
+            user_rating: 0,
+            review_needed: false,
+            source: 'none',
+            verified: 0,
+            category,
+            languages
+          };
+        }
       }
 
-      const pattern = db.getPatternById(problem.pattern_id);
-      const complexity = complexityService.analyze(problem, pattern);
+      // If existing saved problem has null category or languages, fetch them on first view
+      if (problem && problem.id && (problem.category === null || problem.languages === null) && problem.title_slug) {
+        try {
+          const details = await syncService.leetcode.getQuestionDetails(problem.title_slug);
+          if (details) {
+            const updates = {};
+            if (details.categoryTitle && !problem.category) {
+              updates.category = details.categoryTitle;
+              problem.category = details.categoryTitle;
+            }
+            if (details.codeSnippets && Array.isArray(details.codeSnippets) && !problem.languages) {
+              const langs = details.codeSnippets.map(s => s.langSlug);
+              updates.languages = langs;
+              problem.languages = langs;
+            }
+            if (Object.keys(updates).length > 0) {
+              db.updateProblemDetails(problem.id, updates);
+            }
+          }
+        } catch (e) {
+          // Leave as null if fetch fails
+        }
+      }
+
+      const isVerified = Boolean(problem.verified === 1 || problem.verified === true);
+      const pattern = isVerified && problem.pattern_id ? db.getPatternById(problem.pattern_id) : null;
+      const suggestedPattern = (!isVerified && problem.pattern_id) ? db.getPatternById(problem.pattern_id) : null;
+      const complexity = isVerified ? complexityService.analyze(problem, pattern) : null;
+      const hints = isVerified ? (problem.hints_progressive || []) : [];
+      const supportedLanguages = getSupportedLanguagesForProblem(problem);
 
       return sendJSON(res, {
-        problem,
+        problem: {
+          ...problem,
+          supported_languages: supportedLanguages,
+          suggested_pattern: suggestedPattern
+        },
         pattern,
-        hints: problem.hints_progressive,
+        suggested_pattern: suggestedPattern,
+        hints,
+        complexity,
+        supported_languages: supportedLanguages
+      });
+    }
+
+    // Complexity Targeter
+    if (cleanPath.startsWith('/api/complexity/') && req.method === 'GET') {
+      const query = decodeURIComponent(cleanPath.replace('/api/complexity/', '')).trim();
+      const problem = db.findProblem(query);
+      if (!problem) return sendError(res, 'Problem not found', 404);
+
+      const isVerified = Boolean(problem.verified === 1 || problem.verified === true);
+      const pattern = isVerified && problem.pattern_id ? db.getPatternById(problem.pattern_id) : null;
+      const complexity = isVerified ? complexityService.analyze(problem, pattern) : null;
+
+      return sendJSON(res, {
+        problem_id: problem.id,
+        frontend_id: problem.frontend_id,
+        title: problem.title,
+        verified: isVerified,
         complexity
       });
     }
@@ -213,7 +323,7 @@ const server = http.createServer(async (req, res) => {
     if (cleanPath === '/api/wizard/diagnose' && req.method === 'POST') {
       const body = await parseBody(req);
       const results = wizard.diagnose(body);
-      return sendJSON(res, { results });
+      return sendJSON(res, { results, candidates: results });
     }
 
     // LeetCode Sync (by username)
@@ -289,9 +399,21 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 LeetCode Pattern Tracker is running at: http://localhost:${PORT}`);
-  console.log(`📁 Serving frontend from: ${CLIENT_DIR}`);
-  console.log(`📊 Curated patterns loaded: ${patterns.length}`);
-  console.log(`🔍 Built-in diagnostic wizard and progressive hint engine active`);
-});
+  return { server, db, syncService, wizard, complexityService, classifier };
+}
+
+const isMain = process.argv[1] && (
+  process.argv[1].endsWith('server/src/index.js') || 
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
+);
+
+if (isMain) {
+  const { server, db } = createServer();
+  const patterns = db.getPatterns();
+  server.listen(PORT, () => {
+    console.log(`[Asymptote] Server is running at: http://localhost:${PORT}`);
+    console.log(`[Asymptote] Serving frontend from: ${CLIENT_DIR}`);
+    console.log(`[Asymptote] Curated patterns loaded: ${patterns.length}`);
+    console.log(`[Asymptote] Built-in diagnostic wizard and progressive hint engine active`);
+  });
+}

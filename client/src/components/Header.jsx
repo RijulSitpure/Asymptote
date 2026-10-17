@@ -1,12 +1,20 @@
 import React from 'react';
-import { ChevronRight, Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw } from 'lucide-react';
 
-export function Header({ activeTab, openSyncModal, quickProblemSearch, setQuickProblemSearch, onSearchSubmit }) {
+export function Header({ 
+  activeTab, 
+  openSyncModal, 
+  quickProblemSearch, 
+  setQuickProblemSearch, 
+  onSearchSubmit,
+  stats
+}) {
   const tabTitles = {
     dashboard: 'Overview',
+    queue: 'Review',
     patterns: 'Patterns',
     solver: 'Solver',
-    wizard: 'Wizard',
+    wizard: 'Pattern finder',
     solved: 'Solved',
   };
 
@@ -16,37 +24,50 @@ export function Header({ activeTab, openSyncModal, quickProblemSearch, setQuickP
     }
   };
 
+  const totalSolved = stats?.totalSolved ?? stats?.solvedCount ?? 0;
+
   return (
-    <header className="h-16 sticky top-0 z-30 border-b border-[#eef0f4] bg-[#ffffff]/80 backdrop-blur-md px-6 flex items-center justify-between">
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-xs">
-        <span className="text-[#646e82] font-medium">OpenLeet</span>
-        <ChevronRight className="w-3.5 h-3.5 text-[#a0a8b7]" />
-        <span className="text-[#1e2033] font-semibold">{tabTitles[activeTab] || 'Overview'}</span>
+    <header className="h-[60px] sticky top-0 z-30 shrink-0 border-b border-[#e2e8f0] bg-[#ffffff] px-8 py-3.5 flex items-center justify-between">
+      {/* Left: Page name (15px bold, DM Sans, slate) */}
+      <div className="flex items-center">
+        <span className="text-[15px] font-bold text-[#1e2033] leading-none">
+          {tabTitles[activeTab] || 'Overview'}
+        </span>
       </div>
 
-      {/* Global Quick Problem Jump & Actions */}
-      <div className="flex items-center gap-3">
-        <div className="relative w-64 hidden sm:block">
-          <Search className="w-3.5 h-3.5 text-[#a0a8b7] absolute left-3 top-2.5" />
+      {/* Center: Search box (max 420px, "Search problems or patterns") */}
+      <div className="flex-1 max-w-[420px] mx-6 hidden sm:block">
+        <div className="relative flex items-center w-full">
+          <Search className="w-4 h-4 text-[#64748b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={quickProblemSearch}
             onChange={(e) => setQuickProblemSearch(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search # (e.g. 787)..."
-            className="w-full bg-[#f8f9fc] border border-[#eef0f4] rounded-full pl-8 pr-12 py-1.5 text-xs text-[#1e2033] placeholder-[#a0a8b7] focus:outline-none focus:border-[#1e2033] focus:bg-white transition-all font-mono"
+            placeholder="Search problems or patterns"
+            aria-label="Search problems or patterns"
+            className="w-full bg-[#ffffff] border border-[#cbd5e1] focus:border-[#1e2033] rounded-lg pl-10 pr-10 py-2 text-[14px] text-[#1e2033] placeholder:text-[#64748b] outline-none transition-colors"
           />
-          <kbd className="absolute right-2.5 top-2 px-1.5 py-0.5 rounded text-[10px] font-mono bg-white border border-[#eef0f4] text-[#a0a8b7] pointer-events-none shadow-xs">
-            ⌘K
-          </kbd>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+            <kbd className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-[#f8fafc] border border-[#e2e8f0] text-[#64748b] leading-none">
+              ⌘K
+            </kbd>
+          </div>
         </div>
+      </div>
+
+      {/* Right: Solved count ('190 solved') and Sync button (primary, padding 10px 16px) */}
+      <div className="flex items-center gap-4">
+        <span className="text-[14px] text-[#475569] hidden md:inline">
+          {totalSolved} solved
+        </span>
 
         <button 
           onClick={openSyncModal}
-          className="sarvam-btn-primary px-4 py-1.5 text-xs flex items-center gap-1.5"
+          title="Sync solved LeetCode questions"
+          className="btn-primary !px-4 !py-2.5 text-[14px]"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
+          <RefreshCw className="w-4 h-4" />
           <span>Sync</span>
         </button>
       </div>

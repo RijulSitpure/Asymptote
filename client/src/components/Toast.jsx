@@ -36,7 +36,7 @@ export function ToastProvider({ children }) {
             key={toast.id}
             role="status"
             className={cn(
-              "pointer-events-auto sarvam-card px-4 py-3 rounded-2xl flex items-center justify-between gap-3 shadow-lg border text-xs transition-all duration-200 transform translate-y-0",
+              "pointer-events-auto flat-card px-4 py-3 rounded-lg flex items-center justify-between gap-3 shadow-md border text-xs transition-all duration-200 transform translate-y-0 font-mono",
               toast.type === 'success' && "bg-white border-emerald-200/80 text-[#1e2033]",
               toast.type === 'error' && "bg-white border-rose-200/80 text-[#1e2033]",
               toast.type === 'info' && "bg-white border-[#eef0f4] text-[#1e2033]"

@@ -1,24 +1,38 @@
-import React, { useState, useMemo } from 'react';
-import Editor from '@monaco-editor/react';
-import { Search, ChevronDown, ChevronUp, Copy, Check, Sparkles, AlertCircle } from 'lucide-react';
-import { cn } from '../lib/utils';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Copy, Check } from 'lucide-react';
+import { Card } from './Card';
+import { Chip } from './Chip';
+import { sortPatternsByPedagogy, sortCategoriesByPedagogy } from '../lib/curriculum';
+import { SUPPORTED_LANGUAGES, getPatternCode } from '../lib/codeTemplates';
 
-export function PatternAtlas({ patterns, selectedPatternId }) {
+export function PatternAtlas({ patterns = [], selectedPatternId }) {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [expandedId, setExpandedId] = useState(selectedPatternId || null);
-  const [langTab, setLangTab] = useState('py'); // 'py' | 'cpp'
+  const [langTab, setLangTab] = useState('py'); // 'py' | 'cpp' | 'java' | 'mysql'
   const [copiedId, setCopiedId] = useState(null);
 
-  // Extract unique categories
+  // Sync selectedPatternId when navigated from Wizard or Queue
+  useEffect(() => {
+    if (selectedPatternId) {
+      setExpandedId(selectedPatternId);
+      const targetPattern = patterns.find(p => p.id === selectedPatternId);
+      if (targetPattern && selectedCategory !== 'all' && selectedCategory !== targetPattern.category) {
+        setSelectedCategory('all');
+      }
+    }
+  }, [selectedPatternId, patterns]);
+
+  // Extract unique categories sorted by learning progression
   const categories = useMemo(() => {
     const set = new Set(patterns.map(p => p.category));
-    return ['all', ...Array.from(set)];
+    const sorted = sortCategoriesByPedagogy(Array.from(set));
+    return ['all', ...sorted];
   }, [patterns]);
 
-  // Filter patterns
+  // Filter patterns and order by pedagogical curriculum
   const filteredPatterns = useMemo(() => {
-    return patterns.filter(p => {
+    const matched = patterns.filter(p => {
       const matchCat = selectedCategory === 'all' || p.category === selectedCategory;
       const q = search.toLowerCase();
       const matchSearch = !q || 
@@ -27,6 +41,7 @@ export function PatternAtlas({ patterns, selectedPatternId }) {
         (p.short_description && p.short_description.toLowerCase().includes(q));
       return matchCat && matchSearch;
     });
+    return sortPatternsByPedagogy(matched);
   }, [patterns, selectedCategory, search]);
 
   const handleCopy = (id, code) => {
@@ -35,165 +50,202 @@ export function PatternAtlas({ patterns, selectedPatternId }) {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const parseComplexity = (compStr) => {
+    if (!compStr) return { time: 'Time O(N)', space: 'Space O(1)' };
+    const parts = compStr.split('|').map(s => s.trim());
+    const timePart = parts[0] || 'Time O(N)';
+    const spacePart = parts[1] || 'Space O(1)';
+    return {
+      time: timePart.replace('Time:', 'Time').trim(),
+      space: spacePart.replace('Space:', 'Space').trim()
+    };
+  };
+
   return (
     <div className="space-y-6">
-      {/* Search and Category Filters */}
-      <div className="sarvam-card p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      {/* Title & Subtitle */}
+      <div>
+        <h1 className="font-heading text-[32px] font-bold text-[#1e2033] leading-tight">
+          Patterns
+        </h1>
+        <p className="text-[16px] text-[#475569] mt-1">
+          Reference notes for every pattern.
+        </p>
+      </div>
+
+      {/* Filter Row: Search field, Category select, Count chip */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        {/* Search Field */}
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-[#a0a8b7] absolute left-3.5 top-2.5" />
+          <Search className="w-4 h-4 text-[#64748b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search 37+ algorithmic patterns..."
-            className="w-full bg-[#f8f9fc] border border-[#eef0f4] rounded-full pl-9 pr-4 py-2 text-xs text-[#1e2033] placeholder-[#a0a8b7] focus:outline-none focus:border-[#1e2033] focus:bg-white transition-all"
+            placeholder="Search patterns"
+            aria-label="Search patterns"
+            className="asymptote-input w-full !pl-10"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Category Select */}
+        <div className="sm:w-64">
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-[#f8f9fc] border border-[#eef0f4] rounded-full px-4 py-2 text-xs text-[#1e2033] focus:outline-none focus:border-[#1e2033]"
+            aria-label="Filter by category"
+            className="asymptote-input w-full cursor-pointer"
           >
-            {categories.map(c => (
-              <option key={c} value={c}>
-                {c === 'all' ? `All Categories (${patterns.length})` : c}
-              </option>
+            <option value="all">All categories</option>
+            {categories.filter(c => c !== 'all').map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
-          <span className="text-xs font-mono text-[#646e82] bg-[#f8f9fc] border border-[#eef0f4] px-3 py-2 rounded-full">
-            {filteredPatterns.length}
-          </span>
         </div>
+
+        {/* Count Chip */}
+        <Chip variant="neutral" className="shrink-0 self-start sm:self-center">
+          {filteredPatterns.length} patterns
+        </Chip>
       </div>
 
-      {/* Patterns Grid */}
-      <div className="space-y-3">
-        {filteredPatterns.map(pattern => {
-          const isExpanded = expandedId === pattern.id;
-          const code = langTab === 'py' ? (pattern.base_template_py || '# Python template coming soon') : (pattern.base_template_cpp || '// C++ template coming soon');
+      {/* One Card with a row per pattern */}
+      <Card className="!p-0 overflow-hidden">
+        {filteredPatterns.length === 0 ? (
+          <div className="p-12 text-center text-[#64748b] text-[15px]">
+            No patterns found matching your search.
+          </div>
+        ) : (
+          <div className="divide-y divide-[#e2e8f0]">
+            {filteredPatterns.map(pattern => {
+              const isExpanded = expandedId === pattern.id;
+              const { time, space } = parseComplexity(pattern.complexity);
+              const code = getPatternCode(pattern, langTab);
 
-          return (
-            <div key={pattern.id} className="sarvam-card overflow-hidden">
-              <div 
-                className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none hover:bg-[#fafafc] transition-colors"
-                onClick={() => setExpandedId(isExpanded ? null : pattern.id)}
-              >
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-mono font-semibold uppercase text-[#1e2033] bg-[#f4f5f9] border border-[#eef0f4] px-2.5 py-0.5 rounded-full">
-                      {pattern.category}
-                    </span>
-                    <span className="text-xs font-medium text-[#646e82] bg-[#f8f9fc] border border-[#eef0f4] px-2 py-0.5 rounded-full">
-                      {pattern.difficulty || 'Medium'}
-                    </span>
-                    <span className="text-xs font-mono text-[#646e82]">{pattern.complexity}</span>
-                  </div>
-                  <h4 className="text-base font-bold text-[#1e2033] tracking-tight">{pattern.title}</h4>
-                  <p className="text-xs text-[#646e82] line-clamp-1">{pattern.short_description}</p>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  <span className="text-xs text-[#646e82] font-medium">
-                    {isExpanded ? 'Hide' : 'Inspect'}
-                  </span>
-                  {isExpanded ? <ChevronUp className="w-4 h-4 text-[#646e82]" /> : <ChevronDown className="w-4 h-4 text-[#646e82]" />}
-                </div>
-              </div>
-
-              {/* Expanded Inspection */}
-              {isExpanded && (
-                <div className="border-t border-[#eef0f4] p-5 sm:p-6 space-y-5 bg-[#fafafc]">
-                  {/* Triggers */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-[#ffffff] p-4 rounded-xl border border-[#eef0f4] space-y-2">
-                      <span className="text-xs font-semibold text-[#1e2033] flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-[#1e2033]" />
-                        Recognition Signals
-                      </span>
-                      <ul className="space-y-1.5">
-                        {(pattern.mental_triggers || []).slice(0, 3).map((trig, idx) => (
-                          <li key={idx} className="text-xs text-[#646e82] flex items-start gap-2">
-                            <span className="text-[#1e2033] font-bold">•</span>
-                            <span>{trig}</span>
-                          </li>
-                        ))}
-                      </ul>
+              return (
+                <div key={pattern.id} className="transition-colors">
+                  {/* Pattern Row */}
+                  <div className="px-[22px] py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    {/* Left: Name and one-line description (14px, muted) */}
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <h3 className="font-heading text-[18px] font-bold text-[#1e2033] tracking-tight">
+                        {pattern.title}
+                      </h3>
+                      <p className="text-[14px] text-[#64748b] line-clamp-1">
+                        {pattern.short_description}
+                      </p>
                     </div>
 
-                    <div className="bg-[#ffffff] p-4 rounded-xl border border-[#eef0f4] space-y-2">
-                      <span className="text-xs font-semibold text-[#1e2033] flex items-center gap-1.5">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                        Constraint Clues
-                      </span>
-                      <ul className="space-y-1.5">
-                        {(pattern.constraint_signals || []).slice(0, 3).map((sig, idx) => (
-                          <li key={idx} className="text-xs text-[#646e82] flex items-start gap-2">
-                            <span className="text-amber-600 font-bold">•</span>
-                            <span>{sig}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
+                    {/* Right side group: Category chip, Difficulty chip, 2-line Time/Space, Open button */}
+                    <div className="flex flex-wrap items-center gap-4 shrink-0">
+                      <Chip variant="neutral">
+                        {pattern.category}
+                      </Chip>
 
-                  {/* Monaco Code Editor */}
-                  <div className="bg-[#ffffff] p-4 rounded-xl border border-[#eef0f4] space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => setLangTab('py')}
-                          className={cn(
-                            "px-3 py-1 rounded-full text-xs font-medium transition-all",
-                            langTab === 'py' ? "bg-[#1e2033] text-white shadow-sm" : "text-[#646e82] hover:text-[#1e2033] bg-[#f8f9fc]"
-                          )}
-                        >
-                          Python 3
-                        </button>
-                        <button
-                          onClick={() => setLangTab('cpp')}
-                          className={cn(
-                            "px-3 py-1 rounded-full text-xs font-medium transition-all",
-                            langTab === 'cpp' ? "bg-[#1e2033] text-white shadow-sm" : "text-[#646e82] hover:text-[#1e2033] bg-[#f8f9fc]"
-                          )}
-                        >
-                          C++
-                        </button>
+                      <Chip variant={(pattern.difficulty || 'medium').toLowerCase()}>
+                        {pattern.difficulty || 'Medium'}
+                      </Chip>
+
+                      {/* Two-line Time O(...) / Space O(...) block */}
+                      <div className="font-mono text-[12px] text-[#475569] leading-tight min-w-[110px]">
+                        <div>{time}</div>
+                        <div>{space}</div>
                       </div>
 
+                      {/* Secondary "Open" button */}
                       <button
-                        onClick={() => handleCopy(pattern.id, code)}
-                        className="sarvam-btn-secondary px-3 py-1 text-xs flex items-center gap-1.5"
+                        type="button"
+                        onClick={() => setExpandedId(isExpanded ? null : pattern.id)}
+                        className="btn-secondary !py-1.5 !px-3.5 !text-[13px]"
                       >
-                        {copiedId === pattern.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedId === pattern.id ? 'Copied' : 'Copy'}</span>
+                        {isExpanded ? 'Close' : 'Open'}
                       </button>
                     </div>
-
-                    <div className="rounded-xl overflow-hidden border border-[#eef0f4]">
-                      <Editor
-                        height="220px"
-                        language={langTab === 'py' ? 'python' : 'cpp'}
-                        theme="vs-dark"
-                        value={code}
-                        options={{
-                          readOnly: true,
-                          minimap: { enabled: false },
-                          fontSize: 12,
-                          lineNumbers: 'on',
-                          scrollBeyondLastLine: false,
-                          fontFamily: 'JetBrains Mono, Menlo, monospace',
-                        }}
-                      />
-                    </div>
                   </div>
+
+                  {/* Expanded Blueprint Details */}
+                  {isExpanded && (
+                    <div className="px-[22px] pb-6 pt-3 bg-[#f8fafc] border-t border-[#e2e8f0] space-y-4">
+                      {/* Recognition Signals & Constraint Clues */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {pattern.mental_triggers && pattern.mental_triggers.length > 0 && (
+                          <div className="bg-white p-4 rounded-lg border border-[#e2e8f0] space-y-2">
+                            <span className="font-bold text-[14px] text-[#1e2033] block">
+                              Recognition signals
+                            </span>
+                            <ul className="space-y-1.5 text-[14px] text-[#475569]">
+                              {pattern.mental_triggers.map((trigger, idx) => (
+                                <li key={idx} className="flex items-start gap-2">
+                                  <span className="text-[#10b981] font-bold">•</span>
+                                  <span>{trigger}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {pattern.constraint_signals && pattern.constraint_signals.length > 0 && (
+                          <div className="bg-white p-4 rounded-lg border border-[#e2e8f0] space-y-2">
+                            <span className="font-bold text-[14px] text-[#1e2033] block">
+                              Constraint signals
+                            </span>
+                            <ul className="space-y-1.5 text-[14px] text-[#475569]">
+                              {pattern.constraint_signals.map((sig, idx) => (
+                                <li key={idx} className="flex items-start gap-2">
+                                  <span className="text-[#b45309] font-bold">•</span>
+                                  <span>{sig}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Light Monospace Blueprint Code Block */}
+                      <div className="bg-white p-4 rounded-lg border border-[#e2e8f0] space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          {/* Language selector tabs */}
+                          <div className="flex items-center gap-1.5">
+                            {SUPPORTED_LANGUAGES.map((lang) => (
+                              <button
+                                key={lang.id}
+                                type="button"
+                                onClick={() => setLangTab(lang.id)}
+                                className={`px-2.5 py-1 rounded-md text-[13px] font-medium transition-colors ${
+                                  langTab === lang.id
+                                    ? 'bg-[#1e2033] text-white font-bold'
+                                    : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
+                                }`}
+                              >
+                                {lang.name}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Secondary Copy Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(pattern.id, code)}
+                            className="btn-secondary !py-1 !px-2.5 !text-[13px]"
+                          >
+                            {copiedId === pattern.id ? <Check className="w-3.5 h-3.5 text-[#047857]" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedId === pattern.id ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+
+                        {/* Light Monospace Code Box (No dark surfaces!) */}
+                        <pre className="bg-[#f6f8fa] border border-[#e2e8f0] rounded-lg p-4 font-mono text-[13px] text-[#1e2033] leading-relaxed overflow-x-auto whitespace-pre">
+                          <code>{code}</code>
+                        </pre>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

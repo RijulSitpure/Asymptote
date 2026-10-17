@@ -2,8 +2,9 @@
  * Curated Comprehensive Algorithmic Patterns Taxonomy (46 Patterns)
  * Covers every major category tested in LeetCode and technical interviews.
  */
+import { sortPatternsByPedagogy } from './curriculum.js';
 
-export const PATTERNS = [
+const RAW_PATTERNS = [
   // ==================== GRAPH + DP & ADVANCED GRAPH ====================
   {
     id: "graph-dp-dag",
@@ -1557,3 +1558,5 @@ def zeroOneBFS(grid):
     twists: []
   }
 ];
+
+export const PATTERNS = sortPatternsByPedagogy(RAW_PATTERNS);

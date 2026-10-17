@@ -1,287 +1,213 @@
 import React from 'react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell 
-} from 'recharts';
-import { 
-  ArrowUpRight, 
-  CheckCircle2, 
-  Compass, 
-  AlertCircle,
-  Flame 
-} from 'lucide-react';
+import { Card } from './Card';
+import { Chip } from './Chip';
+import { ProgressBar } from './ProgressBar';
 
-export function StatsDashboard({ stats, patterns, onSelectPattern, onPracticeWeakSpot }) {
+export function StatsDashboard({ 
+  stats, 
+  patterns = [], 
+  problems = [], 
+  onPracticeProblem,
+  onOpenQueue 
+}) {
   if (!stats) {
     return (
-      <div className="p-12 text-center text-[#646e82]">
+      <div className="p-12 text-center text-[#64748b] text-[15px]">
         Loading overview...
       </div>
     );
   }
 
-  // Category distribution data
-  const categoryData = (stats.categoryDistribution || []).map(c => ({
-    name: c.category.length > 12 ? c.category.slice(0, 12) + '…' : c.category,
-    fullName: c.category,
-    count: c.count
-  }));
+  const totalSolved = stats.totalSolved ?? stats.solvedCount ?? 0;
+  const easyCount = stats.difficultyBreakdown?.Easy || 0;
+  const medCount = stats.difficultyBreakdown?.Medium || 0;
+  const hardCount = stats.difficultyBreakdown?.Hard || 0;
 
-  // Difficulty breakdown data
-  const diffData = [
-    { name: 'Easy', value: stats.difficultyBreakdown?.Easy || 0, color: '#10b981' },
-    { name: 'Medium', value: stats.difficultyBreakdown?.Medium || 0, color: '#f59e0b' },
-    { name: 'Hard', value: stats.difficultyBreakdown?.Hard || 0, color: '#ef4444' }
-  ].filter(d => d.value > 0);
+  const totalPatternsCount = stats.totalPatternsCount ?? patterns?.length ?? 37;
+  const coveredPatternsCount = stats.coveredPatternsCount ?? (stats.patternDistribution || []).filter(p => p.solved_problems > 0).length;
+  const patternCoveragePercent = stats.patternCoveragePercent ?? (totalPatternsCount > 0 ? Math.round((coveredPatternsCount / totalPatternsCount) * 100) : 0);
+
+  // Review items: problems marked for review or weak spot patterns
+  const flaggedProblems = problems.filter(p => p.review_needed);
+  const reviewCount = flaggedProblems.length > 0 ? flaggedProblems.length : (stats.weakSpots?.length || 0);
+
+  // Take up to 5 review queue items
+  let queueItems = [];
+  if (flaggedProblems.length > 0) {
+    queueItems = flaggedProblems.slice(0, 5).map(p => ({
+      id: p.id,
+      name: p.frontend_id ? `#${p.frontend_id} ${p.title}` : p.title,
+      query: p.frontend_id ? String(p.frontend_id) : p.title_slug || p.title,
+      pattern: (p.verified || p.source === 'curated') ? (p.pattern_title || 'General') : null
+    }));
+  } else if (stats.weakSpots && stats.weakSpots.length > 0) {
+    queueItems = stats.weakSpots.slice(0, 5).map(ws => ({
+      id: ws.id,
+      name: ws.title || ws.pattern_title,
+      query: ws.title || ws.pattern_title,
+      pattern: ws.category || 'Pattern'
+    }));
+  }
+
+  const maxDiffCount = Math.max(easyCount, medCount, hardCount, 1);
 
   return (
     <div className="space-y-6">
-      {/* Hero Welcome with Sarvam atmospheric subtle glow */}
-      <div className="relative rounded-2xl p-6 sm:p-8 bg-[#ffffff] border border-[rgba(30,32,51,0.08)] shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_16px_-2px_rgba(0,0,0,0.03)] overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-32 sarvam-glow pointer-events-none"></div>
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-1.5">
-            <span className="text-xs font-semibold text-[#646e82] uppercase tracking-wider">
-              Pattern Intelligence
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1e2033] tracking-tight">
-              Overview
-            </h2>
-            <p className="text-xs sm:text-sm text-[#646e82] max-w-xl leading-relaxed">
-              Real-time algorithmic mastery, constraint readiness, and priority review queues.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="bg-[#f8f9fc] border border-[#eef0f4] rounded-2xl px-5 py-3 text-center">
-              <span className="text-xs text-[#646e82] block font-medium">Curated Archetypes</span>
-              <span className="text-xl font-extrabold text-[#1e2033]">{stats.totalPatternsCount || 37}</span>
-            </div>
-            <div className="bg-[#f8f9fc] border border-[#eef0f4] rounded-2xl px-5 py-3 text-center">
-              <span className="text-xs text-[#646e82] block font-medium">Active Coverage</span>
-              <span className="text-xl font-extrabold text-[#1e2033]">{stats.patternCoveragePercent || 0}%</span>
-            </div>
-          </div>
-        </div>
+      {/* Title & Subtitle */}
+      <div>
+        <h1 className="font-heading text-[32px] font-bold text-[#1e2033] leading-tight">
+          Overview
+        </h1>
+        <p className="text-[16px] text-[#475569] mt-1">
+          Where your practice stands.
+        </p>
       </div>
 
-      {/* 3 Focused Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Card 1: Solved Questions */}
-        <div className="sarvam-card p-6 flex flex-col justify-between">
+      {/* Three Equal Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Card 1: Solved */}
+        <Card className="flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#646e82] uppercase tracking-wider">Solved Problems</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <div className="text-[14px] font-medium text-[#475569]">
+              Solved
             </div>
-            <h3 className="text-4xl font-extrabold text-[#1e2033] mt-3">
-              {stats.totalSolved || 0}
-            </h3>
+            <div className="font-heading text-[40px] font-bold text-[#1e2033] mt-2 leading-none">
+              {totalSolved}
+            </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-[#f4f5f8] flex items-center gap-2 text-xs">
-            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium text-xs">
-              {stats.difficultyBreakdown?.Easy || 0} Easy
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium text-xs">
-              {stats.difficultyBreakdown?.Medium || 0} Med
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-medium text-xs">
-              {stats.difficultyBreakdown?.Hard || 0} Hard
-            </span>
+          <div className="text-[14px] text-[#475569] mt-4">
+            {easyCount} easy, {medCount} medium, {hardCount} hard
           </div>
-        </div>
+        </Card>
 
-        {/* Card 2: Pattern Coverage */}
-        <div className="sarvam-card p-6 flex flex-col justify-between">
+        {/* Card 2: Pattern coverage */}
+        <Card className="flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#646e82] uppercase tracking-wider">Pattern Coverage</span>
-              <Compass className="w-4 h-4 text-[#1e2033]" />
+            <div className="text-[14px] font-medium text-[#475569]">
+              Pattern coverage
             </div>
-            <h3 className="text-4xl font-extrabold text-[#1e2033] mt-3">
-              {stats.coveredPatternsCount || 0} <span className="text-lg font-normal text-[#646e82]">/ {stats.totalPatternsCount || 37}</span>
-            </h3>
-          </div>
-          <div className="mt-4 pt-4 border-t border-[#f4f5f8]">
-            <div className="w-full bg-[#f4f5f8] h-2 rounded-full overflow-hidden">
-              <div 
-                className="bg-[#1e2033] h-full rounded-full transition-all duration-500"
-                style={{ width: `${stats.patternCoveragePercent || 0}%` }}
-              ></div>
+            <div className="font-heading text-[40px] font-bold text-[#1e2033] mt-2 leading-none">
+              {coveredPatternsCount} of {totalPatternsCount}
             </div>
-            <span className="text-xs text-[#646e82] mt-1.5 block">
-              {stats.patternCoveragePercent || 0}% of core patterns solved at least once
-            </span>
           </div>
-        </div>
+          <div className="mt-4 space-y-2">
+            <ProgressBar value={patternCoveragePercent} max={100} />
+            <div className="text-[14px] text-[#475569]">
+              {patternCoveragePercent}%
+            </div>
+          </div>
+        </Card>
 
-        {/* Card 3: Priority Review Queue */}
-        <div className="sarvam-card p-6 flex flex-col justify-between">
+        {/* Card 3: Due for review */}
+        <Card className="flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#646e82] uppercase tracking-wider">Review Queue</span>
-              <AlertCircle className="w-4 h-4 text-amber-600" />
+            <div className="text-[14px] font-medium text-[#475569]">
+              Due for review
             </div>
-            <h3 className="text-4xl font-extrabold text-amber-600 mt-3">
-              {stats.weakSpots?.length || 0}
-            </h3>
+            <div className="font-heading text-[40px] font-bold text-[#1e2033] mt-2 leading-none">
+              {reviewCount}
+            </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-[#f4f5f8] text-xs text-[#646e82]">
-            <span>High-frequency archetypes needing first solve</span>
+          <div className="text-[14px] text-[#475569] mt-4">
+            problems
           </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Visual Analytics */}
+      {/* Below: Review Queue (2/3 width) and By Difficulty (1/3 width) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Category Distribution Bar Chart */}
-        <div className="sarvam-card lg:col-span-2 p-6">
+        {/* Review Queue Card (2/3 width) */}
+        <Card className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h4 className="font-bold text-sm text-[#1e2033]">Category Distribution</h4>
-              <p className="text-xs text-[#646e82]">Questions mastered across algorithmic domains</p>
-            </div>
-            <span className="text-xs font-mono text-[#646e82] bg-[#f8f9fc] border border-[#eef0f4] px-2.5 py-1 rounded-full">
-              {categoryData.length} Domains
-            </span>
+            <h3 className="font-heading text-[18px] font-bold text-[#1e2033]">
+              Review queue
+            </h3>
           </div>
 
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={categoryData} margin={{ top: 10, right: 10, left: -25, bottom: 25 }}>
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fill: '#646e82', fontSize: 10, fontFamily: 'Plus Jakarta Sans' }} 
-                  angle={-25} 
-                  textAnchor="end"
-                  interval={0}
-                />
-                <YAxis tick={{ fill: '#646e82', fontSize: 10, fontFamily: 'Plus Jakarta Sans' }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#ffffff', 
-                    border: '1px solid rgba(30,32,51,0.1)', 
-                    borderRadius: '12px',
-                    fontSize: '11px',
-                    color: '#1e2033',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
-                  }}
-                  formatter={(value, name, item) => [value, item.payload.fullName]}
-                />
-                <Bar dataKey="count" fill="#1e2033" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Difficulty Donut Chart */}
-        <div className="sarvam-card p-6 flex flex-col justify-between">
-          <div>
-            <div className="mb-2">
-              <h4 className="font-bold text-sm text-[#1e2033]">Difficulty Ratio</h4>
-              <p className="text-xs text-[#646e82]">Distribution of solved catalog</p>
-            </div>
-
-            <div className="h-44 w-full flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={diffData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={45}
-                    outerRadius={65}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {diffData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#ffffff', 
-                      border: '1px solid rgba(30,32,51,0.1)', 
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      color: '#1e2033'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="space-y-2 pt-3 border-t border-[#f4f5f8]">
-            {diffData.map((d) => (
-              <div key={d.name} className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-2 text-[#646e82]">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }}></span>
-                  {d.name}
-                </span>
-                <span className="font-semibold text-[#1e2033] font-mono">{d.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Priority Review Queue */}
-      <div className="sarvam-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Flame className="w-4 h-4 text-amber-500" />
-            <h4 className="font-bold text-sm text-[#1e2033]">Priority Review Queue</h4>
-          </div>
-          <span className="text-xs text-[#646e82]">Targeted archetypes for interview readiness</span>
-        </div>
-
-        {(!stats.weakSpots || stats.weakSpots.length === 0) ? (
-          <div className="p-8 text-center text-xs text-[#646e82]">
-            ✨ Excellent! You have solved questions across all pattern archetypes.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stats.weakSpots.slice(0, 6).map((ws) => (
-              <div 
-                key={ws.id} 
-                className="p-4 rounded-xl bg-[#fbfbfc] border border-[#eef0f4] hover:border-slate-300 transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] text-[#646e82] font-semibold uppercase">{ws.category}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium">
-                      0 Solved
+          {queueItems.length === 0 ? (
+            <p className="text-[14px] text-[#64748b] py-6 text-center">
+              No problems due for review.
+            </p>
+          ) : (
+            <div className="divide-y divide-[#e2e8f0]">
+              {queueItems.map((item) => (
+                <div 
+                  key={item.id} 
+                  className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <span className="text-[15px] font-medium text-[#1e2033] truncate">
+                      {item.name}
                     </span>
+                    {item.pattern && (
+                      <Chip variant="neutral" className="shrink-0 max-w-[180px] sm:max-w-[240px] truncate">
+                        {item.pattern}
+                      </Chip>
+                    )}
                   </div>
-                  <h5 className="font-bold text-xs text-[#1e2033] mb-1">{ws.title}</h5>
-                  <p className="text-[11px] text-[#646e82] line-clamp-2 leading-relaxed">
-                    {ws.short_description || 'High-frequency algorithmic pattern archetype.'}
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-[#f4f5f8] flex items-center justify-between">
-                  <span className="text-[10px] text-[#a0a8b7] font-mono">{ws.difficulty || 'Medium'}</span>
-                  <button 
-                    onClick={() => onPracticeWeakSpot(ws.id)}
-                    className="sarvam-btn-secondary px-3 py-1 text-xs flex items-center gap-1"
+                  <button
+                    type="button"
+                    onClick={() => onPracticeProblem && onPracticeProblem(item.query)}
+                    className="btn-secondary !py-1.5 !px-3 !text-[13px] shrink-0"
                   >
-                    <span>Practice</span>
-                    <ArrowUpRight className="w-3 h-3" />
+                    Practice
                   </button>
                 </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* By Difficulty Card (1/3 width) */}
+        <Card className="lg:col-span-1">
+          <h3 className="font-heading text-[18px] font-bold text-[#1e2033] mb-6">
+            By difficulty
+          </h3>
+
+          <div className="space-y-5">
+            {/* Easy Bar */}
+            <div>
+              <div className="flex items-center justify-between text-[14px] mb-1.5">
+                <span className="font-medium text-[#047857]">Easy</span>
+                <span className="font-medium text-[#1e2033]">{easyCount}</span>
               </div>
-            ))}
+              <div className="h-2 bg-[#e2e8f0] rounded overflow-hidden w-full">
+                <div 
+                  className="h-full bg-[#047857] rounded transition-all duration-300"
+                  style={{ width: `${(easyCount / maxDiffCount) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Medium Bar */}
+            <div>
+              <div className="flex items-center justify-between text-[14px] mb-1.5">
+                <span className="font-medium text-[#b45309]">Medium</span>
+                <span className="font-medium text-[#1e2033]">{medCount}</span>
+              </div>
+              <div className="h-2 bg-[#e2e8f0] rounded overflow-hidden w-full">
+                <div 
+                  className="h-full bg-[#b45309] rounded transition-all duration-300"
+                  style={{ width: `${(medCount / maxDiffCount) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Hard Bar */}
+            <div>
+              <div className="flex items-center justify-between text-[14px] mb-1.5">
+                <span className="font-medium text-[#be123c]">Hard</span>
+                <span className="font-medium text-[#1e2033]">{hardCount}</span>
+              </div>
+              <div className="h-2 bg-[#e2e8f0] rounded overflow-hidden w-full">
+                <div 
+                  className="h-full bg-[#be123c] rounded transition-all duration-300"
+                  style={{ width: `${(hardCount / maxDiffCount) * 100}%` }}
+                />
+              </div>
+            </div>
           </div>
-        )}
+        </Card>
       </div>
     </div>
   );

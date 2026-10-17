@@ -1,4 +1,4 @@
-# ⚡ OpenLeet AI
+# ⚡ Asymptote
 
 > **The Free, Open-Source Alternative to LeetCode Premium's Paywalled ($35/mo) "Leet AI"**  
 > Built for serious software engineers and competitive programmers who want to master algorithmic patterns, derive optimal Big-O complexity from constraints, and get progressive Socratic clues without spoiling the solution.
@@ -12,9 +12,9 @@
 
 ---
 
-## 🥊 OpenLeet AI vs. LeetCode Premium "Leet AI"
+## 🥊 Asymptote vs. LeetCode Premium "Leet AI"
 
-| Feature | 🤖 OpenLeet AI (This Project) | 💸 LeetCode Premium Leet AI |
+| Feature | 🤖 Asymptote (This Project) | 💸 LeetCode Premium Leet AI |
 | :--- | :--- | :--- |
 | **Price** | **100% Free & Open Source (MIT)** | **$35 / month** ($299 / year) |
 | **Philosophy** | **Coder-First & Socratic** (Teaches invariants & intuition) | Generic AI chatbot (Spoils full code easily) |
@@ -45,14 +45,14 @@ Reveal hints progressively without ever spoiling the code:
 * **Level 4 — Blueprint Skeleton**: A fill-in-the-blank code scaffold in Python/C++.
 
 ### 2. 🎯 Constraint-to-Complexity Target Engine
-Every online judge enforces a strict CPU execution budget: **$\approx 10^8$ operations per second (1.0s limit)**. OpenLeet AI analyzes problem constraints to tell you:
+Every online judge enforces a strict CPU execution budget: **$\approx 10^8$ operations per second (1.0s limit)**. Asymptote analyzes problem constraints to tell you:
 * **The Target Big-O**: Exact target Time & Space complexity ($O(N)$, $O(N \log N)$, $O(K \cdot E)$, etc.).
 * **The Naive Flaw**: Why brute force TLEs with math (e.g., $N=10^5 \implies O(N^2) = 10^{10}$ ops $\gg 10^8$ ops $\implies$ 100 seconds to execute).
 * **The Space-Time Trade-off**: What extra memory structure (Hash Map, Deque, Bitmask) buys down the time complexity.
 * **Interviewer Expectation**: What the interviewer expects you to articulate before writing a single line of code.
 
 ### 3. 🧩 In-Page Chrome Extension (Works on LeetCode.com)
-* An in-page, dark-mode drawer that opens right inside any LeetCode problem (`leetcode.com/problems/*`).
+* An in-page drawer that opens right inside any LeetCode problem (`leetcode.com/problems/*`).
 * Instant target complexity breakdown + progressive hints ladder.
 * **Auto-Sync**: Automatically intercepts Accepted submissions and syncs your code, problem difficulty, and pattern archetype straight to your local SQLite database.
 
@@ -64,7 +64,7 @@ Every online judge enforces a strict CPU execution budget: **$\approx 10^8$ oper
 
 ## ⚡ Zero-Dependency Architecture
 
-OpenLeet AI requires **zero external npm packages**. It runs entirely on modern Node.js standard library APIs:
+Asymptote requires **zero external npm packages**. It runs entirely on modern Node.js standard library APIs:
 * **Storage**: Node 22+ built-in `node:sqlite` database engine.
 * **Networking**: Native Node `fetch` API.
 * **Server**: Native Node `node:http` server.
@@ -74,7 +74,7 @@ OpenLeet AI requires **zero external npm packages**. It runs entirely on modern 
 
 ## 🛠️ Quick Start Guide
 
-### Step 1: Start the Local OpenLeet AI Server
+### Step 1: Start the Local Asymptote Server
 Ensure you have **Node.js 22 or newer** installed (`node -v`):
 
 ```bash
@@ -97,7 +97,7 @@ Open your browser to:
 3. Click **Load unpacked** (top-left button).
 4. Select the `extension/` directory from this repository.
 5. Visit any problem on LeetCode (e.g. [Two Sum](https://leetcode.com/problems/two-sum/) or [Cheapest Flights](https://leetcode.com/problems/cheapest-flights-within-k-stops/)).
-6. Click the sleek **⚡ OpenLeet AI** button on the bottom right to open the in-page coach!
+6. Click the sleek **⚡ Asymptote** button on the bottom right to open the in-page coach!
 
 ---
 
@@ -121,7 +121,7 @@ LeetCode-Pattern_Tracker/
 │   └── data/
 │       └── tracker.db               # Local SQLite database (100% private)
 ├── client/
-│   ├── index.html                   # OpenLeet AI Dashboard (Dark mode SPA)
+│   ├── index.html                   # Asymptote Dashboard SPA
 │   └── app.js                       # Socratic ladder & complexity visualizer
 ├── extension/
 │   ├── manifest.json                # Manifest V3 Extension
@@ -135,7 +135,7 @@ LeetCode-Pattern_Tracker/
 
 ## 🔒 Privacy & Local-First Guarantee
 
-* **No External Servers**: OpenLeet AI runs 100% on `localhost:3001`.
+* **No External Servers**: Asymptote runs 100% on `localhost:3001`.
 * **Zero Telemetry**: No tracking, analytics, or logging.
 * **Persistent Storage**: All solved history, notes, and mastery ratings are saved locally in `server/data/tracker.db`.
 

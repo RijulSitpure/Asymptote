@@ -142,6 +142,11 @@ export class LeetCodeService {
           questionFrontendId
           title
           titleSlug
+          categoryTitle
+          codeSnippets {
+            lang
+            langSlug
+          }
           content
           difficulty
           topicTags {

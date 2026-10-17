@@ -1,162 +1,171 @@
-import React, { useState } from 'react';
-import { RefreshCw, Zap, ClipboardList, User, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { X, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
 
 export function SyncModal({ isOpen, onClose, onSyncComplete }) {
-  const [quickInput, setQuickInput] = useState('');
-  const [username, setUsername] = useState('Rijul-Sitpure');
-  const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
 
-  const fillBlind75Sample = () => {
-    setQuickInput('1, 15, 20, 21, 53, 70, 121, 198, 206, 300, 322, 329, 739, 787, 847, 312, 1368, 834, 1011, 875, 76, 3, 2050, 1928, 864');
-  };
+  // Monitor stats updates while the modal is open to report progress and sync results
+  useEffect(() => {
+    if (!isOpen) return;
 
-  const handleQuickImport = async () => {
-    if (!quickInput.trim()) return;
-    setLoading(true);
-    setStatusMessage(null);
-    try {
-      const items = quickInput.split(/[\s,]+/).filter(Boolean);
-      const res = await fetch('/api/sync/problems', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: 'Imported',
-          problems: items.map(p => ({
-            id: isNaN(p) ? null : parseInt(p, 10),
-            title_slug: isNaN(p) ? p.toLowerCase() : '',
-            title: isNaN(p) ? p : `Problem #${p}`
-          }))
-        })
-      });
-      const data = await res.json();
-      setStatusMessage({ type: 'success', text: `Imported ${items.length} questions (${data.newlySynced || 0} new, ${data.updatedCount || 0} updated)!` });
-      setQuickInput('');
-      onSyncComplete();
-    } catch (err) {
-      setStatusMessage({ type: 'error', text: `Import failed: ${err.message}` });
-    } finally {
-      setLoading(false);
-    }
-  };
+    let initialCount = null;
+    const checkCount = async () => {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        const solved = data.total_solved || data.totalSolved || 0;
+        if (initialCount === null) {
+          initialCount = solved;
+        } else if (solved > initialCount) {
+          const diff = solved - initialCount;
+          setStatusMessage({
+            type: 'success',
+            text: `Synced ${diff} newly solved problems from LeetCode!`
+          });
+          initialCount = solved;
+          if (onSyncComplete) onSyncComplete();
+        }
+      } catch (e) {
+        // Polling fail silent
+      }
+    };
 
-  const handleUsernameSync = async () => {
-    if (!username.trim()) return;
-    setLoading(true);
-    setStatusMessage(null);
-    try {
-      const res = await fetch('/api/sync/leetcode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim() })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setStatusMessage({ type: 'success', text: `Synced ${data.syncedCount || 0} submissions for ${username}!` });
-      onSyncComplete();
-    } catch (err) {
-      setStatusMessage({ 
-        type: 'error', 
-        text: `Direct sync failed (LeetCode blocks cloud/server requests with Cloudflare). Please use Method 1 (1-Click Sync in Chrome Extension on leetcode.com) or Method 2 (Quick-Paste Import below)!` 
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    checkCount();
+    const interval = setInterval(checkCount, 3000);
+    const handleFocus = () => checkCount();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isOpen, onSyncComplete]);
+
+  if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#ffffff] border-[#eef0f4] text-[#1e2033] max-w-lg p-6 space-y-4 rounded-2xl shadow-xl">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-[#1e2033] flex items-center justify-center text-white">
-              <RefreshCw className="w-3.5 h-3.5" />
-            </div>
-            <DialogTitle className="text-base font-bold text-[#1e2033]">Sync Solved Problems</DialogTitle>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1e2033]/65 backdrop-blur-xs"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-[14px] p-7 max-w-[520px] w-full max-h-[90vh] overflow-y-auto space-y-5 shadow-none"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header: Title, subtitle, close button */}
+        <div className="flex items-start justify-between pb-2 border-b border-[#e2e8f0]">
+          <div>
+            <h2 className="font-heading text-[22px] font-bold text-[#1e2033]">
+              Sync solved problems
+            </h2>
+            <p className="text-[14px] text-[#475569] mt-0.5">
+              Import your solved history to map them automatically into algorithmic patterns.
+            </p>
           </div>
-          <DialogDescription className="text-xs text-[#646e82]">
-            Import your solved history to map them automatically into 37+ algorithmic patterns.
-          </DialogDescription>
-        </DialogHeader>
 
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-md text-[#64748b] hover:text-[#1e2033] hover:bg-[#f8fafc] transition-colors"
+            aria-label="Close modal"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Media area: sync-demo.gif with sync-demo-poster.png fallback for prefers-reduced-motion */}
+        <div className="rounded-[10px] overflow-hidden border border-[#e2e8f0] bg-[#f6f8fa]">
+          <picture>
+            <source srcSet="/sync-demo-poster.png" media="(prefers-reduced-motion: reduce)" />
+            <img 
+              src="/sync-demo.gif" 
+              alt="Demonstration of syncing solved problems from LeetCode via the Asymptote extension" 
+              className="w-full h-auto block object-cover" 
+            />
+          </picture>
+        </div>
+
+        {/* Status / Result messaging */}
         {statusMessage && (
-          <div className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
-            statusMessage.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'
+          <div className={`p-3.5 rounded-lg border text-[13px] flex items-center gap-2 ${
+            statusMessage.type === 'success' 
+              ? 'bg-[#f0fdf4] border-[#a7f3d0] text-[#047857]' 
+              : 'bg-[#fff1f2] border-[#fecdd3] text-[#9f1239]'
           }`}>
-            {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-red-600" />}
-            <span>{statusMessage.text}</span>
+            {statusMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#047857]" />
+            ) : (
+              <AlertCircle className="w-4 h-4 shrink-0 text-[#9f1239]" />
+            )}
+            <span className="font-medium">{statusMessage.text}</span>
           </div>
         )}
 
-        {/* Method 1: Extension */}
-        <div className="p-4 rounded-xl bg-[#f8f9fc] border border-[#eef0f4] space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#1e2033] flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-amber-500" /> Method 1: Extension 1-Click Sync (Recommended)
+        {/* Three numbered steps */}
+        <div className="space-y-3 pt-1">
+          <div className="flex items-start gap-3.5">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1e2033] text-white text-[12px] font-bold shrink-0 mt-0.5">
+              1
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">
-              Zero Limits
-            </span>
+            <div>
+              <p className="text-[14px] font-bold text-[#1e2033]">
+                Open LeetCode
+              </p>
+              <p className="text-[13px] text-[#475569] mt-0.5 leading-normal">
+                Navigate to your problem set or any problem page while logged into your LeetCode account.
+              </p>
+            </div>
           </div>
-          <p className="text-[11px] text-[#646e82] leading-relaxed">
-            Open the OpenLeet extension popup on leetcode.com and click <strong className="text-[#1e2033]">"⚡ Sync All Solved Questions"</strong> to pull your complete catalog instantly.
-          </p>
+
+          <div className="flex items-start gap-3.5">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1e2033] text-white text-[12px] font-bold shrink-0 mt-0.5">
+              2
+            </span>
+            <div>
+              <p className="text-[14px] font-bold text-[#1e2033]">
+                Click sync in extension
+              </p>
+              <p className="text-[13px] text-[#475569] mt-0.5 leading-normal">
+                Open the Asymptote extension popup and click <strong className="text-[#1e2033]">"Sync all solved problems"</strong>, or click the on-page pill.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3.5">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1e2033] text-white text-[12px] font-bold shrink-0 mt-0.5">
+              3
+            </span>
+            <div>
+              <p className="text-[14px] font-bold text-[#1e2033]">
+                Automatic pattern mapping
+              </p>
+              <p className="text-[13px] text-[#475569] mt-0.5 leading-normal">
+                Your submissions will transfer locally and update your pattern coverage, difficulty stats, and review schedule.
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Method 2: Quick-Paste */}
-        <div className="p-4 rounded-xl bg-[#ffffff] border border-[#eef0f4] space-y-2.5">
-          <span className="text-xs font-semibold text-[#1e2033] flex items-center gap-1.5">
-            <ClipboardList className="w-3.5 h-3.5 text-[#1e2033]" /> Method 2: Quick-Paste Numbers
-          </span>
-          <textarea
-            value={quickInput}
-            onChange={(e) => setQuickInput(e.target.value)}
-            rows={2}
-            placeholder="1, 15, 206, 787, 329, 847..."
-            className="w-full bg-[#f8f9fc] border border-[#eef0f4] rounded-xl p-2.5 text-xs text-[#1e2033] placeholder-[#a0a8b7] focus:outline-none focus:border-[#1e2033] focus:bg-white font-mono"
-          />
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={fillBlind75Sample}
-              className="text-[11px] text-[#1e2033] hover:underline font-medium"
-            >
-              Fill Sample (25 questions)
-            </button>
-            <button
-              disabled={loading || !quickInput.trim()}
-              onClick={handleQuickImport}
-              className="sarvam-btn-primary px-3.5 py-1 text-xs"
-            >
-              Import
-            </button>
-          </div>
+        {/* Footer buttons: "Close" and "Open LeetCode" */}
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e2e8f0]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn-secondary !py-2 !px-4 !text-[14px]"
+          >
+            Close
+          </button>
+          <a
+            href="https://leetcode.com/problemset/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary !py-2 !px-4 !text-[14px] inline-flex items-center gap-1.5"
+          >
+            <span>Open LeetCode</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
         </div>
-
-        {/* Method 3: Public Profile */}
-        <div className="p-4 rounded-xl bg-[#fafafc] border border-[#eef0f4] space-y-2">
-          <span className="text-xs font-semibold text-[#646e82] flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 text-[#a0a8b7]" /> Method 3: Username Sync
-          </span>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. Rijul-Sitpure"
-              className="flex-1 bg-white border border-[#eef0f4] rounded-lg px-3 py-1.5 text-xs text-[#1e2033] focus:outline-none focus:border-[#1e2033]"
-            />
-            <button
-              disabled={loading || !username.trim()}
-              onClick={handleUsernameSync}
-              className="sarvam-btn-secondary px-4 py-1.5 text-xs font-medium"
-            >
-              Sync
-            </button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

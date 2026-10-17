@@ -12,11 +12,11 @@ Software engineers, computer science students, and competitive programmers activ
 
 ## Product Purpose
 
-OpenLeet exists to transform repetitive, unstructured problem grinding into systematic algorithmic pattern mastery. Success means a coder can look at any problem statement and its constraints, accurately deduce the optimal Big-O target and algorithmic archetype, and solve it through progressive Socratic clues without spoiling the solution code.
+Asymptote exists to transform repetitive, unstructured problem grinding into systematic algorithmic pattern mastery. Success means a coder can look at any problem statement and its constraints, accurately deduce the optimal Big-O target and algorithmic archetype, and solve it through progressive Socratic clues without spoiling the solution code.
 
 ## Positioning
 
-A free, 100% local-first, privacy-respecting alternative to LeetCode Premium ($35/mo) and generic LLM chatbots. Unlike ChatGPT or Leet AI which immediately hallucinate full code solutions and spoil learning retention, OpenLeet enforces a strict Socratic hint ladder (Intuition → State → Invariant → Skeleton) and derives optimal Big-O bounds directly from online judge operational CPU limits (~10⁸ ops/sec).
+A free, 100% local-first, privacy-respecting alternative to LeetCode Premium ($35/mo) and generic LLM chatbots. Unlike ChatGPT or Leet AI which immediately hallucinate full code solutions and spoil learning retention, Asymptote enforces a strict Socratic hint ladder (Intuition → State → Invariant → Skeleton) and derives optimal Big-O bounds directly from online judge operational CPU limits (~10⁸ ops/sec).
 
 ## Operating Context
 
@@ -34,7 +34,7 @@ A free, 100% local-first, privacy-respecting alternative to LeetCode Premium ($3
   - 4-Tier Socratic Progressive Hint Ladder (spoilers unlocked sequentially).
   - Diagnostic Inference Wizard (4-question deduction of matching patterns from problem constraints).
   - Dynamic on-the-fly ingestion for any LeetCode problem by number or slug.
-  - In-page Chrome Extension drawer with `[ Ask AI ] | [ Solution ] | [ Complexity ]` tabs and 1-click solved history sync.
+  - In-page Chrome Extension drawer with `[ Hints ] | [ Solution ] | [ Complexity ]` tabs and 1-click solved history sync.
 - **Constraints:**
   - Strict privacy: No remote telemetry or cloud dependency for core functionality.
   - Coder-first: Code solutions must remain the final tier of progressive hints, never the first.
@@ -42,7 +42,7 @@ A free, 100% local-first, privacy-respecting alternative to LeetCode Premium ($3
 
 ## Brand Commitments
 
-- **Name:** OpenLeet
+- **Name:** Asymptote
 - **Tone & Aesthetic:** Minimalist, mature, and engineering-focused (inspired by Sarvam AI's light aesthetic, clean geometric typography, subtle 3D tactile elevation, and generous whitespace).
 - **Anti-patterns to avoid:** No generic glowing "AI" cliches, rainbow gradients, or cartoonish chatbot mascots.
 

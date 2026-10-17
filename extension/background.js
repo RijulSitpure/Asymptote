@@ -87,3 +87,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 });
+
+// Monitor SPA navigation on LeetCode tabs and notify content script immediately
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url && changeInfo.url.includes('leetcode.com')) {
+    chrome.tabs.sendMessage(tabId, {
+      action: 'url_changed',
+      url: changeInfo.url
+    }).catch(() => {
+      // Content script may not be loaded yet or tab is inactive; safe to ignore
+    });
+  }
+});
+

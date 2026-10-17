@@ -11,16 +11,30 @@ export class ComplexityService {
    * Derive complexity guidance from pattern, constraints, and problem metadata
    */
   analyze(problem, pattern) {
+    // Only return complexity for verified problems
+    if (!problem || !problem.verified) {
+      return null;
+    }
+
     const patternId = pattern?.id || problem?.pattern_id || '';
+    if (!patternId) {
+      return null;
+    }
+
     const rawConstraints = problem?.constraints || '';
-    const title = problem?.title || '';
     const difficulty = problem?.difficulty || 'Medium';
 
     // 1. Extract primary variable bounds (N, V, E, K, etc.)
     const bounds = this.extractBounds(rawConstraints, problem);
+    if (!bounds) {
+      return null;
+    }
 
     // 2. Pattern-specific complexity blueprints
     const patternAnalysis = this.getPatternComplexity(patternId, bounds, difficulty);
+    if (!patternAnalysis) {
+      return null;
+    }
 
     // 3. Operational budget calculation
     const budgetExplanation = this.calculateOpsBudget(bounds, patternAnalysis.targetTime);
@@ -46,7 +60,6 @@ export class ComplexityService {
     
     // Look for explicit bounds like 10^5, 1000, 200, 15
     let maxN = null;
-    let nType = 'N';
 
     if (text.includes('10^5') || text.includes('100,000') || text.includes('100000') || text.includes('1e5')) {
       maxN = 100000;
@@ -64,20 +77,15 @@ export class ComplexityService {
       maxN = 20;
     } else if (text.includes('10^9') || text.includes('2^31')) {
       maxN = 1000000000;
+    } else if (text.includes('n <= 100') || text.includes('100')) {
+      maxN = 100;
+    } else if (text.includes('n <= 300') || text.includes('300')) {
+      maxN = 300;
     }
 
-    // Default heuristics if unspecified
+    // If constraints cannot be parsed, return null instead of guessing default
     if (!maxN) {
-      const pid = problem?.pattern_id || '';
-      if (pid.includes('bitmask') || pid.includes('all-nodes')) {
-        maxN = 16;
-      } else if (pid.includes('interval') || pid.includes('2d')) {
-        maxN = 500;
-      } else if (pid.includes('binary-search-answer')) {
-        maxN = 100000;
-      } else {
-        maxN = 100000; // Standard LeetCode array scale
-      }
+      return null;
     }
 
     return {

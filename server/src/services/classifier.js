@@ -506,50 +506,17 @@ export class PatternClassifier {
       };
     }
 
-    if (tags.includes('array')) {
-      return {
-        pattern_id: 'two-pointers-opposite',
-        twist_type: 'Array Processing Pattern',
-        confidence: 0.60
-      };
-    }
-
     return {
-      pattern_id: 'two-pointers-opposite',
-      twist_type: 'Algorithmic Pattern Variation',
-      confidence: 0.50
+      pattern_id: null,
+      twist_type: null,
+      confidence: 0
     };
   }
 
   /**
-   * Generate progressive Socratic hints
+   * Progressive Socratic hints are only returned for curated, verified problems.
    */
   generateProgressiveHints(problem, pattern) {
-    const title = problem.title || 'this problem';
-    const category = pattern ? pattern.category : 'Algorithms';
-    const patternTitle = pattern ? pattern.title : 'Target Pattern';
-
-    return [
-      {
-        level: 1,
-        title: "The Recognition Signal",
-        content: `Notice the constraints and problem structure. This problem maps directly to the ${patternTitle} pattern (${category}). Ask yourself: What mathematical property prevents an exhaustive or brute-force search?`
-      },
-      {
-        level: 2,
-        title: "State & Subproblem Formulation",
-        content: `What parameters uniquely define the state or window at any moment? For ${patternTitle}, consider what information must be maintained as you move from element i to element i + 1.`
-      },
-      {
-        level: 3,
-        title: "Transition Recurrence & Invariants",
-        content: `How do subproblems transition? Pay attention to edge cases where you must avoid modifying states in-place before evaluating all dependencies.`
-      },
-      {
-        level: 4,
-        title: "Blueprint Reference",
-        content: pattern?.base_template_py || `# Refer to canonical pattern template: ${patternTitle}`
-      }
-    ];
+    return [];
   }
 }

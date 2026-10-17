@@ -386,11 +386,11 @@ async function markProblemSolvedFromSolver(problemId) {
         review_needed: false
       })
     });
-    console.log("[OpenLeet Notification]:", 'Awesome! Problem marked as Solved and logged into your Pattern Tracker!');
+    console.log("[Asymptote Notification]:", 'Awesome! Problem marked as Solved and logged into your Pattern Tracker!');
     await loadProblems();
     await loadStats();
   } catch (err) {
-    console.log("[OpenLeet Notification]:", 'Error updating problem: ' + err.message);
+    console.log("[Asymptote Notification]:", 'Error updating problem: ' + err.message);
   }
 }
 
@@ -650,7 +650,7 @@ async function saveProblemDetailEdits() {
     await loadProblems();
     await loadStats();
   } catch (err) {
-    console.log("[OpenLeet Notification]:", 'Failed to save changes: ' + err.message);
+    console.log("[Asymptote Notification]:", 'Failed to save changes: ' + err.message);
   }
 }
 
@@ -752,7 +752,7 @@ async function triggerLeetCodeSync() {
   const btn = document.getElementById('btn-do-sync');
 
   if (!username) {
-    console.log("[OpenLeet Notification]:", 'Please enter your LeetCode username');
+    console.log("[Asymptote Notification]:", 'Please enter your LeetCode username');
     return;
   }
 
@@ -795,7 +795,7 @@ async function importQuickProblemsList() {
   const statusEl = document.getElementById('sync-status-msg');
 
   if (!input) {
-    console.log("[OpenLeet Notification]:", 'Please enter at least one problem number or slug');
+    console.log("[Asymptote Notification]:", 'Please enter at least one problem number or slug');
     return;
   }
 

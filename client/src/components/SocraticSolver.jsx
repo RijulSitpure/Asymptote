@@ -1,8 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import Editor from '@monaco-editor/react';
-import { Search, Sparkles, Lightbulb, AlertTriangle, ArrowRight, Lock, Unlock, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Copy, Check, HelpCircle } from 'lucide-react';
+import { Card } from './Card';
+import { Chip } from './Chip';
+import { HintRow } from './HintRow';
 import { useToast } from './Toast';
-import { cn } from '../lib/utils';
+import { SHOW_HEURISTIC_PATTERNS, getSupportedLanguagesForProblem, getProblemSolutionCode } from '../lib/codeTemplates';
+
+const HINT_TITLES = {
+  1: 'Recognize the pattern',
+  2: 'Define the state',
+  3: 'Write the transition',
+  4: 'See the blueprint'
+};
+
+const RECENT_PROBLEMS = [
+  { id: '1', title: '#1 Two Sum' },
+  { id: '175', title: '#175 Combine Two Tables' },
+  { id: '787', title: '#787 Cheapest Flights' },
+  { id: '329', title: '#329 Longest Path' },
+  { id: '312', title: '#312 Burst Balloons' },
+];
 
 export function SocraticSolver({ initialProblemQuery }) {
   const { addToast } = useToast();
@@ -10,9 +27,22 @@ export function SocraticSolver({ initialProblemQuery }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [revealedLevel, setRevealedLevel] = useState(1);
-  const [isComplexityRevealed, setIsComplexityRevealed] = useState(false);
   const [error, setError] = useState(null);
-  const [isMarkingSolved, setIsMarkingSolved] = useState(false);
+  const [solverLang, setSolverLang] = useState('python3');
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  const isVerified = Boolean(data?.problem?.verified === 1 || data?.problem?.verified === true);
+  const supportedLangs = useMemo(() => {
+    return getSupportedLanguagesForProblem(data?.problem);
+  }, [data?.problem]);
+
+  useEffect(() => {
+    if (supportedLangs && supportedLangs.length > 0) {
+      if (!supportedLangs.some(l => l.id === solverLang)) {
+        setSolverLang(supportedLangs[0].id);
+      }
+    }
+  }, [supportedLangs, solverLang]);
 
   const fetchProblemHints = async (searchQuery) => {
     if (!searchQuery) return;
@@ -26,7 +56,6 @@ export function SocraticSolver({ initialProblemQuery }) {
       const json = await res.json();
       setData(json);
       setRevealedLevel(1);
-      setIsComplexityRevealed(false);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -50,7 +79,6 @@ export function SocraticSolver({ initialProblemQuery }) {
         const level = parseInt(e.key, 10);
         if (level <= (data.hints?.length || 4)) {
           setRevealedLevel(level);
-          if (level >= 2) setIsComplexityRevealed(true);
         }
       }
     };
@@ -63,319 +91,276 @@ export function SocraticSolver({ initialProblemQuery }) {
     fetchProblemHints(query);
   };
 
-  const handleMarkSolved = async () => {
-    if (!data?.problem) return;
-    setIsMarkingSolved(true);
-    try {
-      await fetch(`/api/problems/${data.problem.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_solved: 1 })
-      });
-      addToast({
-        message: `Marked #${data.problem.frontend_id || data.problem.id} ${data.problem.title} as Solved!`,
-        type: 'success'
-      });
-      setData(prev => ({
-        ...prev,
-        problem: { ...prev.problem, is_solved: 1 }
-      }));
-    } catch (err) {
-      addToast({
-        message: `Failed to update status: ${err.message}`,
-        type: 'error'
-      });
-    } finally {
-      setIsMarkingSolved(false);
-    }
+  const unlockLevel = (level) => {
+    setRevealedLevel(Math.max(revealedLevel, level));
+    setTimeout(() => {
+      const el = document.getElementById(`hint-row-${level}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
   };
 
-  const sampleProblems = [
-    { id: '1', title: '#1 Two Sum' },
-    { id: '787', title: '#787 Cheapest Flights' },
-    { id: '329', title: '#329 Longest Path' },
-    { id: '847', title: '#847 Visiting All Nodes' },
-    { id: '312', title: '#312 Burst Balloons' },
-  ];
+  const handleCopyCode = (code) => {
+    navigator.clipboard.writeText(code);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
+  };
+
+  const totalHints = data?.hints?.length || 4;
 
   return (
     <div className="space-y-6">
-      {/* Search Header Banner */}
-      <div className="sarvam-card p-6 sm:p-8 space-y-4">
-        <div className="space-y-1">
-          <span className="text-xs font-semibold text-[#646e82] uppercase tracking-wider">
-            Zero-Spoiler Socratic Method
-          </span>
-          <h2 className="text-2xl font-extrabold text-[#1e2033] tracking-tight">Solver</h2>
-          <p className="text-xs text-[#646e82] max-w-xl">
-            Derive target Big-O bounds and reveal algorithmic clues step-by-step without spoiling the answer. Press keys <kbd className="px-1.5 py-0.5 rounded bg-[#f4f5f8] border border-[#eef0f4] text-[10px] font-mono text-[#1e2033]">1</kbd>–<kbd className="px-1.5 py-0.5 rounded bg-[#f4f5f8] border border-[#eef0f4] text-[10px] font-mono text-[#1e2033]">4</kbd> to step through clues.
-          </p>
-        </div>
+      {/* Title & Subtitle */}
+      <div>
+        <h1 className="font-heading text-[32px] font-bold text-[#1e2033] leading-tight">
+          Solver
+        </h1>
+        <p className="text-[16px] text-[#475569] mt-1">
+          Enter a problem and unlock hints one at a time, without seeing the answer.
+        </p>
+      </div>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-[#a0a8b7] absolute left-3.5 top-3" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter problem number or title (e.g. 787, 329, two sum)..."
-              className="w-full bg-[#f8f9fc] border border-[#eef0f4] rounded-full pl-10 pr-4 py-2.5 text-xs text-[#1e2033] placeholder-[#a0a8b7] focus:outline-none focus:border-[#1e2033] focus:bg-white font-mono transition-all"
-            />
-          </div>
-          <button 
-            type="submit" 
+      {/* Card 1: Problem number or name field + primary Get hints button, then recent problems as neutral chips */}
+      <Card className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Problem number or slug (e.g. 787 or cheapest-flights-within-k-stops)"
+            aria-label="Problem number or name"
+            className="asymptote-input flex-1"
+          />
+          <button
+            type="submit"
             disabled={loading}
-            className="sarvam-btn-primary w-full sm:w-auto px-6 py-2.5 text-xs flex items-center justify-center gap-2"
+            className="btn-primary !py-2.5 !px-5"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{loading ? 'Analyzing...' : 'Get Clues'}</span>
+            {loading ? 'Loading...' : 'Get hints'}
           </button>
         </form>
 
-        {/* Quick Sample Pills */}
-        <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
-          <span className="text-[#a0a8b7]">Try:</span>
-          {sampleProblems.map(p => (
+        {/* Recent problems as neutral chips */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[13px] text-[#64748b]">Recent:</span>
+          {RECENT_PROBLEMS.map((prob) => (
             <button
-              key={p.id}
-              onClick={() => { setQuery(p.id); fetchProblemHints(p.id); }}
-              className="px-3 py-1 rounded-full bg-[#f8f9fc] hover:bg-[#f1f3f7] text-[#1e2033] border border-[#eef0f4] text-xs font-medium transition-all"
+              key={prob.id}
+              type="button"
+              onClick={() => {
+                setQuery(prob.id);
+                fetchProblemHints(prob.id);
+              }}
+              className="chip hover:border-[#cbd5e1] hover:text-[#1e2033] cursor-pointer transition-colors"
             >
-              {p.title}
+              {prob.title}
             </button>
           ))}
         </div>
-      </div>
+      </Card>
 
-      {/* Error state */}
+      {/* Error State */}
       {error && (
-        <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200/80 text-xs text-rose-800 flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-          <span>{error}</span>
-        </div>
+        <Card className="border-[#fda4af] bg-[#fff1f2] text-[#9f1239] text-[14px]">
+          {error}
+        </Card>
       )}
 
-      {/* Results Container */}
-      {data && (
-        <div className="space-y-6">
-          {/* Problem Header Info & Quick Mark Solved Action */}
-          <div className="sarvam-card p-5 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold font-mono text-[#1e2033]">#{data.problem.frontend_id || data.problem.id}</span>
-              <h3 className="text-base font-bold text-[#1e2033]">{data.problem.title}</h3>
-              <span className={cn(
-                "text-xs font-semibold px-2.5 py-0.5 rounded-full",
-                data.problem.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' :
-                data.problem.difficulty === 'Medium' ? 'bg-amber-50 text-amber-700 border border-amber-200/60' :
-                'bg-rose-50 text-rose-700 border border-rose-200/60'
-              )}>
+      {/* When data loaded */}
+      {data && data.problem && (
+        <>
+          {/* Card 2: Problem Header: "#787 Cheapest Flights Within K Stops" (22px Space Grotesk), difficulty chip, pattern chip, status chip */}
+          <Card className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="font-heading text-[22px] font-bold text-[#1e2033] tracking-tight">
+                #{data.problem.frontend_id || data.problem.id} {data.problem.title}
+              </h2>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Chip variant={(data.problem.difficulty || 'medium').toLowerCase()}>
                 {data.problem.difficulty}
-              </span>
+              </Chip>
+              <Chip variant="neutral">
+                {data.problem.category || 'Algorithms'}
+              </Chip>
+              {isVerified ? (
+                <Chip variant="neutral">
+                  {data.pattern?.title || 'Algorithmic Pattern'}
+                </Chip>
+              ) : (SHOW_HEURISTIC_PATTERNS && data.suggested_pattern) ? (
+                <Chip variant="neutral">
+                  Suggested pattern: {data.suggested_pattern.title} (unverified)
+                </Chip>
+              ) : null}
+              <Chip variant={data.problem.is_solved ? 'solved' : 'unsolved'}>
+                {data.problem.is_solved ? 'Solved' : 'Unsolved'}
+              </Chip>
             </div>
+          </Card>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-[#1e2033] bg-[#f8f9fc] border border-[#eef0f4] px-3 py-1 rounded-full">
-                {data.pattern?.title || 'Algorithmic Pattern'}
-              </span>
-              <button
-                onClick={handleMarkSolved}
-                disabled={isMarkingSolved || data.problem.is_solved}
-                className={cn(
-                  "px-3.5 py-1 text-xs rounded-full font-medium transition-all flex items-center gap-1.5",
-                  data.problem.is_solved 
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    : "sarvam-btn-secondary hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200"
-                )}
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{data.problem.is_solved ? 'Solved' : 'Mark Solved'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Socratic Cognitive Gate: Progressive Target Complexity */}
-          {data.complexity && (
-            <div className="sarvam-card overflow-hidden">
-              <div 
-                onClick={() => setIsComplexityRevealed(!isComplexityRevealed)}
-                className="p-5 flex items-center justify-between cursor-pointer hover:bg-[#fafafc] transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-[#1e2033] text-white flex items-center justify-center text-xs font-bold font-mono">
-                    O
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-[#1e2033]">Target Complexity & Bounds Budget</h4>
-                      {!isComplexityRevealed && (
-                        <span className="text-[11px] text-[#646e82] bg-[#f4f5f8] px-2 py-0.5 rounded-full font-mono">
-                          Deduce from Constraints
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-[#646e82] mt-0.5">
-                      {isComplexityRevealed ? data.complexity.boundsSummary : 'Can you deduce the target Big-O before revealing the answer?'}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="sarvam-btn-secondary px-3 py-1 text-xs flex items-center gap-1.5"
-                >
-                  {isComplexityRevealed ? (
-                    <>
-                      <span>Hide Bounds</span>
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    </>
-                  ) : (
-                    <>
-                      <span>Deduce & Reveal</span>
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </>
-                  )}
-                </button>
+          {/* If NOT verified: Show empty-state pattern tile from spec 8.3 */}
+          {!isVerified ? (
+            <Card className="text-center py-12 px-6 space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-xl bg-[#f1f5f9] flex items-center justify-center text-[#64748b]">
+                <HelpCircle className="w-7 h-7" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="font-heading text-[22px] font-bold text-[#1e2033]">
+                  No verified hints yet
+                </h3>
+                <p className="text-[15px] text-[#475569] leading-relaxed">
+                  We have not written verified hints for this problem yet.
+                </p>
+              </div>
+              <div className="pt-2 flex justify-center">
+                <span className="chip text-[12px] font-medium text-[#475569] bg-white border border-[#cbd5e1]">
+                  {data.problem.category || 'Algorithms'}
+                </span>
+              </div>
+            </Card>
+          ) : (
+            /* Card 3: Hints with "1 of 4 unlocked" at right */
+            <Card className="space-y-4">
+              <div className="flex items-center justify-between pb-2">
+                <h3 className="font-heading text-[18px] font-bold text-[#1e2033]">
+                  Hints
+                </h3>
+                <span className="text-[14px] text-[#64748b]">
+                  {revealedLevel} of {totalHints} unlocked
+                </span>
               </div>
 
-              {isComplexityRevealed && (
-                <div className="border-t border-[#f4f5f8] p-6 space-y-4 bg-[#fafafc]">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="bg-white p-4 rounded-xl border border-[#eef0f4] shadow-xs">
-                      <span className="text-xs text-[#646e82] uppercase tracking-wider block font-semibold">Target Time Bound</span>
-                      <span className="text-sm font-bold font-mono text-[#1e2033] mt-1 block">{data.complexity.targetTime}</span>
-                    </div>
-                    <div className="bg-white p-4 rounded-xl border border-[#eef0f4] shadow-xs">
-                      <span className="text-xs text-[#646e82] uppercase tracking-wider block font-semibold">Target Space Bound</span>
-                      <span className="text-sm font-bold font-mono text-[#1e2033] mt-1 block">{data.complexity.targetSpace}</span>
-                    </div>
-                  </div>
+              {/* Four rows: L1 Recognize the pattern, L2 Define the state, L3 Write the transition, L4 See the blueprint */}
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map((level) => {
+                  const isUnlocked = level <= revealedLevel;
+                  const title = HINT_TITLES[level] || `Hint ${level}`;
+                  const rawHint = data.hints && data.hints[level - 1];
 
-                  <div className="bg-white p-4 rounded-xl border border-[#eef0f4] text-xs text-[#646e82] space-y-1.5 shadow-xs">
-                    <span className="font-semibold text-[#1e2033] block">Online Judge Operational Budget ($10^8$ ops/sec):</span>
-                    <p className="leading-relaxed">{data.complexity.opsBudgetExplanation || data.complexity.whyNaiveFails}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Socratic Progressive Clue Ladder */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="font-bold text-sm text-[#1e2033] flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-[#1e2033]" />
-                Socratic Clue Ladder
-              </h4>
-              <span className="text-xs text-[#646e82]">
-                Level {revealedLevel} of {data.hints?.length || 4} Unlocked
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {(data.hints || []).map((hint, idx) => {
-                const isUnlocked = (idx + 1) <= revealedLevel;
-
-                return (
-                  <div 
-                    key={idx} 
-                    className={cn(
-                      "sarvam-card overflow-hidden transition-all",
-                      !isUnlocked && "opacity-75 bg-[#fcfcfd]"
-                    )}
-                  >
-                    <div className="p-4 sm:p-5 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className={cn(
-                          "w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs font-mono",
-                          isUnlocked ? "bg-[#1e2033] text-white" : "bg-[#f4f5f8] text-[#a0a8b7]"
-                        )}>
-                          L{idx + 1}
-                        </span>
-                        <div>
-                          <h5 className="font-bold text-xs text-[#1e2033]">{hint.title}</h5>
-                          <span className="text-xs text-[#646e82]">
-                            {idx === 0 ? 'Recognition & Invariant' : idx === 1 ? 'State Formulation & Target Bounds' : idx === 2 ? 'Transitions & Critical Traps' : 'Implementation Blueprint'}
+                  if (!isUnlocked) {
+                    return (
+                      <div 
+                        key={level} 
+                        id={`hint-row-${level}`}
+                        className="bg-white border border-[#e2e8f0] rounded-[10px] px-5 py-3.5 flex items-center justify-between gap-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="bg-[#e2e8f0] text-[#475569] text-[12px] font-bold px-2.5 py-0.5 rounded-md leading-none">
+                            L{level}
+                          </span>
+                          <span className="text-[15px] font-medium text-[#475569]">
+                            {title}
                           </span>
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => unlockLevel(level)}
+                          className="btn-hint"
+                        >
+                          Unlock
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  // Unlocked row style: #f0fdf4 background, #a7f3d0 border, level badge in slate with white text, title, clue text 15px
+                  if (level === 4) {
+                    const code = getProblemSolutionCode(data.problem, solverLang);
+
+                    return (
+                      <div 
+                        key={level} 
+                        id={`hint-row-${level}`}
+                        className="bg-[#f0fdf4] border border-[#a7f3d0] rounded-[10px] p-[18px] space-y-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="bg-[#1e2033] text-white text-[12px] font-bold px-2.5 py-0.5 rounded-md leading-none">
+                            L{level}
+                          </span>
+                          <h4 className="font-heading text-[16px] font-bold text-[#1e2033]">
+                            {title}
+                          </h4>
+                        </div>
+
+                        {/* Code container with multi-language tabs */}
+                        <div className="bg-white p-4 rounded-lg border border-[#a7f3d0] space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {supportedLangs.length === 0 ? (
+                                <span className="text-[12px] text-[#64748b] italic">Loading languages...</span>
+                              ) : (
+                                supportedLangs.map((lang) => (
+                                  <button
+                                    key={lang.id}
+                                    type="button"
+                                    onClick={() => setSolverLang(lang.id)}
+                                    className={`px-2.5 py-1 rounded-md text-[13px] font-medium transition-colors ${
+                                      solverLang === lang.id
+                                        ? 'bg-[#1e2033] text-white font-bold'
+                                        : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
+                                    }`}
+                                  >
+                                    {lang.name}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleCopyCode(code)}
+                              className="btn-secondary !py-1 !px-2.5 !text-[13px]"
+                            >
+                              {codeCopied ? <Check className="w-3.5 h-3.5 text-[#047857]" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{codeCopied ? 'Copied' : 'Copy'}</span>
+                            </button>
+                          </div>
+
+                          <pre className="bg-[#f6f8fa] border border-[#e2e8f0] rounded-lg p-4 font-mono text-[13px] text-[#1e2033] leading-relaxed overflow-x-auto whitespace-pre">
+                            <code>{code}</code>
+                          </pre>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Levels 1, 2, 3
+                  return (
+                    <div 
+                      key={level} 
+                      id={`hint-row-${level}`}
+                      className="bg-[#f0fdf4] border border-[#a7f3d0] rounded-[10px] p-[18px] space-y-2.5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="bg-[#1e2033] text-white text-[12px] font-bold px-2.5 py-0.5 rounded-md leading-none">
+                          L{level}
+                        </span>
+                        <h4 className="font-heading text-[16px] font-bold text-[#1e2033]">
+                          {title}
+                        </h4>
                       </div>
 
-                      {isUnlocked ? (
-                        <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 rounded-full">
-                          Revealed
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setRevealedLevel(idx + 1);
-                            if (idx + 1 >= 2) setIsComplexityRevealed(true);
-                          }}
-                          className="sarvam-btn-secondary px-3 py-1 text-xs flex items-center gap-1.5"
-                        >
-                          <Lock className="w-3 h-3 text-[#646e82]" />
-                          <span>Unlock L{idx + 1}</span>
-                        </button>
+                      <p className="text-[15px] text-[#334155] leading-relaxed whitespace-pre-wrap">
+                        {rawHint?.content || 'Analyze constraints and invariant relationships.'}
+                      </p>
+
+                      {/* Level 3: Show Pattern variation / twist if present */}
+                      {level === 3 && data.problem.twist_type && (
+                        <div className="p-3 bg-white rounded-lg border border-[#a7f3d0] text-[14px] mt-2">
+                          <span className="font-bold text-[#b45309] block mb-0.5">
+                            Pattern variation
+                          </span>
+                          <span className="text-[#334155]">{data.problem.twist_type}</span>
+                        </div>
                       )}
                     </div>
-
-                    {isUnlocked && (
-                      <div className="border-t border-[#f4f5f8] p-5 bg-[#fafafc] text-xs text-[#1e2033] leading-relaxed space-y-3">
-                        {/* If Level 3: Reveal Critical Twist alert if present */}
-                        {idx === 2 && data.problem.twist_type && (
-                          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5 text-amber-900">
-                            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                            <div>
-                              <strong className="block font-semibold">The Twist & Edge Case Trap:</strong>
-                              <span className="mt-0.5 block">{data.problem.twist_type}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Level 4: Monaco Code Editor */}
-                        {idx === 3 ? (
-                          <div className="rounded-xl overflow-hidden border border-[#eef0f4] shadow-xs">
-                            <Editor
-                              height="200px"
-                              language="python"
-                              theme="vs-dark"
-                              value={hint.content}
-                              options={{
-                                readOnly: true,
-                                minimap: { enabled: false },
-                                fontSize: 12,
-                                lineNumbers: 'off',
-                                scrollBeyondLastLine: false,
-                                fontFamily: 'JetBrains Mono, Menlo, monospace',
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <p className="whitespace-pre-wrap">{hint.content}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Next Reveal Button */}
-            {revealedLevel < (data.hints?.length || 0) && (
-              <button
-                onClick={() => {
-                  const nextLevel = revealedLevel + 1;
-                  setRevealedLevel(nextLevel);
-                  if (nextLevel >= 2) setIsComplexityRevealed(true);
-                }}
-                className="sarvam-btn-primary w-full py-3 text-xs flex items-center justify-center gap-2"
-              >
-                <span>Reveal Next Clue (Level {revealedLevel + 1})</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );

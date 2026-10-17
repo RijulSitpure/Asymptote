@@ -79,10 +79,10 @@ export const KNOWN_PROBLEMS = {
 };
 
 export class SyncService {
-  constructor(db, patterns) {
+  constructor(db, patterns, leetcode = null) {
     this.db = db;
     this.patterns = patterns;
-    this.leetcode = new LeetCodeService();
+    this.leetcode = leetcode || new LeetCodeService();
     this.classifier = new PatternClassifier(patterns);
   }
 
@@ -139,6 +139,11 @@ export class SyncService {
         const targetPattern = this.patterns.find(p => p.id === classification.pattern_id);
         const progressiveHints = this.classifier.generateProgressiveHints(details, targetPattern);
 
+        const category = details.categoryTitle || null;
+        const languages = details.codeSnippets && Array.isArray(details.codeSnippets)
+          ? details.codeSnippets.map(s => s.langSlug)
+          : null;
+
         this.db.upsertProblem({
           frontend_id: details.questionFrontendId || details.questionId,
           title: details.title,
@@ -156,7 +161,11 @@ export class SyncService {
           user_code: '',
           user_notes: `Auto-synced from LeetCode (${cleanUsername})`,
           user_rating: 3,
-          review_needed: false
+          review_needed: false,
+          source: 'heuristic',
+          verified: 0,
+          category,
+          languages
         });
 
         newlySynced++;
@@ -213,6 +222,11 @@ export class SyncService {
     const targetPattern = this.patterns.find(p => p.id === classification.pattern_id);
     const hints = this.classifier.generateProgressiveHints({ title }, targetPattern);
 
+    const category = details?.categoryTitle || null;
+    const languages = details?.codeSnippets && Array.isArray(details.codeSnippets)
+      ? details.codeSnippets.map(s => s.langSlug)
+      : null;
+
     const newId = this.db.upsertProblem({
       frontend_id: frontendId,
       title,
@@ -230,7 +244,11 @@ export class SyncService {
       user_code: code || '',
       user_notes: `Synced via Extension (${runtime || ''} ${memory || ''})`,
       user_rating: 4,
-      review_needed: false
+      review_needed: false,
+      source: 'heuristic',
+      verified: 0,
+      category,
+      languages
     });
 
     this.db.addSyncLog('extension', 'success', `Captured and auto-classified ${title}`);
@@ -254,6 +272,8 @@ export class SyncService {
       let title = item.title;
       let difficulty = item.difficulty || 'Medium';
       let tags = item.topicTags || [];
+      let category = item.category || item.categoryTitle || null;
+      let languages = item.languages || (item.codeSnippets && Array.isArray(item.codeSnippets) ? item.codeSnippets.map(s => s.langSlug) : null);
 
       // Enrich from known problems library if numeric ID or title matches
       if (frontendId && KNOWN_PROBLEMS[frontendId]) {
@@ -264,15 +284,23 @@ export class SyncService {
         if (!tags.length) tags = known.tags;
       }
 
-      if (!slug) slug = (frontendId ? `problem-${frontendId}` : (title || 'problem').toLowerCase().replace(/\s+/g, '-'));
+      if (!slug) slug = (title || 'problem').toLowerCase().replace(/[^a-z0-9]+/g, '-');
       if (!title) title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-      const existing = (slug ? this.db.findProblem(slug) : null) || (frontendId ? this.db.findProblem(frontendId) : null);
+      // Skip problems with invalid or missing frontend IDs
+      if (!frontendId || !/^\d+$/.test(frontendId)) {
+        continue;
+      }
+
+      const existing = (slug ? this.db.findProblem(slug) : null) || this.db.findProblem(frontendId);
       if (existing) {
-        this.db.updateProblemDetails(existing.id, {
+        const updates = {
           is_solved: true,
           solved_at: item.solved_at || existing.solved_at || new Date().toISOString()
-        });
+        };
+        if (category && !existing.category) updates.category = category;
+        if (languages && !existing.languages) updates.languages = languages;
+        this.db.updateProblemDetails(existing.id, updates);
         updatedCount++;
       } else {
         const classification = this.classifier.classify({
@@ -285,7 +313,7 @@ export class SyncService {
         const progressiveHints = this.classifier.generateProgressiveHints({ title }, targetPattern);
 
         this.db.upsertProblem({
-          frontend_id: frontendId || String(Date.now()),
+          frontend_id: frontendId,
           title,
           title_slug: slug,
           difficulty,
@@ -301,7 +329,11 @@ export class SyncService {
           user_code: '',
           user_notes: `Synced via LeetCode Companion`,
           user_rating: 3,
-          review_needed: false
+          review_needed: false,
+          source: 'heuristic',
+          verified: 0,
+          category,
+          languages
         });
         newlySynced++;
       }
