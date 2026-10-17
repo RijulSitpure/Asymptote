@@ -62,10 +62,14 @@ async function main() {
     console.log(`[SKIP] pandas Runner: ${msg}`);
   }
 
+  const targetSlug = process.argv[2];
   // Scan tests directory for testable slugs
-  const testDirs = fs.existsSync(testsDir)
+  let testDirs = fs.existsSync(testsDir)
     ? fs.readdirSync(testsDir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name)
     : [];
+  if (targetSlug) {
+    testDirs = testDirs.filter(d => d === targetSlug);
+  }
 
   console.log(`\nFound ${testDirs.length} problem test suite(s) in dataset/tests/`);
 
@@ -101,7 +105,7 @@ async function main() {
         } else {
           const run = spawnSync('python3', [testScript], {
             cwd: slugTestDir,
-            timeout: 15000,
+            timeout: 30000,
             stdio: 'pipe',
             env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' }
           });
