@@ -271,5 +271,86 @@
       "mysql": "INTERSECT and EXCEPT exist only in MySQL 8.0.31 and later; otherwise use EXISTS / NOT EXISTS or joins",
       "oraclesql": "uses MINUS instead of EXCEPT"
     }
+  },
+  {
+    "id": "null-handling",
+    "domain": "Database",
+    "family": "NULL Handling",
+    "title": "NULL Values, COALESCE & Safe Comparison",
+    "difficulty": "Easy-Medium",
+    "short_description": "Managing three-valued logic (TRUE, FALSE, UNKNOWN) using COALESCE, IFNULL, IS NULL, and understanding aggregate NULL elimination.",
+    "mental_triggers": [
+      "Customer Placing Largest Number of Orders: replacing NULL totals with 0 via COALESCE",
+      "Find Customers With Positive Revenue: filtering where column IS NOT NULL vs > 0",
+      "Aggregates ignoring NULL: COUNT(column) counts non-nulls whereas COUNT(*) counts rows"
+    ],
+    "constraint_signals": [
+      "Arithmetic with NULL produces NULL; comparing with = NULL evaluates to UNKNOWN"
+    ],
+    "complexity": "Query Time: O(N) row evaluation | Space: O(1)",
+    "dialect_notes": {
+      "mysql": "IFNULL(col, default) or COALESCE(col, default)",
+      "postgresql": "COALESCE(col, default)",
+      "mssql": "ISNULL(col, default) or COALESCE(col, default)",
+      "oraclesql": "NVL(col, default) or COALESCE(col, default)"
+    }
+  },
+  {
+    "id": "correlated-subquery-exists",
+    "domain": "Database",
+    "family": "Subqueries",
+    "title": "Correlated Subqueries & EXISTS Logic",
+    "difficulty": "Medium",
+    "short_description": "Evaluating subqueries that reference columns from the outer query for each outer row, typically with EXISTS or scalar aggregations.",
+    "mental_triggers": [
+      "Employees Earning More Than Their Department Average: correlated AVG in WHERE clause",
+      "Customers Who Bought All Products: NOT EXISTS (NOT EXISTS) relational division",
+      "Find Managers with At Least 5 Direct Reports: EXISTS / COUNT in subquery"
+    ],
+    "constraint_signals": [
+      "Correlated subqueries execute per candidate outer row unless rewritten by query optimizer into a join"
+    ],
+    "complexity": "Query Time: O(M * N) unindexed, O(M log N) with index | Space: O(1)"
+  },
+  {
+    "id": "nth-highest-limit-offset",
+    "domain": "Database",
+    "family": "Paging & Offset",
+    "title": "Nth Highest Value via LIMIT/OFFSET & Functions",
+    "difficulty": "Medium",
+    "short_description": "Extracting the Nth distinct record from an ordered dataset using DISTINCT with LIMIT 1 OFFSET N-1 or custom stored functions.",
+    "mental_triggers": [
+      "Second Highest Salary: SELECT DISTINCT salary ... ORDER BY salary DESC LIMIT 1 OFFSET 1",
+      "Nth Highest Salary: encapsulated SQL function taking N and using OFFSET N-1",
+      "Returning NULL automatically if Nth highest value does not exist (wrapping in outer SELECT)"
+    ],
+    "constraint_signals": [
+      "Must use DISTINCT to ensure duplicate highest salaries do not consume multiple rank offsets",
+      "Wrapping query in subquery ensures returning NULL instead of an empty result set"
+    ],
+    "complexity": "Query Time: O(N log N) sorting | Space: O(1)",
+    "dialect_notes": {
+      "mysql": "LIMIT 1 OFFSET N-1",
+      "postgresql": "LIMIT 1 OFFSET N-1",
+      "mssql": "OFFSET N-1 ROWS FETCH NEXT 1 ROWS ONLY",
+      "oraclesql": "OFFSET N-1 ROWS FETCH NEXT 1 ROWS ONLY"
+    }
+  },
+  {
+    "id": "dml-update-delete",
+    "domain": "Database",
+    "family": "Data Modification",
+    "title": "DML Mutations (UPDATE, DELETE & Self-Referential Cleanup)",
+    "difficulty": "Easy-Medium",
+    "short_description": "Modifying database tables in-place using DELETE with self-joins or UPDATE with conditional CASE expressions.",
+    "mental_triggers": [
+      "Delete Duplicate Emails: DELETE p1 FROM Person p1, Person p2 WHERE p1.Email = p2.Email AND p1.Id > p2.Id",
+      "Swap Salary: UPDATE Salary SET sex = CASE WHEN sex = 'm' THEN 'f' ELSE 'm' END",
+      "In-place record modification without intermediate staging tables"
+    ],
+    "constraint_signals": [
+      "MySQL disallows deleting from a table while selecting from the same table in a subquery without aliased temporary table"
+    ],
+    "complexity": "Query Time: O(N log N) or O(N^2) unindexed | Space: O(1)"
   }
 ]
