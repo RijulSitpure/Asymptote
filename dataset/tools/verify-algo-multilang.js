@@ -12,8 +12,38 @@ export function verifyAlgoMultiLang(slug, prob, slugTestDir, runtimes) {
   // 1. C++ compilation check
   const cppSol = prob.solutions?.find(s => s.lang === 'cpp');
   if (cppSol && runtimes.cpp) {
+    let codeToTest = cppSol.code;
+    if (!codeToTest.includes('struct ListNode')) {
+      codeToTest = `
+#include <iostream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <map>
+#include <set>
+#include <queue>
+#include <deque>
+#include <stack>
+#include <algorithm>
+#include <climits>
+#include <cmath>
+#include <numeric>
+#include <utility>
+
+using namespace std;
+
+struct ListNode {
+    int val;
+    ListNode *next;
+    ListNode() : val(0), next(nullptr) {}
+    ListNode(int x) : val(x), next(nullptr) {}
+    ListNode(int x, ListNode *next) : val(x), next(next) {}
+};
+` + codeToTest;
+    }
     const cppRes = spawnSync('g++', ['-std=c++17', '-fsyntax-only', '-x', 'c++', '-'], {
-      input: cppSol.code,
+      input: codeToTest,
       encoding: 'utf8',
       timeout: 15000
     });
@@ -35,9 +65,152 @@ export function verifyAlgoMultiLang(slug, prob, slugTestDir, runtimes) {
       throw new Error(`Missing "method" in ${metaPath}`);
     }
 
-    const sandbox = {};
+    const sandbox = {
+      ListNode: function(val, next) {
+        this.val = (val === undefined ? 0 : val);
+        this.next = (next === undefined ? null : next);
+      }
+    };
     vm.createContext(sandbox);
     vm.runInContext(jsSol.code, sandbox);
+
+    // Helpers for JS linked lists
+    function arrToList(arr) {
+      if (!arr || arr.length === 0) return null;
+      const dummy = new sandbox.ListNode(0);
+      let curr = dummy;
+      for (const x of arr) {
+        curr.next = new sandbox.ListNode(x);
+        curr = curr.next;
+      }
+      return dummy.next;
+    }
+
+    function listToArr(head) {
+      const res = [];
+      let curr = head;
+      while (curr) {
+        res.append ? res.append(curr.val) : res.push(curr.val);
+        curr = curr.next;
+      }
+      return res;
+    }
+
+    function arrToCycle(arr, pos) {
+      if (!arr || arr.length === 0) return null;
+      const nodes = arr.map(x => new sandbox.ListNode(x));
+      for (let i = 0; i < nodes.length - 1; i++) {
+        nodes[i].next = nodes[i + 1];
+      }
+      if (pos >= 0 && pos < nodes.length) {
+        nodes[nodes.length - 1].next = nodes[pos];
+      }
+      return nodes[0];
+    }
+
+    // Special class design testing for min-stack and lru-cache
+    if (slug === 'min-stack') {
+      const pyHarness = `
+import json
+
+sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
+scope = {}
+exec(sol_code, scope)
+MinStack = scope['MinStack']
+
+ops = [
+  ("push", [-2]), ("push", [0]), ("push", [-3]), ("getMin", []),
+  ("pop", []), ("top", []), ("getMin", []),
+  ("push", [5]), ("push", [2]), ("push", [2]), ("getMin", []),
+  ("pop", []), ("getMin", [])
+]
+
+res = []
+ms = MinStack()
+for op, a in ops:
+    if op == 'push':
+        ms.push(a[0])
+        res.append(None)
+    elif op == 'pop':
+        ms.pop()
+        res.append(None)
+    elif op == 'top':
+        res.append(ms.top())
+    elif op == 'getMin':
+        res.append(ms.getMin())
+
+print(json.dumps({'ops': ops, 'expected': res}))
+`;
+      const pyRun = spawnSync('python3', ['-c', pyHarness], { encoding: 'utf8', timeout: 30000 });
+      if (pyRun.status !== 0) {
+        throw new Error(`Python harness failed for min-stack: ${pyRun.stderr}`);
+      }
+      const data = JSON.parse(pyRun.stdout);
+      const ms = new sandbox.MinStack();
+      for (let k = 0; k < data.ops.length; k++) {
+        const [op, a] = data.ops[k];
+        const exp = data.expected[k];
+        let actual = null;
+        if (op === 'push') ms.push(a[0]);
+        else if (op === 'pop') ms.pop();
+        else if (op === 'top') actual = ms.top();
+        else if (op === 'getMin') actual = ms.getMin();
+
+        if (actual !== exp) {
+          throw new Error(`MinStack op ${op}(${JSON.stringify(a)}): JS ${actual} vs PY ${exp}`);
+        }
+      }
+      console.log(`  ↳ Verified JavaScript MinStack against Python 3 across ${data.ops.length} operations`);
+      return;
+    }
+
+    if (slug === 'lru-cache') {
+      const pyHarness = `
+import json
+
+sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
+scope = {}
+exec(sol_code, scope)
+LRUCache = scope['LRUCache']
+
+ops = [
+  ("put", [1, 1]), ("put", [2, 2]), ("get", [1]), ("put", [3, 3]),
+  ("get", [2]), ("put", [4, 4]), ("get", [1]), ("get", [3]), ("get", [4]),
+  ("put", [2, 1]), ("put", [2, 2]), ("get", [2]), ("put", [1, 1]), ("put", [4, 1]), ("get", [2])
+]
+
+res = []
+cache = LRUCache(2)
+for op, a in ops:
+    if op == 'put':
+        cache.put(a[0], a[1])
+        res.append(None)
+    elif op == 'get':
+        res.append(cache.get(a[0]))
+
+print(json.dumps({'ops': ops, 'expected': res}))
+`;
+      const pyRun = spawnSync('python3', ['-c', pyHarness], { encoding: 'utf8', timeout: 30000 });
+      if (pyRun.status !== 0) {
+        throw new Error(`Python harness failed for lru-cache: ${pyRun.stderr}`);
+      }
+      const data = JSON.parse(pyRun.stdout);
+      const cache = new sandbox.LRUCache(2);
+      for (let k = 0; k < data.ops.length; k++) {
+        const [op, a] = data.ops[k];
+        const exp = data.expected[k];
+        let actual = null;
+        if (op === 'put') cache.put(a[0], a[1]);
+        else if (op === 'get') actual = cache.get(a[0]);
+
+        if (actual !== exp) {
+          throw new Error(`LRUCache op ${op}(${JSON.stringify(a)}): JS ${actual} vs PY ${exp}`);
+        }
+      }
+      console.log(`  ↳ Verified JavaScript LRUCache against Python 3 across ${data.ops.length} operations`);
+      return;
+    }
+
     const jsFn = sandbox[methodName];
     if (typeof jsFn !== 'function') {
       throw new Error(`JavaScript solution does not export method "${methodName}"`);
@@ -45,7 +218,38 @@ export function verifyAlgoMultiLang(slug, prob, slugTestDir, runtimes) {
 
     // Python harness to generate cases and evaluate python solution
     const pyHarness = `
-import json, random
+import json, random, math
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def arr_to_list(arr):
+    if not arr: return None
+    dummy = ListNode(0)
+    curr = dummy
+    for x in arr:
+        curr.next = ListNode(x)
+        curr = curr.next
+    return dummy.next
+
+def list_to_arr(head):
+    res = []
+    curr = head
+    while curr:
+        res.append(curr.val)
+        curr = curr.next
+    return res
+
+def arr_to_cycle(arr, pos):
+    if not arr: return None
+    nodes = [ListNode(x) for x in arr]
+    for i in range(len(nodes) - 1):
+        nodes[i].next = nodes[i + 1]
+    if pos >= 0 and pos < len(nodes):
+        nodes[-1].next = nodes[pos]
+    return nodes[0]
 
 def generate_cases(slug):
     rng = random.Random(42)
@@ -299,17 +503,164 @@ def generate_cases(slug):
             s_len = rng.randint(1, 20); t_len = rng.randint(1, 4)
             cases.append({'args': [''.join(rng.choice(letters) for _ in range(s_len)), ''.join(rng.choice(letters) for _ in range(t_len))]})
 
+    elif slug == 'evaluate-reverse-polish-notation':
+        fixed = [
+            (["2","1","+","3","*"],),
+            (["4","13","5","/","+"],),
+            (["10","6","9","3","+","-11","*","/","*","17","+","5","+"],),
+            (["42"],),
+            (["-6","132","/"],)
+        ]
+        for t in fixed: cases.append({'args': list(t)})
+
+    elif slug == 'car-fleet':
+        fixed = [
+            (12, [10,8,0,5,3], [2,4,1,1,3]),
+            (10, [3], [3]),
+            (100, [0,2,4], [4,2,1]),
+            (10, [6, 8], [3, 2])
+        ]
+        for t, p, s in fixed: cases.append({'args': [t, p, s]})
+        for _ in range(25):
+            target = rng.randint(50, 500)
+            n = rng.randint(1, 20)
+            p = rng.sample(range(0, target), n)
+            s = [rng.randint(1, 30) for _ in range(n)]
+            cases.append({'args': [target, p, s]})
+
+    elif slug == 'largest-rectangle-in-histogram':
+        fixed = [[[2,1,5,6,2,3]], [[2,4]], [[1]], [[5,5,5,5]], [[1,2,3,4,5]], [[5,4,3,2,1]]]
+        for h in fixed: cases.append({'args': h})
+        for _ in range(30):
+            sz = rng.randint(1, 30)
+            cases.append({'args': [[rng.randint(0, 40) for _ in range(sz)]]})
+
+    elif slug == 'binary-search':
+        fixed = [([-1,0,3,5,9,12], 9), ([-1,0,3,5,9,12], 2), ([5], 5), ([5], -5)]
+        for n, t in fixed: cases.append({'args': [n, t]})
+        for _ in range(30):
+            sz = rng.randint(1, 30)
+            nums = sorted(list(set(rng.randint(-50, 50) for _ in range(sz))))
+            target = rng.choice(nums) if rng.random() < 0.6 else rng.randint(-60, 60)
+            cases.append({'args': [nums, target]})
+
+    elif slug == 'search-a-2d-matrix':
+        fixed = [
+            ([[1,3,5,7],[10,11,16,20],[23,30,34,60]], 3),
+            ([[1,3,5,7],[10,11,16,20],[23,30,34,60]], 13),
+            ([[1]], 1),
+            ([[1]], 0)
+        ]
+        for m, t in fixed: cases.append({'args': [m, t]})
+        for _ in range(25):
+            r = rng.randint(1, 6); c = rng.randint(1, 6)
+            vals = sorted(list(set(rng.randint(-50, 50) for _ in range(r * c))))
+            while len(vals) < r * c: vals.append(vals[-1] + 1)
+            mat = [vals[i * c : (i + 1) * c] for i in range(r)]
+            target = rng.choice(vals) if rng.random() < 0.5 else rng.randint(-60, 60)
+            cases.append({'args': [mat, target]})
+
+    elif slug == 'koko-eating-bananas':
+        fixed = [([3,6,7,11], 8), ([30,11,23,4,20], 5), ([30,11,23,4,20], 6), ([1,1,1,1], 4)]
+        for p, h in fixed: cases.append({'args': [p, h]})
+        for _ in range(25):
+            n = rng.randint(1, 20)
+            p = [rng.randint(1, 100) for _ in range(n)]
+            h = rng.randint(n, n * 5)
+            cases.append({'args': [p, h]})
+
+    elif slug == 'find-minimum-in-rotated-sorted-array':
+        fixed = [[[3,4,5,1,2]], [[4,5,6,7,0,1,2]], [[11,13,15,17]], [[1]], [[2,1]]]
+        for n in fixed: cases.append({'args': n})
+        for _ in range(30):
+            sz = rng.randint(1, 30)
+            vals = sorted(list(set(rng.randint(-50, 50) for _ in range(sz))))
+            rot = rng.randint(0, len(vals) - 1)
+            cases.append({'args': [vals[rot:] + vals[:rot]]})
+
+    elif slug == 'search-in-rotated-sorted-array':
+        fixed = [([4,5,6,7,0,1,2], 0), ([4,5,6,7,0,1,2], 3), ([1], 0), ([1], 1), ([3,1], 1)]
+        for n, t in fixed: cases.append({'args': [n, t]})
+        for _ in range(30):
+            sz = rng.randint(1, 30)
+            vals = sorted(list(set(rng.randint(-50, 50) for _ in range(sz))))
+            rot = rng.randint(0, len(vals) - 1)
+            nums = vals[rot:] + vals[:rot]
+            target = rng.choice(nums) if rng.random() < 0.6 else rng.randint(-60, 60)
+            cases.append({'args': [nums, target]})
+
+    elif slug == 'reverse-linked-list':
+        fixed = [[[1,2,3,4,5]], [[1,2]], [[]], [[42]]]
+        for a in fixed: cases.append({'args': a})
+        for _ in range(30):
+            sz = rng.randint(0, 25)
+            cases.append({'args': [[rng.randint(-50, 50) for _ in range(sz)]]})
+
+    elif slug == 'merge-two-sorted-lists':
+        fixed = [([1,2,4], [1,3,4]), ([], []), ([], [0]), ([5], [1,2,3])]
+        for a1, a2 in fixed: cases.append({'args': [a1, a2]})
+        for _ in range(30):
+            n1 = rng.randint(0, 20); n2 = rng.randint(0, 20)
+            a1 = sorted([rng.randint(-50, 50) for _ in range(n1)])
+            a2 = sorted([rng.randint(-50, 50) for _ in range(n2)])
+            cases.append({'args': [a1, a2]})
+
+    elif slug == 'reorder-list':
+        fixed = [[[1,2,3,4]], [[1,2,3,4,5]], [[1]], [[1,2]], [[]]]
+        for a in fixed: cases.append({'args': a})
+        for _ in range(30):
+            sz = rng.randint(0, 25)
+            cases.append({'args': [[rng.randint(-50, 50) for _ in range(sz)]]})
+
+    elif slug == 'remove-nth-node-from-end-of-list':
+        fixed = [([1,2,3,4,5], 2), ([1], 1), ([1,2], 1), ([1,2], 2)]
+        for a, n in fixed: cases.append({'args': [a, n]})
+        for _ in range(30):
+            sz = rng.randint(1, 20)
+            n = rng.randint(1, sz)
+            cases.append({'args': [[rng.randint(-50, 50) for _ in range(sz)], n]})
+
+    elif slug == 'linked-list-cycle':
+        fixed = [([3,2,0,-4], 1), ([1,2], 0), ([1], -1), ([], -1)]
+        for a, pos in fixed: cases.append({'args': [a, pos]})
+        for _ in range(30):
+            sz = rng.randint(0, 20)
+            has_c = rng.random() < 0.5
+            pos = rng.randint(0, sz - 1) if has_c and sz > 0 else -1
+            cases.append({'args': [[rng.randint(-50, 50) for _ in range(sz)], pos]})
+
     return cases
 
 sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
-scope = {}
+scope = {'ListNode': ListNode, 'Optional': None}
 exec(sol_code, scope)
 solver = scope['Solution']()
 cases = generate_cases('${slug}')
 
 results = []
 for c in cases:
-    ans = getattr(solver, '${methodName}')(*c['args'])
+    if '${slug}' == 'reverse-linked-list':
+        h = arr_to_list(c['args'][0])
+        res = solver.reverseList(h)
+        ans = list_to_arr(res)
+    elif '${slug}' == 'merge-two-sorted-lists':
+        l1 = arr_to_list(c['args'][0])
+        l2 = arr_to_list(c['args'][1])
+        res = solver.mergeTwoLists(l1, l2)
+        ans = list_to_arr(res)
+    elif '${slug}' == 'reorder-list':
+        h = arr_to_list(c['args'][0])
+        solver.reorderList(h)
+        ans = list_to_arr(h)
+    elif '${slug}' == 'remove-nth-node-from-end-of-list':
+        h = arr_to_list(c['args'][0])
+        res = solver.removeNthFromEnd(h, c['args'][1])
+        ans = list_to_arr(res)
+    elif '${slug}' == 'linked-list-cycle':
+        h = arr_to_cycle(c['args'][0], c['args'][1])
+        ans = solver.hasCycle(h)
+    else:
+        ans = getattr(solver, '${methodName}')(*c['args'])
     results.append({'args': c['args'], 'expected': ans})
 
 print(json.dumps(results))
@@ -325,7 +676,31 @@ print(json.dumps(results))
       const { args, expected } = testPairs[i];
       // Clone args to avoid mutation side-effects across calls
       const clonedArgs = JSON.parse(JSON.stringify(args));
-      const jsResult = jsFn(...clonedArgs);
+      let jsResult;
+
+      if (slug === 'reverse-linked-list') {
+        const h = arrToList(clonedArgs[0]);
+        const res = jsFn(h);
+        jsResult = listToArr(res);
+      } else if (slug === 'merge-two-sorted-lists') {
+        const l1 = arrToList(clonedArgs[0]);
+        const l2 = arrToList(clonedArgs[1]);
+        const res = jsFn(l1, l2);
+        jsResult = listToArr(res);
+      } else if (slug === 'reorder-list') {
+        const h = arrToList(clonedArgs[0]);
+        jsFn(h);
+        jsResult = listToArr(h);
+      } else if (slug === 'remove-nth-node-from-end-of-list') {
+        const h = arrToList(clonedArgs[0]);
+        const res = jsFn(h, clonedArgs[1]);
+        jsResult = listToArr(res);
+      } else if (slug === 'linked-list-cycle') {
+        const h = arrToCycle(clonedArgs[0], clonedArgs[1]);
+        jsResult = jsFn(h);
+      } else {
+        jsResult = jsFn(...clonedArgs);
+      }
 
       if (slug === 'two-sum') {
         const [nums, target] = args;

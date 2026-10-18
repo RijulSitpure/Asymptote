@@ -1,0 +1,79 @@
+{
+  "slug": "lru-cache",
+  "number": 146,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Constant Time Eviction and Lookup",
+      "text": "How can you look up values by key in constant time while also tracking the order of usage for constant-time eviction?"
+    },
+    {
+      "level": 2,
+      "title": "Dual Structure Composition",
+      "text": "A key lookup collection provides constant-time access, and a doubly linked node chain provides constant-time node removal and front insertion."
+    },
+    {
+      "level": 3,
+      "title": "Sentinel Doubly Linked Cache Procedure",
+      "text": "Maintain key-to-node mapping and a doubly linked chain with dummy head and tail sentinels. On get, if present, move the node to front and return its value; else -1. On put, update existing node and move to front; else create node, insert at front, and if capacity exceeded, remove node before tail and delete its key."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\nclass LRUCache:\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.cache = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node: Node) -> None:\n        p = node.prev\n        n = node.next\n        p.next = n\n        n.prev = p\n\n    def _add_to_front(self, node: Node) -> None:\n        node.next = self.head.next\n        node.prev = self.head\n        self.head.next.prev = node\n        self.head.next = node\n\n    def get(self, key: int) -> int:\n        if key in self.cache:\n            node = self.cache[key]\n            self._remove(node)\n            self._add_to_front(node)\n            return node.val\n        return -1\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.cache:\n            node = self.cache[key]\n            self._remove(node)\n            node.val = value\n            self._add_to_front(node)\n        else:\n            if len(self.cache) >= self.cap:\n                lru = self.tail.prev\n                self._remove(lru)\n                del self.cache[lru.key]\n            new_node = Node(key, value)\n            self.cache[key] = new_node\n            self._add_to_front(new_node)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1)",
+    "space": "O(capacity)",
+    "variables": [
+      "capacity: maximum cache size (1 <= capacity <= 3000)",
+      "operations: up to 2 * 10^5 get and put calls"
+    ],
+    "notes": "Both get and put run in strictly O(1) time using pointer updates in doubly linked list.",
+    "whyNaiveFails": "Using an array or list to track timestamps requires O(N) time to find or remove elements on each access, leading to TLE on large operation sequences.",
+    "spaceTimeTradeoff": "Doubly linked list node pointers paired with a hash table achieve strictly O(1) time for both operations using O(capacity) auxiliary space.",
+    "interviewerExpectation": "Sentinel dummy head and tail nodes to avoid null-checking edge cases during node removal and insertion, clean helper functions _remove and _add_to_front, correct eviction of the least recently used key."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\nclass LRUCache:\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.cache = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node: Node) -> None:\n        p = node.prev\n        n = node.next\n        p.next = n\n        n.prev = p\n\n    def _add_to_front(self, node: Node) -> None:\n        node.next = self.head.next\n        node.prev = self.head\n        self.head.next.prev = node\n        self.head.next = node\n\n    def get(self, key: int) -> int:\n        if key in self.cache:\n            node = self.cache[key]\n            self._remove(node)\n            self._add_to_front(node)\n            return node.val\n        return -1\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.cache:\n            node = self.cache[key]\n            self._remove(node)\n            node.val = value\n            self._add_to_front(node)\n        else:\n            if len(self.cache) >= self.cap:\n                lru = self.tail.prev\n                self._remove(lru)\n                del self.cache[lru.key]\n            new_node = Node(key, value)\n            self.cache[key] = new_node\n            self._add_to_front(new_node)",
+      "approach": "Hash Map + Doubly Linked List with Sentinel Head and Tail",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <unordered_map>\n\nusing namespace std;\n\nclass LRUCache {\nprivate:\n    struct Node {\n        int key;\n        int val;\n        Node* prev;\n        Node* next;\n        Node(int k = 0, int v = 0) : key(k), val(v), prev(nullptr), next(nullptr) {}\n    };\n\n    int cap;\n    unordered_map<int, Node*> cache;\n    Node* head;\n    Node* tail;\n\n    void remove(Node* node) {\n        Node* p = node->prev;\n        Node* n = node->next;\n        p->next = n;\n        n->prev = p;\n    }\n\n    void addToFront(Node* node) {\n        node->next = head->next;\n        node->prev = head;\n        head->next->prev = node;\n        head->next = node;\n    }\n\npublic:\n    LRUCache(int capacity) : cap(capacity) {\n        head = new Node();\n        tail = new Node();\n        head->next = tail;\n        tail->prev = head;\n    }\n\n    int get(int key) {\n        if (cache.count(key)) {\n            Node* node = cache[key];\n            remove(node);\n            addToFront(node);\n            return node->val;\n        }\n        return -1;\n    }\n\n    void put(int key, int value) {\n        if (cache.count(key)) {\n            Node* node = cache[key];\n            remove(node);\n            node->val = value;\n            addToFront(node);\n        } else {\n            if ((int)cache.size() >= cap) {\n                Node* lru = tail->prev;\n                remove(lru);\n                cache.erase(lru->key);\n                delete lru;\n            }\n            Node* newNode = new Node(key, value);\n            cache[key] = newNode;\n            addToFront(newNode);\n        }\n    }\n};",
+      "approach": "Unordered Map with Doubly Linked Sentinel Nodes",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.HashMap;\nimport java.util.Map;\n\nclass LRUCache {\n    private static class Node {\n        int key;\n        int val;\n        Node prev;\n        Node next;\n        Node(int k, int v) {\n            this.key = k;\n            this.val = v;\n        }\n    }\n\n    private final int cap;\n    private final Map<Integer, Node> cache;\n    private final Node head;\n    private final Node tail;\n\n    public LRUCache(int capacity) {\n        this.cap = capacity;\n        this.cache = new HashMap<>();\n        this.head = new Node(0, 0);\n        this.tail = new Node(0, 0);\n        this.head.next = this.tail;\n        this.tail.prev = this.head;\n    }\n\n    private void remove(Node node) {\n        Node p = node.prev;\n        Node n = node.next;\n        p.next = n;\n        n.prev = p;\n    }\n\n    private void addToFront(Node node) {\n        node.next = head.next;\n        node.prev = head;\n        head.next.prev = node;\n        head.next = node;\n    }\n\n    public int get(int key) {\n        if (cache.containsKey(key)) {\n            Node node = cache.get(key);\n            remove(node);\n            addToFront(node);\n            return node.val;\n        }\n        return -1;\n    }\n\n    public void put(int key, int value) {\n        if (cache.containsKey(key)) {\n            Node node = cache.get(key);\n            remove(node);\n            node.val = value;\n            addToFront(node);\n        } else {\n            if (cache.size() >= cap) {\n                Node lru = tail.prev;\n                remove(lru);\n                cache.remove(lru.key);\n            }\n            Node newNode = new Node(key, value);\n            cache.put(key, newNode);\n            addToFront(newNode);\n        }\n    }\n}",
+      "approach": "HashMap and Doubly Linked List with Head/Tail Sentinels",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} capacity\n */\nvar LRUCache = function(capacity) {\n    this.cap = capacity;\n    this.cache = new Map();\n    this.head = { key: 0, val: 0, prev: null, next: null };\n    this.tail = { key: 0, val: 0, prev: null, next: null };\n    this.head.next = this.tail;\n    this.tail.prev = this.head;\n};\n\nLRUCache.prototype._remove = function(node) {\n    const p = node.prev;\n    const n = node.next;\n    p.next = n;\n    n.prev = p;\n};\n\nLRUCache.prototype._addToFront = function(node) {\n    node.next = this.head.next;\n    node.prev = this.head;\n    this.head.next.prev = node;\n    this.head.next = node;\n};\n\n/** \n * @param {number} key\n * @return {number}\n */\nLRUCache.prototype.get = function(key) {\n    if (this.cache.has(key)) {\n        const node = this.cache.get(key);\n        this._remove(node);\n        this._addToFront(node);\n        return node.val;\n    }\n    return -1;\n};\n\n/** \n * @param {number} key \n * @param {number} value\n * @return {void}\n */\nLRUCache.prototype.put = function(key, value) {\n    if (this.cache.has(key)) {\n        const node = this.cache.get(key);\n        this._remove(node);\n        node.val = value;\n        this._addToFront(node);\n    } else {\n        if (this.cache.size >= this.cap) {\n            const lru = this.tail.prev;\n            this._remove(lru);\n            this.cache.delete(lru.key);\n        }\n        const newNode = { key, val: value, prev: null, next: null };\n        this.cache.set(key, newNode);\n        this._addToFront(newNode);\n    }\n};",
+      "approach": "Map with Doubly Linked Sentinel Objects",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-18T00:00:00.000Z"
+}
