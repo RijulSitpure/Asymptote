@@ -293,4 +293,69 @@ describe('Dataset Taxonomy and Content Verification Tests', () => {
       }
     ]);
   });
+
+  it('asserts 3-part structured complexity analysis on all 27 problems', () => {
+    expect(allProblems.length).toBe(27);
+    for (const { file, data } of allProblems) {
+      expect(data.complexity, `${file} must have complexity`).toBeDefined();
+      expect(typeof data.complexity.whyNaiveFails, `${file} whyNaiveFails must be string`).toBe('string');
+      expect(data.complexity.whyNaiveFails.trim().length, `${file} whyNaiveFails must be non-empty`).toBeGreaterThan(0);
+
+      expect(typeof data.complexity.spaceTimeTradeoff, `${file} spaceTimeTradeoff must be string`).toBe('string');
+      expect(data.complexity.spaceTimeTradeoff.trim().length, `${file} spaceTimeTradeoff must be non-empty`).toBeGreaterThan(0);
+
+      expect(typeof data.complexity.interviewerExpectation, `${file} interviewerExpectation must be string`).toBe('string');
+      expect(data.complexity.interviewerExpectation.trim().length, `${file} interviewerExpectation must be non-empty`).toBeGreaterThan(0);
+    }
+  });
+
+  it('asserts multi-language solutions across curated categories', () => {
+    const algoProblems = allProblems.filter(({ data }) => data.category === 'Algorithms');
+    expect(algoProblems.length).toBe(10);
+    for (const { file, data } of algoProblems) {
+      const langs = (data.solutions || []).map(s => s.lang);
+      expect(langs, `${file} must support python3, cpp, java, javascript`).toEqual(
+        expect.arrayContaining(['python3', 'cpp', 'java', 'javascript'])
+      );
+      for (const lang of ['python3', 'cpp', 'java', 'javascript']) {
+        const sol = data.solutions.find(s => s.lang === lang);
+        expect(sol, `${file} solution for ${lang} must exist`).toBeDefined();
+        expect(sol.code.trim().length, `${file} solution code for ${lang} must be non-empty`).toBeGreaterThan(0);
+        expect(sol.verifiedBy, `${file} solution for ${lang} must be verified by tests`).toBe('tests');
+      }
+    }
+
+    const dbProblems = allProblems.filter(({ data }) => data.category === 'Database');
+    expect(dbProblems.length).toBe(5);
+    for (const { file, data } of dbProblems) {
+      const langs = (data.solutions || []).map(s => s.lang);
+      expect(langs, `${file} must support mysql, postgresql, pythondata`).toEqual(
+        expect.arrayContaining(['mysql', 'postgresql', 'pythondata'])
+      );
+      for (const lang of ['mysql', 'postgresql', 'pythondata']) {
+        const sol = data.solutions.find(s => s.lang === lang);
+        expect(sol, `${file} solution for ${lang} must exist`).toBeDefined();
+        expect(sol.code.trim().length, `${file} solution code for ${lang} must be non-empty`).toBeGreaterThan(0);
+        expect(sol.verifiedBy, `${file} solution for ${lang} must be verified by tests`).toBe('tests');
+      }
+    }
+
+    const concProblems = allProblems.filter(({ data }) => data.category === 'Concurrency');
+    expect(concProblems.length).toBe(3);
+    for (const { file, data } of concProblems) {
+      const langs = (data.solutions || []).map(s => s.lang);
+      expect(langs, `${file} must support python3, cpp, java`).toEqual(
+        expect.arrayContaining(['python3', 'cpp', 'java'])
+      );
+    }
+
+    const jsProblems = allProblems.filter(({ data }) => data.category === 'JavaScript');
+    expect(jsProblems.length).toBe(3);
+    for (const { file, data } of jsProblems) {
+      const langs = (data.solutions || []).map(s => s.lang);
+      expect(langs, `${file} must support javascript, typescript`).toEqual(
+        expect.arrayContaining(['javascript', 'typescript'])
+      );
+    }
+  });
 });

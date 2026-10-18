@@ -1451,7 +1451,7 @@ class Solution {
  */
 var minCost = function(grid) {
     const m = grid.length, n = grid[0].length;
-    const dist = Array.from({ length: m }, () => new Int32Array(n).fill(Infinity));
+    const dist = Array.from({ length: m }, () => Array(n).fill(Infinity));
     dist[0][0] = 0;
 
     const dq = [[0, 0, 0]];
@@ -1748,7 +1748,7 @@ WHERE p1.email = p2.email AND p1.id > p2.id;`,
 # Modify Person in place
 def delete_duplicate_emails(person: pd.DataFrame) -> None:
     person.sort_values(by='id', ascending=True, inplace=True)
-    person.drop_duplicates(subset=['email'], keep='first', inplace=True)`,
+    null_rows = person[person['email'].isna()]\n    valid_rows = person[person['email'].notna()].drop_duplicates(subset=['email'], keep='first')\n    combined = pd.concat([valid_rows, null_rows]).sort_values(by='id')\n    person.drop(person.index.difference(combined.index), inplace=True)`,
         approach: 'Pandas In-Place Sort and Drop Duplicates',
         verifiedBy: 'tests',
         testedOn: '2026-10-18'

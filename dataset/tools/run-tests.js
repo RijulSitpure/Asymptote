@@ -12,6 +12,9 @@ const datasetDir = path.resolve(rootDir, 'dataset');
 const testsDir = path.resolve(datasetDir, 'tests');
 const toolsDir = path.resolve(datasetDir, 'tools');
 
+import { verifyAlgoMultiLang } from './verify-algo-multilang.js';
+import { verifyDatabasePandas } from './verify-db-pandas.js';
+
 function checkRuntime(cmd, args = ['--version']) {
   try {
     const res = spawnSync(cmd, args, { stdio: 'pipe', timeout: 3000 });
@@ -137,6 +140,7 @@ function ensureMySQLAvailable() {
           const check = spawnSync('docker', ['exec', mysqlContainerName, 'mysql', '-u', 'root', '-e', 'SELECT 1;'], { stdio: 'pipe' });
           if (check.status === 0) {
             ready = true;
+            spawnSync('sleep', ['2']);
             break;
           }
         }
@@ -195,7 +199,7 @@ function runSqlBatch(mode, sql, maxAttempts = 3) {
     }
 
     const err = res.stderr ? res.stderr.toString() : '';
-    if (attempt < maxAttempts && (err.includes('ERROR 2002') || err.includes("Can't connect") || err.includes('ECONNREFUSED'))) {
+    if (attempt < maxAttempts && (err.includes('ERROR 2002') || err.includes('ERROR 2013') || err.includes('Lost connection') || err.includes("Can't connect") || err.includes('ECONNREFUSED'))) {
       spawnSync('sleep', ['1']);
       continue;
     }
@@ -211,7 +215,8 @@ async function main() {
     pandas: checkPythonModule('pandas'),
     bash: checkRuntime('bash'),
     docker: checkDockerRunning(),
-    mysql: Boolean(process.env.MYSQL_HOST) || checkDockerRunning()
+    mysql: Boolean(process.env.MYSQL_HOST) || checkDockerRunning(),
+    cpp: checkRuntime('g++', ['-v'])
   };
 
   const skippedRunners = [];
@@ -297,6 +302,7 @@ async function main() {
               if (run.status === 0) {
                 passed = true;
                 console.log(run.stdout ? run.stdout.toString().trim() : 'Passed');
+                verifyAlgoMultiLang(slug, prob, slugTestDir, runtimes);
               } else {
                 detail = run.stderr ? run.stderr.toString().trim() : `Exited with code ${run.status}`;
               }
@@ -430,6 +436,7 @@ async function main() {
 
             passed = true;
             console.log(`Passed ${testCases.length} database test cases against reference SQL query`);
+            verifyDatabasePandas(slug, prob, slugTestDir, runtimes);
           }
         } else if (category === 'pandas') {
           if (!runtimes.pandas) {

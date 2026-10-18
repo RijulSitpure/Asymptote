@@ -357,4 +357,42 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     const stats = await engine.getStats();
     expect(stats.totalSolved).toBeGreaterThanOrEqual(3);
   });
+
+  // 9. Structured 3-Part Complexity & Multi-Language Code Retrieval
+  it('9. Verifies structured 3-part complexity and multi-language solutions via getProblemSolutionCode', async () => {
+    const algoSlugs = [
+      'two-sum', 'maximum-subarray', 'valid-parentheses', 'daily-temperatures',
+      'burst-balloons', 'cheapest-flights-within-k-stops', 'shortest-path-visiting-all-nodes',
+      'sum-of-distances-in-tree', 'longest-increasing-path-in-a-matrix', 'minimum-cost-to-make-at-least-one-valid-path-in-a-grid'
+    ];
+    for (const slug of algoSlugs) {
+      const { problem, complexity } = await engine.getProblemHints(slug);
+      expect(complexity.whyNaiveFails, `${slug} must have whyNaiveFails`).toBeTruthy();
+      expect(complexity.spaceTimeTradeoff, `${slug} must have spaceTimeTradeoff`).toBeTruthy();
+      expect(complexity.interviewerExpectation, `${slug} must have interviewerExpectation`).toBeTruthy();
+
+      for (const lang of ['python3', 'cpp', 'java', 'javascript']) {
+        const code = getProblemSolutionCode(problem, lang);
+        expect(code, `${slug} solution code for ${lang} must exist`).toBeTruthy();
+        expect(code.length).toBeGreaterThan(0);
+      }
+    }
+
+    const dbSlugs = [
+      'combine-two-tables', 'second-highest-salary', 'department-highest-salary',
+      'rising-temperature', 'delete-duplicate-emails'
+    ];
+    for (const slug of dbSlugs) {
+      const { problem, complexity } = await engine.getProblemHints(slug);
+      expect(complexity.whyNaiveFails, `${slug} must have whyNaiveFails`).toBeTruthy();
+      expect(complexity.spaceTimeTradeoff, `${slug} must have spaceTimeTradeoff`).toBeTruthy();
+      expect(complexity.interviewerExpectation, `${slug} must have interviewerExpectation`).toBeTruthy();
+
+      for (const lang of ['mysql', 'postgresql', 'pythondata']) {
+        const code = getProblemSolutionCode(problem, lang);
+        expect(code, `${slug} solution code for ${lang} must exist`).toBeTruthy();
+        expect(code.length).toBeGreaterThan(0);
+      }
+    }
+  });
 });
