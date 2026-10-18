@@ -1,0 +1,78 @@
+{
+  "slug": "find-median-from-data-stream",
+  "number": 295,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-two-heaps-median"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dynamic Median Shift Overhead",
+      "text": "Keeping a list sorted upon every insertion takes linear time due to shifting elements. How can dividing numbers into smaller and larger halves allow reading the median from the boundary in constant time?"
+    },
+    {
+      "level": 2,
+      "title": "Two Halves Balance Invariant",
+      "text": "The median lies at the boundary between the lower half of numbers and the upper half. Keeping both halves balanced in size lets you read the median in constant time."
+    },
+    {
+      "level": 3,
+      "title": "Two Heaps Balancing Procedure",
+      "text": "Maintain two priority collections: a max-oriented collection for the lower half and a min-oriented collection for the upper half. Push incoming numbers into the lower half, then move its maximum to the upper half. If the upper half has more elements than the lower half, transfer its minimum back. The median is either the top of the lower half or the average of both tops."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass MedianFinder:\n    def __init__(self):\n        self.small = []  # max-heap\n        self.large = []  # min-heap\n\n    def addNum(self, num: int) -> None:\n        heapq.heappush(self.small, -num)\n        heapq.heappush(self.large, -heapq.heappop(self.small))\n        if len(self.large) > len(self.small):\n            heapq.heappush(self.small, -heapq.heappop(self.large))\n\n    def findMedian(self) -> float:\n        if len(self.small) > len(self.large):\n            return float(-self.small[0])\n        return (-self.small[0] + self.large[0]) / 2.0\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total number of added numbers (up to 5 * 10^4)"
+    ],
+    "notes": "addNum runs in O(log N) heap time; findMedian runs in strictly O(1) time.",
+    "whyNaiveFails": "Inserting into a sorted array takes O(N) time per insertion due to element shifts, leading to O(N^2) total time for N insertions (TLE for N = 5 * 10^4).",
+    "spaceTimeTradeoff": "Splitting elements across two balanced halves takes O(log N) per insertion and delivers O(1) median queries with O(N) storage.",
+    "interviewerExpectation": "Invariant maintenance: lower half size is either equal to or one greater than upper half size, max of lower half <= min of upper half, correct float division when total elements is even."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass MedianFinder:\n    def __init__(self):\n        self.small = []  # max-heap\n        self.large = []  # min-heap\n\n    def addNum(self, num: int) -> None:\n        heapq.heappush(self.small, -num)\n        heapq.heappush(self.large, -heapq.heappop(self.small))\n        if len(self.large) > len(self.small):\n            heapq.heappush(self.small, -heapq.heappop(self.large))\n\n    def findMedian(self) -> float:\n        if len(self.small) > len(self.large):\n            return float(-self.small[0])\n        return (-self.small[0] + self.large[0]) / 2.0",
+      "approach": "Two Balanced Heaps (Max-Heap Small, Min-Heap Large)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <queue>\n#include <vector>\n\nusing namespace std;\n\nclass MedianFinder {\nprivate:\n    priority_queue<int> small; // max-heap\n    priority_queue<int, vector<int>, greater<int>> large; // min-heap\npublic:\n    MedianFinder() {}\n    \n    void addNum(int num) {\n        small.push(num);\n        large.push(small.top());\n        small.pop();\n        if (large.size() > small.size()) {\n            small.push(large.top());\n            large.pop();\n        }\n    }\n    \n    double findMedian() {\n        if (small.size() > large.size()) {\n            return (double)small.top();\n        }\n        return ((double)small.top() + (double)large.top()) / 2.0;\n    }\n};",
+      "approach": "Dual Priority Queue Balanced Boundary",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Collections;\nimport java.util.PriorityQueue;\n\nclass MedianFinder {\n    private PriorityQueue<Integer> small;\n    private PriorityQueue<Integer> large;\n\n    public MedianFinder() {\n        small = new PriorityQueue<>(Collections.reverseOrder());\n        large = new PriorityQueue<>();\n    }\n\n    public void addNum(int num) {\n        small.offer(num);\n        large.offer(small.poll());\n        if (large.size() > small.size()) {\n            small.offer(large.poll());\n        }\n    }\n\n    public double findMedian() {\n        if (small.size() > large.size()) {\n            return (double) small.peek();\n        }\n        return ((double) small.peek() + (double) large.peek()) / 2.0;\n    }\n}",
+      "approach": "Two Heaps with Rebalancing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "var MedianFinder = function() {\n    this.arr = [];\n};\n\n/** \n * @param {number} num\n * @return {void}\n */\nMedianFinder.prototype.addNum = function(num) {\n    let low = 0, high = this.arr.length;\n    while (low < high) {\n        const mid = (low + high) >> 1;\n        if (this.arr[mid] < num) low = mid + 1;\n        else high = mid;\n    }\n    this.arr.splice(low, 0, num);\n};\n\n/**\n * @return {number}\n */\nMedianFinder.prototype.findMedian = function() {\n    const n = this.arr.length;\n    const mid = Math.floor(n / 2);\n    if (n % 2 === 1) return this.arr[mid];\n    return (this.arr[mid - 1] + this.arr[mid]) / 2;\n};",
+      "approach": "Binary Search Insertion with Array Splice",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-18T00:00:00.000Z"
+}

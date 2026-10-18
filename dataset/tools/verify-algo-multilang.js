@@ -13,8 +13,7 @@ export function verifyAlgoMultiLang(slug, prob, slugTestDir, runtimes) {
   const cppSol = prob.solutions?.find(s => s.lang === 'cpp');
   if (cppSol && runtimes.cpp) {
     let codeToTest = cppSol.code;
-    if (!codeToTest.includes('struct ListNode')) {
-      codeToTest = `
+    let preamble = `
 #include <iostream>
 #include <vector>
 #include <string>
@@ -32,7 +31,9 @@ export function verifyAlgoMultiLang(slug, prob, slugTestDir, runtimes) {
 #include <utility>
 
 using namespace std;
-
+`;
+    if (!codeToTest.includes('struct ListNode')) {
+      preamble += `
 struct ListNode {
     int val;
     ListNode *next;
@@ -40,8 +41,21 @@ struct ListNode {
     ListNode(int x) : val(x), next(nullptr) {}
     ListNode(int x, ListNode *next) : val(x), next(next) {}
 };
-` + codeToTest;
+`;
     }
+    if (!codeToTest.includes('struct TreeNode')) {
+      preamble += `
+struct TreeNode {
+    int val;
+    TreeNode *left;
+    TreeNode *right;
+    TreeNode() : val(0), left(nullptr), right(nullptr) {}
+    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+};
+`;
+    }
+    codeToTest = preamble + codeToTest;
     const cppRes = spawnSync('g++', ['-std=c++17', '-fsyntax-only', '-x', 'c++', '-'], {
       input: codeToTest,
       encoding: 'utf8',
@@ -69,6 +83,11 @@ struct ListNode {
       ListNode: function(val, next) {
         this.val = (val === undefined ? 0 : val);
         this.next = (next === undefined ? null : next);
+      },
+      TreeNode: function(val, left, right) {
+        this.val = (val === undefined ? 0 : val);
+        this.left = (left === undefined ? null : left);
+        this.right = (right === undefined ? null : right);
       }
     };
     vm.createContext(sandbox);
@@ -106,6 +125,60 @@ struct ListNode {
         nodes[nodes.length - 1].next = nodes[pos];
       }
       return nodes[0];
+    }
+
+    // Helpers for JS trees
+    function arrToTree(arr) {
+      if (!arr || arr.length === 0 || arr[0] === null || arr[0] === undefined) return null;
+      const root = new sandbox.TreeNode(arr[0]);
+      const queue = [root];
+      let i = 1;
+      while (queue.length > 0 && i < arr.length) {
+        const curr = queue.shift();
+        if (i < arr.length && arr[i] !== null && arr[i] !== undefined) {
+          curr.left = new sandbox.TreeNode(arr[i]);
+          queue.push(curr.left);
+        }
+        i++;
+        if (i < arr.length && arr[i] !== null && arr[i] !== undefined) {
+          curr.right = new sandbox.TreeNode(arr[i]);
+          queue.push(curr.right);
+        }
+        i++;
+      }
+      return root;
+    }
+
+    function treeToArr(root) {
+      if (!root) return [];
+      const res = [];
+      const queue = [root];
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        if (curr) {
+          res.push(curr.val);
+          queue.push(curr.left);
+          queue.push(curr.right);
+        } else {
+          res.push(null);
+        }
+      }
+      while (res.length > 0 && res[res.length - 1] === null) {
+        res.pop();
+      }
+      return res;
+    }
+
+    function findTreeNode(root, val) {
+      if (!root) return null;
+      const queue = [root];
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        if (curr.val === val) return curr;
+        if (curr.left) queue.push(curr.left);
+        if (curr.right) queue.push(curr.right);
+      }
+      return null;
     }
 
     // Special class design testing for min-stack and lru-cache
@@ -211,6 +284,118 @@ print(json.dumps({'ops': ops, 'expected': res}))
       return;
     }
 
+    if (slug === 'implement-trie-prefix-tree') {
+      const pyHarness = `
+import json, random
+
+sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
+scope = {}
+exec(sol_code, scope)
+Trie = scope['Trie']
+
+ops = [
+  ("insert", ["apple"]), ("search", ["apple"]), ("search", ["app"]),
+  ("startsWith", ["app"]), ("insert", ["app"]), ("search", ["app"]),
+  ("insert", ["banana"]), ("search", ["ban"]), ("startsWith", ["ban"])
+]
+
+rng = random.Random(42)
+letters = "abcdef"
+for _ in range(50):
+    w = ''.join(rng.choice(letters) for _ in range(rng.randint(1, 6)))
+    op = rng.choice(["insert", "search", "startsWith"])
+    ops.append((op, [w]))
+
+res = []
+trie = Trie()
+for op, a in ops:
+    if op == 'insert':
+        trie.insert(a[0])
+        res.append(None)
+    elif op == 'search':
+        res.append(trie.search(a[0]))
+    elif op == 'startsWith':
+        res.append(trie.startsWith(a[0]))
+
+print(json.dumps({'ops': ops, 'expected': res}))
+`;
+      const pyRun = spawnSync('python3', ['-c', pyHarness], { encoding: 'utf8', timeout: 30000 });
+      if (pyRun.status !== 0) {
+        throw new Error(`Python harness failed for implement-trie-prefix-tree: ${pyRun.stderr}`);
+      }
+      const data = JSON.parse(pyRun.stdout);
+      const trie = new sandbox.Trie();
+      for (let k = 0; k < data.ops.length; k++) {
+        const [op, a] = data.ops[k];
+        const exp = data.expected[k];
+        let actual = null;
+        if (op === 'insert') trie.insert(a[0]);
+        else if (op === 'search') actual = trie.search(a[0]);
+        else if (op === 'startsWith') actual = trie.startsWith(a[0]);
+
+        if (actual !== exp) {
+          throw new Error(`Trie op ${op}(${JSON.stringify(a)}): JS ${actual} vs PY ${exp}`);
+        }
+      }
+      console.log(`  ↳ Verified JavaScript Trie against Python 3 across ${data.ops.length} operations`);
+      return;
+    }
+
+    if (slug === 'find-median-from-data-stream') {
+      const pyHarness = `
+import json, random
+
+sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
+scope = {}
+exec(sol_code, scope)
+MedianFinder = scope['MedianFinder']
+
+ops = [
+  ("addNum", [1]), ("addNum", [2]), ("findMedian", []),
+  ("addNum", [3]), ("findMedian", []),
+  ("addNum", [-1]), ("findMedian", []),
+  ("addNum", [5]), ("findMedian", [])
+]
+
+rng = random.Random(42)
+for _ in range(50):
+    val = rng.randint(-100, 100)
+    ops.append(("addNum", [val]))
+    if rng.random() < 0.6:
+        ops.append(("findMedian", []))
+
+res = []
+mf = MedianFinder()
+for op, a in ops:
+    if op == 'addNum':
+        mf.addNum(a[0])
+        res.append(None)
+    elif op == 'findMedian':
+        res.append(mf.findMedian())
+
+print(json.dumps({'ops': ops, 'expected': res}))
+`;
+      const pyRun = spawnSync('python3', ['-c', pyHarness], { encoding: 'utf8', timeout: 30000 });
+      if (pyRun.status !== 0) {
+        throw new Error(`Python harness failed for find-median-from-data-stream: ${pyRun.stderr}`);
+      }
+      const data = JSON.parse(pyRun.stdout);
+      const mf = new sandbox.MedianFinder();
+      for (let k = 0; k < data.ops.length; k++) {
+        const [op, a] = data.ops[k];
+        const exp = data.expected[k];
+        let actual = null;
+        if (op === 'addNum') mf.addNum(a[0]);
+        else if (op === 'findMedian') actual = mf.findMedian();
+
+        if (actual !== null && Math.abs(actual - exp) > 1e-6) {
+          throw new Error(`MedianFinder op ${op}: JS ${actual} vs PY ${exp}`);
+        }
+      }
+      console.log(`  ↳ Verified JavaScript MedianFinder against Python 3 across ${data.ops.length} operations`);
+      return;
+    }
+
     const jsFn = sandbox[methodName];
     if (typeof jsFn !== 'function') {
       throw new Error(`JavaScript solution does not export method "${methodName}"`);
@@ -250,6 +435,55 @@ def arr_to_cycle(arr, pos):
     if pos >= 0 and pos < len(nodes):
         nodes[-1].next = nodes[pos]
     return nodes[0]
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def arr_to_tree(arr):
+    if not arr or arr[0] is None:
+        return None
+    root = TreeNode(arr[0])
+    queue = [root]
+    i = 1
+    while queue and i < len(arr):
+        curr = queue.pop(0)
+        if i < len(arr) and arr[i] is not None:
+            curr.left = TreeNode(arr[i])
+            queue.append(curr.left)
+        i += 1
+        if i < len(arr) and arr[i] is not None:
+            curr.right = TreeNode(arr[i])
+            queue.append(curr.right)
+        i += 1
+    return root
+
+def tree_to_arr(root):
+    if not root:
+        return []
+    res = []
+    queue = [root]
+    while queue:
+        curr = queue.pop(0)
+        if curr:
+            res.append(curr.val)
+            queue.append(curr.left)
+            queue.append(curr.right)
+        else:
+            res.append(None)
+    while res and res[-1] is None:
+        res.pop()
+    return res
+
+def find_bst_node(root, val):
+    curr = root
+    while curr:
+        if curr.val == val: return curr
+        elif val < curr.val: curr = curr.left
+        else: curr = curr.right
+    return None
 
 def generate_cases(slug):
     rng = random.Random(42)
@@ -629,10 +863,147 @@ def generate_cases(slug):
             pos = rng.randint(0, sz - 1) if has_c and sz > 0 else -1
             cases.append({'args': [[rng.randint(-50, 50) for _ in range(sz)], pos]})
 
+    elif slug == 'invert-binary-tree':
+        fixed = [[[4, 2, 7, 1, 3, 6, 9]], [[2, 1, 3]], [[]], [[1]], [[1, 2]], [[1, None, 2]]]
+        for a in fixed: cases.append({'args': a})
+        for _ in range(25):
+            sz = rng.randint(1, 35)
+            nodes = [rng.randint(-100, 100) if rng.random() > 0.15 else None for _ in range(sz)]
+            if nodes and nodes[0] is None: nodes[0] = 1
+            cases.append({'args': [nodes]})
+
+    elif slug == 'maximum-depth-of-binary-tree':
+        fixed = [[[3, 9, 20, None, None, 15, 7]], [[1, None, 2]], [[]], [[0]], [[1, 2, None, 3, None, 4]]]
+        for a in fixed: cases.append({'args': a})
+        for _ in range(25):
+            sz = rng.randint(1, 35)
+            nodes = [rng.randint(-100, 100) if rng.random() > 0.15 else None for _ in range(sz)]
+            if nodes and nodes[0] is None: nodes[0] = 1
+            cases.append({'args': [nodes]})
+
+    elif slug == 'diameter-of-binary-tree':
+        fixed = [[[1, 2, 3, 4, 5]], [[1, 2]], [[1]], [[]], [[1, 2, None, 3, None, 4]]]
+        for a in fixed: cases.append({'args': a})
+        for _ in range(25):
+            sz = rng.randint(1, 35)
+            nodes = [rng.randint(-100, 100) if rng.random() > 0.15 else None for _ in range(sz)]
+            if nodes and nodes[0] is None: nodes[0] = 1
+            cases.append({'args': [nodes]})
+
+    elif slug == 'balanced-binary-tree':
+        fixed = [[[3, 9, 20, None, None, 15, 7]], [[1, 2, 2, 3, 3, None, None, 4, 4]], [[]], [[1]], [[1, 2]], [[1, 2, None, 3]]]
+        for a in fixed: cases.append({'args': a})
+        for _ in range(25):
+            sz = rng.randint(1, 35)
+            nodes = [rng.randint(-100, 100) if rng.random() > 0.15 else None for _ in range(sz)]
+            if nodes and nodes[0] is None: nodes[0] = 1
+            cases.append({'args': [nodes]})
+
+    elif slug == 'lowest-common-ancestor-of-a-binary-search-tree':
+        tree_vals = [6, 2, 8, 0, 4, 7, 9, None, None, 3, 5]
+        queries = [(2, 8), (2, 4), (3, 5), (7, 9), (0, 5), (0, 4)]
+        for p, q in queries: cases.append({'args': [tree_vals, p, q]})
+        cases.append({'args': [[2, 1], 2, 1]})
+
+    elif slug == 'binary-tree-level-order-traversal':
+        fixed = [[[3, 9, 20, None, None, 15, 7]], [[1]], [[]], [[1, 2, None, 3, None, 4]]]
+        for a in fixed: cases.append({'args': a})
+        for _ in range(25):
+            sz = rng.randint(1, 35)
+            nodes = [rng.randint(-100, 100) if rng.random() > 0.15 else None for _ in range(sz)]
+            if nodes and nodes[0] is None: nodes[0] = 1
+            cases.append({'args': [nodes]})
+
+    elif slug == 'validate-binary-search-tree':
+        fixed = [[[2, 1, 3]], [[5, 1, 4, None, None, 3, 6]], [[1, 1]], [[2, 2, 2]], [[5, 4, 6, None, None, 3, 7]], [[2147483647]], [[-2147483648]], [[0, -1]], [[]]]
+        for a in fixed: cases.append({'args': a})
+        for _ in range(25):
+            sz = rng.randint(1, 30)
+            s_vals = sorted(list(set(rng.randint(-200, 200) for _ in range(sz))))
+            def build_bst(vals):
+                if not vals: return None
+                m = len(vals) // 2
+                nd = TreeNode(vals[m])
+                nd.left = build_bst(vals[:m])
+                nd.right = build_bst(vals[m+1:])
+                return nd
+            t = build_bst(s_vals)
+            cases.append({'args': [tree_to_arr(t)]})
+
+    elif slug == 'kth-smallest-element-in-a-bst':
+        fixed = [([3, 1, 4, None, 2], 1), ([5, 3, 6, 2, 4, None, None, 1], 3), ([1], 1), ([2, 1, 3], 2)]
+        for a, k in fixed: cases.append({'args': [a, k]})
+        for _ in range(25):
+            sz = rng.randint(1, 35)
+            s_vals = sorted(list(set(rng.randint(-200, 200) for _ in range(sz))))
+            def build_bst(vals):
+                if not vals: return None
+                m = len(vals) // 2
+                nd = TreeNode(vals[m])
+                nd.left = build_bst(vals[:m])
+                nd.right = build_bst(vals[m+1:])
+                return nd
+            t = build_bst(s_vals)
+            k = rng.randint(1, len(s_vals))
+            cases.append({'args': [tree_to_arr(t), k]})
+
+    elif slug == 'kth-largest-element-in-an-array':
+        fixed = [([3, 2, 1, 5, 6, 4], 2), ([3, 2, 3, 1, 2, 4, 5, 5, 6], 4), ([1], 1), ([-1, -1], 2), ([-1, 2, 0], 1)]
+        for a, k in fixed: cases.append({'args': [a, k]})
+        for _ in range(30):
+            sz = rng.randint(1, 40)
+            nums = [rng.randint(-100, 100) for _ in range(sz)]
+            k = rng.randint(1, sz)
+            cases.append({'args': [nums, k]})
+
+    elif slug == 'subsets':
+        fixed = [[[1, 2, 3]], [[0]], [[]], [[1, 2]], [[-1, 0, 1]]]
+        for a in fixed: cases.append({'args': a})
+        for _ in range(20):
+            sz = rng.randint(1, 6)
+            nums = sorted(list(set(rng.randint(-20, 20) for _ in range(sz))))
+            cases.append({'args': [nums]})
+
+    elif slug == 'combination-sum':
+        fixed = [([2, 3, 6, 7], 7), ([2, 3, 5], 8), ([2], 1), ([1], 2), ([7, 3, 2], 18)]
+        for a, t in fixed: cases.append({'args': [a, t]})
+        for _ in range(20):
+            sz = rng.randint(1, 4)
+            cands = sorted(list(set(rng.randint(2, 10) for _ in range(sz))))
+            target = rng.randint(4, 18)
+            cases.append({'args': [cands, target]})
+
+    elif slug == 'permutations':
+        fixed = [[[1, 2, 3]], [[0, 1]], [[1]], [[-1, 2, 0]], [[4, 3, 2, 1]]]
+        for a in fixed: cases.append({'args': a})
+        for _ in range(20):
+            sz = rng.randint(1, 5)
+            nums = rng.sample(range(-20, 20), sz)
+            cases.append({'args': [nums]})
+
+    elif slug == 'word-search':
+        base_b = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]]
+        fixed = [
+            (base_b, "ABCCED"),
+            (base_b, "SEE"),
+            (base_b, "ABCB"),
+            ([["a"]], "a"),
+            ([["a"]], "b"),
+            ([["a","b"],["c","d"]], "abcd"),
+            ([["A","B","C","E"],["S","F","E","S"],["A","D","E","E"]], "ABCESEEEFS")
+        ]
+        for b, w in fixed: cases.append({'args': [b, w]})
+        letters = "ABCDEF"
+        for _ in range(20):
+            R = rng.randint(2, 4); C = rng.randint(2, 4)
+            b = [[rng.choice(letters) for _ in range(C)] for _ in range(R)]
+            w = ''.join(rng.choice(letters) for _ in range(rng.randint(1, 5)))
+            cases.append({'args': [b, w]})
+
     return cases
 
 sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
-scope = {'ListNode': ListNode, 'Optional': None}
+scope = {'ListNode': ListNode, 'TreeNode': TreeNode, 'Optional': None}
 exec(sol_code, scope)
 solver = scope['Solution']()
 cases = generate_cases('${slug}')
@@ -659,6 +1030,34 @@ for c in cases:
     elif '${slug}' == 'linked-list-cycle':
         h = arr_to_cycle(c['args'][0], c['args'][1])
         ans = solver.hasCycle(h)
+    elif '${slug}' == 'invert-binary-tree':
+        h = arr_to_tree(c['args'][0])
+        res = solver.invertTree(h)
+        ans = tree_to_arr(res)
+    elif '${slug}' == 'maximum-depth-of-binary-tree':
+        h = arr_to_tree(c['args'][0])
+        ans = solver.maxDepth(h)
+    elif '${slug}' == 'diameter-of-binary-tree':
+        h = arr_to_tree(c['args'][0])
+        ans = solver.diameterOfBinaryTree(h)
+    elif '${slug}' == 'balanced-binary-tree':
+        h = arr_to_tree(c['args'][0])
+        ans = solver.isBalanced(h)
+    elif '${slug}' == 'lowest-common-ancestor-of-a-binary-search-tree':
+        h = arr_to_tree(c['args'][0])
+        p_node = find_bst_node(h, c['args'][1])
+        q_node = find_bst_node(h, c['args'][2])
+        res = solver.lowestCommonAncestor(h, p_node, q_node)
+        ans = res.val if res else None
+    elif '${slug}' == 'binary-tree-level-order-traversal':
+        h = arr_to_tree(c['args'][0])
+        ans = solver.levelOrder(h)
+    elif '${slug}' == 'validate-binary-search-tree':
+        h = arr_to_tree(c['args'][0])
+        ans = solver.isValidBST(h)
+    elif '${slug}' == 'kth-smallest-element-in-a-bst':
+        h = arr_to_tree(c['args'][0])
+        ans = solver.kthSmallest(h, c['args'][1])
     else:
         ans = getattr(solver, '${methodName}')(*c['args'])
     results.append({'args': c['args'], 'expected': ans})
@@ -698,6 +1097,34 @@ print(json.dumps(results))
       } else if (slug === 'linked-list-cycle') {
         const h = arrToCycle(clonedArgs[0], clonedArgs[1]);
         jsResult = jsFn(h);
+      } else if (slug === 'invert-binary-tree') {
+        const h = arrToTree(clonedArgs[0]);
+        const res = jsFn(h);
+        jsResult = treeToArr(res);
+      } else if (slug === 'maximum-depth-of-binary-tree') {
+        const h = arrToTree(clonedArgs[0]);
+        jsResult = jsFn(h);
+      } else if (slug === 'diameter-of-binary-tree') {
+        const h = arrToTree(clonedArgs[0]);
+        jsResult = jsFn(h);
+      } else if (slug === 'balanced-binary-tree') {
+        const h = arrToTree(clonedArgs[0]);
+        jsResult = jsFn(h);
+      } else if (slug === 'lowest-common-ancestor-of-a-binary-search-tree') {
+        const h = arrToTree(clonedArgs[0]);
+        const pNode = findTreeNode(h, clonedArgs[1]);
+        const qNode = findTreeNode(h, clonedArgs[2]);
+        const res = jsFn(h, pNode, qNode);
+        jsResult = res ? res.val : null;
+      } else if (slug === 'binary-tree-level-order-traversal') {
+        const h = arrToTree(clonedArgs[0]);
+        jsResult = jsFn(h);
+      } else if (slug === 'validate-binary-search-tree') {
+        const h = arrToTree(clonedArgs[0]);
+        jsResult = jsFn(h);
+      } else if (slug === 'kth-smallest-element-in-a-bst') {
+        const h = arrToTree(clonedArgs[0]);
+        jsResult = jsFn(h, clonedArgs[1]);
       } else {
         jsResult = jsFn(...clonedArgs);
       }
@@ -765,6 +1192,16 @@ print(json.dumps(results))
               throw new Error(`Case ${i}: minWindow "${jsResult}" does not contain needed character "${c}" x${cnt}`);
             }
           }
+        }
+      } else if (slug === 'subsets' || slug === 'combination-sum') {
+        const norm = arr => JSON.stringify(arr.map(sub => [...sub].sort((a, b) => a - b)).sort());
+        if (norm(jsResult) !== norm(expected)) {
+          throw new Error(`Case ${i} mismatch in ${slug}:\nJS: ${norm(jsResult)}\nPY: ${norm(expected)}`);
+        }
+      } else if (slug === 'permutations') {
+        const norm = arr => JSON.stringify(arr.map(sub => [...sub]).sort());
+        if (norm(jsResult) !== norm(expected)) {
+          throw new Error(`Case ${i} mismatch in ${slug}:\nJS: ${norm(jsResult)}\nPY: ${norm(expected)}`);
         }
       } else {
         const jsStr = JSON.stringify(jsResult);
