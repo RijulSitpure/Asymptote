@@ -260,7 +260,7 @@ function normalizeComplexity(rawComp) {
       targetSpace: 'O(1)',
       opsBudgetExplanation: '',
       whyNaiveFails: '',
-      spaceTimeTradeoff: 'Minimal auxiliary space used.',
+      spaceTimeTradeoff: '',
       interviewerExpectation: '',
       notes: ''
     };
@@ -270,11 +270,9 @@ function normalizeComplexity(rawComp) {
   const time = rawComp.time || 'O(N)';
   const space = rawComp.space || 'O(1)';
   const notes = rawComp.notes || '';
-
-  let spaceTimeTradeoff = 'Minimal auxiliary space used.';
-  if (space && space !== 'O(1)' && space !== 'n/a') {
-    spaceTimeTradeoff = `Auxiliary memory requirement: ${space}.`;
-  }
+  const whyNaiveFails = rawComp.whyNaiveFails || notes || '';
+  const spaceTimeTradeoff = rawComp.spaceTimeTradeoff || (space && space !== 'O(1)' && space !== 'n/a' ? `Auxiliary memory requirement: ${space}.` : (notes || 'Minimal auxiliary space used.'));
+  const interviewerExpectation = rawComp.interviewerExpectation || notes || '';
 
   return {
     kind,
@@ -284,10 +282,10 @@ function normalizeComplexity(rawComp) {
     notes,
     targetTime: time,
     targetSpace: space,
-    opsBudgetExplanation: notes || `${time} complexity required to meet operational budget.`,
-    whyNaiveFails: notes,
+    opsBudgetExplanation: whyNaiveFails || `${time} complexity required to meet operational budget.`,
+    whyNaiveFails,
     spaceTimeTradeoff,
-    interviewerExpectation: notes
+    interviewerExpectation
   };
 }
 

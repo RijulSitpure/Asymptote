@@ -1329,33 +1329,38 @@ function renderDrawerTabContent() {
 
         ${varsHtml}
 
-        <!-- Panel 1: Execution & Indexing notes (rose style) -->
+        ${complexity?.notes ? `
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:12px; font-size:13px; color:#475569; line-height:1.5;">
+          <strong style="color:#1e2033;">Overview:</strong> ${complexity.notes}
+        </div>` : ''}
+
+        <!-- Panel 1: Why Naive Fails (rose style) -->
         <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:14px; margin-bottom:12px;">
           <div style="font-size:14px; font-weight:700; color:#9f1239; margin-bottom:4px;">
-            Execution & Indexing Notes
+            Why Naive Fails / Query Bottlenecks
           </div>
           <div style="font-size:13px; color:#9f1239; line-height:1.55;">
-            ${complexity?.notes || 'Single pass query execution without unnecessary intermediate table materialization.'}
+            ${complexity?.whyNaiveFails || complexity?.notes || ''}
           </div>
         </div>
 
-        <!-- Panel 2: Memory & Working Set (white style) -->
+        <!-- Panel 2: Space-Time Tradeoff (white style) -->
         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:12px;">
           <div style="font-size:14px; font-weight:700; color:#1e2033; margin-bottom:4px;">
-            Memory & Working Set
+            Space-Time Tradeoff
           </div>
           <div style="font-size:13px; color:#334155; line-height:1.55;">
-            ${complexity?.spaceTimeTradeoff || 'Minimal intermediate tables required; memory bounded by hash or sort buffers.'}
+            ${complexity?.spaceTimeTradeoff || 'Minimal auxiliary space used.'}
           </div>
         </div>
 
-        <!-- Panel 3: Query Optimization (white style) -->
+        <!-- Panel 3: What Interviewers Look For (white style) -->
         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:12px;">
           <div style="font-size:14px; font-weight:700; color:#1e2033; margin-bottom:4px;">
-            Query Optimization
+            What Interviewers Look For
           </div>
           <div style="font-size:13px; color:#334155; line-height:1.55;">
-            ${complexity?.interviewerExpectation || 'Proper join ordering, index utilization on predicate keys, and index-supported grouping.'}
+            ${complexity?.interviewerExpectation || ''}
           </div>
         </div>
       `;
@@ -1377,33 +1382,38 @@ function renderDrawerTabContent() {
           </div>
         </div>
 
-        <!-- Panel 1: Synchronization notes (rose style) -->
+        ${complexity?.notes ? `
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:12px; font-size:13px; color:#475569; line-height:1.5;">
+          <strong style="color:#1e2033;">Overview:</strong> ${complexity.notes}
+        </div>` : ''}
+
+        <!-- Panel 1: Why Naive Fails (rose style) -->
         <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:14px; margin-bottom:12px;">
           <div style="font-size:14px; font-weight:700; color:#9f1239; margin-bottom:4px;">
-            Synchronization Notes
+            Why Naive Fails / Concurrency Hazards
           </div>
           <div style="font-size:13px; color:#9f1239; line-height:1.55;">
-            ${complexity?.notes || 'Thread synchronization / concurrency coordination.'}
+            ${complexity?.whyNaiveFails || complexity?.notes || ''}
           </div>
         </div>
 
-        <!-- Panel 2: Thread Safety (white style) -->
+        <!-- Panel 2: Coordination & Memory Tradeoff (white style) -->
         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:12px;">
           <div style="font-size:14px; font-weight:700; color:#1e2033; margin-bottom:4px;">
-            Thread Safety
+            Coordination & Memory Tradeoff
           </div>
           <div style="font-size:13px; color:#334155; line-height:1.55;">
-            Thread-safe synchronization primitives ensure deadlock-free interleaving and prevent race conditions.
+            ${complexity?.spaceTimeTradeoff || 'Minimal auxiliary space used.'}
           </div>
         </div>
 
-        <!-- Panel 3: Invariant Guarantees (white style) -->
+        <!-- Panel 3: What Interviewers Look For (white style) -->
         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:12px;">
           <div style="font-size:14px; font-weight:700; color:#1e2033; margin-bottom:4px;">
-            Invariant Guarantees
+            What Interviewers Look For
           </div>
           <div style="font-size:13px; color:#334155; line-height:1.55;">
-            Orderly signaling between concurrent threads with guaranteed progress and no busy-waiting.
+            ${complexity?.interviewerExpectation || ''}
           </div>
         </div>
       `;
@@ -1425,33 +1435,38 @@ function renderDrawerTabContent() {
           </div>
         </div>
 
-        <!-- Panel 1: Time limit (rose style) -->
+        ${complexity?.notes ? `
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:12px; font-size:13px; color:#475569; line-height:1.5;">
+          <strong style="color:#1e2033;">Overview:</strong> ${complexity.notes}
+        </div>` : ''}
+
+        <!-- Panel 1: Why Naive Fails (rose style) -->
         <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:14px; margin-bottom:12px;">
           <div style="font-size:14px; font-weight:700; color:#9f1239; margin-bottom:4px;">
-            Time limit
+            Why Naive Fails / Operations Budget
           </div>
           <div style="font-size:13px; color:#9f1239; line-height:1.55;">
-            ${complexity?.opsBudgetExplanation || complexity?.whyNaiveFails || 'N <= 10^5 operations requires O(N) or O(N log N) time to prevent Time Limit Exceeded.'}
+            ${complexity?.whyNaiveFails || complexity?.opsBudgetExplanation || complexity?.notes || ''}
           </div>
         </div>
 
-        <!-- Panel 2: Space and time trade-off (white style) -->
+        <!-- Panel 2: Space-Time Tradeoff (white style) -->
         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:12px;">
           <div style="font-size:14px; font-weight:700; color:#1e2033; margin-bottom:4px;">
-            Space and time trade-off
+            Space-Time Tradeoff
           </div>
           <div style="font-size:13px; color:#334155; line-height:1.55;">
-            ${complexity?.spaceTimeTradeoff || 'Using auxiliary memory allows single-pass linear time by storing visited states.'}
+            ${complexity?.spaceTimeTradeoff || 'Minimal auxiliary space used.'}
           </div>
         </div>
 
-        <!-- Panel 3: What interviewers look for (white style) -->
+        <!-- Panel 3: What Interviewers Look For (white style) -->
         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:12px;">
           <div style="font-size:14px; font-weight:700; color:#1e2033; margin-bottom:4px;">
-            What interviewers look for
+            What Interviewers Look For
           </div>
           <div style="font-size:13px; color:#334155; line-height:1.55;">
-            ${complexity?.interviewerExpectation || 'Articulate the recurrence relation and invariant bounds before writing code.'}
+            ${complexity?.interviewerExpectation || ''}
           </div>
         </div>
       `;

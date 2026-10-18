@@ -242,63 +242,68 @@ export function SocraticSolver({ initialProblemQuery }) {
                 </span>
               </div>
 
-              {data.complexity.kind === 'query-notes' ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
-                      <div className="text-[12px] font-medium text-[#64748b]">Execution / Cost</div>
-                      <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">{data.complexity.time || data.complexity.targetTime || 'O(N)'}</div>
-                    </div>
-                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
-                      <div className="text-[12px] font-medium text-[#64748b]">Auxiliary memory</div>
-                      <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">{data.complexity.space || data.complexity.targetSpace || 'O(1)'}</div>
-                    </div>
+              {/* Metrics grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
+                  <div className="text-[12px] font-medium text-[#64748b]">
+                    {data.complexity.kind === 'query-notes' ? 'Execution / Cost' : data.complexity.kind === 'none' ? 'Coordination' : 'Target time'}
                   </div>
-                  {Array.isArray(data.complexity.variables) && data.complexity.variables.length > 0 && (
-                    <div className="p-3 bg-white rounded-lg border border-[#e2e8f0] text-[13px] text-[#475569]">
-                      <strong className="text-[#1e2033]">Variables:</strong> {data.complexity.variables.join('; ')}
-                    </div>
-                  )}
-                  <div className="p-3 bg-[#fff1f2] border border-[#fecdd3] rounded-lg text-[13px] text-[#9f1239] leading-relaxed">
-                    <strong className="block mb-0.5 font-bold">Execution & Indexing Notes</strong>
-                    {data.complexity.notes || 'Single pass query execution without unnecessary intermediate table materialization.'}
+                  <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">
+                    {data.complexity.kind === 'none' ? 'Synchronized' : (data.complexity.targetTime || data.complexity.time || 'O(N)')}
                   </div>
                 </div>
-              ) : data.complexity.kind === 'none' ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
-                      <div className="text-[12px] font-medium text-[#64748b]">Coordination</div>
-                      <div className="font-heading text-[16px] font-bold text-[#1e2033] mt-1">Synchronized</div>
-                    </div>
-                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
-                      <div className="text-[12px] font-medium text-[#64748b]">Space overhead</div>
-                      <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">{data.complexity.space || 'O(1)'}</div>
-                    </div>
+                <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
+                  <div className="text-[12px] font-medium text-[#64748b]">
+                    {data.complexity.kind === 'none' ? 'Space overhead' : 'Auxiliary memory'}
                   </div>
-                  <div className="p-3 bg-[#fff1f2] border border-[#fecdd3] rounded-lg text-[13px] text-[#9f1239] leading-relaxed">
-                    <strong className="block mb-0.5 font-bold">Synchronization Notes</strong>
-                    {data.complexity.notes || 'Thread synchronization / concurrency coordination.'}
+                  <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">
+                    {data.complexity.targetSpace || data.complexity.space || 'O(1)'}
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
-                      <div className="text-[12px] font-medium text-[#64748b]">Target time</div>
-                      <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">{data.complexity.targetTime || data.complexity.time || 'O(N)'}</div>
-                    </div>
-                    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
-                      <div className="text-[12px] font-medium text-[#64748b]">Target space</div>
-                      <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">{data.complexity.targetSpace || data.complexity.space || 'O(1)'}</div>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-[#fff1f2] border border-[#fecdd3] rounded-lg text-[13px] text-[#9f1239] leading-relaxed">
-                    <strong className="block mb-0.5 font-bold">Time limit</strong>
-                    {data.complexity.opsBudgetExplanation || data.complexity.whyNaiveFails || 'N <= 10^5 operations requires O(N) or O(N log N) time.'}
-                  </div>
+              </div>
+
+              {Array.isArray(data.complexity.variables) && data.complexity.variables.length > 0 && (
+                <div className="p-3 bg-[#f8fafc] rounded-lg border border-[#e2e8f0] text-[13px] text-[#475569]">
+                  <strong className="text-[#1e2033]">Variables:</strong> {data.complexity.variables.join('; ')}
                 </div>
               )}
+
+              {data.complexity.notes && (
+                <div className="text-[13px] text-[#475569] leading-relaxed">
+                  <strong className="text-[#1e2033] font-semibold">Overview: </strong>{data.complexity.notes}
+                </div>
+              )}
+
+              {/* 3-Part Structured Complexity Panels */}
+              <div className="space-y-3 pt-1">
+                {/* Panel 1: Why Naive Fails (rose alert style) */}
+                <div className="p-3.5 bg-[#fff1f2] border border-[#fecdd3] rounded-lg text-[13px] text-[#9f1239] leading-relaxed">
+                  <strong className="block mb-1 font-bold text-[13px]">
+                    {data.complexity.kind === 'query-notes'
+                      ? 'Why Naive Fails / Query Bottlenecks'
+                      : data.complexity.kind === 'none'
+                      ? 'Why Naive Fails / Concurrency Hazards'
+                      : 'Why Naive Fails / Operations Budget'}
+                  </strong>
+                  {data.complexity.whyNaiveFails || data.complexity.opsBudgetExplanation || data.complexity.notes}
+                </div>
+
+                {/* Panel 2: Space-Time Tradeoff */}
+                <div className="p-3.5 bg-white border border-[#e2e8f0] rounded-lg text-[13px] text-[#334155] leading-relaxed shadow-sm">
+                  <strong className="block mb-1 font-bold text-[13px] text-[#1e2033]">
+                    {data.complexity.kind === 'none' ? 'Coordination & Memory Tradeoff' : 'Space-Time Tradeoff'}
+                  </strong>
+                  {data.complexity.spaceTimeTradeoff || 'Minimal auxiliary space used.'}
+                </div>
+
+                {/* Panel 3: What Interviewers Look For */}
+                <div className="p-3.5 bg-white border border-[#e2e8f0] rounded-lg text-[13px] text-[#334155] leading-relaxed shadow-sm">
+                  <strong className="block mb-1 font-bold text-[13px] text-[#1e2033]">
+                    What Interviewers Look For
+                  </strong>
+                  {data.complexity.interviewerExpectation || 'Articulate edge cases and invariant bounds clearly.'}
+                </div>
+              </div>
             </Card>
           )}
 

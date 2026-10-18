@@ -198,6 +198,23 @@ function runValidation(exitOnFailure = false) {
         }
       }
     }
+
+    // Complexity 3-part check for tested/reviewed problems
+    if (problem.review && (problem.review.status === 'tested' || problem.review.status === 'reviewed')) {
+      if (!problem.complexity) {
+        errors.push(`[Complexity 3-Part] ${file}: missing complexity block on ${problem.review.status} problem`);
+      } else {
+        if (!problem.complexity.whyNaiveFails || !problem.complexity.whyNaiveFails.trim()) {
+          errors.push(`[Complexity 3-Part] ${file}: missing or empty complexity.whyNaiveFails`);
+        }
+        if (!problem.complexity.spaceTimeTradeoff || !problem.complexity.spaceTimeTradeoff.trim()) {
+          errors.push(`[Complexity 3-Part] ${file}: missing or empty complexity.spaceTimeTradeoff`);
+        }
+        if (!problem.complexity.interviewerExpectation || !problem.complexity.interviewerExpectation.trim()) {
+          errors.push(`[Complexity 3-Part] ${file}: missing or empty complexity.interviewerExpectation`);
+        }
+      }
+    }
   }
 
   console.log(`✓ Loaded and checked ${totalProblems} problem files`);

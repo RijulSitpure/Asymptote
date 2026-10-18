@@ -478,17 +478,21 @@ function renderPopupTabContent() {
           </div>
         </div>
         ${varsHtml}
+        ${complexity?.notes ? `
+        <div style="padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:11px; color:#475569; line-height:1.45; margin-bottom:8px;">
+          <strong style="color:#1e2033;">Overview:</strong> ${complexity.notes}
+        </div>` : ''}
         <div style="padding:10px 12px; background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; font-size:12px; color:#9f1239; line-height:1.45; margin-bottom:8px;">
-          <div style="font-weight:700; font-size:12px; margin-bottom:2px;">Execution & Indexing Notes</div>
-          ${complexity?.notes || 'Single pass query execution without unnecessary intermediate table materialization.'}
+          <div style="font-weight:700; font-size:12px; margin-bottom:2px;">Why Naive Fails / Query Bottlenecks</div>
+          ${complexity?.whyNaiveFails || complexity?.notes || ''}
         </div>
         <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45; margin-bottom:8px;">
-          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Memory & Working Set</div>
-          ${complexity?.spaceTimeTradeoff || 'Minimal intermediate tables required.'}
+          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Space-Time Tradeoff</div>
+          ${complexity?.spaceTimeTradeoff || 'Minimal auxiliary space used.'}
         </div>
         <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45;">
-          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Query Optimization</div>
-          ${complexity?.interviewerExpectation || 'Proper join ordering and predicate indexing.'}
+          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">What Interviewers Look For</div>
+          ${complexity?.interviewerExpectation || ''}
         </div>
       `;
     } else if (compKind === 'none') {
@@ -507,17 +511,21 @@ function renderPopupTabContent() {
             </div>
           </div>
         </div>
+        ${complexity?.notes ? `
+        <div style="padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:11px; color:#475569; line-height:1.45; margin-bottom:8px;">
+          <strong style="color:#1e2033;">Overview:</strong> ${complexity.notes}
+        </div>` : ''}
         <div style="padding:10px 12px; background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; font-size:12px; color:#9f1239; line-height:1.45; margin-bottom:8px;">
-          <div style="font-weight:700; font-size:12px; margin-bottom:2px;">Synchronization Notes</div>
-          ${complexity?.notes || 'Thread synchronization / concurrency coordination.'}
+          <div style="font-weight:700; font-size:12px; margin-bottom:2px;">Why Naive Fails / Concurrency Hazards</div>
+          ${complexity?.whyNaiveFails || complexity?.notes || ''}
         </div>
         <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45; margin-bottom:8px;">
-          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Thread Safety</div>
-          Thread-safe synchronization primitives ensure deadlock-free interleaving and prevent race conditions.
+          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Coordination & Memory Tradeoff</div>
+          ${complexity?.spaceTimeTradeoff || 'Minimal auxiliary space used.'}
         </div>
         <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45;">
-          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Invariant Guarantees</div>
-          Orderly signaling between concurrent threads with guaranteed progress and no busy-waiting.
+          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">What Interviewers Look For</div>
+          ${complexity?.interviewerExpectation || ''}
         </div>
       `;
     } else {
@@ -536,17 +544,21 @@ function renderPopupTabContent() {
             </div>
           </div>
         </div>
+        ${complexity?.notes ? `
+        <div style="padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:11px; color:#475569; line-height:1.45; margin-bottom:8px;">
+          <strong style="color:#1e2033;">Overview:</strong> ${complexity.notes}
+        </div>` : ''}
         <div style="padding:10px 12px; background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; font-size:12px; color:#9f1239; line-height:1.45; margin-bottom:8px;">
-          <div style="font-weight:700; font-size:12px; margin-bottom:2px;">Time limit</div>
-          ${complexity?.opsBudgetExplanation || complexity?.whyNaiveFails || 'LeetCode runtime limit is ~1.0s. Submissions execute cleanly within time bounds.'}
+          <div style="font-weight:700; font-size:12px; margin-bottom:2px;">Why Naive Fails / Operations Budget</div>
+          ${complexity?.whyNaiveFails || complexity?.opsBudgetExplanation || complexity?.notes || ''}
         </div>
         <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45; margin-bottom:8px;">
-          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Space and time trade-off</div>
-          ${complexity?.spaceTimeTradeoff || 'Optimal trade-off avoids redundant traversals with minimal auxiliary storage.'}
+          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">Space-Time Tradeoff</div>
+          ${complexity?.spaceTimeTradeoff || 'Minimal auxiliary space used.'}
         </div>
         <div style="padding:10px 12px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#334155; line-height:1.45;">
-          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">What interviewers look for</div>
-          ${complexity?.interviewerExpectation || 'Articulate time and space tradeoffs and establish recurrence bounds clearly.'}
+          <div style="font-weight:700; font-size:12px; color:#1e2033; margin-bottom:2px;">What Interviewers Look For</div>
+          ${complexity?.interviewerExpectation || ''}
         </div>
       `;
     }
