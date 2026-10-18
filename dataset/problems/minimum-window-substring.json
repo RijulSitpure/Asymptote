@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-window-substring",
+  "number": 76,
+  "category": "Algorithms",
+  "patterns": [
+    "two-pointers-window-dynamic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Exhaustive Window Search Obstacle",
+      "text": "Testing every substring of s to check if it contains all characters of t takes O(|s|^2 * |t|) time. How can you expand a range until all required characters are present, then contract it from the left to find the minimal valid span?"
+    },
+    {
+      "level": 2,
+      "title": "Frequency Deficit and Contraction Invariant",
+      "text": "Track required character counts from t. Expand the right boundary to satisfy all character needs, then shrink the left boundary while all counts remain satisfied to minimize the window."
+    },
+    {
+      "level": 3,
+      "title": "Formed Counter and Dynamic Two Pointers",
+      "text": "Count character frequencies in t and track how many distinct characters have met their target. Advance right, incrementing window counts. When all distinct required characters are satisfied, advance left to shrink the window while recording the minimum valid length, until a requirement is violated."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import Counter\n\n\nclass Solution:\n    def minWindow(self, s: str, t: str) -> str:\n        if not s or not t:\n            return \"\"\n        need = Counter(t)\n        required = len(need)\n        window: dict[str, int] = {}\n        formed = 0\n        left = 0\n        min_len = float('inf')\n        min_start = 0\n\n        for right, ch in enumerate(s):\n            window[ch] = window.get(ch, 0) + 1\n            if ch in need and window[ch] == need[ch]:\n                formed += 1\n\n            while left <= right and formed == required:\n                curr_len = right - left + 1\n                if curr_len < min_len:\n                    min_len = curr_len\n                    min_start = left\n\n                left_ch = s[left]\n                window[left_ch] -= 1\n                if left_ch in need and window[left_ch] < need[left_ch]:\n                    formed -= 1\n                left += 1\n\n        return \"\" if min_len == float('inf') else s[min_start:min_start + int(min_len)]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(|S| + |T|)",
+    "space": "O(|S| + |T|)",
+    "variables": [
+      "|S|: length of string s (1 <= |S| <= 10^5)",
+      "|T|: length of string t (1 <= |T| <= 10^5)"
+    ],
+    "notes": "Each character in s is visited at most twice (once by right pointer, once by left pointer).",
+    "whyNaiveFails": "Checking all O(|S|^2) substrings by checking character counts against t takes O(|S|^2 * |T|) time, leading to time limit exceeded.",
+    "spaceTimeTradeoff": "Storing character frequencies in two hash tables uses O(|S| + |T|) space to enable linear O(|S| + |T|) window expansion and contraction.",
+    "interviewerExpectation": "Using a \"formed\" variable to track satisfied distinct character counts (avoiding comparing the entire map on every step), correct left-shrinking loop, and returning empty string when no valid window exists."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import Counter\n\n\nclass Solution:\n    def minWindow(self, s: str, t: str) -> str:\n        if not s or not t:\n            return \"\"\n        need = Counter(t)\n        required = len(need)\n        window: dict[str, int] = {}\n        formed = 0\n        left = 0\n        min_len = float('inf')\n        min_start = 0\n\n        for right, ch in enumerate(s):\n            window[ch] = window.get(ch, 0) + 1\n            if ch in need and window[ch] == need[ch]:\n                formed += 1\n\n            while left <= right and formed == required:\n                curr_len = right - left + 1\n                if curr_len < min_len:\n                    min_len = curr_len\n                    min_start = left\n\n                left_ch = s[left]\n                window[left_ch] -= 1\n                if left_ch in need and window[left_ch] < need[left_ch]:\n                    formed -= 1\n                left += 1\n\n        return \"\" if min_len == float('inf') else s[min_start:min_start + int(min_len)]",
+      "approach": "Dynamic Sliding Window with Formed Counter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <string>\n#include <vector>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    string minWindow(string s, string t) {\n        if (s.empty() || t.empty()) return \"\";\n        vector<int> need(128, 0);\n        int required = 0;\n        for (char c : t) {\n            if (need[(unsigned char)c] == 0) required++;\n            need[(unsigned char)c]++;\n        }\n        vector<int> window(128, 0);\n        int formed = 0;\n        int left = 0;\n        int minLen = 1e9;\n        int minStart = 0;\n        for (int right = 0; right < (int)s.length(); ++right) {\n            unsigned char c = (unsigned char)s[right];\n            window[c]++;\n            if (need[c] > 0 && window[c] == need[c]) {\n                formed++;\n            }\n            while (left <= right && formed == required) {\n                int currLen = right - left + 1;\n                if (currLen < minLen) {\n                    minLen = currLen;\n                    minStart = left;\n                }\n                unsigned char lc = (unsigned char)s[left];\n                window[lc]--;\n                if (need[lc] > 0 && window[lc] < need[lc]) {\n                    formed--;\n                }\n                left++;\n            }\n        }\n        return minLen == 1e9 ? \"\" : s.substr(minStart, minLen);\n    }\n};",
+      "approach": "ASCII Table Sliding Window",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public String minWindow(String s, String t) {\n        if (s == null || t == null || s.length() == 0 || t.length() == 0) return \"\";\n        int[] need = new int[128];\n        int required = 0;\n        for (int i = 0; i < t.length(); i++) {\n            char c = t.charAt(i);\n            if (need[c] == 0) required++;\n            need[c]++;\n        }\n        int[] window = new int[128];\n        int formed = 0;\n        int left = 0;\n        int minLen = Integer.MAX_VALUE;\n        int minStart = 0;\n        for (int right = 0; right < s.length(); right++) {\n            char c = s.charAt(right);\n            window[c]++;\n            if (need[c] > 0 && window[c] == need[c]) {\n                formed++;\n            }\n            while (left <= right && formed == required) {\n                int currLen = right - left + 1;\n                if (currLen < minLen) {\n                    minLen = currLen;\n                    minStart = left;\n                }\n                char lc = s.charAt(left);\n                window[lc]--;\n                if (need[lc] > 0 && window[lc] < need[lc]) {\n                    formed--;\n                }\n                left++;\n            }\n        }\n        return minLen == Integer.MAX_VALUE ? \"\" : s.substring(minStart, minStart + minLen);\n    }\n}",
+      "approach": "Two Pointers Window with Formed Counter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} s\n * @param {string} t\n * @return {string}\n */\nvar minWindow = function(s, t) {\n    if (!s || !t) return \"\";\n    const need = new Map();\n    for (let i = 0; i < t.length; i++) {\n        need.set(t[i], (need.get(t[i]) || 0) + 1);\n    }\n    const required = need.size;\n    const window = new Map();\n    let formed = 0;\n    let left = 0;\n    let minLen = Infinity;\n    let minStart = 0;\n    for (let right = 0; right < s.length; right++) {\n        const c = s[right];\n        window.set(c, (window.get(c) || 0) + 1);\n        if (need.has(c) && window.get(c) === need.get(c)) {\n            formed++;\n        }\n        while (left <= right && formed === required) {\n            const currLen = right - left + 1;\n            if (currLen < minLen) {\n                minLen = currLen;\n                minStart = left;\n            }\n            const lc = s[left];\n            window.set(lc, window.get(lc) - 1);\n            if (need.has(lc) && window.get(lc) < need.get(lc)) {\n                formed--;\n            }\n            left++;\n        }\n    }\n    return minLen === Infinity ? \"\" : s.slice(minStart, minStart + minLen);\n};",
+      "approach": "Map Dynamic Window",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-18T00:00:00.000Z"
+}
