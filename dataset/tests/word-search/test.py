@@ -3,7 +3,8 @@ import json, os, re, random, time
 
 def load_problem():
     base = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(base, '..', '..', 'problems', 'word-search.json'), 'r') as f:
+    prob_path = os.path.join(base, '..', '..', 'problems', 'word-search.json')
+    with open(prob_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 def extract_hint_code(prob):
