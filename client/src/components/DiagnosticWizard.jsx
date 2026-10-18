@@ -193,9 +193,9 @@ export function DiagnosticWizard({ onSelectPattern }) {
           </h3>
 
           {(() => {
-            const pattern = topMatch.pattern || {};
-            const patternId = pattern.id || topMatch.pattern_id;
-            const patternTitle = pattern.title || topMatch.pattern_id;
+            const pattern = topMatch?.pattern || {};
+            const patternId = pattern.id || topMatch?.pattern_id;
+            const patternTitle = pattern.title || topMatch?.pattern_id || 'Pattern';
 
             return (
               <Card className="space-y-4">
@@ -264,9 +264,9 @@ export function DiagnosticWizard({ onSelectPattern }) {
           <Card className="!p-0 overflow-hidden">
             <div className="divide-y divide-[#e2e8f0]">
               {otherCandidates.map((cand, idx) => {
-                const pat = cand.pattern || {};
-                const pId = pat.id || cand.pattern_id;
-                const pTitle = pat.title || cand.pattern_id;
+                const pat = cand?.pattern || {};
+                const pId = pat.id || cand?.pattern_id;
+                const pTitle = pat.title || cand?.pattern_id || 'Pattern';
 
                 return (
                   <div key={idx} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

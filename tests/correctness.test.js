@@ -166,8 +166,8 @@ describe('Correctness, Classification, and Pedagogical Logic Tests', () => {
         solution_python: 'class Solution:\n    def solve(self):\n        return True'
       };
       expect(getProblemSolutionCode(verified, 'python3')).toContain('class Solution:');
-      expect(getProblemSolutionCode(verified, 'cpp')).toBe('No verified solution in C++ yet');
-      expect(getProblemSolutionCode(verified, 'java')).toBe('No verified solution in Java yet');
+      expect(getProblemSolutionCode(verified, 'cpp')).toContain('Verified C++ solution is not yet in the local dataset');
+      expect(getProblemSolutionCode(verified, 'java')).toContain('Verified Java solution is not yet in the local dataset');
     });
   });
 

@@ -123,9 +123,9 @@ export function getPatternRank(patternId) {
 }
 
 export function sortPatternsByPedagogy(patterns = []) {
-  return [...patterns].sort((a, b) => {
-    const aId = a.id || a.pattern_id;
-    const bId = b.id || b.pattern_id;
+  return [...patterns].filter(Boolean).sort((a, b) => {
+    const aId = a?.id ?? a?.pattern_id ?? null;
+    const bId = b?.id ?? b?.pattern_id ?? null;
     const aRank = getPatternRank(aId);
     const bRank = getPatternRank(bId);
 
@@ -133,18 +133,18 @@ export function sortPatternsByPedagogy(patterns = []) {
       if (aRank !== bRank) return aRank - bRank;
     }
 
-    const aCatRank = getCategoryRank(a.category || a.domain || a.pattern_category);
-    const bCatRank = getCategoryRank(b.category || b.domain || b.pattern_category);
+    const aCatRank = getCategoryRank(a?.category || a?.domain || a?.pattern_category);
+    const bCatRank = getCategoryRank(b?.category || b?.domain || b?.pattern_category);
     if (aCatRank !== bCatRank) return aCatRank - bCatRank;
 
-    return (a.title || a.pattern_title || a.name || '').localeCompare(b.title || b.pattern_title || b.name || '');
+    return (a?.title || a?.pattern_title || a?.name || '').localeCompare(b?.title || b?.pattern_title || b?.name || '');
   });
 }
 
 export function sortCategoriesByPedagogy(categories = []) {
-  return [...categories].sort((a, b) => {
-    const aCat = typeof a === 'string' ? a : (a.category || a.name || a.fullName || '');
-    const bCat = typeof b === 'string' ? b : (b.category || b.name || b.fullName || '');
+  return [...categories].filter(Boolean).sort((a, b) => {
+    const aCat = typeof a === 'string' ? a : (a?.category || a?.name || a?.fullName || '');
+    const bCat = typeof b === 'string' ? b : (b?.category || b?.name || b?.fullName || '');
     const aRank = getCategoryRank(aCat);
     const bRank = getCategoryRank(bCat);
     if (aRank !== bRank) return aRank - bRank;
@@ -218,6 +218,10 @@ export function formatHintsForDisplay(hints = [], unlockedMaxLevel = 0) {
 }
 
 export function getProblemSolutionCode(problem, langSlug = 'python3') {
+  if (LanguagesModule?.getProblemSolutionCode) {
+    return LanguagesModule.getProblemSolutionCode(problem, langSlug);
+  }
+
   if (!problem) return '';
   if (!problem.verified) return '';
 
@@ -244,7 +248,7 @@ export function getProblemSolutionCode(problem, langSlug = 'python3') {
     }
   }
 
-  return `No verified solution in ${meta.name || langSlug} yet`;
+  return `// Verified ${meta.name || langSlug} solution is not yet in the local dataset.`;
 }
 
 function normalizeComplexity(rawComp) {
@@ -475,6 +479,7 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
     },
 
     async getProblems(filters = {}) {
+      const opts = filters || {};
       const userProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
       const problemsList = [];
 
@@ -559,18 +564,19 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
       // 3. Filter problems
       return problemsList.filter(p => {
-        if (filters.pattern_id && p.pattern_id !== filters.pattern_id && !p.patterns?.includes(filters.pattern_id)) {
+        if (!p) return false;
+        if (opts.pattern_id && p.pattern_id !== opts.pattern_id && !p.patterns?.includes(opts.pattern_id)) {
           return false;
         }
-        if (filters.difficulty && p.difficulty?.toLowerCase() !== filters.difficulty.toLowerCase()) {
+        if (opts.difficulty && p.difficulty?.toLowerCase() !== opts.difficulty.toLowerCase()) {
           return false;
         }
-        if (filters.is_solved !== undefined) {
-          const wantSolved = filters.is_solved === true || filters.is_solved === 1 || filters.is_solved === 'true';
+        if (opts.is_solved !== undefined) {
+          const wantSolved = opts.is_solved === true || opts.is_solved === 1 || opts.is_solved === 'true';
           if (Boolean(p.is_solved) !== wantSolved) return false;
         }
-        if (filters.review_needed !== undefined) {
-          const wantReview = filters.review_needed === true || filters.review_needed === 1 || filters.review_needed === 'true';
+        if (opts.review_needed !== undefined) {
+          const wantReview = opts.review_needed === true || opts.review_needed === 1 || opts.review_needed === 'true';
           if (Boolean(p.review_needed) !== wantReview) return false;
         }
         return true;
@@ -658,9 +664,12 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
         };
       });
 
-      const languages = (Array.isArray(cp.solutions) && cp.solutions.length > 0)
-        ? cp.solutions.map(s => s.lang)
-        : (cp.languages || []);
+      const category = cp.category || meta.category || 'Algorithms';
+      const categoryLangs = LanguagesModule?.CATEGORY_ALLOWED_LANGUAGES?.[category] || LanguagesModule?.CATEGORY_ALLOWED_LANGUAGES?.Algorithms || ['python3', 'cpp', 'java', 'javascript', 'typescript'];
+      const languages = (Array.isArray(cp.languages) && cp.languages.length > 0)
+        ? cp.languages
+        : categoryLangs;
+
       const problemObj = {
         id: cp.number,
         frontend_id: String(cp.number),
@@ -669,7 +678,7 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
         title_slug: cp.slug,
         slug: cp.slug,
         difficulty: meta.difficulty || 'Medium',
-        category: cp.category || meta.category || 'Algorithms',
+        category,
         pattern_id: primaryPatternId,
         pattern_title: pattern?.title || primaryPatternId,
         patterns: cp.patterns || [],
@@ -735,13 +744,17 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       return all.find(p => p.slug === slug) || null;
     },
 
-    async recordSubmission({ titleSlug, questionId, title, difficulty, category, languages, code }) {
-      const slug = resolveProblemSlug(titleSlug || questionId, dataset.index);
+    async recordSubmission({ titleSlug, title_slug, slug: slugParam, questionId, questionFrontendId, frontend_id, number, title, difficulty, category, languages, code }) {
+      const rawSlug = titleSlug || title_slug || slugParam;
+      const rawNum = questionId || questionFrontendId || frontend_id || number;
+      const slug = resolveProblemSlug(rawSlug || rawNum, dataset.index);
       if (!slug) throw new Error('Cannot record submission without a valid problem slug or id');
 
       const userProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
       const prev = userProblems[slug] || {};
       const wasNew = !prev.is_solved;
+
+      const parsedNum = rawNum && /^\d+$/.test(String(rawNum)) ? parseInt(String(rawNum), 10) : (prev?.number || null);
 
       const next = {
         ...prev,
@@ -751,7 +764,7 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       };
 
       if (code) next.user_code = code;
-      if (questionId) next.number = parseInt(questionId, 10);
+      if (parsedNum !== null) next.number = parsedNum;
       if (title) next.title = title;
       if (difficulty) next.difficulty = difficulty;
       if (category) next.category = category;
@@ -784,8 +797,12 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       let updatedCount = 0;
 
       for (const p of problems) {
-        const query = p.titleSlug || p.slug || p.questionFrontendId || p.questionId || p.frontend_id;
-        const slug = resolveProblemSlug(query, dataset.index);
+        if (!p) continue;
+        const rawSlug = p.title_slug || p.titleSlug || p.slug;
+        const numberCandidate = p.frontend_id || p.questionFrontendId || p.questionId || p.number || p.id;
+        const slug = rawSlug 
+          ? resolveProblemSlug(rawSlug, dataset.index) 
+          : (numberCandidate ? resolveProblemSlug(numberCandidate, dataset.index) : null);
         if (!slug) continue;
 
         const prev = userProblems[slug];
@@ -797,10 +814,13 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
           updatedCount++;
         }
 
+        const rawNum = p.questionFrontendId || p.frontend_id || p.questionId || p.number || p.id;
+        const parsedNum = rawNum && /^\d+$/.test(String(rawNum)) ? parseInt(String(rawNum), 10) : (prev?.number || null);
+
         userProblems[slug] = {
           ...prev,
           slug,
-          number: p.questionFrontendId ? parseInt(p.questionFrontendId, 10) : (prev?.number || null),
+          number: parsedNum,
           title: p.title || prev?.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
           difficulty: p.difficulty || prev?.difficulty || 'Medium',
           category: p.categoryTitle || p.category || prev?.category || 'Algorithms',
@@ -868,8 +888,8 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
       // Pattern distribution
       const rawPatternDist = patterns.map(pat => {
-        const total = problems.filter(prob => prob.verified === 1 && (prob.pattern_id === pat.id || prob.patterns?.includes(pat.id))).length;
-        const solved = solvedProblems.filter(prob => prob.verified === 1 && (prob.pattern_id === pat.id || prob.patterns?.includes(pat.id))).length;
+        const total = problems.filter(prob => prob?.verified === 1 && (prob?.pattern_id === pat.id || prob?.patterns?.includes(pat.id))).length;
+        const solved = solvedProblems.filter(prob => prob?.verified === 1 && (prob?.pattern_id === pat.id || prob?.patterns?.includes(pat.id))).length;
         return {
           id: pat.id,
           pattern_id: pat.id,

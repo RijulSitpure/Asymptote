@@ -11,6 +11,7 @@ import { updateProblem } from '../lib/engineClient';
 export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
+  const [domainFilter, setDomainFilter] = useState('all');
   const [patternFilter, setPatternFilter] = useState('all');
   const [diffFilter, setDiffFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -38,19 +39,25 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
   // Filter problems
   const filteredProblems = useMemo(() => {
     return problems.filter(p => {
-      const matchPattern = patternFilter === 'all' || p.pattern_id === patternFilter;
-      const matchDiff = diffFilter === 'all' || p.difficulty === diffFilter;
+      const matchDomain = domainFilter === 'all' || 
+        (p.category && p.category.toLowerCase() === domainFilter.toLowerCase()) ||
+        (domainFilter === 'pandas' && (p.category === 'pandas' || p.category === 'Pandas')) ||
+        (domainFilter === 'Database' && p.category === 'Database');
+      const matchPattern = patternFilter === 'all' || 
+        (patternFilter === 'uncurated' ? (!p.pattern_id || p.pattern_id === null) : p.pattern_id === patternFilter);
+      const matchDiff = diffFilter === 'all' || p.difficulty?.toLowerCase() === diffFilter.toLowerCase();
       const matchStatus = statusFilter === 'all' || 
         (statusFilter === 'solved' && p.is_solved && !p.review_needed) || 
         (statusFilter === 'review' && p.review_needed);
       const q = search.toLowerCase();
       const matchSearch = !q || 
-        p.title.toLowerCase().includes(q) || 
+        (p.title && p.title.toLowerCase().includes(q)) || 
         (p.frontend_id && p.frontend_id.toString().includes(q)) ||
-        (p.pattern_title && p.pattern_title.toLowerCase().includes(q));
-      return matchPattern && matchDiff && matchStatus && matchSearch;
+        (p.pattern_title && p.pattern_title.toLowerCase().includes(q)) ||
+        (p.category && p.category.toLowerCase().includes(q));
+      return matchDomain && matchPattern && matchDiff && matchStatus && matchSearch;
     });
-  }, [problems, patternFilter, diffFilter, statusFilter, search]);
+  }, [problems, domainFilter, patternFilter, diffFilter, statusFilter, search]);
 
   const openDetail = (p) => {
     setSelectedProblem({ ...p });
@@ -108,6 +115,24 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
           />
         </div>
 
+        {/* Category / Domain Filter */}
+        <div className="sm:w-44">
+          <select
+            value={domainFilter}
+            onChange={(e) => setDomainFilter(e.target.value)}
+            aria-label="Filter by category"
+            className="asymptote-input w-full cursor-pointer font-medium"
+          >
+            <option value="all">All categories</option>
+            <option value="Algorithms">Algorithms</option>
+            <option value="Database">Database (SQL)</option>
+            <option value="pandas">Pandas</option>
+            <option value="JavaScript">JavaScript</option>
+            <option value="Concurrency">Concurrency</option>
+            <option value="Shell">Shell</option>
+          </select>
+        </div>
+
         {/* All patterns */}
         <div className="sm:w-48">
           <select
@@ -117,6 +142,7 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
             className="asymptote-input w-full cursor-pointer"
           >
             <option value="all">All patterns</option>
+            <option value="uncurated">Uncurated / Synced</option>
             {sortedPatterns.map(p => (
               <option key={p.id} value={p.id}>{p.title}</option>
             ))}
@@ -193,7 +219,11 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
                     <td className="py-3.5 px-5 text-[#475569]">
                       {p.verified 
                         ? (p.pattern_title || p.pattern_id || 'Pattern') 
-                        : (SHOW_HEURISTIC_PATTERNS && p.pattern_title ? `Suggested: ${p.pattern_title} (unverified)` : '—')}
+                        : (SHOW_HEURISTIC_PATTERNS && p.pattern_title ? `Suggested: ${p.pattern_title} (unverified)` : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[12px] font-medium bg-[#f1f5f9] text-[#475569] border border-[#cbd5e1]">
+                              Uncurated / Synced
+                            </span>
+                          ))}
                     </td>
                     <td className="py-3.5 px-5">
                       <Chip variant={(p.difficulty || 'medium').toLowerCase()}>

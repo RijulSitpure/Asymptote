@@ -45,7 +45,7 @@ export async function fetchPatterns() {
   return engine.getPatterns();
 }
 
-export async function fetchProblems(filters = null) {
+export async function fetchProblems(filters = {}) {
   const engine = await getClientEngine();
   return engine.getProblems(filters);
 }

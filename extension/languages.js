@@ -50,6 +50,17 @@
     };
   }
 
+  const SHOW_HEURISTIC_PATTERNS = false;
+
+  const CATEGORY_ALLOWED_LANGUAGES = {
+    Algorithms: ['python3', 'python', 'cpp', 'java', 'javascript', 'typescript', 'csharp', 'c', 'golang', 'kotlin', 'swift', 'rust', 'ruby', 'php', 'dart', 'scala', 'elixir', 'erlang', 'racket'],
+    Database: ['mysql', 'mssql', 'postgresql', 'oraclesql', 'pythondata'],
+    pandas: ['pythondata', 'python3'],
+    Shell: ['bash'],
+    Concurrency: ['cpp', 'java', 'python', 'python3', 'c', 'csharp'],
+    JavaScript: ['javascript', 'typescript']
+  };
+
   function getSupportedLanguagesForProblem(problem) {
     if (!problem) return [];
     let rawLangs = null;
@@ -62,6 +73,9 @@
       } catch (_e) {
         rawLangs = null;
       }
+    } else if (problem.languages === undefined && problem.category) {
+      const cat = problem.category || 'Algorithms';
+      rawLangs = CATEGORY_ALLOWED_LANGUAGES[cat] || CATEGORY_ALLOWED_LANGUAGES.Algorithms || [];
     }
 
     // Nullable state: if unknown/null/empty, return empty array to trigger loading state
@@ -81,29 +95,47 @@
       return '';
     }
 
+    // Check problem.solutions array first
+    if (Array.isArray(problem.solutions) && problem.solutions.length > 0) {
+      const match = problem.solutions.find(s => s.lang === targetSlug || (targetSlug === 'python3' && s.lang === 'python') || (targetSlug === 'python' && s.lang === 'python3'));
+      if (match && match.code && match.code.trim()) {
+        return match.code;
+      }
+    }
+
     if (targetSlug === 'python3' || targetSlug === 'python') {
       if (problem.solution_python && problem.solution_python.trim()) {
         return problem.solution_python;
       }
-      const hints = Array.isArray(problem.hints_progressive) ? problem.hints_progressive : [];
+      const hints = Array.isArray(problem.hints) ? problem.hints : (Array.isArray(problem.hints_progressive) ? problem.hints_progressive : []);
+      if (hints[3]?.text && hints[3].text.trim()) {
+        return hints[3].text;
+      }
       if (hints[3]?.content && hints[3].content.trim()) {
         return hints[3].content;
       }
     }
 
-    return `No verified solution in ${langMeta.name} yet`;
+    // Available solutions
+    const availableLangs = [];
+    if (Array.isArray(problem.solutions)) {
+      for (const s of problem.solutions) {
+        const m = getLanguageMeta(s.lang);
+        const name = m ? m.name : s.lang;
+        if (!availableLangs.includes(name)) {
+          availableLangs.push(name);
+        }
+      }
+    }
+    if (availableLangs.length === 0 && (problem.solution_python || problem.hints?.[3])) {
+      availableLangs.push('Python 3');
+    }
+    const availStr = availableLangs.length > 0 ? availableLangs.join(', ') : 'None';
+
+    const commentPrefix = (targetSlug === 'python' || targetSlug === 'python3' || targetSlug === 'bash' || targetSlug === 'pythondata') ? '#' : (targetSlug === 'mysql' || targetSlug === 'postgresql' || targetSlug === 'mssql' || targetSlug === 'oraclesql') ? '--' : '//';
+
+    return `${commentPrefix} Verified ${langMeta.name} solution is not yet in the local dataset.\n${commentPrefix} Currently available verified solution(s) for this problem: ${availStr}`;
   }
-
-  const SHOW_HEURISTIC_PATTERNS = false;
-
-  const CATEGORY_ALLOWED_LANGUAGES = {
-    Algorithms: ['python3', 'python', 'cpp', 'java', 'javascript', 'typescript', 'csharp', 'c', 'golang', 'kotlin', 'swift', 'rust', 'ruby', 'php', 'dart', 'scala', 'elixir', 'erlang', 'racket'],
-    Database: ['mysql', 'mssql', 'postgresql', 'oraclesql', 'pythondata'],
-    pandas: ['pythondata', 'python3'],
-    Shell: ['bash'],
-    Concurrency: ['cpp', 'java', 'python', 'python3', 'c', 'csharp'],
-    JavaScript: ['javascript', 'typescript']
-  };
 
   const api = {
     SHOW_HEURISTIC_PATTERNS,

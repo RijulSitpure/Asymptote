@@ -9,37 +9,37 @@ export function ReviewQueue({ stats, patterns, problems, onSelectPattern, onPrac
 
   // Weak spot patterns (0 solved or low ratio)
   const weakSpots = sortPatternsByPedagogy((stats?.weakSpots || []).map(ws => {
-    const fullPattern = (patterns || []).find(p => p.id === (ws.id || ws.pattern_id)) || {};
+    const fullPattern = (patterns || []).find(p => p.id === (ws?.id || ws?.pattern_id)) || {};
     return {
       type: 'pattern',
-      id: ws.id || ws.pattern_id,
-      name: ws.title || ws.pattern_title || fullPattern.title,
-      pattern_title: ws.category || fullPattern.category || 'Algorithmic Pattern',
-      difficulty: ws.difficulty || fullPattern.difficulty || 'Medium',
-      is_solved: (ws.solved_problems || 0) > 0,
-      short_description: ws.short_description || fullPattern.short_description,
+      id: ws?.id || ws?.pattern_id,
+      name: ws?.title || ws?.pattern_title || fullPattern.title || 'Pattern',
+      pattern_title: ws?.category || fullPattern.category || 'Algorithmic Pattern',
+      difficulty: ws?.difficulty || fullPattern.difficulty || 'Medium',
+      is_solved: (ws?.solved_problems || 0) > 0,
+      short_description: ws?.short_description || fullPattern.short_description || '',
       twists: fullPattern.twists || [],
       mental_triggers: fullPattern.mental_triggers || [],
-      complexity: fullPattern.complexity || ws.complexity
+      complexity: fullPattern.complexity || ws?.complexity || null
     };
   }));
 
   // Problems flagged for review
   const flaggedProblems = sortPatternsByPedagogy((problems || [])
-    .filter(p => p.review_needed)
+    .filter(p => Boolean(p?.review_needed))
     .map(p => ({
       type: 'problem',
-      id: p.id,
-      frontend_id: p.frontend_id,
-      name: p.frontend_id ? `#${p.frontend_id} ${p.title}` : p.title,
-      query: p.frontend_id ? String(p.frontend_id) : p.title_slug || p.title,
-      pattern_title: (p.verified || p.source === 'curated') ? (p.pattern_title || p.pattern_category || 'Pattern') : null,
-      difficulty: p.difficulty || 'Medium',
-      is_solved: !!p.is_solved,
-      short_description: p.summary || p.user_notes,
-      twist: p.twist_type,
+      id: p?.id,
+      frontend_id: p?.frontend_id,
+      name: p?.frontend_id ? `#${p.frontend_id} ${p?.title || ''}` : (p?.title || 'Problem'),
+      query: p?.frontend_id ? String(p.frontend_id) : (p?.title_slug || p?.slug || p?.title || ''),
+      pattern_title: (p?.verified || p?.source === 'curated') ? (p?.pattern_title || p?.pattern_category || 'Pattern') : null,
+      difficulty: p?.difficulty || 'Medium',
+      is_solved: !!p?.is_solved,
+      short_description: p?.summary || p?.user_notes || '',
+      twist: p?.twist_type || '',
       twists: [],
-      mental_triggers: p.trigger_clues || [],
+      mental_triggers: p?.trigger_clues || [],
       complexity: null
     })));
 

@@ -38,6 +38,8 @@ function safeGetURL(path) {
   return '';
 }
 
+let toastHideTimeout = null;
+
 function showToast(message, type = 'success') {
   let toast = document.getElementById('lc-pattern-toast');
   if (!toast) {
@@ -45,7 +47,7 @@ function showToast(message, type = 'success') {
     toast.id = 'lc-pattern-toast';
     toast.style.cssText = `
       position: fixed;
-      bottom: 24px;
+      bottom: 80px;
       right: 24px;
       padding: 12px 18px;
       background: #ffffff;
@@ -60,11 +62,17 @@ function showToast(message, type = 'success') {
       display: flex;
       align-items: center;
       gap: 10px;
+      pointer-events: none;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       opacity: 0;
       transform: translateY(10px);
     `;
     document.body.appendChild(toast);
+  }
+
+  if (toastHideTimeout) {
+    clearTimeout(toastHideTimeout);
+    toastHideTimeout = null;
   }
 
   const iconSvg = type === 'success'
@@ -76,12 +84,18 @@ function showToast(message, type = 'success') {
   const iconColor = type === 'success' ? '#047857' : type === 'error' ? '#b91c1c' : '#1e2033';
   toast.innerHTML = `<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${iconBg};color:${iconColor};flex-shrink:0;">${iconSvg}</span> <span>${message}</span>`;
   toast.style.borderLeft = `4px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#1e2033'}`;
+  toast.style.display = 'flex';
   toast.style.opacity = '1';
   toast.style.transform = 'translateY(0)';
 
-  setTimeout(() => {
+  toastHideTimeout = setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transform = 'translateY(10px)';
+    setTimeout(() => {
+      if (toast.style.opacity === '0') {
+        toast.style.display = 'none';
+      }
+    }, 250);
   }, 5000);
 }
 
@@ -635,10 +649,17 @@ function injectFloatingButtons() {
       background-color: #d97706;
     }
     .select-clean {
-      background: #ffffff;
+      background-color: #ffffff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 14px;
       border: 1px solid #cbd5e1;
       border-radius: 8px;
-      padding: 6px 12px;
+      padding: 6px 32px 6px 12px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
       font-family: 'DM Sans', sans-serif;
       font-size: 13px;
       font-weight: 500;
@@ -1052,7 +1073,7 @@ function renderDrawerTabContent() {
 
       if (isUnlocked) {
         return `
-          <div style="background:#f0fdf4; border:1px solid #a7f3d0; border-radius:10px; padding:14px; margin-bottom:10px;">
+          <div id="hint-row-${i + 1}" style="background:#f0fdf4; border:1px solid #a7f3d0; border-radius:10px; padding:14px; margin-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
               <span style="background:#1e2033; color:#ffffff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; line-height:1;">
                 L${i + 1}
@@ -1068,7 +1089,7 @@ function renderDrawerTabContent() {
         `;
       } else {
         return `
-          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;">
+          <div id="hint-row-${i + 1}" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="background:#e2e8f0; color:#475569; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; line-height:1;">
                 L${i + 1}
@@ -1113,6 +1134,12 @@ function renderDrawerTabContent() {
       nextBtn.onclick = () => {
         currentLevel++;
         renderDrawerTabContent();
+        setTimeout(() => {
+          const unlockedEl = shadow.getElementById(`hint-row-${currentLevel}`) || shadow.getElementById('btn-reveal-next');
+          if (unlockedEl && typeof unlockedEl.scrollIntoView === 'function') {
+            unlockedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 80);
       };
     }
   }
@@ -1120,8 +1147,14 @@ function renderDrawerTabContent() {
   // TAB 2: [ Solution ] (5.9 Solution tab: Blueprint view select + lang select + white code card + dashboard link)
   else if (activeDrawerTab === 'solution') {
     const supportedLangs = getSupportedLanguages(problem);
-    if (!supportedLangs.some(l => l.id === activeSolutionLang) && supportedLangs.length > 0) {
-      activeSolutionLang = supportedLangs[0].id;
+    const primarySolLang = problem?.solutions?.[0]?.lang || 
+      (problem?.category === 'Database' ? 'mysql' : 
+       problem?.category === 'pandas' ? 'pythondata' : 
+       problem?.category === 'Shell' ? 'bash' : 
+       problem?.category === 'JavaScript' ? 'javascript' : 'python3');
+
+    if (!supportedLangs.some(l => l.id === activeSolutionLang)) {
+      activeSolutionLang = supportedLangs.some(l => l.id === primarySolLang) ? primarySolLang : (supportedLangs[0]?.id || 'python3');
     }
     const activeCode = getCodeForLang(activeSolutionLang, hints, pattern, problem);
 

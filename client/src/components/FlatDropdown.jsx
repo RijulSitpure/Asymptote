@@ -90,8 +90,8 @@ export function FlatDropdown({
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         className={cn(
-          "inline-flex items-center justify-between gap-2 bg-[#f8f9fc] hover:bg-[#ffffff] border border-[#eef0f4] hover:border-[#cbd5e1] focus:border-[#1e2033] focus:bg-[#ffffff] rounded-md font-sans text-[#1e2033] transition-all outline-none cursor-pointer select-none",
-          size === 'sm' ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-xs",
+          "inline-flex items-center justify-between gap-3 bg-[#f8f9fc] hover:bg-[#ffffff] border border-[#eef0f4] hover:border-[#cbd5e1] focus:border-[#1e2033] focus:bg-[#ffffff] rounded-md font-sans text-[#1e2033] transition-all outline-none cursor-pointer select-none",
+          size === 'sm' ? "px-3 py-1 text-xs" : "px-3.5 py-1.5 text-xs",
           isOpen && "border-[#1e2033] bg-[#ffffff] ring-2 ring-[rgba(30,32,51,0.08)]"
         )}
       >

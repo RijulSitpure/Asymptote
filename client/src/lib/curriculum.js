@@ -94,9 +94,9 @@ export function getPatternRank(patternId) {
 }
 
 export function sortPatternsByPedagogy(patterns = []) {
-  return [...patterns].sort((a, b) => {
-    const aId = a.id || a.pattern_id;
-    const bId = b.id || b.pattern_id;
+  return [...patterns].filter(Boolean).sort((a, b) => {
+    const aId = a?.id ?? a?.pattern_id ?? null;
+    const bId = b?.id ?? b?.pattern_id ?? null;
     const aRank = getPatternRank(aId);
     const bRank = getPatternRank(bId);
 
@@ -104,18 +104,18 @@ export function sortPatternsByPedagogy(patterns = []) {
       if (aRank !== bRank) return aRank - bRank;
     }
 
-    const aCatRank = getCategoryRank(a.category || a.pattern_category);
-    const bCatRank = getCategoryRank(b.category || b.pattern_category);
+    const aCatRank = getCategoryRank(a?.category || a?.domain || a?.pattern_category);
+    const bCatRank = getCategoryRank(b?.category || b?.domain || b?.pattern_category);
     if (aCatRank !== bCatRank) return aCatRank - bCatRank;
 
-    return (a.title || a.pattern_title || '').localeCompare(b.title || b.pattern_title || '');
+    return (a?.title || a?.pattern_title || a?.name || '').localeCompare(b?.title || b?.pattern_title || b?.name || '');
   });
 }
 
 export function sortCategoriesByPedagogy(categories = []) {
-  return [...categories].sort((a, b) => {
-    const aCat = typeof a === 'string' ? a : (a.category || a.name || a.fullName || '');
-    const bCat = typeof b === 'string' ? b : (b.category || b.name || b.fullName || '');
+  return [...categories].filter(Boolean).sort((a, b) => {
+    const aCat = typeof a === 'string' ? a : (a?.category || a?.name || a?.fullName || '');
+    const bCat = typeof b === 'string' ? b : (b?.category || b?.name || b?.fullName || '');
     const aRank = getCategoryRank(aCat);
     const bRank = getCategoryRank(bCat);
     if (aRank !== bRank) return aRank - bRank;

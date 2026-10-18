@@ -5,7 +5,18 @@ import { Chip } from './Chip';
 import { sortPatternsByPedagogy, sortCategoriesByPedagogy } from '../lib/curriculum';
 import { SUPPORTED_LANGUAGES, getPatternCode } from '../lib/codeTemplates';
 
+const DOMAIN_OPTIONS = [
+  { id: 'Algorithms', label: 'Algorithms' },
+  { id: 'Database', label: 'Database (SQL)' },
+  { id: 'pandas', label: 'Pandas' },
+  { id: 'JavaScript', label: 'JavaScript' },
+  { id: 'Concurrency', label: 'Concurrency' },
+  { id: 'Shell', label: 'Shell' },
+  { id: 'all', label: 'All Domains' }
+];
+
 export function PatternAtlas({ patterns = [], selectedPatternId }) {
+  const [selectedDomain, setSelectedDomain] = useState('Algorithms');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [expandedId, setExpandedId] = useState(selectedPatternId || null);
@@ -17,32 +28,49 @@ export function PatternAtlas({ patterns = [], selectedPatternId }) {
     if (selectedPatternId) {
       setExpandedId(selectedPatternId);
       const targetPattern = patterns.find(p => p.id === selectedPatternId);
-      if (targetPattern && selectedCategory !== 'all' && selectedCategory !== targetPattern.category) {
-        setSelectedCategory('all');
+      if (targetPattern) {
+        if (targetPattern.domain) {
+          setSelectedDomain(targetPattern.domain);
+        }
+        if (selectedCategory !== 'all' && selectedCategory !== targetPattern.category && selectedCategory !== targetPattern.family) {
+          setSelectedCategory('all');
+        }
       }
     }
-  }, [selectedPatternId, patterns]);
+  }, [selectedPatternId, patterns, selectedCategory]);
 
-  // Extract unique categories sorted by learning progression
+  // Filter patterns by domain
+  const domainPatterns = useMemo(() => {
+    if (selectedDomain === 'all') return patterns;
+    return patterns.filter(p => {
+      const d = p.domain || p.category;
+      return d?.toLowerCase() === selectedDomain.toLowerCase() ||
+        (selectedDomain === 'pandas' && (d === 'pandas' || d === 'Pandas')) ||
+        (selectedDomain === 'Database' && d === 'Database');
+    });
+  }, [patterns, selectedDomain]);
+
+  // Extract unique categories/families belonging to the active domain
   const categories = useMemo(() => {
-    const set = new Set(patterns.map(p => p.category));
+    const set = new Set(domainPatterns.map(p => p.family || p.category).filter(Boolean));
     const sorted = sortCategoriesByPedagogy(Array.from(set));
     return ['all', ...sorted];
-  }, [patterns]);
+  }, [domainPatterns]);
 
   // Filter patterns and order by pedagogical curriculum
   const filteredPatterns = useMemo(() => {
-    const matched = patterns.filter(p => {
-      const matchCat = selectedCategory === 'all' || p.category === selectedCategory;
+    const matched = domainPatterns.filter(p => {
+      const matchCat = selectedCategory === 'all' || p.category === selectedCategory || p.family === selectedCategory;
       const q = search.toLowerCase();
       const matchSearch = !q || 
-        p.title.toLowerCase().includes(q) || 
-        p.category.toLowerCase().includes(q) ||
+        (p.title && p.title.toLowerCase().includes(q)) || 
+        (p.category && p.category.toLowerCase().includes(q)) ||
+        (p.family && p.family.toLowerCase().includes(q)) ||
         (p.short_description && p.short_description.toLowerCase().includes(q));
       return matchCat && matchSearch;
     });
     return sortPatternsByPedagogy(matched);
-  }, [patterns, selectedCategory, search]);
+  }, [domainPatterns, selectedCategory, search]);
 
   const handleCopy = (id, code) => {
     navigator.clipboard.writeText(code);
@@ -73,8 +101,25 @@ export function PatternAtlas({ patterns = [], selectedPatternId }) {
         </p>
       </div>
 
-      {/* Filter Row: Search field, Category select, Count chip */}
+      {/* Filter Row: Domain filter, Search field, Category select, Count chip */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        {/* Domain Filter Select */}
+        <div className="sm:w-44">
+          <select
+            value={selectedDomain}
+            onChange={(e) => {
+              setSelectedDomain(e.target.value);
+              setSelectedCategory('all');
+            }}
+            aria-label="Filter by domain"
+            className="asymptote-input w-full cursor-pointer font-medium"
+          >
+            {DOMAIN_OPTIONS.map(d => (
+              <option key={d.id} value={d.id}>{d.label}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Search Field */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-[#64748b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -89,14 +134,16 @@ export function PatternAtlas({ patterns = [], selectedPatternId }) {
         </div>
 
         {/* Category Select */}
-        <div className="sm:w-64">
+        <div className="sm:w-60">
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             aria-label="Filter by category"
             className="asymptote-input w-full cursor-pointer"
           >
-            <option value="all">All categories</option>
+            <option value="all">
+              {selectedDomain === 'Algorithms' ? 'All families (19)' : 'All categories'}
+            </option>
             {categories.filter(c => c !== 'all').map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}

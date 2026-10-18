@@ -48,11 +48,18 @@ export function SocraticSolver({ initialProblemQuery }) {
 
   useEffect(() => {
     if (supportedLangs && supportedLangs.length > 0) {
+      const primaryLang = data?.problem?.solutions?.[0]?.lang || 
+        (data?.problem?.category === 'Database' ? 'mysql' : 
+         data?.problem?.category === 'pandas' ? 'pythondata' : 
+         data?.problem?.category === 'Shell' ? 'bash' : 
+         data?.problem?.category === 'JavaScript' ? 'javascript' : 'python3');
+
       if (!supportedLangs.some(l => l.id === solverLang)) {
-        setSolverLang(supportedLangs[0].id);
+        const fallback = supportedLangs.some(l => l.id === primaryLang) ? primaryLang : supportedLangs[0].id;
+        setSolverLang(fallback);
       }
     }
-  }, [supportedLangs, solverLang]);
+  }, [supportedLangs, data, solverLang]);
 
   const loadProblemHints = async (searchQuery) => {
     if (!searchQuery) return;
@@ -65,6 +72,12 @@ export function SocraticSolver({ initialProblemQuery }) {
       }
       setData(json);
       setRevealedLevel(1);
+      const primaryLang = json?.problem?.solutions?.[0]?.lang || 
+        (json?.problem?.category === 'Database' ? 'mysql' : 
+         json?.problem?.category === 'pandas' ? 'pythondata' : 
+         json?.problem?.category === 'Shell' ? 'bash' : 
+         json?.problem?.category === 'JavaScript' ? 'javascript' : 'python3');
+      setSolverLang(primaryLang);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -89,6 +102,10 @@ export function SocraticSolver({ initialProblemQuery }) {
         const level = parseInt(e.key, 10);
         if (level <= (data.hints?.length || 4)) {
           setRevealedLevel(level);
+          setTimeout(() => {
+            const el = document.getElementById(`hint-row-${level}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 80);
         }
       }
     };

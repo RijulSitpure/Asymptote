@@ -308,4 +308,53 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(wizardCandidates.length).toBeGreaterThan(0);
     expect(wizardCandidates[0].pattern_id).toBe('two-pointers-window-dynamic');
   });
+
+  // 8. LeetCode Sync Batch Payload & Null Filter Safety
+  it('8. Verifies LeetCode sync batch payload with title_slug and uncurated problems', async () => {
+    const syncResult = await engine.syncBatch({
+      username: 'TestUser',
+      problems: [
+        {
+          frontend_id: '1',
+          title: 'Two Sum',
+          title_slug: 'two-sum',
+          difficulty: 'Easy',
+          category: 'Algorithms',
+          languages: ['python3', 'cpp'],
+          topicTags: ['Array', 'Hash Table']
+        },
+        {
+          frontend_id: '15',
+          title: '3Sum',
+          title_slug: '3sum',
+          difficulty: 'Medium',
+          category: 'Algorithms',
+          languages: ['python3'],
+          topicTags: ['Array', 'Two Pointers']
+        },
+        {
+          frontend_id: '9998',
+          title: 'Future Random Problem',
+          title_slug: 'future-random-problem',
+          difficulty: 'Hard',
+          category: 'Algorithms',
+          languages: ['python3'],
+          topicTags: ['Brainteaser']
+        }
+      ]
+    });
+    expect(syncResult.success).toBe(true);
+
+    // Test null filters and solved retrieval without throwing
+    const allProblems = await engine.getProblems(null);
+    expect(allProblems.length).toBeGreaterThanOrEqual(29);
+
+    const solvedProblems = await engine.getProblems({ is_solved: true });
+    expect(solvedProblems.some(p => p.slug === '3sum')).toBe(true);
+    expect(solvedProblems.some(p => p.slug === 'future-random-problem')).toBe(true);
+    expect(solvedProblems.some(p => p.slug === 'two-sum')).toBe(true);
+
+    const stats = await engine.getStats();
+    expect(stats.totalSolved).toBeGreaterThanOrEqual(3);
+  });
 });

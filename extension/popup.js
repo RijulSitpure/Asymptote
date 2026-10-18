@@ -175,27 +175,44 @@ async function triggerSync() {
 }
 
 // ==================== VIEW SWITCHING ====================
+let lastProblemQuery = null;
+
 function showSyncView() {
   hideMessage();
   const syncView = document.getElementById('sync-view');
   const problemView = document.getElementById('problem-view');
-  const backBtn = document.getElementById('view-back-to-sync-btn');
+  const backToSyncBtn = document.getElementById('view-back-to-sync-btn');
+  const backToProblemBtn = document.getElementById('view-back-to-problem-btn');
+  const accountBackBar = document.getElementById('account-back-bar');
 
   if (syncView) syncView.style.display = 'block';
   if (problemView) problemView.style.display = 'none';
-  if (backBtn) backBtn.style.display = 'none';
+  if (backToSyncBtn) backToSyncBtn.style.display = 'none';
+
+  if (lastProblemQuery || popupCachedData?.problem?.slug) {
+    if (backToProblemBtn) backToProblemBtn.style.display = 'inline-flex';
+    if (accountBackBar) accountBackBar.style.display = 'block';
+  } else {
+    if (backToProblemBtn) backToProblemBtn.style.display = 'none';
+    if (accountBackBar) accountBackBar.style.display = 'none';
+  }
 }
 
 function showProblemView(query) {
+  if (query) lastProblemQuery = query;
   const syncView = document.getElementById('sync-view');
   const problemView = document.getElementById('problem-view');
-  const backBtn = document.getElementById('view-back-to-sync-btn');
+  const backToSyncBtn = document.getElementById('view-back-to-sync-btn');
+  const backToProblemBtn = document.getElementById('view-back-to-problem-btn');
+  const accountBackBar = document.getElementById('account-back-bar');
 
   if (syncView) syncView.style.display = 'none';
   if (problemView) problemView.style.display = 'block';
-  if (backBtn) backBtn.style.display = 'inline-flex';
+  if (backToSyncBtn) backToSyncBtn.style.display = 'inline-flex';
+  if (backToProblemBtn) backToProblemBtn.style.display = 'none';
+  if (accountBackBar) accountBackBar.style.display = 'none';
 
-  lookupProblem(query);
+  lookupProblem(query || lastProblemQuery);
 }
 
 // ==================== PROBLEM VIEW LOGIC ====================
@@ -273,7 +290,7 @@ function renderPopupTabContent() {
       const title = hintTitles[i] || h.title;
       if (isUnlocked) {
         return `
-          <div style="background:#f0fdf4; border:1px solid #a7f3d0; border-radius:10px; padding:12px; margin-bottom:8px;">
+          <div id="popup-hint-card-${i + 1}" style="background:#f0fdf4; border:1px solid #a7f3d0; border-radius:10px; padding:12px; margin-bottom:8px;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
               <span style="background:#1e2033; color:#ffffff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; line-height:1;">
                 L${i + 1}
@@ -287,7 +304,7 @@ function renderPopupTabContent() {
         `;
       } else {
         return `
-          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
+          <div id="popup-hint-card-${i + 1}" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="background:#e2e8f0; color:#475569; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; line-height:1;">
                 L${i + 1}
@@ -330,12 +347,24 @@ function renderPopupTabContent() {
       revealBtn.onclick = () => {
         popupCurrentHintLevel++;
         renderPopupTabContent();
+        setTimeout(() => {
+          const newlyUnlocked = document.getElementById(`popup-hint-card-${popupCurrentHintLevel}`) || document.getElementById('popup-reveal-hint-btn');
+          if (newlyUnlocked && typeof newlyUnlocked.scrollIntoView === 'function') {
+            newlyUnlocked.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 80);
       };
     }
   } else if (popupActiveTab === 'solution') {
     const supportedLangs = getSupportedLanguagesForProblem(problem);
-    if (!supportedLangs.some(l => (l.langSlug || l.id) === popupActiveLang) && supportedLangs.length > 0) {
-      popupActiveLang = supportedLangs[0].langSlug || supportedLangs[0].id;
+    const primarySolLang = problem?.solutions?.[0]?.lang || 
+      (problem?.category === 'Database' ? 'mysql' : 
+       problem?.category === 'pandas' ? 'pythondata' : 
+       problem?.category === 'Shell' ? 'bash' : 
+       problem?.category === 'JavaScript' ? 'javascript' : 'python3');
+
+    if (!supportedLangs.some(l => (l.langSlug || l.id) === popupActiveLang)) {
+      popupActiveLang = supportedLangs.some(l => (l.langSlug || l.id) === primarySolLang) ? primarySolLang : (supportedLangs[0]?.langSlug || supportedLangs[0]?.id || 'python3');
     }
     const selectedMeta = (typeof getLanguageMeta === 'function' ? getLanguageMeta(popupActiveLang) : null) || { displayName: popupActiveLang, name: popupActiveLang };
     const code = getProblemSolutionCode(problem, popupActiveLang);
@@ -351,7 +380,7 @@ function renderPopupTabContent() {
             ${supportedLangs.length === 0 ? `
               <span style="font-size:11px; color:#64748b; font-style:italic;">Loading languages...</span>
             ` : `
-              <select id="popup-lang-select" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:3px 8px; font-size:11px; font-family:'DM Sans',sans-serif;">
+              <select id="popup-lang-select" class="popup-select">
                 ${supportedLangs.map(l => `<option value="${l.langSlug || l.id}" ${(l.langSlug || l.id) === popupActiveLang ? 'selected' : ''}>${l.displayName || l.name}</option>`).join('')}
               </select>
             `}
@@ -662,6 +691,24 @@ if (lookupInput) {
 const backToSyncBtn = document.getElementById('view-back-to-sync-btn');
 if (backToSyncBtn) {
   backToSyncBtn.addEventListener('click', showSyncView);
+}
+
+const backToProblemBtn = document.getElementById('view-back-to-problem-btn');
+if (backToProblemBtn) {
+  backToProblemBtn.addEventListener('click', () => {
+    if (lastProblemQuery || popupCachedData?.problem?.slug) {
+      showProblemView(lastProblemQuery || popupCachedData?.problem?.slug);
+    }
+  });
+}
+
+const btnBackToProblemBar = document.getElementById('btn-back-to-problem-bar');
+if (btnBackToProblemBar) {
+  btnBackToProblemBar.addEventListener('click', () => {
+    if (lastProblemQuery || popupCachedData?.problem?.slug) {
+      showProblemView(lastProblemQuery || popupCachedData?.problem?.slug);
+    }
+  });
 }
 
 // Tab Switcher Listeners
