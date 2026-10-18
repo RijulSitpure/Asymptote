@@ -1,0 +1,79 @@
+{
+  "slug": "course-schedule",
+  "number": 207,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Circular Dependency Pruning Obstacle",
+      "text": "When courses require prerequisites, circular dependencies prevent completion. How can you systematically process courses that have zero remaining prerequisites to verify whether every course can eventually be taken?"
+    },
+    {
+      "level": 2,
+      "title": "Topological Indegree Invariant",
+      "text": "A valid schedule exists if and only if the dependency graph contains no directed cycles. Progressively removing nodes with zero prerequisites must resolve all nodes."
+    },
+    {
+      "level": 3,
+      "title": "Indegree Queue Processing Procedure",
+      "text": "Build an adjacency list of course dependencies and compute each course's incoming prerequisite count. Collect all courses with zero incoming prerequisites. Repeatedly process each available course, decrementing the counts of its dependent courses and unlocking newly free courses. Return whether processed courses equals the total."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def canFinish(self, numCourses: int, prerequisites: list[list[int]]) -> bool:\n        adj = [[] for _ in range(numCourses)]\n        indegree = [0] * numCourses\n        for course, prereq in prerequisites:\n            adj[prereq].append(course)\n            indegree[course] += 1\n        q = deque([i for i in range(numCourses) if indegree[i] == 0])\n        taken = 0\n        while q:\n            curr = q.popleft()\n            taken += 1\n            for nxt in adj[curr]:\n                indegree[nxt] -= 1\n                if indegree[nxt] == 0:\n                    q.append(nxt)\n        return taken == numCourses\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of courses (1 <= V <= 2000)",
+      "E: number of prerequisite pairs (0 <= E <= 5000)"
+    ],
+    "notes": "Every node and directed edge is processed once during queue-based topological sorting.",
+    "whyNaiveFails": "Uncached cycle detection per node with brute-force exploration risks exponential paths on dense graphs.",
+    "spaceTimeTradeoff": "Kahn's algorithm maintains indegrees with linear O(V + E) space, resolving courses in O(V + E) time.",
+    "interviewerExpectation": "Graph construction, indegree calculation, zero-indegree queue traversal, checking total resolved count against V."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def canFinish(self, numCourses: int, prerequisites: list[list[int]]) -> bool:\n        adj = [[] for _ in range(numCourses)]\n        indegree = [0] * numCourses\n        for course, prereq in prerequisites:\n            adj[prereq].append(course)\n            indegree[course] += 1\n        q = deque([i for i in range(numCourses) if indegree[i] == 0])\n        taken = 0\n        while q:\n            curr = q.popleft()\n            taken += 1\n            for nxt in adj[curr]:\n                indegree[nxt] -= 1\n                if indegree[nxt] == 0:\n                    q.append(nxt)\n        return taken == numCourses",
+      "approach": "Kahn's Topological Sort with Indegrees",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    bool canFinish(int numCourses, vector<vector<int>>& prerequisites) {\n        vector<vector<int>> adj(numCourses);\n        vector<int> indegree(numCourses, 0);\n        for (auto& p : prerequisites) {\n            adj[p[1]].push_back(p[0]);\n            indegree[p[0]]++;\n        }\n        queue<int> q;\n        for (int i = 0; i < numCourses; ++i) {\n            if (indegree[i] == 0) q.push(i);\n        }\n        int taken = 0;\n        while (!q.empty()) {\n            int curr = q.front();\n            q.pop();\n            taken++;\n            for (int nxt : adj[curr]) {\n                if (--indegree[nxt] == 0) q.push(nxt);\n            }\n        }\n        return taken == numCourses;\n    }\n};",
+      "approach": "Kahn's BFS Indegree Reduction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public boolean canFinish(int numCourses, int[][] prerequisites) {\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < numCourses; ++i) adj.add(new ArrayList<>());\n        int[] indegree = new int[numCourses];\n        for (int[] p : prerequisites) {\n            adj.get(p[1]).add(p[0]);\n            indegree[p[0]]++;\n        }\n        Queue<Integer> q = new LinkedList<>();\n        for (int i = 0; i < numCourses; ++i) {\n            if (indegree[i] == 0) q.offer(i);\n        }\n        int taken = 0;\n        while (!q.isEmpty()) {\n            int curr = q.poll();\n            taken++;\n            for (int nxt : adj.get(curr)) {\n                if (--indegree[nxt] == 0) q.offer(nxt);\n            }\n        }\n        return taken == numCourses;\n    }\n}",
+      "approach": "Topological Sort Indegree Queue",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} numCourses\n * @param {number[][]} prerequisites\n * @return {boolean}\n */\nvar canFinish = function(numCourses, prerequisites) {\n    const adj = Array.from({ length: numCourses }, () => []);\n    const indegree = new Int32Array(numCourses);\n    for (const [course, prereq] of prerequisites) {\n        adj[prereq].push(course);\n        indegree[course]++;\n    }\n    const q = [];\n    for (let i = 0; i < numCourses; ++i) {\n        if (indegree[i] === 0) q.push(i);\n    }\n    let taken = 0;\n    let head = 0;\n    while (head < q.length) {\n        const curr = q[head++];\n        taken++;\n        for (const nxt of adj[curr]) {\n            if (--indegree[nxt] === 0) q.push(nxt);\n        }\n    }\n    return taken === numCourses;\n};",
+      "approach": "Kahn's Algorithm with Array Queue",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-18T00:00:00.000Z"
+}

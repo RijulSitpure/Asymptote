@@ -1,0 +1,79 @@
+{
+  "slug": "pacific-atlantic-water-flow",
+  "number": 417,
+  "category": "Algorithms",
+  "patterns": [
+    "grid-flood-fill"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Downward Search Redundancy Obstacle",
+      "text": "Checking whether water from each individual cell can flow down to both oceans causes repetitive upward searches. What happens if you invert the perspective and trace where water can flow uphill starting directly from the coastlines?"
+    },
+    {
+      "level": 2,
+      "title": "Reverse Coastal Reachability Invariant",
+      "text": "A cell can drain into an ocean if and only if that ocean's coastline can reach the cell via non-decreasing height steps. The intersection of both reachability zones yields all valid coordinates."
+    },
+    {
+      "level": 3,
+      "title": "Inverted Coastal Flood-Fill Procedure",
+      "text": "Initialize two boolean grids for Pacific and Atlantic reachability. Initiate traversals moving inward from Pacific coastal edges to adjacent cells with equal or greater height, marking them reachable. Repeat independently from Atlantic edges. Collect all coordinates marked true in both grids."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def pacificAtlantic(self, heights: list[list[int]]) -> list[list[int]]:\n        if not heights or not heights[0]:\n            return []\n        m, n = len(heights), len(heights[0])\n        pac = set()\n        atl = set()\n        def dfs(r, c, visited):\n            visited.add((r, c))\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and (nr, nc) not in visited and heights[nr][nc] >= heights[r][c]:\n                    dfs(nr, nc, visited)\n        for c in range(n):\n            dfs(0, c, pac)\n            dfs(m - 1, c, atl)\n        for r in range(m):\n            dfs(r, 0, pac)\n            dfs(r, n - 1, atl)\n        return [list(cell) for cell in (pac & atl)]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N)",
+    "space": "O(M * N)",
+    "variables": [
+      "M: grid rows (1 <= M <= 200)",
+      "N: grid columns (1 <= N <= 200)"
+    ],
+    "notes": "Traversals from Pacific and Atlantic borders visit each cell at most once per ocean.",
+    "whyNaiveFails": "Simulating downward flow from each of the M*N cells individually takes O((M*N)^2) time, leading to Time Limit Exceeded.",
+    "spaceTimeTradeoff": "Running two inward coastal reachability passes and taking their intersection runs in O(M*N) time with O(M*N) visited storage.",
+    "interviewerExpectation": "Reverse reachability insight (moving uphill from coasts), avoiding per-cell redundant searches, clean set or matrix intersection."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def pacificAtlantic(self, heights: list[list[int]]) -> list[list[int]]:\n        if not heights or not heights[0]:\n            return []\n        m, n = len(heights), len(heights[0])\n        pac = set()\n        atl = set()\n        def dfs(r, c, visited):\n            visited.add((r, c))\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and (nr, nc) not in visited and heights[nr][nc] >= heights[r][c]:\n                    dfs(nr, nc, visited)\n        for c in range(n):\n            dfs(0, c, pac)\n            dfs(m - 1, c, atl)\n        for r in range(m):\n            dfs(r, 0, pac)\n            dfs(r, n - 1, atl)\n        return [list(cell) for cell in (pac & atl)]",
+      "approach": "Reverse Coastal DFS Intersection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<vector<int>> pacificAtlantic(vector<vector<int>>& heights) {\n        if (heights.empty() || heights[0].empty()) return {};\n        int m = heights.size(), n = heights[0].size();\n        vector<vector<bool>> pac(m, vector<bool>(n, false));\n        vector<vector<bool>> atl(m, vector<bool>(n, false));\n        \n        auto dfs = [&](auto self, int r, int c, vector<vector<bool>>& vis) -> void {\n            vis[r][c] = true;\n            int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n            for (auto& d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && !vis[nr][nc] && heights[nr][nc] >= heights[r][c]) {\n                    self(self, nr, nc, vis);\n                }\n            }\n        };\n\n        for (int c = 0; c < n; ++c) {\n            dfs(dfs, 0, c, pac);\n            dfs(dfs, m - 1, c, atl);\n        }\n        for (int r = 0; r < m; ++r) {\n            dfs(dfs, r, 0, pac);\n            dfs(dfs, r, n - 1, atl);\n        }\n\n        vector<vector<int>> res;\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (pac[r][c] && atl[r][c]) {\n                    res.push_back({r, c});\n                }\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "Dual Coastal Reachability Visited Grids",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<List<Integer>> pacificAtlantic(int[][] heights) {\n        List<List<Integer>> res = new ArrayList<>();\n        if (heights == null || heights.length == 0 || heights[0].length == 0) return res;\n        int m = heights.length, n = heights[0].length;\n        boolean[][] pac = new boolean[m][n];\n        boolean[][] atl = new boolean[m][n];\n\n        for (int c = 0; c < n; ++c) {\n            dfs(heights, 0, c, pac);\n            dfs(heights, m - 1, c, atl);\n        }\n        for (int r = 0; r < m; ++r) {\n            dfs(heights, r, 0, pac);\n            dfs(heights, r, n - 1, atl);\n        }\n\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (pac[r][c] && atl[r][c]) {\n                    res.add(Arrays.asList(r, c));\n                }\n            }\n        }\n        return res;\n    }\n\n    private void dfs(int[][] h, int r, int c, boolean[][] vis) {\n        vis[r][c] = true;\n        int m = h.length, n = h[0].length;\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int[] d : dirs) {\n            int nr = r + d[0], nc = c + d[1];\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && !vis[nr][nc] && h[nr][nc] >= h[r][c]) {\n                dfs(h, nr, nc, vis);\n            }\n        }\n    }\n}",
+      "approach": "Dual Visited Coastal Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} heights\n * @return {number[][]}\n */\nvar pacificAtlantic = function(heights) {\n    if (!heights || heights.length === 0 || heights[0].length === 0) return [];\n    const m = heights.length, n = heights[0].length;\n    const pac = Array.from({ length: m }, () => Array(n).fill(false));\n    const atl = Array.from({ length: m }, () => Array(n).fill(false));\n\n    function dfs(r, c, vis) {\n        vis[r][c] = true;\n        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && !vis[nr][nc] && heights[nr][nc] >= heights[r][c]) {\n                dfs(nr, nc, vis);\n            }\n        }\n    }\n\n    for (let c = 0; c < n; ++c) {\n        dfs(0, c, pac);\n        dfs(m - 1, c, atl);\n    }\n    for (let r = 0; r < m; ++r) {\n        dfs(r, 0, pac);\n        dfs(r, n - 1, atl);\n    }\n\n    const res = [];\n    for (let r = 0; r < m; ++r) {\n        for (let c = 0; c < n; ++c) {\n            if (pac[r][c] && atl[r][c]) res.push([r, c]);\n        }\n    }\n    return res;\n};",
+      "approach": "Dual Coastal Reachability Sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-18T00:00:00.000Z"
+}

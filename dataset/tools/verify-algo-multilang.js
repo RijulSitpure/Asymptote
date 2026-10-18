@@ -55,6 +55,18 @@ struct TreeNode {
 };
 `;
     }
+    if (!codeToTest.includes('class Node') && !codeToTest.includes('struct Node')) {
+      preamble += `
+class Node {
+public:
+    int val;
+    vector<Node*> neighbors;
+    Node() : val(0), neighbors() {}
+    Node(int _val) : val(_val), neighbors() {}
+    Node(int _val, vector<Node*> _neighbors) : val(_val), neighbors(_neighbors) {}
+};
+`;
+    }
     codeToTest = preamble + codeToTest;
     const cppRes = spawnSync('g++', ['-std=c++17', '-fsyntax-only', '-x', 'c++', '-'], {
       input: codeToTest,
@@ -88,6 +100,10 @@ struct TreeNode {
         this.val = (val === undefined ? 0 : val);
         this.left = (left === undefined ? null : left);
         this.right = (right === undefined ? null : right);
+      },
+      Node: function(val, neighbors) {
+        this.val = (val === undefined ? 0 : val);
+        this.neighbors = (neighbors === undefined ? [] : neighbors);
       }
     };
     vm.createContext(sandbox);
@@ -179,6 +195,32 @@ struct TreeNode {
         if (curr.right) queue.push(curr.right);
       }
       return null;
+    }
+
+    // Helpers for JS graphs
+    function adjToGraph(adj) {
+      if (!adj || adj.length === 0) return null;
+      const nodes = Array.from({ length: adj.length }, (_, i) => new sandbox.Node(i + 1));
+      for (let i = 0; i < adj.length; i++) {
+        nodes[i].neighbors = adj[i].map(nbr => nodes[nbr - 1]);
+      }
+      return nodes[0];
+    }
+
+    function graphToAdj(node) {
+      if (!node) return [];
+      const visited = new Map();
+      function dfs(curr) {
+        if (!curr || visited.has(curr.val)) return;
+        visited.set(curr.val, curr);
+        for (const nbr of curr.neighbors) dfs(nbr);
+      }
+      dfs(node);
+      const adj = Array.from({ length: visited.size }, () => []);
+      for (const [val, n] of visited.entries()) {
+        adj[val - 1] = n.neighbors.map(nbr => nbr.val);
+      }
+      return adj;
     }
 
     // Special class design testing for min-stack and lru-cache
@@ -403,7 +445,7 @@ print(json.dumps({'ops': ops, 'expected': res}))
 
     // Python harness to generate cases and evaluate python solution
     const pyHarness = `
-import json, random, math
+import json, random, math, copy
 
 class ListNode:
     def __init__(self, val=0, next=None):
@@ -484,6 +526,32 @@ def find_bst_node(root, val):
         elif val < curr.val: curr = curr.left
         else: curr = curr.right
     return None
+
+class Node:
+    def __init__(self, val=0, neighbors=None):
+        self.val = val
+        self.neighbors = neighbors if neighbors is not None else []
+
+def adj_to_graph(adj):
+    if not adj or len(adj) == 0: return None
+    nodes = {i + 1: Node(i + 1) for i in range(len(adj))}
+    for i, nbrs in enumerate(adj):
+        nodes[i + 1].neighbors = [nodes[n] for n in nbrs]
+    return nodes[1]
+
+def graph_to_adj(node):
+    if not node: return []
+    visited = {}
+    def dfs(curr):
+        if not curr or curr.val in visited: return
+        visited[curr.val] = curr
+        for nbr in curr.neighbors:
+            dfs(nbr)
+    dfs(node)
+    adj = [[] for _ in range(len(visited))]
+    for val in sorted(visited.keys()):
+        adj[val - 1] = [nbr.val for nbr in visited[val].neighbors]
+    return adj
 
 def generate_cases(slug):
     rng = random.Random(42)
@@ -1000,10 +1068,237 @@ def generate_cases(slug):
             w = ''.join(rng.choice(letters) for _ in range(rng.randint(1, 5)))
             cases.append({'args': [b, w]})
 
+    elif slug == 'number-of-islands':
+        fixed = [
+            [["1","1","1","1","0"],["1","1","0","1","0"],["1","1","0","0","0"],["0","0","0","0","0"]],
+            [["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]],
+            [["0"]], [["1"]], [["1","0"],["0","1"]], [["1","1"],["1","1"]]
+        ]
+        for g in fixed: cases.append({'args': [g]})
+        for _ in range(25):
+            m = rng.randint(2, 6); n = rng.randint(2, 6)
+            cases.append({'args': [[[rng.choice(['0', '1']) for _ in range(n)] for _ in range(m)]]})
+
+    elif slug == 'clone-graph':
+        fixed = [
+            [[2,4],[1,3],[2,4],[1,3]],
+            [[]],
+            [],
+            [[2],[1]]
+        ]
+        for a in fixed: cases.append({'args': [a]})
+
+    elif slug == 'rotting-oranges':
+        fixed = [
+            [[2,1,1],[1,1,0],[0,1,1]],
+            [[2,1,1],[0,1,1],[1,0,1]],
+            [[0,2]],
+            [[0]], [[1]], [[2]],
+            [[1,2]]
+        ]
+        for g in fixed: cases.append({'args': [g]})
+        for _ in range(25):
+            m = rng.randint(1, 6); n = rng.randint(1, 6)
+            cases.append({'args': [[[rng.choice([0, 1, 2]) for _ in range(n)] for _ in range(m)]]})
+
+    elif slug == 'pacific-atlantic-water-flow':
+        fixed = [
+            [[1,2,2,3,5],[3,2,3,4,4],[2,4,5,3,1],[6,7,1,4,5],[5,1,1,2,4]],
+            [[1]],
+            [[1,1],[1,1]],
+            [[10,10,10],[10,1,10],[10,10,10]]
+        ]
+        for h in fixed: cases.append({'args': [h]})
+        for _ in range(20):
+            m = rng.randint(1, 6); n = rng.randint(1, 6)
+            cases.append({'args': [[[rng.randint(1, 20) for _ in range(n)] for _ in range(m)]]})
+
+    elif slug == 'course-schedule':
+        fixed = [
+            (2, [[1, 0]]),
+            (2, [[1, 0], [0, 1]]),
+            (1, []),
+            (3, [[0, 1], [0, 2], [1, 2]]),
+            (4, [[1, 0], [2, 0], [3, 1], [3, 2]]),
+            (3, [[0, 1], [1, 2], [2, 0]])
+        ]
+        for num, pre in fixed: cases.append({'args': [num, pre]})
+        for _ in range(25):
+            num = rng.randint(2, 8)
+            edges = []
+            for _ in range(rng.randint(0, num * 2)):
+                u, v = rng.sample(range(num), 2)
+                edges.append([u, v])
+            cases.append({'args': [num, edges]})
+
+    elif slug == 'redundant-connection':
+        fixed = [
+            [[1,2],[1,3],[2,3]],
+            [[1,2],[2,3],[3,4],[1,4],[1,5]],
+            [[1,2],[2,3],[1,3]]
+        ]
+        for e in fixed: cases.append({'args': [e]})
+        for _ in range(25):
+            n = rng.randint(4, 15)
+            tree_edges = [[i, rng.randint(1, i - 1)] for i in range(2, n + 1)]
+            u, v = rng.sample(range(1, n + 1), 2)
+            while [min(u, v), max(u, v)] in [[min(a, b), max(a, b)] for a, b in tree_edges]:
+                u, v = rng.sample(range(1, n + 1), 2)
+            cases.append({'args': [tree_edges + [[u, v]]]})
+
+    elif slug == 'climbing-stairs':
+        for n in [1, 2, 3, 4, 5, 10, 15, 20, 30, 45]:
+            cases.append({'args': [n]})
+
+    elif slug == 'house-robber':
+        fixed = [
+            [1, 2, 3, 1],
+            [2, 7, 9, 3, 1],
+            [0], [100], [2, 1, 1, 2], [5, 1, 1, 5, 1, 1, 5]
+        ]
+        for h in fixed: cases.append({'args': [h]})
+        for _ in range(30):
+            sz = rng.randint(1, 30)
+            cases.append({'args': [[rng.randint(0, 100) for _ in range(sz)]]})
+
+    elif slug == 'coin-change':
+        fixed = [
+            ([1, 2, 5], 11),
+            ([2], 3),
+            ([1], 0),
+            ([1], 1),
+            ([1], 2),
+            ([2, 5, 10, 1], 27),
+            ([186, 419, 83, 408], 6249)
+        ]
+        for c, a in fixed: cases.append({'args': [c, a]})
+        for _ in range(25):
+            sz = rng.randint(1, 5)
+            coins = sorted(list(set([rng.randint(1, 25) for _ in range(sz)])))
+            amt = rng.randint(0, 50)
+            cases.append({'args': [coins, amt]})
+
+    elif slug == 'longest-increasing-subsequence':
+        fixed = [
+            [10, 9, 2, 5, 3, 7, 101, 18],
+            [0, 1, 0, 3, 2, 3],
+            [7, 7, 7, 7, 7, 7, 7],
+            [1], [1, 2, 3, 4, 5], [5, 4, 3, 2, 1]
+        ]
+        for n in fixed: cases.append({'args': [n]})
+        for _ in range(30):
+            sz = rng.randint(1, 35)
+            cases.append({'args': [[rng.randint(-50, 50) for _ in range(sz)]]})
+
+    elif slug == 'word-break':
+        fixed = [
+            ("leetcode", ["leet", "code"]),
+            ("applepenapple", ["apple", "pen"]),
+            ("catsandog", ["cats", "dog", "sand", "and", "cat"]),
+            ("a", ["a"]),
+            ("a", ["b"]),
+            ("cars", ["car", "ca", "rs"])
+        ]
+        for s, wd in fixed: cases.append({'args': [s, wd]})
+        letters = "ab"
+        for _ in range(25):
+            wd = list(set(''.join(rng.choice(letters) for _ in range(rng.randint(1, 3))) for _ in range(4)))
+            s = ''.join(rng.choice(letters) for _ in range(rng.randint(1, 10)))
+            cases.append({'args': [s, wd]})
+
+    elif slug == 'partition-equal-subset-sum':
+        fixed = [
+            [1, 5, 11, 5],
+            [1, 2, 3, 5],
+            [1, 2, 5],
+            [2, 2, 2, 2],
+            [1, 1],
+            [100]
+        ]
+        for n in fixed: cases.append({'args': [n]})
+        for _ in range(25):
+            sz = rng.randint(1, 15)
+            cases.append({'args': [[rng.randint(1, 20) for _ in range(sz)]]})
+
+    elif slug == 'unique-paths':
+        fixed = [(3, 7), (3, 2), (1, 1), (1, 10), (10, 1), (7, 3), (3, 3)]
+        for m, n in fixed: cases.append({'args': [m, n]})
+        for _ in range(25):
+            cases.append({'args': [rng.randint(1, 12), rng.randint(1, 12)]})
+
+    elif slug == 'longest-common-subsequence':
+        fixed = [
+            ("abcde", "ace"),
+            ("abc", "abc"),
+            ("abc", "def"),
+            ("ezupkr", "ubmrapg"),
+            ("bsbininm", "jmjkbkjkv"),
+            ("a", "a"),
+            ("a", "b")
+        ]
+        for t1, t2 in fixed: cases.append({'args': [t1, t2]})
+        letters = "abcde"
+        for _ in range(25):
+            s1 = ''.join(rng.choice(letters) for _ in range(rng.randint(1, 15)))
+            s2 = ''.join(rng.choice(letters) for _ in range(rng.randint(1, 15)))
+            cases.append({'args': [s1, s2]})
+
+    elif slug == 'jump-game':
+        fixed = [
+            [2, 3, 1, 1, 4],
+            [3, 2, 1, 0, 4],
+            [0], [1], [2, 0], [0, 2], [1, 2, 3]
+        ]
+        for n in fixed: cases.append({'args': [n]})
+        for _ in range(30):
+            sz = rng.randint(1, 30)
+            cases.append({'args': [[rng.randint(0, 5) for _ in range(sz)]]})
+
+    elif slug == 'merge-intervals':
+        fixed = [
+            [[1,3],[2,6],[8,10],[15,18]],
+            [[1,4],[4,5]],
+            [[1,4],[0,4]],
+            [[1,4],[2,3]],
+            [[1,4]],
+            [[1,4],[0,2],[3,5]]
+        ]
+        for iv in fixed: cases.append({'args': [iv]})
+        for _ in range(30):
+            sz = rng.randint(1, 15)
+            iv = []
+            for _ in range(sz):
+                s = rng.randint(0, 30)
+                e = s + rng.randint(0, 15)
+                iv.append([s, e])
+            cases.append({'args': [iv]})
+
+    elif slug == 'non-overlapping-intervals':
+        fixed = [
+            [[1,2],[2,3],[3,4],[1,3]],
+            [[1,2],[1,2],[1,2]],
+            [[1,2],[2,3]],
+            [[1,100],[11,22],[1,11],[2,12]],
+            [[0,2],[1,3],[2,4],[3,5],[4,6]]
+        ]
+        for iv in fixed: cases.append({'args': [iv]})
+        for _ in range(30):
+            sz = rng.randint(1, 15)
+            iv = []
+            for _ in range(sz):
+                s = rng.randint(0, 30)
+                e = s + rng.randint(1, 15)
+                iv.append([s, e])
+            cases.append({'args': [iv]})
+
+    elif slug == 'counting-bits':
+        for n in [0, 1, 2, 3, 4, 5, 8, 15, 16, 25, 50, 100]:
+            cases.append({'args': [n]})
+
     return cases
 
 sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
-scope = {'ListNode': ListNode, 'TreeNode': TreeNode, 'Optional': None}
+scope = {'ListNode': ListNode, 'TreeNode': TreeNode, 'Node': Node, 'Optional': None}
 exec(sol_code, scope)
 solver = scope['Solution']()
 cases = generate_cases('${slug}')
@@ -1058,8 +1353,12 @@ for c in cases:
     elif '${slug}' == 'kth-smallest-element-in-a-bst':
         h = arr_to_tree(c['args'][0])
         ans = solver.kthSmallest(h, c['args'][1])
+    elif '${slug}' == 'clone-graph':
+        g = adj_to_graph(c['args'][0])
+        res = solver.cloneGraph(g)
+        ans = graph_to_adj(res)
     else:
-        ans = getattr(solver, '${methodName}')(*c['args'])
+        ans = getattr(solver, '${methodName}')(*copy.deepcopy(c['args']))
     results.append({'args': c['args'], 'expected': ans})
 
 print(json.dumps(results))
@@ -1125,6 +1424,10 @@ print(json.dumps(results))
       } else if (slug === 'kth-smallest-element-in-a-bst') {
         const h = arrToTree(clonedArgs[0]);
         jsResult = jsFn(h, clonedArgs[1]);
+      } else if (slug === 'clone-graph') {
+        const g = adjToGraph(clonedArgs[0]);
+        const res = jsFn(g);
+        jsResult = graphToAdj(res);
       } else {
         jsResult = jsFn(...clonedArgs);
       }
@@ -1202,6 +1505,16 @@ print(json.dumps(results))
         const norm = arr => JSON.stringify(arr.map(sub => [...sub]).sort());
         if (norm(jsResult) !== norm(expected)) {
           throw new Error(`Case ${i} mismatch in ${slug}:\nJS: ${norm(jsResult)}\nPY: ${norm(expected)}`);
+        }
+      } else if (slug === 'pacific-atlantic-water-flow') {
+        const norm = arr => JSON.stringify(arr.map(c => [...c]).sort((a, b) => a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]));
+        if (norm(jsResult) !== norm(expected)) {
+          throw new Error(`Case ${i} mismatch in pacific-atlantic-water-flow:\nJS: ${norm(jsResult)}\nPY: ${norm(expected)}`);
+        }
+      } else if (slug === 'merge-intervals') {
+        const norm = arr => JSON.stringify(arr.map(iv => [...iv]).sort((a, b) => a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]));
+        if (norm(jsResult) !== norm(expected)) {
+          throw new Error(`Case ${i} mismatch in merge-intervals:\nJS: ${norm(jsResult)}\nPY: ${norm(expected)}`);
         }
       } else {
         const jsStr = JSON.stringify(jsResult);
