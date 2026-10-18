@@ -395,4 +395,49 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
       }
     }
   });
+
+  // 10. Full LeetCode Problem Catalog Index Resolution
+  it('10. Resolves uncurated problem metadata, category, supported languages, and suggested pattern from catalog.json', async () => {
+    // Problem #2 (Add Two Numbers) - uncurated, in catalog
+    const addTwo = await engine.getProblemHints(2);
+    expect(addTwo.problem).not.toBeNull();
+    expect(addTwo.problem.number).toBe(2);
+    expect(addTwo.problem.slug).toBe('add-two-numbers');
+    expect(addTwo.problem.title).toBe('Add Two Numbers');
+    expect(addTwo.problem.difficulty).toBe('Medium');
+    expect(addTwo.problem.category).toBe('Algorithms');
+    expect(addTwo.problem.verified).toBe(0);
+    expect(addTwo.problem.verification_tier).toBe('unverified');
+    expect(addTwo.problem.hints).toEqual([]);
+    expect(addTwo.complexity).toBeNull();
+    expect(addTwo.supported_languages.length).toBeGreaterThanOrEqual(4);
+    expect(addTwo.supported_languages.some(l => l.id === 'python3')).toBe(true);
+
+    // Problem #51 (N-Queens) - uncurated, in catalog with mapped pattern backtracking-subsets-perm
+    const nQueens = await engine.getProblemHints('n-queens');
+    expect(nQueens.problem).not.toBeNull();
+    expect(nQueens.problem.number).toBe(51);
+    expect(nQueens.suggested_pattern).not.toBeNull();
+    expect(nQueens.suggested_pattern.id).toBe('backtracking-subsets-perm');
+    expect(nQueens.problem.verified).toBe(0);
+
+    // Syncing an uncurated catalog problem inherits its true category and number
+    const syncRes = await engine.syncBatch({
+      username: 'CatalogTester',
+      problems: [
+        {
+          title_slug: 'add-two-numbers',
+          languages: ['python3']
+        }
+      ]
+    });
+    expect(syncRes.success).toBe(true);
+
+    const problems = await engine.getProblems();
+    const syncedTwo = problems.find(p => p.slug === 'add-two-numbers');
+    expect(syncedTwo).toBeDefined();
+    expect(syncedTwo.number).toBe(2);
+    expect(syncedTwo.title).toBe('Add Two Numbers');
+    expect(syncedTwo.category).toBe('Algorithms');
+  });
 });

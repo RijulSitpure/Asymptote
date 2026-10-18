@@ -151,7 +151,7 @@ export function sortCategoriesByPedagogy(categories = []) {
   });
 }
 
-export function resolveProblemSlug(query, index = null) {
+export function resolveProblemSlug(query, index = null, catalog = null) {
   if (query === null || query === undefined) return null;
   const q = String(query).trim();
   if (!q) return null;
@@ -170,6 +170,16 @@ export function resolveProblemSlug(query, index = null) {
         if (entry && String(entry.number) === q) return slug;
       }
     }
+    if (catalog) {
+      const num = parseInt(q, 10);
+      if (Array.isArray(catalog)) {
+        const found = catalog.find(item => item.n === num);
+        if (found?.s) return found.s;
+      } else if (catalog instanceof Map) {
+        const found = catalog.get(num);
+        if (found?.s) return found.s;
+      }
+    }
   }
 
   // 2. Direct slug candidate
@@ -177,6 +187,15 @@ export function resolveProblemSlug(query, index = null) {
   if (index?.bySlug && index.bySlug[slugCandidate]) return slugCandidate;
   if (index?.[slugCandidate]) return slugCandidate;
   if (CURATED_PROBLEMS_META[slugCandidate]) return slugCandidate;
+  if (catalog) {
+    if (Array.isArray(catalog)) {
+      const found = catalog.find(item => item.s === slugCandidate);
+      if (found?.s) return found.s;
+    } else if (catalog instanceof Map) {
+      const found = catalog.get(slugCandidate);
+      if (found?.s) return found.s;
+    }
+  }
 
   // 3. Case-insensitive title match (e.g. "Two Sum")
   const qLower = q.toLowerCase();
@@ -191,6 +210,14 @@ export function resolveProblemSlug(query, index = null) {
     const bySlug = index.bySlug || index;
     for (const [slug] of Object.entries(bySlug)) {
       if (slug.toLowerCase() === qLower) return slug;
+    }
+  }
+
+  // 5. Case-insensitive title match in catalog
+  if (catalog) {
+    if (Array.isArray(catalog)) {
+      const found = catalog.find(item => item.t && item.t.toLowerCase() === qLower);
+      if (found?.s) return found.s;
     }
   }
 
@@ -349,12 +376,14 @@ export function createChromeStorageAdapter() {
 
 export async function loadDatasetFromFetch(baseUrl = '/data') {
   const cleanBase = baseUrl.replace(/\/+$/, '');
-  const [manifestRes, indexRes] = await Promise.all([
+  const [manifestRes, indexRes, catalogRes] = await Promise.all([
     fetch(`${cleanBase}/manifest.json`),
-    fetch(`${cleanBase}/index.json`)
+    fetch(`${cleanBase}/index.json`),
+    fetch(`${cleanBase}/catalog.json`).catch(() => null)
   ]);
   const manifest = await manifestRes.json();
   const index = await indexRes.json();
+  const catalog = catalogRes && catalogRes.ok ? await catalogRes.json() : [];
 
   const domains = ['algorithms', 'database', 'pandas', 'shell', 'concurrency', 'javascript'];
   const shardPromises = domains.map(async (d) => {
@@ -368,6 +397,7 @@ export async function loadDatasetFromFetch(baseUrl = '/data') {
   return {
     manifest,
     index,
+    catalog,
     shards,
     ...shards
   };
@@ -384,6 +414,15 @@ export async function loadDatasetFromFs(dataDir = null) {
   const manifest = JSON.parse(fs.readFileSync(path.join(resolvedDir, 'manifest.json'), 'utf8'));
   const index = JSON.parse(fs.readFileSync(path.join(resolvedDir, 'index.json'), 'utf8'));
 
+  const catalogFile = path.join(resolvedDir, 'catalog.json');
+  const rawCatalogSource = path.resolve(resolvedDir, '../../dataset/catalog/leetcode-catalog.json');
+  let catalog = [];
+  if (fs.existsSync(catalogFile)) {
+    catalog = JSON.parse(fs.readFileSync(catalogFile, 'utf8'));
+  } else if (fs.existsSync(rawCatalogSource)) {
+    catalog = JSON.parse(fs.readFileSync(rawCatalogSource, 'utf8'));
+  }
+
   const domains = ['algorithms', 'database', 'pandas', 'shell', 'concurrency', 'javascript'];
   const shards = {};
   for (const d of domains) {
@@ -398,6 +437,7 @@ export async function loadDatasetFromFs(dataDir = null) {
   return {
     manifest,
     index,
+    catalog,
     shards,
     ...shards
   };
@@ -466,6 +506,15 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
     curatedProblemsBySlug.set(cp.slug, cp);
   }
 
+  // Full LeetCode catalog index maps
+  const rawCatalog = Array.isArray(dataset.catalog) ? dataset.catalog : [];
+  const catalogBySlug = new Map();
+  const catalogByNumber = new Map();
+  for (const item of rawCatalog) {
+    if (item.s) catalogBySlug.set(item.s, item);
+    if (item.n) catalogByNumber.set(item.n, item);
+  }
+
   return {
     getPatterns() {
       return [...normalizedPatterns];
@@ -527,24 +576,30 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       // 2. Uncurated problems from user storage
       for (const [slug, userState] of Object.entries(userProblems)) {
         if (!curatedProblemsBySlug.has(slug)) {
-          const number = userState.number || userState.id || userState.frontend_id || null;
+          const catalogEntry = catalogBySlug.get(slug);
+          const number = userState.number || catalogEntry?.n || userState.id || userState.frontend_id || null;
+          const category = userState.category || catalogEntry?.c || 'Algorithms';
+          const difficulty = userState.difficulty || catalogEntry?.d || 'Medium';
+          const title = userState.title || catalogEntry?.t || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          const patternId = userState.pattern_id || catalogEntry?.p || null;
+          const pat = patternId ? patternsById.get(patternId) : null;
           problemsList.push({
             id: number || slug,
             frontend_id: number ? String(number) : slug,
             number: number ? Number(number) : null,
-            title: userState.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            title,
             title_slug: slug,
             slug,
-            difficulty: userState.difficulty || 'Medium',
-            category: userState.category || 'Algorithms',
-            pattern_id: null,
-            pattern_title: null,
-            patterns: [],
+            difficulty,
+            category,
+            pattern_id: patternId,
+            pattern_title: pat?.title || patternId,
+            patterns: patternId ? [patternId] : [],
             languages: userState.languages || [],
             verified: 0,
             verification_tier: 'unverified',
             review: { status: 'unverified' },
-            source: 'leetcode-sync',
+            source: userState.source || (catalogEntry ? 'catalog' : 'leetcode-sync'),
             twist_type: '',
             is_solved: userState.is_solved ? 1 : 0,
             solved_at: userState.solved_at || null,
@@ -581,7 +636,7 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
     },
 
     async getProblemHints(query) {
-      const slug = resolveProblemSlug(query, dataset.index);
+      const slug = resolveProblemSlug(query, dataset.index, rawCatalog);
       if (!slug) {
         return {
           problem: null,
@@ -600,10 +655,29 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       const userState = userProblems[slug] || {};
 
       if (!cp || (cp.review?.status !== 'tested' && cp.review?.status !== 'reviewed')) {
-        // Unverified or unknown problem: Never fallback to two-pointers or generate fake hints
+        // Unverified or catalog problem: Never fallback to two-pointers or generate fake hints
         const meta = CURATED_PROBLEMS_META[slug] || {};
-        const number = cp?.number || userState.number || (/^\d+$/.test(query) ? Number(query) : null);
-        const title = meta.title || userState.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const isNumQuery = /^\d+$/.test(String(query).trim());
+        const queryNum = isNumQuery ? parseInt(String(query).trim(), 10) : null;
+        const catalogEntry = catalogBySlug.get(slug) || (queryNum !== null ? catalogByNumber.get(queryNum) : null);
+        const number = cp?.number || catalogEntry?.n || userState.number || queryNum;
+        const title = meta.title || catalogEntry?.t || userState.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const difficulty = meta.difficulty || catalogEntry?.d || userState.difficulty || 'Medium';
+        const category = cp?.category || meta.category || catalogEntry?.c || userState.category || 'Algorithms';
+        const suggestedPatternId = catalogEntry?.p || null;
+        const suggestedPattern = suggestedPatternId ? patternsById.get(suggestedPatternId) : null;
+
+        const categoryLangs = LanguagesModule?.CATEGORY_ALLOWED_LANGUAGES?.[category] || LanguagesModule?.CATEGORY_ALLOWED_LANGUAGES?.Algorithms || ['python3', 'cpp', 'java', 'javascript', 'typescript'];
+        const languages = (Array.isArray(userState.languages) && userState.languages.length > 0)
+          ? userState.languages
+          : categoryLangs;
+
+        const supportedLanguages = languages.map(slugId => {
+          if (LanguagesModule?.getLanguageMeta) {
+            return LanguagesModule.getLanguageMeta(slugId);
+          }
+          return { id: slugId, name: slugId, langSlug: slugId, displayName: slugId };
+        }).filter(Boolean);
 
         return {
           problem: {
@@ -613,27 +687,29 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
             title,
             title_slug: slug,
             slug,
-            difficulty: meta.difficulty || userState.difficulty || 'Medium',
-            category: cp?.category || meta.category || userState.category || 'Algorithms',
+            difficulty,
+            category,
             pattern_id: null,
             pattern_title: null,
             patterns: [],
-            languages: userState.languages || [],
+            languages,
             verified: 0,
             verification_tier: 'unverified',
             review: { status: 'unverified' },
-            source: userState.source || 'uncurated',
+            source: userState.source || (catalogEntry ? 'catalog' : 'uncurated'),
             is_solved: userState.is_solved ? 1 : 0,
             user_notes: userState.user_notes || '',
             user_rating: userState.user_rating || 0,
             review_needed: userState.review_needed ? 1 : 0,
-            supported_languages: []
+            supported_languages: supportedLanguages,
+            hints: [],
+            complexity: null
           },
           pattern: null,
-          suggested_pattern: null,
+          suggested_pattern: suggestedPattern,
           hints: [],
           complexity: null,
-          supported_languages: [],
+          supported_languages: supportedLanguages,
           verification_tier: 'unverified',
           verified: 0
         };
@@ -716,7 +792,7 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
     },
 
     async updateProblemUserState(idOrSlug, updates = {}) {
-      const slug = resolveProblemSlug(idOrSlug, dataset.index);
+      const slug = resolveProblemSlug(idOrSlug, dataset.index, rawCatalog);
       if (!slug) throw new Error(`Problem not found for identifier: ${idOrSlug}`);
 
       const userProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
@@ -744,7 +820,7 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
     async recordSubmission({ titleSlug, title_slug, slug: slugParam, questionId, questionFrontendId, frontend_id, number, title, difficulty, category, languages, code }) {
       const rawSlug = titleSlug || title_slug || slugParam;
       const rawNum = questionId || questionFrontendId || frontend_id || number;
-      const slug = resolveProblemSlug(rawSlug || rawNum, dataset.index);
+      const slug = resolveProblemSlug(rawSlug || rawNum, dataset.index, rawCatalog);
       if (!slug) throw new Error('Cannot record submission without a valid problem slug or id');
 
       const userProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
@@ -752,6 +828,7 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       const wasNew = !prev.is_solved;
 
       const parsedNum = rawNum && /^\d+$/.test(String(rawNum)) ? parseInt(String(rawNum), 10) : (prev?.number || null);
+      const catalogEntry = catalogBySlug.get(slug) || (parsedNum ? catalogByNumber.get(parsedNum) : null);
 
       const next = {
         ...prev,
@@ -761,11 +838,14 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       };
 
       if (code) next.user_code = code;
-      if (parsedNum !== null) next.number = parsedNum;
-      if (title) next.title = title;
-      if (difficulty) next.difficulty = difficulty;
-      if (category) next.category = category;
+      next.number = parsedNum !== null ? parsedNum : (catalogEntry?.n || prev?.number || null);
+      next.title = title || catalogEntry?.t || prev?.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      next.difficulty = difficulty || catalogEntry?.d || prev?.difficulty || 'Medium';
+      next.category = category || catalogEntry?.c || prev?.category || 'Algorithms';
       if (languages) next.languages = languages;
+      if (catalogEntry?.p && !next.pattern_id) {
+        next.pattern_id = catalogEntry.p;
+      }
 
       userProblems[slug] = next;
       await store.set(STORAGE_KEY_USER_PROBLEMS, userProblems);
@@ -798,8 +878,8 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
         const rawSlug = p.title_slug || p.titleSlug || p.slug;
         const numberCandidate = p.frontend_id || p.questionFrontendId || p.questionId || p.number || p.id;
         const slug = rawSlug 
-          ? resolveProblemSlug(rawSlug, dataset.index) 
-          : (numberCandidate ? resolveProblemSlug(numberCandidate, dataset.index) : null);
+          ? resolveProblemSlug(rawSlug, dataset.index, rawCatalog) 
+          : (numberCandidate ? resolveProblemSlug(numberCandidate, dataset.index, rawCatalog) : null);
         if (!slug) continue;
 
         const prev = userProblems[slug];
@@ -813,14 +893,16 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
         const rawNum = p.questionFrontendId || p.frontend_id || p.questionId || p.number || p.id;
         const parsedNum = rawNum && /^\d+$/.test(String(rawNum)) ? parseInt(String(rawNum), 10) : (prev?.number || null);
+        const catalogEntry = catalogBySlug.get(slug) || (parsedNum ? catalogByNumber.get(parsedNum) : null);
 
         userProblems[slug] = {
           ...prev,
           slug,
-          number: parsedNum,
-          title: p.title || prev?.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          difficulty: p.difficulty || prev?.difficulty || 'Medium',
-          category: p.categoryTitle || p.category || prev?.category || 'Algorithms',
+          number: parsedNum || catalogEntry?.n || prev?.number || null,
+          title: p.title || catalogEntry?.t || prev?.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          difficulty: p.difficulty || catalogEntry?.d || prev?.difficulty || 'Medium',
+          category: p.categoryTitle || p.category || catalogEntry?.c || prev?.category || 'Algorithms',
+          pattern_id: prev?.pattern_id || catalogEntry?.p || null,
           languages: p.languages || prev?.languages || [],
           is_solved: 1,
           solved_at: p.solved_at || prev?.solved_at || new Date().toISOString(),

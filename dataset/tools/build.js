@@ -112,6 +112,18 @@ function build() {
   checksums['index.json'] = sha256(indexMinified);
   console.log(`✓ Generated index.json: ${Object.keys(slugIndex).length} problems indexed by slug and number`);
 
+  // Write full LeetCode catalog if available
+  const catalogSource = path.join(datasetDir, 'catalog', 'leetcode-catalog.json');
+  let totalCatalogProblems = 0;
+  if (fs.existsSync(catalogSource)) {
+    const catalogData = JSON.parse(fs.readFileSync(catalogSource, 'utf8'));
+    totalCatalogProblems = catalogData.length;
+    const catalogMinified = JSON.stringify(catalogData);
+    fs.writeFileSync(path.join(outDir, 'catalog.json'), catalogMinified);
+    checksums['catalog.json'] = sha256(catalogMinified);
+    console.log(`✓ Generated catalog.json: ${totalCatalogProblems} full catalog problems`);
+  }
+
   // Read package.json for version
   const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
 
@@ -121,6 +133,7 @@ function build() {
     datasetVersion: '1.0.0',
     totalPatterns: Object.values(domainPatterns).reduce((acc, p) => acc + p.length, 0),
     totalProblems: Object.values(domainProblems).reduce((acc, p) => acc + p.length, 0),
+    totalCatalogProblems,
     checksums
   };
   const manifestMinified = JSON.stringify(manifestData, null, 2);
