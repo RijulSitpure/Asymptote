@@ -1,0 +1,71 @@
+{
+  "slug": "rank-scores",
+  "number": 178,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Ranking Without Numeric Gaps",
+      "text": "Standard competition ranking skips subsequent numbers when ties occur. How can each distinct numerical score receive consecutive rank integers ordered from highest to lowest without leaving any gaps?"
+    },
+    {
+      "level": 2,
+      "title": "Dense Window Ranking Invariant",
+      "text": "A dense ranking function assigns identical ranking positions to tied values while incrementing by exactly one for the next distinct score in the partition."
+    },
+    {
+      "level": 3,
+      "title": "Dense Rank Window Specification",
+      "text": "Apply the dense ranking window function ordered by score in descending order over the entire table. Assign the column alias rank with identifier delimiters if required by the dialect."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT score, DENSE_RANK() OVER (ORDER BY score DESC) AS `rank`\nFROM Scores;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total score rows in Scores table"
+    ],
+    "notes": "Single pass window sort and dense rank assignment across score values.",
+    "whyNaiveFails": "Correlated subqueries counting distinct higher scores per row take O(N^2) time, choking on large score tables.",
+    "spaceTimeTradeoff": "Window ranking sorts records in O(N log N) time and evaluates rank increments in a single pass using O(N) memory.",
+    "interviewerExpectation": "Using DENSE_RANK() instead of RANK() or ROW_NUMBER(), properly aliasing rank using backticks or identifier quotes."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT score, DENSE_RANK() OVER (ORDER BY score DESC) AS `rank`\nFROM Scores;",
+      "approach": "Window Dense Rank Function",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT score, DENSE_RANK() OVER (ORDER BY score DESC) AS \"rank\"\nFROM Scores;",
+      "approach": "PostgreSQL Quoted Identifier Dense Rank",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef order_scores(scores: pd.DataFrame) -> pd.DataFrame:\n    if scores.empty:\n        return pd.DataFrame(columns=['score', 'rank'])\n    scores['rank'] = scores['score'].rank(method='dense', ascending=False)\n    return scores[['score', 'rank']].sort_values(by='score', ascending=False).reset_index(drop=True)",
+      "approach": "Pandas Dense Rank by Score Descending",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-18T00:00:00.000Z"
+}

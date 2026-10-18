@@ -1,0 +1,71 @@
+{
+  "slug": "consecutive-numbers",
+  "number": 180,
+  "category": "Database",
+  "patterns": [
+    "window-offset"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sequential Row Triplet Matching",
+      "text": "The table records numbers logged in sequential identifier order. How can you inspect the immediately preceding and succeeding values around each row to identify numbers repeated across at least three continuous occurrences?"
+    },
+    {
+      "level": 2,
+      "title": "Window Offset Invariant",
+      "text": "In an unbroken sequence of three identical numbers ordered by identifier, looking backward one row and forward one row yields the exact same value as the current record."
+    },
+    {
+      "level": 3,
+      "title": "Lead and Lag Filtering Procedure",
+      "text": "Use window offset functions over sequential identifier order to retrieve the prior value and next value. Wrap in a subquery and select unique numbers where current matches both neighboring values."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT DISTINCT num AS ConsecutiveNums\nFROM (\n    SELECT num,\n           LAG(num, 1) OVER (ORDER BY id) AS prev_num,\n           LEAD(num, 1) OVER (ORDER BY id) AS next_num,\n           LAG(id, 1) OVER (ORDER BY id) AS prev_id,\n           LEAD(id, 1) OVER (ORDER BY id) AS next_id,\n           id\n    FROM Logs\n) t\nWHERE num = prev_num AND num = next_num AND prev_id = id - 1 AND next_id = id + 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total records in Logs table"
+    ],
+    "notes": "Window lead and lag offsets over sorted identifier order with distinct result filtering.",
+    "whyNaiveFails": "Three-way self-joins (Logs l1 JOIN Logs l2 JOIN Logs l3) assume strictly continuous integer identifiers without gaps and perform quadratic tuple comparisons.",
+    "spaceTimeTradeoff": "Window offsets evaluate consecutive rows in O(N log N) sorting time and O(N) memory without Cartesian explosion.",
+    "interviewerExpectation": "Handling identifier gaps correctly by sorting or windowing; removing duplicate matches with DISTINCT."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT DISTINCT num AS ConsecutiveNums\nFROM (\n    SELECT num,\n           LAG(num, 1) OVER (ORDER BY id) AS prev_num,\n           LEAD(num, 1) OVER (ORDER BY id) AS next_num,\n           LAG(id, 1) OVER (ORDER BY id) AS prev_id,\n           LEAD(id, 1) OVER (ORDER BY id) AS next_id,\n           id\n    FROM Logs\n) t\nWHERE num = prev_num AND num = next_num AND prev_id = id - 1 AND next_id = id + 1;",
+      "approach": "Window Lead and Lag Functions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT DISTINCT num AS ConsecutiveNums\nFROM (\n    SELECT num,\n           LAG(num, 1) OVER (ORDER BY id) AS prev_num,\n           LEAD(num, 1) OVER (ORDER BY id) AS next_num,\n           LAG(id, 1) OVER (ORDER BY id) AS prev_id,\n           LEAD(id, 1) OVER (ORDER BY id) AS next_id,\n           id\n    FROM Logs\n) t\nWHERE num = prev_num AND num = next_num AND prev_id = id - 1 AND next_id = id + 1;",
+      "approach": "PostgreSQL Window Offset Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef consecutive_numbers(logs: pd.DataFrame) -> pd.DataFrame:\n    if len(logs) < 3:\n        return pd.DataFrame(columns=['ConsecutiveNums'])\n    logs = logs.sort_values(by='id').reset_index(drop=True)\n    logs['prev_num'] = logs['num'].shift(1)\n    logs['next_num'] = logs['num'].shift(-1)\n    logs['prev_id'] = logs['id'].shift(1)\n    logs['next_id'] = logs['id'].shift(-1)\n    match = logs[\n        (logs['num'] == logs['prev_num']) &\n        (logs['num'] == logs['next_num']) &\n        (logs['prev_id'] == logs['id'] - 1) &\n        (logs['next_id'] == logs['id'] + 1)\n    ]\n    return pd.DataFrame({'ConsecutiveNums': match['num'].drop_duplicates()})",
+      "approach": "Pandas Shift Lead Lag Matching",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-18T00:00:00.000Z"
+}

@@ -1,0 +1,71 @@
+{
+  "slug": "department-top-three-salaries",
+  "number": 185,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Partitioned Multi-Level High Earners",
+      "text": "Each organizational division has multiple earners and potentially tied salaries. How can you rank compensation independently within each division so that up to three distinct top amounts are included?"
+    },
+    {
+      "level": 2,
+      "title": "Partitioned Dense Rank Invariant",
+      "text": "Dense ranking partitioned by department identifier orders salaries within each group independently, ensuring tied earners share rank without consuming subsequent rank slots."
+    },
+    {
+      "level": 3,
+      "title": "Partitioned Window Join Procedure",
+      "text": "In a subquery, compute dense rank partitioned by department identifier ordered by salary descending. Join with Department on department identifier and filter where rank is at most three."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT d.name AS Department, e.name AS Employee, e.salary AS Salary\nFROM (\n    SELECT name, salary, departmentId,\n           DENSE_RANK() OVER (PARTITION BY departmentId ORDER BY salary DESC) AS rnk\n    FROM Employee\n) e\nJOIN Department d ON e.departmentId = d.id\nWHERE e.rnk <= 3;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total employees across all departments"
+    ],
+    "notes": "Partitioned window dense rank with inner join to Department table.",
+    "whyNaiveFails": "Correlated self-joins counting distinct higher salaries take O(N^2) time, which times out on departments with thousands of employees.",
+    "spaceTimeTradeoff": "Window partitioning sorts each department group in O(N log N) overall time and O(N) memory.",
+    "interviewerExpectation": "Using DENSE_RANK() with PARTITION BY; joining with department table to present department name."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary\nFROM (\n    SELECT name, salary, departmentId,\n           DENSE_RANK() OVER (PARTITION BY departmentId ORDER BY salary DESC) AS rnk\n    FROM Employee\n) e\nJOIN Department d ON e.departmentId = d.id\nWHERE e.rnk <= 3;",
+      "approach": "Partitioned Dense Window Rank",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary\nFROM (\n    SELECT name, salary, departmentId,\n           DENSE_RANK() OVER (PARTITION BY departmentId ORDER BY salary DESC) AS rnk\n    FROM Employee\n) e\nJOIN Department d ON e.departmentId = d.id\nWHERE e.rnk <= 3;",
+      "approach": "PostgreSQL Partitioned Window Rank",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef top_three_salaries(employee: pd.DataFrame, department: pd.DataFrame) -> pd.DataFrame:\n    if employee.empty or department.empty:\n        return pd.DataFrame(columns=['Department', 'Employee', 'Salary'])\n    merged = employee.merge(department, left_on='departmentId', right_on='id', suffixes=('', '_dept'))\n    merged['rnk'] = merged.groupby('departmentId')['salary'].rank(method='dense', ascending=False)\n    top3 = merged[merged['rnk'] <= 3]\n    return top3[['name_dept', 'name', 'salary']].rename(columns={'name_dept': 'Department', 'name': 'Employee', 'salary': 'Salary'})",
+      "approach": "Pandas Groupby Dense Rank Top Three",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-18T00:00:00.000Z"
+}

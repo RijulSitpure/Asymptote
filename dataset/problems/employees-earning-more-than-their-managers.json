@@ -1,0 +1,71 @@
+{
+  "slug": "employees-earning-more-than-their-managers",
+  "number": 181,
+  "category": "Database",
+  "patterns": [
+    "self-join"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Comparing Records Within the Same Table",
+      "text": "Both workers and their supervisors reside in the same employee table. How can you connect each worker record with the corresponding supervisor record using the supervisory foreign key?"
+    },
+    {
+      "level": 2,
+      "title": "Self-Join Relationship Invariant",
+      "text": "A self-join treats the same table as two separate entities: one representing workers and the other representing supervisors, connected by manager identifier matching primary identifier."
+    },
+    {
+      "level": 3,
+      "title": "Inner Self-Join Filtering Procedure",
+      "text": "Perform an inner join of Employee to itself on worker manager identifier equals supervisor identifier. Filter for records where worker compensation exceeds supervisor compensation, and select the worker name."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT e.name AS Employee\nFROM Employee e\nJOIN Employee m ON e.managerId = m.id\nWHERE e.salary > m.salary;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total rows in Employee table"
+    ],
+    "notes": "Equi-join on primary key index with salary predicate filter.",
+    "whyNaiveFails": "Correlated scalar subqueries inside a SELECT or WHERE clause execute once per row, resulting in O(N^2) evaluation without index caching.",
+    "spaceTimeTradeoff": "An inner self-join on indexed id requires O(N) time with O(1) extra space or O(N) hash join memory.",
+    "interviewerExpectation": "Clear aliasing of worker versus supervisor tables; recognizing inner join excludes employees without managers."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT e.name AS Employee\nFROM Employee e\nJOIN Employee m ON e.managerId = m.id\nWHERE e.salary > m.salary;",
+      "approach": "Self-Join on Manager Identifier",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT e.name AS Employee\nFROM Employee e\nJOIN Employee m ON e.managerId = m.id\nWHERE e.salary > m.salary;",
+      "approach": "PostgreSQL Self-Join on Primary Key",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_employees(employee: pd.DataFrame) -> pd.DataFrame:\n    if employee.empty:\n        return pd.DataFrame(columns=['Employee'])\n    emp = employee.dropna(subset=['managerId']).copy()\n    emp['managerId'] = emp['managerId'].astype(employee['id'].dtype)\n    merged = emp.merge(employee, left_on='managerId', right_on='id', suffixes=('_emp', '_mgr'))\n    res = merged[merged['salary_emp'] > merged['salary_mgr']]\n    return res[['name_emp']].rename(columns={'name_emp': 'Employee'})",
+      "approach": "Pandas Self-Merge on Manager Identifier",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-18T00:00:00.000Z"
+}
