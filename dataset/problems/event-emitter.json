@@ -29,22 +29,31 @@
   ],
   "complexity": {
     "kind": "big-o",
-    "time": "O(K) per emit",
-    "space": "O(E * K)",
+    "time": "O(1) subscribe, O(K) emit",
+    "space": "O(N)",
     "variables": [
-      "E: number of distinct events",
-      "K: listeners per event"
+      "N: total subscribed listeners across all events",
+      "K: listeners subscribed to the emitted event"
     ],
-    "notes": "Map lookup followed by sequential callback dispatch."
+    "notes": "Map of event names to listener arrays with closure-based unsubscription.",
+    "whyNaiveFails": "Searching and filtering listener lists repeatedly with string scans on every emit wastes time. Failing to isolate callbacks by event name means every event triggers unrelated listeners.",
+    "spaceTimeTradeoff": "Using a hash map (Map<string, Function[]>) provides O(1) average subscription lookup and O(K) emit time where K is the number of callbacks for that event, using O(N) total storage for N registered listeners.",
+    "interviewerExpectation": "Returning an unsubscribe object with clean lexical scope; handling multiple subscriptions of the identical callback without double-removing or indexing bugs; returning empty array for events with no listeners."
   },
   "solutions": [
     {
       "lang": "javascript",
       "code": "class EventEmitter {\n    constructor() {\n        this.events = new Map();\n    }\n\n    /**\n     * @param {string} eventName\n     * @param {Function} callback\n     * @return {Object}\n     */\n    subscribe(eventName, callback) {\n        if (!this.events.has(eventName)) {\n            this.events.set(eventName, []);\n        }\n        const callbacks = this.events.get(eventName);\n        callbacks.push(callback);\n\n        return {\n            unsubscribe: () => {\n                const index = callbacks.indexOf(callback);\n                if (index !== -1) {\n                    callbacks.splice(index, 1);\n                }\n            }\n        };\n    }\n\n    /**\n     * @param {string} eventName\n     * @param {Array} [args]\n     * @return {Array}\n     */\n    emit(eventName, args = []) {\n        const callbacks = this.events.get(eventName);\n        if (!callbacks || callbacks.length === 0) {\n            return [];\n        }\n        return callbacks.map(cb => cb(...args));\n    }\n}",
-      "approach": "Map-Backed EventEmitter with Unsubscribe Callback",
+      "approach": "Map with Closure Unsubscribe Handlers",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-18",
-      "testKind": "deterministic"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "typescript",
+      "code": "type Callback = (...args: any[]) => any;\ntype Subscription = {\n    unsubscribe: () => void;\n};\n\nclass EventEmitter {\n    private events: Map<string, Callback[]>;\n\n    constructor() {\n        this.events = new Map<string, Callback[]>();\n    }\n\n    subscribe(eventName: string, callback: Callback): Subscription {\n        if (!this.events.has(eventName)) {\n            this.events.set(eventName, []);\n        }\n        const callbacks = this.events.get(eventName)!;\n        callbacks.push(callback);\n\n        return {\n            unsubscribe: () => {\n                const index = callbacks.indexOf(callback);\n                if (index !== -1) {\n                    callbacks.splice(index, 1);\n                }\n            }\n        };\n    }\n\n    emit(eventName: string, args: any[] = []): any[] {\n        const callbacks = this.events.get(eventName);\n        if (!callbacks || callbacks.length === 0) {\n            return [];\n        }\n        return callbacks.map(cb => cb(...args));\n    }\n}",
+      "approach": "TypeScript Type-Safe Event Pub/Sub Registry",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -52,5 +61,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-18"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

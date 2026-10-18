@@ -34,7 +34,10 @@
     "variables": [
       "N: length of string s (1 <= N <= 10^4)"
     ],
-    "notes": "Single pass pushing and popping each character from stack at most once."
+    "notes": "Single pass pushing and popping each character from stack at most once.",
+    "whyNaiveFails": "Repeatedly searching for and replacing adjacent pairs '()', '{}', '[]' with string replace/regex operations takes O(N^2) time and allocates new string buffers on each scan. For N = 10^4, this requires up to ~5 * 10^7 character copies, creating unnecessary GC pressure and quadratic latency.",
+    "spaceTimeTradeoff": "Allocating an explicit LIFO stack of up to O(N) auxiliary characters enables a single deterministic linear pass (O(N) time) by immediately validating and popping the most recent unclosed bracket.",
+    "interviewerExpectation": "Handling edge cases cleanly: odd length strings (immediate false), premature closing brackets with an empty stack, mismatched bracket kinds, and leftover unclosed brackets at end-of-string."
   },
   "solutions": [
     {
@@ -42,7 +45,28 @@
       "code": "class Solution:\n    def isValid(self, s: str) -> bool:\n        mapping = {')': '(', '}': '{', ']': '['}\n        stack = []\n        for char in s:\n            if char in mapping:\n                if not stack or stack[-1] != mapping[char]:\n                    return False\n                stack.pop()\n            else:\n                stack.append(char)\n        return len(stack) == 0",
       "approach": "LIFO Stack Matching with Delimiter Mapping",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-17"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <string>\n#include <stack>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    bool isValid(string s) {\n        if (s.size() % 2 != 0) return false;\n        stack<char> st;\n        for (char c : s) {\n            if (c == '(') st.push(')');\n            else if (c == '{') st.push('}');\n            else if (c == '[') st.push(']');\n            else {\n                if (st.empty() || st.top() != c) return false;\n                st.pop();\n            }\n        }\n        return st.empty();\n    }\n};",
+      "approach": "LIFO Stack with Matching Inversion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\nclass Solution {\n    public boolean isValid(String s) {\n        if (s.length() % 2 != 0) return false;\n        Deque<Character> stack = new ArrayDeque<>();\n        for (char c : s.toCharArray()) {\n            if (c == '(') stack.push(')');\n            else if (c == '{') stack.push('}');\n            else if (c == '[') stack.push(']');\n            else {\n                if (stack.isEmpty() || stack.pop() != c) return false;\n            }\n        }\n        return stack.isEmpty();\n    }\n}",
+      "approach": "ArrayDeque LIFO Character Validation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} s\n * @return {boolean}\n */\nvar isValid = function(s) {\n    if (s.length % 2 !== 0) return false;\n    const mapping = { ')': '(', '}': '{', ']': '[' };\n    const stack = [];\n    for (let i = 0; i < s.length; i++) {\n        const char = s[i];\n        if (mapping[char]) {\n            if (stack.length === 0 || stack[stack.length - 1] !== mapping[char]) {\n                return false;\n            }\n            stack.pop();\n        } else {\n            stack.push(char);\n        }\n    }\n    return stack.length === 0;\n};",
+      "approach": "Array Stack Linear Validation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -50,5 +74,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-17T00:00:00.000Z"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

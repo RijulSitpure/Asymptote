@@ -34,7 +34,10 @@
     "variables": [
       "N: length of temperatures array (N <= 10^5)"
     ],
-    "notes": "Monotonic decreasing stack where each index is pushed and popped at most once."
+    "notes": "Monotonic decreasing stack where each index is pushed and popped at most once.",
+    "whyNaiveFails": "For each day i, scanning forward for the first day j > i with T[j] > T[i] requires O(N^2) time in the worst case (e.g. monotonically non-increasing temperatures like [100, 99, 98, ...]). For N = 10^5, this requires (10^5)^2 / 2 = 5 * 10^9 inner loop comparisons, exceeding the 1-second timeout by 50x.",
+    "spaceTimeTradeoff": "Storing up to O(N) unresolved day indices in a monotonic decreasing stack guarantees each index is pushed and popped at most once, reducing aggregate time from O(N^2) to amortized O(N).",
+    "interviewerExpectation": "Storing indices instead of temperature values on the stack so index deltas (i - prev) can be written directly to the output array; leaving 0 for temperatures that are never exceeded."
   },
   "solutions": [
     {
@@ -42,7 +45,28 @@
       "code": "class Solution:\n    def dailyTemperatures(self, temperatures: list[int]) -> list[int]:\n        n = len(temperatures)\n        res = [0] * n\n        stack = []\n\n        for i, t in enumerate(temperatures):\n            while stack and t > temperatures[stack[-1]]:\n                prev_idx = stack.pop()\n                res[prev_idx] = i - prev_idx\n            stack.append(i)\n\n        return res",
       "approach": "Index Distance instead of Value (Monotonic Decreasing Stack)",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-17"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <stack>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> dailyTemperatures(vector<int>& temperatures) {\n        int n = temperatures.size();\n        vector<int> res(n, 0);\n        stack<int> st;\n        for (int i = 0; i < n; ++i) {\n            while (!st.empty() && temperatures[i] > temperatures[st.top()]) {\n                int prevIdx = st.top();\n                st.pop();\n                res[prevIdx] = i - prevIdx;\n            }\n            st.push(i);\n        }\n        return res;\n    }\n};",
+      "approach": "Monotonic Decreasing Stack of Indices",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\nclass Solution {\n    public int[] dailyTemperatures(int[] temperatures) {\n        int n = temperatures.length;\n        int[] res = new int[n];\n        Deque<Integer> stack = new ArrayDeque<>();\n        for (int i = 0; i < n; i++) {\n            while (!stack.isEmpty() && temperatures[i] > temperatures[stack.peek()]) {\n                int prevIdx = stack.pop();\n                res[prevIdx] = i - prevIdx;\n            }\n            stack.push(i);\n        }\n        return res;\n    }\n}",
+      "approach": "ArrayDeque Monotonic Index Resolution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} temperatures\n * @return {number[]}\n */\nvar dailyTemperatures = function(temperatures) {\n    const n = temperatures.length;\n    const res = new Array(n).fill(0);\n    const stack = [];\n    for (let i = 0; i < n; i++) {\n        while (stack.length > 0 && temperatures[i] > temperatures[stack[stack.length - 1]]) {\n            const prevIdx = stack.pop();\n            res[prevIdx] = i - prevIdx;\n        }\n        stack.push(i);\n    }\n    return res;\n};",
+      "approach": "Monotonic Decreasing Stack Scan",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -50,5 +74,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-17T00:00:00.000Z"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

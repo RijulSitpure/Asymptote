@@ -34,7 +34,10 @@
     "variables": [
       "N: number of nodes (N <= 12)"
     ],
-    "notes": "Breadth-first search on state graph (current_node, visited_bitmask)."
+    "notes": "Breadth-first search on state graph (current_node, visited_bitmask).",
+    "whyNaiveFails": "Standard BFS with a 1D visited array terminates prematurely because reaching all nodes in a general graph (e.g. tree or line graph) requires backtracking across already visited vertices. Naive unconstrained search enters infinite cycles or explores up to N! ≈ 4.79 * 10^8 paths, exhausting memory and time limits.",
+    "spaceTimeTradeoff": "Expanding the state space to (node, mask) uses O(N * 2^N) auxiliary space (at most 12 * 4096 = 49,152 states) to enable an unweighted BFS that guarantees the first state with mask = (1 << N) - 1 is the global shortest path in O(N^2 * 2^N) time.",
+    "interviewerExpectation": "Multi-source initialization (enqueuing all N starting nodes simultaneously at distance 0); using bitwise operations (mask | (1 << neighbor)) for O(1) state transitions; recognizing that unweighted shortest path guarantees optimality upon reaching full mask."
   },
   "solutions": [
     {
@@ -42,7 +45,28 @@
       "code": "from collections import deque\n\nclass Solution:\n    def shortestPathLength(self, graph: list[list[int]]) -> int:\n        n = len(graph)\n        target = (1 << n) - 1\n        queue = deque([(i, 1 << i, 0) for i in range(n)])\n        visited = set([(i, 1 << i) for i in range(n)])\n\n        while queue:\n            node, mask, dist = queue.popleft()\n            if mask == target:\n                return dist\n            for neighbor in graph[node]:\n                next_mask = mask | (1 << neighbor)\n                if (neighbor, next_mask) not in visited:\n                    visited.add((neighbor, next_mask))\n                    queue.append((neighbor, next_mask, dist + 1))\n        return 0",
       "approach": "State Bitmask BFS (Node revisiting allowed)",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-17"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n#include <tuple>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int shortestPathLength(vector<vector<int>>& graph) {\n        int n = graph.size();\n        int target = (1 << n) - 1;\n        queue<tuple<int, int, int>> q;\n        vector<vector<bool>> visited(n, vector<bool>(1 << n, false));\n\n        for (int i = 0; i < n; ++i) {\n            q.push({i, 1 << i, 0});\n            visited[i][1 << i] = true;\n        }\n\n        while (!q.empty()) {\n            auto [node, mask, dist] = q.front();\n            q.pop();\n\n            if (mask == target) return dist;\n\n            for (int neighbor : graph[node]) {\n                int nextMask = mask | (1 << neighbor);\n                if (!visited[neighbor][nextMask]) {\n                    visited[neighbor][nextMask] = true;\n                    q.push({neighbor, nextMask, dist + 1});\n                }\n            }\n        }\n        return 0;\n    }\n};",
+      "approach": "Multi-Source State Bitmask BFS",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Queue;\nimport java.util.ArrayDeque;\n\nclass Solution {\n    public int shortestPathLength(int[][] graph) {\n        int n = graph.length;\n        int target = (1 << n) - 1;\n        Queue<int[]> queue = new ArrayDeque<>();\n        boolean[][] visited = new boolean[n][1 << n];\n\n        for (int i = 0; i < n; i++) {\n            queue.offer(new int[]{i, 1 << i, 0});\n            visited[i][1 << i] = true;\n        }\n\n        while (!queue.isEmpty()) {\n            int[] curr = queue.poll();\n            int node = curr[0], mask = curr[1], dist = curr[2];\n\n            if (mask == target) return dist;\n\n            for (int neighbor : graph[node]) {\n                int nextMask = mask | (1 << neighbor);\n                if (!visited[neighbor][nextMask]) {\n                    visited[neighbor][nextMask] = true;\n                    queue.offer(new int[]{neighbor, nextMask, dist + 1});\n                }\n            }\n        }\n        return 0;\n    }\n}",
+      "approach": "State BFS over (Node, Bitmask) Graph",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} graph\n * @return {number}\n */\nvar shortestPathLength = function(graph) {\n    const n = graph.length;\n    const target = (1 << n) - 1;\n    const queue = [];\n    const visited = Array.from({ length: n }, () => new Uint8Array(1 << n));\n\n    for (let i = 0; i < n; i++) {\n        queue.push([i, 1 << i, 0]);\n        visited[i][1 << i] = 1;\n    }\n\n    let head = 0;\n    while (head < queue.length) {\n        const [node, mask, dist] = queue[head++];\n        if (mask === target) return dist;\n\n        for (const neighbor of graph[node]) {\n            const nextMask = mask | (1 << neighbor);\n            if (!visited[neighbor][nextMask]) {\n                visited[neighbor][nextMask] = 1;\n                queue.push([neighbor, nextMask, dist + 1]);\n            }\n        }\n    }\n    return 0;\n};",
+      "approach": "Bitmask BFS with Fast Uint8Array Table",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -50,5 +74,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-17T00:00:00.000Z"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

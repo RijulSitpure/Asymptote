@@ -36,7 +36,10 @@
       "E: number of flights",
       "K: maximum stops (k <= 100)"
     ],
-    "notes": "Bellman-Ford relaxation across at most K + 1 edge rounds."
+    "notes": "Bellman-Ford relaxation across at most K + 1 edge rounds.",
+    "whyNaiveFails": "Standard Dijkstra only records the cheapest distance to each node, prematurely discarding a pricier path that reaches a node in fewer stops. Backtracking all paths recursively takes exponential O(V^(K+1)) time, which exceeds 100^100 operations and triggers severe Time Limit Exceeded.",
+    "spaceTimeTradeoff": "Maintaining two arrays of size O(V) (dist and temp snapshot) prevents cascading updates within a single step and guarantees O(K * E) time across at most K + 1 rounds with O(V) auxiliary memory.",
+    "interviewerExpectation": "Explaining why a temporary distance snapshot is strictly necessary (to prevent taking multiple flights in a single round); properly returning -1 when destination is unreachable."
   },
   "solutions": [
     {
@@ -44,7 +47,28 @@
       "code": "class Solution:\n    def findCheapestPrice(self, n: int, flights: list[list[int]], src: int, dst: int, k: int) -> int:\n        dist = [float('inf')] * n\n        dist[src] = 0\n\n        for _ in range(k + 1):\n            temp = list(dist)\n            for u, v, price in flights:\n                if dist[u] != float('inf') and dist[u] + price < temp[v]:\n                    temp[v] = dist[u] + price\n            dist = temp\n\n        return dist[dst] if dist[dst] != float('inf') else -1",
       "approach": "Bounded Edge Count (Bellman-Ford / DP state expansion)",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-17"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int findCheapestPrice(int n, vector<vector<int>>& flights, int src, int dst, int k) {\n        const int INF = 1e9;\n        vector<int> dist(n, INF);\n        dist[src] = 0;\n\n        for (int i = 0; i <= k; ++i) {\n            vector<int> temp = dist;\n            for (const auto& f : flights) {\n                int u = f[0], v = f[1], price = f[2];\n                if (dist[u] != INF && dist[u] + price < temp[v]) {\n                    temp[v] = dist[u] + price;\n                }\n            }\n            dist = temp;\n        }\n\n        return dist[dst] == INF ? -1 : dist[dst];\n    }\n};",
+      "approach": "Bellman-Ford with Layer Snapshotting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    public int findCheapestPrice(int n, int[][] flights, int src, int dst, int k) {\n        int[] dist = new int[n];\n        Arrays.fill(dist, Integer.MAX_VALUE);\n        dist[src] = 0;\n\n        for (int i = 0; i <= k; i++) {\n            int[] temp = Arrays.copyOf(dist, n);\n            for (int[] f : flights) {\n                int u = f[0], v = f[1], price = f[2];\n                if (dist[u] != Integer.MAX_VALUE && dist[u] + price < temp[v]) {\n                    temp[v] = dist[u] + price;\n                }\n            }\n            dist = temp;\n        }\n\n        return dist[dst] == Integer.MAX_VALUE ? -1 : dist[dst];\n    }\n}",
+      "approach": "Bounded Step Relaxation (Bellman-Ford)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} flights\n * @param {number} src\n * @param {number} dst\n * @param {number} k\n * @return {number}\n */\nvar findCheapestPrice = function(n, flights, src, dst, k) {\n    let dist = new Array(n).fill(Infinity);\n    dist[src] = 0;\n\n    for (let i = 0; i <= k; i++) {\n        const temp = [...dist];\n        for (const [u, v, price] of flights) {\n            if (dist[u] !== Infinity && dist[u] + price < temp[v]) {\n                temp[v] = dist[u] + price;\n            }\n        }\n        dist = temp;\n    }\n\n    return dist[dst] === Infinity ? -1 : dist[dst];\n};",
+      "approach": "Layered Edge Relaxation (Bellman-Ford)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -52,5 +76,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-17T00:00:00.000Z"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

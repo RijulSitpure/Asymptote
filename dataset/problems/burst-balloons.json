@@ -34,7 +34,10 @@
     "variables": [
       "N: number of balloons (N <= 300)"
     ],
-    "notes": "Interval DP iterating over all sub-ranges and last popped balloon k."
+    "notes": "Interval DP iterating over all sub-ranges and last popped balloon k.",
+    "whyNaiveFails": "Choosing balloons in forward order means bursting balloon i couples its left and right neighbors across all future choices, destroying optimal substructure. A brute-force search over all N! permutations for N = 300 requires 300! ≈ 3 * 10^614 operations, which is completely intractable.",
+    "spaceTimeTradeoff": "Allocating an O(N^2) dynamic programming table (dp[i][j] for all intervals (i, j)) enables solving the inverted problem (choosing the LAST balloon to burst) in O(N^3) operations by decoupling the subproblems.",
+    "interviewerExpectation": "Explaining clearly why forward DP fails (neighbor dependency) and why reverse DP works (last balloon burst maintains fixed boundary neighbors nums[left] and nums[right]); padding array with boundary 1s."
   },
   "solutions": [
     {
@@ -42,7 +45,28 @@
       "code": "class Solution:\n    def maxCoins(self, nums: list[int]) -> int:\n        nums = [1] + [x for x in nums if x > 0] + [1]\n        n = len(nums)\n        dp = [[0] * n for _ in range(n)]\n\n        for length in range(2, n):\n            for left in range(n - length):\n                right = left + length\n                for k in range(left + 1, right):\n                    coins = dp[left][k] + dp[k][right] + nums[left] * nums[k] * nums[right]\n                    if coins > dp[left][right]:\n                        dp[left][right] = coins\n\n        return dp[0][n - 1]",
       "approach": "Reverse Order Thinking (Choose LAST burst balloon in interval)",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-17"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int maxCoins(vector<int>& nums) {\n        vector<int> vals;\n        vals.push_back(1);\n        for (int x : nums) {\n            if (x > 0) vals.push_back(x);\n        }\n        vals.push_back(1);\n        int n = vals.size();\n        vector<vector<int>> dp(n, vector<int>(n, 0));\n\n        for (int len = 2; len < n; ++len) {\n            for (int left = 0; left < n - len; ++left) {\n                int right = left + len;\n                for (int k = left + 1; k < right; ++k) {\n                    int coins = dp[left][k] + dp[k][right] + vals[left] * vals[k] * vals[right];\n                    if (coins > dp[left][right]) {\n                        dp[left][right] = coins;\n                    }\n                }\n            }\n        }\n        return dp[0][n - 1];\n    }\n};",
+      "approach": "Interval Dynamic Programming (Inverted Last-Popped Selection)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int maxCoins(int[] nums) {\n        int[] vals = new int[nums.length + 2];\n        int n = 1;\n        vals[0] = 1;\n        for (int x : nums) {\n            if (x > 0) vals[n++] = x;\n        }\n        vals[n++] = 1;\n\n        int[][] dp = new int[n][n];\n        for (int len = 2; len < n; ++len) {\n            for (int left = 0; left < n - len; ++left) {\n                int right = left + len;\n                for (int k = left + 1; k < right; ++k) {\n                    int coins = dp[left][k] + dp[k][right] + vals[left] * vals[k] * vals[right];\n                    if (coins > dp[left][right]) {\n                        dp[left][right] = coins;\n                    }\n                }\n            }\n        }\n        return dp[0][n - 1];\n    }\n}",
+      "approach": "Interval DP with Boundary Padding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar maxCoins = function(nums) {\n    const vals = [1, ...nums.filter(x => x > 0), 1];\n    const n = vals.length;\n    const dp = Array.from({ length: n }, () => new Array(n).fill(0));\n\n    for (let len = 2; len < n; len++) {\n        for (let left = 0; left < n - len; left++) {\n            const right = left + len;\n            for (let k = left + 1; k < right; k++) {\n                const coins = dp[left][k] + dp[k][right] + vals[left] * vals[k] * vals[right];\n                if (coins > dp[left][right]) {\n                    dp[left][right] = coins;\n                }\n            }\n        }\n    }\n    return dp[0][n - 1];\n};",
+      "approach": "Interval DP (Choose Last Balloon in Interval)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -50,5 +74,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-17T00:00:00.000Z"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

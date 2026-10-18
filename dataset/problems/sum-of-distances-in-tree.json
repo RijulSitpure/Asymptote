@@ -34,7 +34,10 @@
     "variables": [
       "N: number of nodes (N <= 3 * 10^4)"
     ],
-    "notes": "Two-pass tree rerooting using iterative BFS ordering to support arbitrary tree depths without recursion limits."
+    "notes": "Two-pass tree rerooting using iterative BFS ordering to support arbitrary tree depths without recursion limits.",
+    "whyNaiveFails": "Running an independent BFS or DFS traversal from every single node takes O(N^2) time. For N = 3 * 10^4, this requires (3 * 10^4)^2 = 9 * 10^8 operations, exceeding the 1-second timeout by an order of magnitude and risking deep recursion call stack overflow on skewed tree paths.",
+    "spaceTimeTradeoff": "Storing O(N) auxiliary tree metadata (count[u] subtree node counts and ans[u] running distances) across two linear passes (O(N) time) computes all N tree distance sums with zero redundant traversals.",
+    "interviewerExpectation": "Deriving the rerooting transition formula ans[v] = ans[u] - count[v] + (n - count[v]) from first principles (moving root to child v brings its count[v] subtree nodes 1 step closer and moves the remaining n - count[v] nodes 1 step farther)."
   },
   "solutions": [
     {
@@ -42,7 +45,28 @@
       "code": "from collections import deque\n\nclass Solution:\n    def sumOfDistancesInTree(self, n: int, edges: list[list[int]]) -> list[int]:\n        if n <= 1:\n            return [0]\n\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n\n        parent = [-1] * n\n        order = []\n        visited = [False] * n\n        visited[0] = True\n        queue = deque([0])\n\n        while queue:\n            u = queue.popleft()\n            order.append(u)\n            for v in adj[u]:\n                if not visited[v]:\n                    visited[v] = True\n                    parent[v] = u\n                    queue.append(v)\n\n        count = [1] * n\n        ans = [0] * n\n\n        for u in reversed(order[1:]):\n            p = parent[u]\n            count[p] += count[u]\n            ans[p] += ans[u] + count[u]\n\n        for u in order[1:]:\n            p = parent[u]\n            ans[u] = ans[p] - count[u] + (n - count[u])\n\n        return ans",
       "approach": "2-Pass Iterative Tree Rerooting DP (Zero-Recursion BFS Topological Order)",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-17"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> sumOfDistancesInTree(int n, vector<vector<int>>& edges) {\n        if (n <= 1) return {0};\n\n        vector<vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n\n        vector<int> parent(n, -1);\n        vector<int> order;\n        order.reserve(n);\n        vector<bool> visited(n, false);\n        visited[0] = true;\n        queue<int> q;\n        q.push(0);\n\n        while (!q.empty()) {\n            int u = q.front();\n            q.pop();\n            order.push_back(u);\n            for (int v : adj[u]) {\n                if (!visited[v]) {\n                    visited[v] = true;\n                    parent[v] = u;\n                    q.push(v);\n                }\n            }\n        }\n\n        vector<int> count(n, 1);\n        vector<int> ans(n, 0);\n\n        for (int i = n - 1; i > 0; --i) {\n            int u = order[i];\n            int p = parent[u];\n            count[p] += count[u];\n            ans[p] += ans[u] + count[u];\n        }\n\n        for (int i = 1; i < n; ++i) {\n            int u = order[i];\n            int p = parent[u];\n            ans[u] = ans[p] - count[u] + (n - count[u]);\n        }\n\n        return ans;\n    }\n};",
+      "approach": "Iterative 2-Pass BFS Rerooting Tree DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.Queue;\nimport java.util.ArrayDeque;\n\nclass Solution {\n    public int[] sumOfDistancesInTree(int n, int[][] edges) {\n        if (n <= 1) return new int[]{0};\n\n        List<List<Integer>> adj = new ArrayList<>(n);\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n\n        int[] parent = new int[n];\n        Arrays.fill(parent, -1);\n        int[] order = new int[n];\n        int orderIdx = 0;\n        boolean[] visited = new boolean[n];\n        visited[0] = true;\n        Queue<Integer> queue = new ArrayDeque<>();\n        queue.offer(0);\n\n        while (!queue.isEmpty()) {\n            int u = queue.poll();\n            order[orderIdx++] = u;\n            for (int v : adj.get(u)) {\n                if (!visited[v]) {\n                    visited[v] = true;\n                    parent[v] = u;\n                    queue.offer(v);\n                }\n            }\n        }\n\n        int[] count = new int[n];\n        Arrays.fill(count, 1);\n        int[] ans = new int[n];\n\n        for (int i = n - 1; i > 0; i--) {\n            int u = order[i];\n            int p = parent[u];\n            count[p] += count[u];\n            ans[p] += ans[u] + count[u];\n        }\n\n        for (int i = 1; i < n; i++) {\n            int u = order[i];\n            int p = parent[u];\n            ans[u] = ans[p] - count[u] + (n - count[u]);\n        }\n\n        return ans;\n    }\n}",
+      "approach": "Iterative Topological Tree Rerooting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @return {number[]}\n */\nvar sumOfDistancesInTree = function(n, edges) {\n    if (n <= 1) return [0];\n\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n\n    const parent = new Int32Array(n).fill(-1);\n    const order = [];\n    const visited = new Uint8Array(n);\n    visited[0] = 1;\n    const queue = [0];\n\n    let head = 0;\n    while (head < queue.length) {\n        const u = queue[head++];\n        order.push(u);\n        for (const v of adj[u]) {\n            if (!visited[v]) {\n                visited[v] = 1;\n                parent[v] = u;\n                queue.push(v);\n            }\n        }\n    }\n\n    const count = new Int32Array(n).fill(1);\n    const ans = new Int32Array(n);\n\n    for (let i = n - 1; i > 0; i--) {\n        const u = order[i];\n        const p = parent[u];\n        count[p] += count[u];\n        ans[p] += ans[u] + count[u];\n    }\n\n    for (let i = 1; i < n; i++) {\n        const u = order[i];\n        const p = parent[u];\n        ans[u] = ans[p] - count[u] + (n - count[u]);\n    }\n\n    return Array.from(ans);\n};",
+      "approach": "2-Pass Iterative Tree Rerooting DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -50,5 +74,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-17T00:00:00.000Z"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

@@ -24,26 +24,42 @@
     {
       "level": 4,
       "title": "Complete Implementation",
-      "text": "```sql\nSELECT (\n  SELECT DISTINCT salary\n  FROM Employee\n  ORDER BY salary DESC\n  LIMIT 1 OFFSET 1\n) AS SecondHighestSalary;\n```"
+      "text": "```mysql\nSELECT (\n  SELECT DISTINCT salary\n  FROM Employee\n  ORDER BY salary DESC\n  LIMIT 1 OFFSET 1\n) AS SecondHighestSalary;\n```"
     }
   ],
   "complexity": {
     "kind": "query-notes",
     "time": "O(N log N)",
-    "space": "O(N)",
+    "space": "O(1)",
     "variables": [
-      "N: number of employee records"
+      "N: rows in Employee table"
     ],
-    "notes": "Sorting distinct salaries with index scan or filesort and scalar subquery null fallback."
+    "notes": "Scalar subquery wrapping DISTINCT salary ordering with LIMIT 1 OFFSET 1.",
+    "whyNaiveFails": "Using SELECT DISTINCT salary ... LIMIT 1 OFFSET 1 directly without a wrapper subquery or NULL-coalesce returns zero rows (an empty set) instead of null when the table contains fewer than 2 distinct salaries, failing the LeetCode schema contract.",
+    "spaceTimeTradeoff": "Wrapping the scalar query in SELECT (...) AS SecondHighestSalary evaluates in O(N log N) time (or O(N) with an index scan on salary DESC) with O(1) memory, returning null automatically upon an empty result set.",
+    "interviewerExpectation": "Handling the edge cases where all salaries are identical or only 1 employee exists (must return null); deduplicating with DISTINCT before ordering."
   },
   "solutions": [
     {
       "lang": "mysql",
       "code": "SELECT (\n  SELECT DISTINCT salary\n  FROM Employee\n  ORDER BY salary DESC\n  LIMIT 1 OFFSET 1\n) AS SecondHighestSalary;",
-      "approach": "Distinct Sort with Limit/Offset inside Scalar Subquery",
+      "approach": "Scalar Subquery with Limit Offset Handling Null",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-18",
-      "testKind": "deterministic"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT (\n  SELECT DISTINCT salary\n  FROM Employee\n  ORDER BY salary DESC\n  LIMIT 1 OFFSET 1\n) AS \"SecondHighestSalary\";",
+      "approach": "PostgreSQL Scalar Subquery with Limit Offset",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef second_highest_salary(employee: pd.DataFrame) -> pd.DataFrame:\n    unique_salaries = employee['salary'].drop_duplicates().sort_values(ascending=False)\n    if len(unique_salaries) < 2:\n        return pd.DataFrame({'SecondHighestSalary': [None]})\n    second_salary = unique_salaries.iloc[1]\n    return pd.DataFrame({'SecondHighestSalary': [second_salary]})",
+      "approach": "Pandas Drop Duplicates and Second Element Selection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -51,5 +67,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-18"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

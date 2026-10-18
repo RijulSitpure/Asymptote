@@ -32,16 +32,32 @@
     "time": "n/a",
     "space": "n/a",
     "variables": [],
-    "notes": "Thread coordination with zero busy waiting."
+    "notes": "Event-driven thread coordination with zero CPU busy-waiting.",
+    "whyNaiveFails": "Busy-waiting with while (!done); spins the CPU at 100% core utilization, creating thread contention, cache thrashing, and potential starvation under preemption or non-realtime OS thread schedulers.",
+    "spaceTimeTradeoff": "Using two binary synchronization events/semaphores requires O(1) memory and suspends waiting threads without CPU consumption, ensuring sequential execution with zero thread drift.",
+    "interviewerExpectation": "Avoiding spinlocks / busy-waits; handling InterruptedException in Java / condition variable predicate spurious wakeups in C++; understanding why two coordination barriers are necessary to enforce a three-step sequence."
   },
   "solutions": [
     {
       "lang": "python3",
       "code": "from threading import Event\n\nclass Foo:\n    def __init__(self):\n        self.first_done = Event()\n        self.second_done = Event()\n\n    def first(self, printFirst: 'Callable[[], None]') -> None:\n        printFirst()\n        self.first_done.set()\n\n    def second(self, printSecond: 'Callable[[], None]') -> None:\n        self.first_done.wait()\n        printSecond()\n        self.second_done.set()\n\n    def third(self, printThird: 'Callable[[], None]') -> None:\n        self.second_done.wait()\n        printThird()",
-      "approach": "Chained Threading Events",
+      "approach": "Thread Events Sequential Unblocking",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-18",
-      "testKind": "stress"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <mutex>\n#include <condition_variable>\n#include <functional>\n\nusing namespace std;\n\nclass Foo {\nprivate:\n    std::mutex mtx;\n    std::condition_variable cv;\n    int step = 1;\n\npublic:\n    Foo() {}\n\n    void first(function<void()> printFirst) {\n        std::unique_lock<std::mutex> lock(mtx);\n        printFirst();\n        step = 2;\n        cv.notify_all();\n    }\n\n    void second(function<void()> printSecond) {\n        std::unique_lock<std::mutex> lock(mtx);\n        cv.wait(lock, [this]() { return step == 2; });\n        printSecond();\n        step = 3;\n        cv.notify_all();\n    }\n\n    void third(function<void()> printThird) {\n        std::unique_lock<std::mutex> lock(mtx);\n        cv.wait(lock, [this]() { return step == 3; });\n        printThird();\n    }\n};",
+      "approach": "Mutex and Condition Variable Sequence Synchronization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.concurrent.Semaphore;\n\nclass Foo {\n    private final Semaphore s12 = new Semaphore(0);\n    private final Semaphore s23 = new Semaphore(0);\n\n    public Foo() {}\n\n    public void first(Runnable printFirst) throws InterruptedException {\n        printFirst.run();\n        s12.release();\n    }\n\n    public void second(Runnable printSecond) throws InterruptedException {\n        s12.acquire();\n        printSecond.run();\n        s23.release();\n    }\n\n    public void third(Runnable printThird) throws InterruptedException {\n        s23.acquire();\n        printThird.run();\n    }\n}",
+      "approach": "Two Semaphore Sequential Barrier",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -49,5 +65,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-18"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

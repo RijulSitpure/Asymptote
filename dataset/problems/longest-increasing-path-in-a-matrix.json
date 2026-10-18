@@ -35,7 +35,10 @@
       "M: matrix rows (M <= 200)",
       "N: matrix columns (N <= 200)"
     ],
-    "notes": "Iterative topological sort (Kahn's BFS) on DAG formed by strictly increasing cell values."
+    "notes": "Iterative topological sort (Kahn's BFS) on DAG formed by strictly increasing cell values.",
+    "whyNaiveFails": "Exhaustive depth-first search without memoization from every cell explores up to 4^(M * N) branching paths. For a 200 x 200 grid (40,000 cells), 4^40000 operations causes immediate Time Limit Exceeded, while deep recursive DFS can exceed standard language thread stack limits.",
+    "spaceTimeTradeoff": "Allocating an O(M * N) auxiliary table for cell in-degrees and BFS queue states ensures each directed transition (u, v) is traversed exactly once, achieving optimal O(M * N) time.",
+    "interviewerExpectation": "Recognizing that strictly increasing values prevent directed cycles (guaranteeing the grid is an implicit DAG); understanding both topological BFS (peeling layers) and memoized DFS as equivalent O(M * N) solutions."
   },
   "solutions": [
     {
@@ -43,7 +46,28 @@
       "code": "from collections import deque\n\nclass Solution:\n    def longestIncreasingPath(self, matrix: list[list[int]]) -> int:\n        if not matrix or not matrix[0]:\n            return 0\n        m, n = len(matrix), len(matrix[0])\n        in_degree = [[0] * n for _ in range(m)]\n\n        for r in range(m):\n            for c in range(n):\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < m and 0 <= nc < n and matrix[nr][nc] < matrix[r][c]:\n                        in_degree[r][c] += 1\n\n        queue = deque([(r, c) for r in range(m) for c in range(n) if in_degree[r][c] == 0])\n        length = 0\n\n        while queue:\n            length += 1\n            for _ in range(len(queue)):\n                r, c = queue.popleft()\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < m and 0 <= nc < n and matrix[nr][nc] > matrix[r][c]:\n                        in_degree[nr][nc] -= 1\n                        if in_degree[nr][nc] == 0:\n                            queue.append((nr, nc))\n\n        return length",
       "approach": "Iterative Topological Sort (Kahn's Algorithm on Grid DAG)",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-17"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int longestIncreasingPath(vector<vector<int>>& matrix) {\n        if (matrix.empty() || matrix[0].empty()) return 0;\n        int m = matrix.size(), n = matrix[0].size();\n        vector<vector<int>> inDegree(m, vector<int>(n, 0));\n        const int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                for (auto& d : dirs) {\n                    int nr = r + d[0], nc = c + d[1];\n                    if (nr >= 0 && nr < m && nc >= 0 && nc < n && matrix[nr][nc] < matrix[r][c]) {\n                        inDegree[r][c]++;\n                    }\n                }\n            }\n        }\n\n        queue<pair<int, int>> q;\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (inDegree[r][c] == 0) q.push({r, c});\n            }\n        }\n\n        int length = 0;\n        while (!q.empty()) {\n            length++;\n            int sz = q.size();\n            for (int i = 0; i < sz; ++i) {\n                auto [r, c] = q.front();\n                q.pop();\n                for (auto& d : dirs) {\n                    int nr = r + d[0], nc = c + d[1];\n                    if (nr >= 0 && nr < m && nc >= 0 && nc < n && matrix[nr][nc] > matrix[r][c]) {\n                        if (--inDegree[nr][nc] == 0) {\n                            q.push({nr, nc});\n                        }\n                    }\n                }\n            }\n        }\n        return length;\n    }\n};",
+      "approach": "Kahn's Topological Layer BFS on Grid DAG",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Queue;\nimport java.util.ArrayDeque;\n\nclass Solution {\n    public int longestIncreasingPath(int[][] matrix) {\n        if (matrix == null || matrix.length == 0 || matrix[0].length == 0) return 0;\n        int m = matrix.length, n = matrix[0].length;\n        int[][] inDegree = new int[m][n];\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                for (int[] d : dirs) {\n                    int nr = r + d[0], nc = c + d[1];\n                    if (nr >= 0 && nr < m && nc >= 0 && nc < n && matrix[nr][nc] < matrix[r][c]) {\n                        inDegree[r][c]++;\n                    }\n                }\n            }\n        }\n\n        Queue<int[]> queue = new ArrayDeque<>();\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                if (inDegree[r][c] == 0) queue.offer(new int[]{r, c});\n            }\n        }\n\n        int length = 0;\n        while (!queue.isEmpty()) {\n            length++;\n            int sz = queue.size();\n            for (int i = 0; i < sz; i++) {\n                int[] curr = queue.poll();\n                int r = curr[0], c = curr[1];\n                for (int[] d : dirs) {\n                    int nr = r + d[0], nc = c + d[1];\n                    if (nr >= 0 && nr < m && nc >= 0 && nc < n && matrix[nr][nc] > matrix[r][c]) {\n                        if (--inDegree[nr][nc] == 0) {\n                            queue.offer(new int[]{nr, nc});\n                        }\n                    }\n                }\n            }\n        }\n        return length;\n    }\n}",
+      "approach": "Topological In-Degree Peeling on Implicit DAG",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} matrix\n * @return {number}\n */\nvar longestIncreasingPath = function(matrix) {\n    if (!matrix || matrix.length === 0 || matrix[0].length === 0) return 0;\n    const m = matrix.length, n = matrix[0].length;\n    const inDegree = Array.from({ length: m }, () => new Int32Array(n));\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            for (const [dr, dc] of dirs) {\n                const nr = r + dr, nc = c + dc;\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && matrix[nr][nc] < matrix[r][c]) {\n                    inDegree[r][c]++;\n                }\n            }\n        }\n    }\n\n    const queue = [];\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            if (inDegree[r][c] === 0) queue.push([r, c]);\n        }\n    }\n\n    let length = 0;\n    let head = 0;\n    while (head < queue.length) {\n        length++;\n        const end = queue.length;\n        while (head < end) {\n            const [r, c] = queue[head++];\n            for (const [dr, dc] of dirs) {\n                const nr = r + dr, nc = c + dc;\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && matrix[nr][nc] > matrix[r][c]) {\n                    inDegree[nr][nc]--;\n                    if (inDegree[nr][nc] === 0) {\n                        queue.push([nr, nc]);\n                    }\n                }\n            }\n        }\n    }\n    return length;\n};",
+      "approach": "Iterative Topological Sort (Kahn's BFS)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -51,5 +75,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-17T00:00:00.000Z"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

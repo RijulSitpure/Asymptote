@@ -35,7 +35,10 @@
       "M: grid rows (M <= 100)",
       "N: grid columns (N <= 100)"
     ],
-    "notes": "0-1 BFS using deque with push-front for weight 0 and push-back for weight 1."
+    "notes": "0-1 BFS using deque with push-front for weight 0 and push-back for weight 1.",
+    "whyNaiveFails": "Standard Dijkstra uses a binary heap with O(log(M * N)) operations per extraction, yielding O(M * N log(M * N)) time. Because edge weights are restricted strictly to {0, 1}, heap-based sorting adds unnecessary overhead compared to direct deque queueing.",
+    "spaceTimeTradeoff": "Using an O(M * N) double-ended queue (deque) maintains monotonically non-decreasing distances without sorting by pushing weight-0 transitions to the front and weight-1 transitions to the back, achieving optimal O(M * N) linear time.",
+    "interviewerExpectation": "Explaining why 0-1 BFS maintains the monotonic priority queue invariant without a heap; pruning non-optimal paths with cost > dist[r][c]; mapping the 1-indexed directions 1=right, 2=left, 3=lower, 4=upper accurately."
   },
   "solutions": [
     {
@@ -43,7 +46,28 @@
       "code": "from collections import deque\n\nclass Solution:\n    def minCost(self, grid: list[list[int]]) -> int:\n        m, n = len(grid), len(grid[0])\n        dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)]\n        dist = [[float('inf')] * n for _ in range(m)]\n        dist[0][0] = 0\n        dq = deque([(0, 0, 0)])\n\n        while dq:\n            r, c, cost = dq.popleft()\n            if r == m - 1 and c == n - 1:\n                return cost\n            if cost > dist[r][c]:\n                continue\n            for d, (dr, dc) in enumerate(dirs, 1):\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    weight = 0 if grid[r][c] == d else 1\n                    if cost + weight < dist[nr][nc]:\n                        dist[nr][nc] = cost + weight\n                        if weight == 0:\n                            dq.appendleft((nr, nc, cost))\n                        else:\n                            dq.append((nr, nc, cost + 1))\n        return dist[m-1][n-1]",
       "approach": "0/1 BFS Deque Optimization (Cost 0 vs Cost 1)",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-17"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <deque>\n#include <tuple>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int minCost(vector<vector<int>>& grid) {\n        int m = grid.size(), n = grid[0].size();\n        const int INF = 1e9;\n        vector<vector<int>> dist(m, vector<int>(n, INF));\n        dist[0][0] = 0;\n\n        deque<tuple<int, int, int>> dq;\n        dq.push_back({0, 0, 0});\n        const int dirs[4][2] = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};\n\n        while (!dq.empty()) {\n            auto [r, c, cost] = dq.front();\n            dq.pop_front();\n\n            if (r == m - 1 && c == n - 1) return cost;\n            if (cost > dist[r][c]) continue;\n\n            for (int d = 1; d <= 4; ++d) {\n                int nr = r + dirs[d - 1][0];\n                int nc = c + dirs[d - 1][1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int weight = (grid[r][c] == d) ? 0 : 1;\n                    if (cost + weight < dist[nr][nc]) {\n                        dist[nr][nc] = cost + weight;\n                        if (weight == 0) {\n                            dq.push_front({nr, nc, cost});\n                        } else {\n                            dq.push_back({nr, nc, cost + 1});\n                        }\n                    }\n                }\n            }\n        }\n        return dist[m - 1][n - 1];\n    }\n};",
+      "approach": "0-1 BFS Double-Ended Queue Shortest Path",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Deque;\nimport java.util.ArrayDeque;\nimport java.util.Arrays;\n\nclass Solution {\n    public int minCost(int[][] grid) {\n        int m = grid.length, n = grid[0].length;\n        int[][] dist = new int[m][n];\n        for (int[] row : dist) Arrays.fill(row, Integer.MAX_VALUE);\n        dist[0][0] = 0;\n\n        Deque<int[]> dq = new ArrayDeque<>();\n        dq.offer(new int[]{0, 0, 0});\n        int[][] dirs = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};\n\n        while (!dq.isEmpty()) {\n            int[] curr = dq.pollFirst();\n            int r = curr[0], c = curr[1], cost = curr[2];\n\n            if (r == m - 1 && c == n - 1) return cost;\n            if (cost > dist[r][c]) continue;\n\n            for (int d = 1; d <= 4; d++) {\n                int nr = r + dirs[d - 1][0];\n                int nc = c + dirs[d - 1][1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int weight = (grid[r][c] == d) ? 0 : 1;\n                    if (cost + weight < dist[nr][nc]) {\n                        dist[nr][nc] = cost + weight;\n                        if (weight == 0) {\n                            dq.offerFirst(new int[]{nr, nc, cost});\n                        } else {\n                            dq.offerLast(new int[]{nr, nc, cost + 1});\n                        }\n                    }\n                }\n            }\n        }\n        return dist[m - 1][n - 1];\n    }\n}",
+      "approach": "0-1 BFS with ArrayDeque",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} grid\n * @return {number}\n */\nvar minCost = function(grid) {\n    const m = grid.length, n = grid[0].length;\n    const dist = Array.from({ length: m }, () => new Int32Array(n).fill(Infinity));\n    dist[0][0] = 0;\n\n    const dq = [[0, 0, 0]];\n    let head = 0;\n    const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];\n\n    while (head < dq.length) {\n        const [r, c, cost] = dq[head++];\n        if (r === m - 1 && c === n - 1) return cost;\n        if (cost > dist[r][c]) continue;\n\n        for (let d = 1; d <= 4; d++) {\n            const [dr, dc] = dirs[d - 1];\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                const weight = grid[r][c] === d ? 0 : 1;\n                if (cost + weight < dist[nr][nc]) {\n                    dist[nr][nc] = cost + weight;\n                    if (weight === 0) {\n                        dq.splice(head, 0, [nr, nc, cost]);\n                    } else {\n                        dq.push([nr, nc, cost + 1]);\n                    }\n                }\n            }\n        }\n    }\n    return dist[m - 1][n - 1];\n};",
+      "approach": "0-1 BFS Double-Ended Queue State Expansion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -51,5 +75,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-17T00:00:00.000Z"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

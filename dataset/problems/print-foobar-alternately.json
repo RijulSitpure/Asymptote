@@ -32,16 +32,32 @@
     "time": "n/a",
     "space": "n/a",
     "variables": [],
-    "notes": "Ping-pong synchronization across n cycles."
+    "notes": "Ping-pong synchronization across n cycles.",
+    "whyNaiveFails": "Unsynchronized alternating loops produce race conditions where bar prints before foo or multiple foo calls interleave consecutively. Busy-waiting using volatile flags wastes CPU cycles and fails on weakly-ordered memory architectures.",
+    "spaceTimeTradeoff": "Pairing two semaphores (or condition variables with a boolean predicate) requires O(1) memory and suspends threads during opposite turns, ensuring exact alternating lockstep in O(N) total operations.",
+    "interviewerExpectation": "Initializing the first semaphore with 1 permit and the second with 0; proper semaphore permit handoff (foo releases bar, bar releases foo); deadlock prevention and clean thread termination after N cycles."
   },
   "solutions": [
     {
       "lang": "python3",
       "code": "from threading import Semaphore\n\nclass FooBar:\n    def __init__(self, n):\n        self.n = n\n        self.foo_sem = Semaphore(1)\n        self.bar_sem = Semaphore(0)\n\n    def foo(self, printFoo: 'Callable[[], None]') -> None:\n        for _ in range(self.n):\n            self.foo_sem.acquire()\n            printFoo()\n            self.bar_sem.release()\n\n    def bar(self, printBar: 'Callable[[], None]') -> None:\n        for _ in range(self.n):\n            self.bar_sem.acquire()\n            printBar()\n            self.foo_sem.release()",
-      "approach": "Dual Semaphore Ping-Pong Interleaving",
+      "approach": "Dual Semaphore Alternating Signal",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-18",
-      "testKind": "stress"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <mutex>\n#include <condition_variable>\n#include <functional>\n\nusing namespace std;\n\nclass FooBar {\nprivate:\n    int n;\n    std::mutex mtx;\n    std::condition_variable cv;\n    bool fooTurn = true;\n\npublic:\n    FooBar(int n) {\n        this->n = n;\n    }\n\n    void foo(function<void()> printFoo) {\n        for (int i = 0; i < n; i++) {\n            std::unique_lock<std::mutex> lock(mtx);\n            cv.wait(lock, [this]() { return fooTurn; });\n            printFoo();\n            fooTurn = false;\n            cv.notify_one();\n        }\n    }\n\n    void bar(function<void()> printBar) {\n        for (int i = 0; i < n; i++) {\n            std::unique_lock<std::mutex> lock(mtx);\n            cv.wait(lock, [this]() { return !fooTurn; });\n            printBar();\n            fooTurn = true;\n            cv.notify_one();\n        }\n    }\n};",
+      "approach": "Condition Variable Turn Synchronization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.concurrent.Semaphore;\n\nclass FooBar {\n    private int n;\n    private final Semaphore fooSem = new Semaphore(1);\n    private final Semaphore barSem = new Semaphore(0);\n\n    public FooBar(int n) {\n        this.n = n;\n    }\n\n    public void foo(Runnable printFoo) throws InterruptedException {\n        for (int i = 0; i < n; i++) {\n            fooSem.acquire();\n            printFoo.run();\n            barSem.release();\n        }\n    }\n\n    public void bar(Runnable printBar) throws InterruptedException {\n        for (int i = 0; i < n; i++) {\n            barSem.acquire();\n            printBar.run();\n            fooSem.release();\n        }\n    }\n}",
+      "approach": "Dual Semaphore Permitted Alternation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -49,5 +65,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-18"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

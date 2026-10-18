@@ -24,26 +24,42 @@
     {
       "level": 4,
       "title": "Complete Implementation",
-      "text": "```sql\nDELETE p1\nFROM Person p1\nJOIN Person p2 ON p1.email = p2.email AND p1.id > p2.id;\n```"
+      "text": "```mysql\nDELETE p1\nFROM Person p1\nJOIN Person p2 ON p1.email = p2.email AND p1.id > p2.id;\n```"
     }
   ],
   "complexity": {
     "kind": "query-notes",
-    "time": "O(N^2) or O(N log N)",
+    "time": "O(N log N)",
     "space": "O(1)",
     "variables": [
-      "N: number of person records"
+      "N: rows in Person table"
     ],
-    "notes": "In-place DML deletion scanning matching duplicate emails via join index."
+    "notes": "Multi-table DELETE self-join matching email with greater id.",
+    "whyNaiveFails": "A naive DELETE FROM Person WHERE id NOT IN (SELECT MIN(id) FROM Person GROUP BY email) in MySQL fails with error 1093 (\"You cannot specify target table for update in FROM clause\"). A naive subquery also risks full-table locking.",
+    "spaceTimeTradeoff": "Self-joining Person p1 JOIN Person p2 on matching email and p1.id > p2.id allows MySQL and PostgreSQL to delete in-place during the join scan in O(N log N) time without temporary materialized subquery tables.",
+    "interviewerExpectation": "Understanding MySQL multi-table DELETE syntax (DELETE p1 FROM Person p1 JOIN Person p2); ensuring that only duplicate rows with strictly larger IDs are deleted while retaining the minimal ID."
   },
   "solutions": [
     {
       "lang": "mysql",
       "code": "DELETE p1\nFROM Person p1\nJOIN Person p2 ON p1.email = p2.email AND p1.id > p2.id;",
-      "approach": "Self-Join DML Delete on Higher ID",
+      "approach": "In-Place Multi-Table DELETE Self-Join",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-18",
-      "testKind": "deterministic"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "postgresql",
+      "code": "DELETE FROM Person p1\nUSING Person p2\nWHERE p1.email = p2.email AND p1.id > p2.id;",
+      "approach": "PostgreSQL DELETE USING Self-Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\n# Modify Person in place\ndef delete_duplicate_emails(person: pd.DataFrame) -> None:\n    person.sort_values(by='id', ascending=True, inplace=True)\n    person.drop_duplicates(subset=['email'], keep='first', inplace=True)",
+      "approach": "Pandas In-Place Sort and Drop Duplicates",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -51,5 +67,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-18"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

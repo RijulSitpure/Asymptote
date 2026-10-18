@@ -24,7 +24,7 @@
     {
       "level": 4,
       "title": "Complete Implementation",
-      "text": "```sql\nSELECT p.firstName, p.lastName, a.city, a.state\nFROM Person p\nLEFT JOIN Address a ON p.personId = a.personId;\n```"
+      "text": "```mysql\nSELECT p.firstName, p.lastName, a.city, a.state\nFROM Person p\nLEFT JOIN Address a ON p.personId = a.personId;\n```"
     }
   ],
   "complexity": {
@@ -35,16 +35,32 @@
       "P: rows in Person",
       "A: rows in Address"
     ],
-    "notes": "Single pass outer hash or index join over Person and Address tables."
+    "notes": "Single pass outer hash or index join over Person and Address tables.",
+    "whyNaiveFails": "A Cartesian product (FROM Person, Address) produces P x A intermediate rows before filtering with a WHERE clause. For large tables, this materializes unnecessary cross-product tuples in memory. An INNER JOIN erroneously discards people who do not have an address entry.",
+    "spaceTimeTradeoff": "A LEFT JOIN with index support on Address(personId) streams the outer table in O(P) time with O(1) extra space, or performs a single-pass hash join in O(P + A) time and O(P) auxiliary memory without intermediate sorting.",
+    "interviewerExpectation": "Immediate recognition of LEFT JOIN semantics to retain Person rows having null address fields; leveraging foreign key indexes on personId."
   },
   "solutions": [
     {
       "lang": "mysql",
       "code": "SELECT p.firstName, p.lastName, a.city, a.state\nFROM Person p\nLEFT JOIN Address a ON p.personId = a.personId;",
-      "approach": "Left Outer Join on personId",
+      "approach": "Left Outer Join on Foreign Key",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-18",
-      "testKind": "deterministic"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT p.firstName, p.lastName, a.city, a.state\nFROM Person p\nLEFT JOIN Address a ON p.personId = a.personId;",
+      "approach": "PostgreSQL Left Outer Join on personId",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef combine_two_tables(person: pd.DataFrame, address: pd.DataFrame) -> pd.DataFrame:\n    merged = person.merge(address, on='personId', how='left')\n    return merged[['firstName', 'lastName', 'city', 'state']]",
+      "approach": "Pandas Left Merge on personId",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -52,5 +68,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-18"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

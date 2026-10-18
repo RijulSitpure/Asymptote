@@ -24,27 +24,43 @@
     {
       "level": 4,
       "title": "Complete Implementation",
-      "text": "```sql\nSELECT d.name AS Department, e.name AS Employee, e.salary AS Salary\nFROM Employee e\nJOIN Department d ON e.departmentId = d.id\nWHERE (e.departmentId, e.salary) IN (\n  SELECT departmentId, MAX(salary)\n  FROM Employee\n  GROUP BY departmentId\n);\n```"
+      "text": "```mysql\nSELECT d.name AS Department, e.name AS Employee, e.salary AS Salary\nFROM Employee e\nJOIN Department d ON e.departmentId = d.id\nWHERE (e.departmentId, e.salary) IN (\n  SELECT departmentId, MAX(salary)\n  FROM Employee\n  GROUP BY departmentId\n);\n```"
     }
   ],
   "complexity": {
     "kind": "query-notes",
     "time": "O(E + D)",
-    "space": "O(E)",
+    "space": "O(D)",
     "variables": [
-      "E: number of employee records",
-      "D: number of departments"
+      "E: rows in Employee table",
+      "D: rows in Department table"
     ],
-    "notes": "Grouped aggregation followed by indexed tuple lookup and department dimension join."
+    "notes": "Inner join with grouped maximum salary subquery on (departmentId, salary).",
+    "whyNaiveFails": "Correlated subqueries in the SELECT clause (SELECT (SELECT MAX(...) ... WHERE ...)) execute once per employee row (O(E * E) full scans). Joining without a composite tuple match (departmentId, salary) can mismatch salaries across different departments.",
+    "spaceTimeTradeoff": "Grouping once by department to compute MAX(salary) requires O(E) time and O(D) hash table memory, enabling an optimal hash-semijoin in O(E + D) total execution time.",
+    "interviewerExpectation": "Handling salary ties properly (if two employees in the same department share the max salary, both must be returned); using composite tuple matching or window functions (DENSE_RANK())."
   },
   "solutions": [
     {
       "lang": "mysql",
       "code": "SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary\nFROM Employee e\nJOIN Department d ON e.departmentId = d.id\nWHERE (e.departmentId, e.salary) IN (\n  SELECT departmentId, MAX(salary)\n  FROM Employee\n  GROUP BY departmentId\n);",
-      "approach": "Grouped Max Salary Subquery with Tuple IN Match",
+      "approach": "Group By Maximum Salary Semi-Join",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-18",
-      "testKind": "deterministic"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT d.name AS \"Department\", e.name AS \"Employee\", e.salary AS \"Salary\"\nFROM Employee e\nJOIN Department d ON e.departmentId = d.id\nWHERE (e.departmentId, e.salary) IN (\n  SELECT departmentId, MAX(salary)\n  FROM Employee\n  GROUP BY departmentId\n);",
+      "approach": "PostgreSQL Composite In-Clause Semi-Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef department_highest_salary(employee: pd.DataFrame, department: pd.DataFrame) -> pd.DataFrame:\n    if employee.empty or department.empty:\n        return pd.DataFrame(columns=['Department', 'Employee', 'Salary'])\n    merged = employee.merge(department, left_on='departmentId', right_on='id', suffixes=('_employee', '_department'))\n    max_salary_per_dept = merged.groupby('departmentId')['salary'].transform('max')\n    highest = merged[merged['salary'] == max_salary_per_dept]\n    result = highest[['name_department', 'name_employee', 'salary']].copy()\n    result.columns = ['Department', 'Employee', 'Salary']\n    return result",
+      "approach": "Pandas Merge and Groupby Transform Max Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -52,5 +68,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-18"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

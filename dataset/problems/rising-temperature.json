@@ -24,26 +24,42 @@
     {
       "level": 4,
       "title": "Complete Implementation",
-      "text": "```sql\nSELECT w1.id\nFROM Weather w1\nJOIN Weather w2 ON w1.recordDate = DATE_ADD(w2.recordDate, INTERVAL 1 DAY)\nWHERE w1.temperature > w2.temperature;\n```"
+      "text": "```mysql\nSELECT w1.id\nFROM Weather w1\nJOIN Weather w2 ON w1.recordDate = DATE_ADD(w2.recordDate, INTERVAL 1 DAY)\nWHERE w1.temperature > w2.temperature;\n```"
     }
   ],
   "complexity": {
     "kind": "query-notes",
     "time": "O(N)",
-    "space": "O(N)",
+    "space": "O(1)",
     "variables": [
-      "N: number of weather records"
+      "N: rows in Weather table"
     ],
-    "notes": "Self-join on calculated previous calendar day with index lookups."
+    "notes": "Self-join matching recordDate with yesterday using DATE_ADD interval.",
+    "whyNaiveFails": "A cross-join of Weather with itself without indexed date arithmetic scans N^2 pairs. Filtering by w1.id = w2.id + 1 fails when record IDs are non-consecutive or dates have gaps; date differences must be measured using temporal intervals.",
+    "spaceTimeTradeoff": "Self-joining on w1.recordDate = DATE_ADD(w2.recordDate, INTERVAL 1 DAY) utilizes a B-tree index on recordDate, reducing execution from quadratic nested scans to O(N) index-lookup time with O(1) temporary memory.",
+    "interviewerExpectation": "Using date arithmetic functions (DATE_ADD in MySQL, + INTERVAL '1 day' in PostgreSQL) rather than subtracting IDs; strictly comparing temperatures with >."
   },
   "solutions": [
     {
       "lang": "mysql",
       "code": "SELECT w1.id\nFROM Weather w1\nJOIN Weather w2 ON w1.recordDate = DATE_ADD(w2.recordDate, INTERVAL 1 DAY)\nWHERE w1.temperature > w2.temperature;",
-      "approach": "Self-Join with DATE_ADD 1 Day Offset",
+      "approach": "Self Join on Date Interval Arithmetic",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-18",
-      "testKind": "deterministic"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT w1.id\nFROM Weather w1\nJOIN Weather w2 ON w1.recordDate = w2.recordDate + INTERVAL '1 day'\nWHERE w1.temperature > w2.temperature;",
+      "approach": "PostgreSQL Temporal Interval Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef rising_temperature(weather: pd.DataFrame) -> pd.DataFrame:\n    weather['recordDate'] = pd.to_datetime(weather['recordDate'])\n    weather = weather.sort_values('recordDate')\n    prev_weather = weather.copy()\n    prev_weather['recordDate'] = prev_weather['recordDate'] + pd.Timedelta(days=1)\n    merged = weather.merge(prev_weather, on='recordDate', suffixes=('', '_prev'))\n    rising = merged[merged['temperature'] > merged['temperature_prev']]\n    return rising[['id']]",
+      "approach": "Pandas Timedelta Shift and Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -51,5 +67,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-18"
+  "updated": "2026-10-18T00:00:00.000Z"
 }

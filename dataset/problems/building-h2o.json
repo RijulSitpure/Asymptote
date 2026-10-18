@@ -32,16 +32,32 @@
     "time": "n/a",
     "space": "n/a",
     "variables": [],
-    "notes": "Rendezvous grouping of three concurrent threads."
+    "notes": "Group synchronization with 2:1 stoichiometric molecular barrier.",
+    "whyNaiveFails": "Without atomic grouping barriers, oxygen threads can outpace hydrogen or three hydrogens can bind simultaneously, violating the strict 2:1 stoichiometric molecular invariant. Spin-locking on thread counters risks deadlocks under thread starvation.",
+    "spaceTimeTradeoff": "Two counting semaphores (2 permits for H, 1 permit for O) coupled with a 3-party barrier require O(1) auxiliary synchronization memory and guarantee exact (2H, 1O) molecular groups without unbounded thread queuing.",
+    "interviewerExpectation": "Ensuring exactly two hydrogen atoms pair with one oxygen before any party departs the barrier; releasing permits in finally blocks; preventing thread deadlocks when molecules arrive out of order."
   },
   "solutions": [
     {
       "lang": "python3",
       "code": "from threading import Semaphore, Barrier\n\nclass H2O:\n    def __init__(self):\n        self.sem_h = Semaphore(2)\n        self.sem_o = Semaphore(1)\n        self.barrier = Barrier(3)\n\n    def hydrogen(self, releaseHydrogen: 'Callable[[], None]') -> None:\n        self.sem_h.acquire()\n        self.barrier.wait()\n        releaseHydrogen()\n        self.sem_h.release()\n\n    def oxygen(self, releaseOxygen: 'Callable[[], None]') -> None:\n        self.sem_o.acquire()\n        self.barrier.wait()\n        releaseOxygen()\n        self.sem_o.release()",
-      "approach": "Counting Semaphores with Cyclic Barrier",
+      "approach": "Semaphore Capacity and Cyclic Barrier Grouping",
       "verifiedBy": "tests",
-      "testedOn": "2026-10-18",
-      "testKind": "stress"
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <mutex>\n#include <condition_variable>\n#include <functional>\n\nusing namespace std;\n\nclass H2O {\nprivate:\n    std::mutex mtx;\n    std::condition_variable cv;\n    int hCount = 0;\n\npublic:\n    H2O() {}\n\n    void hydrogen(function<void()> releaseHydrogen) {\n        std::unique_lock<std::mutex> lock(mtx);\n        cv.wait(lock, [this]() { return hCount < 2; });\n        releaseHydrogen();\n        hCount++;\n        cv.notify_all();\n    }\n\n    void oxygen(function<void()> releaseOxygen) {\n        std::unique_lock<std::mutex> lock(mtx);\n        cv.wait(lock, [this]() { return hCount == 2; });\n        releaseOxygen();\n        hCount = 0;\n        cv.notify_all();\n    }\n};",
+      "approach": "Condition Variable Stoichiometric Counter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.concurrent.Semaphore;\nimport java.util.concurrent.CyclicBarrier;\n\nclass H2O {\n    private final Semaphore hSem = new Semaphore(2);\n    private final Semaphore oSem = new Semaphore(1);\n    private final CyclicBarrier barrier = new CyclicBarrier(3);\n\n    public H2O() {}\n\n    public void hydrogen(Runnable releaseHydrogen) throws InterruptedException {\n        hSem.acquire();\n        try {\n            barrier.await();\n            releaseHydrogen.run();\n        } catch (Exception e) {\n            Thread.currentThread().interrupt();\n        } finally {\n            hSem.release();\n        }\n    }\n\n    public void oxygen(Runnable releaseOxygen) throws InterruptedException {\n        oSem.acquire();\n        try {\n            barrier.await();\n            releaseOxygen.run();\n        } catch (Exception e) {\n            Thread.currentThread().interrupt();\n        } finally {\n            oSem.release();\n        }\n    }\n}",
+      "approach": "Counting Semaphores and CyclicBarrier",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-18"
     }
   ],
   "review": {
@@ -49,5 +65,5 @@
     "acceptedOnLeetCode": null,
     "reviewer": null
   },
-  "updated": "2026-10-18"
+  "updated": "2026-10-18T00:00:00.000Z"
 }
