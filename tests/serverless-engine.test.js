@@ -49,7 +49,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     }
 
     const problems = await engine.getProblems();
-    expect(problems.length).toBe(27);
+    expect(problems.length).toBe(Object.keys(dataset.index.bySlug).length);
 
     for (const prob of problems) {
       expect(prob.verified).toBe(1);
@@ -237,9 +237,9 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(syncRes.success).toBe(true);
     expect(syncRes.newlySynced).toBe(1);
 
-    // List problems: total count is now 28 (27 curated + 1 uncurated)
+    // List problems: total count is curated + 1 uncurated
     const problems = await engine.getProblems();
-    expect(problems.length).toBe(28);
+    expect(problems.length).toBe(Object.keys(dataset.index.bySlug).length + 1);
 
     const uncurated = problems.find(p => p.slug === 'uncurated-sample-problem');
     expect(uncurated).toBeDefined();
@@ -280,7 +280,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
 
     // Check stats
     const stats = await engine.getStats();
-    expect(stats.totalProblems).toBe(28);
+    expect(stats.totalProblems).toBe(Object.keys(dataset.index.bySlug).length + 1);
     // Solved: two-sum (curated) + uncurated-sample-problem (from test 6)
     expect(stats.solvedCount).toBe(2);
     expect(stats.totalSolved).toBe(2);

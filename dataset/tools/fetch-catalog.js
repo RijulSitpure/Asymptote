@@ -46,88 +46,203 @@ function mapSuggestedPattern(q, category) {
   // 2. Concurrency
   if (category === 'Concurrency') {
     if (slug.includes('philosopher')) return 'deadlock-avoidance';
-    if (slug.includes('h2o')) return 'barrier-rendezvous';
-    if (slug.includes('foobar') || slug.includes('fizz-buzz')) return 'turn-taking';
-    if (slug.includes('order') || slug.includes('zero-even-odd')) return 'ordering-signals';
+    if (slug.includes('h2o') || slug.includes('barrier') || slug.includes('rendezvous')) return 'barrier-rendezvous';
+    if (slug.includes('foobar') || slug.includes('fizz-buzz') || slug.includes('alternate')) return 'turn-taking';
+    if (slug.includes('order') || slug.includes('zero-even-odd') || slug.includes('sequence')) return 'ordering-signals';
+    if (slug.includes('producer') || slug.includes('consumer') || slug.includes('bounded-blocking')) return 'producer-consumer';
+    if (slug.includes('traffic') || slug.includes('resource')) return 'resource-allocation';
     return 'mutual-exclusion';
   }
 
   // 3. Shell
   if (category === 'Shell') {
-    if (slug.includes('phone')) return 'text-filter';
-    if (slug.includes('transpose')) return 'field-processing';
-    if (slug.includes('word-frequency') || slug.includes('frequency')) return 'count-and-sort';
-    if (slug.includes('tenth-line') || slug.includes('line')) return 'stream-edit';
+    if (slug.includes('word-frequency') || slug.includes('frequency') || slug.includes('count')) return 'count-and-sort';
+    if (slug.includes('transpose') || slug.includes('column') || slug.includes('field')) return 'field-processing';
+    if (slug.includes('tenth-line') || slug.includes('line') || slug.includes('sed')) return 'stream-edit';
+    if (slug.includes('read') || slug.includes('log')) return 'line-by-line-reading';
     return 'text-filter';
   }
 
   // 4. JavaScript
   if (category === 'JavaScript') {
-    if (slug.includes('counter') || slug.includes('curry') || slug.includes('memoize')) return 'closures';
-    if (slug.includes('sleep') || slug.includes('debounce') || slug.includes('throttle') || slug.includes('timeout') || slug.includes('time-limit')) return 'timing-control';
-    if (slug.includes('promise') || slug.includes('async')) return 'promises-async';
-    if (slug.includes('event-emitter')) return 'classes-prototypes';
+    if (slug.includes('counter') || slug.includes('curry') || slug.includes('memoize') || slug.includes('once')) return 'closures';
+    if (slug.includes('sleep') || slug.includes('debounce') || slug.includes('throttle') || slug.includes('timeout') || slug.includes('time-limit') || slug.includes('cache-with-time-limit') || slug.includes('interval')) return 'timing-control';
+    if (slug.includes('promise') || slug.includes('async') || slug.includes('await')) return 'promises-async';
+    if (slug.includes('event-emitter') || slug.includes('class') || slug.includes('chain')) return 'classes-and-chaining';
+    if (slug.includes('map') || slug.includes('filter') || slug.includes('reduce') || slug.includes('last') || slug.includes('group-by')) return 'array-prototype-methods';
+    if (slug.includes('json') || slug.includes('flatten') || slug.includes('chunk') || slug.includes('deep') || slug.includes('object-diff')) return 'json-object-traversal';
+    if (slug.includes('compose') || slug.includes('call-poly')) return 'higher-order-functions';
     return 'object-array-utilities';
   }
 
   // 5. pandas
   if (category === 'pandas') {
-    if (slug.includes('duplicate')) return 'clean-duplicates';
-    if (slug.includes('pivot') || slug.includes('reshape') || slug.includes('melt')) return 'reshape';
+    if (slug.includes('duplicate') || slug.includes('drop') || slug.includes('clean') || slug.includes('fillna') || slug.includes('null') || slug.includes('missing')) return 'cleaning-nulls-duplicates';
+    if (slug.includes('pivot') || slug.includes('melt') || slug.includes('reshape')) return 'reshape';
     if (slug.includes('join') || slug.includes('merge')) return 'merge-join';
-    if (slug.includes('group') || slug.includes('count') || slug.includes('aggregate')) return 'groupby-agg';
-    if (slug.includes('rank') || slug.includes('lead') || slug.includes('lag')) return 'rank-shift';
+    if (slug.includes('group') || slug.includes('count') || slug.includes('aggregate') || slug.includes('sum') || slug.includes('min') || slug.includes('max') || slug.includes('avg')) return 'groupby-agg';
+    if (slug.includes('rank') || slug.includes('lead') || slug.includes('lag') || slug.includes('shift')) return 'rank-shift';
     if (slug.includes('create') || slug.includes('dataframe')) return 'dataframe-basics';
+    if (slug.includes('string') || slug.includes('date') || slug.includes('time') || slug.includes('lower') || slug.includes('upper') || slug.includes('length')) return 'string-datetime-ops';
+    if (slug.includes('apply') || slug.includes('vectorize')) return 'vectorize-apply';
+    if (slug.includes('sort') || slug.includes('limit') || slug.includes('head') || slug.includes('concat')) return 'concat-sort-limit';
     return 'filter-select';
   }
 
   // 6. Database
   if (category === 'Database') {
-    if (slug.includes('second-highest') || slug.includes('nth-highest') || slug.includes('rank') || title.includes('rank')) return 'window-ranking';
-    if (slug.includes('combine-two-tables') || slug.includes('join') || slug.includes('customer')) return 'join-filter';
-    if (slug.includes('duplicate')) return 'join-filter';
-    if (slug.includes('rising-temperature') || slug.includes('consecutive') || slug.includes('weather')) return 'window-lead-lag';
-    if (slug.includes('department-highest-salary') || slug.includes('group') || slug.includes('count')) return 'group-aggregate';
+    if (slug.includes('second-highest') || slug.includes('nth-highest') || (slug.includes('highest') && slug.includes('salary'))) return 'nth-highest-limit-offset';
+    if (slug.includes('rank') || slug.includes('dense') || title.includes('rank') || slug.includes('top-three') || slug.includes('top-3')) return 'window-ranking';
+    if (slug.includes('lead') || slug.includes('lag') || slug.includes('consecutive') || slug.includes('previous') || slug.includes('weather') || slug.includes('rising-temperature')) return 'window-offset';
+    if (slug.includes('delete') || slug.includes('update')) return 'dml-update-delete';
+    if (slug.includes('null') || slug.includes('ifnull') || slug.includes('coalesce')) return 'null-handling';
+    if (slug.includes('gap') || slug.includes('island') || slug.includes('continuous')) return 'gaps-and-islands';
+    if (slug.includes('tree') || slug.includes('hierarchy') || slug.includes('recursive') || slug.includes('boss') || slug.includes('manager')) return 'recursive-cte';
+    if (slug.includes('pivot') || slug.includes('transpose') || slug.includes('case-when')) return 'conditional-pivot';
+    if (slug.includes('running') || slug.includes('cumulative') || slug.includes('rolling') || slug.includes('moving')) return 'running-total';
+    if (slug.includes('top-n') || slug.includes('top-2') || slug.includes('per-group')) return 'top-n-per-group';
+    if (slug.includes('exists') || slug.includes('correlated')) return 'correlated-subquery-exists';
+    if (slug.includes('anti') || slug.includes('never') || slug.includes('not-in') || slug.includes('unconfirmed') || slug.includes('without')) return 'anti-join';
+    if (slug.includes('self-join') || slug.includes('confirmation')) return 'self-join';
+    if (slug.includes('union') || slug.includes('intersect') || slug.includes('except')) return 'set-operations';
+    if (slug.includes('date') || slug.includes('day') || slug.includes('month') || slug.includes('year') || slug.includes('time') || slug.includes('activity')) return 'date-time';
+    if (slug.includes('string') || slug.includes('valid') || slug.includes('regex') || slug.includes('name') || slug.includes('format')) return 'string-handling';
     if (slug.includes('having')) return 'having-filter';
-    if (slug.includes('tree') || slug.includes('hierarchy') || slug.includes('recursive')) return 'recursive-cte';
-    return null;
+    if (slug.includes('group') || slug.includes('count') || slug.includes('sum') || slug.includes('average') || slug.includes('avg') || slug.includes('total') || slug.includes('sales') || slug.includes('orders')) return 'group-aggregate';
+    return 'join-filter';
   }
 
   // 7. Algorithms
   if (tagSet.has('trie')) return 'tree-trie-prefix';
-  if (tagSet.has('union find') || tagSet.has('disjoint set')) return 'graph-union-find-dsu';
+  if (tagSet.has('union find') || tagSet.has('union-find') || tagSet.has('disjoint set')) return 'graph-union-find-dsu';
   if (tagSet.has('segment tree') || tagSet.has('binary indexed tree')) return 'segment-tree-fenwick';
   if (tagSet.has('topological sort')) return 'graph-topo-kahn';
-  if (slug.includes('cheapest-flights') || slug.includes('k-stops')) return 'graph-dp-k-steps';
-  if (slug.includes('burst-balloons')) return 'dp-interval';
-  if (slug.includes('longest-increasing-path')) return 'graph-dp-dag';
-  if (slug.includes('shortest-path-visiting-all-nodes')) return 'graph-bitmask-all-nodes';
-  if (slug.includes('sum-of-distances-in-tree')) return 'graph-tree-rerooting';
-  if (slug.includes('minimum-cost-to-make-at-least-one-valid-path')) return 'graph-01-bfs';
-
-  if (tagSet.has('binary search tree')) return 'tree-bst-properties';
   if (tagSet.has('monotonic queue')) return 'queue-monotonic-sliding-window';
   if (tagSet.has('monotonic stack')) return 'stack-monotonic-next-greater';
-  if (tagSet.has('sliding window')) return 'two-pointers-window-dynamic';
-  if (slug.includes('two-sum') && !slug.includes('two-sum-ii')) return 'hash-map-lookup';
-  if (slug.includes('valid-anagram') || slug.includes('group-anagrams') || slug.includes('contains-duplicate') || slug.includes('longest-consecutive-sequence')) return 'hash-map-lookup';
-  if (slug.includes('two-sum-ii') || slug.includes('3sum') || slug.includes('container-with-most-water') || slug.includes('valid-palindrome')) return 'two-pointers-opposite';
-  if (slug.includes('linked-list-cycle') || slug.includes('find-the-duplicate-number')) return 'two-pointers-fast-slow';
-  if (slug.includes('maximum-subarray') || slug.includes('maximum-product-subarray') || slug.includes('best-time-to-buy-and-sell-stock')) return 'array-kadane';
-  if (slug.includes('product-of-array-except-self') || slug.includes('subarray-sum-equals-k')) return 'prefix-sum-hashmap';
-
+  if (tagSet.has('binary search tree')) return 'tree-bst-properties';
   if (tagSet.has('quickselect')) return 'sorting-quickselect';
-  if (tagSet.has('heap (priority queue)')) return 'heap-top-k-elements';
-  if (tagSet.has('backtracking')) return 'backtracking-subsets-perm';
-  if (tagSet.has('binary search') && (title.includes('answer') || title.includes('capacity') || title.includes('koko') || title.includes('minimum') || title.includes('maximum'))) return 'binary-search-answer';
-  if (tagSet.has('binary search') && (slug.includes('rotated') || title.includes('rotated'))) return 'binary-search-rotated';
-  if (tagSet.has('binary search') && tagSet.size <= 3) return 'binary-search-basic';
-  if (tagSet.has('breadth-first search') && tagSet.has('tree')) return 'tree-bfs-level-order';
-  if (tagSet.has('depth-first search') && tagSet.has('tree')) return 'tree-dfs-subproblem';
-  if (tagSet.has('breadth-first search') && tagSet.has('graph')) return 'graph-bfs-shortest-path';
-  if (tagSet.has('bit manipulation') && tagSet.size <= 2) return 'bit-manipulation-tricks';
+  if (tagSet.has('string matching') || tagSet.has('rolling hash')) return 'string-matching';
   if (tagSet.has('design')) return 'design-data-structures';
-  if (tagSet.has('prefix sum') && tagSet.has('hash table')) return 'prefix-sum-hashmap';
+
+  // Heap / Priority Queue
+  if (tagSet.has('heap (priority queue)') || tagSet.has('heap')) {
+    if (slug.includes('median') || slug.includes('running')) return 'heap-two-heaps-median';
+    return 'heap-top-k-elements';
+  }
+
+  // Linked list
+  if (tagSet.has('linked list') || tagSet.has('linked-list')) {
+    if (slug.includes('cycle') || slug.includes('fast-slow')) return 'two-pointers-fast-slow';
+    return 'linked-list-pointers';
+  }
+
+  // Binary search
+  if (tagSet.has('binary search') || tagSet.has('binary-search')) {
+    if (slug.includes('rotated') || title.includes('rotated')) return 'binary-search-rotated';
+    if (title.includes('capacity') || title.includes('koko') || title.includes('ship') || title.includes('split') || title.includes('minimum') || title.includes('maximum') || title.includes('smallest') || title.includes('largest') || slug.includes('koko') || slug.includes('capacity')) return 'binary-search-answer';
+    return 'binary-search-basic';
+  }
+
+  // Sliding window & Prefix sum
+  if (tagSet.has('sliding window') || tagSet.has('sliding-window')) {
+    if (slug.includes('fixed') || slug.includes('permutation') || slug.includes('size-k') || slug.includes('length-k')) return 'sliding-window-fixed';
+    return 'two-pointers-window-dynamic';
+  }
+  if (tagSet.has('prefix sum') || tagSet.has('prefix-sum')) return 'prefix-sum-hashmap';
+
+  // Two pointers
+  if (tagSet.has('two pointers') || tagSet.has('two-pointers')) {
+    if (slug.includes('fast-slow') || slug.includes('cycle') || slug.includes('duplicate')) return 'two-pointers-fast-slow';
+    return 'two-pointers-opposite';
+  }
+
+  // Stack
+  if (tagSet.has('stack')) {
+    if (slug.includes('monotonic') || slug.includes('next-greater') || slug.includes('daily') || slug.includes('stock-span')) return 'stack-monotonic-next-greater';
+    return 'stack-parentheses-parser';
+  }
+
+  // Graphs and BFS/DFS
+  if (tagSet.has('shortest path') || slug.includes('dijkstra')) return 'graph-dijkstra';
+  if (tagSet.has('breadth-first search') || tagSet.has('breadth-first-search')) {
+    if (tagSet.has('tree')) return 'tree-bfs-level-order';
+    if (slug.includes('multi-source') || slug.includes('rotten') || slug.includes('01-matrix') || slug.includes('as-far-from-land')) return 'graph-multi-source-bfs';
+    if (slug.includes('minimum-cost') || slug.includes('0-1')) return 'graph-01-bfs';
+    return 'graph-bfs-shortest-path';
+  }
+  if (tagSet.has('depth-first search') || tagSet.has('depth-first-search')) {
+    if (tagSet.has('tree')) return 'tree-dfs-subproblem';
+    if (slug.includes('island') || slug.includes('flood') || slug.includes('surrounded') || slug.includes('pacific') || slug.includes('color')) return 'grid-flood-fill';
+    if (tagSet.has('backtracking')) return 'backtracking-grid-dfs';
+    return 'tree-dfs-subproblem';
+  }
+  if (tagSet.has('graph') || tagSet.has('graph theory') || tagSet.has('graph-theory') || tagSet.has('directed acyclic graph')) return 'graph-bfs-shortest-path';
+
+  // Backtracking
+  if (tagSet.has('backtracking')) {
+    if (slug.includes('sudoku') || slug.includes('n-queens') || slug.includes('word-search') || slug.includes('grid') || slug.includes('board') || slug.includes('maze')) return 'backtracking-grid-dfs';
+    return 'backtracking-subsets-perm';
+  }
+
+  // Bit Manipulation
+  if (tagSet.has('bit manipulation') || tagSet.has('bit-manipulation') || tagSet.has('bitmask')) {
+    if (tagSet.has('dynamic programming')) return 'dp-bitmask';
+    return 'bit-manipulation-tricks';
+  }
+
+  // Dynamic Programming
+  if (tagSet.has('dynamic programming') || tagSet.has('dynamic-programming')) {
+    if (slug.includes('longest-increasing-subsequence') || slug.includes('lis') || slug.includes('russian-doll')) return 'dp-lis';
+    if (slug.includes('burst-balloon') || slug.includes('matrix-chain') || slug.includes('merge-stones') || slug.includes('interval')) return 'dp-interval';
+    if (slug.includes('unique-paths') || slug.includes('minimum-path-sum') || slug.includes('dungeon') || slug.includes('cherry') || tagSet.has('matrix')) return 'dp-grid-2d';
+    if (slug.includes('coin-change') || slug.includes('partition') || slug.includes('knapsack') || slug.includes('target-sum') || slug.includes('subset-sum')) return 'dp-knapsack-variants';
+    if (slug.includes('stock') || slug.includes('buy-and-sell') || slug.includes('state') || slug.includes('house-robber')) return 'dp-state-machine';
+    if (slug.includes('longest-common-subsequence') || slug.includes('edit-distance') || slug.includes('interleaving') || slug.includes('distinct-subsequences')) return 'dp-longest-common-subseq';
+    if (slug.includes('reroot') || slug.includes('sum-of-distances')) return 'graph-tree-rerooting';
+    return 'dp-1d-fib-linear';
+  }
+
+  // Greedy
+  if (tagSet.has('greedy')) {
+    if (slug.includes('interval') || slug.includes('meeting') || slug.includes('balloon') || slug.includes('merge-intervals') || slug.includes('erase')) return 'greedy-interval-scheduling';
+    if (slug.includes('kadane') || slug.includes('maximum-subarray') || slug.includes('stock')) return 'array-kadane';
+    return 'greedy-general';
+  }
+
+  // Trees (remaining)
+  if (tagSet.has('tree') || tagSet.has('binary tree')) return 'tree-dfs-subproblem';
+
+  // Math, Number Theory, Geometry, Combinatorics, Game Theory, Enumeration
+  if (tagSet.has('math') || tagSet.has('number theory') || tagSet.has('geometry') || tagSet.has('combinatorics') || tagSet.has('game theory') || tagSet.has('enumeration')) return 'math-number-theory';
+
+  // Matrix and Simulation
+  if (tagSet.has('matrix') || tagSet.has('simulation')) return 'matrix-simulation';
+
+  // Hash Table
+  if (tagSet.has('hash table') || tagSet.has('hash-table') || tagSet.has('counting')) return 'hash-map-lookup';
+
+  // Sorting
+  if (tagSet.has('sorting')) return 'sorting-quickselect';
+
+  // String / Array heuristics
+  if (tagSet.has('string')) {
+    if (slug.includes('palindrome') || slug.includes('reverse') || slug.includes('valid-palindrome')) return 'two-pointers-opposite';
+    return 'hash-map-lookup';
+  }
+  if (tagSet.has('array')) {
+    if (slug.includes('subsequence') || slug.includes('duplicate')) return 'hash-map-lookup';
+    if (slug.includes('subarray')) return 'array-kadane';
+    return 'hash-map-lookup';
+  }
+
+  // Fallback for general algorithms questions with unknown/empty tags
+  if (category === 'Algorithms') {
+    if (slug.includes('tree')) return 'tree-dfs-subproblem';
+    if (slug.includes('graph')) return 'graph-bfs-shortest-path';
+    if (slug.includes('string')) return 'hash-map-lookup';
+    if (slug.includes('count') || slug.includes('sum') || slug.includes('number')) return 'math-number-theory';
+    return 'hash-map-lookup';
+  }
 
   return null;
 }
@@ -219,11 +334,18 @@ async function fetchAllLeetCodeQuestions() {
 async function main() {
   console.log('=== Building Full LeetCode Problem Catalog ===\n');
 
-  if (!fs.existsSync(catalogDir)) {
-    fs.mkdirSync(catalogDir, { recursive: true });
-  }
+  const rawCacheFile = path.resolve(catalogDir, '.raw-questions.json');
+  let rawQuestions;
 
-  const rawQuestions = await fetchAllLeetCodeQuestions();
+  const forceRefresh = process.argv.includes('--refresh') || process.argv.includes('--fetch');
+  if (!forceRefresh && fs.existsSync(rawCacheFile)) {
+    console.log(`Loading cached questions from ${rawCacheFile}...`);
+    rawQuestions = JSON.parse(fs.readFileSync(rawCacheFile, 'utf8'));
+  } else {
+    rawQuestions = await fetchAllLeetCodeQuestions();
+    fs.writeFileSync(rawCacheFile, JSON.stringify(rawQuestions));
+    console.log(`Cached raw questions to ${rawCacheFile}`);
+  }
 
   const catalog = [];
   const seenSlugs = new Set();

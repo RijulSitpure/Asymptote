@@ -967,12 +967,9 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
         }
       }
 
-      // Verified solved problems
-      const verifiedSolved = solvedProblems.filter(p => p.verified === 1);
-
-      // Category distribution for verified solved problems
+      // Category distribution for solved problems
       const catCountMap = new Map();
-      for (const p of verifiedSolved) {
+      for (const p of solvedProblems) {
         const cat = p.category || 'Algorithms';
         catCountMap.set(cat, (catCountMap.get(cat) || 0) + 1);
       }
@@ -984,8 +981,8 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
       // Pattern distribution
       const rawPatternDist = patterns.map(pat => {
-        const total = problems.filter(prob => prob?.verified === 1 && (prob?.pattern_id === pat.id || prob?.patterns?.includes(pat.id))).length;
-        const solved = solvedProblems.filter(prob => prob?.verified === 1 && (prob?.pattern_id === pat.id || prob?.patterns?.includes(pat.id))).length;
+        const total = problems.filter(prob => prob?.pattern_id === pat.id || prob?.patterns?.includes(pat.id)).length;
+        const solved = solvedProblems.filter(prob => prob?.pattern_id === pat.id || prob?.patterns?.includes(pat.id)).length;
         return {
           id: pat.id,
           pattern_id: pat.id,
