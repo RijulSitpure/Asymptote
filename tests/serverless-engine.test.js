@@ -413,12 +413,12 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(addTwo.supported_languages.length).toBeGreaterThanOrEqual(4);
     expect(addTwo.supported_languages.some(l => l.id === 'python3')).toBe(true);
 
-    // Problem #51 (N-Queens) - uncurated, in catalog with mapped pattern backtracking-subsets-perm
+    // Problem #51 (N-Queens) - uncurated, in catalog with mapped pattern backtracking-grid-dfs
     const nQueens = await engine.getProblemHints('n-queens');
     expect(nQueens.problem).not.toBeNull();
     expect(nQueens.problem.number).toBe(51);
     expect(nQueens.suggested_pattern).not.toBeNull();
-    expect(nQueens.suggested_pattern.id).toBe('backtracking-subsets-perm');
+    expect(nQueens.suggested_pattern.id).toBe('backtracking-grid-dfs');
     expect(nQueens.problem.verified).toBe(0);
 
     // Syncing an uncurated catalog problem inherits its true category and number

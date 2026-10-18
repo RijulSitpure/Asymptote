@@ -138,7 +138,7 @@ describe('Chrome Extension Wiring & Offline Contract', () => {
   it('4. Resolves solution code and supported languages for every curated problem across domains', async () => {
     const problems = await engine.getProblems();
     const curated = problems.filter(p => p.verified === 1);
-    expect(curated.length).toBe(27);
+    expect(curated.length).toBe(Object.keys(dataset.index.bySlug).length);
 
     for (const prob of curated) {
       const hintData = await engine.getProblemHints(prob.slug);
