@@ -938,11 +938,12 @@ async function toggleHintsDrawer() {
       </button>
     </div>
 
-    <!-- TABS NAV: [ Hints ] | [ Solution ] | [ Complexity ] with 3px emerald underline on active tab -->
+    <!-- TABS NAV: [ Hints ] | [ Solution ] | [ Complexity ] | [ Notes ] with 3px emerald underline on active tab -->
     <div class="tabs-nav">
       <button id="tab-btn-hints" class="tab-btn ${activeDrawerTab === 'hints' ? 'active' : ''}">Hints</button>
       <button id="tab-btn-solution" class="tab-btn ${activeDrawerTab === 'solution' ? 'active' : ''}">Solution</button>
       <button id="tab-btn-complexity" class="tab-btn ${activeDrawerTab === 'complexity' ? 'active' : ''}">Complexity</button>
+      <button id="tab-btn-notes" class="tab-btn ${activeDrawerTab === 'notes' ? 'active' : ''}">Notes</button>
     </div>
 
     <div id="lc-drawer-content" class="drawer-body"></div>
@@ -954,6 +955,7 @@ async function toggleHintsDrawer() {
   shadow.getElementById('tab-btn-hints').onclick = () => switchDrawerTab('hints');
   shadow.getElementById('tab-btn-solution').onclick = () => switchDrawerTab('solution');
   shadow.getElementById('tab-btn-complexity').onclick = () => switchDrawerTab('complexity');
+  shadow.getElementById('tab-btn-notes').onclick = () => switchDrawerTab('notes');
 
   if (cachedHintData && loadedProblemSlug === slug) {
     renderDrawerTabContent();
@@ -966,7 +968,7 @@ function switchDrawerTab(tab) {
   if (activeDrawerTab === tab) return;
   activeDrawerTab = tab;
   const shadow = getShadowRoot();
-  const tabs = ['hints', 'solution', 'complexity'];
+  const tabs = ['hints', 'solution', 'complexity', 'notes'];
 
   tabs.forEach(t => {
     const btn = shadow.getElementById(`tab-btn-${t}`);
@@ -1478,6 +1480,183 @@ function renderDrawerTabContent() {
         ${complexityBodyHtml}
       </div>
     `;
+  }
+
+  // TAB 4: [ Notes ]
+  if (activeDrawerTab === 'notes') {
+    renderDrawerNotesTab(problem, headerHtml);
+  }
+}
+
+function renderDrawerNotesTab(problem, headerHtml) {
+  const shadow = getShadowRoot();
+  const content = shadow.getElementById('lc-drawer-content');
+  if (!content) return;
+
+  let currentRating = Number(problem.user_rating || 3);
+  let isReview = Boolean(problem.review_needed);
+  let currentNotes = problem.user_notes || '';
+
+  const renderStars = (rating) => {
+    let starsHtml = '';
+    for (let i = 1; i <= 5; i++) {
+      const active = i <= rating;
+      starsHtml += `
+        <span class="drawer-star-btn" data-star="${i}" style="font-size:22px; color:${active ? '#f59e0b' : '#cbd5e1'}; cursor:pointer; padding:0 3px; user-select:none; transition:color 0.15s ease;">
+          ★
+        </span>
+      `;
+    }
+    return starsHtml;
+  };
+
+  const escapeStr = (str) => {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
+  content.innerHTML = `
+    <div class="tab-content-pane" style="text-align:left; font-family:'DM Sans', sans-serif;">
+      ${headerHtml}
+
+      <!-- Confidence Card -->
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:12px; font-weight:700; color:#1e2033; text-transform:uppercase; letter-spacing:0.04em;">CONFIDENCE RATING</div>
+          <div style="font-size:12px; color:#64748b; margin-top:2px;">Rate your comfort with this solution</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div id="drawer-notes-stars" style="display:flex; align-items:center;">
+            ${renderStars(currentRating)}
+          </div>
+          <span id="drawer-notes-rating-text" style="font-size:13px; font-weight:700; color:#1e2033; min-width:32px; text-align:right;">
+            ${currentRating}/5
+          </span>
+        </div>
+      </div>
+
+      <!-- Spaced Repetition Review Queue Toggle -->
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
+        <label for="drawer-notes-review-toggle" style="font-size:13px; font-weight:600; color:#1e2033; cursor:pointer; display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="drawer-notes-review-toggle" ${isReview ? 'checked' : ''} style="accent-color:#d97706; width:16px; height:16px; cursor:pointer;" />
+          <span>Flag for review queue</span>
+        </label>
+        <span id="drawer-notes-review-badge" style="font-size:11px; font-weight:600; padding:3px 10px; border-radius:9999px; ${isReview ? 'background:#fef3c7; color:#92400e; border:1px solid #fde68a;' : 'background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;'}">
+          ${isReview ? 'Review Due' : 'Mastered'}
+        </span>
+      </div>
+
+      <!-- Notes Textarea -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <label for="drawer-notes-input" style="font-size:12px; font-weight:700; color:#1e2033; text-transform:uppercase; letter-spacing:0.04em;">
+            Personal Notes & Takeaways
+          </label>
+          <span id="drawer-notes-status" style="font-size:12px; font-weight:600; color:#059669; opacity:0; transition:opacity 0.2s ease;">
+            Notes saved ✓
+          </span>
+        </div>
+        <textarea 
+          id="drawer-notes-input" 
+          rows="7" 
+          placeholder="Capture the core insight, subtle invariants, edge cases (e.g. empty inputs, duplicates), or space-time trade-offs..."
+          style="width:100%; border:1px solid #cbd5e1; border-radius:10px; padding:12px; font-family:'DM Sans', sans-serif; font-size:13px; color:#1e2033; line-height:1.55; resize:vertical; outline:none; box-sizing:border-box; background:#ffffff; box-shadow:0 1px 2px rgba(0,0,0,0.03);"
+        >${escapeStr(currentNotes)}</textarea>
+      </div>
+
+      <!-- Save Button -->
+      <div style="display:flex; gap:10px;">
+        <button id="drawer-notes-save-btn" style="flex:1; background:#059669; color:#ffffff; font-family:'DM Sans', sans-serif; font-size:13px; font-weight:700; padding:11px 16px; border:none; border-radius:10px; cursor:pointer; transition:background 0.15s ease; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+          Save Notes
+        </button>
+      </div>
+    </div>
+  `;
+
+  const starsContainer = shadow.getElementById('drawer-notes-stars');
+  const ratingText = shadow.getElementById('drawer-notes-rating-text');
+  const reviewToggle = shadow.getElementById('drawer-notes-review-toggle');
+  const reviewBadge = shadow.getElementById('drawer-notes-review-badge');
+  const notesInput = shadow.getElementById('drawer-notes-input');
+  const saveBtn = shadow.getElementById('drawer-notes-save-btn');
+  const statusEl = shadow.getElementById('drawer-notes-status');
+
+  let debounceTimer = null;
+
+  const saveUpdates = (notify = true) => {
+    const nextNotes = notesInput ? notesInput.value : currentNotes;
+    const nextRating = currentRating;
+    const nextReview = reviewToggle ? (reviewToggle.checked ? 1 : 0) : (isReview ? 1 : 0);
+
+    // Update in local cached object
+    if (cachedHintData?.problem) {
+      cachedHintData.problem.user_notes = nextNotes;
+      cachedHintData.problem.user_rating = nextRating;
+      cachedHintData.problem.review_needed = nextReview;
+    }
+
+    safeSendMessage({
+      action: 'update_problem',
+      id: problem.slug || problem.id,
+      updates: {
+        user_notes: nextNotes,
+        user_rating: nextRating,
+        review_needed: nextReview
+      }
+    }, (res) => {
+      if (res && res.success && notify) {
+        if (statusEl) {
+          statusEl.style.opacity = '1';
+          setTimeout(() => { if (statusEl) statusEl.style.opacity = '0'; }, 1800);
+        }
+        showToast('Notes saved ✓', 'success');
+      }
+    });
+  };
+
+  if (starsContainer) {
+    starsContainer.addEventListener('click', (e) => {
+      const starEl = e.target.closest('.drawer-star-btn');
+      if (!starEl) return;
+      currentRating = parseInt(starEl.getAttribute('data-star'), 10) || 3;
+      starsContainer.innerHTML = renderStars(currentRating);
+      if (ratingText) ratingText.innerText = `${currentRating}/5`;
+      saveUpdates(true);
+    });
+  }
+
+  if (reviewToggle) {
+    reviewToggle.addEventListener('change', () => {
+      isReview = reviewToggle.checked;
+      if (reviewBadge) {
+        reviewBadge.innerText = isReview ? 'Review Due' : 'Mastered';
+        reviewBadge.style.background = isReview ? '#fef3c7' : '#f1f5f9';
+        reviewBadge.style.color = isReview ? '#92400e' : '#64748b';
+        reviewBadge.style.border = isReview ? '1px solid #fde68a' : '1px solid #e2e8f0';
+      }
+      saveUpdates(true);
+    });
+  }
+
+  if (notesInput) {
+    notesInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        saveUpdates(true);
+      }, 1000);
+    });
+  }
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      clearTimeout(debounceTimer);
+      saveUpdates(true);
+    });
   }
 }
 

@@ -216,15 +216,25 @@ function showProblemView(query) {
 }
 
 // ==================== PROBLEM VIEW LOGIC ====================
-let popupActiveTab = 'clues'; // 'clues' | 'solution' | 'complexity'
+let popupActiveTab = 'clues'; // 'clues' | 'solution' | 'complexity' | 'notes'
 let popupActiveLang = 'python3';
 let popupCurrentHintLevel = 1;
 let popupCachedData = null;
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function switchPopupTab(tab) {
   popupActiveTab = tab;
 
-  const tabs = ['clues', 'solution', 'complexity'];
+  const tabs = ['clues', 'solution', 'complexity', 'notes'];
   tabs.forEach(t => {
     const btn = document.getElementById(`popup-tab-btn-${t}`);
     if (btn) {
@@ -568,6 +578,168 @@ function renderPopupTabContent() {
         ${compHtml}
       </div>
     `;
+  } else if (popupActiveTab === 'notes') {
+    renderPopupNotesTab();
+  }
+}
+
+function renderPopupNotesTab() {
+  const contentEl = document.getElementById('popup-tab-content');
+  if (!contentEl || !popupCachedData) return;
+
+  const { problem } = popupCachedData;
+  if (!problem) return;
+
+  let currentRating = Number(problem.user_rating || 3);
+  let isReview = Boolean(problem.review_needed);
+  let currentNotes = problem.user_notes || '';
+
+  const renderStars = (rating) => {
+    let starsHtml = '';
+    for (let i = 1; i <= 5; i++) {
+      const active = i <= rating;
+      starsHtml += `
+        <span class="star-btn" data-star="${i}" style="font-size:18px; color:${active ? '#f59e0b' : '#cbd5e1'}; cursor:pointer; padding:0 2px; user-select:none; transition:color 0.15s ease;">
+          ★
+        </span>
+      `;
+    }
+    return starsHtml;
+  };
+
+  contentEl.innerHTML = `
+    <div class="tab-content-pane" style="text-align:left; font-family:'DM Sans', sans-serif;">
+      <!-- Confidence Rating Card -->
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:12px; font-weight:700; color:#1e2033; text-transform:uppercase; letter-spacing:0.04em;">CONFIDENCE RATING</div>
+          <div style="font-size:11px; color:#64748b; margin-top:2px;">Rate your mastery of this problem</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <div id="popup-notes-stars" style="display:flex; align-items:center;">
+            ${renderStars(currentRating)}
+          </div>
+          <span id="popup-notes-rating-text" style="font-size:12px; font-weight:600; color:#475569; width:36px; text-align:right;">
+            ${currentRating}/5
+          </span>
+        </div>
+      </div>
+
+      <!-- Flag for Review Queue -->
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+        <label for="popup-notes-review-toggle" style="font-size:13px; font-weight:600; color:#1e2033; cursor:pointer; display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="popup-notes-review-toggle" ${isReview ? 'checked' : ''} style="accent-color:#d97706; width:15px; height:15px; cursor:pointer;" />
+          <span>Flag for spaced repetition review</span>
+        </label>
+        <span id="popup-notes-review-badge" style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:9999px; ${isReview ? 'background:#fef3c7; color:#92400e; border:1px solid #fde68a;' : 'background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;'}">
+          ${isReview ? 'Review Due' : 'Mastered'}
+        </span>
+      </div>
+
+      <!-- Notes Textarea -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <label for="popup-notes-input" style="font-size:12px; font-weight:700; color:#1e2033; text-transform:uppercase; letter-spacing:0.04em;">
+            Personal Notes & Takeaways
+          </label>
+          <span id="popup-notes-status" style="font-size:11px; font-weight:600; color:#059669; opacity:0; transition:opacity 0.2s ease;">
+            Saved ✓
+          </span>
+        </div>
+        <textarea 
+          id="popup-notes-input" 
+          rows="6" 
+          placeholder="Jot down the core intuition, edge cases, tricky constraints, or patterns to remember..."
+          style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:10px; font-family:'DM Sans', sans-serif; font-size:13px; color:#1e2033; line-height:1.5; resize:vertical; outline:none; box-sizing:border-box; background:#ffffff;"
+        >${escapeHtml(currentNotes)}</textarea>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button id="popup-notes-save-btn" class="btn-primary" style="flex:1; padding:9px 14px; font-size:13px; font-weight:600; border-radius:8px; cursor:pointer;">
+          Save Notes
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Attach event handlers
+  const starsContainer = document.getElementById('popup-notes-stars');
+  const ratingText = document.getElementById('popup-notes-rating-text');
+  const reviewToggle = document.getElementById('popup-notes-review-toggle');
+  const reviewBadge = document.getElementById('popup-notes-review-badge');
+  const notesInput = document.getElementById('popup-notes-input');
+  const saveBtn = document.getElementById('popup-notes-save-btn');
+  const statusEl = document.getElementById('popup-notes-status');
+
+  let debounceTimer = null;
+
+  const saveUpdates = (showToast = true) => {
+    const nextNotes = notesInput ? notesInput.value : currentNotes;
+    const nextRating = currentRating;
+    const nextReview = reviewToggle ? (reviewToggle.checked ? 1 : 0) : (isReview ? 1 : 0);
+
+    // Update in local cached object
+    popupCachedData.problem.user_notes = nextNotes;
+    popupCachedData.problem.user_rating = nextRating;
+    popupCachedData.problem.review_needed = nextReview;
+
+    chrome.runtime.sendMessage({
+      action: 'update_problem',
+      id: problem.slug || problem.id,
+      updates: {
+        user_notes: nextNotes,
+        user_rating: nextRating,
+        review_needed: nextReview
+      }
+    }, (res) => {
+      if (res && res.success && showToast && statusEl) {
+        statusEl.style.opacity = '1';
+        setTimeout(() => {
+          if (statusEl) statusEl.style.opacity = '0';
+        }, 1800);
+      }
+    });
+  };
+
+  if (starsContainer) {
+    starsContainer.addEventListener('click', (e) => {
+      const starEl = e.target.closest('.star-btn');
+      if (!starEl) return;
+      currentRating = parseInt(starEl.getAttribute('data-star'), 10) || 3;
+      starsContainer.innerHTML = renderStars(currentRating);
+      if (ratingText) ratingText.innerText = `${currentRating}/5`;
+      saveUpdates(true);
+    });
+  }
+
+  if (reviewToggle) {
+    reviewToggle.addEventListener('change', () => {
+      isReview = reviewToggle.checked;
+      if (reviewBadge) {
+        reviewBadge.innerText = isReview ? 'Review Due' : 'Mastered';
+        reviewBadge.style.background = isReview ? '#fef3c7' : '#f1f5f9';
+        reviewBadge.style.color = isReview ? '#92400e' : '#64748b';
+        reviewBadge.style.border = isReview ? '1px solid #fde68a' : '1px solid #e2e8f0';
+      }
+      saveUpdates(true);
+    });
+  }
+
+  if (notesInput) {
+    notesInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        saveUpdates(true);
+      }, 1000);
+    });
+  }
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      clearTimeout(debounceTimer);
+      saveUpdates(true);
+    });
   }
 }
 
@@ -732,6 +904,9 @@ if (solBtn) solBtn.addEventListener('click', () => switchPopupTab('solution'));
 
 const compBtn = document.getElementById('popup-tab-btn-complexity');
 if (compBtn) compBtn.addEventListener('click', () => switchPopupTab('complexity'));
+
+const notesBtn = document.getElementById('popup-tab-btn-notes');
+if (notesBtn) notesBtn.addEventListener('click', () => switchPopupTab('notes'));
 
 // Initial check & auto-detect
 checkServer();

@@ -49,7 +49,7 @@
     };
   }
 
-  const SHOW_HEURISTIC_PATTERNS = false;
+  const SHOW_HEURISTIC_PATTERNS = true;
 
   const CATEGORY_ALLOWED_LANGUAGES = {
     Algorithms: ['python3', 'python', 'cpp', 'java', 'javascript', 'typescript', 'csharp', 'c', 'golang', 'kotlin', 'swift', 'rust', 'ruby', 'php', 'dart', 'scala', 'elixir', 'erlang', 'racket'],

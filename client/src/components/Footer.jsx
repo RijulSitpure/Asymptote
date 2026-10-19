@@ -1,74 +1,162 @@
-import { Terminal, Code2 } from 'lucide-react';
+import { ShieldCheck, Heart, Sparkles, Bug, MessageSquare } from 'lucide-react';
 
-export function Footer({ _activeTab, _onSelectTab } = {}) {
+function GithubIcon({ className = "w-4 h-4" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+    </svg>
+  );
+}
+
+function LinkedinIcon({ className = "w-4 h-4" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9h2.77v8.37H6.46v-8.37M7.84 6.88a1.62 1.62 0 1 0 0 3.24 1.62 1.62 0 0 0 0-3.24" />
+    </svg>
+  );
+}
+
+export function Footer({ onOpenFeedback }) {
+  const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-[#eef0f4] bg-[#ffffff] text-[#646e82] text-xs font-mono py-6 px-6 transition-colors select-none mt-auto">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Left: Author Credentials & Asymptote Architecture */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
-          <div className="w-7 h-7 rounded-lg bg-[#1e2033] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-            <Code2 className="w-3.5 h-3.5 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-[#1e2033] font-heading text-xs">Rijul Sitpure</span>
-              <span className="text-[#cbd5e1]">•</span>
-              <span className="text-[#646e82] text-[11px]">Asymptote Algorithm Platform</span>
+    <footer className="mt-16 border-t border-[#e2e8f0] bg-white/70 backdrop-blur-sm -mx-8 px-8 py-10 text-[#475569]">
+      <div className="max-w-[1040px] mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-[#e2e8f0]">
+          {/* Brand & Mission */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <img 
+                src="./asymptote-icon-small.svg" 
+                alt="Asymptote" 
+                className="w-6 h-6 shrink-0 block" 
+                width="24" 
+                height="24" 
+              />
+              <span className="font-heading font-bold text-[18px] text-[#1e2033]">
+                Asymptote
+              </span>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] font-semibold">
+                v2.0.0
+              </span>
             </div>
-            <p className="text-[11px] text-[#94a3b8] mt-0.5">
-              Pedagogical Curriculum & Socratic Inference Workbench
+            <p className="text-[13px] text-[#64748b] leading-relaxed">
+              Offline algorithmic pattern intelligence and Socratic mentor for LeetCode. 
+              Master the invariants behind 99 core archetypes instead of memorizing solutions.
             </p>
+            <div className="flex items-center gap-2 text-[12px] text-[#047857] font-medium">
+              <ShieldCheck className="w-4 h-4 text-[#059669]" />
+              <span>100% Local & Offline • Zero Telemetry</span>
+            </div>
+          </div>
+
+          {/* Catalog & Taxonomy Stats */}
+          <div className="space-y-3">
+            <h4 className="text-[13px] font-bold text-[#1e2033] uppercase tracking-wider font-heading">
+              Platform Architecture
+            </h4>
+            <ul className="space-y-2 text-[13px]">
+              <li className="flex items-center justify-between text-[#64748b]">
+                <span>Curated Invariant Problems:</span>
+                <span className="font-mono font-semibold text-[#1e2033]">105 tested</span>
+              </li>
+              <li className="flex items-center justify-between text-[#64748b]">
+                <span>Algorithmic Archetypes:</span>
+                <span className="font-mono font-semibold text-[#1e2033]">99 patterns</span>
+              </li>
+              <li className="flex items-center justify-between text-[#64748b]">
+                <span>Full LeetCode Catalog:</span>
+                <span className="font-mono font-semibold text-[#1e2033]">4,086 indexed</span>
+              </li>
+              <li className="flex items-center justify-between text-[#64748b]">
+                <span>Cross-Domain Support:</span>
+                <span className="font-mono font-semibold text-[#1e2033]">6 domains</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Connect & Feedback */}
+          <div className="space-y-3">
+            <h4 className="text-[13px] font-bold text-[#1e2033] uppercase tracking-wider font-heading">
+              Developer & Community
+            </h4>
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-3">
+                <a
+                  href="https://github.com/Rijul-Sitpure"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-[13px] font-medium text-[#334155] hover:text-[#1e2033] transition-colors"
+                >
+                  <GithubIcon className="w-4 h-4" />
+                  <span>@Rijul-Sitpure</span>
+                </a>
+                <span className="text-[#cbd5e1]">•</span>
+                <a
+                  href="https://www.linkedin.com/in/rijul-sitpure"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-[13px] font-medium text-[#0a66c2] hover:text-[#004182] transition-colors"
+                >
+                  <LinkedinIcon className="w-4 h-4" />
+                  <span>LinkedIn</span>
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <a
+                  href="https://github.com/Rijul-Sitpure/LeetCode-Pattern_Tracker"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-secondary !py-1.5 !px-3 !text-[12px] flex items-center gap-1.5"
+                >
+                  <GithubIcon className="w-3.5 h-3.5" />
+                  <span>Star on GitHub</span>
+                </a>
+
+                {onOpenFeedback && (
+                  <button
+                    type="button"
+                    onClick={onOpenFeedback}
+                    className="btn-secondary !py-1.5 !px-3 !text-[12px] flex items-center gap-1.5 hover:!border-[#10b981] hover:!text-[#047857]"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Feedback</span>
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Center: Command Shortcuts Reference */}
-        <div className="hidden lg:flex items-center gap-3 text-[11px] bg-[#f8f9fc] border border-[#eef0f4] px-3.5 py-1.5 rounded-lg text-[#646e82]">
-          <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#e2e6ed] text-[10px] text-[#1e2033] font-bold">⌘K</kbd>
-            <span>Search</span>
-          </span>
-          <span className="text-[#cbd5e1]">/</span>
-          <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#e2e6ed] text-[10px] text-[#1e2033] font-bold">1</kbd>–<kbd className="px-1.5 py-0.5 rounded bg-white border border-[#e2e6ed] text-[10px] text-[#1e2033] font-bold">4</kbd>
-            <span>Clues</span>
-          </span>
-          <span className="text-[#cbd5e1]">/</span>
-          <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#e2e6ed] text-[10px] text-[#1e2033] font-bold">Esc</kbd>
-            <span>Close</span>
-          </span>
-        </div>
+        {/* Bottom bar */}
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-[#64748b]">
+          <div className="flex items-center gap-1">
+            <span>Crafted with</span>
+            <Heart className="w-3.5 h-3.5 text-[#ef4444] fill-[#ef4444]" />
+            <span>by <strong className="text-[#1e2033]">Rijul Sitpure</strong> © {currentYear}</span>
+          </div>
 
-        {/* Right: Direct Profiles & System Telemetry */}
-        <div className="flex items-center gap-3 text-xs">
-          <a
-            href="https://github.com/rijul-sitpure/LeetCode-Pattern_Tracker"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 text-[#646e82] hover:text-[#1e2033] transition-colors py-1 px-2 rounded-md hover:bg-[#f8f9fc]"
-            title="Inspect Source Code on GitHub"
-          >
-            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-              <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-            </svg>
-            <span className="hidden sm:inline">GitHub</span>
-          </a>
-
-          <a
-            href="https://leetcode.com/u/Rijul-Sitpure/"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 text-[#646e82] hover:text-[#1e2033] transition-colors py-1 px-2 rounded-md hover:bg-[#f8f9fc]"
-            title="Inspect LeetCode Profile"
-          >
-            <Terminal className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">LeetCode</span>
-          </a>
-
-          <div className="flex items-center gap-1.5 pl-2 border-l border-[#eef0f4] text-[11px] text-[#646e82]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span>v2.4.0</span>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://github.com/Rijul-Sitpure/LeetCode-Pattern_Tracker/issues/new?labels=bug"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#9f1239] transition-colors flex items-center gap-1"
+            >
+              <Bug className="w-3.5 h-3.5" />
+              <span>Report an Issue</span>
+            </a>
+            <span>•</span>
+            <a
+              href="https://github.com/Rijul-Sitpure/LeetCode-Pattern_Tracker/issues/new?labels=enhancement"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#047857] transition-colors flex items-center gap-1"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Suggest Pattern</span>
+            </a>
           </div>
         </div>
       </div>

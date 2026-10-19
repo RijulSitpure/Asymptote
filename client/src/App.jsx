@@ -9,6 +9,8 @@ import { SolvedLog } from './components/SolvedLog';
 import { ReviewQueue } from './components/ReviewQueue';
 import { SyncModal } from './components/SyncModal';
 import { ExtensionModal } from './components/ExtensionModal';
+import { Footer } from './components/Footer';
+import { FeedbackModal } from './components/FeedbackModal';
 import { ToastProvider } from './components/Toast';
 import {
   fetchPatterns,
@@ -42,6 +44,7 @@ export default function App() {
   const [quickSearch, setQuickSearch] = useState('');
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sync') === '1');
   const [isExtensionModalOpen, setIsExtensionModalOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   const loadData = async () => {
     try {
@@ -126,6 +129,7 @@ export default function App() {
       if (e.key === 'Escape') {
         setIsSyncModalOpen(false);
         setIsExtensionModalOpen(false);
+        setIsFeedbackModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -148,6 +152,7 @@ export default function App() {
           <Header
             activeTab={activeTab}
             openSyncModal={() => setIsSyncModalOpen(true)}
+            openFeedbackModal={() => setIsFeedbackModalOpen(true)}
             quickProblemSearch={quickSearch}
             setQuickProblemSearch={setQuickSearch}
             onSearchSubmit={handleGlobalSearchSubmit}
@@ -212,6 +217,9 @@ export default function App() {
               )}
             </div>
           </main>
+
+          {/* Persistent Footer with social links, repo, and feedback */}
+          <Footer onOpenFeedback={() => setIsFeedbackModalOpen(true)} />
         </div>
 
         {/* Modals */}
@@ -224,6 +232,11 @@ export default function App() {
         <ExtensionModal
           isOpen={isExtensionModalOpen}
           onClose={() => setIsExtensionModalOpen(false)}
+        />
+
+        <FeedbackModal
+          isOpen={isFeedbackModalOpen}
+          onClose={() => setIsFeedbackModalOpen(false)}
         />
       </div>
     </ToastProvider>
