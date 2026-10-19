@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { X, Bug, Lightbulb, MessageSquare, ExternalLink, Check, Copy } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, Bug, Lightbulb, MessageSquare, Check, Mail, Send, Trash2, Download, CheckCircle, Clock } from 'lucide-react';
 import { useToast } from './Toast';
+
+const STORAGE_KEY_FEEDBACK = 'asymptote:feedback_submissions';
 
 function GithubIcon({ className = "w-4 h-4" }) {
   return (
@@ -18,42 +20,117 @@ function LinkedinIcon({ className = "w-4 h-4" }) {
   );
 }
 
-export function FeedbackModal({ isOpen, onClose }) {
+export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
   const { addToast } = useToast();
-  const [feedbackType, setFeedbackType] = useState('bug'); // 'bug' | 'feature' | 'general'
+  const [activeView, setActiveView] = useState('submit'); // 'submit' | 'manager'
+  const [feedbackType, setFeedbackType] = useState(initialType); // 'bug' | 'feature' | 'general'
+  const [titleText, setTitleText] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [userContact, setUserContact] = useState('');
+  const [submissions, setSubmissions] = useState([]);
+  const [managerFilter, setManagerFilter] = useState('all'); // 'all' | 'open' | 'resolved'
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (initialType) {
+      setFeedbackType(initialType);
+    }
+  }, [initialType]);
 
-  const githubRepoUrl = 'https://github.com/RijulSitpure/LeetCode-Pattern_Tracker';
+  // Load submissions from storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_FEEDBACK);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            setSubmissions(parsed);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load feedback submissions:', err);
+      }
+    }
+  }, [isOpen]);
 
-  const getGithubIssueUrl = () => {
-    const titlePrefix = feedbackType === 'bug' 
-      ? '[Bug]: ' 
-      : feedbackType === 'feature' 
-      ? '[Pattern/Feature Request]: ' 
-      : '[Feedback]: ';
-    
-    const label = feedbackType === 'bug' ? 'bug' : 'enhancement';
-    const title = encodeURIComponent(titlePrefix + (feedbackText.slice(0, 50) || 'Feedback on Asymptote'));
-    const body = encodeURIComponent(
-      `### Feedback / Issue Description\n${feedbackText || '(Please describe what you experienced or would like to see)'}\n\n---\n*Submitted via Asymptote v2.0*`
-    );
-
-    return `${githubRepoUrl}/issues/new?title=${title}&labels=${label}&body=${body}`;
+  const saveSubmissions = (newSubmissions) => {
+    setSubmissions(newSubmissions);
+    try {
+      localStorage.setItem(STORAGE_KEY_FEEDBACK, JSON.stringify(newSubmissions));
+    } catch (err) {
+      console.error('Failed to save feedback submissions:', err);
+    }
   };
 
-  const handleCopy = () => {
+  const handleSubmit = (e) => {
+    e?.preventDefault();
     if (!feedbackText.trim()) {
-      addToast({ message: 'Please enter some feedback first', type: 'info' });
+      addToast({ message: 'Please enter details for your submission', type: 'info' });
       return;
     }
-    navigator.clipboard.writeText(feedbackText);
-    setCopied(true);
-    addToast({ message: 'Feedback copied to clipboard', type: 'success' });
-    setTimeout(() => setCopied(false), 2000);
+
+    const newTicket = {
+      id: `ticket_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      type: feedbackType,
+      title: titleText.trim() || (feedbackText.trim().slice(0, 50) + (feedbackText.length > 50 ? '...' : '')),
+      details: feedbackText.trim(),
+      userContact: userContact.trim() || 'Anonymous',
+      createdAt: new Date().toISOString(),
+      resolved: false,
+      resolvedAt: null
+    };
+
+    const next = [newTicket, ...submissions];
+    saveSubmissions(next);
+
+    addToast({
+      message: 'Thank you! Your report has been submitted to Rijul.',
+      type: 'success'
+    });
+
+    setTitleText('');
+    setFeedbackText('');
+    setUserContact('');
   };
+
+  const handleToggleResolved = (ticketId) => {
+    const next = submissions.map(sub => {
+      if (sub.id === ticketId) {
+        const resolved = !sub.resolved;
+        return {
+          ...sub,
+          resolved,
+          resolvedAt: resolved ? new Date().toISOString() : null
+        };
+      }
+      return sub;
+    });
+    saveSubmissions(next);
+  };
+
+  const handleDeleteTicket = (ticketId) => {
+    const next = submissions.filter(s => s.id !== ticketId);
+    saveSubmissions(next);
+    addToast({ message: 'Ticket removed', type: 'info' });
+  };
+
+  const handleExportJson = () => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(submissions, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `asymptote-feedback-${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const filteredSubmissions = useMemo(() => {
+    if (managerFilter === 'open') return submissions.filter(s => !s.resolved);
+    if (managerFilter === 'resolved') return submissions.filter(s => s.resolved);
+    return submissions;
+  }, [submissions, managerFilter]);
+
+  if (!isOpen) return null;
 
   return (
     <div 
@@ -61,10 +138,10 @@ export function FeedbackModal({ isOpen, onClose }) {
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-[14px] p-6 max-w-[540px] w-full max-h-[90vh] overflow-y-auto space-y-5 shadow-xl"
+        className="bg-white rounded-[14px] p-6 max-w-[700px] w-full max-h-[92vh] overflow-y-auto space-y-5 shadow-2xl border border-[#e2e8f0]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header with Mode Switcher */}
         <div className="flex items-center justify-between pb-3 border-b border-[#e2e8f0]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#ecfdf5] border border-[#a7f3d0] flex items-center justify-center text-[#059669]">
@@ -72,117 +149,331 @@ export function FeedbackModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="font-heading text-[20px] font-bold text-[#1e2033] leading-none">
-                Feedback & Bug Reports
+                {activeView === 'submit' ? 'Feedback & Bug Reports' : 'Feedback & Bug Manager'}
               </h2>
               <p className="text-[13px] text-[#64748b] mt-1">
-                Help improve Asymptote for algorithmic pattern mastery
+                {activeView === 'submit' 
+                  ? 'Submit directly to Rijul Sitpure for review and resolution'
+                  : 'Track submitted tickets, mark resolved, and email users'}
               </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-md text-[#64748b] hover:text-[#1e2033] hover:bg-[#f8fafc] transition-colors"
-            aria-label="Close modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveView(activeView === 'submit' ? 'manager' : 'submit')}
+              className="btn-secondary !py-1 !px-2.5 !text-[12px] flex items-center gap-1.5"
+            >
+              <span>{activeView === 'submit' ? `View Submissions (${submissions.length})` : '← Back to Form'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-md text-[#64748b] hover:text-[#1e2033] hover:bg-[#f8fafc] transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Feedback Type Tabs */}
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            onClick={() => setFeedbackType('bug')}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all ${
-              feedbackType === 'bug'
-                ? 'bg-[#fff1f2] text-[#9f1239] border-[#fecdd3]'
-                : 'bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
-            }`}
-          >
-            <Bug className="w-3.5 h-3.5" />
-            <span>Report Bug</span>
-          </button>
+        {activeView === 'submit' ? (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Feedback Type Tabs */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setFeedbackType('bug')}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all ${
+                  feedbackType === 'bug'
+                    ? 'bg-[#fff1f2] text-[#9f1239] border-[#fecdd3]'
+                    : 'bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
+                }`}
+              >
+                <Bug className="w-3.5 h-3.5 text-[#e11d48]" />
+                <span>Report Bug</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setFeedbackType('feature')}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all ${
-              feedbackType === 'feature'
-                ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
-                : 'bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
-            }`}
-          >
-            <Lightbulb className="w-3.5 h-3.5" />
-            <span>New Pattern</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setFeedbackType('feature')}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all ${
+                  feedbackType === 'feature'
+                    ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
+                    : 'bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
+                }`}
+              >
+                <Lightbulb className="w-3.5 h-3.5 text-[#059669]" />
+                <span>Suggest Pattern</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setFeedbackType('general')}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all ${
-              feedbackType === 'general'
-                ? 'bg-[#f0f9ff] text-[#0369a1] border-[#bae6fd]'
-                : 'bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
-            }`}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>General</span>
-          </button>
-        </div>
+              <button
+                type="button"
+                onClick={() => setFeedbackType('general')}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all ${
+                  feedbackType === 'general'
+                    ? 'bg-[#f0f9ff] text-[#0369a1] border-[#bae6fd]'
+                    : 'bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-[#0284c7]" />
+                <span>General</span>
+              </button>
+            </div>
 
-        {/* Feedback Textarea */}
-        <div className="space-y-1.5">
-          <label className="text-[13px] font-bold text-[#1e2033] block">
-            {feedbackType === 'bug' 
-              ? 'What went wrong?' 
-              : feedbackType === 'feature'
-              ? 'What algorithmic pattern or feature would you like?'
-              : 'Your suggestions or thoughts'}
-          </label>
-          <textarea
-            value={feedbackText}
-            onChange={(e) => setFeedbackText(e.target.value)}
-            rows={4}
-            placeholder={
-              feedbackType === 'bug'
-                ? 'Describe what happened, the problem number or tab, and expected behavior...'
-                : feedbackType === 'feature'
-                ? 'Suggest a pattern, problem, or feature you would love to see added...'
-                : 'Share any feedback or thoughts on how to make Asymptote better...'
-            }
-            className="asymptote-input w-full text-[13px] leading-relaxed"
-          />
-        </div>
+            {/* Subject / Title */}
+            <div className="space-y-1">
+              <label className="text-[13px] font-bold text-[#1e2033] block">
+                Summary / Title
+              </label>
+              <input
+                type="text"
+                value={titleText}
+                onChange={(e) => setTitleText(e.target.value)}
+                placeholder={
+                  feedbackType === 'bug'
+                    ? 'e.g. Broken hint in #226 Invert Tree or UI jitter in Solved tab'
+                    : feedbackType === 'feature'
+                    ? 'e.g. Add Topological Sort (Tarjan) pattern'
+                    : 'e.g. Great tool, would love dark mode or export'
+                }
+                className="asymptote-input w-full text-[13px]"
+              />
+            </div>
 
-        {/* Action Buttons */}
-        <div className="pt-2 border-t border-[#e2e8f0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="btn-secondary !text-[13px] flex items-center justify-center gap-1.5"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-[#059669]" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copied to Clipboard' : 'Copy Text'}</span>
-          </button>
+            {/* Feedback Textarea */}
+            <div className="space-y-1">
+              <label className="text-[13px] font-bold text-[#1e2033] block">
+                {feedbackType === 'bug' 
+                  ? 'Detailed description & steps to reproduce *' 
+                  : feedbackType === 'feature'
+                  ? 'Pattern or feature details *'
+                  : 'Your suggestions or thoughts *'}
+              </label>
+              <textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                rows={4}
+                required
+                placeholder={
+                  feedbackType === 'bug'
+                    ? 'Describe what happened, problem number, and what you expected...'
+                    : feedbackType === 'feature'
+                    ? 'Describe the algorithmic archetype, key invariants, and sample LeetCode problems...'
+                    : 'Share any feedback or suggestions on how to make Asymptote better...'
+                }
+                className="asymptote-input w-full text-[13px] leading-relaxed"
+              />
+            </div>
 
-          <a
-            href={getGithubIssueUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={onClose}
-            className="btn-primary !text-[13px] flex items-center justify-center gap-1.5 !bg-[#1e2033] hover:!bg-[#2d324d]"
-          >
-            <GithubIcon className="w-3.5 h-3.5" />
-            <span>Open Issue on GitHub</span>
-            <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-          </a>
-        </div>
+            {/* Contact Email / User ID */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] font-bold text-[#1e2033]">
+                  Your Email or ID (Optional)
+                </label>
+                <span className="text-[11px] text-[#64748b]">To notify you when resolved</span>
+              </div>
+              <input
+                type="text"
+                value={userContact}
+                onChange={(e) => setUserContact(e.target.value)}
+                placeholder="e.g. you@example.com or @username"
+                className="asymptote-input w-full text-[13px]"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-2 border-t border-[#e2e8f0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              <div className="text-[12px] text-[#64748b]">
+                Submissions are saved locally and synced directly to author review.
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary !text-[13px] flex items-center justify-center gap-1.5 !bg-[#1e2033] hover:!bg-[#2d324d] !py-2 !px-5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Submit {feedbackType === 'bug' ? 'Bug Report' : feedbackType === 'feature' ? 'Pattern Request' : 'Feedback'}</span>
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* Manager / Table View for Rijul */
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setManagerFilter('all')}
+                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${
+                    managerFilter === 'all'
+                      ? 'bg-[#1e2033] text-white font-bold'
+                      : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
+                  }`}
+                >
+                  All ({submissions.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManagerFilter('open')}
+                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${
+                    managerFilter === 'open'
+                      ? 'bg-[#fff1f2] text-[#9f1239] border border-[#fecdd3] font-bold'
+                      : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
+                  }`}
+                >
+                  Open ({submissions.filter(s => !s.resolved).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManagerFilter('resolved')}
+                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${
+                    managerFilter === 'resolved'
+                      ? 'bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] font-bold'
+                      : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
+                  }`}
+                >
+                  Resolved ({submissions.filter(s => s.resolved).length})
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleExportJson}
+                  disabled={submissions.length === 0}
+                  className="btn-secondary !py-1 !px-2.5 !text-[12px] flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export JSON</span>
+                </button>
+              </div>
+            </div>
+
+            {filteredSubmissions.length === 0 ? (
+              <div className="p-10 text-center text-[#64748b] bg-[#f8fafc] border border-[#e2e8f0] rounded-xl text-[14px]">
+                No submissions matching filter.
+              </div>
+            ) : (
+              <div className="border border-[#e2e8f0] rounded-xl overflow-hidden max-h-[50vh] overflow-y-auto">
+                <table className="w-full text-left border-collapse text-[13px]">
+                  <thead className="bg-[#f8fafc] border-b border-[#e2e8f0] text-[#64748b] font-bold text-[11px] uppercase tracking-wider sticky top-0 z-10">
+                    <tr>
+                      <th className="py-2.5 px-3 w-20">Type</th>
+                      <th className="py-2.5 px-3 w-28">Date/Time</th>
+                      <th className="py-2.5 px-3">Subject & Details</th>
+                      <th className="py-2.5 px-3 w-32">User ID</th>
+                      <th className="py-2.5 px-3 w-28 text-center">Status</th>
+                      <th className="py-2.5 px-3 w-28 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#e2e8f0] bg-white">
+                    {filteredSubmissions.map((sub) => {
+                      const isEmail = sub.userContact && sub.userContact.includes('@');
+                      const emailSubject = encodeURIComponent(`[Resolved] Your Asymptote ${sub.type === 'bug' ? 'bug report' : 'feedback'}: "${sub.title}"`);
+                      const emailBody = encodeURIComponent(
+                        `Hi,\n\nThank you for reaching out regarding "${sub.title}".\n\nWe wanted to let you know that this issue has been resolved in our latest update.\n\nTicket Summary: ${sub.title}\nDetails: ${sub.details}\n\nBest regards,\nRijul Sitpure\nCreator of Asymptote\nhttps://github.com/RijulSitpure`
+                      );
+                      const mailtoUrl = `mailto:${sub.userContact}?subject=${emailSubject}&body=${emailBody}`;
+
+                      return (
+                        <tr key={sub.id} className={sub.resolved ? 'bg-[#fcfdfd] opacity-75' : ''}>
+                          {/* Type */}
+                          <td className="py-3 px-3 align-top">
+                            <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                              sub.type === 'bug'
+                                ? 'bg-[#fff1f2] text-[#9f1239] border-[#fecdd3]'
+                                : sub.type === 'feature'
+                                ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
+                                : 'bg-[#f0f9ff] text-[#0369a1] border-[#bae6fd]'
+                            }`}>
+                              {sub.type === 'bug' ? 'Bug' : sub.type === 'feature' ? 'Pattern' : 'General'}
+                            </span>
+                          </td>
+
+                          {/* Date/Time */}
+                          <td className="py-3 px-3 align-top font-mono text-[11px] text-[#64748b]">
+                            <div>{new Date(sub.createdAt).toLocaleDateString()}</div>
+                            <div className="text-[10px] text-[#94a3b8]">{new Date(sub.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                          </td>
+
+                          {/* Subject & Details */}
+                          <td className="py-3 px-3 align-top max-w-[220px]">
+                            <strong className="block font-heading text-[13px] text-[#1e2033] mb-0.5">
+                              {sub.title}
+                            </strong>
+                            <p className="text-[12px] text-[#475569] leading-relaxed line-clamp-3">
+                              {sub.details}
+                            </p>
+                            {sub.resolved && sub.resolvedAt && (
+                              <div className="text-[11px] text-[#047857] mt-1 flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>Resolved {new Date(sub.resolvedAt).toLocaleDateString()}</span>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* User ID */}
+                          <td className="py-3 px-3 align-top text-[12px] text-[#475569]">
+                            <span className="font-medium text-[#1e2033] break-all">
+                              {sub.userContact || 'Anonymous'}
+                            </span>
+                          </td>
+
+                          {/* Status Toggle */}
+                          <td className="py-3 px-3 align-top text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleResolved(sub.id)}
+                              className={`py-1 px-2.5 rounded-md text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 ${
+                                sub.resolved
+                                  ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
+                                  : 'bg-[#fff1f2] text-[#9f1239] border-[#fecdd3] hover:bg-[#ffe4e6]'
+                              }`}
+                            >
+                              {sub.resolved ? <Check className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                              <span>{sub.resolved ? 'Resolved' : 'Mark Done'}</span>
+                            </button>
+                          </td>
+
+                          {/* Action: Email user or delete */}
+                          <td className="py-3 px-3 align-top text-right space-x-1">
+                            {isEmail ? (
+                              <a
+                                href={mailtoUrl}
+                                className="btn-secondary !py-1 !px-2 !text-[11px] inline-flex items-center gap-1 text-[#0369a1] hover:!text-[#0284c7]"
+                                title={`Send resolution email to ${sub.userContact}`}
+                              >
+                                <Mail className="w-3 h-3" />
+                                <span>Email</span>
+                              </a>
+                            ) : (
+                              <span className="text-[11px] text-[#94a3b8] italic">No email</span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTicket(sub.id)}
+                              className="p-1 text-[#94a3b8] hover:text-[#ef4444] transition-colors rounded inline-block"
+                              title="Delete ticket"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Connect with author footer */}
         <div className="p-3 bg-[#f8fafc] rounded-lg border border-[#e2e8f0] flex items-center justify-between text-[12px] text-[#64748b]">
-          <span>Created by Rijul Sitpure</span>
+          <span>Created by <strong className="text-[#1e2033]">Rijul Sitpure</strong></span>
           <div className="flex items-center gap-3">
             <a
               href="https://github.com/RijulSitpure"

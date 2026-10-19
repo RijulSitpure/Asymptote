@@ -45,6 +45,7 @@ export default function App() {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('sync') === '1');
   const [isExtensionModalOpen, setIsExtensionModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [feedbackInitialType, setFeedbackInitialType] = useState('bug');
 
   const loadData = async () => {
     try {
@@ -152,7 +153,10 @@ export default function App() {
           <Header
             activeTab={activeTab}
             openSyncModal={() => setIsSyncModalOpen(true)}
-            openFeedbackModal={() => setIsFeedbackModalOpen(true)}
+            openFeedbackModal={(type = 'general') => {
+              setFeedbackInitialType(type);
+              setIsFeedbackModalOpen(true);
+            }}
             quickProblemSearch={quickSearch}
             setQuickProblemSearch={setQuickSearch}
             onSearchSubmit={handleGlobalSearchSubmit}
@@ -219,7 +223,10 @@ export default function App() {
           </main>
 
           {/* Persistent Footer with social links, repo, and feedback */}
-          <Footer onOpenFeedback={() => setIsFeedbackModalOpen(true)} />
+          <Footer onOpenFeedback={(type = 'general') => {
+            setFeedbackInitialType(type);
+            setIsFeedbackModalOpen(true);
+          }} />
         </div>
 
         {/* Modals */}
@@ -236,6 +243,7 @@ export default function App() {
 
         <FeedbackModal
           isOpen={isFeedbackModalOpen}
+          initialType={feedbackInitialType}
           onClose={() => setIsFeedbackModalOpen(false)}
         />
       </div>

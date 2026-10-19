@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, X, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 import { Card } from './Card';
 import { Chip } from './Chip';
 import { ConfidenceRating } from './ConfidenceRating';
@@ -18,6 +18,25 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' | 'desc'
   const [selectedProblem, setSelectedProblem] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Check if any non-default filters or search queries are applied
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+    domainFilter !== 'all' ||
+    patternFilter !== 'all' ||
+    diffFilter !== 'all' ||
+    statusFilter !== 'all'
+  );
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setDomainFilter('all');
+    setPatternFilter('all');
+    setDiffFilter('all');
+    setStatusFilter('all');
+    setSortField('number');
+    setSortOrder('asc');
+  };
 
   // 1. Base solved problems: Only include problems that the user has actually solved
   const solvedProblems = useMemo(() => {
@@ -357,6 +376,19 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
             ? `${solvedProblems.length} solved` 
             : `${sortedProblems.length} of ${solvedProblems.length} solved`}
         </Chip>
+
+        {/* Reset Filters button */}
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-[#475569] hover:text-[#0f172a] bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-[#cbd5e1] transition-colors shrink-0 self-start sm:self-center focus:outline-none focus:ring-2 focus:ring-[#6366f1]/30 cursor-pointer"
+            title="Reset all filters and search"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-[#64748b]" />
+            <span>Reset filters</span>
+          </button>
+        )}
       </div>
 
       {/* Table inside one card, no zebra striping */}
@@ -432,9 +464,23 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
               {sortedProblems.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-[#64748b] text-[15px]">
-                    {solvedProblems.length === 0 
-                      ? 'No solved problems recorded yet. Sync your LeetCode account or solve a problem to see it here.'
-                      : 'No solved problems match the active filters.'}
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <span>
+                        {solvedProblems.length === 0 
+                          ? 'No solved problems recorded yet. Sync your LeetCode account or solve a problem to see it here.'
+                          : 'No solved problems match the active filters.'}
+                      </span>
+                      {hasActiveFilters && (
+                        <button
+                          type="button"
+                          onClick={handleResetFilters}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-semibold text-[#4338ca] bg-[#eef2ff] hover:bg-[#e0e7ff] border border-[#c7d2fe] transition-colors cursor-pointer"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Reset all filters</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (

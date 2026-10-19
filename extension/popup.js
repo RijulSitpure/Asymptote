@@ -991,6 +991,24 @@ if (compBtn) compBtn.addEventListener('click', () => switchPopupTab('complexity'
 const notesBtn = document.getElementById('popup-tab-btn-notes');
 if (notesBtn) notesBtn.addEventListener('click', () => switchPopupTab('notes'));
 
+// Dashboard Openers (Header & Footer)
+function openFullDashboard() {
+  const slug = popupCachedData?.problem?.slug || lastProblemQuery || '';
+  const query = slug ? `?tab=solver&q=${encodeURIComponent(slug)}` : '';
+  const dashboardUrl = chrome.runtime.getURL(`dashboard/index.html${query}`);
+  chrome.tabs.create({ url: dashboardUrl });
+}
+
+const headerDashBtn = document.getElementById('btn-popup-header-dashboard');
+if (headerDashBtn) {
+  headerDashBtn.addEventListener('click', openFullDashboard);
+}
+
+const footerDashBtn = document.getElementById('btn-popup-footer-dashboard');
+if (footerDashBtn) {
+  footerDashBtn.addEventListener('click', openFullDashboard);
+}
+
 // Initial check & auto-detect
 checkServer();
 checkLeetCodeLogin();

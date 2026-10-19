@@ -943,9 +943,15 @@ async function toggleHintsDrawer() {
         <img src="${safeGetURL('icons/asymptote-icon-small.svg')}" width="28" height="28" alt="Asymptote" style="border-radius:6px; display:block; flex-shrink:0;" />
         <span style="font-size:18px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:#1e2033; letter-spacing:-0.02em;">Asymptote</span>
       </div>
-      <button id="lc-close-drawer" style="background:none; border:none; color:#64748b; cursor:pointer; padding:6px; line-height:1; border-radius:6px; display:flex; align-items:center; justify-content:center;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </button>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button id="lc-open-dashboard-header-btn" style="display:inline-flex; align-items:center; gap:4px; background:#1e2033; color:#ffffff; border:1px solid #1e2033; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif;" title="Open full Asymptote Dashboard">
+          <span>Dashboard</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </button>
+        <button id="lc-close-drawer" style="background:none; border:none; color:#64748b; cursor:pointer; padding:6px; line-height:1; border-radius:6px; display:flex; align-items:center; justify-content:center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
     </div>
 
     <!-- TABS NAV: [ Hints ] | [ Solution ] | [ Complexity ] | [ Notes ] with 3px emerald underline on active tab -->
@@ -960,6 +966,16 @@ async function toggleHintsDrawer() {
   `;
 
   shadow.appendChild(drawer);
+
+  const headerDashBtn = shadow.getElementById('lc-open-dashboard-header-btn');
+  if (headerDashBtn) {
+    headerDashBtn.onclick = () => {
+      safeSendMessage({
+        action: 'open_dashboard',
+        query: '?tab=solver&q=' + encodeURIComponent(slug)
+      });
+    };
+  }
 
   shadow.getElementById('lc-close-drawer').onclick = () => drawer.remove();
   shadow.getElementById('tab-btn-hints').onclick = () => switchDrawerTab('hints');

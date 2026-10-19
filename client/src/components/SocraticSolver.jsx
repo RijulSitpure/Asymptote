@@ -19,16 +19,34 @@ const GENERIC_HINT_TITLES = {
   4: 'See the blueprint'
 };
 
-const RECENT_PROBLEMS = [
-  { id: '1', title: '#1 Two Sum' },
-  { id: '175', title: '#175 Combine Two Tables' },
-  { id: '787', title: '#787 Cheapest Flights' },
-  { id: '329', title: '#329 Longest Path' },
-  { id: '312', title: '#312 Burst Balloons' },
+const DEFAULT_RECENT_PROBLEMS = [
+  { id: '1', title: '#1 Two Sum', slug: 'two-sum' },
+  { id: '175', title: '#175 Combine Two Tables', slug: 'combine-two-tables' },
+  { id: '787', title: '#787 Cheapest Flights', slug: 'cheapest-flights-within-k-stops' },
+  { id: '329', title: '#329 Longest Path', slug: 'longest-increasing-path-in-a-matrix' },
+  { id: '312', title: '#312 Burst Balloons', slug: 'burst-balloons' },
 ];
+
+const STORAGE_KEY_RECENT_PROBLEMS = 'asymptote:recent_solver_queries';
 
 export function SocraticSolver({ initialProblemQuery }) {
   const { addToast: _addToast } = useToast();
+  const [recentProblems, setRecentProblems] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = localStorage.getItem(STORAGE_KEY_RECENT_PROBLEMS);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return DEFAULT_RECENT_PROBLEMS;
+  });
   const [query, setQuery] = useState(() => {
     if (initialProblemQuery) return initialProblemQuery;
     if (typeof window !== 'undefined') {
@@ -84,6 +102,26 @@ export function SocraticSolver({ initialProblemQuery }) {
          json?.problem?.category === 'Shell' ? 'bash' : 
          json?.problem?.category === 'JavaScript' ? 'javascript' : 'python3');
       setSolverLang(primaryLang);
+
+      // Update recents list with this resolved problem
+      const probNum = String(json.problem.frontend_id || json.problem.id || searchQuery);
+      const rawTitle = json.problem.title || `Problem #${probNum}`;
+      const shortTitle = `#${probNum} ${rawTitle.length > 20 ? rawTitle.slice(0, 19) + '…' : rawTitle}`;
+      const probSlug = json.problem.slug || searchQuery;
+      const newEntry = { id: probNum, title: shortTitle, slug: probSlug };
+
+      setRecentProblems(prev => {
+        const filtered = prev.filter(p => p.id !== probNum && p.slug !== probSlug);
+        const updated = [newEntry, ...filtered].slice(0, 6);
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem(STORAGE_KEY_RECENT_PROBLEMS, JSON.stringify(updated));
+          }
+        } catch {
+          // ignore
+        }
+        return updated;
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -173,22 +211,27 @@ export function SocraticSolver({ initialProblemQuery }) {
         </form>
 
         {/* Recent problems as neutral chips */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-[13px] text-[#64748b]">Recent:</span>
-          {RECENT_PROBLEMS.map((prob) => (
-            <button
-              key={prob.id}
-              type="button"
-              onClick={() => {
-                setQuery(prob.id);
-                loadProblemHints(prob.id);
-              }}
-              className="chip hover:border-[#cbd5e1] hover:text-[#1e2033] cursor-pointer transition-colors"
-            >
-              {prob.title}
-            </button>
-          ))}
-        </div>
+        {recentProblems && recentProblems.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="text-[13px] text-[#64748b]">Recent:</span>
+            {recentProblems.map((prob) => {
+              const targetKey = prob.slug || prob.id;
+              return (
+                <button
+                  key={prob.id || prob.slug}
+                  type="button"
+                  onClick={() => {
+                    setQuery(targetKey);
+                    loadProblemHints(targetKey);
+                  }}
+                  className="chip hover:border-[#cbd5e1] hover:text-[#1e2033] cursor-pointer transition-colors"
+                >
+                  {prob.title}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {/* Error State */}

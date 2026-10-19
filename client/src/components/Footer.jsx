@@ -105,19 +105,19 @@ export function Footer({ onOpenFeedback }) {
 
               <div className="flex items-center gap-2 pt-1">
                 <a
-                  href="https://github.com/RijulSitpure/LeetCode-Pattern_Tracker"
+                  href="https://github.com/RijulSitpure"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-secondary !py-1.5 !px-3 !text-[12px] flex items-center gap-1.5"
                 >
                   <GithubIcon className="w-3.5 h-3.5" />
-                  <span>Star on GitHub</span>
+                  <span>GitHub Profile</span>
                 </a>
 
                 {onOpenFeedback && (
                   <button
                     type="button"
-                    onClick={onOpenFeedback}
+                    onClick={() => onOpenFeedback('general')}
                     className="btn-secondary !py-1.5 !px-3 !text-[12px] flex items-center gap-1.5 hover:!border-[#10b981] hover:!text-[#047857]"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
@@ -138,25 +138,23 @@ export function Footer({ onOpenFeedback }) {
           </div>
 
           <div className="flex items-center gap-4">
-            <a
-              href="https://github.com/RijulSitpure/LeetCode-Pattern_Tracker/issues/new?labels=bug"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#9f1239] transition-colors flex items-center gap-1"
+            <button
+              type="button"
+              onClick={() => onOpenFeedback && onOpenFeedback('bug')}
+              className="hover:text-[#9f1239] transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0 text-[12px] text-inherit"
             >
-              <Bug className="w-3.5 h-3.5" />
+              <Bug className="w-3.5 h-3.5 text-[#e11d48]" />
               <span>Report an Issue</span>
-            </a>
+            </button>
             <span>•</span>
-            <a
-              href="https://github.com/RijulSitpure/LeetCode-Pattern_Tracker/issues/new?labels=enhancement"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#047857] transition-colors flex items-center gap-1"
+            <button
+              type="button"
+              onClick={() => onOpenFeedback && onOpenFeedback('feature')}
+              className="hover:text-[#047857] transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0 text-[12px] text-inherit"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 text-[#059669]" />
               <span>Suggest Pattern</span>
-            </a>
+            </button>
           </div>
         </div>
       </div>
