@@ -212,6 +212,7 @@ export default function App() {
               {activeTab === 'solver' && (
                 <SocraticSolver
                   initialProblemQuery={socraticProblemQuery}
+                  problems={problems}
                 />
               )}
 

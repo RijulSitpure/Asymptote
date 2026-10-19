@@ -959,15 +959,24 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       }
 
       const cp = curatedProblemsBySlug.get(slug);
-      const userProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
-      const userState = userProblems[slug] || {};
+      const rawUserProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
+
+      const isNumQuery = /^\d+$/.test(String(query).trim());
+      const queryNum = isNumQuery ? parseInt(String(query).trim(), 10) : null;
+      const catalogEntry = catalogBySlug.get(slug) || (queryNum !== null ? catalogByNumber.get(queryNum) : null);
+      const numCandidate = cp?.number || catalogEntry?.n || queryNum || null;
+
+      // Bidirectional lookup for user state (supports slug, numeric ID, query, and search)
+      const userState = rawUserProblems[slug]
+        || (numCandidate !== null ? rawUserProblems[String(numCandidate)] : null)
+        || (numCandidate !== null ? rawUserProblems[numCandidate] : null)
+        || (queryNum !== null ? rawUserProblems[String(queryNum)] : null)
+        || Object.values(rawUserProblems).find(s => s && (s.slug === slug || (numCandidate !== null && (s.number === numCandidate || s.frontend_id === String(numCandidate)))))
+        || {};
 
       if (!cp || (cp.review?.status !== 'tested' && cp.review?.status !== 'reviewed')) {
         // Unverified or catalog problem: Never fallback to two-pointers or generate fake hints
         const meta = CURATED_PROBLEMS_META[slug] || {};
-        const isNumQuery = /^\d+$/.test(String(query).trim());
-        const queryNum = isNumQuery ? parseInt(String(query).trim(), 10) : null;
-        const catalogEntry = catalogBySlug.get(slug) || (queryNum !== null ? catalogByNumber.get(queryNum) : null);
         const number = cp?.number || catalogEntry?.n || userState.number || queryNum;
         const title = meta.title || catalogEntry?.t || userState.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         const difficulty = meta.difficulty || catalogEntry?.d || userState.difficulty || 'Medium';
@@ -1104,7 +1113,9 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       if (!slug) throw new Error(`Problem not found for identifier: ${idOrSlug}`);
 
       const userProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
-      const current = userProblems[slug] || {};
+      const current = userProblems[slug] 
+        || (typeof idOrSlug === 'number' || /^\d+$/.test(String(idOrSlug)) ? userProblems[String(idOrSlug)] : null) 
+        || {};
 
       const next = {
         ...current,
@@ -1133,6 +1144,9 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       if (updates.unlocked_hint_level !== undefined) next.unlocked_hint_level = Number(updates.unlocked_hint_level);
 
       userProblems[slug] = next;
+      if (typeof idOrSlug === 'number' || /^\d+$/.test(String(idOrSlug))) {
+        userProblems[String(idOrSlug)] = next;
+      }
       await store.set(STORAGE_KEY_USER_PROBLEMS, userProblems);
 
       const all = await this.getProblems();
