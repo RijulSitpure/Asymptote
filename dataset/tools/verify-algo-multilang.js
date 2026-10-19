@@ -29,6 +29,7 @@ export function verifyAlgoMultiLang(slug, prob, slugTestDir, runtimes) {
 #include <cmath>
 #include <numeric>
 #include <utility>
+#include <sstream>
 
 using namespace std;
 `;
@@ -1434,6 +1435,300 @@ def generate_cases(slug):
             sz = rng.randint(1, 35)
             cases.append({'args': [[rng.randint(0, 5) for _ in range(sz)]]})
 
+
+    elif slug == 'add-two-numbers':
+        fixed = [([2, 4, 3], [5, 6, 4]), ([0], [0]), ([9, 9, 9, 9, 9, 9, 9], [9, 9, 9, 9])]
+        for a, b in fixed: cases.append({'args': [a, b]})
+        for _ in range(25):
+            l1 = [rng.randint(0, 9) for _ in range(rng.randint(1, 15))]
+            l2 = [rng.randint(0, 9) for _ in range(rng.randint(1, 15))]
+            cases.append({'args': [l1, l2]})
+
+    elif slug == 'swap-nodes-in-pairs':
+        fixed = [[1, 2, 3, 4], [], [1], [1, 2, 3]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(1, 100) for _ in range(rng.randint(0, 20))]]})
+
+    elif slug == 'reverse-nodes-in-k-group':
+        fixed = [([1, 2, 3, 4, 5], 2), ([1, 2, 3, 4, 5], 3), ([1], 1)]
+        for a, k in fixed: cases.append({'args': [a, k]})
+        for _ in range(25):
+            sz = rng.randint(1, 25)
+            cases.append({'args': [[rng.randint(1, 100) for _ in range(sz)], rng.randint(1, sz)]})
+
+    elif slug == 'rotate-list':
+        fixed = [([1, 2, 3, 4, 5], 2), ([0, 1, 2], 4), ([], 0), ([1], 99)]
+        for a, k in fixed: cases.append({'args': [a, k]})
+        for _ in range(25):
+            sz = rng.randint(0, 20)
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(sz)], rng.randint(0, 100)]})
+
+    elif slug in ('remove-duplicates-from-sorted-list', 'remove-duplicates-from-sorted-list-ii'):
+        fixed = [[1, 2, 3, 3, 4, 4, 5], [1, 1, 1, 2, 3], [], [1], [1, 1]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            arr = sorted(rng.randint(1, 10) for _ in range(rng.randint(0, 25)))
+            cases.append({'args': [arr]})
+
+    elif slug == 'partition-list':
+        fixed = [([1, 4, 3, 2, 5, 2], 3), ([2, 1], 2), ([], 0)]
+        for a, x in fixed: cases.append({'args': [a, x]})
+        for _ in range(25):
+            sz = rng.randint(0, 20)
+            cases.append({'args': [[rng.randint(1, 30) for _ in range(sz)], rng.randint(1, 30)]})
+
+    elif slug == 'reverse-linked-list-ii':
+        fixed = [([1, 2, 3, 4, 5], 2, 4), ([5], 1, 1)]
+        for a, l, r in fixed: cases.append({'args': [a, l, r]})
+        for _ in range(25):
+            sz = rng.randint(1, 20)
+            l = rng.randint(1, sz)
+            r = rng.randint(l, sz)
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(sz)], l, r]})
+
+    elif slug == 'linked-list-cycle-ii':
+        fixed = [([3, 2, 0, -4], 1), ([1, 2], 0), ([1], -1)]
+        for a, p in fixed: cases.append({'args': [a, p]})
+        for _ in range(25):
+            sz = rng.randint(1, 20)
+            p = rng.randint(-1, sz - 1)
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(sz)], p]})
+
+    elif slug in ('insertion-sort-list', 'sort-list'):
+        fixed = [[4, 2, 1, 3], [-1, 5, 3, 4, 0], [], [1]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(-50, 50) for _ in range(rng.randint(0, 25))]]})
+
+    elif slug == 'intersection-of-two-linked-lists':
+        fixed = [([4, 1, 8, 4, 5], [5, 6, 1, 8, 4, 5], 2, 3), ([1, 9, 1, 2, 4], [3, 2, 4], 3, 1), ([2, 6, 4], [1, 5], 3, 2)]
+        for a, b, sa, sb in fixed: cases.append({'args': [a, b, sa, sb]})
+
+    elif slug == 'remove-linked-list-elements':
+        fixed = [([1, 2, 6, 3, 4, 5, 6], 6), ([], 1), ([7, 7, 7, 7], 7)]
+        for a, v in fixed: cases.append({'args': [a, v]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(1, 10) for _ in range(rng.randint(0, 20))], rng.randint(1, 10)]})
+
+    elif slug == 'palindrome-linked-list':
+        fixed = [[1, 2, 2, 1], [1, 2], [1], [1, 2, 3, 2, 1]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            half = [rng.randint(1, 10) for _ in range(rng.randint(1, 10))]
+            is_pal = rng.random() < 0.5
+            arr = half + (list(reversed(half)) if is_pal else [999] + list(reversed(half)))
+            cases.append({'args': [arr]})
+
+    elif slug == 'delete-the-middle-node-of-a-linked-list':
+        fixed = [[1, 3, 4, 7, 1, 2, 6], [1, 2, 3, 4], [2, 1], [1]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(rng.randint(1, 20))]]})
+
+    elif slug == 'odd-even-linked-list':
+        fixed = [[1, 2, 3, 4, 5], [2, 1, 3, 5, 6, 4, 7], [], [1]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(rng.randint(0, 20))]]})
+
+    elif slug == 'add-two-numbers-ii':
+        fixed = [([7, 2, 4, 3], [5, 6, 4]), ([2, 4, 3], [5, 6, 4]), ([0], [0])]
+        for a, b in fixed: cases.append({'args': [a, b]})
+        for _ in range(25):
+            l1 = [rng.randint(1, 9)] + [rng.randint(0, 9) for _ in range(rng.randint(0, 15))]
+            l2 = [rng.randint(1, 9)] + [rng.randint(0, 9) for _ in range(rng.randint(0, 15))]
+            cases.append({'args': [l1, l2]})
+
+    elif slug == 'split-linked-list-in-parts':
+        fixed = [([1, 2, 3], 5), ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3), ([], 3)]
+        for a, k in fixed: cases.append({'args': [a, k]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(rng.randint(0, 20))], rng.randint(1, 10)]})
+
+    elif slug == 'middle-of-the-linked-list':
+        fixed = [[1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6], [1]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(rng.randint(1, 20))]]})
+
+    elif slug == 'swapping-nodes-in-a-linked-list':
+        fixed = [([1, 2, 3, 4, 5], 2), ([7, 9, 6, 6, 7, 8, 3, 0, 9, 5], 5), ([1], 1)]
+        for a, k in fixed: cases.append({'args': [a, k]})
+        for _ in range(25):
+            sz = rng.randint(1, 20)
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(sz)], rng.randint(1, sz)]})
+
+    elif slug == 'longest-valid-parentheses':
+        fixed = ["(()", ")()())", "", "()", "()(()"]
+        for s in fixed: cases.append({'args': [s]})
+        for _ in range(25):
+            cases.append({'args': [''.join(rng.choice(['(', ')']) for _ in range(rng.randint(0, 30)))]})
+
+    elif slug == 'simplify-path':
+        fixed = ["/home/", "/home//foo/", "/home/user/Documents/../Pictures", "/../", "/.../a/../b/c/../d/./"]
+        for s in fixed: cases.append({'args': [s]})
+
+    elif slug == 'basic-calculator-ii':
+        fixed = ["3+2*2", " 3/2 ", " 3+5 / 2 ", "14-3/2", "0"]
+        for s in fixed: cases.append({'args': [s]})
+        ops = ['+', '-', '*', '/']
+        for _ in range(25):
+            terms = [str(rng.randint(1, 20)) for _ in range(rng.randint(2, 6))]
+            expr = "".join(f"{t}{rng.choice(ops)}" for t in terms[:-1]) + terms[-1]
+            cases.append({'args': [expr]})
+
+    elif slug == 'decode-string':
+        fixed = ["3[a]2[bc]", "3[a2[c]]", "2[abc]3[cd]ef", "abc3[cd]xyz"]
+        for s in fixed: cases.append({'args': [s]})
+
+    elif slug == 'exclusive-time-of-functions':
+        fixed = [
+            (2, ["0:start:0","1:start:2","1:end:5","0:end:6"]),
+            (1, ["0:start:0","0:start:2","0:end:5","0:end:6"]),
+            (2, ["0:start:0","0:start:2","0:end:5","1:start:6","1:end:6","0:end:7"])
+        ]
+        for n, logs in fixed: cases.append({'args': [n, logs]})
+
+    elif slug == 'valid-parenthesis-string':
+        fixed = ["()", "(*)", "(*))", "(", ")", "(((******))"]
+        for s in fixed: cases.append({'args': [s]})
+        for _ in range(25):
+            cases.append({'args': [''.join(rng.choice(['(', ')', '*']) for _ in range(rng.randint(1, 25)))]})
+
+    elif slug == 'asteroid-collision':
+        fixed = [[5, 10, -5], [8, -8], [10, 2, -5], [-2, -1, 1, 2], [-2, -2, 1, -2]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.choice([-1, 1]) * rng.randint(1, 50) for _ in range(rng.randint(2, 20))]]})
+
+    elif slug == 'backspace-string-compare':
+        fixed = [("ab#c", "ad#c"), ("ab##", "c#d#"), ("a#c", "b"), ("y#fo##f", "y#f#o##f")]
+        for s, t in fixed: cases.append({'args': [s, t]})
+        for _ in range(25):
+            s1 = ''.join(rng.choice(['a', 'b', '#']) for _ in range(rng.randint(1, 20)))
+            t1 = ''.join(rng.choice(['a', 'b', '#']) for _ in range(rng.randint(1, 20)))
+            cases.append({'args': [s1, t1]})
+
+    elif slug == 'minimum-add-to-make-parentheses-valid':
+        fixed = ["())", "(((", "()", "()))(("]
+        for s in fixed: cases.append({'args': [s]})
+        for _ in range(25):
+            cases.append({'args': [''.join(rng.choice(['(', ')']) for _ in range(rng.randint(1, 30)))]})
+
+    elif slug == 'validate-stack-sequences':
+        fixed = [([1, 2, 3, 4, 5], [4, 5, 3, 2, 1]), ([1, 2, 3, 4, 5], [4, 3, 5, 1, 2])]
+        for p, q in fixed: cases.append({'args': [p, q]})
+        for _ in range(25):
+            sz = rng.randint(1, 20)
+            p = list(range(1, sz + 1))
+            st, q = [], []
+            pi = 0
+            while pi < sz or st:
+                if pi < sz and (not st or rng.random() < 0.5):
+                    st.append(p[pi]); pi += 1
+                else: q.append(st.pop())
+            cases.append({'args': [p, q]})
+
+    elif slug == 'check-if-word-is-valid-after-substitutions':
+        fixed = ["aabcbc", "abcabcababcc", "abccba", "abc", "a"]
+        for s in fixed: cases.append({'args': [s]})
+
+    elif slug == 'remove-outermost-parentheses':
+        fixed = ["(()())(())", "(()())(())(()(()))", "()()"]
+        for s in fixed: cases.append({'args': [s]})
+
+    elif slug in ('remove-all-adjacent-duplicates-in-string', 'make-the-string-great'):
+        fixed = ["abbaca", "azxxzy", "a", "aa", "leEeetcode", "abBAcC"]
+        for s in fixed: cases.append({'args': [s]})
+        for _ in range(25):
+            cases.append({'args': [''.join(rng.choice(['a', 'A', 'b', 'B', 'c']) for _ in range(rng.randint(1, 25)))]})
+
+    elif slug == 'reverse-substrings-between-each-pair-of-parentheses':
+        fixed = ["(abcd)", "(u(love)i)", "(ed(et(oc))el)", "a(bcdefghijkl(mno)p)q"]
+        for s in fixed: cases.append({'args': [s]})
+
+    elif slug == 'remove-all-adjacent-duplicates-in-string-ii':
+        fixed = [("abcd", 2), ("deeedbbcccbdaa", 3), ("pbbcggttciiippooaais", 2)]
+        for s, k in fixed: cases.append({'args': [s, k]})
+
+    elif slug == 'minimum-remove-to-make-valid-parentheses':
+        fixed = ["lee(t(c)o)de)", "a)b(c)d", "))((", "(a(b(c)d)"]
+        for s in fixed: cases.append({'args': [s]})
+
+    elif slug == 'maximum-nesting-depth-of-the-parentheses':
+        fixed = ["(1+(2*3)+((8)/4))+1", "(1)+((2))+(((3)))", "1+(2*3)/(2-1)", "1"]
+        for s in fixed: cases.append({'args': [s]})
+
+    elif slug == 'maximal-rectangle':
+        fixed = [
+            [["1","0","1","0","0"],["1","0","1","1","1"],["1","1","1","1","1"],["1","0","0","1","0"]],
+            [["0"]], [["1"]], [["1","1"],["1","1"]]
+        ]
+        for m in fixed: cases.append({'args': [m]})
+
+    elif slug == 'sliding-window-maximum':
+        fixed = [([1,3,-1,-3,5,3,6,7], 3), ([1], 1), ([1, -1], 1), ([9, 11], 2)]
+        for a, k in fixed: cases.append({'args': [a, k]})
+        for _ in range(25):
+            sz = rng.randint(1, 30)
+            k = rng.randint(1, sz)
+            cases.append({'args': [[rng.randint(-50, 50) for _ in range(sz)], k]})
+
+    elif slug == 'remove-duplicate-letters':
+        fixed = ["bcabc", "cbacdcbc", "abacb", "bbcaac"]
+        for s in fixed: cases.append({'args': [s]})
+
+    elif slug == 'remove-k-digits':
+        fixed = [("1432219", 3), ("10200", 1), ("10", 2), ("9", 1)]
+        for num, k in fixed: cases.append({'args': [num, k]})
+
+    elif slug == '132-pattern':
+        fixed = [[1, 2, 3, 4], [3, 1, 4, 2], [-1, 3, 2, 0], [1, 0, 1, -4, -3]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(-30, 30) for _ in range(rng.randint(3, 25))]]})
+
+    elif slug == 'next-greater-element-i':
+        fixed = [([4, 1, 2], [1, 3, 4, 2]), ([2, 4], [1, 2, 3, 4])]
+        for a, b in fixed: cases.append({'args': [a, b]})
+
+    elif slug == 'next-greater-element-ii':
+        fixed = [[1, 2, 1], [1, 2, 3, 4, 3], [5, 4, 3, 2, 1], [1]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(-50, 50) for _ in range(rng.randint(1, 25))]]})
+
+    elif slug == 'sum-of-subarray-minimums':
+        fixed = [[3, 1, 2, 4], [11, 81, 94, 43, 3], [71, 55, 82, 55], [1]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(rng.randint(1, 25))]]})
+
+    elif slug == 'maximum-width-ramp':
+        fixed = [[6, 0, 8, 2, 1, 5], [9, 8, 1, 0, 1, 9, 4, 0, 4, 1], [1, 1], [2, 1]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(0, 50) for _ in range(rng.randint(2, 25))]]})
+
+    elif slug == 'next-greater-node-in-linked-list':
+        fixed = [[2, 1, 5], [2, 7, 4, 3, 5], [1, 7, 5, 1, 9, 2, 5, 1], [5]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(rng.randint(1, 20))]]})
+
+    elif slug == 'final-prices-with-a-special-discount-in-a-shop':
+        fixed = [[8, 4, 6, 2, 3], [1, 2, 3, 4, 5], [10, 1, 1, 6], [5]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [[rng.randint(1, 50) for _ in range(rng.randint(1, 25))]]})
+
+    elif slug == 'number-of-visible-people-in-a-queue':
+        fixed = [[10, 6, 8, 5, 11, 9], [5, 1, 2, 3, 10], [1, 2, 3], [3, 2, 1], [10]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(25):
+            cases.append({'args': [rng.sample(range(1, 1000), rng.randint(1, 25))]})
+
     return cases
 
 sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
@@ -1517,6 +1812,58 @@ for c in cases:
         nums_copy = list(c['args'][0])
         solver.moveZeroes(nums_copy)
         ans = nums_copy
+    elif '${slug}' in ('add-two-numbers', 'add-two-numbers-ii'):
+        l1 = arr_to_list(c['args'][0])
+        l2 = arr_to_list(c['args'][1])
+        ans = list_to_arr(solver.addTwoNumbers(l1, l2))
+    elif '${slug}' == 'swap-nodes-in-pairs':
+        ans = list_to_arr(solver.swapPairs(arr_to_list(c['args'][0])))
+    elif '${slug}' == 'reverse-nodes-in-k-group':
+        ans = list_to_arr(solver.reverseKGroup(arr_to_list(c['args'][0]), c['args'][1]))
+    elif '${slug}' == 'rotate-list':
+        ans = list_to_arr(solver.rotateRight(arr_to_list(c['args'][0]), c['args'][1]))
+    elif '${slug}' in ('remove-duplicates-from-sorted-list', 'remove-duplicates-from-sorted-list-ii'):
+        ans = list_to_arr(solver.deleteDuplicates(arr_to_list(c['args'][0])))
+    elif '${slug}' == 'partition-list':
+        ans = list_to_arr(solver.partition(arr_to_list(c['args'][0]), c['args'][1]))
+    elif '${slug}' == 'reverse-linked-list-ii':
+        ans = list_to_arr(solver.reverseBetween(arr_to_list(c['args'][0]), c['args'][1], c['args'][2]))
+    elif '${slug}' == 'linked-list-cycle-ii':
+        h = arr_to_cycle(c['args'][0], c['args'][1])
+        node = solver.detectCycle(h)
+        ans = node.val if node else -1
+    elif '${slug}' in ('insertion-sort-list', 'sort-list'):
+        ans = list_to_arr(solver.insertionSortList(arr_to_list(c['args'][0])) if '${slug}' == 'insertion-sort-list' else solver.sortList(arr_to_list(c['args'][0])))
+    elif '${slug}' == 'intersection-of-two-linked-lists':
+        nodes_a = [ListNode(x) for x in c['args'][0]]
+        nodes_b = [ListNode(x) for x in c['args'][1]]
+        for k in range(len(nodes_a) - 1): nodes_a[k].next = nodes_a[k + 1]
+        for k in range(len(nodes_b) - 1): nodes_b[k].next = nodes_b[k + 1]
+        sa, sb = c['args'][2], c['args'][3]
+        if sa < len(nodes_a) and sb < len(nodes_b) and len(nodes_a) > 0 and len(nodes_b) > 0:
+            if sb > 0: nodes_b[sb - 1].next = nodes_a[sa]
+            elif sb == 0: nodes_b = nodes_a[sa:]
+        headA = nodes_a[0] if nodes_a else None
+        headB = nodes_b[0] if nodes_b else None
+        res = solver.getIntersectionNode(headA, headB)
+        ans = res.val if res else None
+    elif '${slug}' == 'remove-linked-list-elements':
+        ans = list_to_arr(solver.removeElements(arr_to_list(c['args'][0]), c['args'][1]))
+    elif '${slug}' == 'palindrome-linked-list':
+        ans = solver.isPalindrome(arr_to_list(c['args'][0]))
+    elif '${slug}' == 'delete-the-middle-node-of-a-linked-list':
+        ans = list_to_arr(solver.deleteMiddle(arr_to_list(c['args'][0])))
+    elif '${slug}' == 'odd-even-linked-list':
+        ans = list_to_arr(solver.oddEvenList(arr_to_list(c['args'][0])))
+    elif '${slug}' == 'split-linked-list-in-parts':
+        parts = solver.splitListToParts(arr_to_list(c['args'][0]), c['args'][1])
+        ans = [list_to_arr(p) for p in parts]
+    elif '${slug}' == 'middle-of-the-linked-list':
+        ans = list_to_arr(solver.middleNode(arr_to_list(c['args'][0])))
+    elif '${slug}' == 'swapping-nodes-in-a-linked-list':
+        ans = list_to_arr(solver.swapNodes(arr_to_list(c['args'][0]), c['args'][1]))
+    elif '${slug}' == 'next-greater-node-in-linked-list':
+        ans = solver.nextLargerNodes(arr_to_list(c['args'][0]))
     elif '${slug}' == 'reverse-string':
         s_copy = list(c['args'][0])
         solver.reverseString(s_copy)
@@ -1613,6 +1960,59 @@ print(json.dumps(results))
         const numsCopy = [...clonedArgs[0]];
         jsFn(numsCopy);
         jsResult = numsCopy;
+      } else if (slug === 'add-two-numbers' || slug === 'add-two-numbers-ii') {
+        const l1 = arrToList(clonedArgs[0]);
+        const l2 = arrToList(clonedArgs[1]);
+        const res = jsFn(l1, l2);
+        jsResult = listToArr(res);
+      } else if (slug === 'swap-nodes-in-pairs') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0])));
+      } else if (slug === 'reverse-nodes-in-k-group') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0]), clonedArgs[1]));
+      } else if (slug === 'rotate-list') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0]), clonedArgs[1]));
+      } else if (slug === 'remove-duplicates-from-sorted-list' || slug === 'remove-duplicates-from-sorted-list-ii') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0])));
+      } else if (slug === 'partition-list') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0]), clonedArgs[1]));
+      } else if (slug === 'reverse-linked-list-ii') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0]), clonedArgs[1], clonedArgs[2]));
+      } else if (slug === 'linked-list-cycle-ii') {
+        const h = arrToCycle(clonedArgs[0], clonedArgs[1]);
+        const node = jsFn(h);
+        jsResult = node ? node.val : -1;
+      } else if (slug === 'insertion-sort-list' || slug === 'sort-list') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0])));
+      } else if (slug === 'intersection-of-two-linked-lists') {
+        const nodesA = clonedArgs[0].map(x => new sandbox.ListNode(x));
+        const nodesB = clonedArgs[1].map(x => new sandbox.ListNode(x));
+        for (let k = 0; k < nodesA.length - 1; k++) nodesA[k].next = nodesA[k + 1];
+        for (let k = 0; k < nodesB.length - 1; k++) nodesB[k].next = nodesB[k + 1];
+        const sa = clonedArgs[2], sb = clonedArgs[3];
+        if (sa < nodesA.length && sb < nodesB.length && nodesA.length > 0 && nodesB.length > 0) {
+          if (sb > 0) nodesB[sb - 1].next = nodesA[sa];
+        }
+        const headA = nodesA.length > 0 ? nodesA[0] : null;
+        const headB = nodesB.length > 0 ? (sb === 0 && sa < nodesA.length ? nodesA[sa] : nodesB[0]) : null;
+        const res = jsFn(headA, headB);
+        jsResult = res ? res.val : null;
+      } else if (slug === 'remove-linked-list-elements') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0]), clonedArgs[1]));
+      } else if (slug === 'palindrome-linked-list') {
+        jsResult = jsFn(arrToList(clonedArgs[0]));
+      } else if (slug === 'delete-the-middle-node-of-a-linked-list') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0])));
+      } else if (slug === 'odd-even-linked-list') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0])));
+      } else if (slug === 'split-linked-list-in-parts') {
+        const parts = jsFn(arrToList(clonedArgs[0]), clonedArgs[1]);
+        jsResult = (parts || []).map(listToArr);
+      } else if (slug === 'middle-of-the-linked-list') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0])));
+      } else if (slug === 'swapping-nodes-in-a-linked-list') {
+        jsResult = listToArr(jsFn(arrToList(clonedArgs[0]), clonedArgs[1]));
+      } else if (slug === 'next-greater-node-in-linked-list') {
+        jsResult = jsFn(arrToList(clonedArgs[0]));
       } else if (slug === 'reverse-string') {
         const sCopy = [...clonedArgs[0]];
         jsFn(sCopy);

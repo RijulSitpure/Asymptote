@@ -1,0 +1,78 @@
+{
+  "slug": "sum-of-subarray-minimums",
+  "number": 907,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-monotonic-next-greater"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subarray Enumeration Obstacle",
+      "text": "Generating all O(N^2) subarrays and finding each minimum takes quadratic or cubic time. How can you invert the problem by determining how many subarrays have a given element as their minimum?"
+    },
+    {
+      "level": 2,
+      "title": "Contribution Window Invariant",
+      "text": "Element arr[i] is the minimum of a subarray [L, R] if arr[i] is <= all elements between L and R. If prev_less is the previous strictly smaller index and next_less_or_equal is the next smaller-or-equal index, arr[i] contributes arr[i] * (i - prev_less) * (next_less_or_equal - i)."
+    },
+    {
+      "level": 3,
+      "title": "Monotonic Boundary Procedure",
+      "text": "Use a monotonic list of indices to compute left boundaries (distance to previous strictly less element) and right boundaries (distance to next less or equal element). For each index i, multiply arr[i] by left[i] * right[i], sum over all i, and take modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def sumSubarrayMins(self, arr: List[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(arr)\n        left = [0] * n\n        right = [0] * n\n        st = []\n        for i in range(n):\n            while st and arr[st[-1]] > arr[i]:\n                st.pop()\n            left[i] = i + 1 if not st else i - st[-1]\n            st.append(i)\n        st = []\n        for i in range(n - 1, -1, -1):\n            while st and arr[st[-1]] >= arr[i]:\n                st.pop()\n            right[i] = n - i if not st else st[-1] - i\n            st.append(i)\n        return sum(arr[i] * left[i] * right[i] for i in range(n)) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of array arr (1 <= N <= 3 * 10^4)"
+    ],
+    "notes": "Two monotonic passes to find left and right span boundaries.",
+    "whyNaiveFails": "Examining all O(N^2) subarrays takes O(N^2) time, timing out for N = 3 * 10^4.",
+    "spaceTimeTradeoff": "Storing boundary span arrays of size N achieves linear O(N) runtime.",
+    "interviewerExpectation": "Properly handling duplicates with strict inequality on one side and non-strict inequality on the other to prevent double counting."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def sumSubarrayMins(self, arr: List[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(arr)\n        left = [0] * n\n        right = [0] * n\n        st = []\n        for i in range(n):\n            while st and arr[st[-1]] > arr[i]:\n                st.pop()\n            left[i] = i + 1 if not st else i - st[-1]\n            st.append(i)\n        st = []\n        for i in range(n - 1, -1, -1):\n            while st and arr[st[-1]] >= arr[i]:\n                st.pop()\n            right[i] = n - i if not st else st[-1] - i\n            st.append(i)\n        return sum(arr[i] * left[i] * right[i] for i in range(n)) % MOD",
+      "approach": "Monotonic stack contribution counting with duplicate deduplication",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int sumSubarrayMins(vector<int>& arr) {\n        long long MOD = 1e9 + 7;\n        int n = arr.size();\n        vector<int> left(n), right(n);\n        vector<int> st;\n        for (int i = 0; i < n; i++) {\n            while (!st.empty() && arr[st.back()] > arr[i]) st.pop_back();\n            left[i] = st.empty() ? i + 1 : i - st.back();\n            st.push_back(i);\n        }\n        st.clear();\n        for (int i = n - 1; i >= 0; i--) {\n            while (!st.empty() && arr[st.back()] >= arr[i]) st.pop_back();\n            right[i] = st.empty() ? n - i : st.back() - i;\n            st.push_back(i);\n        }\n        long long res = 0;\n        for (int i = 0; i < n; i++) {\n            res = (res + (long long)arr[i] * left[i] % MOD * right[i]) % MOD;\n        }\n        return res;\n    }\n};",
+      "approach": "Monotonic stack contribution counting with duplicate deduplication",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int sumSubarrayMins(int[] arr) {\n        long MOD = 1000000007L;\n        int n = arr.length;\n        int[] left = new int[n];\n        int[] right = new int[n];\n        int[] st = new int[n];\n        int top = 0;\n        for (int i = 0; i < n; i++) {\n            while (top > 0 && arr[st[top - 1]] > arr[i]) top--;\n            left[i] = (top == 0) ? i + 1 : i - st[top - 1];\n            st[top++] = i;\n        }\n        top = 0;\n        for (int i = n - 1; i >= 0; i--) {\n            while (top > 0 && arr[st[top - 1]] >= arr[i]) top--;\n            right[i] = (top == 0) ? n - i : st[top - 1] - i;\n            st[top++] = i;\n        }\n        long res = 0;\n        for (int i = 0; i < n; i++) {\n            res = (res + (long)arr[i] * left[i] % MOD * right[i]) % MOD;\n        }\n        return (int)res;\n    }\n}",
+      "approach": "Monotonic stack contribution counting with duplicate deduplication",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "javascript",
+      "code": "var sumSubarrayMins = function(arr) {\n    const MOD = 1000000007;\n    const n = arr.length;\n    const left = new Array(n);\n    const right = new Array(n);\n    let st = [];\n    for (let i = 0; i < n; i++) {\n        while (st.length > 0 && arr[st[st.length - 1]] > arr[i]) st.pop();\n        left[i] = st.length === 0 ? i + 1 : i - st[st.length - 1];\n        st.push(i);\n    }\n    st = [];\n    for (let i = n - 1; i >= 0; i--) {\n        while (st.length > 0 && arr[st[st.length - 1]] >= arr[i]) st.pop();\n        right[i] = st.length === 0 ? n - i : st[st.length - 1] - i;\n        st.push(i);\n    }\n    let res = 0;\n    for (let i = 0; i < n; i++) {\n        const prod = (BigInt(arr[i]) * BigInt(left[i]) * BigInt(right[i])) % BigInt(MOD);\n        res = (res + Number(prod)) % MOD;\n    }\n    return res;\n};",
+      "approach": "Monotonic stack contribution counting with duplicate deduplication",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-20T00:00:00.000Z"
+}

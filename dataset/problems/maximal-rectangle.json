@@ -1,0 +1,79 @@
+{
+  "slug": "maximal-rectangle",
+  "number": 85,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-monotonic-next-greater"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "2D Subgrid Enumeration Obstacle",
+      "text": "Checking every possible rectangular subgrid incurs O(R^3 * C^3) brute-force complexity. How can collapsing consecutive vertical ones into histogram bars reduce the 2D problem to repeated 1D queries?"
+    },
+    {
+      "level": 2,
+      "title": "Row-by-Row Histogram Invariant",
+      "text": "Row r provides a base for histograms where bar heights equal consecutive '1's ending at row r. The maximal rectangle ending at or above row r is bounded by the largest rectangle in that 1D histogram."
+    },
+    {
+      "level": 3,
+      "title": "Histogram Monotonic Reduction Procedure",
+      "text": "Maintain a heights array of length C initialized to 0. For each row: if matrix[r][c] is '1', increment heights[c], else reset heights[c] = 0. Then compute the maximum rectangle for heights using a monotonic increasing index buffer. Track the global maximum area."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def maximalRectangle(self, matrix: List[List[str]]) -> int:\n        if not matrix or not matrix[0]:\n            return 0\n        cols = len(matrix[0])\n        heights = [0] * (cols + 1)\n        max_area = 0\n        for row in matrix:\n            for c in range(cols):\n                heights[c] = heights[c] + 1 if row[c] == '1' else 0\n            st = []\n            for i in range(cols + 1):\n                while st and heights[st[-1]] > heights[i]:\n                    h = heights[st.pop()]\n                    w = i if not st else i - st[-1] - 1\n                    max_area = max(max_area, h * w)\n                st.append(i)\n        return max_area\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R * C)",
+    "space": "O(C)",
+    "variables": [
+      "R: number of rows (1 <= R <= 200)",
+      "C: number of columns (1 <= C <= 200)"
+    ],
+    "notes": "Reduces 2D grid to R instances of largest rectangle in histogram.",
+    "whyNaiveFails": "Enumerating all O(R^2 * C^2) rectangles and verifying cells takes O(R^3 * C^3) time.",
+    "spaceTimeTradeoff": "Maintaining 1D column heights across rows requires only O(C) auxiliary space.",
+    "interviewerExpectation": "Connecting this 2D problem cleanly to the 1D largest rectangle in histogram monotonic stack problem."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maximalRectangle(self, matrix: List[List[str]]) -> int:\n        if not matrix or not matrix[0]:\n            return 0\n        cols = len(matrix[0])\n        heights = [0] * (cols + 1)\n        max_area = 0\n        for row in matrix:\n            for c in range(cols):\n                heights[c] = heights[c] + 1 if row[c] == '1' else 0\n            st = []\n            for i in range(cols + 1):\n                while st and heights[st[-1]] > heights[i]:\n                    h = heights[st.pop()]\n                    w = i if not st else i - st[-1] - 1\n                    max_area = max(max_area, h * w)\n                st.append(i)\n        return max_area",
+      "approach": "Row-by-row histogram with monotonic index buffer",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int maximalRectangle(vector<vector<char>>& matrix) {\n        if (matrix.empty() || matrix[0].empty()) return 0;\n        int cols = matrix[0].size();\n        vector<int> heights(cols + 1, 0);\n        int max_area = 0;\n        for (const auto& row : matrix) {\n            for (int c = 0; c < cols; c++) {\n                heights[c] = (row[c] == '1') ? heights[c] + 1 : 0;\n            }\n            vector<int> st;\n            for (int i = 0; i <= cols; i++) {\n                while (!st.empty() && heights[st.back()] > heights[i]) {\n                    int h = heights[st.back()];\n                    st.pop_back();\n                    int w = st.empty() ? i : i - st.back() - 1;\n                    max_area = max(max_area, h * w);\n                }\n                st.push_back(i);\n            }\n        }\n        return max_area;\n    }\n};",
+      "approach": "Row-by-row histogram with monotonic index buffer",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int maximalRectangle(char[][] matrix) {\n        if (matrix == null || matrix.length == 0 || matrix[0].length == 0) return 0;\n        int cols = matrix[0].length;\n        int[] heights = new int[cols + 1];\n        int maxArea = 0;\n        for (char[] row : matrix) {\n            for (int c = 0; c < cols; c++) {\n                heights[c] = (row[c] == '1') ? heights[c] + 1 : 0;\n            }\n            int[] st = new int[cols + 2];\n            int top = 0;\n            for (int i = 0; i <= cols; i++) {\n                while (top > 0 && heights[st[top - 1]] > heights[i]) {\n                    int h = heights[st[--top]];\n                    int w = (top == 0) ? i : i - st[top - 1] - 1;\n                    maxArea = Math.max(maxArea, h * w);\n                }\n                st[top++] = i;\n            }\n        }\n        return maxArea;\n    }\n}",
+      "approach": "Row-by-row histogram with monotonic index buffer",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maximalRectangle = function(matrix) {\n    if (!matrix || matrix.length === 0 || matrix[0].length === 0) return 0;\n    const cols = matrix[0].length;\n    const heights = new Array(cols + 1).fill(0);\n    let maxArea = 0;\n    for (let r = 0; r < matrix.length; r++) {\n        for (let c = 0; c < cols; c++) {\n            heights[c] = matrix[r][c] === '1' ? heights[c] + 1 : 0;\n        }\n        const st = [];\n        for (let i = 0; i <= cols; i++) {\n            while (st.length > 0 && heights[st[st.length - 1]] > heights[i]) {\n                const h = heights[st.pop()];\n                const w = st.length === 0 ? i : i - st[st.length - 1] - 1;\n                maxArea = Math.max(maxArea, h * w);\n            }\n            st.push(i);\n        }\n    }\n    return maxArea;\n};",
+      "approach": "Row-by-row histogram with monotonic index buffer",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-20T00:00:00.000Z"
+}

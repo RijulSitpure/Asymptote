@@ -398,20 +398,20 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
 
   // 10. Full LeetCode Problem Catalog Index Resolution
   it('10. Resolves uncurated problem metadata, category, supported languages, and suggested pattern from catalog.json', async () => {
-    // Problem #2 (Add Two Numbers) - uncurated, in catalog
-    const addTwo = await engine.getProblemHints(2);
-    expect(addTwo.problem).not.toBeNull();
-    expect(addTwo.problem.number).toBe(2);
-    expect(addTwo.problem.slug).toBe('add-two-numbers');
-    expect(addTwo.problem.title).toBe('Add Two Numbers');
-    expect(addTwo.problem.difficulty).toBe('Medium');
-    expect(addTwo.problem.category).toBe('Algorithms');
-    expect(addTwo.problem.verified).toBe(0);
-    expect(addTwo.problem.verification_tier).toBe('unverified');
-    expect(addTwo.problem.hints).toEqual([]);
-    expect(addTwo.complexity).toBeNull();
-    expect(addTwo.supported_languages.length).toBeGreaterThanOrEqual(4);
-    expect(addTwo.supported_languages.some(l => l.id === 'python3')).toBe(true);
+    // Problem #7 (Reverse Integer) - uncurated, in catalog
+    const revInt = await engine.getProblemHints(7);
+    expect(revInt.problem).not.toBeNull();
+    expect(revInt.problem.number).toBe(7);
+    expect(revInt.problem.slug).toBe('reverse-integer');
+    expect(revInt.problem.title).toBe('Reverse Integer');
+    expect(revInt.problem.difficulty).toBe('Medium');
+    expect(revInt.problem.category).toBe('Algorithms');
+    expect(revInt.problem.verified).toBe(0);
+    expect(revInt.problem.verification_tier).toBe('unverified');
+    expect(revInt.problem.hints).toEqual([]);
+    expect(revInt.complexity).toBeNull();
+    expect(revInt.supported_languages.length).toBeGreaterThanOrEqual(4);
+    expect(revInt.supported_languages.some(l => l.id === 'python3')).toBe(true);
 
     // Problem #51 (N-Queens) - uncurated, in catalog with mapped pattern backtracking-grid-dfs
     const nQueens = await engine.getProblemHints('n-queens');
@@ -426,7 +426,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
       username: 'CatalogTester',
       problems: [
         {
-          title_slug: 'add-two-numbers',
+          title_slug: 'reverse-integer',
           languages: ['python3']
         }
       ]
@@ -434,10 +434,10 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(syncRes.success).toBe(true);
 
     const problems = await engine.getProblems();
-    const syncedTwo = problems.find(p => p.slug === 'add-two-numbers');
-    expect(syncedTwo).toBeDefined();
-    expect(syncedTwo.number).toBe(2);
-    expect(syncedTwo.title).toBe('Add Two Numbers');
-    expect(syncedTwo.category).toBe('Algorithms');
+    const syncedRev = problems.find(p => p.slug === 'reverse-integer');
+    expect(syncedRev).toBeDefined();
+    expect(syncedRev.number).toBe(7);
+    expect(syncedRev.title).toBe('Reverse Integer');
+    expect(syncedRev.category).toBe('Algorithms');
   });
 });

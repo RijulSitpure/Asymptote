@@ -1,0 +1,78 @@
+{
+  "slug": "basic-calculator-ii",
+  "number": 227,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-parentheses-parser"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Multiplication Precedence Immediate Evaluation Obstacle",
+      "text": "Evaluating left-to-right naively ignores standard operator precedence between addition and multiplication. How can storing pending terms allow you to resolve multiplications and divisions before sum aggregation?"
+    },
+    {
+      "level": 2,
+      "title": "Immediate Precedence Resolution Invariant",
+      "text": "Evaluate * and / immediately with the last processed number, while pushing + and - operands to sum at the end."
+    },
+    {
+      "level": 3,
+      "title": "Operator Buffer Processing Procedure",
+      "text": "Track currentNumber and lastSign (default '+'). When an operator or string end is reached: if lastSign is '+', push num. If '-', push -num. If '*', pop and multiply with num. If '/', pop and truncate toward zero with num. Reset num and update lastSign. Sum all numbers at the end."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def calculate(self, s: str) -> int:\n        num = 0\n        sign = '+'\n        st = []\n        for i, c in enumerate(s):\n            if c.isdigit():\n                num = num * 10 + int(c)\n            if c in '+-*/' or i == len(s) - 1:\n                if sign == '+':\n                    st.append(num)\n                elif sign == '-':\n                    st.append(-num)\n                elif sign == '*':\n                    st.append(st.pop() * num)\n                elif sign == '/':\n                    st.append(int(st.pop() / num))\n                sign = c\n                num = 0\n        return sum(st)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of string s (1 <= N <= 3 * 10^5)"
+    ],
+    "notes": "Single pass resolving high-precedence operators immediately.",
+    "whyNaiveFails": "Full recursive parsing or nested regex evaluation times out on strings with 300,000 characters.",
+    "spaceTimeTradeoff": "Pending operand buffering enables strictly linear time evaluation without building an expression tree.",
+    "interviewerExpectation": "Correct integer division truncation toward zero (e.g. -3 // 2 in Python truncates to -2, requiring int(-3 / 2))."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def calculate(self, s: str) -> int:\n        num = 0\n        sign = '+'\n        st = []\n        for i, c in enumerate(s):\n            if c.isdigit():\n                num = num * 10 + int(c)\n            if c in '+-*/' or i == len(s) - 1:\n                if sign == '+':\n                    st.append(num)\n                elif sign == '-':\n                    st.append(-num)\n                elif sign == '*':\n                    st.append(st.pop() * num)\n                elif sign == '/':\n                    st.append(int(st.pop() / num))\n                sign = c\n                num = 0\n        return sum(st)",
+      "approach": "Precedence buffering with zero-truncation integer division",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int calculate(string s) {\n        long long num = 0;\n        char sign = '+';\n        vector<int> st;\n        for (int i = 0; i < (int)s.size(); i++) {\n            char c = s[i];\n            if (isdigit(c)) num = num * 10 + (c - '0');\n            if ((!isdigit(c) && c != ' ') || i == (int)s.size() - 1) {\n                if (sign == '+') st.push_back((int)num);\n                else if (sign == '-') st.push_back((int)-num);\n                else if (sign == '*') {\n                    int top = st.back(); st.pop_back();\n                    st.push_back(top * (int)num);\n                } else if (sign == '/') {\n                    int top = st.back(); st.pop_back();\n                    st.push_back(top / (int)num);\n                }\n                sign = c;\n                num = 0;\n            }\n        }\n        int res = 0;\n        for (int x : st) res += x;\n        return res;\n    }\n};",
+      "approach": "Precedence buffering with zero-truncation integer division",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int calculate(String s) {\n        int num = 0;\n        char sign = '+';\n        java.util.ArrayDeque<Integer> st = new java.util.ArrayDeque<>();\n        for (int i = 0; i < s.length(); i++) {\n            char c = s.charAt(i);\n            if (Character.isDigit(c)) num = num * 10 + (c - '0');\n            if ((!Character.isDigit(c) && c != ' ') || i == s.length() - 1) {\n                if (sign == '+') st.push(num);\n                else if (sign == '-') st.push(-num);\n                else if (sign == '*') st.push(st.pop() * num);\n                else if (sign == '/') st.push(st.pop() / num);\n                sign = c;\n                num = 0;\n            }\n        }\n        int res = 0;\n        for (int x : st) res += x;\n        return res;\n    }\n}",
+      "approach": "Precedence buffering with zero-truncation integer division",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "javascript",
+      "code": "var calculate = function(s) {\n    let num = 0;\n    let sign = '+';\n    const st = [];\n    for (let i = 0; i < s.length; i++) {\n        const c = s[i];\n        if (c >= '0' && c <= '9') num = num * 10 + Number(c);\n        if ((c !== ' ' && (c < '0' || c > '9')) || i === s.length - 1) {\n            if (sign === '+') st.push(num);\n            else if (sign === '-') st.push(-num);\n            else if (sign === '*') st.push(st.pop() * num);\n            else if (sign === '/') st.push(Math.trunc(st.pop() / num));\n            sign = c;\n            num = 0;\n        }\n    }\n    return st.reduce((a, b) => a + b, 0);\n};",
+      "approach": "Precedence buffering with zero-truncation integer division",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-20T00:00:00.000Z"
+}
