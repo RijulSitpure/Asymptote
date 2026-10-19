@@ -2,12 +2,15 @@
  * Asymptote - Google Sheets Feedback Client
  * 
  * Secure client-side utility for validating, sanitizing, and dispatching
- * user feedback, bug reports, and pattern suggestions to Rijul's Google Sheets webhook.
+ * user feedback, bug reports, and pattern suggestions.
+ * 
+ * Submissions are dispatched strictly to the centralized, validated Google Apps Script endpoint.
+ * No user-editable settings, localStorage overrides, or untrusted URLs are permitted.
  */
 
+import { getFeedbackEndpoint } from '../config/feedback.js';
+
 export const STORAGE_KEY_FEEDBACK = 'asymptote:feedback_submissions';
-export const STORAGE_KEY_ENDPOINT = 'asymptote:feedback_endpoint';
-export const DEFAULT_FEEDBACK_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwJ_-Jr0IAdW8tBxg0077PcfmrLwC2-TRjROZXryvCvFwrGXmsF9nzUtbTDckHWjEG-/exec';
 
 export const MAX_TITLE_LENGTH = 150;
 export const MAX_DETAILS_LENGTH = 3000;
@@ -81,56 +84,22 @@ export function sanitizeForSpreadsheet(val) {
 }
 
 /**
- * Retrieves the configured Google Apps Script Web App endpoint URL.
- * Checks environment variable VITE_FEEDBACK_ENDPOINT first, then local storage.
- */
-export function getStoredFeedbackEndpoint() {
-  if (typeof window !== 'undefined') {
-    // Check localStorage override
-    const local = localStorage.getItem(STORAGE_KEY_ENDPOINT);
-    if (local && local.trim()) {
-      return local.trim();
-    }
-  }
-  // Check build-time env variable if defined
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FEEDBACK_ENDPOINT) {
-    return import.meta.env.VITE_FEEDBACK_ENDPOINT.trim();
-  }
-  return DEFAULT_FEEDBACK_ENDPOINT;
-}
-
-/**
- * Sets or updates the Google Apps Script Web App endpoint URL in local storage
- */
-export function setStoredFeedbackEndpoint(url) {
-  if (typeof window !== 'undefined') {
-    const clean = (url || '').trim();
-    if (clean) {
-      localStorage.setItem(STORAGE_KEY_ENDPOINT, clean);
-    } else {
-      localStorage.removeItem(STORAGE_KEY_ENDPOINT);
-    }
-  }
-}
-
-/**
- * Submits validated feedback to the Google Apps Script Web App endpoint.
+ * Submits validated feedback strictly to the centralized, validated Google Apps Script endpoint.
  * Uses text/plain Content-Type to avoid CORS preflight OPTIONS issues on Apps Script.
+ * The endpoint URL is never exposed in user-facing error messages or logs.
  */
-export async function submitFeedbackToGoogleSheets(payload, customEndpoint = null) {
-  const endpoint = customEndpoint !== null ? customEndpoint : getStoredFeedbackEndpoint();
-  if (!endpoint) {
-    throw new Error('Google Sheets webhook endpoint is not configured. Please set the Apps Script URL in settings.');
-  }
+export async function submitFeedbackToGoogleSheets(payload) {
+  // 1. Retrieve the immutable, validated endpoint
+  const endpoint = getFeedbackEndpoint();
 
-  // 1. Client-side validation
+  // 2. Client-side validation
   const validation = validateFeedbackPayload(payload);
   if (!validation.isValid) {
     const firstErr = Object.values(validation.errors)[0];
     throw new Error(firstErr || 'Form validation failed.');
   }
 
-  // 2. Prepare payload
+  // 3. Prepare payload
   const bodyData = {
     type: payload.type,
     title: payload.title.trim(),
@@ -140,9 +109,9 @@ export async function submitFeedbackToGoogleSheets(payload, customEndpoint = nul
     clientVersion: '2.0.0'
   };
 
-  // 3. Dispatch POST request
+  // 4. Dispatch POST request
   // Note: Using 'text/plain;charset=utf-8' triggers a CORS "simple request",
-  // bypassing the OPTIONS preflight that Google Apps Script fails to respond to.
+  // bypassing the OPTIONS preflight that Google Apps Script does not support.
   let response;
   try {
     response = await fetch(endpoint, {
@@ -154,27 +123,28 @@ export async function submitFeedbackToGoogleSheets(payload, customEndpoint = nul
       redirect: 'follow'
     });
   } catch (netErr) {
-    throw new Error(`Network error connecting to Google Sheets: ${netErr.message || 'Check your internet connection.'}`);
+    // Avoid reflecting the endpoint URL in error messages
+    throw new Error(`Network error connecting to feedback service: ${netErr.message || 'Check your internet connection.'}`);
   }
 
   if (!response.ok) {
-    throw new Error(`Google Sheets endpoint returned HTTP ${response.status} ${response.statusText}`);
+    throw new Error(`Feedback service returned HTTP ${response.status} ${response.statusText}`);
   }
 
-  // 4. Parse server response
+  // 5. Parse server response
   let json;
   try {
     json = await response.json();
   } catch {
-    throw new Error('Invalid response received from Google Sheets endpoint.');
+    throw new Error('Invalid response received from feedback service.');
   }
 
   if (!json || json.success !== true) {
-    throw new Error(json?.error || 'Spreadsheet rejected the submission.');
+    throw new Error(json?.error || 'Feedback submission was rejected by the server.');
   }
 
   if (!json.referenceId) {
-    throw new Error('Spreadsheet confirmed write but did not return a valid reference ID.');
+    throw new Error('Server confirmed write but did not return a valid reference ID.');
   }
 
   return {

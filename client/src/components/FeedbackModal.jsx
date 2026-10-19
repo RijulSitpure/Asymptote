@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   X, Bug, Lightbulb, MessageSquare, Check, Mail, Send, Trash2, 
-  Download, CheckCircle, Clock, Copy, AlertTriangle, Settings, 
-  RefreshCw, ShieldCheck 
+  Download, CheckCircle, Clock, Copy, AlertTriangle, RefreshCw 
 } from 'lucide-react';
 import { useToast } from './Toast';
 import { 
@@ -11,8 +10,6 @@ import {
   MAX_DETAILS_LENGTH, 
   MAX_EMAIL_LENGTH,
   validateFeedbackPayload,
-  getStoredFeedbackEndpoint,
-  setStoredFeedbackEndpoint,
   submitFeedbackToGoogleSheets
 } from '../lib/feedbackClient';
 
@@ -48,11 +45,6 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
   const [submittedResult, setSubmittedResult] = useState(null);
   const [copiedRefId, setCopiedRefId] = useState(false);
 
-  // Endpoint configuration state
-  const [endpointUrl, setEndpointUrl] = useState(() => getStoredFeedbackEndpoint());
-  const [showEndpointSettings, setShowEndpointSettings] = useState(false);
-  const [tempEndpointInput, setTempEndpointInput] = useState('');
-
   // Local submissions management state
   const [submissions, setSubmissions] = useState([]);
   const [managerFilter, setManagerFilter] = useState('all'); // 'all' | 'open' | 'resolved'
@@ -63,7 +55,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
     }
   }, [initialType]);
 
-  // Load submissions and endpoint from storage
+  // Load submissions from storage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -77,9 +69,6 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
       } catch (err) {
         console.error('Failed to load feedback submissions:', err);
       }
-      const currentEp = getStoredFeedbackEndpoint();
-      setEndpointUrl(currentEp);
-      setTempEndpointInput(currentEp);
     }
   }, [isOpen]);
 
@@ -112,17 +101,6 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
     });
   };
 
-  const handleSaveEndpoint = () => {
-    const clean = tempEndpointInput.trim();
-    setStoredFeedbackEndpoint(clean);
-    setEndpointUrl(clean);
-    setShowEndpointSettings(false);
-    addToast({
-      message: clean ? 'Google Sheets webhook endpoint saved' : 'Google Sheets webhook cleared',
-      type: 'success'
-    });
-  };
-
   const handleSubmit = async (e) => {
     e?.preventDefault();
     if (isSubmitting) return; // Prevent duplicate clicks
@@ -147,16 +125,16 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
     setIsSubmitting(true);
 
     try {
-      // 1. Submit to Google Sheets via secure Apps Script Web App
+      // 1. Submit to Google Sheets via authoritative internal endpoint
       const res = await submitFeedbackToGoogleSheets({
         type: feedbackType,
         title: titleText,
         details: feedbackText,
         email: userContact,
         hp_company_field: honeypot
-      }, endpointUrl);
+      });
 
-      // 2. Verified write to Google Sheets confirmed!
+      // 2. Verified write to Google Sheets confirmed
       const referenceId = res.referenceId;
       const serverTimestamp = res.timestamp;
 
@@ -188,7 +166,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
       setActiveView('confirmation');
 
       addToast({
-        message: `Saved to Google Sheets! Reference: ${referenceId}`,
+        message: `Feedback recorded! Reference: ${referenceId}`,
         type: 'success'
       });
 
@@ -200,7 +178,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
     } catch (err) {
       // Friendly error handling: Form inputs are preserved
       console.error('Feedback submission failed:', err);
-      setSubmissionError(err.message || 'Failed to submit report. Please check your connection or endpoint.');
+      setSubmissionError(err.message || 'Failed to submit report. Please check your connection and try again.');
       addToast({
         message: 'Submission failed. Your text has been preserved.',
         type: 'error'
@@ -265,7 +243,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
         className="bg-white rounded-[14px] p-6 max-w-[720px] w-full max-h-[92vh] overflow-y-auto space-y-5 shadow-2xl border border-[#e2e8f0]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header with Mode Switcher & Status */}
+        {/* Header with Mode Switcher & Navigation */}
         <div className="flex items-center justify-between pb-3 border-b border-[#e2e8f0]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#ecfdf5] border border-[#a7f3d0] flex items-center justify-center text-[#059669]">
@@ -290,22 +268,6 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {activeView === 'submit' && (
-              <button
-                type="button"
-                onClick={() => setShowEndpointSettings(!showEndpointSettings)}
-                className={`p-1.5 rounded-md border transition-colors ${
-                  endpointUrl 
-                    ? 'text-[#059669] bg-[#ecfdf5] border-[#a7f3d0] hover:bg-[#d1fae5]' 
-                    : 'text-[#d97706] bg-[#fffbeb] border-[#fde68a] hover:bg-[#fef3c7]'
-                }`}
-                title={endpointUrl ? "Google Sheets Webhook Connected" : "Configure Google Sheets Webhook"}
-                aria-label="Google Sheets Webhook Settings"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-            )}
-
             <button
               type="button"
               onClick={() => {
@@ -316,7 +278,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                   setActiveView('manager');
                 }
               }}
-              className="btn-secondary !py-1 !px-2.5 !text-[12px] flex items-center gap-1.5"
+              className="btn-secondary !py-1 !px-2.5 !text-[12px] flex items-center gap-1.5 cursor-pointer"
             >
               <span>{activeView === 'submit' ? `View Submissions (${submissions.length})` : '← Back to Form'}</span>
             </button>
@@ -324,51 +286,13 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-md text-[#64748b] hover:text-[#1e2033] hover:bg-[#f8fafc] transition-colors"
+              className="p-1.5 rounded-md text-[#64748b] hover:text-[#1e2033] hover:bg-[#f8fafc] transition-colors cursor-pointer"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
-
-        {/* Optional Endpoint Settings Panel (Accessible by Rijul to configure or test his Apps Script URL) */}
-        {showEndpointSettings && activeView === 'submit' && (
-          <div className="p-3.5 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl space-y-2 text-[13px]">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-[#1e2033] flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#059669]" />
-                Google Apps Script Webhook Endpoint
-              </span>
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
-                endpointUrl 
-                  ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]' 
-                  : 'bg-[#fffbeb] text-[#b45309] border-[#fde68a]'
-              }`}>
-                {endpointUrl ? 'Endpoint Configured' : 'Needs Setup'}
-              </span>
-            </div>
-            <p className="text-[12px] text-[#64748b] leading-normal">
-              Enter your deployed Google Apps Script Web App URL (<code className="text-[#0f172a] bg-[#e2e8f0] px-1 py-0.5 rounded">https://script.google.com/macros/s/.../exec</code>) to receive submissions into your private Google Sheet.
-            </p>
-            <div className="flex gap-2 pt-1">
-              <input
-                type="url"
-                value={tempEndpointInput}
-                onChange={(e) => setTempEndpointInput(e.target.value)}
-                placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-                className="asymptote-input flex-1 text-[12px] font-mono"
-              />
-              <button
-                type="button"
-                onClick={handleSaveEndpoint}
-                className="btn-primary !text-[12px] !py-1.5 !px-3"
-              >
-                Save Endpoint
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* 1. Submission Form View */}
         {activeView === 'submit' && (
@@ -380,15 +304,6 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                 <div className="flex-1">
                   <strong className="block font-semibold">Unable to submit report</strong>
                   <span className="leading-relaxed">{submissionError}</span>
-                  {!endpointUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setShowEndpointSettings(true)}
-                      className="block mt-1.5 text-[12px] font-bold text-[#b91c1c] underline cursor-pointer"
-                    >
-                      Click here to configure your Google Sheets Apps Script URL
-                    </button>
-                  )}
                 </div>
               </div>
             )}
@@ -614,7 +529,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                 <button
                   type="button"
                   onClick={() => handleCopyRefId(submittedResult.referenceId)}
-                  className="p-1.5 rounded-md hover:bg-[#e2e8f0] text-[#64748b] hover:text-[#1e2033] transition-colors"
+                  className="p-1.5 rounded-md hover:bg-[#e2e8f0] text-[#64748b] hover:text-[#1e2033] transition-colors cursor-pointer"
                   title="Copy Reference ID"
                 >
                   {copiedRefId ? <Check className="w-4 h-4 text-[#059669]" /> : <Copy className="w-4 h-4" />}
@@ -633,14 +548,14 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                   setActiveView('submit');
                   setSubmittedResult(null);
                 }}
-                className="btn-secondary !py-2 !px-4 !text-[13px]"
+                className="btn-secondary !py-2 !px-4 !text-[13px] cursor-pointer"
               >
                 Submit another response
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="btn-primary !py-2 !px-6 !text-[13px] !bg-[#1e2033]"
+                className="btn-primary !py-2 !px-6 !text-[13px] !bg-[#1e2033] cursor-pointer"
               >
                 Done
               </button>
@@ -669,7 +584,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                   onClick={() => setManagerFilter('open')}
                   className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors cursor-pointer ${
                     managerFilter === 'open'
-                      ? 'bg-[#fff1f2] text-[#9f1239] border-[#fecdd3] font-bold'
+                      ? 'bg-[#fff1f2] text-[#9f1239] border border-[#fecdd3] font-bold'
                       : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
                   }`}
                 >
@@ -693,7 +608,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                   type="button"
                   onClick={handleExportJson}
                   disabled={submissions.length === 0}
-                  className="btn-secondary !py-1 !px-2.5 !text-[12px] flex items-center gap-1.5"
+                  className="btn-secondary !py-1 !px-2.5 !text-[12px] flex items-center gap-1.5 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Export JSON</span>
