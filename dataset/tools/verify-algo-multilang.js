@@ -1295,6 +1295,145 @@ def generate_cases(slug):
         for n in [0, 1, 2, 3, 4, 5, 8, 15, 16, 25, 50, 100]:
             cases.append({'args': [n]})
 
+    elif slug == 'remove-duplicates-from-sorted-array':
+        fixed = [[1, 1, 2], [0, 0, 1, 1, 1, 2, 2, 3, 3, 4], [1], [1, 1, 1, 1], [1, 2, 3, 4, 5]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(30):
+            sz = rng.randint(1, 30)
+            cases.append({'args': [sorted([rng.randint(-20, 20) for _ in range(sz)])]})
+
+    elif slug == 'remove-element':
+        fixed = [([3, 2, 2, 3], 3), ([0, 1, 2, 2, 3, 0, 4, 2], 2), ([], 1), ([1], 1), ([1], 2), ([2, 2, 2], 2)]
+        for a, val in fixed: cases.append({'args': [a, val]})
+        for _ in range(30):
+            sz = rng.randint(1, 30)
+            arr = [rng.randint(0, 10) for _ in range(sz)]
+            val = rng.randint(0, 10)
+            cases.append({'args': [arr, val]})
+
+    elif slug == 'sort-colors':
+        fixed = [[2, 0, 2, 1, 1, 0], [2, 0, 1], [0], [1], [2], [1, 0], [2, 1, 0, 2, 1, 0], [0, 0, 0], [2, 2, 2]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(30):
+            sz = rng.randint(1, 35)
+            cases.append({'args': [[rng.randint(0, 2) for _ in range(sz)]]})
+
+    elif slug == 'merge-sorted-array':
+        fixed = [
+            ([1, 2, 3, 0, 0, 0], 3, [2, 5, 6], 3),
+            ([1], 1, [], 0),
+            ([0], 0, [1], 1),
+            ([2, 0], 1, [1], 1),
+            ([4, 5, 6, 0, 0, 0], 3, [1, 2, 3], 3)
+        ]
+        for n1, m, n2, n in fixed: cases.append({'args': [n1, m, n2, n]})
+        for _ in range(30):
+            m = rng.randint(0, 20)
+            n = rng.randint(0, 20)
+            if m == 0 and n == 0: m = 1
+            a1 = sorted([rng.randint(-50, 50) for _ in range(m)])
+            a2 = sorted([rng.randint(-50, 50) for _ in range(n)])
+            cases.append({'args': [a1 + [0] * n, m, a2, n]})
+
+    elif slug == 'majority-element':
+        fixed = [[3, 2, 3], [2, 2, 1, 1, 1, 2, 2], [1], [6, 5, 5], [1, 1, 1, 2, 3, 1]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(30):
+            sz = rng.randint(1, 35)
+            maj = rng.randint(-100, 100)
+            maj_count = sz // 2 + 1
+            other_count = sz - maj_count
+            arr = [maj] * maj_count + [rng.randint(-100, 100) for _ in range(other_count)]
+            rng.shuffle(arr)
+            cases.append({'args': [arr]})
+
+    elif slug == 'move-zeroes':
+        fixed = [[0, 1, 0, 3, 12], [0], [1], [0, 0, 1], [1, 0, 0], [2, 1], [0, 0, 0]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(30):
+            sz = rng.randint(1, 35)
+            arr = [0 if rng.random() < 0.4 else rng.randint(-50, 50) for _ in range(sz)]
+            cases.append({'args': [arr]})
+
+    elif slug == 'reverse-string':
+        fixed = [["h","e","l","l","o"], ["H","a","n","n","a","h"], ["a"], ["a","b"]]
+        for a in fixed: cases.append({'args': [a]})
+        letters = "abcdefghijklmnopqrstuvwxyz"
+        for _ in range(30):
+            sz = rng.randint(1, 30)
+            cases.append({'args': [[rng.choice(letters) for _ in range(sz)]]})
+
+    elif slug == 'squares-of-a-sorted-array':
+        fixed = [[-4, -1, 0, 3, 10], [-7, -3, 2, 3, 11], [-5, -3, -2, -1], [0, 1, 2, 3], [0], [-10]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(30):
+            sz = rng.randint(1, 35)
+            cases.append({'args': [sorted([rng.randint(-100, 100) for _ in range(sz)])]})
+
+    elif slug == '3sum-closest':
+        fixed = [([-1, 2, 1, -4], 1), ([0, 0, 0], 1), ([1, 1, 1, 0], -100), ([1, 2, 5, 10, 11], 12)]
+        for a, t in fixed: cases.append({'args': [a, t]})
+        for _ in range(30):
+            sz = rng.randint(3, 25)
+            arr = [rng.randint(-100, 100) for _ in range(sz)]
+            t = rng.randint(-150, 150)
+            cases.append({'args': [arr, t]})
+
+    elif slug == '4sum':
+        fixed = [([1, 0, -1, 0, -2, 2], 0), ([2, 2, 2, 2, 2], 8), ([-3, -1, 0, 2, 4, 5], 2), ([0, 0, 0, 0], 0)]
+        for a, t in fixed: cases.append({'args': [a, t]})
+        for _ in range(25):
+            sz = rng.randint(4, 18)
+            arr = [rng.randint(-20, 20) for _ in range(sz)]
+            t = rng.randint(-30, 30)
+            cases.append({'args': [arr, t]})
+
+    elif slug == 'valid-sudoku':
+        fixed = [
+            [["5","3",".",".","7",".",".",".","."],["6",".",".","1","9","5",".",".","."],[".","9","8",".",".",".",".","6","."],["8",".",".",".","6",".",".",".","3"],["4",".",".","8",".","3",".",".","1"],["7",".",".",".","2",".",".",".","6"],[".","6",".",".",".",".","2","8","."],[".",".",".","4","1","9",".",".","5"],[".",".",".",".","8",".",".","7","9"]],
+            [["8","3",".",".","7",".",".",".","."],["6",".",".","1","9","5",".",".","."],[".","9","8",".",".",".",".","6","."],["8",".",".",".","6",".",".",".","3"],["4",".",".","8",".","3",".",".","1"],["7",".",".",".","2",".",".",".","6"],[".","6",".",".",".",".","2","8","."],[".",".",".","4","1","9",".",".","5"],[".",".",".",".","8",".",".","7","9"]]
+        ]
+        for b in fixed: cases.append({'args': [b]})
+        for _ in range(20):
+            b = [["." for _ in range(9)] for _ in range(9)]
+            for r in range(9):
+                for c in range(9):
+                    if rng.random() < 0.2:
+                        b[r][c] = str(rng.randint(1, 9))
+            cases.append({'args': [b]})
+
+    elif slug == 'minimum-size-subarray-sum':
+        fixed = [(7, [2, 3, 1, 2, 4, 3]), (4, [1, 4, 4]), (11, [1, 1, 1, 1, 1, 1, 1, 1]), (15, [1, 2, 3, 4, 5]), (100, [1, 2, 3])]
+        for t, a in fixed: cases.append({'args': [t, a]})
+        for _ in range(30):
+            sz = rng.randint(1, 35)
+            arr = [rng.randint(1, 20) for _ in range(sz)]
+            t = rng.randint(1, sum(arr) + 10)
+            cases.append({'args': [t, arr]})
+
+    elif slug == 'subarray-sum-equals-k':
+        fixed = [([1, 1, 1], 2), ([1, 2, 3], 3), ([1, -1, 0], 0), ([1], 0), ([1], 1), ([-1, -1, 1], 0)]
+        for a, k in fixed: cases.append({'args': [a, k]})
+        for _ in range(30):
+            sz = rng.randint(1, 30)
+            arr = [rng.randint(-10, 10) for _ in range(sz)]
+            k = rng.randint(-15, 15)
+            cases.append({'args': [arr, k]})
+
+    elif slug == 'find-pivot-index':
+        fixed = [[1, 7, 3, 6, 5, 6], [1, 2, 3], [2, 1, -1], [0], [-1, -1, -1, -1, -1, 0], [1, -1, 2]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(30):
+            sz = rng.randint(1, 35)
+            cases.append({'args': [[rng.randint(-20, 20) for _ in range(sz)]]})
+
+    elif slug == 'fruit-into-baskets':
+        fixed = [[1, 2, 1], [0, 1, 2, 2], [1, 2, 3, 2, 2], [3, 3, 3, 1, 2, 1, 1, 2, 3, 3, 4], [1], [1, 2]]
+        for a in fixed: cases.append({'args': [a]})
+        for _ in range(30):
+            sz = rng.randint(1, 35)
+            cases.append({'args': [[rng.randint(0, 5) for _ in range(sz)]]})
+
     return cases
 
 sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
@@ -1357,6 +1496,31 @@ for c in cases:
         g = adj_to_graph(c['args'][0])
         res = solver.cloneGraph(g)
         ans = graph_to_adj(res)
+    elif '${slug}' == 'remove-duplicates-from-sorted-array':
+        nums_copy = list(c['args'][0])
+        k = solver.removeDuplicates(nums_copy)
+        ans = {'k': k, 'nums': nums_copy[:k]}
+    elif '${slug}' == 'remove-element':
+        nums_copy = list(c['args'][0])
+        k = solver.removeElement(nums_copy, c['args'][1])
+        ans = {'k': k, 'nums': sorted(nums_copy[:k])}
+    elif '${slug}' == 'sort-colors':
+        nums_copy = list(c['args'][0])
+        solver.sortColors(nums_copy)
+        ans = nums_copy
+    elif '${slug}' == 'merge-sorted-array':
+        nums1_copy = list(c['args'][0])
+        nums2_copy = list(c['args'][2])
+        solver.merge(nums1_copy, c['args'][1], nums2_copy, c['args'][3])
+        ans = nums1_copy
+    elif '${slug}' == 'move-zeroes':
+        nums_copy = list(c['args'][0])
+        solver.moveZeroes(nums_copy)
+        ans = nums_copy
+    elif '${slug}' == 'reverse-string':
+        s_copy = list(c['args'][0])
+        solver.reverseString(s_copy)
+        ans = s_copy
     else:
         ans = getattr(solver, '${methodName}')(*copy.deepcopy(c['args']))
     results.append({'args': c['args'], 'expected': ans})
@@ -1428,6 +1592,31 @@ print(json.dumps(results))
         const g = adjToGraph(clonedArgs[0]);
         const res = jsFn(g);
         jsResult = graphToAdj(res);
+      } else if (slug === 'remove-duplicates-from-sorted-array') {
+        const numsCopy = [...clonedArgs[0]];
+        const k = jsFn(numsCopy);
+        jsResult = { k, nums: numsCopy.slice(0, k) };
+      } else if (slug === 'remove-element') {
+        const numsCopy = [...clonedArgs[0]];
+        const k = jsFn(numsCopy, clonedArgs[1]);
+        jsResult = { k, nums: numsCopy.slice(0, k).sort((a, b) => a - b) };
+      } else if (slug === 'sort-colors') {
+        const numsCopy = [...clonedArgs[0]];
+        jsFn(numsCopy);
+        jsResult = numsCopy;
+      } else if (slug === 'merge-sorted-array') {
+        const nums1Copy = [...clonedArgs[0]];
+        const nums2Copy = [...clonedArgs[2]];
+        jsFn(nums1Copy, clonedArgs[1], nums2Copy, clonedArgs[3]);
+        jsResult = nums1Copy;
+      } else if (slug === 'move-zeroes') {
+        const numsCopy = [...clonedArgs[0]];
+        jsFn(numsCopy);
+        jsResult = numsCopy;
+      } else if (slug === 'reverse-string') {
+        const sCopy = [...clonedArgs[0]];
+        jsFn(sCopy);
+        jsResult = sCopy;
       } else {
         jsResult = jsFn(...clonedArgs);
       }
@@ -1515,6 +1704,11 @@ print(json.dumps(results))
         const norm = arr => JSON.stringify(arr.map(iv => [...iv]).sort((a, b) => a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]));
         if (norm(jsResult) !== norm(expected)) {
           throw new Error(`Case ${i} mismatch in merge-intervals:\nJS: ${norm(jsResult)}\nPY: ${norm(expected)}`);
+        }
+      } else if (slug === '4sum') {
+        const norm = arr => JSON.stringify(arr.map(t => [...t].sort((a, b) => a - b)).sort());
+        if (norm(jsResult) !== norm(expected)) {
+          throw new Error(`Case ${i} mismatch in 4sum:\nJS: ${norm(jsResult)}\nPY: ${norm(expected)}`);
         }
       } else {
         const jsStr = JSON.stringify(jsResult);

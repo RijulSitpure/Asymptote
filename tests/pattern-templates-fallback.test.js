@@ -103,8 +103,8 @@ describe('Pattern Atlas Boilerplate Templates & Uncurated Catalog Fallback UX', 
   });
 
   it('3. Confirms uncurated catalog problem returns suggested pattern blueprint, recognition signals, and templates', async () => {
-    // #16 3Sum Closest is in catalog (4,086 problems) but not in curated 105 set
-    const result = await engine.getProblemHints('16');
+    // #31 Next Permutation is in catalog (4,086 problems) but not in curated set
+    const result = await engine.getProblemHints('31');
     expect(result).toBeDefined();
     expect(result.problem).toBeDefined();
     expect(result.problem.verified).toBe(0);
