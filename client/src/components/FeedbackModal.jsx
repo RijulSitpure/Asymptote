@@ -26,7 +26,7 @@ export function FeedbackModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const githubRepoUrl = 'https://github.com/Rijul-Sitpure/LeetCode-Pattern_Tracker';
+  const githubRepoUrl = 'https://github.com/RijulSitpure/LeetCode-Pattern_Tracker';
 
   const getGithubIssueUrl = () => {
     const titlePrefix = feedbackType === 'bug' 
@@ -185,7 +185,7 @@ export function FeedbackModal({ isOpen, onClose }) {
           <span>Created by Rijul Sitpure</span>
           <div className="flex items-center gap-3">
             <a
-              href="https://github.com/Rijul-Sitpure"
+              href="https://github.com/RijulSitpure"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#1e2033] flex items-center gap-1 transition-colors"
@@ -194,7 +194,7 @@ export function FeedbackModal({ isOpen, onClose }) {
               <span>GitHub</span>
             </a>
             <a
-              href="https://www.linkedin.com/in/rijul-sitpure"
+              href="https://www.linkedin.com/in/rijulsitpure"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#0a66c2] flex items-center gap-1 transition-colors"

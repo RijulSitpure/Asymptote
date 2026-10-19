@@ -7,7 +7,9 @@ const {
   SHOW_HEURISTIC_PATTERNS = false,
   getLanguageMeta,
   getSupportedLanguagesForProblem,
-  getProblemSolutionCode
+  getSupportedLanguagesForPattern,
+  getProblemSolutionCode,
+  getPatternCode
 } = (globalThis.LanguagesModule || window.LanguagesModule || {});
 
 function showMessage(text, type = 'info') {
@@ -263,15 +265,49 @@ function renderPopupTabContent() {
   if (popupActiveTab === 'clues') {
     if (!isVerified) {
       const sug = suggested_pattern || problem?.suggested_pattern;
+      if (sug) {
+        contentEl.innerHTML = `
+          <div class="tab-content-pane" style="text-align:left; padding:16px 12px;">
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-size:10px; font-weight:700; color:#1d4ed8; text-transform:uppercase; letter-spacing:0.5px;">Suggested Pattern</span>
+                <span style="font-size:11px; font-weight:600; color:#475569; background:#ffffff; border:1px solid #cbd5e1; border-radius:9999px; padding:2px 8px;">${sug.category || problem?.category || 'Algorithms'}</span>
+              </div>
+              <h3 style="font-family:'Space Grotesk', sans-serif; font-size:16px; font-weight:700; color:#1e2033; margin:0 0 6px 0;">
+                ${sug.title}
+              </h3>
+              <p style="font-size:12px; color:#475569; line-height:1.4; margin:0;">
+                ${sug.short_description || ''}
+              </p>
+            </div>
+
+            ${sug.mental_triggers && sug.mental_triggers.length > 0 ? `
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:8px;">
+                <span style="font-size:12px; font-weight:700; color:#1e2033; display:block; margin-bottom:6px;">Recognition Signals</span>
+                <ul style="margin:0; padding-left:16px; font-size:12px; color:#475569; line-height:1.4;">
+                  ${sug.mental_triggers.map(t => `<li style="margin-bottom:3px;">${t}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            ${sug.constraint_signals && sug.constraint_signals.length > 0 ? `
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+                <span style="font-size:12px; font-weight:700; color:#1e2033; display:block; margin-bottom:6px;">Constraint Signals</span>
+                <ul style="margin:0; padding-left:16px; font-size:12px; color:#475569; line-height:1.4;">
+                  ${sug.constraint_signals.map(s => `<li style="margin-bottom:3px;">${s}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            <div style="font-size:11px; color:#64748b; line-height:1.4; text-align:center; padding:4px;">
+              Problem-specific 4-level hints are in curation. Switch to the <strong>Solution</strong> tab for the pattern starter blueprint.
+            </div>
+          </div>
+        `;
+        return;
+      }
       contentEl.innerHTML = `
         <div class="tab-content-pane" style="text-align:center; padding:28px 12px;">
-          ${(SHOW_HEURISTIC_PATTERNS && sug) ? `
-            <div style="margin-bottom:12px;">
-              <span style="font-size:11px; font-weight:500; color:#475569; padding:3px 10px; border-radius:9999px; background:#f1f5f9; border:1px solid #e2e8f0; display:inline-block;">
-                Suggested pattern: ${sug.title} (unverified)
-              </span>
-            </div>
-          ` : ''}
           <div style="width:56px; height:56px; margin:0 auto 14px; background:#f1f5f9; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#64748b;">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -366,25 +402,38 @@ function renderPopupTabContent() {
       };
     }
   } else if (popupActiveTab === 'solution') {
-    const supportedLangs = getSupportedLanguagesForProblem(problem);
-    const primarySolLang = problem?.solutions?.[0]?.lang || 
-      (problem?.category === 'Database' ? 'mysql' : 
-       problem?.category === 'pandas' ? 'pythondata' : 
-       problem?.category === 'Shell' ? 'bash' : 
-       problem?.category === 'JavaScript' ? 'javascript' : 'python3');
+    const sug = suggested_pattern || problem?.suggested_pattern;
+    const supportedLangs = isVerified
+      ? getSupportedLanguagesForProblem(problem)
+      : (sug && typeof getSupportedLanguagesForPattern === 'function' ? getSupportedLanguagesForPattern(sug) : getSupportedLanguagesForProblem(problem));
+
+    const primarySolLang = isVerified
+      ? (problem?.solutions?.[0]?.lang || 
+         (problem?.category === 'Database' ? 'mysql' : 
+          problem?.category === 'pandas' ? 'pythondata' : 
+          problem?.category === 'Shell' ? 'bash' : 
+          problem?.category === 'JavaScript' ? 'javascript' : 'python3'))
+      : (supportedLangs[0]?.langSlug || supportedLangs[0]?.id || 'python3');
 
     if (!supportedLangs.some(l => (l.langSlug || l.id) === popupActiveLang)) {
       popupActiveLang = supportedLangs.some(l => (l.langSlug || l.id) === primarySolLang) ? primarySolLang : (supportedLangs[0]?.langSlug || supportedLangs[0]?.id || 'python3');
     }
     const selectedMeta = (typeof getLanguageMeta === 'function' ? getLanguageMeta(popupActiveLang) : null) || { displayName: popupActiveLang, name: popupActiveLang };
-    const code = getProblemSolutionCode(problem, popupActiveLang);
+
+    let code = '';
+    if (isVerified) {
+      code = getProblemSolutionCode(problem, popupActiveLang);
+    } else if (sug && typeof getPatternCode === 'function') {
+      code = getPatternCode(sug, popupActiveLang);
+    }
     const activeCode = code && code.trim() ? code : `No verified solution in ${selectedMeta.displayName || selectedMeta.name} yet`;
+    const blueprintTitle = isVerified ? 'Blueprint' : (sug ? `Pattern Blueprint: ${sug.title}` : 'Blueprint');
 
     contentEl.innerHTML = `
       <div class="tab-content-pane">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:13px; font-weight:700; color:#1e2033;">
-            Blueprint
+            ${blueprintTitle}
           </span>
           <div style="display:flex; align-items:center; gap:6px;">
             ${supportedLangs.length === 0 ? `
@@ -437,6 +486,40 @@ function renderPopupTabContent() {
     }
   } else if (popupActiveTab === 'complexity') {
     if (!isVerified) {
+      const sug = suggested_pattern || problem?.suggested_pattern;
+      if (sug && sug.complexity) {
+        contentEl.innerHTML = `
+          <div class="tab-content-pane" style="text-align:left; padding:16px 12px;">
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:10px 12px; margin-bottom:12px;">
+              <span style="font-size:10px; font-weight:700; color:#1d4ed8; text-transform:uppercase; letter-spacing:0.5px;">Target Pattern Complexity</span>
+              <div style="font-size:14px; font-weight:700; color:#1e2033; margin-top:2px;">${sug.title}</div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:10px;">
+                <div style="font-size:10px; color:#64748b; font-weight:600; text-transform:uppercase;">Target Time</div>
+                <div style="font-family:'Space Grotesk', monospace; font-size:16px; font-weight:700; color:#1e2033; margin-top:2px;">
+                  ${sug.complexity.time || 'O(N)'}
+                </div>
+              </div>
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:10px;">
+                <div style="font-size:10px; color:#64748b; font-weight:600; text-transform:uppercase;">Auxiliary Space</div>
+                <div style="font-family:'Space Grotesk', monospace; font-size:16px; font-weight:700; color:#1e2033; margin-top:2px;">
+                  ${sug.complexity.space || 'O(1)'}
+                </div>
+              </div>
+            </div>
+            ${sug.complexity.notes ? `
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:12px; color:#475569; line-height:1.4;">
+                <strong style="color:#1e2033;">Pattern Notes:</strong> ${sug.complexity.notes}
+              </div>
+            ` : ''}
+            <div style="font-size:11px; color:#64748b; text-align:center; padding:4px;">
+              Standard complexity target for ${sug.title}. Detailed operation count in curation.
+            </div>
+          </div>
+        `;
+        return;
+      }
       contentEl.innerHTML = `
         <div class="tab-content-pane" style="text-align:center; padding:28px 12px;">
           <div style="width:52px; height:52px; margin:0 auto 12px; background:#f1f5f9; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#64748b;">

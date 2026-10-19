@@ -3,7 +3,7 @@ import { Search, Copy, Check } from 'lucide-react';
 import { Card } from './Card';
 import { Chip } from './Chip';
 import { sortPatternsByPedagogy, sortCategoriesByPedagogy } from '../lib/curriculum';
-import { SUPPORTED_LANGUAGES, getPatternCode } from '../lib/codeTemplates';
+import { getSupportedLanguagesForPattern, getPatternCode } from '../lib/codeTemplates';
 
 const DOMAIN_OPTIONS = [
   { id: 'Algorithms', label: 'Algorithms' },
@@ -20,7 +20,7 @@ export function PatternAtlas({ patterns = [], selectedPatternId }) {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [expandedId, setExpandedId] = useState(selectedPatternId || null);
-  const [langTab, setLangTab] = useState('py'); // 'py' | 'cpp' | 'java' | 'mysql'
+  const [langTab, setLangTab] = useState('python3');
   const [copiedId, setCopiedId] = useState(null);
 
   // Sync selectedPatternId when navigated from Wizard or Queue
@@ -167,7 +167,11 @@ export function PatternAtlas({ patterns = [], selectedPatternId }) {
             {filteredPatterns.map(pattern => {
               const isExpanded = expandedId === pattern.id;
               const { time, space } = parseComplexity(pattern.complexity);
-              const code = getPatternCode(pattern, langTab);
+              const supportedLangs = getSupportedLanguagesForPattern(pattern);
+              const activeLangId = supportedLangs.some(l => l.id === langTab)
+                ? langTab
+                : (supportedLangs[0]?.id || 'python3');
+              const code = getPatternCode(pattern, activeLangId);
 
               return (
                 <div key={pattern.id} className="transition-colors">
@@ -253,13 +257,13 @@ export function PatternAtlas({ patterns = [], selectedPatternId }) {
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           {/* Language selector tabs */}
                           <div className="flex items-center gap-1.5">
-                            {SUPPORTED_LANGUAGES.map((lang) => (
+                            {supportedLangs.map((lang) => (
                               <button
                                 key={lang.id}
                                 type="button"
                                 onClick={() => setLangTab(lang.id)}
                                 className={`px-2.5 py-1 rounded-md text-[13px] font-medium transition-colors ${
-                                  langTab === lang.id
+                                  activeLangId === lang.id
                                     ? 'bg-[#1e2033] text-white font-bold'
                                     : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
                                 }`}

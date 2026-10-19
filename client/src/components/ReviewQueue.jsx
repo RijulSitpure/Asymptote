@@ -33,7 +33,7 @@ export function ReviewQueue({ stats, patterns, problems, onSelectPattern, onPrac
       frontend_id: p?.frontend_id,
       name: p?.frontend_id ? `#${p.frontend_id} ${p?.title || ''}` : (p?.title || 'Problem'),
       query: p?.frontend_id ? String(p.frontend_id) : (p?.title_slug || p?.slug || p?.title || ''),
-      pattern_title: (p?.verified || p?.source === 'curated') ? (p?.pattern_title || p?.pattern_category || 'Pattern') : null,
+      pattern_title: (p?.verified || p?.source === 'curated') ? (p?.pattern_title || p?.pattern_category || 'Pattern') : (p?.pattern_title ? `${p.pattern_title} (Catalog)` : null),
       difficulty: p?.difficulty || 'Medium',
       is_solved: !!p?.is_solved,
       short_description: p?.summary || p?.user_notes || '',

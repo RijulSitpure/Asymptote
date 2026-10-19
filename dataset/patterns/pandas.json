@@ -14,7 +14,8 @@
     "constraint_signals": [
       "Vectorized boolean indexing avoids Python row-by-row iteration; bitwise operators &, | require parentheses around conditions"
     ],
-    "complexity": "Time: O(N * C) vectorized evaluation | Space: O(M * C) filtered view/copy"
+    "complexity": "Time: O(N * C) vectorized evaluation | Space: O(M * C) filtered view/copy",
+    "base_template_py": "import pandas as pd\n\ndef select_data(students: pd.DataFrame) -> pd.DataFrame:\n    return students[students[\"student_id\"] == 101][[\"name\", \"age\"]]"
   },
   {
     "id": "merge-join",
@@ -31,7 +32,8 @@
     "constraint_signals": [
       "Hash join on merge keys in memory; non-unique keys produce Cartesian product on matching values"
     ],
-    "complexity": "Time: O(M + N) average hash join | Space: O(M + N) merged dataframe"
+    "complexity": "Time: O(M + N) average hash join | Space: O(M + N) merged dataframe",
+    "base_template_py": "import pandas as pd\n\ndef merge_data(left_df: pd.DataFrame, right_df: pd.DataFrame) -> pd.DataFrame:\n    return left_df.merge(right_df, on=\"id\", how=\"left\")"
   },
   {
     "id": "groupby-agg",
@@ -48,7 +50,8 @@
     "constraint_signals": [
       "Split-apply-combine partitions indices; as_index=False avoids resetting index afterwards"
     ],
-    "complexity": "Time: O(N) hash grouping + O(K) aggregation | Space: O(K) aggregated dataframe"
+    "complexity": "Time: O(N) hash grouping + O(K) aggregation | Space: O(K) aggregated dataframe",
+    "base_template_py": "import pandas as pd\n\ndef group_summary(df: pd.DataFrame) -> pd.DataFrame:\n    return df.groupby(\"category\").agg(\n        total=(\"amount\", \"sum\"),\n        average=(\"amount\", \"mean\")\n    ).reset_index()"
   },
   {
     "id": "rank-shift",
@@ -65,7 +68,8 @@
     "constraint_signals": [
       "Sorting before shifting ensures correct chronological or ordinal comparisons"
     ],
-    "complexity": "Time: O(N log N) sorting + O(N) shifting | Space: O(N) series"
+    "complexity": "Time: O(N log N) sorting + O(N) shifting | Space: O(N) series",
+    "base_template_py": "import pandas as pd\n\ndef rank_and_shift(df: pd.DataFrame) -> pd.DataFrame:\n    df[\"rank\"] = df[\"score\"].rank(method=\"dense\", ascending=False)\n    df[\"prev_score\"] = df[\"score\"].shift(1)\n    return df"
   },
   {
     "id": "reshape",
@@ -82,7 +86,8 @@
     "constraint_signals": [
       "pivot() requires unique index/column pairs; pivot_table() supports aggregation for duplicate pairs"
     ],
-    "complexity": "Time: O(N) reshaping | Space: O(N) restructured dataframe"
+    "complexity": "Time: O(N) reshaping | Space: O(N) restructured dataframe",
+    "base_template_py": "import pandas as pd\n\ndef pivot_data(df: pd.DataFrame) -> pd.DataFrame:\n    return df.pivot(index=\"city\", columns=\"month\", values=\"temperature\").reset_index()"
   },
   {
     "id": "cleaning-nulls-duplicates",
@@ -99,7 +104,8 @@
     "constraint_signals": [
       "dropna() and drop_duplicates() with subset parameter provide in-place or copy deduplication"
     ],
-    "complexity": "Time: O(N) linear scan / hashing | Space: O(N) cleaned dataframe"
+    "complexity": "Time: O(N) linear scan / hashing | Space: O(N) cleaned dataframe",
+    "base_template_py": "import pandas as pd\n\ndef clean_data(df: pd.DataFrame) -> pd.DataFrame:\n    df = df.drop_duplicates(subset=[\"id\"], keep=\"first\")\n    df[\"quantity\"] = df[\"quantity\"].fillna(0)\n    return df.dropna(subset=[\"price\"]).reset_index(drop=True)"
   },
   {
     "id": "string-datetime-ops",
@@ -116,7 +122,8 @@
     "constraint_signals": [
       "Vectorized .str and .dt accessors avoid slow Python loop execution over Series elements"
     ],
-    "complexity": "Time: O(N * L) string operations / O(N) date conversions | Space: O(N) series"
+    "complexity": "Time: O(N * L) string operations / O(N) date conversions | Space: O(N) series",
+    "base_template_py": "import pandas as pd\n\ndef string_datetime(df: pd.DataFrame) -> pd.DataFrame:\n    df[\"clean_email\"] = df[\"email\"].str.strip().str.lower()\n    df[\"year\"] = pd.to_datetime(df[\"created_at\"]).dt.year\n    return df"
   },
   {
     "id": "vectorize-apply",
@@ -133,7 +140,8 @@
     "constraint_signals": [
       "np.select() executes in compiled C array speed; .apply(axis=1) is slow fallback for complex non-vectorizable logic"
     ],
-    "complexity": "Time: O(N) vectorized array evaluation | Space: O(N) output series"
+    "complexity": "Time: O(N) vectorized array evaluation | Space: O(N) output series",
+    "base_template_py": "import pandas as pd\nimport numpy as np\n\ndef transform_columns(df: pd.DataFrame) -> pd.DataFrame:\n    df[\"bonus\"] = df[\"salary\"] * 2\n    df[\"tier\"] = np.where(df[\"salary\"] >= 100000, \"High\", \"Standard\")\n    return df"
   },
   {
     "id": "dataframe-basics",
@@ -151,7 +159,8 @@
     "constraint_signals": [
       "Basic table instantiation and schema inspection with zero row-by-row iteration"
     ],
-    "complexity": "Time: O(N * C) where C is column count | Space: O(N * C)"
+    "complexity": "Time: O(N * C) where C is column count | Space: O(N * C)",
+    "base_template_py": "import pandas as pd\n\ndef inspect_dataframe(df: pd.DataFrame) -> list:\n    return [df.shape[0], df.shape[1]]"
   },
   {
     "id": "concat-sort-limit",
@@ -168,6 +177,7 @@
     "constraint_signals": [
       "Vertical concatenation requires aligned column headers; sort_values uses introsort O(N log N)"
     ],
-    "complexity": "Time: O(N log N) for sorting | Space: O(N)"
+    "complexity": "Time: O(N log N) for sorting | Space: O(N)",
+    "base_template_py": "import pandas as pd\n\ndef concat_and_sort(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:\n    combined = pd.concat([df1, df2], ignore_index=True)\n    return combined.sort_values(by=\"salary\", ascending=False).head(5).reset_index(drop=True)"
   }
 ]

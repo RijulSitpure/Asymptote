@@ -8,16 +8,23 @@ import './languages.js';
 const {
   SHOW_HEURISTIC_PATTERNS,
   LEETCODE_LANGUAGES,
+  CATEGORY_ALLOWED_LANGUAGES,
+  PATTERN_CATEGORY_LANGUAGES,
   getLanguageMeta,
   getSupportedLanguagesForProblem,
-  getProblemSolutionCode
+  getSupportedLanguagesForPattern,
+  getProblemSolutionCode,
+  getPatternCode: sharedGetPatternCode
 } = globalThis.LanguagesModule;
 
 export {
   SHOW_HEURISTIC_PATTERNS,
   LEETCODE_LANGUAGES,
+  CATEGORY_ALLOWED_LANGUAGES,
+  PATTERN_CATEGORY_LANGUAGES,
   getLanguageMeta,
   getSupportedLanguagesForProblem,
+  getSupportedLanguagesForPattern,
   getProblemSolutionCode
 };
 
@@ -32,6 +39,9 @@ export const SUPPORTED_LANGUAGES = [
  * Returns canonical pattern scaffold code if available.
  */
 export function getPatternCode(pattern, langSlug = 'python3') {
+  if (typeof sharedGetPatternCode === 'function') {
+    return sharedGetPatternCode(pattern, langSlug);
+  }
   if (!pattern) return '';
   const meta = getLanguageMeta(langSlug);
   const slug = meta ? meta.id : langSlug;

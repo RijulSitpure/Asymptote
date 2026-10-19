@@ -368,6 +368,12 @@ let activeSolutionLang = 'python3';
 let activeSolutionView = 'scaffold'; // 'scaffold' | 'twists' | 'notes'
 
 function getSupportedLanguages(problem) {
+  if (problem && !problem.verified && (problem.suggested_pattern || problem.pattern)) {
+    const sug = problem.suggested_pattern || problem.pattern;
+    if (typeof LanguagesModule !== 'undefined' && LanguagesModule?.getSupportedLanguagesForPattern) {
+      return LanguagesModule.getSupportedLanguagesForPattern(sug);
+    }
+  }
   if (LanguagesModule && LanguagesModule.getSupportedLanguagesForProblem) {
     return LanguagesModule.getSupportedLanguagesForProblem(problem);
   }
@@ -388,6 +394,10 @@ function getSupportedLanguages(problem) {
 
 function getCodeForLang(langSlug, hints, pattern, problem) {
   if (!problem || !problem.verified) {
+    const sug = problem?.suggested_pattern || pattern;
+    if (sug && typeof LanguagesModule !== 'undefined' && LanguagesModule?.getPatternCode) {
+      return LanguagesModule.getPatternCode(sug, langSlug);
+    }
     const meta = (typeof LanguagesModule !== 'undefined' && LanguagesModule?.getLanguageMeta) 
       ? LanguagesModule.getLanguageMeta(langSlug) 
       : null;
@@ -1034,6 +1044,49 @@ function renderDrawerTabContent() {
   // TAB 1: [ Hints ] (5.8 Hints tab: 4 hint rows + full-width amber button)
   if (activeDrawerTab === 'hints') {
     if (!isVerified) {
+      const sug = problem?.suggested_pattern || pattern;
+      if (sug) {
+        content.innerHTML = `
+          <div class="tab-content-pane">
+            ${headerHtml}
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px; margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:11px; font-weight:700; color:#1d4ed8; text-transform:uppercase; letter-spacing:0.5px;">Catalog Pattern Blueprint</span>
+                <span style="font-size:12px; font-weight:600; color:#475569; background:#ffffff; border:1px solid #cbd5e1; border-radius:9999px; padding:2px 8px;">${sug.category || problem.category || 'Algorithms'}</span>
+              </div>
+              <h3 style="font-family:'Space Grotesk', sans-serif; font-size:18px; font-weight:700; color:#1e2033; margin:0 0 6px 0;">
+                ${sug.title}
+              </h3>
+              <p style="font-size:13px; color:#475569; line-height:1.45; margin:0;">
+                ${sug.short_description || ''}
+              </p>
+            </div>
+
+            ${sug.mental_triggers && sug.mental_triggers.length > 0 ? `
+              <div class="card-white" style="margin-bottom:10px;">
+                <span style="font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:700; color:#1e2033; display:block; margin-bottom:8px;">Recognition Signals</span>
+                <ul style="margin:0; padding-left:18px; font-size:13px; color:#475569; line-height:1.5;">
+                  ${sug.mental_triggers.map(t => `<li style="margin-bottom:4px;">${t}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            ${sug.constraint_signals && sug.constraint_signals.length > 0 ? `
+              <div class="card-white" style="margin-bottom:12px;">
+                <span style="font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:700; color:#1e2033; display:block; margin-bottom:8px;">Constraint Signals</span>
+                <ul style="margin:0; padding-left:18px; font-size:13px; color:#475569; line-height:1.5;">
+                  ${sug.constraint_signals.map(s => `<li style="margin-bottom:4px;">${s}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            <div style="font-size:12px; color:#64748b; line-height:1.45; text-align:center; padding:8px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+              Problem-specific 4-level hints are in curation. Switch to the <strong>Solution</strong> tab for the pattern blueprint skeleton.
+            </div>
+          </div>
+        `;
+        return;
+      }
       content.innerHTML = `
         <div class="tab-content-pane">
           ${headerHtml}
@@ -1163,12 +1216,14 @@ function renderDrawerTabContent() {
     const isScaffold = activeSolutionView === 'scaffold';
     const isTwist = activeSolutionView === 'twists';
     const isNotes = activeSolutionView === 'notes';
+    const sug = problem?.suggested_pattern || pattern;
+    const blueprintTitle = isVerified ? 'Blueprint' : (sug ? `Blueprint (${sug.title})` : 'Blueprint');
 
     const codeCardHtml = `
       <div class="card-white" style="margin-top:12px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <span style="font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:700; color:#1e2033;">
-            Blueprint
+            ${blueprintTitle}
           </span>
           <button id="btn-copy-code" class="btn-secondary">
             Copy
@@ -1273,6 +1328,41 @@ function renderDrawerTabContent() {
   // TAB 3: [ Complexity ] (5.10 Complexity tab: Target time/space + Time limit, Space/time trade-off, What interviewers look for)
   else if (activeDrawerTab === 'complexity') {
     if (!isVerified) {
+      const sug = problem?.suggested_pattern || pattern;
+      if (sug && sug.complexity) {
+        content.innerHTML = `
+          <div class="tab-content-pane">
+            ${headerHtml}
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+              <span style="font-size:11px; font-weight:700; color:#1d4ed8; text-transform:uppercase; letter-spacing:0.5px;">Target Pattern Complexity</span>
+              <div style="font-size:14px; font-weight:700; color:#1e2033; margin-top:2px;">${sug.title}</div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                <div style="font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase;">Target Time</div>
+                <div style="font-family:'Space Grotesk', monospace; font-size:18px; font-weight:700; color:#1e2033; margin-top:4px;">
+                  ${sug.complexity.time || 'O(N)'}
+                </div>
+              </div>
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                <div style="font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase;">Target Space</div>
+                <div style="font-family:'Space Grotesk', monospace; font-size:18px; font-weight:700; color:#1e2033; margin-top:4px;">
+                  ${sug.complexity.space || 'O(1)'}
+                </div>
+              </div>
+            </div>
+            ${sug.complexity.notes ? `
+              <div class="card-white" style="margin-bottom:12px; font-size:13px; color:#475569; line-height:1.5;">
+                <strong style="color:#1e2033;">Pattern Notes:</strong> ${sug.complexity.notes}
+              </div>
+            ` : ''}
+            <div style="font-size:12px; color:#64748b; text-align:center; padding:8px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+              Target complexity for ${sug.title}. Problem-specific operation count in curation.
+            </div>
+          </div>
+        `;
+        return;
+      }
       content.innerHTML = `
         <div class="tab-content-pane">
           ${headerHtml}

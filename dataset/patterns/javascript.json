@@ -15,7 +15,9 @@
     "constraint_signals": [
       "State must persist between invocations without polluting global or outer namespace"
     ],
-    "complexity": "Time: O(1) per invocation | Space: O(1) closure scope memory"
+    "complexity": "Time: O(1) per invocation | Space: O(1) closure scope memory",
+    "base_template_js": "function createCounter(n) {\n    let count = n;\n    return function() {\n        return count++;\n    };\n}",
+    "base_template_ts": "function createCounter(n: number): () => number {\n    let count = n;\n    return function(): number {\n        return count++;\n    };\n}"
   },
   {
     "id": "higher-order-functions",
@@ -32,7 +34,9 @@
     "constraint_signals": [
       "Pure functional transformations operating on functions as first-class citizens"
     ],
-    "complexity": "Time: O(F) where F is number of composed functions | Space: O(F) call stack"
+    "complexity": "Time: O(F) where F is number of composed functions | Space: O(F) call stack",
+    "base_template_js": "function compose(functions) {\n    return function(x) {\n        return functions.reduceRight((acc, fn) => fn(acc), x);\n    };\n}",
+    "base_template_ts": "type F = (x: number) => number;\n\nfunction compose(functions: F[]): F {\n    return function(x: number): number {\n        return functions.reduceRight((acc, fn) => fn(acc), x);\n    };\n}"
   },
   {
     "id": "promises-async",
@@ -49,7 +53,9 @@
     "constraint_signals": [
       "Non-blocking I/O operations with resolved/rejected state transitions in microtask queue"
     ],
-    "complexity": "Time: O(N) scheduling across event loop microtask queue | Space: O(N) promise references"
+    "complexity": "Time: O(N) scheduling across event loop microtask queue | Space: O(N) promise references",
+    "base_template_js": "async function promiseAll(functions) {\n    return new Promise((resolve, reject) => {\n        const results = new Array(functions.length);\n        let resolvedCount = 0;\n        if (functions.length === 0) return resolve(results);\n        functions.forEach((fn, index) => {\n            fn().then(val => {\n                results[index] = val;\n                if (++resolvedCount === functions.length) resolve(results);\n            }).catch(reject);\n        });\n    });\n}",
+    "base_template_ts": "async function promiseAll<T>(functions: (() => Promise<T>)[]): Promise<T[]> {\n    return new Promise((resolve, reject) => {\n        const results: T[] = new Array(functions.length);\n        let resolvedCount = 0;\n        if (functions.length === 0) return resolve(results);\n        functions.forEach((fn, index) => {\n            fn().then(val => {\n                results[index] = val;\n                if (++resolvedCount === functions.length) resolve(results);\n            }).catch(reject);\n        });\n    });\n}"
   },
   {
     "id": "timing-control",
@@ -66,7 +72,9 @@
     "constraint_signals": [
       "High-frequency event triggers risk overloading execution thread or API rate limits"
     ],
-    "complexity": "Time: O(1) timer schedule / cancellation | Space: O(1) timer handle closure"
+    "complexity": "Time: O(1) timer schedule / cancellation | Space: O(1) timer handle closure",
+    "base_template_js": "function debounce(fn, t) {\n    let timerId = null;\n    return function(...args) {\n        clearTimeout(timerId);\n        timerId = setTimeout(() => fn(...args), t);\n    };\n}",
+    "base_template_ts": "type F = (...args: any[]) => void;\n\nfunction debounce(fn: F, t: number): F {\n    let timerId: any = null;\n    return function(...args: any[]) {\n        clearTimeout(timerId);\n        timerId = setTimeout(() => fn(...args), t);\n    };\n}"
   },
   {
     "id": "object-array-utilities",
@@ -82,7 +90,9 @@
     "constraint_signals": [
       "Arbitrarily nested recursive data structures; fast hash-table lookup for cached invocations"
     ],
-    "complexity": "Time: O(N) traversal over all nested elements | Space: O(D) recursion depth + O(N) output"
+    "complexity": "Time: O(N) traversal over all nested elements | Space: O(D) recursion depth + O(N) output",
+    "base_template_js": "Array.prototype.groupBy = function(fn) {\n    const result = {};\n    for (const item of this) {\n        const key = fn(item);\n        if (!result[key]) result[key] = [];\n        result[key].push(item);\n    }\n    return result;\n};",
+    "base_template_ts": "declare global {\n    interface Array<T> {\n        groupBy(fn: (item: T) => string): Record<string, T[]>;\n    }\n}\n\nArray.prototype.groupBy = function<T>(fn: (item: T) => string): Record<string, T[]> {\n    const result: Record<string, T[]> = {};\n    for (const item of this) {\n        const key = fn(item);\n        if (!result[key]) result[key] = [];\n        result[key].push(item);\n    }\n    return result;\n};"
   },
   {
     "id": "classes-and-chaining",
@@ -99,7 +109,9 @@
     "constraint_signals": [
       "Returning this enables fluent chaining; event listeners stored in Map/Object keyed by event name"
     ],
-    "complexity": "Time: O(1) subscribe, O(L) emit where L is listener count | Space: O(L)"
+    "complexity": "Time: O(1) subscribe, O(L) emit where L is listener count | Space: O(L)",
+    "base_template_js": "class Calculator {\n    constructor(value) {\n        this.result = value;\n    }\n    add(value) { this.result += value; return this; }\n    subtract(value) { this.result -= value; return this; }\n    multiply(value) { this.result *= value; return this; }\n    divide(value) {\n        if (value === 0) throw new Error(\"Division by zero is not allowed\");\n        this.result /= value; return this;\n    }\n    getResult() { return this.result; }\n}",
+    "base_template_ts": "class Calculator {\n    private result: number;\n    constructor(value: number) { this.result = value; }\n    add(value: number): Calculator { this.result += value; return this; }\n    subtract(value: number): Calculator { this.result -= value; return this; }\n    multiply(value: number): Calculator { this.result *= value; return this; }\n    divide(value: number): Calculator {\n        if (value === 0) throw new Error(\"Division by zero is not allowed\");\n        this.result /= value; return this;\n    }\n    getResult(): number { return this.result; }\n}"
   },
   {
     "id": "array-prototype-methods",
@@ -117,7 +129,9 @@
     "constraint_signals": [
       "Prototype methods access instance data via this keyword; handles empty array edge cases"
     ],
-    "complexity": "Time: O(N) linear iteration | Space: O(N) grouped/chunked output"
+    "complexity": "Time: O(N) linear iteration | Space: O(N) grouped/chunked output",
+    "base_template_js": "function chunk(arr, size) {\n    const chunked = [];\n    for (let i = 0; i < arr.length; i += size) {\n        chunked.push(arr.slice(i, i + size));\n    }\n    return chunked;\n}",
+    "base_template_ts": "function chunk<T>(arr: T[], size: number): T[][] {\n    const chunked: T[][] = [];\n    for (let i = 0; i < arr.length; i += size) {\n        chunked.push(arr.slice(i, i + size));\n    }\n    return chunked;\n}"
   },
   {
     "id": "json-object-traversal",
@@ -134,6 +148,8 @@
     "constraint_signals": [
       "Arbitrarily nested JSON structures; distinguishing between Array.isArray(obj) and plain objects"
     ],
-    "complexity": "Time: O(N) total keys/elements | Space: O(D) recursion stack depth"
+    "complexity": "Time: O(N) total keys/elements | Space: O(D) recursion stack depth",
+    "base_template_js": "function compactObject(obj) {\n    if (obj === null || typeof obj !== \"object\") return obj;\n    if (Array.isArray(obj)) {\n        return obj.filter(Boolean).map(compactObject);\n    }\n    const compacted = {};\n    for (const [key, value] of Object.entries(obj)) {\n        if (Boolean(value)) {\n            compacted[key] = compactObject(value);\n        }\n    }\n    return compacted;\n}",
+    "base_template_ts": "type JSONValue = null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };\n\nfunction compactObject(obj: JSONValue): JSONValue {\n    if (obj === null || typeof obj !== \"object\") return obj;\n    if (Array.isArray(obj)) {\n        return obj.filter(Boolean).map(compactObject);\n    }\n    const compacted: Record<string, JSONValue> = {};\n    for (const [key, value] of Object.entries(obj)) {\n        if (Boolean(value)) {\n            compacted[key] = compactObject(value);\n        }\n    }\n    return compacted;\n}"
   }
 ]

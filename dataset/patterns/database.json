@@ -15,7 +15,9 @@
       "Tables indexed on join keys allow nested loop or hash join in O(M + N)",
       "Missing records should be filled with NULL (requires LEFT JOIN)"
     ],
-    "complexity": "Query Time: O(M log N) or O(M + N) with index on join key | Space: O(M + N)"
+    "complexity": "Query Time: O(M log N) or O(M + N) with index on join key | Space: O(M + N)",
+    "base_template_sql": "SELECT a.id, a.name, b.department_name\nFROM Employees a\nLEFT JOIN Departments b ON a.department_id = b.id\nWHERE b.is_active = 1;",
+    "base_template_py": "import pandas as pd\n\ndef join_filter(employees: pd.DataFrame, departments: pd.DataFrame) -> pd.DataFrame:\n    merged = employees.merge(departments, left_on=\"department_id\", right_on=\"id\", how=\"left\")\n    return merged[merged[\"is_active\"] == 1][[\"id\", \"name\", \"department_name\"]]"
   },
   {
     "id": "anti-join",
@@ -32,7 +34,9 @@
     "constraint_signals": [
       "Nullable columns in secondary table can make NOT IN fail; NOT EXISTS or LEFT JOIN ... IS NULL is safer and index-friendly"
     ],
-    "complexity": "Query Time: O(M + N) with index-backed foreign key | Space: O(M) temporary set"
+    "complexity": "Query Time: O(M + N) with index-backed foreign key | Space: O(M) temporary set",
+    "base_template_sql": "SELECT c.name AS Customers\nFROM Customers c\nLEFT JOIN Orders o ON c.id = o.customer_id\nWHERE o.customer_id IS NULL;",
+    "base_template_py": "import pandas as pd\n\ndef anti_join(customers: pd.DataFrame, orders: pd.DataFrame) -> pd.DataFrame:\n    active_ids = orders[\"customer_id\"].dropna().unique()\n    return customers[~customers[\"id\"].isin(active_ids)][[\"name\"]]"
   },
   {
     "id": "group-aggregate",
@@ -49,7 +53,9 @@
     "constraint_signals": [
       "High-cardinality grouping requires memory hash table; pre-sorted input or index on GROUP BY keys avoids temporary files"
     ],
-    "complexity": "Query Time: O(N log N) or O(N) with index grouping | Space: O(K) where K is number of groups"
+    "complexity": "Query Time: O(N log N) or O(N) with index grouping | Space: O(K) where K is number of groups",
+    "base_template_sql": "SELECT department_id, COUNT(*) AS employee_count, AVG(salary) AS avg_salary\nFROM Employees\nGROUP BY department_id;",
+    "base_template_py": "import pandas as pd\n\ndef group_aggregate(employees: pd.DataFrame) -> pd.DataFrame:\n    return employees.groupby(\"department_id\").agg(\n        employee_count=(\"id\", \"count\"),\n        avg_salary=(\"salary\", \"mean\")\n    ).reset_index()"
   },
   {
     "id": "having-filter",
@@ -66,7 +72,9 @@
     "constraint_signals": [
       "Filter conditions reference aggregate functions (COUNT, SUM, AVG) rather than raw individual row attributes"
     ],
-    "complexity": "Query Time: O(N log N) for grouping + O(K) bucket filter | Space: O(K) groups"
+    "complexity": "Query Time: O(N log N) for grouping + O(K) bucket filter | Space: O(K) groups",
+    "base_template_sql": "SELECT email\nFROM Person\nGROUP BY email\nHAVING COUNT(*) > 1;",
+    "base_template_py": "import pandas as pd\n\ndef having_filter(person: pd.DataFrame) -> pd.DataFrame:\n    counts = person.groupby(\"email\").size().reset_index(name=\"cnt\")\n    return counts[counts[\"cnt\"] > 1][[\"email\"]]"
   },
   {
     "id": "window-ranking",
@@ -83,7 +91,9 @@
     "constraint_signals": [
       "Result requires retaining individual row identity while assigning rank values partitioned by department or category"
     ],
-    "complexity": "Query Time: O(N log N) for window sorting | Space: O(N) window frame buffer"
+    "complexity": "Query Time: O(N log N) for window sorting | Space: O(N) window frame buffer",
+    "base_template_sql": "SELECT score, DENSE_RANK() OVER (ORDER BY score DESC) AS \nFROM Scores;",
+    "base_template_py": "import pandas as pd\n\ndef window_ranking(scores: pd.DataFrame) -> pd.DataFrame:\n    scores[\"rank\"] = scores[\"score\"].rank(method=\"dense\", ascending=False)\n    return scores.sort_values(by=\"score\", ascending=False).reset_index(drop=True)"
   },
   {
     "id": "window-offset",
@@ -100,7 +110,9 @@
     "constraint_signals": [
       "Chronological row comparisons where each row must inspect adjacent previous/next row within partition"
     ],
-    "complexity": "Query Time: O(N log N) for ordered partitioning | Space: O(N) window frame buffer"
+    "complexity": "Query Time: O(N log N) for ordered partitioning | Space: O(N) window frame buffer",
+    "base_template_sql": "SELECT DISTINCT num AS ConsecutiveNums\nFROM (\n    SELECT num,\n           LAG(num, 1) OVER (ORDER BY id) AS prev_num,\n           LEAD(num, 1) OVER (ORDER BY id) AS next_num\n    FROM Logs\n) t\nWHERE num = prev_num AND num = next_num;",
+    "base_template_py": "import pandas as pd\n\ndef window_offset(logs: pd.DataFrame) -> pd.DataFrame:\n    logs = logs.sort_values(\"id\").reset_index(drop=True)\n    is_consec = (logs[\"num\"] == logs[\"num\"].shift(1)) & (logs[\"num\"] == logs[\"num\"].shift(-1))\n    return logs[is_consec][[\"num\"]].drop_duplicates().rename(columns={\"num\": \"ConsecutiveNums\"})"
   },
   {
     "id": "running-total",
@@ -118,7 +130,9 @@
       "ORDER BY inside OVER() creates cumulative frame (RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) by default",
       "With ORDER BY, the default frame is RANGE, so tied rows share one running total; use ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW for strict row-by-row totals."
     ],
-    "complexity": "Query Time: O(N log N) for sorting | Space: O(N) window buffer"
+    "complexity": "Query Time: O(N log N) for sorting | Space: O(N) window buffer",
+    "base_template_sql": "SELECT visited_on,\n       SUM(amount) OVER (\n           ORDER BY visited_on\n           ROWS BETWEEN 6 PRECEDING AND CURRENT ROW\n       ) AS amount,\n       ROUND(AVG(amount) OVER (\n           ORDER BY visited_on\n           ROWS BETWEEN 6 PRECEDING AND CURRENT ROW\n       ), 2) AS average_amount\nFROM Customer;",
+    "base_template_py": "import pandas as pd\n\ndef running_total(customer: pd.DataFrame) -> pd.DataFrame:\n    daily = customer.groupby(\"visited_on\")[\"amount\"].sum().reset_index()\n    daily[\"rolling_amount\"] = daily[\"amount\"].rolling(window=7, min_periods=7).sum()\n    daily[\"average_amount\"] = (daily[\"rolling_amount\"] / 7).round(2)\n    return daily.dropna().reset_index(drop=True)"
   },
   {
     "id": "top-n-per-group",
@@ -135,7 +149,9 @@
     "constraint_signals": [
       "Requires subquery or CTE because window functions cannot appear directly in WHERE clause"
     ],
-    "complexity": "Query Time: O(N log N) window sort + O(N) outer predicate | Space: O(N) CTE materialization"
+    "complexity": "Query Time: O(N log N) window sort + O(N) outer predicate | Space: O(N) CTE materialization",
+    "base_template_sql": "WITH Ranked AS (\n    SELECT e.id, e.name, e.salary, e.departmentId,\n           DENSE_RANK() OVER (PARTITION BY e.departmentId ORDER BY e.salary DESC) AS rnk\n    FROM Employee e\n)\nSELECT d.name AS Department, r.name AS Employee, r.salary AS Salary\nFROM Ranked r\nJOIN Department d ON r.departmentId = d.id\nWHERE r.rnk <= 3;",
+    "base_template_py": "import pandas as pd\n\ndef top_n_per_group(employee: pd.DataFrame, department: pd.DataFrame) -> pd.DataFrame:\n    employee[\"rnk\"] = employee.groupby(\"departmentId\")[\"salary\"].rank(method=\"dense\", ascending=False)\n    top3 = employee[employee[\"rnk\"] <= 3]\n    merged = top3.merge(department, left_on=\"departmentId\", right_on=\"id\", suffixes=(\"_emp\", \"_dept\"))\n    return merged[[\"name_dept\", \"name_emp\", \"salary\"]].rename(columns={\"name_dept\": \"Department\", \"name_emp\": \"Employee\", \"salary\": \"Salary\"})"
   },
   {
     "id": "self-join",
@@ -152,7 +168,9 @@
     "constraint_signals": [
       "Single table contains both the entity and a foreign key pointing to another row in the same table"
     ],
-    "complexity": "Query Time: O(N log N) or O(N^2) unindexed | Space: O(N) intermediate join table"
+    "complexity": "Query Time: O(N log N) or O(N^2) unindexed | Space: O(N) intermediate join table",
+    "base_template_sql": "SELECT e.name AS Employee\nFROM Employee e\nJOIN Employee m ON e.managerId = m.id\nWHERE e.salary > m.salary;",
+    "base_template_py": "import pandas as pd\n\ndef self_join(employee: pd.DataFrame) -> pd.DataFrame:\n    merged = employee.merge(employee, left_on=\"managerId\", right_on=\"id\", suffixes=(\"\", \"_mgr\"))\n    return merged[merged[\"salary\"] > merged[\"salary_mgr\"]][[\"name\"]].rename(columns={\"name\": \"Employee\"})"
   },
   {
     "id": "gaps-and-islands",
@@ -169,7 +187,9 @@
     "constraint_signals": [
       "Subtracting ROW_NUMBER() from a date or sequence number yields a constant invariant for all rows in the same contiguous island"
     ],
-    "complexity": "Query Time: O(N log N) window sort + O(N) group aggregation | Space: O(N) window tracking buffer"
+    "complexity": "Query Time: O(N log N) window sort + O(N) group aggregation | Space: O(N) window tracking buffer",
+    "base_template_sql": "WITH Numbered AS (\n    SELECT log_date,\n           DATE_SUB(log_date, INTERVAL ROW_NUMBER() OVER (ORDER BY log_date) DAY) AS island_id\n    FROM UserActivity\n)\nSELECT MIN(log_date) AS start_date, MAX(log_date) AS end_date, COUNT(*) AS streak_length\nFROM Numbered\nGROUP BY island_id;",
+    "base_template_py": "import pandas as pd\n\ndef gaps_and_islands(df: pd.DataFrame) -> pd.DataFrame:\n    df[\"log_date\"] = pd.to_datetime(df[\"log_date\"])\n    df = df.sort_values(\"log_date\").reset_index(drop=True)\n    df[\"island\"] = df[\"log_date\"] - pd.to_timedelta(df.index, unit=\"D\")\n    return df.groupby(\"island\").agg(start_date=(\"log_date\", \"min\"), end_date=(\"log_date\", \"max\"), streak_length=(\"log_date\", \"count\")).reset_index(drop=True)"
   },
   {
     "id": "recursive-cte",
@@ -189,7 +209,9 @@
     "complexity": "Time: O(rows produced) | Space: O(rows produced) where the engine materializes the CTE",
     "dialect_notes": {
       "mysql": "cte_max_recursion_depth defaults to 1000, so long sequences such as date ranges need it raised or a different approach."
-    }
+    },
+    "base_template_sql": "WITH RECURSIVE Hierarchy AS (\n    SELECT id, name, manager_id, 1 AS depth\n    FROM Employees\n    WHERE manager_id IS NULL\n    UNION ALL\n    SELECT e.id, e.name, e.manager_id, h.depth + 1\n    FROM Employees e\n    JOIN Hierarchy h ON e.manager_id = h.id\n)\nSELECT * FROM Hierarchy ORDER BY depth, id;",
+    "base_template_py": "import pandas as pd\n\ndef recursive_hierarchy(employees: pd.DataFrame) -> pd.DataFrame:\n    roots = employees[employees[\"manager_id\"].isna()].copy()\n    roots[\"depth\"] = 1\n    levels = [roots]\n    while True:\n        curr = levels[-1]\n        nxt = employees.merge(curr[[\"id\", \"depth\"]], left_on=\"manager_id\", right_on=\"id\", suffixes=(\"\", \"_parent\"))\n        if nxt.empty: break\n        nxt[\"depth\"] = nxt[\"depth\"] + 1\n        levels.append(nxt[[\"id\", \"name\", \"manager_id\", \"depth\"]])\n    return pd.concat(levels, ignore_index=True)"
   },
   {
     "id": "conditional-pivot",
@@ -206,7 +228,9 @@
     "constraint_signals": [
       "Input is tall/narrow and target output is wide with fixed column headers for each category value"
     ],
-    "complexity": "Query Time: O(N) single-pass aggregate over groups | Space: O(K) where K is distinct groups"
+    "complexity": "Query Time: O(N) single-pass aggregate over groups | Space: O(K) where K is distinct groups",
+    "base_template_sql": "SELECT product_id,\n       SUM(CASE WHEN store = \"store1\" THEN price ELSE NULL END) AS store1,\n       SUM(CASE WHEN store = \"store2\" THEN price ELSE NULL END) AS store2,\n       SUM(CASE WHEN store = \"store3\" THEN price ELSE NULL END) AS store3\nFROM Products\nGROUP BY product_id;",
+    "base_template_py": "import pandas as pd\n\ndef conditional_pivot(products: pd.DataFrame) -> pd.DataFrame:\n    return products.pivot(index=\"product_id\", columns=\"store\", values=\"price\").reset_index()"
   },
   {
     "id": "date-time",
@@ -226,7 +250,9 @@
     "complexity": "Query Time: O(N) linear evaluation; can use index range scan if function is not wrapped on column | Space: O(1)",
     "dialect_notes": {
       "general": "Date and interval functions differ significantly across SQL engines (e.g. DATEDIFF in MySQL vs interval arithmetic in PostgreSQL)."
-    }
+    },
+    "base_template_sql": "SELECT w1.id\nFROM Weather w1\nJOIN Weather w2 ON DATEDIFF(w1.recordDate, w2.recordDate) = 1\nWHERE w1.temperature > w2.temperature;",
+    "base_template_py": "import pandas as pd\n\ndef date_time_cmp(weather: pd.DataFrame) -> pd.DataFrame:\n    weather[\"recordDate\"] = pd.to_datetime(weather[\"recordDate\"])\n    weather = weather.sort_values(\"recordDate\").reset_index(drop=True)\n    date_diff = (weather[\"recordDate\"] - weather[\"recordDate\"].shift(1)).dt.days\n    temp_diff = weather[\"temperature\"] - weather[\"temperature\"].shift(1)\n    return weather[(date_diff == 1) & (temp_diff > 0)][[\"id\"]]"
   },
   {
     "id": "string-handling",
@@ -249,7 +275,9 @@
       "postgresql": "STRING_AGG for string aggregation",
       "mssql": "STRING_AGG for string aggregation",
       "oraclesql": "LISTAGG for string aggregation"
-    }
+    },
+    "base_template_sql": "SELECT user_id,\n       CONCAT(UPPER(SUBSTRING(name, 1, 1)), LOWER(SUBSTRING(name, 2))) AS name\nFROM Users\nORDER BY user_id;",
+    "base_template_py": "import pandas as pd\n\ndef fix_names(users: pd.DataFrame) -> pd.DataFrame:\n    users[\"name\"] = users[\"name\"].str.capitalize()\n    return users.sort_values(\"user_id\").reset_index(drop=True)"
   },
   {
     "id": "set-operations",
@@ -270,7 +298,9 @@
     "dialect_notes": {
       "mysql": "INTERSECT and EXCEPT exist only in MySQL 8.0.31 and later; otherwise use EXISTS / NOT EXISTS or joins",
       "oraclesql": "uses MINUS instead of EXCEPT"
-    }
+    },
+    "base_template_sql": "SELECT id, name FROM SourceA\nUNION\nSELECT id, name FROM SourceB;",
+    "base_template_py": "import pandas as pd\n\ndef set_operations(source_a: pd.DataFrame, source_b: pd.DataFrame) -> pd.DataFrame:\n    return pd.concat([source_a, source_b], ignore_index=True).drop_duplicates()"
   },
   {
     "id": "null-handling",
@@ -293,7 +323,9 @@
       "postgresql": "COALESCE(col, default)",
       "mssql": "ISNULL(col, default) or COALESCE(col, default)",
       "oraclesql": "NVL(col, default) or COALESCE(col, default)"
-    }
+    },
+    "base_template_sql": "SELECT e.name, b.bonus\nFROM Employee e\nLEFT JOIN Bonus b ON e.empId = b.empId\nWHERE COALESCE(b.bonus, 0) < 1000;",
+    "base_template_py": "import pandas as pd\n\ndef null_handling(employee: pd.DataFrame, bonus: pd.DataFrame) -> pd.DataFrame:\n    merged = employee.merge(bonus, on=\"empId\", how=\"left\")\n    merged[\"bonus\"] = merged[\"bonus\"].fillna(0)\n    return merged[merged[\"bonus\"] < 1000][[\"name\", \"bonus\"]]"
   },
   {
     "id": "correlated-subquery-exists",
@@ -310,7 +342,9 @@
     "constraint_signals": [
       "Correlated subqueries execute per candidate outer row unless rewritten by query optimizer into a join"
     ],
-    "complexity": "Query Time: O(M * N) unindexed, O(M log N) with index | Space: O(1)"
+    "complexity": "Query Time: O(M * N) unindexed, O(M log N) with index | Space: O(1)",
+    "base_template_sql": "SELECT e.name\nFROM Employee e\nWHERE EXISTS (\n    SELECT 1 FROM Employee sub\n    WHERE sub.managerId = e.id\n    HAVING COUNT(*) >= 5\n);",
+    "base_template_py": "import pandas as pd\n\ndef exists_subquery(employee: pd.DataFrame) -> pd.DataFrame:\n    mgr_counts = employee[\"managerId\"].value_counts()\n    valid_ids = mgr_counts[mgr_counts >= 5].index\n    return employee[employee[\"id\"].isin(valid_ids)][[\"name\"]]"
   },
   {
     "id": "nth-highest-limit-offset",
@@ -334,7 +368,9 @@
       "postgresql": "LIMIT 1 OFFSET N-1",
       "mssql": "OFFSET N-1 ROWS FETCH NEXT 1 ROWS ONLY",
       "oraclesql": "OFFSET N-1 ROWS FETCH NEXT 1 ROWS ONLY"
-    }
+    },
+    "base_template_sql": "SELECT (\n    SELECT DISTINCT salary\n    FROM Employee\n    ORDER BY salary DESC\n    LIMIT 1 OFFSET 1\n) AS SecondHighestSalary;",
+    "base_template_py": "import pandas as pd\n\ndef nth_highest(employee: pd.DataFrame, n: int = 2) -> pd.DataFrame:\n    unique_salaries = employee[\"salary\"].drop_duplicates().sort_values(ascending=False).reset_index(drop=True)\n    if len(unique_salaries) < n:\n        return pd.DataFrame({\"SecondHighestSalary\": [None]})\n    return pd.DataFrame({\"SecondHighestSalary\": [unique_salaries.iloc[n - 1]]})"
   },
   {
     "id": "dml-update-delete",
@@ -351,6 +387,8 @@
     "constraint_signals": [
       "MySQL disallows deleting from a table while selecting from the same table in a subquery without aliased temporary table"
     ],
-    "complexity": "Query Time: O(N log N) or O(N^2) unindexed | Space: O(1)"
+    "complexity": "Query Time: O(N log N) or O(N^2) unindexed | Space: O(1)",
+    "base_template_sql": "DELETE p1\nFROM Person p1\nJOIN Person p2 ON p1.email = p2.email AND p1.id > p2.id;",
+    "base_template_py": "import pandas as pd\n\ndef delete_duplicates(person: pd.DataFrame) -> None:\n    person.sort_values(by=\"id\", inplace=True)\n    person.drop_duplicates(subset=[\"email\"], keep=\"first\", inplace=True)"
   }
 ]

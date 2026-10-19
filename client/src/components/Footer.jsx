@@ -42,7 +42,7 @@ export function Footer({ onOpenFeedback }) {
             </div>
             <p className="text-[13px] text-[#64748b] leading-relaxed">
               Offline algorithmic pattern intelligence and Socratic mentor for LeetCode. 
-              Master the invariants behind 99 core archetypes instead of memorizing solutions.
+              Master the approach instead of memorizing solutions.
             </p>
             <div className="flex items-center gap-2 text-[12px] text-[#047857] font-medium">
               <ShieldCheck className="w-4 h-4 text-[#059669]" />
@@ -83,17 +83,17 @@ export function Footer({ onOpenFeedback }) {
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center gap-3">
                 <a
-                  href="https://github.com/Rijul-Sitpure"
+                  href="https://github.com/RijulSitpure"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-[13px] font-medium text-[#334155] hover:text-[#1e2033] transition-colors"
                 >
                   <GithubIcon className="w-4 h-4" />
-                  <span>@Rijul-Sitpure</span>
+                  <span>@RijulSitpure</span>
                 </a>
                 <span className="text-[#cbd5e1]">•</span>
                 <a
-                  href="https://www.linkedin.com/in/rijul-sitpure"
+                  href="https://www.linkedin.com/in/rijulsitpure"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-[13px] font-medium text-[#0a66c2] hover:text-[#004182] transition-colors"
@@ -105,7 +105,7 @@ export function Footer({ onOpenFeedback }) {
 
               <div className="flex items-center gap-2 pt-1">
                 <a
-                  href="https://github.com/Rijul-Sitpure/LeetCode-Pattern_Tracker"
+                  href="https://github.com/RijulSitpure/LeetCode-Pattern_Tracker"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-secondary !py-1.5 !px-3 !text-[12px] flex items-center gap-1.5"
@@ -139,7 +139,7 @@ export function Footer({ onOpenFeedback }) {
 
           <div className="flex items-center gap-4">
             <a
-              href="https://github.com/Rijul-Sitpure/LeetCode-Pattern_Tracker/issues/new?labels=bug"
+              href="https://github.com/RijulSitpure/LeetCode-Pattern_Tracker/issues/new?labels=bug"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#9f1239] transition-colors flex items-center gap-1"
@@ -149,7 +149,7 @@ export function Footer({ onOpenFeedback }) {
             </a>
             <span>•</span>
             <a
-              href="https://github.com/Rijul-Sitpure/LeetCode-Pattern_Tracker/issues/new?labels=enhancement"
+              href="https://github.com/RijulSitpure/LeetCode-Pattern_Tracker/issues/new?labels=enhancement"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#047857] transition-colors flex items-center gap-1"

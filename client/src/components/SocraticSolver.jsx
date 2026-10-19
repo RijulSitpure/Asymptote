@@ -3,7 +3,13 @@ import { Copy, Check, HelpCircle } from 'lucide-react';
 import { Card } from './Card';
 import { Chip } from './Chip';
 import { useToast } from './Toast';
-import { SHOW_HEURISTIC_PATTERNS, getSupportedLanguagesForProblem, getProblemSolutionCode } from '../lib/codeTemplates';
+import {
+  SHOW_HEURISTIC_PATTERNS,
+  getSupportedLanguagesForProblem,
+  getSupportedLanguagesForPattern,
+  getProblemSolutionCode,
+  getPatternCode
+} from '../lib/codeTemplates';
 import { fetchProblemHints } from '../lib/engineClient';
 
 const GENERIC_HINT_TITLES = {
@@ -307,26 +313,192 @@ export function SocraticSolver({ initialProblemQuery }) {
             </Card>
           )}
 
-          {/* If NOT verified: Show empty-state pattern tile from spec 8.3 */}
+          {/* If NOT verified: Show Pattern Intelligence Blueprint if suggested pattern exists, else clean empty state */}
           {!isVerified ? (
-            <Card className="text-center py-12 px-6 space-y-4">
-              <div className="w-14 h-14 mx-auto rounded-xl bg-[#f1f5f9] flex items-center justify-center text-[#64748b]">
-                <HelpCircle className="w-7 h-7" />
+            data.suggested_pattern ? (
+              <div className="space-y-4">
+                {/* Pattern Blueprint Header Card */}
+                <Card className="space-y-4 border-l-4 border-l-[#3b82f6]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#e2e8f0]">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="chip text-[11px] font-semibold bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]">
+                          Catalog Pattern Blueprint
+                        </span>
+                        <span className="chip text-[11px] font-medium text-[#64748b] bg-[#f8fafc] border border-[#e2e8f0]">
+                          Uncurated Problem
+                        </span>
+                      </div>
+                      <h3 className="font-heading text-[20px] font-bold text-[#1e2033]">
+                        {data.suggested_pattern.title}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Chip variant="neutral">
+                        {data.suggested_pattern.category || data.problem.category}
+                      </Chip>
+                      <Chip variant={(data.suggested_pattern.difficulty || 'medium').toLowerCase()}>
+                        {data.suggested_pattern.difficulty || 'Medium'}
+                      </Chip>
+                    </div>
+                  </div>
+
+                  <p className="text-[14px] text-[#475569] leading-relaxed">
+                    {data.suggested_pattern.short_description}
+                  </p>
+
+                  <div className="p-3 bg-[#f8fafc] rounded-lg border border-[#e2e8f0] text-[13px] text-[#64748b] flex items-start gap-2.5">
+                    <span className="text-[#3b82f6] font-bold text-[16px] leading-none">ℹ</span>
+                    <span>
+                      Problem-specific 4-level hints are currently in curation. Master the recognition signals, constraint invariants, and starter blueprint below to structure your approach.
+                    </span>
+                  </div>
+                </Card>
+
+                {/* Target Pattern Complexity */}
+                {data.suggested_pattern.complexity && (
+                  <Card className="space-y-3">
+                    <div className="flex items-center justify-between pb-1 border-b border-[#e2e8f0]">
+                      <h4 className="font-heading text-[16px] font-bold text-[#1e2033]">
+                        Target Pattern Complexity
+                      </h4>
+                      <span className="text-[11px] font-medium text-[#64748b] bg-[#f1f5f9] px-2 py-0.5 rounded-full border border-[#e2e8f0]">
+                        Standard Bound
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
+                        <div className="text-[12px] font-medium text-[#64748b]">Target Time</div>
+                        <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">
+                          {data.suggested_pattern.complexity.time || 'O(N)'}
+                        </div>
+                      </div>
+                      <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3">
+                        <div className="text-[12px] font-medium text-[#64748b]">Auxiliary Space</div>
+                        <div className="font-mono text-[16px] font-bold text-[#1e2033] mt-1">
+                          {data.suggested_pattern.complexity.space || 'O(1)'}
+                        </div>
+                      </div>
+                    </div>
+                    {data.suggested_pattern.complexity.notes && (
+                      <p className="text-[13px] text-[#64748b] italic">
+                        {data.suggested_pattern.complexity.notes}
+                      </p>
+                    )}
+                  </Card>
+                )}
+
+                {/* Recognition Signals & Constraint Clues */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {data.suggested_pattern.mental_triggers && data.suggested_pattern.mental_triggers.length > 0 && (
+                    <Card className="space-y-2">
+                      <span className="font-bold text-[14px] text-[#1e2033] block">
+                        Recognition Signals
+                      </span>
+                      <ul className="space-y-1.5 text-[14px] text-[#475569]">
+                        {data.suggested_pattern.mental_triggers.map((trigger, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-[#10b981] font-bold">•</span>
+                            <span>{trigger}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </Card>
+                  )}
+
+                  {data.suggested_pattern.constraint_signals && data.suggested_pattern.constraint_signals.length > 0 && (
+                    <Card className="space-y-2">
+                      <span className="font-bold text-[14px] text-[#1e2033] block">
+                        Constraint Signals
+                      </span>
+                      <ul className="space-y-1.5 text-[14px] text-[#475569]">
+                        {data.suggested_pattern.constraint_signals.map((sig, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-[#b45309] font-bold">•</span>
+                            <span>{sig}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Pattern Starter Blueprint Code */}
+                {(() => {
+                  const patLangs = getSupportedLanguagesForPattern(data.suggested_pattern);
+                  const activePatLangId = patLangs.some(l => l.id === solverLang)
+                    ? solverLang
+                    : (patLangs[0]?.id || 'python3');
+                  const blueprintCode = getPatternCode(data.suggested_pattern, activePatLangId);
+
+                  return (
+                    <Card className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <h4 className="font-heading text-[16px] font-bold text-[#1e2033]">
+                            Starter Blueprint
+                          </h4>
+                          <p className="text-[12px] text-[#64748b]">
+                            Canonical implementation skeleton for {data.suggested_pattern.title}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {patLangs.map((lang) => (
+                              <button
+                                key={lang.id}
+                                type="button"
+                                onClick={() => setSolverLang(lang.id)}
+                                className={`px-2.5 py-1 rounded-md text-[13px] font-medium transition-colors ${
+                                  activePatLangId === lang.id
+                                    ? 'bg-[#1e2033] text-white font-bold'
+                                    : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
+                                }`}
+                              >
+                                {lang.name}
+                              </button>
+                            ))}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCopyCode(blueprintCode)}
+                            className="btn-secondary !py-1 !px-2.5 !text-[13px]"
+                          >
+                            {codeCopied ? <Check className="w-3.5 h-3.5 text-[#047857]" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{codeCopied ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <pre className="bg-[#f6f8fa] border border-[#e2e8f0] rounded-lg p-4 font-mono text-[13px] text-[#1e2033] leading-relaxed overflow-x-auto whitespace-pre">
+                        <code>{blueprintCode}</code>
+                      </pre>
+                    </Card>
+                  );
+                })()}
               </div>
-              <div className="space-y-1.5 max-w-md mx-auto">
-                <h3 className="font-heading text-[22px] font-bold text-[#1e2033]">
-                  No verified hints yet
-                </h3>
-                <p className="text-[15px] text-[#475569] leading-relaxed">
-                  We have not written verified hints for this problem yet.
-                </p>
-              </div>
-              <div className="pt-2 flex justify-center">
-                <span className="chip text-[12px] font-medium text-[#475569] bg-white border border-[#cbd5e1]">
-                  {data.problem.category || 'Algorithms'}
-                </span>
-              </div>
-            </Card>
+            ) : (
+              <Card className="text-center py-12 px-6 space-y-4">
+                <div className="w-14 h-14 mx-auto rounded-xl bg-[#f1f5f9] flex items-center justify-center text-[#64748b]">
+                  <HelpCircle className="w-7 h-7" />
+                </div>
+                <div className="space-y-1.5 max-w-md mx-auto">
+                  <h3 className="font-heading text-[22px] font-bold text-[#1e2033]">
+                    No verified hints or pattern mapped
+                  </h3>
+                  <p className="text-[15px] text-[#475569] leading-relaxed">
+                    This problem is not yet mapped in our offline curriculum. Run the Diagnostic Wizard to deduce its algorithmic invariants.
+                  </p>
+                </div>
+                <div className="pt-2 flex justify-center">
+                  <span className="chip text-[12px] font-medium text-[#475569] bg-white border border-[#cbd5e1]">
+                    {data.problem?.category || 'Algorithms'}
+                  </span>
+                </div>
+              </Card>
+            )
           ) : (
             /* Card 3: Hints with "1 of 4 unlocked" at right */
             <Card className="space-y-4">

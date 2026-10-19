@@ -136,13 +136,114 @@
     return `${commentPrefix} Verified ${langMeta.name} solution is not yet in the local dataset.\n${commentPrefix} Currently available verified solution(s) for this problem: ${availStr}`;
   }
 
+  const PATTERN_CATEGORY_LANGUAGES = {
+    Algorithms: ['python3', 'cpp'],
+    Database: ['mysql', 'postgresql', 'pythondata'],
+    pandas: ['pythondata', 'python3'],
+    Shell: ['bash'],
+    Concurrency: ['cpp', 'java'],
+    JavaScript: ['javascript', 'typescript']
+  };
+
+  function getSupportedLanguagesForPattern(pattern) {
+    if (!pattern) {
+      return [
+        getLanguageMeta('python3'),
+        getLanguageMeta('cpp')
+      ];
+    }
+
+    const cat = pattern.category || pattern.domain || 'Algorithms';
+    const langIds = [];
+
+    if (pattern.base_template_py) {
+      if (cat === 'pandas') {
+        langIds.push('pythondata');
+        langIds.push('python3');
+      } else if (cat === 'Database') {
+        // Will be added after SQL
+      } else {
+        langIds.push('python3');
+      }
+    }
+    if (pattern.base_template_cpp) {
+      langIds.push('cpp');
+    }
+    if (pattern.base_template_sql) {
+      langIds.push('mysql');
+      langIds.push('postgresql');
+    }
+    if (pattern.base_template_py && cat === 'Database') {
+      langIds.push('pythondata');
+    }
+    if (pattern.base_template_js) {
+      langIds.push('javascript');
+    }
+    if (pattern.base_template_ts) {
+      langIds.push('typescript');
+    }
+    if (pattern.base_template_java) {
+      langIds.push('java');
+    }
+    if (pattern.base_template_sh) {
+      langIds.push('bash');
+    }
+
+    if (langIds.length === 0) {
+      const defaults = PATTERN_CATEGORY_LANGUAGES[cat] || PATTERN_CATEGORY_LANGUAGES.Algorithms;
+      defaults.forEach(d => langIds.push(d));
+    }
+
+    const unique = Array.from(new Set(langIds));
+    return unique.map(slug => getLanguageMeta(slug)).filter(Boolean);
+  }
+
+  function getPatternCode(pattern, langSlug = 'python3') {
+    if (!pattern) return '';
+    const meta = getLanguageMeta(langSlug);
+    const slug = meta ? meta.id : String(langSlug).toLowerCase().trim();
+
+    if (slug === 'python3' || slug === 'python') {
+      if (pattern.base_template_py) return pattern.base_template_py;
+    }
+    if (slug === 'cpp') {
+      if (pattern.base_template_cpp) return pattern.base_template_cpp;
+    }
+    if (slug === 'java') {
+      if (pattern.base_template_java) return pattern.base_template_java;
+    }
+    if (slug === 'javascript') {
+      if (pattern.base_template_js) return pattern.base_template_js;
+      if (pattern.base_template_ts) return pattern.base_template_ts;
+    }
+    if (slug === 'typescript') {
+      if (pattern.base_template_ts) return pattern.base_template_ts;
+      if (pattern.base_template_js) return pattern.base_template_js;
+    }
+    if (slug === 'mysql' || slug === 'postgresql' || slug === 'mssql' || slug === 'oraclesql') {
+      if (pattern.base_template_sql) return pattern.base_template_sql;
+    }
+    if (slug === 'pythondata') {
+      if (pattern.base_template_py) return pattern.base_template_py;
+    }
+    if (slug === 'bash') {
+      if (pattern.base_template_sh) return pattern.base_template_sh;
+    }
+
+    const commentPrefix = (slug === 'python' || slug === 'python3' || slug === 'bash' || slug === 'pythondata') ? '#' : (slug === 'mysql' || slug === 'postgresql' || slug === 'mssql' || slug === 'oraclesql') ? '--' : '//';
+    return `${commentPrefix} Canonical ${meta?.name || langSlug} Template for ${pattern.title || 'Pattern'}`;
+  }
+
   const api = {
     SHOW_HEURISTIC_PATTERNS,
     LEETCODE_LANGUAGES,
     CATEGORY_ALLOWED_LANGUAGES,
+    PATTERN_CATEGORY_LANGUAGES,
     getLanguageMeta,
     getSupportedLanguagesForProblem,
-    getProblemSolutionCode
+    getSupportedLanguagesForPattern,
+    getProblemSolutionCode,
+    getPatternCode
   };
 
   if (typeof global !== 'undefined') {
