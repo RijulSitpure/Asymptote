@@ -101,6 +101,53 @@ export async function recordSubmission(payload) {
   return engine.recordSubmission(payload);
 }
 
+export async function exportUserData() {
+  const engine = await getClientEngine();
+  return engine.exportUserData();
+}
+
+export async function importUserData(backupData) {
+  const engine = await getClientEngine();
+  return engine.importUserData(backupData);
+}
+
+export async function downloadUserDataBackup() {
+  const data = await exportUserData();
+  const dateStr = new Date().toISOString().split('T')[0];
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `asymptote-backup-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return data;
+}
+
+export async function importUserDataFromFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      reject(new Error('No file selected'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target.result;
+        const json = JSON.parse(text);
+        const result = await importUserData(json);
+        resolve(result);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsText(file);
+  });
+}
+
 export function subscribeToStorageChanges(callback) {
   const cleanups = [];
 

@@ -102,6 +102,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
         }
 
+        case 'export_user_data': {
+          const data = await engine.exportUserData();
+          sendResponse({ success: true, data });
+          break;
+        }
+
+        case 'import_user_data': {
+          const data = await engine.importUserData(request.backupData);
+          sendResponse({ success: true, data });
+          break;
+        }
+
         default:
           sendResponse({ success: false, error: `Unknown action: ${request.action}` });
           break;

@@ -1,9 +1,52 @@
-import { useState, useEffect } from 'react';
-import { X, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
-import { fetchStats } from '../lib/engineClient';
+import { useState, useEffect, useRef } from 'react';
+import { X, CheckCircle2, AlertCircle, ExternalLink, Download, Upload, Database, Loader2 } from 'lucide-react';
+import { fetchStats, downloadUserDataBackup, importUserDataFromFile } from '../lib/engineClient';
 
 export function SyncModal({ isOpen, onClose, onSyncComplete }) {
   const [statusMessage, setStatusMessage] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const data = await downloadUserDataBackup();
+      setStatusMessage({
+        type: 'success',
+        text: `Exported backup with ${data.total_problems || Object.keys(data.user_problems || {}).length} problems!`
+      });
+    } catch (err) {
+      setStatusMessage({
+        type: 'error',
+        text: `Export failed: ${err.message || 'Unknown error'}`
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsImporting(true);
+      const res = await importUserDataFromFile(file);
+      setStatusMessage({
+        type: 'success',
+        text: `Successfully imported ${res.importedCount} problems into local storage!`
+      });
+      if (onSyncComplete) onSyncComplete();
+    } catch (err) {
+      setStatusMessage({
+        type: 'error',
+        text: `Import failed: ${err.message || 'Invalid backup JSON file'}`
+      });
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   // Monitor stats updates while the modal is open to report progress and sync results
   useEffect(() => {
@@ -143,6 +186,44 @@ export function SyncModal({ isOpen, onClose, onSyncComplete }) {
                 Your submissions will transfer locally and update your pattern coverage, difficulty stats, and review schedule.
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* 1-Click Progress Backup & Restore */}
+        <div className="p-4 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-[13px] font-bold text-[#1e2033] flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-[#64748b]" />
+                Offline Backup & Restore
+              </h3>
+              <p className="text-[12px] text-[#64748b] mt-0.5">
+                Save or restore your solved history, custom notes, confidence ratings, and review queue to a local file.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pt-1 flex-wrap">
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="btn-secondary !py-1.5 !px-3 !text-[12px] inline-flex items-center gap-1.5"
+            >
+              {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              <span>{isExporting ? 'Exporting...' : 'Export Backup (.json)'}</span>
+            </button>
+            <label className={`btn-secondary !py-1.5 !px-3 !text-[12px] inline-flex items-center gap-1.5 cursor-pointer ${isImporting ? 'opacity-50 pointer-events-none' : ''}`}>
+              {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+              <span>{isImporting ? 'Importing...' : 'Import Backup (.json)'}</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={handleImport}
+                disabled={isImporting}
+              />
+            </label>
           </div>
         </div>
 

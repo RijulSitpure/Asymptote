@@ -124,13 +124,57 @@ function build() {
     console.log(`✓ Generated catalog.json: ${totalCatalogProblems} full catalog problems`);
   }
 
+  // Determine dataset version
+  let datasetVersion = process.env.DATASET_VERSION || null;
+
+  const versionArg = process.argv.find(a => a.startsWith('--dataset-version='));
+  if (versionArg) {
+    datasetVersion = versionArg.split('=')[1];
+  }
+
+  const versionFile = path.join(datasetDir, 'version.json');
+  if (!datasetVersion && fs.existsSync(versionFile)) {
+    try {
+      const vData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+      if (vData.datasetVersion) datasetVersion = vData.datasetVersion;
+    } catch {}
+  }
+
+  const existingManifest = path.join(outDir, 'manifest.json');
+  if (!datasetVersion && fs.existsSync(existingManifest)) {
+    try {
+      const mData = JSON.parse(fs.readFileSync(existingManifest, 'utf8'));
+      if (mData.datasetVersion) datasetVersion = mData.datasetVersion;
+    } catch {}
+  }
+
+  if (!datasetVersion) {
+    datasetVersion = '1.0.0';
+  }
+
+  if (process.argv.includes('--bump') || process.argv.includes('--bump-patch')) {
+    const parts = datasetVersion.split('.').map(n => parseInt(n, 10) || 0);
+    while (parts.length < 3) parts.push(0);
+    parts[2]++;
+    datasetVersion = parts.join('.');
+  } else if (process.argv.includes('--bump-minor')) {
+    const parts = datasetVersion.split('.').map(n => parseInt(n, 10) || 0);
+    while (parts.length < 3) parts.push(0);
+    parts[1]++;
+    parts[2] = 0;
+    datasetVersion = parts.join('.');
+  }
+
+  // Persist dataset version in dataset/version.json
+  fs.writeFileSync(versionFile, JSON.stringify({ datasetVersion }, null, 2) + '\n');
+
   // Read package.json for version
   const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
 
   // Write manifest
   const manifestData = {
     version: pkg.version || '2.0.0',
-    datasetVersion: '1.0.0',
+    datasetVersion,
     totalPatterns: Object.values(domainPatterns).reduce((acc, p) => acc + p.length, 0),
     totalProblems: Object.values(domainProblems).reduce((acc, p) => acc + p.length, 0),
     totalCatalogProblems,
@@ -138,7 +182,7 @@ function build() {
   };
   const manifestMinified = JSON.stringify(manifestData, null, 2);
   fs.writeFileSync(path.join(outDir, 'manifest.json'), manifestMinified + '\n');
-  console.log(`✓ Generated manifest.json with SHA-256 checksums\n`);
+  console.log(`✓ Generated manifest.json (v${datasetVersion}) with SHA-256 checksums\n`);
   console.log('Build completed successfully.');
 }
 

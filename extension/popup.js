@@ -936,6 +936,56 @@ document.getElementById('open-app-btn').addEventListener('click', async () => {
   }
 });
 
+const exportBackupBtn = document.getElementById('btn-export-backup');
+if (exportBackupBtn) {
+  exportBackupBtn.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: 'export_user_data' }, (response) => {
+      if (response && response.success && response.data) {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `asymptote-backup-${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showMessage(`Exported backup with ${response.data.total_problems || 0} problems!`, 'success');
+      } else {
+        showMessage('Export failed', 'error');
+      }
+    });
+  });
+}
+
+const importBackupInput = document.getElementById('input-import-backup');
+if (importBackupInput) {
+  importBackupInput.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const backupData = JSON.parse(evt.target.result);
+        chrome.runtime.sendMessage({ action: 'import_user_data', backupData }, (response) => {
+          if (response && response.success) {
+            showMessage(`Restored ${response.data.importedCount} problems from backup!`, 'success');
+            checkServer();
+          } else {
+            showMessage(response?.error || 'Import failed', 'error');
+          }
+        });
+      } catch (_err) {
+        showMessage('Invalid JSON backup file', 'error');
+      } finally {
+        importBackupInput.value = '';
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
 const lookupBtn = document.getElementById('lookup-btn');
 if (lookupBtn) {
   lookupBtn.addEventListener('click', () => {

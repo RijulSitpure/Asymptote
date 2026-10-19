@@ -711,8 +711,10 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
           is_solved: isSolved,
           solved_at: userState.solved_at || null,
           user_code: userState.user_code || '',
-          user_notes: userState.user_notes || '',
-          user_rating: userState.user_rating !== undefined ? userState.user_rating : 0,
+          user_notes: userState.user_notes || userState.notes || '',
+          notes: userState.user_notes || userState.notes || '',
+          user_rating: userState.user_rating !== undefined ? userState.user_rating : (userState.confidence !== undefined ? userState.confidence : 0),
+          confidence: userState.user_rating !== undefined ? userState.user_rating : (userState.confidence !== undefined ? userState.confidence : 0),
           review_needed: reviewNeeded,
           solutions: cp.solutions || [],
           hints: cp.hints || [],
@@ -751,8 +753,10 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
             is_solved: userState.is_solved ? 1 : 0,
             solved_at: userState.solved_at || null,
             user_code: userState.user_code || '',
-            user_notes: userState.user_notes || '',
-            user_rating: userState.user_rating !== undefined ? userState.user_rating : 0,
+            user_notes: userState.user_notes || userState.notes || '',
+            notes: userState.user_notes || userState.notes || '',
+            user_rating: userState.user_rating !== undefined ? userState.user_rating : (userState.confidence !== undefined ? userState.confidence : 0),
+            confidence: userState.user_rating !== undefined ? userState.user_rating : (userState.confidence !== undefined ? userState.confidence : 0),
             review_needed: userState.review_needed ? 1 : 0,
             solutions: [],
             hints: [],
@@ -953,8 +957,22 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       if (updates.is_solved !== undefined) next.is_solved = updates.is_solved ? 1 : 0;
       if (updates.review_needed !== undefined) next.review_needed = updates.review_needed ? 1 : 0;
       if (updates.user_code !== undefined) next.user_code = updates.user_code;
-      if (updates.user_notes !== undefined) next.user_notes = updates.user_notes;
-      if (updates.user_rating !== undefined) next.user_rating = Number(updates.user_rating);
+      if (updates.user_notes !== undefined) {
+        next.user_notes = updates.user_notes;
+        next.notes = updates.user_notes;
+      }
+      if (updates.notes !== undefined) {
+        next.user_notes = updates.notes;
+        next.notes = updates.notes;
+      }
+      if (updates.user_rating !== undefined) {
+        next.user_rating = Number(updates.user_rating);
+        next.confidence = Number(updates.user_rating);
+      }
+      if (updates.confidence !== undefined) {
+        next.user_rating = Number(updates.confidence);
+        next.confidence = Number(updates.confidence);
+      }
       if (updates.unlocked_hint_level !== undefined) next.unlocked_hint_level = Number(updates.unlocked_hint_level);
 
       userProblems[slug] = next;
@@ -962,6 +980,14 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
       const all = await this.getProblems();
       return all.find(p => p.slug === slug) || null;
+    },
+
+    async updateProblemNotes(idOrSlug, data = {}) {
+      return this.updateProblemUserState(idOrSlug, data);
+    },
+
+    async batchSyncProblems(problems = [], username = null) {
+      return this.syncBatch({ username, problems });
     },
 
     async recordSubmission({ titleSlug, title_slug, slug: slugParam, questionId, questionFrontendId, frontend_id, number, title, difficulty, category, languages, code }) {
@@ -1164,6 +1190,78 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       const patterns = this.getPatterns();
       const wizard = new DiagnosticWizard(patterns);
       return wizard.diagnose(payload);
+    },
+
+    async exportUserData() {
+      const userProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
+      const username = (await store.get(STORAGE_KEY_USERNAME)) || null;
+      const lastSync = (await store.get(STORAGE_KEY_LAST_SYNC)) || null;
+      const recentLogs = (await store.get(STORAGE_KEY_RECENT_LOGS)) || [];
+
+      return {
+        schema_version: 'asymptote-backup-v1',
+        app_version: '2.0.0',
+        exported_at: new Date().toISOString(),
+        username,
+        last_sync: lastSync,
+        total_problems: Object.keys(userProblems).length,
+        user_problems: userProblems,
+        recent_logs: recentLogs
+      };
+    },
+
+    async importUserData(backupData) {
+      if (!backupData || typeof backupData !== 'object') {
+        throw new Error('Invalid backup file: Payload must be a JSON object');
+      }
+
+      // Check if user_problems is present (supports both root-level mapping or backup wrapper)
+      const incomingProblems = backupData.user_problems || (backupData.schema_version ? null : backupData);
+      if (!incomingProblems || typeof incomingProblems !== 'object' || Array.isArray(incomingProblems)) {
+        throw new Error('Invalid backup file: Missing user_problems mapping');
+      }
+
+      const existingProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
+      const mergedProblems = { ...existingProblems };
+
+      let importedCount = 0;
+      for (const [slug, data] of Object.entries(incomingProblems)) {
+        if (!slug || !data || typeof data !== 'object') continue;
+        const prev = mergedProblems[slug] || {};
+        mergedProblems[slug] = {
+          ...prev,
+          ...data,
+          user_notes: data.user_notes !== undefined ? data.user_notes : (data.notes !== undefined ? data.notes : (prev.user_notes || prev.notes || '')),
+          notes: data.notes !== undefined ? data.notes : (data.user_notes !== undefined ? data.user_notes : (prev.notes || prev.user_notes || '')),
+          user_rating: data.user_rating !== undefined ? Number(data.user_rating) : (data.confidence !== undefined ? Number(data.confidence) : (prev.user_rating || prev.confidence || 0)),
+          confidence: data.confidence !== undefined ? Number(data.confidence) : (data.user_rating !== undefined ? Number(data.user_rating) : (prev.confidence || prev.user_rating || 0))
+        };
+        importedCount++;
+      }
+
+      await store.set(STORAGE_KEY_USER_PROBLEMS, mergedProblems);
+
+      if (backupData.username && typeof backupData.username === 'string') {
+        await store.set(STORAGE_KEY_USERNAME, backupData.username);
+      }
+      if (backupData.last_sync && typeof backupData.last_sync === 'string') {
+        await store.set(STORAGE_KEY_LAST_SYNC, backupData.last_sync);
+      }
+
+      const now = new Date().toISOString();
+      const logs = (await store.get(STORAGE_KEY_RECENT_LOGS)) || [];
+      logs.unshift({
+        timestamp: now,
+        type: 'backup_restore',
+        message: `Restored ${importedCount} problems from backup file`
+      });
+      await store.set(STORAGE_KEY_RECENT_LOGS, logs.slice(0, 20));
+
+      return {
+        success: true,
+        importedCount,
+        totalUserProblems: Object.keys(mergedProblems).length
+      };
     }
   };
 }
