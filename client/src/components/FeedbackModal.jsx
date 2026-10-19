@@ -1,8 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Bug, Lightbulb, MessageSquare, Check, Mail, Send, Trash2, Download, CheckCircle, Clock } from 'lucide-react';
+import { 
+  X, Bug, Lightbulb, MessageSquare, Check, Mail, Send, Trash2, 
+  Download, CheckCircle, Clock, Copy, AlertTriangle, Settings, 
+  RefreshCw, ShieldCheck 
+} from 'lucide-react';
 import { useToast } from './Toast';
-
-const STORAGE_KEY_FEEDBACK = 'asymptote:feedback_submissions';
+import { 
+  STORAGE_KEY_FEEDBACK, 
+  MAX_TITLE_LENGTH, 
+  MAX_DETAILS_LENGTH, 
+  MAX_EMAIL_LENGTH,
+  validateFeedbackPayload,
+  getStoredFeedbackEndpoint,
+  setStoredFeedbackEndpoint,
+  submitFeedbackToGoogleSheets
+} from '../lib/feedbackClient';
 
 function GithubIcon({ className = "w-4 h-4" }) {
   return (
@@ -22,11 +34,26 @@ function LinkedinIcon({ className = "w-4 h-4" }) {
 
 export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
   const { addToast } = useToast();
-  const [activeView, setActiveView] = useState('submit'); // 'submit' | 'manager'
+  const [activeView, setActiveView] = useState('submit'); // 'submit' | 'confirmation' | 'manager'
   const [feedbackType, setFeedbackType] = useState(initialType); // 'bug' | 'feature' | 'general'
   const [titleText, setTitleText] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
   const [userContact, setUserContact] = useState('');
+  const [honeypot, setHoneypot] = useState('');
+  
+  // Validation & Submission state
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState(null);
+  const [submittedResult, setSubmittedResult] = useState(null);
+  const [copiedRefId, setCopiedRefId] = useState(false);
+
+  // Endpoint configuration state
+  const [endpointUrl, setEndpointUrl] = useState(() => getStoredFeedbackEndpoint());
+  const [showEndpointSettings, setShowEndpointSettings] = useState(false);
+  const [tempEndpointInput, setTempEndpointInput] = useState('');
+
+  // Local submissions management state
   const [submissions, setSubmissions] = useState([]);
   const [managerFilter, setManagerFilter] = useState('all'); // 'all' | 'open' | 'resolved'
 
@@ -36,7 +63,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
     }
   }, [initialType]);
 
-  // Load submissions from storage
+  // Load submissions and endpoint from storage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -50,6 +77,9 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
       } catch (err) {
         console.error('Failed to load feedback submissions:', err);
       }
+      const currentEp = getStoredFeedbackEndpoint();
+      setEndpointUrl(currentEp);
+      setTempEndpointInput(currentEp);
     }
   }, [isOpen]);
 
@@ -62,40 +92,127 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  // Live input validation
+  const validateField = (field, value) => {
+    const candidate = {
+      type: feedbackType,
+      title: field === 'title' ? value : titleText,
+      details: field === 'details' ? value : feedbackText,
+      email: field === 'email' ? value : userContact
+    };
+    const { errors: newErrors } = validateFeedbackPayload(candidate);
+    setErrors(prev => {
+      const copy = { ...prev };
+      if (newErrors[field]) {
+        copy[field] = newErrors[field];
+      } else {
+        delete copy[field];
+      }
+      return copy;
+    });
+  };
+
+  const handleSaveEndpoint = () => {
+    const clean = tempEndpointInput.trim();
+    setStoredFeedbackEndpoint(clean);
+    setEndpointUrl(clean);
+    setShowEndpointSettings(false);
+    addToast({
+      message: clean ? 'Google Sheets webhook endpoint saved' : 'Google Sheets webhook cleared',
+      type: 'success'
+    });
+  };
+
+  const handleSubmit = async (e) => {
     e?.preventDefault();
-    if (!feedbackText.trim()) {
-      addToast({ message: 'Please enter details for your submission', type: 'info' });
+    if (isSubmitting) return; // Prevent duplicate clicks
+
+    // Validate all fields
+    const { errors: formErrors, isValid } = validateFeedbackPayload({
+      type: feedbackType,
+      title: titleText,
+      details: feedbackText,
+      email: userContact
+    });
+
+    if (!isValid) {
+      setErrors(formErrors);
+      const firstErr = Object.values(formErrors)[0];
+      setSubmissionError(firstErr);
       return;
     }
 
-    const newTicket = {
-      id: `ticket_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      type: feedbackType,
-      title: titleText.trim() || (feedbackText.trim().slice(0, 50) + (feedbackText.length > 50 ? '...' : '')),
-      details: feedbackText.trim(),
-      userContact: userContact.trim() || 'Anonymous',
-      createdAt: new Date().toISOString(),
-      resolved: false,
-      resolvedAt: null
-    };
+    setErrors({});
+    setSubmissionError(null);
+    setIsSubmitting(true);
 
-    const next = [newTicket, ...submissions];
-    saveSubmissions(next);
+    try {
+      // 1. Submit to Google Sheets via secure Apps Script Web App
+      const res = await submitFeedbackToGoogleSheets({
+        type: feedbackType,
+        title: titleText,
+        details: feedbackText,
+        email: userContact,
+        hp_company_field: honeypot
+      }, endpointUrl);
 
-    addToast({
-      message: 'Thank you! Your report has been submitted to Rijul.',
-      type: 'success'
-    });
+      // 2. Verified write to Google Sheets confirmed!
+      const referenceId = res.referenceId;
+      const serverTimestamp = res.timestamp;
 
-    setTitleText('');
-    setFeedbackText('');
-    setUserContact('');
+      // 3. Save ticket to local submissions cache for Rijul
+      const newTicket = {
+        id: referenceId,
+        referenceId: referenceId,
+        type: feedbackType,
+        title: titleText.trim(),
+        details: feedbackText.trim(),
+        userContact: userContact.trim() || 'Anonymous',
+        createdAt: serverTimestamp,
+        resolved: false,
+        resolvedAt: null,
+        syncedToSheets: true
+      };
+
+      const updatedSubmissions = [newTicket, ...submissions];
+      saveSubmissions(updatedSubmissions);
+
+      // 4. Update UI to Confirmation Screen
+      setSubmittedResult({
+        referenceId: referenceId,
+        title: titleText.trim(),
+        type: feedbackType,
+        timestamp: serverTimestamp,
+        email: userContact.trim()
+      });
+      setActiveView('confirmation');
+
+      addToast({
+        message: `Saved to Google Sheets! Reference: ${referenceId}`,
+        type: 'success'
+      });
+
+      // Clear input state only after verified success
+      setTitleText('');
+      setFeedbackText('');
+      setUserContact('');
+      setHoneypot('');
+    } catch (err) {
+      // Friendly error handling: Form inputs are preserved
+      console.error('Feedback submission failed:', err);
+      setSubmissionError(err.message || 'Failed to submit report. Please check your connection or endpoint.');
+      addToast({
+        message: 'Submission failed. Your text has been preserved.',
+        type: 'error'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleToggleResolved = (ticketId) => {
     const next = submissions.map(sub => {
-      if (sub.id === ticketId) {
+      if (sub.id === ticketId || sub.referenceId === ticketId) {
         const resolved = !sub.resolved;
         return {
           ...sub,
@@ -109,9 +226,9 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
   };
 
   const handleDeleteTicket = (ticketId) => {
-    const next = submissions.filter(s => s.id !== ticketId);
+    const next = submissions.filter(s => s.id !== ticketId && s.referenceId !== ticketId);
     saveSubmissions(next);
-    addToast({ message: 'Ticket removed', type: 'info' });
+    addToast({ message: 'Ticket removed from local manager', type: 'info' });
   };
 
   const handleExportJson = () => {
@@ -122,6 +239,13 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  };
+
+  const handleCopyRefId = (text) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedRefId(true);
+    setTimeout(() => setCopiedRefId(false), 2000);
   };
 
   const filteredSubmissions = useMemo(() => {
@@ -138,10 +262,10 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-[14px] p-6 max-w-[700px] w-full max-h-[92vh] overflow-y-auto space-y-5 shadow-2xl border border-[#e2e8f0]"
+        className="bg-white rounded-[14px] p-6 max-w-[720px] w-full max-h-[92vh] overflow-y-auto space-y-5 shadow-2xl border border-[#e2e8f0]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header with Mode Switcher */}
+        {/* Header with Mode Switcher & Status */}
         <div className="flex items-center justify-between pb-3 border-b border-[#e2e8f0]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#ecfdf5] border border-[#a7f3d0] flex items-center justify-center text-[#059669]">
@@ -149,24 +273,54 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
             </div>
             <div>
               <h2 className="font-heading text-[20px] font-bold text-[#1e2033] leading-none">
-                {activeView === 'submit' ? 'Feedback & Bug Reports' : 'Feedback & Bug Manager'}
+                {activeView === 'submit' 
+                  ? 'Feedback & Bug Reports' 
+                  : activeView === 'confirmation'
+                  ? 'Submission Confirmed'
+                  : 'Feedback & Bug Manager'}
               </h2>
               <p className="text-[13px] text-[#64748b] mt-1">
                 {activeView === 'submit' 
-                  ? 'Submit directly to Rijul Sitpure for review and resolution'
-                  : 'Track submitted tickets, mark resolved, and email users'}
+                  ? 'Directly updates maintainer Rijul Sitpure\'s private Google Sheet'
+                  : activeView === 'confirmation'
+                  ? 'Your submission has been securely written to Google Sheets'
+                  : 'Track submitted tickets, copy reference IDs, and email users'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {activeView === 'submit' && (
+              <button
+                type="button"
+                onClick={() => setShowEndpointSettings(!showEndpointSettings)}
+                className={`p-1.5 rounded-md border transition-colors ${
+                  endpointUrl 
+                    ? 'text-[#059669] bg-[#ecfdf5] border-[#a7f3d0] hover:bg-[#d1fae5]' 
+                    : 'text-[#d97706] bg-[#fffbeb] border-[#fde68a] hover:bg-[#fef3c7]'
+                }`}
+                title={endpointUrl ? "Google Sheets Webhook Connected" : "Configure Google Sheets Webhook"}
+                aria-label="Google Sheets Webhook Settings"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => setActiveView(activeView === 'submit' ? 'manager' : 'submit')}
+              onClick={() => {
+                if (activeView === 'manager' || activeView === 'confirmation') {
+                  setActiveView('submit');
+                  setSubmissionError(null);
+                } else {
+                  setActiveView('manager');
+                }
+              }}
               className="btn-secondary !py-1 !px-2.5 !text-[12px] flex items-center gap-1.5"
             >
               <span>{activeView === 'submit' ? `View Submissions (${submissions.length})` : '← Back to Form'}</span>
             </button>
+
             <button
               type="button"
               onClick={onClose}
@@ -178,14 +332,88 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
           </div>
         </div>
 
-        {activeView === 'submit' ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Optional Endpoint Settings Panel (Accessible by Rijul to configure or test his Apps Script URL) */}
+        {showEndpointSettings && activeView === 'submit' && (
+          <div className="p-3.5 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl space-y-2 text-[13px]">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-[#1e2033] flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-[#059669]" />
+                Google Apps Script Webhook Endpoint
+              </span>
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                endpointUrl 
+                  ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]' 
+                  : 'bg-[#fffbeb] text-[#b45309] border-[#fde68a]'
+              }`}>
+                {endpointUrl ? 'Endpoint Configured' : 'Needs Setup'}
+              </span>
+            </div>
+            <p className="text-[12px] text-[#64748b] leading-normal">
+              Enter your deployed Google Apps Script Web App URL (<code className="text-[#0f172a] bg-[#e2e8f0] px-1 py-0.5 rounded">https://script.google.com/macros/s/.../exec</code>) to receive submissions into your private Google Sheet.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <input
+                type="url"
+                value={tempEndpointInput}
+                onChange={(e) => setTempEndpointInput(e.target.value)}
+                placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                className="asymptote-input flex-1 text-[12px] font-mono"
+              />
+              <button
+                type="button"
+                onClick={handleSaveEndpoint}
+                className="btn-primary !text-[12px] !py-1.5 !px-3"
+              >
+                Save Endpoint
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 1. Submission Form View */}
+        {activeView === 'submit' && (
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            {/* Friendly Error Banner on Submission Failure (Preserves User Input) */}
+            {submissionError && (
+              <div className="p-3.5 rounded-xl border border-[#fecdd3] bg-[#fff1f2] text-[#9f1239] text-[13px] flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-[#e11d48] mt-0.5" />
+                <div className="flex-1">
+                  <strong className="block font-semibold">Unable to submit report</strong>
+                  <span className="leading-relaxed">{submissionError}</span>
+                  {!endpointUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setShowEndpointSettings(true)}
+                      className="block mt-1.5 text-[12px] font-bold text-[#b91c1c] underline cursor-pointer"
+                    >
+                      Click here to configure your Google Sheets Apps Script URL
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Anti-Bot Honeypot Field (Invisible to legitimate human users) */}
+            <input
+              type="text"
+              name="hp_company_field"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+              style={{ display: 'none', opacity: 0, position: 'absolute', left: '-9999px' }}
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+            />
+
             {/* Feedback Type Tabs */}
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => setFeedbackType('bug')}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all ${
+                onClick={() => {
+                  setFeedbackType('bug');
+                  validateField('type', 'bug');
+                }}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all cursor-pointer ${
                   feedbackType === 'bug'
                     ? 'bg-[#fff1f2] text-[#9f1239] border-[#fecdd3]'
                     : 'bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
@@ -197,8 +425,11 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
 
               <button
                 type="button"
-                onClick={() => setFeedbackType('feature')}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all ${
+                onClick={() => {
+                  setFeedbackType('feature');
+                  validateField('type', 'feature');
+                }}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all cursor-pointer ${
                   feedbackType === 'feature'
                     ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
                     : 'bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
@@ -210,8 +441,11 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
 
               <button
                 type="button"
-                onClick={() => setFeedbackType('general')}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all ${
+                onClick={() => {
+                  setFeedbackType('general');
+                  validateField('type', 'general');
+                }}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-[13px] font-semibold border transition-all cursor-pointer ${
                   feedbackType === 'general'
                     ? 'bg-[#f0f9ff] text-[#0369a1] border-[#bae6fd]'
                     : 'bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:bg-[#f1f5f9]'
@@ -222,15 +456,24 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
               </button>
             </div>
 
-            {/* Subject / Title */}
+            {/* Title / Summary */}
             <div className="space-y-1">
-              <label className="text-[13px] font-bold text-[#1e2033] block">
-                Summary / Title
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] font-bold text-[#1e2033] block">
+                  Summary / Title <span className="text-[#e11d48]">*</span>
+                </label>
+                <span className={`text-[11px] font-mono ${titleText.length > MAX_TITLE_LENGTH ? 'text-[#e11d48] font-bold' : 'text-[#94a3b8]'}`}>
+                  {titleText.length}/{MAX_TITLE_LENGTH}
+                </span>
+              </div>
               <input
                 type="text"
                 value={titleText}
-                onChange={(e) => setTitleText(e.target.value)}
+                onChange={(e) => {
+                  setTitleText(e.target.value);
+                  validateField('title', e.target.value);
+                }}
+                onBlur={() => validateField('title', titleText)}
                 placeholder={
                   feedbackType === 'bug'
                     ? 'e.g. Broken hint in #226 Invert Tree or UI jitter in Solved tab'
@@ -238,76 +481,182 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                     ? 'e.g. Add Topological Sort (Tarjan) pattern'
                     : 'e.g. Great tool, would love dark mode or export'
                 }
-                className="asymptote-input w-full text-[13px]"
+                maxLength={MAX_TITLE_LENGTH + 10}
+                className={`asymptote-input w-full text-[13px] ${
+                  errors.title ? '!border-[#fda4af] !bg-[#fff1f2]/30 focus:!ring-[#e11d48]/20' : ''
+                }`}
               />
+              {errors.title && (
+                <p className="text-[12px] text-[#e11d48] font-medium mt-0.5">{errors.title}</p>
+              )}
             </div>
 
-            {/* Feedback Textarea */}
+            {/* Details / Description */}
             <div className="space-y-1">
-              <label className="text-[13px] font-bold text-[#1e2033] block">
-                {feedbackType === 'bug' 
-                  ? 'Detailed description & steps to reproduce *' 
-                  : feedbackType === 'feature'
-                  ? 'Pattern or feature details *'
-                  : 'Your suggestions or thoughts *'}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] font-bold text-[#1e2033] block">
+                  {feedbackType === 'bug' 
+                    ? 'Detailed description & steps to reproduce' 
+                    : feedbackType === 'feature'
+                    ? 'Pattern or feature details'
+                    : 'Your suggestions or thoughts'} <span className="text-[#e11d48]">*</span>
+                </label>
+                <span className={`text-[11px] font-mono ${feedbackText.length > MAX_DETAILS_LENGTH ? 'text-[#e11d48] font-bold' : 'text-[#94a3b8]'}`}>
+                  {feedbackText.length}/{MAX_DETAILS_LENGTH}
+                </span>
+              </div>
               <textarea
                 value={feedbackText}
-                onChange={(e) => setFeedbackText(e.target.value)}
+                onChange={(e) => {
+                  setFeedbackText(e.target.value);
+                  validateField('details', e.target.value);
+                }}
+                onBlur={() => validateField('details', feedbackText)}
                 rows={4}
-                required
+                maxLength={MAX_DETAILS_LENGTH + 50}
                 placeholder={
                   feedbackType === 'bug'
-                    ? 'Describe what happened, problem number, and what you expected...'
+                    ? 'Describe what happened, problem number or URL, and what you expected to see...'
                     : feedbackType === 'feature'
                     ? 'Describe the algorithmic archetype, key invariants, and sample LeetCode problems...'
                     : 'Share any feedback or suggestions on how to make Asymptote better...'
                 }
-                className="asymptote-input w-full text-[13px] leading-relaxed"
+                className={`asymptote-input w-full text-[13px] leading-relaxed ${
+                  errors.details ? '!border-[#fda4af] !bg-[#fff1f2]/30 focus:!ring-[#e11d48]/20' : ''
+                }`}
               />
+              {errors.details && (
+                <p className="text-[12px] text-[#e11d48] font-medium mt-0.5">{errors.details}</p>
+              )}
             </div>
 
-            {/* Contact Email / User ID */}
+            {/* Contact Email (Optional) */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-[13px] font-bold text-[#1e2033]">
-                  Your Email or ID (Optional)
+                  Your Email Address (Optional)
                 </label>
-                <span className="text-[11px] text-[#64748b]">To notify you when resolved</span>
+                <span className="text-[11px] text-[#64748b]">Only used to notify you when resolved</span>
               </div>
               <input
-                type="text"
+                type="email"
                 value={userContact}
-                onChange={(e) => setUserContact(e.target.value)}
-                placeholder="e.g. you@example.com or @username"
-                className="asymptote-input w-full text-[13px]"
+                onChange={(e) => {
+                  setUserContact(e.target.value);
+                  validateField('email', e.target.value);
+                }}
+                onBlur={() => validateField('email', userContact)}
+                placeholder="e.g. you@example.com"
+                maxLength={MAX_EMAIL_LENGTH}
+                className={`asymptote-input w-full text-[13px] ${
+                  errors.email ? '!border-[#fda4af] !bg-[#fff1f2]/30 focus:!ring-[#e11d48]/20' : ''
+                }`}
               />
+              {errors.email && (
+                <p className="text-[12px] text-[#e11d48] font-medium mt-0.5">{errors.email}</p>
+              )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="pt-2 border-t border-[#e2e8f0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-              <div className="text-[12px] text-[#64748b]">
-                Submissions are saved locally and synced directly to author review.
+            {/* Privacy Notice & Submit Action */}
+            <div className="pt-2 border-t border-[#e2e8f0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="text-[11px] text-[#64748b] leading-tight max-w-[360px]">
+                🔒 <strong>Privacy:</strong> Submissions write directly to maintainer Rijul Sitpure&apos;s private Google Sheet. Providing an email is optional for resolution updates. No browsing telemetry or cookies are collected.
               </div>
 
               <button
                 type="submit"
-                className="btn-primary !text-[13px] flex items-center justify-center gap-1.5 !bg-[#1e2033] hover:!bg-[#2d324d] !py-2 !px-5"
+                disabled={isSubmitting}
+                className={`btn-primary !text-[13px] flex items-center justify-center gap-2 !bg-[#1e2033] hover:!bg-[#2d324d] !py-2.5 !px-6 cursor-pointer ${
+                  isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
               >
-                <Send className="w-3.5 h-3.5" />
-                <span>Submit {feedbackType === 'bug' ? 'Bug Report' : feedbackType === 'feature' ? 'Pattern Request' : 'Feedback'}</span>
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Sending to Sheets...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Submit {feedbackType === 'bug' ? 'Bug Report' : feedbackType === 'feature' ? 'Pattern Request' : 'Feedback'}</span>
+                  </>
+                )}
               </button>
             </div>
           </form>
-        ) : (
-          /* Manager / Table View for Rijul */
+        )}
+
+        {/* 2. Success Confirmation View */}
+        {activeView === 'confirmation' && submittedResult && (
+          <div className="py-6 px-4 text-center space-y-5">
+            <div className="w-14 h-14 rounded-full bg-[#ecfdf5] border-2 border-[#a7f3d0] text-[#059669] mx-auto flex items-center justify-center">
+              <CheckCircle className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="font-heading text-[22px] font-bold text-[#1e2033]">
+                Submission Received!
+              </h3>
+              <p className="text-[14px] text-[#475569] max-w-[480px] mx-auto">
+                Thank you! Your {submittedResult.type === 'bug' ? 'bug report' : submittedResult.type === 'feature' ? 'pattern suggestion' : 'feedback'} has been securely written to maintainer Rijul Sitpure&apos;s private Google Sheet.
+              </p>
+            </div>
+
+            {/* Generated Reference ID Box */}
+            <div className="max-w-[400px] mx-auto p-4 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748b] block">
+                Server Reference ID
+              </span>
+              <div className="flex items-center justify-center gap-2">
+                <span className="font-mono text-[18px] font-bold text-[#1e2033] tracking-wider select-all">
+                  {submittedResult.referenceId}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyRefId(submittedResult.referenceId)}
+                  className="p-1.5 rounded-md hover:bg-[#e2e8f0] text-[#64748b] hover:text-[#1e2033] transition-colors"
+                  title="Copy Reference ID"
+                >
+                  {copiedRefId ? <Check className="w-4 h-4 text-[#059669]" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+              <div className="text-[11px] text-[#059669] font-medium">
+                Initial Status: <strong>New</strong> (Queued for author review)
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveView('submit');
+                  setSubmittedResult(null);
+                }}
+                className="btn-secondary !py-2 !px-4 !text-[13px]"
+              >
+                Submit another response
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-primary !py-2 !px-6 !text-[13px] !bg-[#1e2033]"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 3. Manager / Table View for Rijul */}
+        {activeView === 'manager' && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => setManagerFilter('all')}
-                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors cursor-pointer ${
                     managerFilter === 'all'
                       ? 'bg-[#1e2033] text-white font-bold'
                       : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
@@ -318,9 +667,9 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                 <button
                   type="button"
                   onClick={() => setManagerFilter('open')}
-                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors cursor-pointer ${
                     managerFilter === 'open'
-                      ? 'bg-[#fff1f2] text-[#9f1239] border border-[#fecdd3] font-bold'
+                      ? 'bg-[#fff1f2] text-[#9f1239] border-[#fecdd3] font-bold'
                       : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
                   }`}
                 >
@@ -329,9 +678,9 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                 <button
                   type="button"
                   onClick={() => setManagerFilter('resolved')}
-                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors cursor-pointer ${
                     managerFilter === 'resolved'
-                      ? 'bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0] font-bold'
+                      ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0] font-bold'
                       : 'text-[#475569] hover:text-[#1e2033] bg-[#f8fafc] border border-[#e2e8f0]'
                   }`}
                 >
@@ -361,25 +710,37 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                 <table className="w-full text-left border-collapse text-[13px]">
                   <thead className="bg-[#f8fafc] border-b border-[#e2e8f0] text-[#64748b] font-bold text-[11px] uppercase tracking-wider sticky top-0 z-10">
                     <tr>
+                      <th className="py-2.5 px-3 w-28">Ref ID</th>
                       <th className="py-2.5 px-3 w-20">Type</th>
                       <th className="py-2.5 px-3 w-28">Date/Time</th>
                       <th className="py-2.5 px-3">Subject & Details</th>
                       <th className="py-2.5 px-3 w-32">User ID</th>
                       <th className="py-2.5 px-3 w-28 text-center">Status</th>
-                      <th className="py-2.5 px-3 w-28 text-right">Action</th>
+                      <th className="py-2.5 px-3 w-24 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e2e8f0] bg-white">
                     {filteredSubmissions.map((sub) => {
+                      const refId = sub.referenceId || sub.id;
                       const isEmail = sub.userContact && sub.userContact.includes('@');
-                      const emailSubject = encodeURIComponent(`[Resolved] Your Asymptote ${sub.type === 'bug' ? 'bug report' : 'feedback'}: "${sub.title}"`);
+                      const emailSubject = encodeURIComponent(`[Resolved] Asymptote ticket ${refId}: "${sub.title}"`);
                       const emailBody = encodeURIComponent(
-                        `Hi,\n\nThank you for reaching out regarding "${sub.title}".\n\nWe wanted to let you know that this issue has been resolved in our latest update.\n\nTicket Summary: ${sub.title}\nDetails: ${sub.details}\n\nBest regards,\nRijul Sitpure\nCreator of Asymptote\nhttps://github.com/RijulSitpure`
+                        `Hi,\n\nThank you for reaching out regarding "${sub.title}" (Reference ID: ${refId}).\n\nWe wanted to let you know that this issue has been resolved in our latest update.\n\nTicket Summary: ${sub.title}\nDetails: ${sub.details}\n\nBest regards,\nRijul Sitpure\nCreator of Asymptote\nhttps://github.com/RijulSitpure`
                       );
                       const mailtoUrl = `mailto:${sub.userContact}?subject=${emailSubject}&body=${emailBody}`;
 
                       return (
-                        <tr key={sub.id} className={sub.resolved ? 'bg-[#fcfdfd] opacity-75' : ''}>
+                        <tr key={refId} className={sub.resolved ? 'bg-[#fcfdfd] opacity-75' : ''}>
+                          {/* Reference ID */}
+                          <td className="py-3 px-3 align-top font-mono text-[11px] text-[#1e2033] font-bold">
+                            <span className="block">{refId}</span>
+                            {sub.syncedToSheets && (
+                              <span className="inline-block mt-0.5 text-[9px] text-[#059669] bg-[#ecfdf5] px-1 rounded font-semibold border border-[#a7f3d0]">
+                                Sheets ✓
+                              </span>
+                            )}
+                          </td>
+
                           {/* Type */}
                           <td className="py-3 px-3 align-top">
                             <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
@@ -426,8 +787,8 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                           <td className="py-3 px-3 align-top text-center">
                             <button
                               type="button"
-                              onClick={() => handleToggleResolved(sub.id)}
-                              className={`py-1 px-2.5 rounded-md text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 ${
+                              onClick={() => handleToggleResolved(refId)}
+                              className={`py-1 px-2.5 rounded-md text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer ${
                                 sub.resolved
                                   ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
                                   : 'bg-[#fff1f2] text-[#9f1239] border-[#fecdd3] hover:bg-[#ffe4e6]'
@@ -454,8 +815,8 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                             )}
                             <button
                               type="button"
-                              onClick={() => handleDeleteTicket(sub.id)}
-                              className="p-1 text-[#94a3b8] hover:text-[#ef4444] transition-colors rounded inline-block"
+                              onClick={() => handleDeleteTicket(refId)}
+                              className="p-1 text-[#94a3b8] hover:text-[#ef4444] transition-colors rounded inline-block cursor-pointer"
                               title="Delete ticket"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
