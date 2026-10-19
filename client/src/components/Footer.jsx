@@ -1,4 +1,4 @@
-import { ShieldCheck, Heart, Sparkles, Bug, MessageSquare } from 'lucide-react';
+import { ShieldCheck, Sparkles, Bug, MessageSquare, Star, BookOpen } from 'lucide-react';
 
 function GithubIcon({ className = "w-4 h-4" }) {
   return (
@@ -17,8 +17,6 @@ function LinkedinIcon({ className = "w-4 h-4" }) {
 }
 
 export function Footer({ onOpenFeedback }) {
-  const currentYear = new Date().getFullYear();
-
   return (
     <footer className="mt-16 border-t border-[#e2e8f0] bg-white/70 backdrop-blur-sm -mx-8 px-8 py-10 text-[#475569]">
       <div className="max-w-[1040px] mx-auto">
@@ -41,8 +39,7 @@ export function Footer({ onOpenFeedback }) {
               </span>
             </div>
             <p className="text-[13px] text-[#64748b] leading-relaxed">
-              Offline algorithmic pattern intelligence and Socratic mentor for LeetCode. 
-              Master the approach instead of memorizing solutions.
+              A Socratic mentor for LeetCode that runs offline. Learn the approach instead of memorizing solutions.
             </p>
             <div className="flex items-center gap-2 text-[12px] text-[#047857] font-medium">
               <ShieldCheck className="w-4 h-4 text-[#059669]" />
@@ -50,27 +47,26 @@ export function Footer({ onOpenFeedback }) {
             </div>
           </div>
 
-          {/* Catalog & Taxonomy Stats */}
+          {/* How It Works */}
           <div className="space-y-3">
-            <h4 className="text-[13px] font-bold text-[#1e2033] uppercase tracking-wider font-heading">
-              Platform Architecture
-            </h4>
+            <div className="flex items-center gap-1.5">
+              <BookOpen className="w-4 h-4 text-[#1e2033]" />
+              <h4 className="text-[13px] font-bold text-[#1e2033] uppercase tracking-wider font-heading">
+                How It Works
+              </h4>
+            </div>
             <ul className="space-y-2 text-[13px]">
-              <li className="flex items-center justify-between text-[#64748b]">
-                <span>Curated Invariant Problems:</span>
-                <span className="font-mono font-semibold text-[#1e2033]">105 tested</span>
+              <li className="flex items-start gap-2 text-[#64748b]">
+                <span className="text-[#059669] font-bold">•</span>
+                <span><strong>4-Tier Socratic Guidance:</strong> Progressive hints from obstacle to blueprint without giving away answers.</span>
               </li>
-              <li className="flex items-center justify-between text-[#64748b]">
-                <span>Algorithmic Archetypes:</span>
-                <span className="font-mono font-semibold text-[#1e2033]">99 patterns</span>
+              <li className="flex items-start gap-2 text-[#64748b]">
+                <span className="text-[#059669] font-bold">•</span>
+                <span><strong>100% Local & Offline:</strong> Runs entirely in your browser with zero telemetry or remote tracking.</span>
               </li>
-              <li className="flex items-center justify-between text-[#64748b]">
-                <span>Full LeetCode Catalog:</span>
-                <span className="font-mono font-semibold text-[#1e2033]">4,086 indexed</span>
-              </li>
-              <li className="flex items-center justify-between text-[#64748b]">
-                <span>Cross-Domain Support:</span>
-                <span className="font-mono font-semibold text-[#1e2033]">6 domains</span>
+              <li className="flex items-start gap-2 text-[#64748b]">
+                <span className="text-[#059669] font-bold">•</span>
+                <span><strong>Invariant Patterns:</strong> Master core algorithmic archetypes across 6 domains.</span>
               </li>
             </ul>
           </div>
@@ -103,15 +99,16 @@ export function Footer({ onOpenFeedback }) {
                 </a>
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex flex-wrap items-center gap-2 pt-1">
                 <a
-                  href="https://github.com/RijulSitpure"
+                  href="https://github.com/RijulSitpure/LeetCode-Pattern_Tracker"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-secondary !py-1.5 !px-3 !text-[12px] flex items-center gap-1.5"
+                  className="btn-secondary !py-1.5 !px-3 !text-[12px] flex items-center gap-1.5 hover:!border-[#eab308] hover:!text-[#854d0e] transition-colors"
+                  title="Star this repository on GitHub"
                 >
-                  <GithubIcon className="w-3.5 h-3.5" />
-                  <span>GitHub Profile</span>
+                  <Star className="w-3.5 h-3.5 text-[#eab308] fill-[#eab308]" />
+                  <span>Star on GitHub</span>
                 </a>
 
                 {onOpenFeedback && (
@@ -131,10 +128,8 @@ export function Footer({ onOpenFeedback }) {
 
         {/* Bottom bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-[#64748b]">
-          <div className="flex items-center gap-1">
-            <span>Crafted with</span>
-            <Heart className="w-3.5 h-3.5 text-[#ef4444] fill-[#ef4444]" />
-            <span>by <strong className="text-[#1e2033]">Rijul Sitpure</strong> © {currentYear}</span>
+          <div>
+            <span>© 2026 Rijul Sitpure. Asymptote is an independent project and is not affiliated with LeetCode.</span>
           </div>
 
           <div className="flex items-center gap-4">

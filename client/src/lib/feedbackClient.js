@@ -154,3 +154,42 @@ export async function submitFeedbackToGoogleSheets(payload) {
     type: json.type || payload.type
   };
 }
+
+/**
+ * Queries Google Apps Script endpoint for current ticket resolution status.
+ * Accepts an array of reference IDs (e.g. ['ASY-20261019-XXXX', ...]).
+ * Returns an object mapping reference ID to status: { [refId]: 'Resolved' | 'New' | ... }
+ */
+export async function checkFeedbackStatus(referenceIds) {
+  if (!Array.isArray(referenceIds) || referenceIds.length === 0) {
+    return {};
+  }
+
+  const endpoint = getFeedbackEndpoint();
+  const validIds = referenceIds.map(id => String(id).trim()).filter(Boolean);
+  if (validIds.length === 0) return {};
+
+  const url = `${endpoint}?action=status&ids=${encodeURIComponent(validIds.join(','))}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+
+    if (!response.ok) {
+      return {};
+    }
+
+    const data = await response.json();
+    if (data && data.success && data.statuses) {
+      return data.statuses;
+    }
+  } catch (err) {
+    // Non-blocking: fail quietly if user is offline
+    console.debug('Status check bypassed or network unreachable:', err?.message);
+  }
+
+  return {};
+}
+

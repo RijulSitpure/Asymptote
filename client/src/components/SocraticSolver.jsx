@@ -139,35 +139,43 @@ export function SocraticSolver({ initialProblemQuery }) {
     }
   }, [initialProblemQuery]);
 
+  const totalHints = data?.hints?.length || 4;
+
+  const scrollToHintOrNextAction = (level) => {
+    // If there is a next locked hint, scroll so its unlock button is brought into viewport;
+    // otherwise scroll to reveal the current hint or solution blueprint.
+    const nextLevel = level < totalHints ? level + 1 : level;
+    const targetEl = document.getElementById(`hint-row-${nextLevel}`) || document.getElementById(`hint-row-${level}`);
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  const unlockLevel = (level) => {
+    const nextRevealed = Math.max(revealedLevel, level);
+    setRevealedLevel(nextRevealed);
+    setTimeout(() => {
+      scrollToHintOrNextAction(nextRevealed);
+    }, 120);
+  };
+
   // Keyboard shortcut: Keys 1-4 reveal clue levels
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (['1', '2', '3', '4'].includes(e.key) && data && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
         const level = parseInt(e.key, 10);
-        if (level <= (data.hints?.length || 4)) {
-          setRevealedLevel(level);
-          setTimeout(() => {
-            const el = document.getElementById(`hint-row-${level}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }, 80);
+        if (level <= totalHints) {
+          unlockLevel(level);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [data]);
+  }, [data, totalHints, revealedLevel]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     loadProblemHints(query);
-  };
-
-  const unlockLevel = (level) => {
-    setRevealedLevel(Math.max(revealedLevel, level));
-    setTimeout(() => {
-      const el = document.getElementById(`hint-row-${level}`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 100);
   };
 
   const handleCopyCode = (code) => {
@@ -175,8 +183,6 @@ export function SocraticSolver({ initialProblemQuery }) {
     setCodeCopied(true);
     setTimeout(() => setCodeCopied(false), 2000);
   };
-
-  const totalHints = data?.hints?.length || 4;
 
   return (
     <div className="space-y-6">

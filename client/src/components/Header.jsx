@@ -1,4 +1,4 @@
-import { Search, RefreshCw, MessageSquare } from 'lucide-react';
+import { Search, RefreshCw, MessageSquare, CheckCircle2 } from 'lucide-react';
 
 export function Header({ 
   activeTab, 
@@ -56,11 +56,16 @@ export function Header({
         </div>
       </div>
 
-      {/* Right: Fixed width container so solved count, Feedback, and Sync never jitter */}
-      <div className="w-[240px] shrink-0 flex items-center justify-end gap-2.5">
-        <span className="text-[14px] text-[#475569] hidden xl:inline">
-          {totalSolved} solved
-        </span>
+      {/* Right: Solved count badge, Feedback, and Sync */}
+      <div className="shrink-0 flex items-center justify-end gap-3 min-w-[240px]">
+        <div 
+          className="hidden md:inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f8fafc] border border-[#e2e8f0] text-[13px] text-[#475569] shadow-2xs font-medium"
+          title={`${totalSolved} problems solved`}
+        >
+          <CheckCircle2 className="w-3.5 h-3.5 text-[#059669] shrink-0" />
+          <span className="font-bold text-[#1e2033]">{totalSolved}</span>
+          <span className="text-[#64748b]">solved</span>
+        </div>
 
         {openFeedbackModal && (
           <button 

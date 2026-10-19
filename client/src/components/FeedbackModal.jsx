@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
-  X, Bug, Lightbulb, MessageSquare, Check, Mail, Send, Trash2, 
+  X, Bug, Lightbulb, MessageSquare, Check, Send, Trash2, 
   Download, CheckCircle, Clock, Copy, AlertTriangle, RefreshCw 
 } from 'lucide-react';
 import { useToast } from './Toast';
@@ -10,7 +10,8 @@ import {
   MAX_DETAILS_LENGTH, 
   MAX_EMAIL_LENGTH,
   validateFeedbackPayload,
-  submitFeedbackToGoogleSheets
+  submitFeedbackToGoogleSheets,
+  checkFeedbackStatus
 } from '../lib/feedbackClient';
 
 function GithubIcon({ className = "w-4 h-4" }) {
@@ -48,12 +49,62 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
   // Local submissions management state
   const [submissions, setSubmissions] = useState([]);
   const [managerFilter, setManagerFilter] = useState('all'); // 'all' | 'open' | 'resolved'
+  const [isSyncingStatus, setIsSyncingStatus] = useState(false);
 
   useEffect(() => {
     if (initialType) {
       setFeedbackType(initialType);
     }
   }, [initialType]);
+
+  const saveSubmissions = (newSubmissions) => {
+    setSubmissions(newSubmissions);
+    try {
+      localStorage.setItem(STORAGE_KEY_FEEDBACK, JSON.stringify(newSubmissions));
+    } catch (err) {
+      console.error('Failed to save feedback submissions:', err);
+    }
+  };
+
+  const syncTicketStatuses = useCallback(async (currentList = submissions) => {
+    if (!currentList || currentList.length === 0) return;
+    const unresolved = currentList.filter(s => !s.resolved && s.referenceId);
+    if (unresolved.length === 0) return;
+
+    setIsSyncingStatus(true);
+    try {
+      const idsToCheck = unresolved.map(s => s.referenceId);
+      const statuses = await checkFeedbackStatus(idsToCheck);
+      
+      let changed = false;
+      const updated = currentList.map(sub => {
+        if (!sub.resolved && sub.referenceId && statuses[sub.referenceId]) {
+          const remoteStatus = String(statuses[sub.referenceId]).toLowerCase();
+          if (remoteStatus === 'resolved' || remoteStatus === 'done' || remoteStatus === 'closed') {
+            changed = true;
+            return {
+              ...sub,
+              resolved: true,
+              resolvedAt: new Date().toISOString()
+            };
+          }
+        }
+        return sub;
+      });
+
+      if (changed) {
+        saveSubmissions(updated);
+        addToast({
+          message: 'Synced with server: Ticket(s) marked resolved.',
+          type: 'success'
+        });
+      }
+    } catch (err) {
+      console.debug('Failed to sync ticket status:', err);
+    } finally {
+      setIsSyncingStatus(false);
+    }
+  }, [submissions, addToast]);
 
   // Load submissions from storage
   useEffect(() => {
@@ -72,14 +123,12 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
     }
   }, [isOpen]);
 
-  const saveSubmissions = (newSubmissions) => {
-    setSubmissions(newSubmissions);
-    try {
-      localStorage.setItem(STORAGE_KEY_FEEDBACK, JSON.stringify(newSubmissions));
-    } catch (err) {
-      console.error('Failed to save feedback submissions:', err);
+  // Auto-sync unresolved tickets when entering manager view
+  useEffect(() => {
+    if (activeView === 'manager' && submissions.length > 0) {
+      syncTicketStatuses(submissions);
     }
-  };
+  }, [activeView]);
 
   // Live input validation
   const validateField = (field, value) => {
@@ -255,14 +304,14 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                   ? 'Feedback & Bug Reports' 
                   : activeView === 'confirmation'
                   ? 'Submission Confirmed'
-                  : 'Feedback & Bug Manager'}
+                  : 'Submitted Tickets'}
               </h2>
               <p className="text-[13px] text-[#64748b] mt-1">
                 {activeView === 'submit' 
-                  ? 'Directly updates maintainer Rijul Sitpure\'s private Google Sheet'
+                  ? 'Send feedback, report bugs, or suggest new algorithmic patterns.' 
                   : activeView === 'confirmation'
-                  ? 'Your submission has been securely written to Google Sheets'
-                  : 'Track submitted tickets, copy reference IDs, and email users'}
+                  ? 'Your submission has been recorded successfully.'
+                  : 'Track the status of your submitted tickets.'}
               </p>
             </div>
           </div>
@@ -472,12 +521,8 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
               )}
             </div>
 
-            {/* Privacy Notice & Submit Action */}
-            <div className="pt-2 border-t border-[#e2e8f0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div className="text-[11px] text-[#64748b] leading-tight max-w-[360px]">
-                🔒 <strong>Privacy:</strong> Submissions write directly to maintainer Rijul Sitpure&apos;s private Google Sheet. Providing an email is optional for resolution updates. No browsing telemetry or cookies are collected.
-              </div>
-
+            {/* Submit Action */}
+            <div className="pt-2 border-t border-[#e2e8f0] flex items-center justify-end">
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -488,7 +533,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Sending to Sheets...</span>
+                    <span>Submitting...</span>
                   </>
                 ) : (
                   <>
@@ -513,7 +558,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                 Submission Received!
               </h3>
               <p className="text-[14px] text-[#475569] max-w-[480px] mx-auto">
-                Thank you! Your {submittedResult.type === 'bug' ? 'bug report' : submittedResult.type === 'feature' ? 'pattern suggestion' : 'feedback'} has been securely written to maintainer Rijul Sitpure&apos;s private Google Sheet.
+                Thank you! Your {submittedResult.type === 'bug' ? 'bug report' : submittedResult.type === 'feature' ? 'pattern suggestion' : 'feedback'} has been submitted successfully.
               </p>
             </div>
 
@@ -606,6 +651,17 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => syncTicketStatuses(submissions)}
+                  disabled={isSyncingStatus || submissions.length === 0}
+                  className="btn-secondary !py-1 !px-2.5 !text-[12px] flex items-center gap-1.5 cursor-pointer"
+                  title="Check Google Sheets for resolution updates"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingStatus ? 'animate-spin text-[#059669]' : ''}`} />
+                  <span>{isSyncingStatus ? 'Checking...' : 'Refresh Status'}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleExportJson}
                   disabled={submissions.length === 0}
                   className="btn-secondary !py-1 !px-2.5 !text-[12px] flex items-center gap-1.5 cursor-pointer"
@@ -629,7 +685,6 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                       <th className="py-2.5 px-3 w-20">Type</th>
                       <th className="py-2.5 px-3 w-28">Date/Time</th>
                       <th className="py-2.5 px-3">Subject & Details</th>
-                      <th className="py-2.5 px-3 w-32">User ID</th>
                       <th className="py-2.5 px-3 w-28 text-center">Status</th>
                       <th className="py-2.5 px-3 w-24 text-right">Action</th>
                     </tr>
@@ -637,12 +692,6 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                   <tbody className="divide-y divide-[#e2e8f0] bg-white">
                     {filteredSubmissions.map((sub) => {
                       const refId = sub.referenceId || sub.id;
-                      const isEmail = sub.userContact && sub.userContact.includes('@');
-                      const emailSubject = encodeURIComponent(`[Resolved] Asymptote ticket ${refId}: "${sub.title}"`);
-                      const emailBody = encodeURIComponent(
-                        `Hi,\n\nThank you for reaching out regarding "${sub.title}" (Reference ID: ${refId}).\n\nWe wanted to let you know that this issue has been resolved in our latest update.\n\nTicket Summary: ${sub.title}\nDetails: ${sub.details}\n\nBest regards,\nRijul Sitpure\nCreator of Asymptote\nhttps://github.com/RijulSitpure`
-                      );
-                      const mailtoUrl = `mailto:${sub.userContact}?subject=${emailSubject}&body=${emailBody}`;
 
                       return (
                         <tr key={refId} className={sub.resolved ? 'bg-[#fcfdfd] opacity-75' : ''}>
@@ -651,7 +700,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                             <span className="block">{refId}</span>
                             {sub.syncedToSheets && (
                               <span className="inline-block mt-0.5 text-[9px] text-[#059669] bg-[#ecfdf5] px-1 rounded font-semibold border border-[#a7f3d0]">
-                                Sheets ✓
+                                Synced ✓
                               </span>
                             )}
                           </td>
@@ -676,7 +725,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                           </td>
 
                           {/* Subject & Details */}
-                          <td className="py-3 px-3 align-top max-w-[220px]">
+                          <td className="py-3 px-3 align-top max-w-[260px]">
                             <strong className="block font-heading text-[13px] text-[#1e2033] mb-0.5">
                               {sub.title}
                             </strong>
@@ -691,18 +740,12 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                             )}
                           </td>
 
-                          {/* User ID */}
-                          <td className="py-3 px-3 align-top text-[12px] text-[#475569]">
-                            <span className="font-medium text-[#1e2033] break-all">
-                              {sub.userContact || 'Anonymous'}
-                            </span>
-                          </td>
-
-                          {/* Status Toggle */}
+                          {/* Status */}
                           <td className="py-3 px-3 align-top text-center">
                             <button
                               type="button"
                               onClick={() => handleToggleResolved(refId)}
+                              title={sub.resolved ? "Click to reopen ticket" : "Click to mark resolved locally"}
                               className={`py-1 px-2.5 rounded-md text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer ${
                                 sub.resolved
                                   ? 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]'
@@ -710,28 +753,24 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
                               }`}
                             >
                               {sub.resolved ? <Check className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                              <span>{sub.resolved ? 'Resolved' : 'Mark Done'}</span>
+                              <span>{sub.resolved ? 'Resolved' : 'Open'}</span>
                             </button>
                           </td>
 
-                          {/* Action: Email user or delete */}
+                          {/* Action: Copy Ref ID or delete */}
                           <td className="py-3 px-3 align-top text-right space-x-1">
-                            {isEmail ? (
-                              <a
-                                href={mailtoUrl}
-                                className="btn-secondary !py-1 !px-2 !text-[11px] inline-flex items-center gap-1 text-[#0369a1] hover:!text-[#0284c7]"
-                                title={`Send resolution email to ${sub.userContact}`}
-                              >
-                                <Mail className="w-3 h-3" />
-                                <span>Email</span>
-                              </a>
-                            ) : (
-                              <span className="text-[11px] text-[#94a3b8] italic">No email</span>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleCopyRefId(refId)}
+                              className="p-1.5 text-[#64748b] hover:text-[#1e2033] hover:bg-[#f1f5f9] rounded transition-colors inline-block cursor-pointer"
+                              title="Copy Reference ID"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteTicket(refId)}
-                              className="p-1 text-[#94a3b8] hover:text-[#ef4444] transition-colors rounded inline-block cursor-pointer"
+                              className="p-1.5 text-[#94a3b8] hover:text-[#ef4444] hover:bg-[#fff1f2] transition-colors rounded inline-block cursor-pointer"
                               title="Delete ticket"
                             >
                               <Trash2 className="w-3.5 h-3.5" />

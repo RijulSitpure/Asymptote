@@ -264,9 +264,67 @@ function doPost(e) {
 }
 
 /**
- * HTTP GET entrypoint - Health check / status probe
+ * HTTP GET entrypoint - Health check or status query for submitted tickets
+ * Query param: ?action=status&ids=ASY-20261019-XXXX,ASY-20261020-YYYY
  */
 function doGet(e) {
+  var action = (e && e.parameter && e.parameter.action) || 'ping';
+  var rawIds = (e && e.parameter && e.parameter.ids) || '';
+
+  if (action === 'status' || rawIds) {
+    var idList = rawIds.split(',').map(function(id) { return id.trim(); }).filter(Boolean);
+    if (idList.length === 0) {
+      return createJsonResponse({ success: true, statuses: {} });
+    }
+
+    // Limit to max 50 IDs per query to protect performance
+    if (idList.length > 50) {
+      idList = idList.slice(0, 50);
+    }
+
+    var targetIds = {};
+    for (var i = 0; i < idList.length; i++) {
+      targetIds[idList[i]] = true;
+    }
+
+    try {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      if (!ss) {
+        return createJsonResponse({ success: false, error: 'No active spreadsheet bound.' });
+      }
+
+      var sheet = ss.getSheetByName('Submissions') || ss.getActiveSheet();
+      if (!sheet) {
+        return createJsonResponse({ success: false, error: 'Submissions sheet not found.' });
+      }
+
+      var lastRow = sheet.getLastRow();
+      var statuses = {};
+
+      if (lastRow > 1) {
+        // Column A is Submission ID (col 1), Column G is Status (col 7)
+        var values = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
+        for (var r = 0; r < values.length; r++) {
+          var rowId = String(values[r][0] || '').trim();
+          if (rowId && targetIds[rowId]) {
+            var rowStatus = String(values[r][6] || 'New').trim();
+            statuses[rowId] = rowStatus;
+          }
+        }
+      }
+
+      return createJsonResponse({
+        success: true,
+        statuses: statuses
+      });
+    } catch (err) {
+      return createJsonResponse({
+        success: false,
+        error: 'Failed to retrieve ticket status.'
+      });
+    }
+  }
+
   return createJsonResponse({
     status: 'ok',
     service: 'Asymptote Feedback Webhook',
