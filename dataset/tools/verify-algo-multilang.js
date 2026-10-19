@@ -68,6 +68,10 @@ public:
 };
 `;
     }
+    preamble += `
+bool isBadVersion(int version);
+int guess(int num);
+`;
     codeToTest = preamble + codeToTest;
     const cppRes = spawnSync('g++', ['-std=c++17', '-fsyntax-only', '-x', 'c++', '-'], {
       input: codeToTest,
@@ -381,6 +385,62 @@ print(json.dumps({'ops': ops, 'expected': res}))
         }
       }
       console.log(`  ↳ Verified JavaScript Trie against Python 3 across ${data.ops.length} operations`);
+      return;
+    }
+
+    if (slug === 'binary-search-tree-iterator') {
+      const pyHarness = `
+import json
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def bst_from_sorted(arr):
+    if not arr: return None
+    mid = len(arr) // 2
+    root = TreeNode(arr[mid])
+    root.left = bst_from_sorted(arr[:mid])
+    root.right = bst_from_sorted(arr[mid+1:])
+    return root
+
+sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
+scope = {'TreeNode': TreeNode, 'Optional': None}
+exec(sol_code, scope)
+BSTIterator = scope['BSTIterator']
+
+t = bst_from_sorted([3, 7, 9, 15, 20])
+it = BSTIterator(t)
+res = []
+while it.hasNext():
+    res.append(it.next())
+
+print(json.dumps({'expected': res}))
+`;
+      const pyRun = spawnSync('python3', ['-c', pyHarness], { encoding: 'utf8', timeout: 30000 });
+      if (pyRun.status !== 0) {
+        throw new Error(`Python harness failed for binary-search-tree-iterator: ${pyRun.stderr}`);
+      }
+      const data = JSON.parse(pyRun.stdout);
+      function bstFromSorted(arr) {
+        if (!arr || arr.length === 0) return null;
+        const mid = Math.floor(arr.length / 2);
+        const root = new sandbox.TreeNode(arr[mid]);
+        root.left = bstFromSorted(arr.slice(0, mid));
+        root.right = bstFromSorted(arr.slice(mid + 1));
+        return root;
+      }
+      const jsIt = new sandbox.BSTIterator(bstFromSorted([3, 7, 9, 15, 20]));
+      const actual = [];
+      while (jsIt.hasNext()) {
+        actual.push(jsIt.next());
+      }
+      if (JSON.stringify(actual) !== JSON.stringify(data.expected)) {
+        throw new Error(`BSTIterator mismatch: JS ${JSON.stringify(actual)} vs PY ${JSON.stringify(data.expected)}`);
+      }
+      console.log(`  ↳ Verified JavaScript BSTIterator against Python 3 across ${data.expected.length} elements`);
       return;
     }
 

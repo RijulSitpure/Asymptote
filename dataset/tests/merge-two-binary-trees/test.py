@@ -1,0 +1,77 @@
+import json, os, re, random, time, sys
+sys.setrecursionlimit(20000)
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def build_tree(arr):
+    if not arr or arr[0] is None:
+        return None
+    root = TreeNode(arr[0])
+    queue = [root]
+    i = 1
+    while queue and i < len(arr):
+        curr = queue.pop(0)
+        if i < len(arr) and arr[i] is not None:
+            curr.left = TreeNode(arr[i])
+            queue.append(curr.left)
+        i += 1
+        if i < len(arr) and arr[i] is not None:
+            curr.right = TreeNode(arr[i])
+            queue.append(curr.right)
+        i += 1
+    return root
+
+def load_problem():
+    base = os.path.dirname(os.path.abspath(__file__))
+    prob_path = os.path.join(base, '..', '..', 'problems', 'merge-two-binary-trees.json')
+    with open(prob_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def extract_hint_code(prob):
+    m = re.search(r'```python\n(.*?)\n```', prob['hints'][3]['text'], re.DOTALL)
+    if not m: raise ValueError("Could not extract Python code")
+    return m.group(1)
+
+def main():
+    prob = load_problem()
+    sol_code = prob['solutions'][0]['code']
+    hint_code = extract_hint_code(prob)
+    assert sol_code.strip() == hint_code.strip(), "Hint 4 code must match solution code"
+
+    scope = {'TreeNode': TreeNode, 'ListNode': ListNode, 'List': list, 'Optional': None}
+    exec(sol_code, scope)
+    solver = scope['Solution']()
+
+    def tree_to_inorder(root):
+        return tree_to_inorder(root.left) + [root.val] + tree_to_inorder(root.right) if root else []
+
+    t1 = build_tree([1, 3, 2, 5])
+    t2 = build_tree([2, 1, 3, None, 4, None, 7])
+    m = solver.mergeTrees(t1, t2)
+    assert m.val == 3
+    assert m.left.val == 4
+    assert m.right.val == 5
+
+    # Scale test: 2000 nodes
+    vals1 = list(range(2000))
+    vals2 = list(range(2000))
+    t1_sc = build_tree(vals1)
+    t2_sc = build_tree(vals2)
+    t0 = time.perf_counter()
+    res = solver.mergeTrees(t1_sc, t2_sc)
+    t1_time = time.perf_counter()
+    assert res.val == 0
+    print(f"✓ Merge Two Binary Trees: fixed and N=2000 passed in {(t1_time-t0)*1000:.2f}ms")
+
+
+if __name__ == '__main__':
+    main()

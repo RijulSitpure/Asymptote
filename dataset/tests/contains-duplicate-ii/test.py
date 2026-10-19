@@ -1,0 +1,60 @@
+import json, os, re, random, time
+
+def load_problem():
+    base = os.path.dirname(os.path.abspath(__file__))
+    prob_path = os.path.join(base, '..', '..', 'problems', 'contains-duplicate-ii.json')
+    with open(prob_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def extract_hint_code(prob):
+    m = re.search(r'```python\n(.*?)\n```', prob['hints'][3]['text'], re.DOTALL)
+    if not m: raise ValueError("Could not extract Python code")
+    return m.group(1)
+
+def main():
+    prob = load_problem()
+    sol_code = prob['solutions'][0]['code']
+    hint_code = extract_hint_code(prob)
+    assert sol_code.strip() == hint_code.strip(), "Hint 4 code must match solution code"
+
+    scope = {'List': list, 'Optional': None}
+    exec(sol_code, scope)
+    solver = scope['Solution']()
+
+    fixed = [
+        ([1, 2, 3, 1], 3, True),
+        ([1, 0, 1, 1], 1, True),
+        ([1, 2, 3, 1, 2, 3], 2, False),
+        ([1], 1, False),
+        ([1, 2, 1], 0, False)
+    ]
+    for nums, k, exp in fixed:
+        assert solver.containsNearbyDuplicate(nums, k) == exp
+
+    rng = random.Random(42)
+    for _ in range(35):
+        sz = rng.randint(1, 40)
+        nums = [rng.randint(1, 15) for _ in range(sz)]
+        k = rng.randint(0, 10)
+        # reference
+        ref = False
+        for i in range(sz):
+            for j in range(i + 1, min(sz, i + k + 1)):
+                if nums[i] == nums[j]:
+                    ref = True
+                    break
+            if ref: break
+        assert solver.containsNearbyDuplicate(nums, k) == ref
+
+    # Scale test: 50,000 items
+    big = list(range(50000))
+    big.append(0)
+    t0 = time.perf_counter()
+    res = solver.containsNearbyDuplicate(big, 50000)
+    t1 = time.perf_counter()
+    assert res is True
+    print(f"✓ Contains Duplicate II: fixed, 35 random, and N=50k passed in {(t1-t0)*1000:.2f}ms")
+
+
+if __name__ == '__main__':
+    main()

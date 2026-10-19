@@ -1,0 +1,79 @@
+{
+  "slug": "reorganize-string",
+  "number": 767,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Adjacent Identical Character Obstacle",
+      "text": "If any character appears more than (len(s) + 1) // 2 times, no valid rearrangement exists. How can placing the most frequent remaining characters greedily prevent collisions?"
+    },
+    {
+      "level": 2,
+      "title": "Max-Frequency Greedy Invariant",
+      "text": "Always pick the character with highest remaining count that differs from the previous placed character. Track characters in a max-priority queue."
+    },
+    {
+      "level": 3,
+      "title": "Priority Queue Interleaving Procedure",
+      "text": "Build a frequency table. If any count > (len(s) + 1) // 2, return empty string. Place counts into a max-priority queue. While queue has >= 2 elements, pop the two most frequent characters, append both to result, decrement counts, and push back if positive. Handle any final single character."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def reorganizeString(self, s: str) -> str:\n        import heapq\n        from collections import Counter\n        counts = Counter(s)\n        max_freq = max(counts.values())\n        if max_freq > (len(s) + 1) // 2:\n            return \"\"\n        heap = [(-cnt, ch) for ch, cnt in counts.items()]\n        heapq.heapify(heap)\n        res = []\n        while len(heap) >= 2:\n            cnt1, ch1 = heapq.heappop(heap)\n            cnt2, ch2 = heapq.heappop(heap)\n            res.extend([ch1, ch2])\n            if cnt1 + 1 < 0:\n                heapq.heappush(heap, (cnt1 + 1, ch1))\n            if cnt2 + 1 < 0:\n                heapq.heappush(heap, (cnt2 + 1, ch2))\n        if heap:\n            res.append(heap[0][1])\n        return \"\".join(res)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * log A)",
+    "space": "O(A)",
+    "variables": [
+      "N: length of string s (1 <= N <= 500)",
+      "A: alphabet size (A <= 26)"
+    ],
+    "notes": "Greedy priority queue interleaving popping top 2 frequent characters with alphabet size at most 26.",
+    "whyNaiveFails": "Generating permutations takes O(N!) time which is impossible for N up to 500.",
+    "spaceTimeTradeoff": "Heap size bounded by alphabet size 26.",
+    "interviewerExpectation": "Checking the pigeonhole impossibility condition max_freq > (len(s) + 1) // 2 upfront."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def reorganizeString(self, s: str) -> str:\n        import heapq\n        from collections import Counter\n        counts = Counter(s)\n        max_freq = max(counts.values())\n        if max_freq > (len(s) + 1) // 2:\n            return \"\"\n        heap = [(-cnt, ch) for ch, cnt in counts.items()]\n        heapq.heapify(heap)\n        res = []\n        while len(heap) >= 2:\n            cnt1, ch1 = heapq.heappop(heap)\n            cnt2, ch2 = heapq.heappop(heap)\n            res.extend([ch1, ch2])\n            if cnt1 + 1 < 0:\n                heapq.heappush(heap, (cnt1 + 1, ch1))\n            if cnt2 + 1 < 0:\n                heapq.heappush(heap, (cnt2 + 1, ch2))\n        if heap:\n            res.append(heap[0][1])\n        return \"\".join(res)",
+      "approach": "Greedy priority queue interleaving of most frequent characters",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    string reorganizeString(string s) {\n        vector<int> counts(26, 0);\n        for (char c : s) counts[c - 'a']++;\n        int max_freq = 0;\n        for (int c : counts) max_freq = max(max_freq, c);\n        if (max_freq > ((int)s.length() + 1) / 2) return \"\";\n        priority_queue<pair<int, char>> pq;\n        for (int i = 0; i < 26; i++) {\n            if (counts[i] > 0) pq.push({counts[i], (char)('a' + i)});\n        }\n        string res = \"\";\n        while (pq.size() >= 2) {\n            auto [cnt1, ch1] = pq.top(); pq.pop();\n            auto [cnt2, ch2] = pq.top(); pq.pop();\n            res.push_back(ch1);\n            res.push_back(ch2);\n            if (cnt1 - 1 > 0) pq.push({cnt1 - 1, ch1});\n            if (cnt2 - 1 > 0) pq.push({cnt2 - 1, ch2});\n        }\n        if (!pq.empty()) res.push_back(pq.top().second);\n        return res;\n    }\n};",
+      "approach": "Greedy priority queue interleaving of most frequent characters",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public String reorganizeString(String s) {\n        int[] counts = new int[26];\n        for (int i = 0; i < s.length(); i++) counts[s.charAt(i) - 'a']++;\n        int maxFreq = 0;\n        for (int c : counts) maxFreq = Math.max(maxFreq, c);\n        if (maxFreq > (s.length() + 1) / 2) return \"\";\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> b[0] - a[0]);\n        for (int i = 0; i < 26; i++) {\n            if (counts[i] > 0) pq.offer(new int[]{counts[i], i});\n        }\n        StringBuilder sb = new StringBuilder();\n        while (pq.size() >= 2) {\n            int[] first = pq.poll();\n            int[] second = pq.poll();\n            sb.append((char)('a' + first[1]));\n            sb.append((char)('a' + second[1]));\n            if (first[0] - 1 > 0) pq.offer(new int[]{first[0] - 1, first[1]});\n            if (second[0] - 1 > 0) pq.offer(new int[]{second[0] - 1, second[1]});\n        }\n        if (!pq.isEmpty()) sb.append((char)('a' + pq.poll()[1]));\n        return sb.toString();\n    }\n}",
+      "approach": "Greedy priority queue interleaving of most frequent characters",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    },
+    {
+      "lang": "javascript",
+      "code": "var reorganizeString = function(s) {\n    const counts = new Array(26).fill(0);\n    for (let i = 0; i < s.length; i++) counts[s.charCodeAt(i) - 97]++;\n    let maxFreq = 0, maxCharIdx = 0;\n    for (let i = 0; i < 26; i++) {\n        if (counts[i] > maxFreq) {\n            maxFreq = counts[i];\n            maxCharIdx = i;\n        }\n    }\n    if (maxFreq > Math.floor((s.length + 1) / 2)) return \"\";\n    const res = new Array(s.length);\n    let idx = 0;\n    while (counts[maxCharIdx] > 0) {\n        res[idx] = String.fromCharCode(97 + maxCharIdx);\n        idx += 2;\n        counts[maxCharIdx]--;\n    }\n    for (let i = 0; i < 26; i++) {\n        while (counts[i] > 0) {\n            if (idx >= s.length) idx = 1;\n            res[idx] = String.fromCharCode(97 + i);\n            idx += 2;\n            counts[i]--;\n        }\n    }\n    return res.join('');\n};",
+      "approach": "Greedy placement at alternating indices",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-20"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-20T00:00:00.000Z"
+}

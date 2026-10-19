@@ -1,0 +1,93 @@
+import json, os, re, random, time, sys
+sys.setrecursionlimit(20000)
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def build_tree(arr):
+    if not arr or arr[0] is None:
+        return None
+    root = TreeNode(arr[0])
+    queue = [root]
+    i = 1
+    while queue and i < len(arr):
+        curr = queue.pop(0)
+        if i < len(arr) and arr[i] is not None:
+            curr.left = TreeNode(arr[i])
+            queue.append(curr.left)
+        i += 1
+        if i < len(arr) and arr[i] is not None:
+            curr.right = TreeNode(arr[i])
+            queue.append(curr.right)
+        i += 1
+    return root
+
+def load_problem():
+    base = os.path.dirname(os.path.abspath(__file__))
+    prob_path = os.path.join(base, '..', '..', 'problems', 'recover-binary-search-tree.json')
+    with open(prob_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def extract_hint_code(prob):
+    m = re.search(r'```python\n(.*?)\n```', prob['hints'][3]['text'], re.DOTALL)
+    if not m: raise ValueError("Could not extract Python code")
+    return m.group(1)
+
+def main():
+    prob = load_problem()
+    sol_code = prob['solutions'][0]['code']
+    hint_code = extract_hint_code(prob)
+    assert sol_code.strip() == hint_code.strip(), "Hint 4 code must match solution code"
+
+    scope = {'TreeNode': TreeNode, 'ListNode': ListNode, 'List': list, 'Optional': None}
+    exec(sol_code, scope)
+    solver = scope['Solution']()
+
+    def tree_to_inorder(root):
+        return tree_to_inorder(root.left) + [root.val] + tree_to_inorder(root.right) if root else []
+
+    t = build_tree([1, 3, None, None, 2])
+    solver.recoverTree(t)
+    assert tree_to_inorder(t) == [1, 2, 3]
+
+    t2 = build_tree([3, 1, 4, None, None, 2])
+    solver.recoverTree(t2)
+    assert tree_to_inorder(t2) == [1, 2, 3, 4]
+
+    def bst_from_sorted(arr):
+        if not arr: return None
+        mid = len(arr) // 2
+        root = TreeNode(arr[mid])
+        root.left = bst_from_sorted(arr[:mid])
+        root.right = bst_from_sorted(arr[mid+1:])
+        return root
+
+    def find_node(root, val):
+        if not root: return None
+        if root.val == val: return root
+        return find_node(root.left, val) or find_node(root.right, val)
+
+    # Scale test: 1000 nodes BST with 2 swapped values
+    vals = list(range(1, 1001))
+    t = bst_from_sorted(vals)
+    n1 = find_node(t, 100)
+    n2 = find_node(t, 800)
+    n1.val, n2.val = n2.val, n1.val
+    t0 = time.perf_counter()
+    solver.recoverTree(t)
+    t1 = time.perf_counter()
+    ino = tree_to_inorder(t)
+    assert ino == sorted(vals)
+    print(f"✓ Recover Binary Search Tree: fixed and N=1000 passed in {(t1-t0)*1000:.2f}ms")
+
+
+if __name__ == '__main__':
+    main()
