@@ -440,4 +440,52 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(syncedRev.title).toBe('Reverse Integer');
     expect(syncedRev.category).toBe('Algorithms');
   });
+
+  // 11. Bidirectional Key Resolution & "Unclassified" Pattern Prevention
+  it('11. Resolves patterns and prevents "Unclassified" status whether user state is keyed by number or canonical slug', async () => {
+    const memoryStore = createMemoryStorage({
+      asymptote_user_problems: {
+        '1': { is_solved: 1, title: 'Two Sum' },
+        '15': { is_solved: 1, title: '3Sum' },
+        '2000': { is_solved: 1, title: 'Reverse Prefix of Word' }
+      }
+    });
+
+    const testEngine = createAsymptoteEngine({
+      dataset,
+      storage: memoryStore
+    });
+
+    const solved = await testEngine.getProblems({ is_solved: 1 });
+    expect(solved.length).toBe(3);
+
+    // Two Sum (#1) - curated problem keyed by numeric string "1"
+    const twoSum = solved.find(p => p.number === 1);
+    expect(twoSum).toBeDefined();
+    expect(twoSum.slug).toBe('two-sum');
+    expect(twoSum.verified).toBe(1);
+    expect(twoSum.pattern_id).toBe('hash-map-lookup');
+    expect(twoSum.pattern_title).toBe('Hash Map Complement Lookup & Frequency Counting');
+
+    // 3Sum (#15) - curated problem keyed by numeric string "15"
+    const threeSum = solved.find(p => p.number === 15);
+    expect(threeSum).toBeDefined();
+    expect(threeSum.slug).toBe('3sum');
+    expect(threeSum.verified).toBe(1);
+    expect(threeSum.pattern_id).toBe('two-pointers-opposite');
+    expect(threeSum.pattern_title).toBe('Opposite Ends Two Pointers');
+
+    // Reverse Prefix of Word (#2000) - uncurated catalog problem keyed by numeric string "2000"
+    const revPrefix = solved.find(p => p.number === 2000);
+    expect(revPrefix).toBeDefined();
+    expect(revPrefix.slug).toBe('reverse-prefix-of-word');
+    expect(revPrefix.verified).toBe(0);
+    expect(revPrefix.pattern_id).toBe('two-pointers-opposite');
+    expect(revPrefix.pattern_title).toBe('Opposite Ends Two Pointers');
+
+    // Verify stats calculation includes solved problems properly
+    const stats = await testEngine.getStats();
+    expect(stats.solvedCount).toBe(3);
+    expect(stats.totalSolved).toBe(3);
+  });
 });

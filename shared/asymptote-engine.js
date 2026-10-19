@@ -737,18 +737,71 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
     async getProblems(filters = {}) {
       const opts = filters || {};
-      const userProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
+      const rawUserProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
       const problemsList = [];
+
+      // Build bidirectional lookup for user problem state (canonical slug & problem number)
+      const userStateBySlug = new Map();
+      const userStateByNumber = new Map();
+
+      for (const [key, state] of Object.entries(rawUserProblems)) {
+        if (!state || typeof state !== 'object') continue;
+
+        const resolvedSlug = resolveProblemSlug(key, dataset.index, rawCatalog)
+          || (state.slug ? resolveProblemSlug(state.slug, dataset.index, rawCatalog) : null)
+          || (state.titleSlug ? resolveProblemSlug(state.titleSlug, dataset.index, rawCatalog) : null)
+          || key;
+
+        let numVal = null;
+        if (/^\d+$/.test(key)) {
+          numVal = parseInt(key, 10);
+        } else if (state.number !== undefined && state.number !== null && !isNaN(Number(state.number))) {
+          numVal = Number(state.number);
+        } else if (state.id !== undefined && /^\d+$/.test(String(state.id))) {
+          numVal = parseInt(String(state.id), 10);
+        } else if (state.frontend_id !== undefined && /^\d+$/.test(String(state.frontend_id))) {
+          numVal = parseInt(String(state.frontend_id), 10);
+        }
+
+        if (numVal === null) {
+          const cat = catalogBySlug.get(resolvedSlug);
+          if (cat?.n) numVal = cat.n;
+        }
+
+        userStateBySlug.set(resolvedSlug, state);
+        userStateBySlug.set(key, state);
+        if (numVal !== null) {
+          userStateByNumber.set(numVal, state);
+          userStateByNumber.set(String(numVal), state);
+        }
+      }
+
+      const handledSlugs = new Set();
+      const handledNumbers = new Set();
 
       // 1. Curated problems
       for (const cp of rawCuratedProblems) {
+        handledSlugs.add(cp.slug);
+        if (cp.number) {
+          handledNumbers.add(cp.number);
+          handledNumbers.add(String(cp.number));
+        }
+
         const meta = CURATED_PROBLEMS_META[cp.slug] || {};
-        const userState = userProblems[cp.slug] || {};
+        const userState = userStateBySlug.get(cp.slug)
+          || (cp.number ? userStateByNumber.get(cp.number) : null)
+          || (cp.number ? userStateByNumber.get(String(cp.number)) : null)
+          || rawUserProblems[cp.slug]
+          || (cp.number ? rawUserProblems[String(cp.number)] : null)
+          || {};
+
         const isTestedOrReviewed = cp.review?.status === 'tested' || cp.review?.status === 'reviewed';
         const tier = cp.review?.status === 'reviewed' ? 'reviewed' : cp.review?.status === 'tested' ? 'tested' : 'unverified';
 
-        const primaryPattern = cp.patterns?.[0] || null;
+        const catalogEntry = catalogBySlug.get(cp.slug) || (cp.number ? catalogByNumber.get(cp.number) : null);
+        const primaryPattern = cp.patterns?.[0] || meta.pattern_id || catalogEntry?.p || null;
         const pat = primaryPattern ? patternsById.get(primaryPattern) : null;
+        const patternTitle = pat?.title || (primaryPattern ? primaryPattern.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : null);
         const languages = cp.languages || (Array.isArray(cp.solutions) ? cp.solutions.map(s => s.lang) : []);
 
         const isSolved = userState.is_solved ? 1 : 0;
@@ -758,14 +811,14 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
           id: cp.number,
           frontend_id: String(cp.number),
           number: cp.number,
-          title: meta.title || cp.slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          title: meta.title || catalogEntry?.t || cp.slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
           title_slug: cp.slug,
           slug: cp.slug,
-          difficulty: meta.difficulty || 'Medium',
-          category: cp.category || meta.category || 'Algorithms',
+          difficulty: meta.difficulty || catalogEntry?.d || 'Medium',
+          category: cp.category || meta.category || catalogEntry?.c || 'Algorithms',
           pattern_id: primaryPattern,
-          pattern_title: pat?.title || primaryPattern,
-          patterns: cp.patterns || [],
+          pattern_title: patternTitle,
+          patterns: cp.patterns || (primaryPattern ? [primaryPattern] : []),
           languages,
           verified: isTestedOrReviewed ? 1 : 0,
           verification_tier: tier,
@@ -787,46 +840,85 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       }
 
       // 2. Uncurated problems from user storage
-      for (const [slug, userState] of Object.entries(userProblems)) {
-        if (!curatedProblemsBySlug.has(slug)) {
-          const catalogEntry = catalogBySlug.get(slug);
-          const number = userState.number || catalogEntry?.n || userState.id || userState.frontend_id || null;
-          const category = userState.category || catalogEntry?.c || 'Algorithms';
-          const difficulty = userState.difficulty || catalogEntry?.d || 'Medium';
-          const title = userState.title || catalogEntry?.t || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          const patternId = userState.pattern_id || catalogEntry?.p || null;
-          const pat = patternId ? patternsById.get(patternId) : null;
-          problemsList.push({
-            id: number || slug,
-            frontend_id: number ? String(number) : slug,
-            number: number ? Number(number) : null,
-            title,
-            title_slug: slug,
-            slug,
-            difficulty,
-            category,
-            pattern_id: patternId,
-            pattern_title: pat?.title || patternId,
-            patterns: patternId ? [patternId] : [],
-            languages: userState.languages || [],
-            verified: 0,
-            verification_tier: 'unverified',
-            review: { status: 'unverified' },
-            source: userState.source || (catalogEntry ? 'catalog' : 'leetcode-sync'),
-            twist_type: '',
-            is_solved: userState.is_solved ? 1 : 0,
-            solved_at: userState.solved_at || null,
-            user_code: userState.user_code || '',
-            user_notes: userState.user_notes || userState.notes || '',
-            notes: userState.user_notes || userState.notes || '',
-            user_rating: userState.user_rating !== undefined ? userState.user_rating : (userState.confidence !== undefined ? userState.confidence : 0),
-            confidence: userState.user_rating !== undefined ? userState.user_rating : (userState.confidence !== undefined ? userState.confidence : 0),
-            review_needed: userState.review_needed ? 1 : 0,
-            solutions: [],
-            hints: [],
-            complexity: null
-          });
+      for (const [key, userState] of Object.entries(rawUserProblems)) {
+        if (!key || !userState || typeof userState !== 'object') continue;
+
+        const resolvedSlug = resolveProblemSlug(key, dataset.index, rawCatalog)
+          || (userState.slug ? resolveProblemSlug(userState.slug, dataset.index, rawCatalog) : null)
+          || (userState.titleSlug ? resolveProblemSlug(userState.titleSlug, dataset.index, rawCatalog) : null)
+          || key;
+
+        // Skip if already handled in curated problems or handled earlier
+        if (
+          curatedProblemsBySlug.has(resolvedSlug) ||
+          curatedProblemsBySlug.has(key) ||
+          handledSlugs.has(resolvedSlug) ||
+          handledSlugs.has(key) ||
+          handledNumbers.has(key)
+        ) {
+          continue;
         }
+
+        handledSlugs.add(resolvedSlug);
+        handledSlugs.add(key);
+
+        let parsedNum = null;
+        if (/^\d+$/.test(key)) {
+          parsedNum = parseInt(key, 10);
+        } else if (userState.number !== undefined && userState.number !== null && !isNaN(Number(userState.number))) {
+          parsedNum = Number(userState.number);
+        } else if (userState.id !== undefined && /^\d+$/.test(String(userState.id))) {
+          parsedNum = parseInt(String(userState.id), 10);
+        } else if (userState.frontend_id !== undefined && /^\d+$/.test(String(userState.frontend_id))) {
+          parsedNum = parseInt(String(userState.frontend_id), 10);
+        }
+
+        const catalogEntry = catalogBySlug.get(resolvedSlug)
+          || (parsedNum !== null ? catalogByNumber.get(parsedNum) : null);
+
+        const number = parsedNum || catalogEntry?.n || null;
+        if (number) {
+          handledNumbers.add(number);
+          handledNumbers.add(String(number));
+        }
+
+        const category = userState.category || catalogEntry?.c || 'Algorithms';
+        const difficulty = userState.difficulty || catalogEntry?.d || 'Medium';
+        const title = userState.title || catalogEntry?.t || resolvedSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const patternId = userState.pattern_id || catalogEntry?.p || null;
+        const pat = patternId ? patternsById.get(patternId) : null;
+        const patternTitle = pat?.title || (patternId ? patternId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : null);
+
+        problemsList.push({
+          id: number || resolvedSlug,
+          frontend_id: number ? String(number) : resolvedSlug,
+          number: number ? Number(number) : null,
+          title,
+          title_slug: resolvedSlug,
+          slug: resolvedSlug,
+          difficulty,
+          category,
+          pattern_id: patternId,
+          pattern_title: patternTitle,
+          patterns: patternId ? [patternId] : [],
+          languages: userState.languages || [],
+          verified: 0,
+          verification_tier: 'unverified',
+          review: { status: 'unverified' },
+          source: userState.source || (catalogEntry ? 'catalog' : 'leetcode-sync'),
+          twist_type: '',
+          is_solved: userState.is_solved ? 1 : 0,
+          solved_at: userState.solved_at || null,
+          user_code: userState.user_code || '',
+          user_notes: userState.user_notes || userState.notes || '',
+          notes: userState.user_notes || userState.notes || '',
+          user_rating: userState.user_rating !== undefined ? userState.user_rating : (userState.confidence !== undefined ? userState.confidence : 0),
+          confidence: userState.user_rating !== undefined ? userState.user_rating : (userState.confidence !== undefined ? userState.confidence : 0),
+          review_needed: userState.review_needed ? 1 : 0,
+          solutions: [],
+          hints: [],
+          complexity: null
+        });
       }
 
       // 3. Filter problems
@@ -1066,6 +1158,9 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
       const parsedNum = rawNum && /^\d+$/.test(String(rawNum)) ? parseInt(String(rawNum), 10) : (prev?.number || null);
       const catalogEntry = catalogBySlug.get(slug) || (parsedNum ? catalogByNumber.get(parsedNum) : null);
+      const curated = curatedProblemsBySlug.get(slug);
+      const meta = CURATED_PROBLEMS_META[slug] || {};
+      const primaryPattern = curated?.patterns?.[0] || meta.pattern_id || catalogEntry?.p || null;
 
       const next = {
         ...prev,
@@ -1075,13 +1170,13 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       };
 
       if (code) next.user_code = code;
-      next.number = parsedNum !== null ? parsedNum : (catalogEntry?.n || prev?.number || null);
-      next.title = title || catalogEntry?.t || prev?.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      next.difficulty = difficulty || catalogEntry?.d || prev?.difficulty || 'Medium';
-      next.category = category || catalogEntry?.c || prev?.category || 'Algorithms';
+      next.number = parsedNum !== null ? parsedNum : (curated?.number || catalogEntry?.n || prev?.number || null);
+      next.title = title || meta.title || catalogEntry?.t || prev?.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      next.difficulty = difficulty || meta.difficulty || catalogEntry?.d || prev?.difficulty || 'Medium';
+      next.category = category || curated?.category || meta.category || catalogEntry?.c || prev?.category || 'Algorithms';
       if (languages) next.languages = languages;
-      if (catalogEntry?.p && !next.pattern_id) {
-        next.pattern_id = catalogEntry.p;
+      if (primaryPattern && !next.pattern_id) {
+        next.pattern_id = primaryPattern;
       }
 
       userProblems[slug] = next;
@@ -1131,15 +1226,18 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
         const rawNum = p.questionFrontendId || p.frontend_id || p.questionId || p.number || p.id;
         const parsedNum = rawNum && /^\d+$/.test(String(rawNum)) ? parseInt(String(rawNum), 10) : (prev?.number || null);
         const catalogEntry = catalogBySlug.get(slug) || (parsedNum ? catalogByNumber.get(parsedNum) : null);
+        const curated = curatedProblemsBySlug.get(slug);
+        const meta = CURATED_PROBLEMS_META[slug] || {};
+        const primaryPattern = curated?.patterns?.[0] || meta.pattern_id || catalogEntry?.p || null;
 
         userProblems[slug] = {
           ...prev,
           slug,
-          number: parsedNum || catalogEntry?.n || prev?.number || null,
-          title: p.title || catalogEntry?.t || prev?.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          difficulty: p.difficulty || catalogEntry?.d || prev?.difficulty || 'Medium',
-          category: p.categoryTitle || p.category || catalogEntry?.c || prev?.category || 'Algorithms',
-          pattern_id: prev?.pattern_id || catalogEntry?.p || null,
+          number: parsedNum || curated?.number || catalogEntry?.n || prev?.number || null,
+          title: p.title || meta.title || catalogEntry?.t || prev?.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          difficulty: p.difficulty || meta.difficulty || catalogEntry?.d || prev?.difficulty || 'Medium',
+          category: p.categoryTitle || p.category || curated?.category || meta.category || catalogEntry?.c || prev?.category || 'Algorithms',
+          pattern_id: prev?.pattern_id || primaryPattern,
           languages: p.languages || prev?.languages || [],
           is_solved: 1,
           solved_at: p.solved_at || prev?.solved_at || new Date().toISOString(),
@@ -1289,12 +1387,24 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       const mergedProblems = { ...existingProblems };
 
       let importedCount = 0;
-      for (const [slug, data] of Object.entries(incomingProblems)) {
-        if (!slug || !data || typeof data !== 'object') continue;
-        const prev = mergedProblems[slug] || {};
-        mergedProblems[slug] = {
+      for (const [key, data] of Object.entries(incomingProblems)) {
+        if (!key || !data || typeof data !== 'object') continue;
+
+        const canonicalSlug = resolveProblemSlug(key, dataset.index, rawCatalog)
+          || (data.slug ? resolveProblemSlug(data.slug, dataset.index, rawCatalog) : null)
+          || (data.titleSlug ? resolveProblemSlug(data.titleSlug, dataset.index, rawCatalog) : null)
+          || key;
+
+        const curated = curatedProblemsBySlug.get(canonicalSlug);
+        const cat = catalogBySlug.get(canonicalSlug);
+        const patternId = data.pattern_id || curated?.patterns?.[0] || cat?.p || null;
+
+        const prev = mergedProblems[canonicalSlug] || mergedProblems[key] || {};
+        mergedProblems[canonicalSlug] = {
           ...prev,
           ...data,
+          slug: canonicalSlug,
+          pattern_id: patternId || prev.pattern_id || null,
           user_notes: data.user_notes !== undefined ? data.user_notes : (data.notes !== undefined ? data.notes : (prev.user_notes || prev.notes || '')),
           notes: data.notes !== undefined ? data.notes : (data.user_notes !== undefined ? data.user_notes : (prev.notes || prev.user_notes || '')),
           user_rating: data.user_rating !== undefined ? Number(data.user_rating) : (data.confidence !== undefined ? Number(data.confidence) : (prev.user_rating || prev.confidence || 0)),

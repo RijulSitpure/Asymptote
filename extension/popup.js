@@ -30,26 +30,34 @@ function updateServerStatus(isConnected, stats = null) {
   const dotEl = document.getElementById('server-dot');
 
   if (isConnected && stats) {
-    statusEl.innerText = 'Local Engine Ready';
-    dotEl.style.background = '#10b981';
+    if (statusEl) statusEl.innerText = 'Local Engine Ready';
+    if (dotEl) dotEl.style.background = '#10b981';
 
     const username = stats.username || 'LeetCode User';
     const totalSolved = stats.totalSolved ?? stats.solvedCount ?? 0;
     const coverage = stats.patternCoveragePercent ?? 0;
     const diff = stats.difficultyBreakdown || { Easy: 0, Medium: 0, Hard: 0 };
 
-    document.getElementById('user-name').innerText = username;
-    document.getElementById('user-avatar').innerText = username.charAt(0).toUpperCase();
-    document.getElementById('user-coverage-pill').innerText = `${coverage}% Coverage`;
-    document.getElementById('user-stats-meta').innerText = `${totalSolved} Solved • Synced`;
+    const nameEl = document.getElementById('user-name');
+    if (nameEl) nameEl.innerText = username;
+    const avatarEl = document.getElementById('user-avatar');
+    if (avatarEl) avatarEl.innerText = username.charAt(0).toUpperCase();
+    const covEl = document.getElementById('user-coverage-pill');
+    if (covEl) covEl.innerText = `${coverage}% Coverage`;
+    const metaEl = document.getElementById('user-stats-meta');
+    if (metaEl) metaEl.innerText = `${totalSolved} Solved • Synced`;
 
-    document.getElementById('badge-easy').innerText = `${diff.Easy || 0} Easy`;
-    document.getElementById('badge-med').innerText = `${diff.Medium || 0} Med`;
-    document.getElementById('badge-hard').innerText = `${diff.Hard || 0} Hard`;
+    const easyEl = document.getElementById('badge-easy');
+    if (easyEl) easyEl.innerText = `${diff.Easy || 0} Easy`;
+    const medEl = document.getElementById('badge-med');
+    if (medEl) medEl.innerText = `${diff.Medium || 0} Med`;
+    const hardEl = document.getElementById('badge-hard');
+    if (hardEl) hardEl.innerText = `${diff.Hard || 0} Hard`;
   } else {
-    statusEl.innerText = 'Local Engine';
-    dotEl.style.background = '#10b981';
-    document.getElementById('user-stats-meta').innerText = 'Local dataset ready';
+    if (statusEl) statusEl.innerText = 'Local Engine';
+    if (dotEl) dotEl.style.background = '#10b981';
+    const metaEl = document.getElementById('user-stats-meta');
+    if (metaEl) metaEl.innerText = 'Local dataset ready';
   }
 }
 

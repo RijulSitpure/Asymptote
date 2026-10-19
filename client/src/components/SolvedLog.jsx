@@ -116,6 +116,17 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
   // Sort pattern filter options in pedagogical sequence
   const sortedPatterns = useMemo(() => sortPatternsByPedagogy(patterns), [patterns]);
 
+  // Lookup map for human-readable pattern titles
+  const patternTitleMap = useMemo(() => {
+    const map = new Map();
+    for (const pat of patterns) {
+      if (pat && pat.id) {
+        map.set(pat.id, pat.title || pat.name || pat.id);
+      }
+    }
+    return map;
+  }, [patterns]);
+
   // Support ?edit=1 for direct modal preview
   useEffect(() => {
     if (typeof window !== 'undefined' && solvedProblems.length > 0) {
@@ -485,7 +496,10 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
                 </tr>
               ) : (
                 sortedProblems.map(p => {
-                  const patternLabel = p.pattern_title || p.pattern_id;
+                  const patId = p.pattern_id || (Array.isArray(p.patterns) && p.patterns[0]) || null;
+                  const patternLabel = p.pattern_title
+                    || (patId ? patternTitleMap.get(patId) : null)
+                    || (patId ? patId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : null);
                   const isCurated = Boolean(p.verified);
 
                   return (
@@ -597,7 +611,7 @@ export function SolvedLog({ problems = [], patterns = [], onRefresh }) {
                 Pattern variation
               </label>
               <div className="bg-[#f6f8fa] border border-[#e2e8f0] rounded-lg p-3 text-[14px] text-[#334155] leading-relaxed">
-                {selectedProblem.twist_type || selectedProblem.pattern_title || 'Standard algorithmic archetype'}
+                {selectedProblem.twist_type || selectedProblem.pattern_title || (selectedProblem.pattern_id ? patternTitleMap.get(selectedProblem.pattern_id) : null) || 'Standard algorithmic archetype'}
               </div>
             </div>
 
