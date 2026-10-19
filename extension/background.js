@@ -9,6 +9,7 @@ import {
   loadDatasetFromFetch,
   createChromeStorageAdapter
 } from './asymptote-engine.js';
+import { silentlySyncDataset } from './dataset-sync.js';
 
 let engineInstance = null;
 let engineInitPromise = null;
@@ -125,3 +126,67 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     });
   }
 });
+
+// ==============================================================================
+// Silent Over-The-Air (OTA) Dataset Synchronizer
+// Operates completely silently in the background: zero user alerts, zero popups.
+// When new problem batches or hints are pushed to the repository, the extension
+// automatically and silently updates local storage and hot-applies to the engine.
+// ==============================================================================
+const ALARM_SILENT_DATASET_SYNC = 'asymptote_silent_dataset_sync';
+
+async function performSilentDatasetSync() {
+  try {
+    const engine = await getEngine();
+    const manifestUrl = chrome.runtime.getURL('data/manifest.json');
+    const localManifestRes = await fetch(manifestUrl).catch(() => null);
+    if (!localManifestRes || !localManifestRes.ok) return;
+    const localManifest = await localManifestRes.json();
+    const storage = createChromeStorageAdapter();
+
+    const result = await silentlySyncDataset({
+      storage,
+      localManifest,
+      engine
+    });
+
+    if (result && result.updated) {
+      console.debug('[Background] Dataset silently updated to version', result.version, 'with', result.newProblemsCount, 'curated problems.');
+    }
+  } catch (err) {
+    // Fails completely silently without any user disruption or popup errors
+    console.debug('[Background] Silent dataset sync check skipped/failed:', err?.message);
+  }
+}
+
+// Set up periodic background alarm (checks every 6 hours)
+if (typeof chrome !== 'undefined' && chrome.alarms) {
+  chrome.alarms.get(ALARM_SILENT_DATASET_SYNC, (alarm) => {
+    if (!alarm) {
+      chrome.alarms.create(ALARM_SILENT_DATASET_SYNC, {
+        periodInMinutes: 360 // every 6 hours
+      });
+    }
+  });
+
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === ALARM_SILENT_DATASET_SYNC) {
+      performSilentDatasetSync();
+    }
+  });
+}
+
+// Run a silent background check when extension starts or installs
+if (typeof chrome !== 'undefined' && chrome.runtime) {
+  if (chrome.runtime.onStartup) {
+    chrome.runtime.onStartup.addListener(() => {
+      performSilentDatasetSync();
+    });
+  }
+  if (chrome.runtime.onInstalled) {
+    chrome.runtime.onInstalled.addListener(() => {
+      performSilentDatasetSync();
+    });
+  }
+}
+

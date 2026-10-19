@@ -589,6 +589,66 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
     curatedProblemsBySlug.set(cp.slug, cp);
   }
 
+  // Helper to normalize pattern object
+  function normalizePattern(p) {
+    return {
+      id: p.id,
+      domain: p.domain,
+      family: p.family,
+      category: p.domain === 'Algorithms' ? p.family : p.domain,
+      title: p.title || p.name || p.id,
+      name: p.title || p.name || p.id,
+      difficulty: p.difficulty || 'Medium',
+      short_description: p.short_description || p.summary || '',
+      summary: p.short_description || p.summary || '',
+      mental_triggers: Array.isArray(p.mental_triggers) ? p.mental_triggers : (Array.isArray(p.signals) ? p.signals : []),
+      constraint_signals: Array.isArray(p.constraint_signals) ? p.constraint_signals : [],
+      complexity: typeof p.complexity === 'string' ? p.complexity : 'Time: O(N) | Space: O(1)',
+      base_template_py: p.base_template_py || '',
+      base_template_cpp: p.base_template_cpp || '',
+      twists: Array.isArray(p.twists) ? p.twists : []
+    };
+  }
+
+  // Hot-apply OTA updates in memory
+  function applyOtaDataset(otaData) {
+    if (!otaData) return;
+    if (Array.isArray(otaData.patterns)) {
+      for (const pat of otaData.patterns) {
+        if (pat && pat.id) {
+          const norm = normalizePattern(pat);
+          patternsById.set(pat.id, norm);
+          const pIdx = normalizedPatterns.findIndex(p => p.id === pat.id);
+          if (pIdx !== -1) {
+            normalizedPatterns[pIdx] = norm;
+          } else {
+            normalizedPatterns.push(norm);
+          }
+        }
+      }
+    }
+    if (Array.isArray(otaData.problems)) {
+      for (const prob of otaData.problems) {
+        if (prob && prob.slug) {
+          curatedProblemsBySlug.set(prob.slug, prob);
+          const cIdx = rawCuratedProblems.findIndex(p => p.slug === prob.slug);
+          if (cIdx !== -1) {
+            rawCuratedProblems[cIdx] = prob;
+          } else {
+            rawCuratedProblems.push(prob);
+          }
+        }
+      }
+    }
+  }
+
+  // Async load OTA dataset on engine creation if present in storage
+  if (store && typeof store.get === 'function') {
+    store.get('asymptote_ota_dataset').then(otaData => {
+      if (otaData) applyOtaDataset(otaData);
+    }).catch(() => {});
+  }
+
   // Full LeetCode catalog index maps
   const rawCatalog = Array.isArray(dataset.catalog) ? dataset.catalog : [];
   const catalogBySlug = new Map();
@@ -599,6 +659,10 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
   }
 
   return {
+    applyOtaDataset(otaData) {
+      applyOtaDataset(otaData);
+    },
+
     getPatterns() {
       return [...normalizedPatterns];
     },

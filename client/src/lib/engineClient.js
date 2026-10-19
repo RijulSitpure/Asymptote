@@ -4,6 +4,7 @@ import {
   createChromeStorageAdapter,
   createLocalStorageAdapter
 } from './asymptote-engine.js';
+import { silentlySyncDataset } from './dataset-sync.js';
 import './languages.js';
 
 let engineInstance = null;
@@ -34,6 +35,26 @@ export async function getClientEngine() {
 
       const dataset = await loadDatasetFromFetch(dataUrl);
       engineInstance = createAsymptoteEngine({ dataset, storage });
+
+      // Silent background dataset update check:
+      // Completely transparent to user, zero prompts, zero alerts.
+      if (typeof window !== 'undefined') {
+        setTimeout(async () => {
+          try {
+            const syncRes = await silentlySyncDataset({
+              storage,
+              localManifest: dataset.manifest,
+              engine: engineInstance
+            });
+            if (syncRes && syncRes.updated) {
+              window.dispatchEvent(new CustomEvent('asymptote:dataset_updated', { detail: syncRes }));
+            }
+          } catch {
+            // Fail completely silently
+          }
+        }, 1500);
+      }
+
       return engineInstance;
     })();
   }

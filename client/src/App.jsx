@@ -103,8 +103,17 @@ export default function App() {
     const unsubscribe = subscribeToStorageChanges(() => {
       loadData();
     });
+    const handleSilentDatasetUpdate = () => {
+      loadData();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('asymptote:dataset_updated', handleSilentDatasetUpdate);
+    }
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('asymptote:dataset_updated', handleSilentDatasetUpdate);
+      }
     };
   }, []);
 

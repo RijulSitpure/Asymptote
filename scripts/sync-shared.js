@@ -10,7 +10,8 @@ const SHARED_FILES = [
   'languages.js',
   'wizard.js',
   'classifier.js',
-  'asymptote-engine.js'
+  'asymptote-engine.js',
+  'dataset-sync.js'
 ];
 
 const isCheckMode = process.argv.includes('--check');
