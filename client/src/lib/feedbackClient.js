@@ -7,6 +7,7 @@
 
 export const STORAGE_KEY_FEEDBACK = 'asymptote:feedback_submissions';
 export const STORAGE_KEY_ENDPOINT = 'asymptote:feedback_endpoint';
+export const DEFAULT_FEEDBACK_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwJ_-Jr0IAdW8tBxg0077PcfmrLwC2-TRjROZXryvCvFwrGXmsF9nzUtbTDckHWjEG-/exec';
 
 export const MAX_TITLE_LENGTH = 150;
 export const MAX_DETAILS_LENGTH = 3000;
@@ -95,7 +96,7 @@ export function getStoredFeedbackEndpoint() {
   if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FEEDBACK_ENDPOINT) {
     return import.meta.env.VITE_FEEDBACK_ENDPOINT.trim();
   }
-  return '';
+  return DEFAULT_FEEDBACK_ENDPOINT;
 }
 
 /**
@@ -117,7 +118,7 @@ export function setStoredFeedbackEndpoint(url) {
  * Uses text/plain Content-Type to avoid CORS preflight OPTIONS issues on Apps Script.
  */
 export async function submitFeedbackToGoogleSheets(payload, customEndpoint = null) {
-  const endpoint = customEndpoint || getStoredFeedbackEndpoint();
+  const endpoint = customEndpoint !== null ? customEndpoint : getStoredFeedbackEndpoint();
   if (!endpoint) {
     throw new Error('Google Sheets webhook endpoint is not configured. Please set the Apps Script URL in settings.');
   }
