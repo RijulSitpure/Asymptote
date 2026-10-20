@@ -7,6 +7,7 @@ import { SocraticSolver } from './components/SocraticSolver';
 import { DiagnosticWizard } from './components/DiagnosticWizard';
 import { SolvedLog } from './components/SolvedLog';
 import { ReviewQueue } from './components/ReviewQueue';
+import { CourseRoadmap } from './components/CourseRoadmap';
 import { SyncModal } from './components/SyncModal';
 import { ExtensionModal } from './components/ExtensionModal';
 import { Footer } from './components/Footer';
@@ -24,7 +25,7 @@ export default function App() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get('tab') || window.location.hash.replace('#', '');
-      if (['dashboard', 'queue', 'patterns', 'solver', 'wizard', 'solved'].includes(tab)) {
+      if (['dashboard', 'roadmap', 'queue', 'patterns', 'solver', 'wizard', 'solved'].includes(tab)) {
         return tab;
       }
     }
@@ -186,6 +187,17 @@ export default function App() {
                     setActiveTab('solver');
                   }}
                   onOpenQueue={() => setActiveTab('queue')}
+                />
+              )}
+
+              {activeTab === 'roadmap' && (
+                <CourseRoadmap
+                  problems={problems}
+                  onSelectPattern={handleSelectPattern}
+                  onPracticeProblem={(query) => {
+                    setSocraticProblemQuery(query);
+                    setActiveTab('solver');
+                  }}
                 />
               )}
 

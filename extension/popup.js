@@ -227,6 +227,10 @@ let popupActiveTab = 'clues'; // 'clues' | 'solution' | 'complexity' | 'notes'
 let popupActiveLang = 'python3';
 let popupCurrentHintLevel = 1;
 let popupCachedData = null;
+let popupNanoMode = 'intuition';
+let popupNanoOutput = null;
+let popupNanoLoading = false;
+let popupNanoProvider = null;
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -257,7 +261,7 @@ function renderPopupTabContent() {
   const contentEl = document.getElementById('popup-tab-content');
   if (!contentEl || !popupCachedData) return;
 
-  const { problem, hints, complexity } = popupCachedData;
+  const { problem, pattern, hints, complexity } = popupCachedData;
   const isVerified = Boolean(problem?.verified === 1 || problem?.verified === true);
 
   const hintTitles = [
@@ -429,6 +433,47 @@ function renderPopupTabContent() {
           </div>
         </div>
         <pre class="code-preview"><code>${activeCode}</code></pre>
+        <div style="margin-top:10px; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:5px;">
+              <span style="font-size:13px;">✨</span>
+              <span style="font-family:'Space Grotesk', sans-serif; font-size:12px; font-weight:700; color:#1e2033;">
+                AI Solution Mentor
+              </span>
+            </div>
+            <span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:9999px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;">
+              ${popupNanoProvider === 'gemini-nano' ? 'Gemini Nano' : 'On-Device AI'}
+            </span>
+          </div>
+
+          <div style="display:flex; gap:4px; margin-bottom:8px;">
+            <button id="popup-nano-mode-intuition" class="btn-secondary" style="flex:1; font-size:10px; padding:3px 2px; ${popupNanoMode === 'intuition' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
+              Intuition
+            </button>
+            <button id="popup-nano-mode-walkthrough" class="btn-secondary" style="flex:1; font-size:10px; padding:3px 2px; ${popupNanoMode === 'walkthrough' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
+              Walkthrough
+            </button>
+            <button id="popup-nano-mode-edge" class="btn-secondary" style="flex:1; font-size:10px; padding:3px 2px; ${popupNanoMode === 'edge_cases' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
+              Edge Cases
+            </button>
+          </div>
+
+          ${popupNanoLoading ? `
+            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">
+              ⏳ Generating on-device explanation...
+            </div>
+          ` : popupNanoOutput ? `
+            <div style="font-size:11px; color:#334155; line-height:1.5; white-space:pre-wrap; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; max-height:150px; overflow-y:auto; margin-bottom:6px;">${popupNanoOutput}</div>
+            <button id="popup-nano-explain-btn" class="btn-secondary" style="width:100%; font-size:10px; font-weight:600; padding:3px 6px;">
+              Regenerate
+            </button>
+          ` : `
+            <button id="popup-nano-explain-btn" class="btn-amber-reveal" style="font-size:11px; padding:6px 10px; width:100%; margin-top:2px;">
+              Explain with Local AI (Gemini Nano)
+            </button>
+          `}
+        </div>
+
         <div style="text-align:center; margin-top:12px;">
           <button id="popup-open-editor-btn" type="button" style="background:none; border:none; padding:0; font-size:12px; color:#1e2033; font-weight:600; cursor:pointer; text-decoration:none; font-family:inherit;">
             Open in dashboard editor ↗
@@ -462,6 +507,58 @@ function renderPopupTabContent() {
         setTimeout(() => {
           if (copyBtn) copyBtn.innerText = 'Copy';
         }, 1500);
+      };
+    }
+
+    const nanoBtn = document.getElementById('popup-nano-explain-btn');
+    if (nanoBtn) {
+      nanoBtn.onclick = () => {
+        const nanoModule = globalThis.NanoAIModule || window.NanoAIModule || null;
+        if (nanoModule) {
+          popupNanoLoading = true;
+          renderPopupTabContent();
+          nanoModule.explainSolutionWithNano({
+            problem,
+            pattern,
+            code: activeCode,
+            lang: popupActiveLang,
+            mode: popupNanoMode
+          }).then(res => {
+            popupNanoLoading = false;
+            popupNanoOutput = res.text;
+            popupNanoProvider = res.provider;
+            renderPopupTabContent();
+          }).catch(err => {
+            popupNanoLoading = false;
+            popupNanoOutput = 'Error: ' + err.message;
+            renderPopupTabContent();
+          });
+        }
+      };
+    }
+
+    const modeInt = document.getElementById('popup-nano-mode-intuition');
+    if (modeInt) {
+      modeInt.onclick = () => {
+        popupNanoMode = 'intuition';
+        popupNanoOutput = null;
+        renderPopupTabContent();
+      };
+    }
+    const modeWalk = document.getElementById('popup-nano-mode-walkthrough');
+    if (modeWalk) {
+      modeWalk.onclick = () => {
+        popupNanoMode = 'walkthrough';
+        popupNanoOutput = null;
+        renderPopupTabContent();
+      };
+    }
+    const modeEdge = document.getElementById('popup-nano-mode-edge');
+    if (modeEdge) {
+      modeEdge.onclick = () => {
+        popupNanoMode = 'edge_cases';
+        popupNanoOutput = null;
+        renderPopupTabContent();
       };
     }
   } else if (popupActiveTab === 'complexity') {
@@ -1008,6 +1105,14 @@ if (headerDashBtn) {
 const footerDashBtn = document.getElementById('btn-popup-footer-dashboard');
 if (footerDashBtn) {
   footerDashBtn.addEventListener('click', openFullDashboard);
+}
+
+const footerRoadmapBtn = document.getElementById('btn-popup-footer-roadmap');
+if (footerRoadmapBtn) {
+  footerRoadmapBtn.addEventListener('click', () => {
+    const dashboardUrl = chrome.runtime.getURL('dashboard/index.html?tab=roadmap');
+    chrome.tabs.create({ url: dashboardUrl });
+  });
 }
 
 // Initial check & auto-detect

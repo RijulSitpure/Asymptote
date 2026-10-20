@@ -366,6 +366,10 @@ const LanguagesModule = globalThis.LanguagesModule || window.LanguagesModule || 
 
 let activeSolutionLang = 'python3';
 let activeSolutionView = 'scaffold'; // 'scaffold' | 'twists' | 'notes'
+let contentNanoMode = 'intuition';
+let contentNanoOutput = null;
+let contentNanoLoading = false;
+let contentNanoProvider = null;
 
 function getSupportedLanguages(problem) {
   if (LanguagesModule && LanguagesModule.getSupportedLanguagesForProblem) {
@@ -1232,6 +1236,49 @@ function renderDrawerTabContent() {
       </div>
     `;
 
+    const nanoCardHtml = `
+      <div class="card-white" style="margin-top:12px; border-color:#cbd5e1; background:#ffffff;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:14px;">✨</span>
+            <span style="font-family:'Space Grotesk', sans-serif; font-size:13px; font-weight:700; color:#1e2033;">
+              AI Solution Mentor
+            </span>
+          </div>
+          <span style="font-size:10px; font-weight:600; padding:2px 7px; border-radius:9999px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;">
+            ${contentNanoProvider === 'gemini-nano' ? 'Gemini Nano (On-device)' : 'On-Device AI'}
+          </span>
+        </div>
+
+        <div style="display:flex; gap:4px; margin-bottom:8px;">
+          <button id="btn-nano-mode-intuition" class="btn-secondary" style="flex:1; font-size:11px; padding:4px 4px; ${contentNanoMode === 'intuition' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
+            Intuition
+          </button>
+          <button id="btn-nano-mode-walkthrough" class="btn-secondary" style="flex:1; font-size:11px; padding:4px 4px; ${contentNanoMode === 'walkthrough' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
+            Walkthrough
+          </button>
+          <button id="btn-nano-mode-edge" class="btn-secondary" style="flex:1; font-size:11px; padding:4px 4px; ${contentNanoMode === 'edge_cases' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
+            Edge Cases
+          </button>
+        </div>
+
+        ${contentNanoLoading ? `
+          <div style="text-align:center; padding:14px 8px; font-size:12px; color:#64748b;">
+            ⏳ Generating on-device explanation...
+          </div>
+        ` : contentNanoOutput ? `
+          <div style="font-size:12px; color:#334155; line-height:1.55; white-space:pre-wrap; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; max-height:200px; overflow-y:auto; margin-bottom:8px;">${contentNanoOutput}</div>
+          <button id="btn-nano-explain" class="btn-secondary" style="width:100%; font-size:11px; font-weight:600; padding:4px 8px;">
+            Regenerate explanation
+          </button>
+        ` : `
+          <button id="btn-nano-explain" class="btn-amber-reveal" style="font-size:12px; padding:8px 10px; width:100%;">
+            Explain with Local AI (Gemini Nano)
+          </button>
+        `}
+      </div>
+    `;
+
     const twistHtml = `
       <div class="card-white" style="margin-top:12px;">
         <div style="font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:700; color:#1e2033; margin-bottom:6px;">
@@ -1274,7 +1321,7 @@ function renderDrawerTabContent() {
           ) : ''}
         </div>
 
-        ${isScaffold ? codeCardHtml : isTwist ? twistHtml : notesHtml}
+        ${isScaffold ? `${codeCardHtml}${nanoCardHtml}` : isTwist ? twistHtml : notesHtml}
 
         <div style="text-align:center; margin-top:16px;">
           <button id="lc-open-solver-btn" type="button" style="background:none; border:none; padding:0; font-size:13px; color:#1e2033; font-weight:600; cursor:pointer; text-decoration:none; font-family:inherit;">
@@ -1319,6 +1366,58 @@ function renderDrawerTabContent() {
           setTimeout(() => {
             if (copyBtn) copyBtn.innerText = 'Copy';
           }, 2000);
+        };
+      }
+
+      const nanoBtn = shadow.getElementById('btn-nano-explain');
+      if (nanoBtn) {
+        nanoBtn.onclick = () => {
+          const nanoModule = globalThis.NanoAIModule || window.NanoAIModule || null;
+          if (nanoModule) {
+            contentNanoLoading = true;
+            renderDrawerTabContent();
+            nanoModule.explainSolutionWithNano({
+              problem,
+              pattern,
+              code: activeCode,
+              lang: activeSolutionLang,
+              mode: contentNanoMode
+            }).then(res => {
+              contentNanoLoading = false;
+              contentNanoOutput = res.text;
+              contentNanoProvider = res.provider;
+              renderDrawerTabContent();
+            }).catch(err => {
+              contentNanoLoading = false;
+              contentNanoOutput = 'Error generating explanation: ' + err.message;
+              renderDrawerTabContent();
+            });
+          }
+        };
+      }
+
+      const modeInt = shadow.getElementById('btn-nano-mode-intuition');
+      if (modeInt) {
+        modeInt.onclick = () => {
+          contentNanoMode = 'intuition';
+          contentNanoOutput = null;
+          renderDrawerTabContent();
+        };
+      }
+      const modeWalk = shadow.getElementById('btn-nano-mode-walkthrough');
+      if (modeWalk) {
+        modeWalk.onclick = () => {
+          contentNanoMode = 'walkthrough';
+          contentNanoOutput = null;
+          renderDrawerTabContent();
+        };
+      }
+      const modeEdge = shadow.getElementById('btn-nano-mode-edge');
+      if (modeEdge) {
+        modeEdge.onclick = () => {
+          contentNanoMode = 'edge_cases';
+          contentNanoOutput = null;
+          renderDrawerTabContent();
         };
       }
     }

@@ -1,5 +1,6 @@
 import { 
   LayoutDashboard, 
+  GraduationCap,
   RotateCcw, 
   Compass, 
   Lightbulb, 
@@ -17,6 +18,7 @@ export function Sidebar({
 
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+    { id: 'roadmap', label: 'Curriculum', icon: GraduationCap },
     { id: 'queue', label: 'Review', icon: RotateCcw, badge: queueCount > 0 ? `${queueCount}` : null },
     { id: 'patterns', label: 'Patterns', icon: Compass },
     { id: 'solver', label: 'Solver', icon: Lightbulb },

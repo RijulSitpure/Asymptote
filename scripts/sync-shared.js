@@ -11,7 +11,9 @@ const SHARED_FILES = [
   'wizard.js',
   'classifier.js',
   'asymptote-engine.js',
-  'dataset-sync.js'
+  'dataset-sync.js',
+  'nano-ai.js',
+  'curriculum-roadmap.js'
 ];
 
 const isCheckMode = process.argv.includes('--check');

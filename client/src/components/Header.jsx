@@ -11,6 +11,7 @@ export function Header({
 }) {
   const tabTitles = {
     dashboard: 'Overview',
+    roadmap: 'Curriculum',
     queue: 'Review',
     patterns: 'Patterns',
     solver: 'Solver',
