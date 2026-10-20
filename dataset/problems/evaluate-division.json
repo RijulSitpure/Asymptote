@@ -1,0 +1,80 @@
+{
+  "slug": "evaluate-division",
+  "number": 399,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Multiplicative Ratio Path Search Obstacle",
+      "text": "Equations represent directed multiplicative relationships between variable nodes. A query evaluates to the cumulative product along a path connecting numerator to denominator. How can traversing these links answer each query?"
+    },
+    {
+      "level": 2,
+      "title": "Invertible Edge Weight Product Invariant",
+      "text": "Treat each equation A / B = val as a pair of directed edges: A to B with multiplier val, and B to A with multiplier 1.0 / val. Finding a path between variables yields their quotient by multiplying edge weights."
+    },
+    {
+      "level": 3,
+      "title": "Graph Traversal Multiplicative Search Procedure",
+      "text": "Build an adjacency map where each node maps to its neighbors and transition multipliers. For each query, if either variable is missing from the graph, return -1.0. If both variables match, return 1.0. Otherwise, explore outward tracking cumulative product until reaching the target variable. If unreachable, return -1.0."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def calcEquation(self, equations: List[List[str]], values: List[float], queries: List[List[str]]) -> List[float]:\n        from collections import defaultdict, deque\n        graph = defaultdict(dict)\n        for (u, v), val in zip(equations, values):\n            graph[u][v] = val\n            graph[v][u] = 1.0 / val\n        def bfs(src, dst):\n            if src not in graph or dst not in graph:\n                return -1.0\n            if src == dst:\n                return 1.0\n            q = deque([(src, 1.0)])\n            visited = {src}\n            while q:\n                curr, prod = q.popleft()\n                if curr == dst:\n                    return prod\n                for neighbor, weight in graph[curr].items():\n                    if neighbor not in visited:\n                        visited.add(neighbor)\n                        q.append((neighbor, prod * weight))\n            return -1.0\n        return [bfs(c, d) for c, d in queries]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(Q * (V + E))",
+    "space": "O(V + E)",
+    "variables": [
+      "Q: number of queries",
+      "V: number of distinct variables",
+      "E: number of equations"
+    ],
+    "notes": "Building the graph takes O(E); each query performs a BFS/DFS traversal across at most V nodes and E edges.",
+    "whyNaiveFails": "Direct algebraic substitution across arbitrary systems of equations without a graph model is complex.",
+    "spaceTimeTradeoff": "Adjacency hash map stores variables and edge ratios in O(V + E) memory.",
+    "interviewerExpectation": "Modeling quotient calculations as edge multiplications and reciprocal back-edges."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def calcEquation(self, equations: List[List[str]], values: List[float], queries: List[List[str]]) -> List[float]:\n        from collections import defaultdict, deque\n        graph = defaultdict(dict)\n        for (u, v), val in zip(equations, values):\n            graph[u][v] = val\n            graph[v][u] = 1.0 / val\n        def bfs(src, dst):\n            if src not in graph or dst not in graph:\n                return -1.0\n            if src == dst:\n                return 1.0\n            q = deque([(src, 1.0)])\n            visited = {src}\n            while q:\n                curr, prod = q.popleft()\n                if curr == dst:\n                    return prod\n                for neighbor, weight in graph[curr].items():\n                    if neighbor not in visited:\n                        visited.add(neighbor)\n                        q.append((neighbor, prod * weight))\n            return -1.0\n        return [bfs(c, d) for c, d in queries]",
+      "approach": "Weighted directed graph representation and BFS path weight multiplication",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<double> calcEquation(vector<vector<string>>& equations, vector<double>& values, vector<vector<string>>& queries) {\n        unordered_map<string, unordered_map<string, double>> graph;\n        for (size_t i = 0; i < equations.size(); ++i) {\n            const string& u = equations[i][0];\n            const string& v = equations[i][1];\n            double val = values[i];\n            graph[u][v] = val;\n            graph[v][u] = 1.0 / val;\n        }\n        auto bfs = [&](const string& src, const string& dst) -> double {\n            if (!graph.count(src) || !graph.count(dst)) return -1.0;\n            if (src == dst) return 1.0;\n            queue<pair<string, double>> q;\n            unordered_set<string> visited;\n            q.push({src, 1.0});\n            visited.insert(src);\n            while (!q.empty()) {\n                auto [curr, prod] = q.front();\n                q.pop();\n                if (curr == dst) return prod;\n                for (const auto& [neighbor, weight] : graph[curr]) {\n                    if (!visited.count(neighbor)) {\n                        visited.insert(neighbor);\n                        q.push({neighbor, prod * weight});\n                    }\n                }\n            }\n            return -1.0;\n        };\n        vector<double> res;\n        for (const auto& q : queries) {\n            res.push_back(bfs(q[0], q[1]));\n        }\n        return res;\n    }\n};",
+      "approach": "Weighted directed graph representation and BFS path weight multiplication",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public double[] calcEquation(List<List<String>> equations, double[] values, List<List<String>> queries) {\n        Map<String, Map<String, Double>> graph = new HashMap<>();\n        for (int i = 0; i < equations.size(); i++) {\n            String u = equations.get(i).get(0);\n            String v = equations.get(i).get(1);\n            double val = values[i];\n            graph.computeIfAbsent(u, k -> new HashMap<>()).put(v, val);\n            graph.computeIfAbsent(v, k -> new HashMap<>()).put(u, 1.0 / val);\n        }\n        double[] res = new double[queries.size()];\n        for (int i = 0; i < queries.size(); i++) {\n            res[i] = bfs(graph, queries.get(i).get(0), queries.get(i).get(1));\n        }\n        return res;\n    }\n    private double bfs(Map<String, Map<String, Double>> graph, String src, String dst) {\n        if (!graph.containsKey(src) || !graph.containsKey(dst)) return -1.0;\n        if (src.equals(dst)) return 1.0;\n        Queue<Pair> q = new ArrayDeque<>();\n        Set<String> visited = new HashSet<>();\n        q.add(new Pair(src, 1.0));\n        visited.add(src);\n        while (!q.isEmpty()) {\n            Pair curr = q.poll();\n            if (curr.node.equals(dst)) return curr.prod;\n            for (Map.Entry<String, Double> entry : graph.get(curr.node).entrySet()) {\n                if (!visited.contains(entry.getKey())) {\n                    visited.add(entry.getKey());\n                    q.add(new Pair(entry.getKey(), curr.prod * entry.getValue()));\n                }\n            }\n        }\n        return -1.0;\n    }\n    private static class Pair {\n        String node;\n        double prod;\n        Pair(String node, double prod) { this.node = node; this.prod = prod; }\n    }\n}",
+      "approach": "Weighted directed graph representation and BFS path weight multiplication",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var calcEquation = function(equations, values, queries) {\n    const graph = new Map();\n    for (let i = 0; i < equations.length; i++) {\n        const [u, v] = equations[i];\n        const val = values[i];\n        if (!graph.has(u)) graph.set(u, new Map());\n        if (!graph.has(v)) graph.set(v, new Map());\n        graph.get(u).set(v, val);\n        graph.get(v).set(u, 1.0 / val);\n    }\n    const bfs = (src, dst) => {\n        if (!graph.has(src) || !graph.has(dst)) return -1.0;\n        if (src === dst) return 1.0;\n        const q = [[src, 1.0]];\n        const visited = new Set([src]);\n        let head = 0;\n        while (head < q.length) {\n            const [curr, prod] = q[head++];\n            if (curr === dst) return prod;\n            for (const [neighbor, weight] of graph.get(curr).entries()) {\n                if (!visited.has(neighbor)) {\n                    visited.add(neighbor);\n                    q.push([neighbor, prod * weight]);\n                }\n            }\n        }\n        return -1.0;\n    };\n    return queries.map(([c, d]) => bfs(c, d));\n};",
+      "approach": "Weighted directed graph representation and BFS path weight multiplication",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

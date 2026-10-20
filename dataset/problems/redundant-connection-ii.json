@@ -1,0 +1,79 @@
+{
+  "slug": "redundant-connection-ii",
+  "number": 685,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Directed Cycle and Two-Parent Conflict Obstacle",
+      "text": "Adding one directed edge to a rooted tree can cause a node to have two incoming edges, introduce a directed cycle, or both. How can dissecting whether two parent edges exist pinpoint which edge breaks tree structure?"
+    },
+    {
+      "level": 2,
+      "title": "Dual Edge Candidate Classification Invariant",
+      "text": "If any node receives two incoming edges, one of those two candidate edges must be removed. Otherwise, the redundant edge is simply the edge that introduces a directed cycle."
+    },
+    {
+      "level": 3,
+      "title": "Candidate Pruning and Disjoint Set Verification Procedure",
+      "text": "First inspect edges to see if any node has two incoming edges; if so, record cand1 and cand2. Next, process edges using a disjoint set data structure while skipping cand2. If a cycle forms during union operations, return cand1 if two incoming edges existed, otherwise return the cycle-causing edge. If no cycle forms after skipping cand2, then cand2 is the redundant edge."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def findRedundantDirectedConnection(self, edges: List[List[int]]) -> List[int]:\n        n = len(edges)\n        parent_edge = {}\n        cand1, cand2 = None, None\n        for u, v in edges:\n            if v in parent_edge:\n                cand1 = [parent_edge[v], v]\n                cand2 = [u, v]\n                break\n            parent_edge[v] = u\n        parent = list(range(n + 1))\n        def find(x):\n            while parent[x] != x:\n                parent[x] = parent[parent[x]]\n                x = parent[x]\n            return x\n        for u, v in edges:\n            if cand2 and [u, v] == cand2:\n                continue\n            ru, rv = find(u), find(v)\n            if ru == rv:\n                return cand1 if cand1 else [u, v]\n            parent[ru] = rv\n        return cand2\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * alpha(N))",
+    "space": "O(N)",
+    "variables": [
+      "N: number of vertices/edges in the directed graph",
+      "alpha: inverse Ackermann function"
+    ],
+    "notes": "Scans edges to identify two-parent candidates then performs at most N DSU union operations.",
+    "whyNaiveFails": "Testing every edge removal with full tree DFS takes O(N^2) time.",
+    "spaceTimeTradeoff": "Parent mapping and DSU array consume O(N) auxiliary space.",
+    "interviewerExpectation": "Carefully distinguishing between two-parent nodes, simple cycles, and cycles containing two-parent nodes."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def findRedundantDirectedConnection(self, edges: List[List[int]]) -> List[int]:\n        n = len(edges)\n        parent_edge = {}\n        cand1, cand2 = None, None\n        for u, v in edges:\n            if v in parent_edge:\n                cand1 = [parent_edge[v], v]\n                cand2 = [u, v]\n                break\n            parent_edge[v] = u\n        parent = list(range(n + 1))\n        def find(x):\n            while parent[x] != x:\n                parent[x] = parent[parent[x]]\n                x = parent[x]\n            return x\n        for u, v in edges:\n            if cand2 and [u, v] == cand2:\n                continue\n            ru, rv = find(u), find(v)\n            if ru == rv:\n                return cand1 if cand1 else [u, v]\n            parent[ru] = rv\n        return cand2",
+      "approach": "Two-parent candidate detection combined with DSU cycle verification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> findRedundantDirectedConnection(vector<vector<int>>& edges) {\n        int n = edges.size();\n        vector<int> parentEdge(n + 1, 0);\n        vector<int> cand1, cand2;\n        for (const auto& e : edges) {\n            int u = e[0], v = e[1];\n            if (parentEdge[v] != 0) {\n                cand1 = {parentEdge[v], v};\n                cand2 = e;\n                break;\n            }\n            parentEdge[v] = u;\n        }\n        vector<int> parent(n + 1);\n        iota(parent.begin(), parent.end(), 0);\n        auto find = [&](auto self, int x) -> int {\n            while (parent[x] != x) {\n                parent[x] = parent[parent[x]];\n                x = parent[x];\n            }\n            return x;\n        };\n        for (const auto& e : edges) {\n            if (!cand2.empty() && e == cand2) continue;\n            int ru = find(find, e[0]), rv = find(find, e[1]);\n            if (ru == rv) {\n                return !cand1.empty() ? cand1 : e;\n            }\n            parent[ru] = rv;\n        }\n        return cand2;\n    }\n};",
+      "approach": "Two-parent candidate detection combined with DSU cycle verification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[] findRedundantDirectedConnection(int[][] edges) {\n        int n = edges.length;\n        int[] parentEdge = new int[n + 1];\n        int[] cand1 = null, cand2 = null;\n        for (int[] e : edges) {\n            int u = e[0], v = e[1];\n            if (parentEdge[v] != 0) {\n                cand1 = new int[]{parentEdge[v], v};\n                cand2 = e;\n                break;\n            }\n            parentEdge[v] = u;\n        }\n        int[] parent = new int[n + 1];\n        for (int i = 0; i <= n; i++) parent[i] = i;\n        for (int[] e : edges) {\n            if (cand2 != null && e[0] == cand2[0] && e[1] == cand2[1]) continue;\n            int ru = find(parent, e[0]);\n            int rv = find(parent, e[1]);\n            if (ru == rv) {\n                return cand1 != null ? cand1 : e;\n            }\n            parent[ru] = rv;\n        }\n        return cand2;\n    }\n    private int find(int[] parent, int x) {\n        while (parent[x] != x) {\n            parent[x] = parent[parent[x]];\n            x = parent[x];\n        }\n        return x;\n    }\n}",
+      "approach": "Two-parent candidate detection combined with DSU cycle verification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findRedundantDirectedConnection = function(edges) {\n    const n = edges.length;\n    const parentEdge = new Map();\n    let cand1 = null, cand2 = null;\n    for (const [u, v] of edges) {\n        if (parentEdge.has(v)) {\n            cand1 = [parentEdge.get(v), v];\n            cand2 = [u, v];\n            break;\n        }\n        parentEdge.set(v, u);\n    }\n    const parent = Array.from({ length: n + 1 }, (_, i) => i);\n    const find = (x) => {\n        while (parent[x] !== x) {\n            parent[x] = parent[parent[x]];\n            x = parent[x];\n        }\n        return x;\n    };\n    for (const [u, v] of edges) {\n        if (cand2 && u === cand2[0] && v === cand2[1]) continue;\n        const ru = find(u), rv = find(v);\n        if (ru === rv) {\n            return cand1 ? cand1 : [u, v];\n        }\n        parent[ru] = rv;\n    }\n    return cand2;\n};",
+      "approach": "Two-parent candidate detection combined with DSU cycle verification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

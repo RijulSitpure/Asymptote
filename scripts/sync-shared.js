@@ -13,6 +13,7 @@ const SHARED_FILES = [
   'asymptote-engine.js',
   'dataset-sync.js',
   'nano-ai.js',
+  'nano-chat-service.js',
   'curriculum-roadmap.js'
 ];
 

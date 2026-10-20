@@ -1,0 +1,78 @@
+{
+  "slug": "n-queens",
+  "number": 51,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-grid-dfs"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Non-Attacking Placement Obstacle",
+      "text": "Placing N queens on an NxN board without any two queens sharing a row, column, or diagonal requires avoiding invalid board states. How can tracking occupied diagonals prune conflicting placements in constant time?"
+    },
+    {
+      "level": 2,
+      "title": "Diagonal Invariant Formulation",
+      "text": "Two cells (r1, c1) and (r2, c2) share a major diagonal if r1 - c1 == r2 - c2, and share an anti-diagonal if r1 + c1 == r2 + c2."
+    },
+    {
+      "level": 3,
+      "title": "Row-by-Row Placement Procedure",
+      "text": "Recurse row by row from 0 to n. For row r, iterate column c from 0 to n - 1. If c is in occupied columns, (r - c) in occupied diagonals, or (r + c) in occupied anti-diagonals, skip. Otherwise record state, place queen, recurse on r + 1, and backtrack by clearing sets."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def solveNQueens(self, n: int) -> List[List[str]]:\n        res = []\n        cols = set()\n        diag1 = set()   # r - c\n        diag2 = set()   # r + c\n        board = [['.' for _ in range(n)] for _ in range(n)]\n        def backtrack(r: int):\n            if r == n:\n                res.append([''.join(row) for row in board])\n                return\n            for c in range(n):\n                if c in cols or (r - c) in diag1 or (r + c) in diag2:\n                    continue\n                cols.add(c)\n                diag1.add(r - c)\n                diag2.add(r + c)\n                board[r][c] = 'Q'\n                backtrack(r + 1)\n                board[r][c] = '.'\n                cols.remove(c)\n                diag1.remove(r - c)\n                diag2.remove(r + c)\n        backtrack(0)\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N!)",
+    "space": "O(N)",
+    "variables": [
+      "N: board dimension and queen count (1 <= N <= 9)"
+    ],
+    "notes": "First queen has N choices, second has at most N-2 choices, bounding complexity by O(N!).",
+    "whyNaiveFails": "Testing all (N^2 choose N) board arrangements exceeds feasible computation.",
+    "spaceTimeTradeoff": "Constant-time diagonal state lookups require O(N) auxiliary set memory.",
+    "interviewerExpectation": "Using row-by-row placement to inherently satisfy the row constraint."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def solveNQueens(self, n: int) -> List[List[str]]:\n        res = []\n        cols = set()\n        diag1 = set()   # r - c\n        diag2 = set()   # r + c\n        board = [['.' for _ in range(n)] for _ in range(n)]\n        def backtrack(r: int):\n            if r == n:\n                res.append([''.join(row) for row in board])\n                return\n            for c in range(n):\n                if c in cols or (r - c) in diag1 or (r + c) in diag2:\n                    continue\n                cols.add(c)\n                diag1.add(r - c)\n                diag2.add(r + c)\n                board[r][c] = 'Q'\n                backtrack(r + 1)\n                board[r][c] = '.'\n                cols.remove(c)\n                diag1.remove(r - c)\n                diag2.remove(r + c)\n        backtrack(0)\n        return res",
+      "approach": "Row-by-row backtracking with diagonal lookup sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<vector<string>> solveNQueens(int n) {\n        vector<vector<string>> res;\n        vector<string> board(n, string(n, '.'));\n        vector<bool> cols(n, false), diag1(2 * n, false), diag2(2 * n, false);\n        auto dfs = [&](auto& self, int r) -> void {\n            if (r == n) {\n                res.push_back(board);\n                return;\n            }\n            for (int c = 0; c < n; ++c) {\n                if (cols[c] || diag1[r - c + n] || diag2[r + c]) continue;\n                cols[c] = diag1[r - c + n] = diag2[r + c] = true;\n                board[r][c] = 'Q';\n                self(self, r + 1);\n                board[r][c] = '.';\n                cols[c] = diag1[r - c + n] = diag2[r + c] = false;\n            }\n        };\n        dfs(dfs, 0);\n        return res;\n    }\n};",
+      "approach": "Row-by-row backtracking with diagonal lookup sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<List<String>> solveNQueens(int n) {\n        List<List<String>> res = new ArrayList<>();\n        char[][] board = new char[n][n];\n        for (char[] row : board) Arrays.fill(row, '.');\n        boolean[] cols = new boolean[n];\n        boolean[] diag1 = new boolean[2 * n];\n        boolean[] diag2 = new boolean[2 * n];\n        dfs(0, n, board, cols, diag1, diag2, res);\n        return res;\n    }\n    private void dfs(int r, int n, char[][] board, boolean[] cols, boolean[] diag1, boolean[] diag2, List<List<String>> res) {\n        if (r == n) {\n            List<String> list = new ArrayList<>();\n            for (char[] row : board) list.add(new String(row));\n            res.add(list);\n            return;\n        }\n        for (int c = 0; c < n; c++) {\n            if (cols[c] || diag1[r - c + n] || diag2[r + c]) continue;\n            cols[c] = diag1[r - c + n] = diag2[r + c] = true;\n            board[r][c] = 'Q';\n            dfs(r + 1, n, board, cols, diag1, diag2, res);\n            board[r][c] = '.';\n            cols[c] = diag1[r - c + n] = diag2[r + c] = false;\n        }\n    }\n}",
+      "approach": "Row-by-row backtracking with diagonal lookup sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var solveNQueens = function(n) {\n    const res = [];\n    const board = Array.from({ length: n }, () => new Array(n).fill('.'));\n    const cols = new Set();\n    const diag1 = new Set();\n    const diag2 = new Set();\n    function backtrack(r) {\n        if (r === n) {\n            res.push(board.map(row => row.join('')));\n            return;\n        }\n        for (let c = 0; c < n; c++) {\n            if (cols.has(c) || diag1.has(r - c) || diag2.has(r + c)) continue;\n            cols.add(c);\n            diag1.add(r - c);\n            diag2.add(r + c);\n            board[r][c] = 'Q';\n            backtrack(r + 1);\n            board[r][c] = '.';\n            cols.delete(c);\n            diag1.delete(r - c);\n            diag2.delete(r + c);\n        }\n    }\n    backtrack(0);\n    return res;\n};",
+      "approach": "Row-by-row backtracking with diagonal lookup sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

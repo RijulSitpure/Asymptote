@@ -1,179 +1,946 @@
 // generated, do not edit - source: shared/curriculum-roadmap.js
 /**
- * Asymptote - Master Course & Roadmap Curriculum
+ * Asymptote - Curriculum & Problem Roadmap
  * Universal module: works in browser, Node.js, and Chrome Extension.
- * Defines the 7-stage pedagogical curriculum from algorithmic foundations to advanced systems mastery.
+ * Defines the initial 13-topic algorithmic curriculum from Algomap.
  */
 
 (function (global) {
   const COURSE_ROADMAP = [
     {
-      id: 'stage-1-foundations',
-      stageNumber: 1,
-      title: 'Stage 1: Algorithmic Foundations & Multi-Pointers',
-      tagline: 'Eliminate redundant nested iterations with linear pointer state machines.',
-      estimatedHours: '6–8 hrs',
-      difficulty: 'Easy–Medium',
-      description: 'Master in-place pointer scanning, window size adjustment invariants, and cumulative prefix sums. Essential baseline for all technical interviews.',
-      patternIds: [
-        'two-pointers',
-        'sliding-window-fixed',
-        'sliding-window-variable',
-        'prefix-sum'
-      ],
-      milestones: [
-        { number: 1, slug: 'two-sum', title: 'Two Sum', difficulty: 'Easy', patternId: 'two-pointers' },
-        { number: 167, slug: 'two-sum-ii-input-array-is-sorted', title: 'Two Sum II - Input Array Is Sorted', difficulty: 'Medium', patternId: 'two-pointers' },
-        { number: 15, slug: '3sum', title: '3Sum', difficulty: 'Medium', patternId: 'two-pointers' },
-        { number: 11, slug: 'container-with-most-water', title: 'Container With Most Water', difficulty: 'Medium', patternId: 'two-pointers' },
-        { number: 3, slug: 'longest-substring-without-repeating-characters', title: 'Longest Substring Without Repeating Characters', difficulty: 'Medium', patternId: 'sliding-window-variable' },
-        { number: 560, slug: 'subarray-sum-equals-k', title: 'Subarray Sum Equals K', difficulty: 'Medium', patternId: 'prefix-sum' }
-      ]
+        "id": "arrays-strings",
+        "stageNumber": 1,
+        "title": "Arrays & Strings",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 2239,
+                "slug": "find-closest-number-to-zero",
+                "title": "Find Closest Number to Zero",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/find-closest-number-to-zero/"
+            },
+            {
+                "number": 1768,
+                "slug": "merge-strings-alternately",
+                "title": "Merge Strings Alternately",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/merge-strings-alternately/"
+            },
+            {
+                "number": 13,
+                "slug": "roman-to-integer",
+                "title": "Roman to Integer",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/roman-to-integer/"
+            },
+            {
+                "number": 392,
+                "slug": "is-subsequence",
+                "title": "Is Subsequence",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/is-subsequence/"
+            },
+            {
+                "number": 121,
+                "slug": "best-time-to-buy-and-sell-stock",
+                "title": "Best Time to Buy and Sell Stock",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"
+            },
+            {
+                "number": 14,
+                "slug": "longest-common-prefix",
+                "title": "Longest Common Prefix",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/longest-common-prefix/"
+            },
+            {
+                "number": 228,
+                "slug": "summary-ranges",
+                "title": "Summary Ranges",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/summary-ranges/"
+            },
+            {
+                "number": 26,
+                "slug": "remove-duplicates-from-sorted-array",
+                "title": "Remove Duplicates from Sorted Array",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/remove-duplicates-from-sorted-array/"
+            },
+            {
+                "number": 27,
+                "slug": "remove-element",
+                "title": "Remove Element",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/remove-element/"
+            },
+            {
+                "number": 88,
+                "slug": "merge-sorted-array",
+                "title": "Merge Sorted Array",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/merge-sorted-array/"
+            },
+            {
+                "number": 122,
+                "slug": "best-time-to-buy-and-sell-stock-ii",
+                "title": "Best Time to Buy and Sell Stock II",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-ii/"
+            },
+            {
+                "number": 80,
+                "slug": "remove-duplicates-from-sorted-array-ii",
+                "title": "Remove Duplicates from Sorted Array II",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/remove-duplicates-from-sorted-array-ii/"
+            },
+            {
+                "number": 75,
+                "slug": "sort-colors",
+                "title": "Sort Colors",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/sort-colors/"
+            },
+            {
+                "number": 238,
+                "slug": "product-of-array-except-self",
+                "title": "Product of Array Except Self",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/product-of-array-except-self/"
+            },
+            {
+                "number": 274,
+                "slug": "h-index",
+                "title": "H-Index",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/h-index/"
+            },
+            {
+                "number": 56,
+                "slug": "merge-intervals",
+                "title": "Merge Intervals",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/merge-intervals/"
+            },
+            {
+                "number": 54,
+                "slug": "spiral-matrix",
+                "title": "Spiral Matrix",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/spiral-matrix/"
+            },
+            {
+                "number": 6,
+                "slug": "zigzag-conversion",
+                "title": "Zigzag Conversion",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/zigzag-conversion/"
+            },
+            {
+                "number": 48,
+                "slug": "rotate-image",
+                "title": "Rotate Image",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/rotate-image/"
+            }
+        ]
     },
     {
-      id: 'stage-2-linear-monotonic',
-      stageNumber: 2,
-      title: 'Stage 2: Linear Structures & Monotonic Invariants',
-      tagline: 'Master pointer rewiring, cycle invariants, and LIFO monotonic evictions.',
-      estimatedHours: '8–10 hrs',
-      difficulty: 'Medium',
-      description: 'Learn sentinel-guided linked list manipulation, Floyd cycle meeting arithmetic, and monotonic stacks/queues that break O(N^2) bounds.',
-      patternIds: [
-        'linked-list-reversal',
-        'fast-slow-pointers',
-        'stack-matching',
-        'monotonic-stack',
-        'monotonic-queue'
-      ],
-      milestones: [
-        { number: 206, slug: 'reverse-linked-list', title: 'Reverse Linked List', difficulty: 'Easy', patternId: 'linked-list-reversal' },
-        { number: 141, slug: 'linked-list-cycle', title: 'Linked List Cycle', difficulty: 'Easy', patternId: 'fast-slow-pointers' },
-        { number: 142, slug: 'linked-list-cycle-ii', title: 'Linked List Cycle II', difficulty: 'Medium', patternId: 'fast-slow-pointers' },
-        { number: 20, slug: 'valid-parentheses', title: 'Valid Parentheses', difficulty: 'Easy', patternId: 'stack-matching' },
-        { number: 739, slug: 'daily-temperatures', title: 'Daily Temperatures', difficulty: 'Medium', patternId: 'monotonic-stack' },
-        { number: 84, slug: 'largest-rectangle-in-histogram', title: 'Largest Rectangle in Histogram', difficulty: 'Hard', patternId: 'monotonic-stack' },
-        { number: 239, slug: 'sliding-window-maximum', title: 'Sliding Window Maximum', difficulty: 'Hard', patternId: 'monotonic-queue' }
-      ]
+        "id": "hashmaps-sets",
+        "stageNumber": 2,
+        "title": "Hashmaps & Sets",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 771,
+                "slug": "jewels-and-stones",
+                "title": "Jewels and Stones",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/jewels-and-stones/"
+            },
+            {
+                "number": 217,
+                "slug": "contains-duplicate",
+                "title": "Contains Duplicate",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/contains-duplicate/"
+            },
+            {
+                "number": 383,
+                "slug": "ransom-note",
+                "title": "Ransom Note",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/ransom-note/"
+            },
+            {
+                "number": 242,
+                "slug": "valid-anagram",
+                "title": "Valid Anagram",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/valid-anagram/"
+            },
+            {
+                "number": 1189,
+                "slug": "maximum-number-of-balloons",
+                "title": "Maximum Number of Balloons",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/maximum-number-of-balloons/"
+            },
+            {
+                "number": 1,
+                "slug": "two-sum",
+                "title": "Two Sum",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/two-sum/"
+            },
+            {
+                "number": 36,
+                "slug": "valid-sudoku",
+                "title": "Valid Sudoku",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/valid-sudoku/"
+            },
+            {
+                "number": 49,
+                "slug": "group-anagrams",
+                "title": "Group Anagrams",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/group-anagrams/"
+            },
+            {
+                "number": 169,
+                "slug": "majority-element",
+                "title": "Majority Element",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/majority-element/"
+            },
+            {
+                "number": 128,
+                "slug": "longest-consecutive-sequence",
+                "title": "Longest Consecutive Sequence",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/longest-consecutive-sequence/"
+            }
+        ]
     },
     {
-      id: 'stage-3-binary-search',
-      stageNumber: 3,
-      title: 'Stage 3: Binary Search & Monotonic Answer Spaces',
-      tagline: 'Halve the search universe logarithmically across discrete and continuous bounds.',
-      estimatedHours: '6–8 hrs',
-      difficulty: 'Medium',
-      description: 'Go beyond basic array lookups to master rotated boundary detection, lower/upper bounds, and binary search on monotonic predicate functions.',
-      patternIds: [
-        'binary-search-boundary',
-        'binary-search-rotated',
-        'binary-search-answer'
-      ],
-      milestones: [
-        { number: 704, slug: 'binary-search', title: 'Binary Search', difficulty: 'Easy', patternId: 'binary-search-boundary' },
-        { number: 33, slug: 'search-in-rotated-sorted-array', title: 'Search in Rotated Sorted Array', difficulty: 'Medium', patternId: 'binary-search-rotated' },
-        { number: 153, slug: 'find-minimum-in-rotated-sorted-array', title: 'Find Minimum in Rotated Sorted Array', difficulty: 'Medium', patternId: 'binary-search-rotated' },
-        { number: 875, slug: 'koko-eating-bananas', title: 'Koko Eating Bananas', difficulty: 'Medium', patternId: 'binary-search-answer' },
-        { number: 4, slug: 'median-of-two-sorted-arrays', title: 'Median of Two Sorted Arrays', difficulty: 'Hard', patternId: 'binary-search-boundary' }
-      ]
+        "id": "2-pointers",
+        "stageNumber": 3,
+        "title": "2 Pointers",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 977,
+                "slug": "squares-of-a-sorted-array",
+                "title": "Squares of a Sorted Array",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/squares-of-a-sorted-array/"
+            },
+            {
+                "number": 344,
+                "slug": "reverse-string",
+                "title": "Reverse String",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/reverse-string/"
+            },
+            {
+                "number": 167,
+                "slug": "two-sum-ii-input-array-is-sorted",
+                "title": "Two Sum II - Input Array Is Sorted",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/"
+            },
+            {
+                "number": 125,
+                "slug": "valid-palindrome",
+                "title": "Valid Palindrome",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/valid-palindrome/"
+            },
+            {
+                "number": 15,
+                "slug": "3sum",
+                "title": "3Sum",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/3sum/"
+            },
+            {
+                "number": 11,
+                "slug": "container-with-most-water",
+                "title": "Container With Most Water",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/container-with-most-water/"
+            },
+            {
+                "number": 16,
+                "slug": "3sum-closest",
+                "title": "3Sum Closest",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/3sum-closest/"
+            },
+            {
+                "number": 18,
+                "slug": "4sum",
+                "title": "4Sum",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/4sum/"
+            },
+            {
+                "number": 42,
+                "slug": "trapping-rain-water",
+                "title": "Trapping Rain Water",
+                "difficulty": "Hard",
+                "leetcodeUrl": "https://leetcode.com/problems/trapping-rain-water/"
+            }
+        ]
     },
     {
-      id: 'stage-4-trees-bst',
-      stageNumber: 4,
-      title: 'Stage 4: Hierarchies, Trees & Recursive Invariants',
-      tagline: 'Recursively decompose tree nodes and conquer ordered binary search trees.',
-      estimatedHours: '8–10 hrs',
-      difficulty: 'Easy–Medium',
-      description: 'Explore bottom-up subtree aggregation, level-order BFS queueing, BST range boundaries, and lowest common ancestor pointer convergence.',
-      patternIds: [
-        'tree-dfs',
-        'tree-bfs',
-        'bst-invariant',
-        'tree-lca'
-      ],
-      milestones: [
-        { number: 104, slug: 'maximum-depth-of-binary-tree', title: 'Maximum Depth of Binary Tree', difficulty: 'Easy', patternId: 'tree-dfs' },
-        { number: 226, slug: 'invert-binary-tree', title: 'Invert Binary Tree', difficulty: 'Easy', patternId: 'tree-dfs' },
-        { number: 102, slug: 'binary-tree-level-order-traversal', title: 'Binary Tree Level Order Traversal', difficulty: 'Medium', patternId: 'tree-bfs' },
-        { number: 98, slug: 'validate-binary-search-tree', title: 'Validate Binary Search Tree', difficulty: 'Medium', patternId: 'bst-invariant' },
-        { number: 236, slug: 'lowest-common-ancestor-of-a-binary-tree', title: 'Lowest Common Ancestor of a Binary Tree', difficulty: 'Medium', patternId: 'tree-lca' },
-        { number: 124, slug: 'binary-tree-maximum-path-sum', title: 'Binary Tree Maximum Path Sum', difficulty: 'Hard', patternId: 'tree-dfs' }
-      ]
+        "id": "stacks",
+        "stageNumber": 4,
+        "title": "Stacks",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 682,
+                "slug": "baseball-game",
+                "title": "Baseball Game",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/baseball-game/"
+            },
+            {
+                "number": 20,
+                "slug": "valid-parentheses",
+                "title": "Valid Parentheses",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/valid-parentheses/"
+            },
+            {
+                "number": 150,
+                "slug": "evaluate-reverse-polish-notation",
+                "title": "Evaluate Reverse Polish Notation",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/evaluate-reverse-polish-notation/"
+            },
+            {
+                "number": 739,
+                "slug": "daily-temperatures",
+                "title": "Daily Temperatures",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/daily-temperatures/"
+            },
+            {
+                "number": 155,
+                "slug": "min-stack",
+                "title": "Min Stack",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/min-stack/"
+            },
+            {
+                "number": 84,
+                "slug": "largest-rectangle-in-histogram",
+                "title": "Largest Rectangle in Histogram",
+                "difficulty": "Hard",
+                "leetcodeUrl": "https://leetcode.com/problems/largest-rectangle-in-histogram/"
+            }
+        ]
     },
     {
-      id: 'stage-5-graphs',
-      stageNumber: 5,
-      title: 'Stage 5: Graphs, Cycles & Topological Orderings',
-      tagline: 'Model complex relationships, connected components, and directed acyclic workflows.',
-      estimatedHours: '10–12 hrs',
-      difficulty: 'Medium–Hard',
-      description: 'Master grid flood-fills, queue-based shortest paths, Kahn’s in-degree topological sort, Disjoint Set Union (DSU), and Dijkstra priority queues.',
-      patternIds: [
-        'graph-bfs',
-        'graph-dfs',
-        'topological-sort',
-        'union-find',
-        'dijkstra'
-      ],
-      milestones: [
-        { number: 200, slug: 'number-of-islands', title: 'Number of Islands', difficulty: 'Medium', patternId: 'graph-dfs' },
-        { number: 133, slug: 'clone-graph', title: 'Clone Graph', difficulty: 'Medium', patternId: 'graph-dfs' },
-        { number: 207, slug: 'course-schedule', title: 'Course Schedule', difficulty: 'Medium', patternId: 'topological-sort' },
-        { number: 210, slug: 'course-schedule-ii', title: 'Course Schedule II', difficulty: 'Medium', patternId: 'topological-sort' },
-        { number: 684, slug: 'redundant-connection', title: 'Redundant Connection', difficulty: 'Medium', patternId: 'union-find' },
-        { number: 787, slug: 'cheapest-flights-within-k-stops', title: 'Cheapest Flights Within K Stops', difficulty: 'Medium', patternId: 'dijkstra' }
-      ]
+        "id": "linked-lists",
+        "stageNumber": 5,
+        "title": "Linked Lists",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 83,
+                "slug": "remove-duplicates-from-sorted-list",
+                "title": "Remove Duplicates from Sorted List",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/remove-duplicates-from-sorted-list/"
+            },
+            {
+                "number": 2807,
+                "slug": "insert-greatest-common-divisors-in-linked-list",
+                "title": "Insert Greatest Common Divisors in Linked List",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/insert-greatest-common-divisors-in-linked-list/"
+            },
+            {
+                "number": 206,
+                "slug": "reverse-linked-list",
+                "title": "Reverse Linked List",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/reverse-linked-list/"
+            },
+            {
+                "number": 21,
+                "slug": "merge-two-sorted-lists",
+                "title": "Merge Two Sorted Lists",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/merge-two-sorted-lists/"
+            },
+            {
+                "number": 141,
+                "slug": "linked-list-cycle",
+                "title": "Linked List Cycle",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/linked-list-cycle/"
+            },
+            {
+                "number": 876,
+                "slug": "middle-of-the-linked-list",
+                "title": "Middle of the Linked List",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/middle-of-the-linked-list/"
+            },
+            {
+                "number": 19,
+                "slug": "remove-nth-node-from-end-of-list",
+                "title": "Remove Nth Node From End of List",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/remove-nth-node-from-end-of-list/"
+            },
+            {
+                "number": 138,
+                "slug": "copy-list-with-random-pointer",
+                "title": "Copy List with Random Pointer",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/copy-list-with-random-pointer/"
+            }
+        ]
     },
     {
-      id: 'stage-6-dynamic-programming',
-      stageNumber: 6,
-      title: 'Stage 6: Dynamic Programming & Optimal Substructure',
-      tagline: 'Break multi-stage optimization down into deterministic recurrence relations.',
-      estimatedHours: '12–14 hrs',
-      difficulty: 'Medium–Hard',
-      description: 'Conquer state transition modeling: 1D linear DP, 0/1 Knapsack decision trees, unbounded coin picking, 2D string alignments, and interval matrix chains.',
-      patternIds: [
-        '1d-dp-fibonacci',
-        'knapsack-01',
-        'unbounded-knapsack',
-        'longest-common-subsequence',
-        'interval-dp'
-      ],
-      milestones: [
-        { number: 70, slug: 'climbing-stairs', title: 'Climbing Stairs', difficulty: 'Easy', patternId: '1d-dp-fibonacci' },
-        { number: 198, slug: 'house-robber', title: 'House Robber', difficulty: 'Medium', patternId: '1d-dp-fibonacci' },
-        { number: 322, slug: 'coin-change', title: 'Coin Change', difficulty: 'Medium', patternId: 'unbounded-knapsack' },
-        { number: 300, slug: 'longest-increasing-subsequence', title: 'Longest Increasing Subsequence', difficulty: 'Medium', patternId: '1d-dp-fibonacci' },
-        { number: 1143, slug: 'longest-common-subsequence', title: 'Longest Common Subsequence', difficulty: 'Medium', patternId: 'longest-common-subsequence' },
-        { number: 72, slug: 'edit-distance', title: 'Edit Distance', difficulty: 'Medium', patternId: 'longest-common-subsequence' }
-      ]
+        "id": "binary-search",
+        "stageNumber": 6,
+        "title": "Binary Search",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 704,
+                "slug": "binary-search",
+                "title": "Binary Search",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/binary-search/"
+            },
+            {
+                "number": 35,
+                "slug": "search-insert-position",
+                "title": "Search Insert Position",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/search-insert-position/"
+            },
+            {
+                "number": 278,
+                "slug": "first-bad-version",
+                "title": "First Bad Version",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/first-bad-version/"
+            },
+            {
+                "number": 367,
+                "slug": "valid-perfect-square",
+                "title": "Valid Perfect Square",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/valid-perfect-square/"
+            },
+            {
+                "number": 74,
+                "slug": "search-a-2d-matrix",
+                "title": "Search a 2D Matrix",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/search-a-2d-matrix/"
+            },
+            {
+                "number": 153,
+                "slug": "find-minimum-in-rotated-sorted-array",
+                "title": "Find Minimum in Rotated Sorted Array",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/"
+            },
+            {
+                "number": 33,
+                "slug": "search-in-rotated-sorted-array",
+                "title": "Search in Rotated Sorted Array",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/search-in-rotated-sorted-array/"
+            },
+            {
+                "number": 875,
+                "slug": "koko-eating-bananas",
+                "title": "Koko Eating Bananas",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/koko-eating-bananas/"
+            }
+        ]
     },
     {
-      id: 'stage-7-advanced-systems',
-      stageNumber: 7,
-      title: 'Stage 7: Advanced Systems & Multimodal Engineering',
-      tagline: 'Combine heaps, prefix trees, interval scheduling, concurrency, and SQL data pipelines.',
-      estimatedHours: '10–12 hrs',
-      difficulty: 'Medium–Hard',
-      description: 'The pinnacle of technical interviews: top-K heaps, Trie prefix search, interval sweep-line, multi-thread synchronizers, and analytical SQL queries.',
-      patternIds: [
-        'heap-k-way',
-        'trie-prefix',
-        'interval-merge',
-        'concurrency-synchronization',
-        'sql-window-functions'
-      ],
-      milestones: [
-        { number: 23, slug: 'merge-k-sorted-lists', title: 'Merge k Sorted Lists', difficulty: 'Hard', patternId: 'heap-k-way' },
-        { number: 208, slug: 'implement-trie-prefix-tree', title: 'Implement Trie (Prefix Tree)', difficulty: 'Medium', patternId: 'trie-prefix' },
-        { number: 56, slug: 'merge-intervals', title: 'Merge Intervals', difficulty: 'Medium', patternId: 'interval-merge' },
-        { number: 1114, slug: 'print-in-order', title: 'Print in Order', difficulty: 'Easy', patternId: 'concurrency-synchronization' },
-        { number: 185, slug: 'department-top-three-salaries', title: 'Department Top Three Salaries', difficulty: 'Hard', patternId: 'sql-window-functions' }
-      ]
+        "id": "sliding-window",
+        "stageNumber": 7,
+        "title": "Sliding Window",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 643,
+                "slug": "maximum-average-subarray-i",
+                "title": "Maximum Average Subarray I",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/maximum-average-subarray-i/"
+            },
+            {
+                "number": 1004,
+                "slug": "max-consecutive-ones-iii",
+                "title": "Max Consecutive Ones III",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/max-consecutive-ones-iii/"
+            },
+            {
+                "number": 3,
+                "slug": "longest-substring-without-repeating-characters",
+                "title": "Longest Substring Without Repeating Characters",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/longest-substring-without-repeating-characters/"
+            },
+            {
+                "number": 424,
+                "slug": "longest-repeating-character-replacement",
+                "title": "Longest Repeating Character Replacement",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/longest-repeating-character-replacement/"
+            },
+            {
+                "number": 209,
+                "slug": "minimum-size-subarray-sum",
+                "title": "Minimum Size Subarray Sum",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/minimum-size-subarray-sum/"
+            },
+            {
+                "number": 567,
+                "slug": "permutation-in-string",
+                "title": "Permutation in String",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/permutation-in-string/"
+            }
+        ]
+    },
+    {
+        "id": "trees",
+        "stageNumber": 8,
+        "title": "Trees",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 226,
+                "slug": "invert-binary-tree",
+                "title": "Invert Binary Tree",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/invert-binary-tree/"
+            },
+            {
+                "number": 104,
+                "slug": "maximum-depth-of-binary-tree",
+                "title": "Maximum Depth of Binary Tree",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/maximum-depth-of-binary-tree/"
+            },
+            {
+                "number": 110,
+                "slug": "balanced-binary-tree",
+                "title": "Balanced Binary Tree",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/balanced-binary-tree/"
+            },
+            {
+                "number": 543,
+                "slug": "diameter-of-binary-tree",
+                "title": "Diameter of Binary Tree",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/diameter-of-binary-tree/"
+            },
+            {
+                "number": 100,
+                "slug": "same-tree",
+                "title": "Same Tree",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/same-tree/"
+            },
+            {
+                "number": 101,
+                "slug": "symmetric-tree",
+                "title": "Symmetric Tree",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/symmetric-tree/"
+            },
+            {
+                "number": 112,
+                "slug": "path-sum",
+                "title": "Path Sum",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/path-sum/"
+            },
+            {
+                "number": 572,
+                "slug": "subtree-of-another-tree",
+                "title": "Subtree of Another Tree",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/subtree-of-another-tree/"
+            },
+            {
+                "number": 102,
+                "slug": "binary-tree-level-order-traversal",
+                "title": "Binary Tree Level Order Traversal",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/binary-tree-level-order-traversal/"
+            },
+            {
+                "number": 637,
+                "slug": "average-of-levels-in-binary-tree",
+                "title": "Average of Levels in Binary Tree",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/average-of-levels-in-binary-tree/"
+            },
+            {
+                "number": 230,
+                "slug": "kth-smallest-element-in-a-bst",
+                "title": "Kth Smallest Element in a BST",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/kth-smallest-element-in-a-bst/"
+            },
+            {
+                "number": 530,
+                "slug": "minimum-absolute-difference-in-bst",
+                "title": "Minimum Absolute Difference in BST",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/minimum-absolute-difference-in-bst/"
+            },
+            {
+                "number": 98,
+                "slug": "validate-binary-search-tree",
+                "title": "Validate Binary Search Tree",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/validate-binary-search-tree/"
+            },
+            {
+                "number": 235,
+                "slug": "lowest-common-ancestor-of-a-binary-search-tree",
+                "title": "Lowest Common Ancestor of a Binary Search Tree",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/"
+            },
+            {
+                "number": 208,
+                "slug": "implement-trie-prefix-tree",
+                "title": "Implement Trie (Prefix Tree)",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/implement-trie-prefix-tree/"
+            }
+        ]
+    },
+    {
+        "id": "heaps",
+        "stageNumber": 9,
+        "title": "Heaps",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 1046,
+                "slug": "last-stone-weight",
+                "title": "Last Stone Weight",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/last-stone-weight/"
+            },
+            {
+                "number": 215,
+                "slug": "kth-largest-element-in-an-array",
+                "title": "Kth Largest Element in an Array",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/kth-largest-element-in-an-array/"
+            },
+            {
+                "number": 347,
+                "slug": "top-k-frequent-elements",
+                "title": "Top K Frequent Elements",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/top-k-frequent-elements/"
+            },
+            {
+                "number": 973,
+                "slug": "k-closest-points-to-origin",
+                "title": "K Closest Points to Origin",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/k-closest-points-to-origin/"
+            },
+            {
+                "number": 23,
+                "slug": "merge-k-sorted-lists",
+                "title": "Merge k Sorted Lists",
+                "difficulty": "Hard",
+                "leetcodeUrl": "https://leetcode.com/problems/merge-k-sorted-lists/"
+            }
+        ]
+    },
+    {
+        "id": "recursive-backtracking",
+        "stageNumber": 10,
+        "title": "Recursive Backtracking",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 78,
+                "slug": "subsets",
+                "title": "Subsets",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/subsets/"
+            },
+            {
+                "number": 46,
+                "slug": "permutations",
+                "title": "Permutations",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/permutations/"
+            },
+            {
+                "number": 77,
+                "slug": "combinations",
+                "title": "Combinations",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/combinations/"
+            },
+            {
+                "number": 39,
+                "slug": "combination-sum",
+                "title": "Combination Sum",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/combination-sum/"
+            },
+            {
+                "number": 17,
+                "slug": "letter-combinations-of-a-phone-number",
+                "title": "Letter Combinations of a Phone Number",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/letter-combinations-of-a-phone-number/"
+            },
+            {
+                "number": 22,
+                "slug": "generate-parentheses",
+                "title": "Generate Parentheses",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/generate-parentheses/"
+            },
+            {
+                "number": 45,
+                "slug": "jump-game-ii",
+                "title": "Jump Game II",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/jump-game-ii/"
+            },
+            {
+                "number": 79,
+                "slug": "word-search",
+                "title": "Word Search",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/word-search/"
+            }
+        ]
+    },
+    {
+        "id": "graphs",
+        "stageNumber": 11,
+        "title": "Graphs",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 1971,
+                "slug": "find-if-path-exists-in-graph",
+                "title": "Find if Path Exists in Graph",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/find-if-path-exists-in-graph/"
+            },
+            {
+                "number": 200,
+                "slug": "number-of-islands",
+                "title": "Number of Islands",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/number-of-islands/"
+            },
+            {
+                "number": 695,
+                "slug": "max-area-of-island",
+                "title": "Max Area of Island",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/max-area-of-island/"
+            },
+            {
+                "number": 207,
+                "slug": "course-schedule",
+                "title": "Course Schedule",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/course-schedule/"
+            },
+            {
+                "number": 210,
+                "slug": "course-schedule-ii",
+                "title": "Course Schedule II",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/course-schedule-ii/"
+            },
+            {
+                "number": 417,
+                "slug": "pacific-atlantic-water-flow",
+                "title": "Pacific Atlantic Water Flow",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/pacific-atlantic-water-flow/"
+            },
+            {
+                "number": 133,
+                "slug": "clone-graph",
+                "title": "Clone Graph",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/clone-graph/"
+            },
+            {
+                "number": 994,
+                "slug": "rotting-oranges",
+                "title": "Rotting Oranges",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/rotting-oranges/"
+            },
+            {
+                "number": 1584,
+                "slug": "min-cost-to-connect-all-points",
+                "title": "Min Cost to Connect All Points",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/min-cost-to-connect-all-points/"
+            },
+            {
+                "number": 743,
+                "slug": "network-delay-time",
+                "title": "Network Delay Time",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/network-delay-time/"
+            }
+        ]
+    },
+    {
+        "id": "dynamic-programming",
+        "stageNumber": 12,
+        "title": "Dynamic Programming",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 509,
+                "slug": "fibonacci-number",
+                "title": "Fibonacci Number",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/fibonacci-number/"
+            },
+            {
+                "number": 70,
+                "slug": "climbing-stairs",
+                "title": "Climbing Stairs",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/climbing-stairs/"
+            },
+            {
+                "number": 746,
+                "slug": "min-cost-climbing-stairs",
+                "title": "Min Cost Climbing Stairs",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/min-cost-climbing-stairs/"
+            },
+            {
+                "number": 198,
+                "slug": "house-robber",
+                "title": "House Robber",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/house-robber/"
+            },
+            {
+                "number": 62,
+                "slug": "unique-paths",
+                "title": "Unique Paths",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/unique-paths/"
+            },
+            {
+                "number": 53,
+                "slug": "maximum-subarray",
+                "title": "Maximum Subarray",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/maximum-subarray/"
+            },
+            {
+                "number": 55,
+                "slug": "jump-game",
+                "title": "Jump Game",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/jump-game/"
+            },
+            {
+                "number": 322,
+                "slug": "coin-change",
+                "title": "Coin Change",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/coin-change/"
+            },
+            {
+                "number": 300,
+                "slug": "longest-increasing-subsequence",
+                "title": "Longest Increasing Subsequence",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/longest-increasing-subsequence/"
+            },
+            {
+                "number": 1143,
+                "slug": "longest-common-subsequence",
+                "title": "Longest Common Subsequence",
+                "difficulty": "Medium",
+                "leetcodeUrl": "https://leetcode.com/problems/longest-common-subsequence/"
+            }
+        ]
+    },
+    {
+        "id": "bit-manipulation",
+        "stageNumber": 13,
+        "title": "Bit Manipulation",
+        "patternIds": [],
+        "milestones": [
+            {
+                "number": 504,
+                "slug": "base-7",
+                "title": "Base 7",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/base-7/"
+            },
+            {
+                "number": 136,
+                "slug": "single-number",
+                "title": "Single Number",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/single-number/"
+            },
+            {
+                "number": 191,
+                "slug": "number-of-1-bits",
+                "title": "Number of 1 Bits",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/number-of-1-bits/"
+            },
+            {
+                "number": 67,
+                "slug": "add-binary",
+                "title": "Add Binary",
+                "difficulty": "Easy",
+                "leetcodeUrl": "https://leetcode.com/problems/add-binary/"
+            }
+        ]
     }
-  ];
+];
 
   /**
-   * Calculates detailed student progress through the roadmap.
+   * Calculates student progress through the curriculum.
    * @param {Array} roadmap The COURSE_ROADMAP array
    * @param {Array|Set} solvedProblems List of solved problem objects or slug/number strings
    */
@@ -183,9 +950,9 @@
     if (Array.isArray(solvedProblems)) {
       for (const p of solvedProblems) {
         if (!p) continue;
-        if (typeof p === 'string' || typeof p === 'number') {
+        if (typeof p === "string" || typeof p === "number") {
           solvedSet.add(String(p).toLowerCase().trim());
-        } else if (typeof p === 'object') {
+        } else if (typeof p === "object") {
           if (p.is_solved) {
             if (p.slug) solvedSet.add(String(p.slug).toLowerCase().trim());
             if (p.title_slug) solvedSet.add(String(p.title_slug).toLowerCase().trim());
@@ -211,7 +978,7 @@
 
       const solvedInStage = stageMilestones.filter(m => {
         const slugMatch = m.slug && solvedSet.has(String(m.slug).toLowerCase().trim());
-        const numMatch = m.number !== undefined && solvedSet.has(String(m.number));
+        const numMatch = m.number !== undefined && m.number !== null && solvedSet.has(String(m.number));
         return slugMatch || numMatch;
       });
 
@@ -219,12 +986,12 @@
       completedMilestones += solvedStageCount;
 
       const stagePercent = totalStage > 0 ? Math.round((solvedStageCount / totalStage) * 100) : 0;
-      let status = 'locked';
+      let status = "locked";
 
       if (stagePercent === 100) {
-        status = 'completed';
+        status = "completed";
       } else if (stagePercent > 0 || idx === 0) {
-        status = 'in-progress';
+        status = "in-progress";
       }
 
       return {
@@ -235,7 +1002,7 @@
         status,
         milestonesWithStatus: stageMilestones.map(m => {
           const isSolved = (m.slug && solvedSet.has(String(m.slug).toLowerCase().trim())) ||
-            (m.number !== undefined && solvedSet.has(String(m.number)));
+            (m.number !== undefined && m.number !== null && solvedSet.has(String(m.number)));
           return {
             ...m,
             isSolved: Boolean(isSolved)
@@ -246,9 +1013,9 @@
 
     // Make sure next stage after completed stage is unlocked
     for (let i = 0; i < stages.length; i++) {
-      if (stages[i].status === 'completed' && i + 1 < stages.length) {
-        if (stages[i + 1].status === 'locked') {
-          stages[i + 1].status = 'in-progress';
+      if (stages[i].status === "completed" && i + 1 < stages.length) {
+        if (stages[i + 1].status === "locked") {
+          stages[i + 1].status = "in-progress";
         }
       }
     }
@@ -257,25 +1024,10 @@
       ? Math.round((completedMilestones / totalMilestones) * 100) 
       : 0;
 
-    // Find next recommended problem
-    let nextMilestone = null;
-    for (const stage of stages) {
-      const uncompleted = stage.milestonesWithStatus.find(m => !m.isSolved);
-      if (uncompleted) {
-        nextMilestone = {
-          ...uncompleted,
-          stageTitle: stage.title,
-          stageNumber: stage.stageNumber
-        };
-        break;
-      }
-    }
-
     return {
       totalMilestones,
       completedMilestones,
       overallPercent,
-      nextMilestone,
       stages
     };
   }
@@ -285,10 +1037,10 @@
     calculateCurriculumProgress
   };
 
-  if (typeof global !== 'undefined') {
+  if (typeof global !== "undefined") {
     global.CurriculumRoadmapModule = api;
   }
-  if (typeof module !== 'undefined' && module.exports) {
+  if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   }
-})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+})(typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this);

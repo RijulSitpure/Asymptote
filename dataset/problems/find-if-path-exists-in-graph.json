@@ -1,0 +1,79 @@
+{
+  "slug": "find-if-path-exists-in-graph",
+  "number": 1971,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Undirected Graph Connectivity Obstacle",
+      "text": "Determining whether a path exists between source and destination in an undirected graph with up to 200,000 vertices requires near constant-time connectivity queries. How can disjoint set union connect edges efficiently?"
+    },
+    {
+      "level": 2,
+      "title": "Equivalence Partition Invariant",
+      "text": "A path exists between source and destination if and only if both vertices belong to the identical disjoint set representative."
+    },
+    {
+      "level": 3,
+      "title": "Disjoint Set Union Procedure",
+      "text": "Initialize a parent array parent[i] = i for all vertices. For each edge (u, v), unite the sets containing u and v using path compression and union by rank. Finally, return whether find(source) == find(destination)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def validPath(self, n: int, edges: List[List[int]], source: int, destination: int) -> bool:\n        parent = list(range(n))\n        rank = [0] * n\n        def find(i: int) -> int:\n            if parent[i] != i:\n                parent[i] = find(parent[i])\n            return parent[i]\n        def union(i: int, j: int):\n            root_i, root_j = find(i), find(j)\n            if root_i != root_j:\n                if rank[root_i] < rank[root_j]:\n                    parent[root_i] = root_j\n                elif rank[root_i] > rank[root_j]:\n                    parent[root_j] = root_i\n                else:\n                    parent[root_j] = root_i\n                    rank[root_i] += 1\n        for u, v in edges:\n            union(u, v)\n        return find(source) == find(destination)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E * alpha(N))",
+    "space": "O(N)",
+    "variables": [
+      "N: number of vertices (1 <= N <= 2 * 10^5)",
+      "E: number of edges (E <= 2 * 10^5)"
+    ],
+    "notes": "Alpha is the inverse Ackermann function, effectively constant (<= 4).",
+    "whyNaiveFails": "Recursive depth searches risk hitting recursion depth limits on large linear chain graphs.",
+    "spaceTimeTradeoff": "Parent and rank arrays require O(N) space.",
+    "interviewerExpectation": "Using path compression in find and union by rank."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def validPath(self, n: int, edges: List[List[int]], source: int, destination: int) -> bool:\n        parent = list(range(n))\n        rank = [0] * n\n        def find(i: int) -> int:\n            if parent[i] != i:\n                parent[i] = find(parent[i])\n            return parent[i]\n        def union(i: int, j: int):\n            root_i, root_j = find(i), find(j)\n            if root_i != root_j:\n                if rank[root_i] < rank[root_j]:\n                    parent[root_i] = root_j\n                elif rank[root_i] > rank[root_j]:\n                    parent[root_j] = root_i\n                else:\n                    parent[root_j] = root_i\n                    rank[root_i] += 1\n        for u, v in edges:\n            union(u, v)\n        return find(source) == find(destination)",
+      "approach": "Disjoint Set Union with path compression and rank",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    bool validPath(int n, vector<vector<int>>& edges, int source, int destination) {\n        vector<int> parent(n), rank(n, 0);\n        iota(parent.begin(), parent.end(), 0);\n        auto find = [&](auto& self, int i) -> int {\n            if (parent[i] != i) parent[i] = self(self, parent[i]);\n            return parent[i];\n        };\n        auto unite = [&](int i, int j) {\n            int rootI = find(find, i), rootJ = find(find, j);\n            if (rootI != rootJ) {\n                if (rank[rootI] < rank[rootJ]) parent[rootI] = rootJ;\n                else if (rank[rootI] > rank[rootJ]) parent[rootJ] = rootI;\n                else {\n                    parent[rootJ] = rootI;\n                    rank[rootI]++;\n                }\n            }\n        };\n        for (auto& e : edges) unite(e[0], e[1]);\n        return find(find, source) == find(find, destination);\n    }\n};",
+      "approach": "Disjoint Set Union with path compression and rank",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public boolean validPath(int n, int[][] edges, int source, int destination) {\n        int[] parent = new int[n];\n        int[] rank = new int[n];\n        for (int i = 0; i < n; i++) parent[i] = i;\n        for (int[] e : edges) union(e[0], e[1], parent, rank);\n        return find(source, parent) == find(destination, parent);\n    }\n    private int find(int i, int[] parent) {\n        if (parent[i] != i) parent[i] = find(parent[i], parent);\n        return parent[i];\n    }\n    private void union(int i, int j, int[] parent, int[] rank) {\n        int rootI = find(i, parent), rootJ = find(j, parent);\n        if (rootI != rootJ) {\n            if (rank[rootI] < rank[rootJ]) parent[rootI] = rootJ;\n            else if (rank[rootI] > rank[rootJ]) parent[rootJ] = rootI;\n            else {\n                parent[rootJ] = rootI;\n                rank[rootI]++;\n            }\n        }\n    }\n}",
+      "approach": "Disjoint Set Union with path compression and rank",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var validPath = function(n, edges, source, destination) {\n    const parent = Array.from({ length: n }, (_, i) => i);\n    const rank = new Array(n).fill(0);\n    function find(i) {\n        if (parent[i] !== i) parent[i] = find(parent[i]);\n        return parent[i];\n    }\n    function union(i, j) {\n        const rootI = find(i), rootJ = find(j);\n        if (rootI !== rootJ) {\n            if (rank[rootI] < rank[rootJ]) parent[rootI] = rootJ;\n            else if (rank[rootI] > rank[rootJ]) parent[rootJ] = rootI;\n            else {\n                parent[rootJ] = rootI;\n                rank[rootI]++;\n            }\n        }\n    }\n    for (const [u, v] of edges) union(u, v);\n    return find(source) === find(destination);\n};",
+      "approach": "Disjoint Set Union with path compression and rank",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

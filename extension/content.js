@@ -365,20 +365,9 @@ let _urlCheckIntervalId = null;
 const LanguagesModule = globalThis.LanguagesModule || window.LanguagesModule || null;
 
 let activeSolutionLang = 'python3';
-let activeSolutionView = 'scaffold'; // 'scaffold' | 'twists' | 'notes'
-let contentUserPrompt = '';
-let contentNanoOutputHtml = null;
-let contentNanoLoading = false;
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+let activeSolutionView = 'scaffold'; // 'scaffold' | 'twists' | 'notes' | 'chat'
+let drawerChatInitialText = '';
+let drawerChatAutoSend = false;
 
 function getSupportedLanguages(problem) {
   if (LanguagesModule && LanguagesModule.getSupportedLanguagesForProblem) {
@@ -568,6 +557,13 @@ function injectFloatingButtons() {
       flex: 1;
       font-size: 13px;
       scroll-behavior: smooth;
+    }
+    .drawer-body:has(.asymptote-solution-pane),
+    .drawer-body:has(.asymptote-chat-container) {
+      overflow-y: hidden;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
     }
     .drawer-body::-webkit-scrollbar {
       width: 5px;
@@ -820,6 +816,9 @@ function renderDrawerLoadingState(slug = null) {
  */
 function loadFreshProblemData(slug) {
   if (!slug) return;
+  if (globalThis.NanoChatService && typeof globalThis.NanoChatService.destroySession === 'function') {
+    globalThis.NanoChatService.destroySession();
+  }
 
   const fetchId = ++currentFetchId;
   renderDrawerLoadingState(slug);
@@ -982,7 +981,12 @@ async function toggleHintsDrawer() {
     };
   }
 
-  shadow.getElementById('lc-close-drawer').onclick = () => drawer.remove();
+  shadow.getElementById('lc-close-drawer').onclick = () => {
+    drawer.remove();
+    if (globalThis.NanoChatService && typeof globalThis.NanoChatService.destroySession === 'function') {
+      globalThis.NanoChatService.destroySession();
+    }
+  };
   shadow.getElementById('tab-btn-hints').onclick = () => switchDrawerTab('hints');
   shadow.getElementById('tab-btn-solution').onclick = () => switchDrawerTab('solution');
   shadow.getElementById('tab-btn-complexity').onclick = () => switchDrawerTab('complexity');
@@ -1021,6 +1025,14 @@ function renderDrawerTabContent() {
   const shadow = getShadowRoot();
   const content = shadow.getElementById('lc-drawer-content');
   if (!content) return;
+
+  if (activeDrawerTab !== 'solution') {
+    content.style.padding = '';
+    content.style.overflow = '';
+    content.style.display = '';
+    content.style.flexDirection = '';
+    content.style.height = '';
+  }
 
   const currentSlug = getProblemSlug();
   if (!cachedHintData || loadedProblemSlug !== currentSlug) {
@@ -1226,6 +1238,7 @@ function renderDrawerTabContent() {
     }
     const activeCode = getCodeForLang(activeSolutionLang, hints, pattern, problem);
 
+    const isChat = activeSolutionView === 'chat';
     const isScaffold = activeSolutionView === 'scaffold';
     const isTwist = activeSolutionView === 'twists';
     const isNotes = activeSolutionView === 'notes';
@@ -1242,33 +1255,6 @@ function renderDrawerTabContent() {
           </button>
         </div>
         <pre class="code-preview-light"><code>${activeCode}</code></pre>
-      </div>
-    `;
-
-    const nanoCardHtml = `
-      <div class="card-white" style="margin-top:12px; border-color:#cbd5e1; background:#ffffff;">
-        <div style="font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:700; color:#1e2033; margin-bottom:8px;">
-          AI Explanation
-        </div>
-
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-          <input id="lc-ai-prompt-input" type="text" placeholder="Ask anything about this solution..." value="${escapeHtml(contentUserPrompt)}" style="flex:1; min-width:0; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px 12px; font-size:13px; color:#1e2033; outline:none; font-family:inherit;" />
-          <button id="lc-nano-ask-btn" class="btn-amber-reveal" style="font-size:13px; font-weight:700; padding:8px 16px; margin-top:0; border-radius:8px; white-space:nowrap; width:auto; cursor:pointer;">Ask</button>
-        </div>
-
-        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
-          <button type="button" class="lc-prompt-chip" data-prompt="Explain core intuition" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:11px; color:#475569; cursor:pointer;">💡 Intuition</button>
-          <button type="button" class="lc-prompt-chip" data-prompt="Step-by-step code trace" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:11px; color:#475569; cursor:pointer;">🔍 Code trace</button>
-          <button type="button" class="lc-prompt-chip" data-prompt="Critical edge cases" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:11px; color:#475569; cursor:pointer;">⚠️ Edge cases</button>
-        </div>
-
-        ${contentNanoLoading ? `
-          <div style="text-align:center; padding:16px 8px; font-size:13px; color:#64748b;">
-            ⏳ Generating explanation...
-          </div>
-        ` : contentNanoOutputHtml ? `
-          <div style="font-size:13px; color:#334155; line-height:1.6; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; max-height:220px; overflow-y:auto; margin-bottom:8px;">${contentNanoOutputHtml}</div>
-        ` : ''}
       </div>
     `;
 
@@ -1294,35 +1280,115 @@ function renderDrawerTabContent() {
       </div>
     `;
 
+    if (isChat || isScaffold) {
+      content.style.padding = '0';
+      content.style.overflow = 'hidden';
+      content.style.display = 'flex';
+      content.style.flexDirection = 'column';
+      content.style.height = '100%';
+      content.style.minHeight = '0';
+    } else {
+      content.style.padding = '';
+      content.style.overflow = '';
+      content.style.display = '';
+      content.style.flexDirection = '';
+      content.style.height = '';
+    }
+
     content.innerHTML = `
-      <div class="tab-content-pane">
-        ${headerHtml}
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-          <select id="solution-view-select" class="select-clean" style="flex:1;">
-            <option value="scaffold" ${isScaffold ? 'selected' : ''}>Blueprint</option>
-            <option value="twists" ${isTwist ? 'selected' : ''}>Pattern variation</option>
-            <option value="notes" ${isNotes ? 'selected' : ''}>Notes</option>
-          </select>
-          ${isScaffold ? (
-            supportedLangs.length === 0 ? `
-              <span style="font-size:12px; color:#64748b; font-style:italic;">Loading languages...</span>
-            ` : `
-              <select id="solution-lang-select" class="select-clean" style="flex:1;">
-                ${supportedLangs.map(l => `<option value="${l.id}" ${activeSolutionLang === l.id ? 'selected' : ''}>${l.name || l.label}</option>`).join('')}
+      <div class="tab-content-pane ${isScaffold || isChat ? 'asymptote-solution-pane' : ''}" style="${isChat || isScaffold ? 'flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; height:100%;' : ''}">
+        ${isChat ? `
+          <!-- Unified Chat Component Mount Point (takes over tab, fills all remaining height) -->
+          <div id="lc-solution-chat-container" style="flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; height:100%;"></div>
+        ` : isScaffold ? `
+          <!-- Scrolling Blueprint Region (meta block, selects, code card, dashboard link) -->
+          <div class="blueprint-scroll-region" style="flex:1; min-height:0; overflow-y:auto; padding:16px 18px 8px 18px;">
+            ${headerHtml}
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-shrink:0;">
+              <select id="solution-view-select" class="select-clean" style="flex:1;">
+                <option value="scaffold" selected>Blueprint</option>
+                <option value="twists">Pattern variation</option>
+                <option value="notes">Notes</option>
               </select>
-            `
-          ) : ''}
-        </div>
+              ${supportedLangs.length === 0 ? `
+                <span style="font-size:12px; color:#64748b; font-style:italic;">Loading languages...</span>
+              ` : `
+                <select id="solution-lang-select" class="select-clean" style="flex:1;">
+                  ${supportedLangs.map(l => `<option value="${l.id}" ${activeSolutionLang === l.id ? 'selected' : ''}>${l.name || l.label}</option>`).join('')}
+                </select>
+              `}
+            </div>
 
-        ${isScaffold ? `${codeCardHtml}${nanoCardHtml}` : isTwist ? twistHtml : notesHtml}
+            ${codeCardHtml}
 
-        <div style="text-align:center; margin-top:16px;">
-          <button id="lc-open-solver-btn" type="button" style="background:none; border:none; padding:0; font-size:13px; color:#1e2033; font-weight:600; cursor:pointer; text-decoration:none; font-family:inherit;">
-            Open in dashboard editor ↗
-          </button>
-        </div>
+            <div style="text-align:center; margin-top:16px; margin-bottom:8px;">
+              <button id="lc-open-solver-btn" type="button" style="background:none; border:none; padding:0; font-size:13px; color:#1e2033; font-weight:600; cursor:pointer; text-decoration:none; font-family:inherit;">
+                Open in dashboard editor ↗
+              </button>
+            </div>
+          </div>
+
+          <!-- Docked prompt bar pinned at bottom on Blueprint view only (flex-shrink: 0) -->
+          <div id="lc-docked-bar-mount" style="flex-shrink:0;"></div>
+        ` : `
+          ${headerHtml}
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+            <select id="solution-view-select" class="select-clean" style="flex:1;">
+              <option value="scaffold">Blueprint</option>
+              <option value="twists" ${isTwist ? 'selected' : ''}>Pattern variation</option>
+              <option value="notes" ${isNotes ? 'selected' : ''}>Notes</option>
+            </select>
+          </div>
+          ${isTwist ? twistHtml : notesHtml}
+          <div style="text-align:center; margin-top:16px;">
+            <button id="lc-open-solver-btn" type="button" style="background:none; border:none; padding:0; font-size:13px; color:#1e2033; font-weight:600; cursor:pointer; text-decoration:none; font-family:inherit;">
+              Open in dashboard editor ↗
+            </button>
+          </div>
+        `}
       </div>
     `;
+
+    // Mount unified SolutionChat if in chat view
+    if (isChat && globalThis.SolutionChat && typeof globalThis.SolutionChat.mount === 'function') {
+      const chatContainer = shadow.getElementById('lc-solution-chat-container');
+      if (chatContainer) {
+        globalThis.SolutionChat.mount(chatContainer, {
+          problem,
+          pattern,
+          code: activeCode,
+          lang: activeSolutionLang,
+          isShadowRoot: true,
+          initialText: drawerChatInitialText,
+          autoSend: drawerChatAutoSend,
+          onBackToSolution: () => {
+            activeSolutionView = 'scaffold';
+            drawerChatInitialText = '';
+            drawerChatAutoSend = false;
+            renderDrawerTabContent();
+          }
+        });
+        drawerChatInitialText = '';
+        drawerChatAutoSend = false;
+      }
+    } else if (isScaffold && globalThis.SolutionChat && typeof globalThis.SolutionChat.mountDockedBar === 'function') {
+      const dockedMount = shadow.getElementById('lc-docked-bar-mount');
+      if (dockedMount) {
+        globalThis.SolutionChat.mountDockedBar(dockedMount, {
+          problem,
+          pattern,
+          code: activeCode,
+          lang: activeSolutionLang,
+          isShadowRoot: true,
+          onOpenChat: ({ initialText = '', autoSend = false } = {}) => {
+            activeSolutionView = 'chat';
+            drawerChatInitialText = initialText;
+            drawerChatAutoSend = autoSend;
+            renderDrawerTabContent();
+          }
+        });
+      }
+    }
 
     const solverBtn = shadow.getElementById('lc-open-solver-btn');
     if (solverBtn) {
@@ -1342,7 +1408,7 @@ function renderDrawerTabContent() {
       };
     }
 
-    if (isScaffold) {
+    if (isScaffold || isChat) {
       const langSelect = shadow.getElementById('solution-lang-select');
       if (langSelect) {
         langSelect.onchange = (e) => {
@@ -1361,53 +1427,6 @@ function renderDrawerTabContent() {
           }, 2000);
         };
       }
-
-      const askLcPrompt = (promptText) => {
-        const nanoModule = globalThis.NanoAIModule || window.NanoAIModule || null;
-        if (!nanoModule) return;
-        contentNanoLoading = true;
-        contentUserPrompt = promptText || contentUserPrompt || 'Explain core intuition';
-        renderDrawerTabContent();
-
-        nanoModule.explainSolutionWithNano({
-          problem,
-          pattern,
-          code: activeCode,
-          lang: activeSolutionLang,
-          prompt: contentUserPrompt
-        }).then(res => {
-          contentNanoLoading = false;
-          contentNanoOutputHtml = res.html;
-          renderDrawerTabContent();
-        }).catch(err => {
-          contentNanoLoading = false;
-          contentNanoOutputHtml = `<div style="color:#dc2626;">Error generating explanation: ${escapeHtml(err.message)}</div>`;
-          renderDrawerTabContent();
-        });
-      };
-
-      const askBtn = shadow.getElementById('lc-nano-ask-btn');
-      const promptInput = shadow.getElementById('lc-ai-prompt-input');
-      if (askBtn && promptInput) {
-        askBtn.onclick = () => {
-          askLcPrompt(promptInput.value.trim());
-        };
-        promptInput.onkeydown = (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            askLcPrompt(promptInput.value.trim());
-          }
-        };
-      }
-
-      const chips = shadow.querySelectorAll('.lc-prompt-chip');
-      chips.forEach(chip => {
-        chip.onclick = () => {
-          const p = chip.getAttribute('data-prompt') || '';
-          contentUserPrompt = p;
-          askLcPrompt(p);
-        };
-      });
     }
   }
 

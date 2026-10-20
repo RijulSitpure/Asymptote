@@ -214,7 +214,10 @@ function showProblemView(query) {
   const accountBackBar = document.getElementById('account-back-bar');
 
   if (syncView) syncView.style.display = 'none';
-  if (problemView) problemView.style.display = 'block';
+  if (problemView) {
+    problemView.style.display = 'flex';
+    problemView.style.flexDirection = 'column';
+  }
   if (backToSyncBtn) backToSyncBtn.style.display = 'inline-flex';
   if (backToProblemBtn) backToProblemBtn.style.display = 'none';
   if (accountBackBar) accountBackBar.style.display = 'none';
@@ -224,12 +227,12 @@ function showProblemView(query) {
 
 // ==================== PROBLEM VIEW LOGIC ====================
 let popupActiveTab = 'clues'; // 'clues' | 'solution' | 'complexity' | 'notes'
+let popupActiveSolutionView = 'blueprint'; // 'blueprint' | 'chat'
+let popupChatInitialText = '';
+let popupChatAutoSend = false;
 let popupActiveLang = 'python3';
 let popupCurrentHintLevel = 1;
 let popupCachedData = null;
-let popupUserPrompt = '';
-let popupNanoOutputHtml = null;
-let popupNanoLoading = false;
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -259,6 +262,24 @@ function switchPopupTab(tab) {
 function renderPopupTabContent() {
   const contentEl = document.getElementById('popup-tab-content');
   if (!contentEl || !popupCachedData) return;
+
+  const isChatViewActive = popupActiveTab === 'solution' && popupActiveSolutionView === 'chat';
+  const headerBox = document.querySelector('.problem-header-box');
+  const popupBody = document.querySelector('#problem-view .popup-body');
+  if (headerBox) headerBox.style.display = isChatViewActive ? 'none' : '';
+  if (popupBody) {
+    popupBody.style.padding = isChatViewActive ? '0' : '';
+    popupBody.style.overflow = isChatViewActive ? 'hidden' : '';
+    popupBody.style.flex = '1';
+    popupBody.style.minHeight = '0';
+    popupBody.style.height = isChatViewActive ? '100%' : '';
+  }
+  if (contentEl) {
+    contentEl.style.overflow = isChatViewActive ? 'hidden' : 'auto';
+    contentEl.style.flex = '1';
+    contentEl.style.minHeight = '0';
+    contentEl.style.height = isChatViewActive ? '100%' : '';
+  }
 
   const { problem, pattern, hints, complexity } = popupCachedData;
   const isVerified = Boolean(problem?.verified === 1 || problem?.verified === true);
@@ -410,60 +431,88 @@ function renderPopupTabContent() {
 
     const code = getProblemSolutionCode(problem, popupActiveLang);
     const activeCode = code && code.trim() ? code : `No verified solution in ${selectedMeta.displayName || selectedMeta.name} yet`;
-    const blueprintTitle = 'Blueprint';
+    const isChatView = popupActiveSolutionView === 'chat';
 
     contentEl.innerHTML = `
-      <div class="tab-content-pane">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span style="font-size:13px; font-weight:700; color:#1e2033;">
-            ${blueprintTitle}
-          </span>
-          <div style="display:flex; align-items:center; gap:6px;">
-            ${supportedLangs.length === 0 ? `
-              <span style="font-size:11px; color:#64748b; font-style:italic;">Loading languages...</span>
-            ` : `
-              <select id="popup-lang-select" class="popup-select">
-                ${supportedLangs.map(l => `<option value="${l.langSlug || l.id}" ${(l.langSlug || l.id) === popupActiveLang ? 'selected' : ''}>${l.displayName || l.name}</option>`).join('')}
-              </select>
-            `}
-            <button id="popup-copy-btn" style="background:#ffffff; border:1px solid #e2e8f0; color:#1e2033; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:500; cursor:pointer;">
-              Copy
-            </button>
-          </div>
-        </div>
-        <pre class="code-preview"><code>${activeCode}</code></pre>
-        <div style="margin-top:10px; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:10px;">
-          <div style="font-family:'Space Grotesk', sans-serif; font-size:13px; font-weight:700; color:#1e2033; margin-bottom:8px;">
-            AI Explanation
-          </div>
-
-          <div style="display:flex; gap:6px; margin-bottom:6px;">
-            <input id="popup-ai-prompt-input" type="text" placeholder="Ask anything about this solution..." value="${escapeHtml(popupUserPrompt)}" style="flex:1; min-width:0; background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:6px 10px; font-size:12px; color:#1e2033; outline:none; font-family:inherit;" />
-            <button id="popup-nano-ask-btn" class="btn-amber-reveal" style="font-size:11px; font-weight:700; padding:6px 12px; margin-top:0; border-radius:6px; white-space:nowrap; width:auto; cursor:pointer;">Ask</button>
-          </div>
-
-          <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
-            <button type="button" class="popup-prompt-chip" data-prompt="Explain core intuition" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px; font-size:10px; color:#475569; cursor:pointer;">💡 Intuition</button>
-            <button type="button" class="popup-prompt-chip" data-prompt="Step-by-step code trace" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px; font-size:10px; color:#475569; cursor:pointer;">🔍 Code trace</button>
-            <button type="button" class="popup-prompt-chip" data-prompt="Critical edge cases" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px; font-size:10px; color:#475569; cursor:pointer;">⚠️ Edge cases</button>
-          </div>
-
-          ${popupNanoLoading ? `
-            <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">
-              ⏳ Generating explanation...
+      <div class="tab-content-pane" style="flex:1; min-height:0; height:100%; display:flex; flex-direction:column; overflow:hidden;">
+        ${isChatView ? `
+          <!-- Unified Chat View (replaces blueprint body, fills space between tabs and prompt bar) -->
+          <div id="popup-solution-chat-container" style="flex:1; min-height:0; height:100%; display:flex; flex-direction:column; overflow:hidden;"></div>
+        ` : `
+          <!-- Top scrollable Blueprint body -->
+          <div style="flex:1; min-height:0; overflow-y:auto; padding-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-shrink:0;">
+              <span style="font-family:'Space Grotesk', sans-serif; font-size:13px; font-weight:700; color:#1e2033;">Blueprint</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                ${supportedLangs.length === 0 ? `
+                  <span style="font-size:11px; color:#64748b; font-style:italic;">Loading languages...</span>
+                ` : `
+                  <select id="popup-lang-select" class="popup-select">
+                    ${supportedLangs.map(l => `<option value="${l.langSlug || l.id}" ${(l.langSlug || l.id) === popupActiveLang ? 'selected' : ''}>${l.displayName || l.name}</option>`).join('')}
+                  </select>
+                `}
+                <button id="popup-copy-btn" style="background:#ffffff; border:1px solid #e2e8f0; color:#1e2033; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:500; cursor:pointer;">
+                  Copy
+                </button>
+              </div>
             </div>
-          ` : popupNanoOutputHtml ? `
-            <div style="font-size:11px; color:#334155; line-height:1.55; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px 10px; max-height:160px; overflow-y:auto; margin-bottom:6px;">${popupNanoOutputHtml}</div>
-          ` : ''}
-        </div>
 
-        <div style="text-align:center; margin-top:12px;">
-          <button id="popup-open-editor-btn" type="button" style="background:none; border:none; padding:0; font-size:12px; color:#1e2033; font-weight:600; cursor:pointer; text-decoration:none; font-family:inherit;">
-            Open in dashboard editor ↗
-          </button>
-        </div>
+            <!-- Code Blueprint View -->
+            <pre class="code-preview"><code>${activeCode}</code></pre>
+
+            <div style="text-align:center; margin-top:12px; margin-bottom:8px;">
+              <button id="popup-open-editor-btn" type="button" style="background:none; border:none; padding:0; font-size:12px; color:#1e2033; font-weight:600; cursor:pointer; text-decoration:none; font-family:inherit;">
+                Open in dashboard editor ↗
+              </button>
+            </div>
+          </div>
+
+          <!-- Docked prompt bar pinned at bottom on Blueprint view only -->
+          <div id="popup-docked-bar-mount" style="flex-shrink:0; margin: 0 -16px -14px -16px;"></div>
+        `}
       </div>
     `;
+
+    // Mount unified SolutionChat if in chat view
+    if (isChatView && globalThis.SolutionChat && typeof globalThis.SolutionChat.mount === 'function') {
+      const chatMount = document.getElementById('popup-solution-chat-container');
+      if (chatMount) {
+        globalThis.SolutionChat.mount(chatMount, {
+          problem,
+          pattern,
+          code: activeCode,
+          lang: popupActiveLang,
+          isShadowRoot: false,
+          initialText: popupChatInitialText,
+          autoSend: popupChatAutoSend,
+          onBackToSolution: () => {
+            popupActiveSolutionView = 'blueprint';
+            popupChatInitialText = '';
+            popupChatAutoSend = false;
+            renderPopupTabContent();
+          }
+        });
+        popupChatInitialText = '';
+        popupChatAutoSend = false;
+      }
+    } else if (!isChatView && globalThis.SolutionChat && typeof globalThis.SolutionChat.mountDockedBar === 'function') {
+      const dockedMount = document.getElementById('popup-docked-bar-mount');
+      if (dockedMount) {
+        globalThis.SolutionChat.mountDockedBar(dockedMount, {
+          problem,
+          pattern,
+          code: activeCode,
+          lang: popupActiveLang,
+          isShadowRoot: false,
+          onOpenChat: ({ initialText = '', autoSend = false } = {}) => {
+            popupActiveSolutionView = 'chat';
+            popupChatInitialText = initialText;
+            popupChatAutoSend = autoSend;
+            renderPopupTabContent();
+          }
+        });
+      }
+    }
 
     const editorBtn = document.getElementById('popup-open-editor-btn');
     if (editorBtn) {
@@ -492,53 +541,6 @@ function renderPopupTabContent() {
         }, 1500);
       };
     }
-
-    const askPopupPrompt = (promptText) => {
-      const nanoModule = globalThis.NanoAIModule || window.NanoAIModule || null;
-      if (!nanoModule) return;
-      popupNanoLoading = true;
-      popupUserPrompt = promptText || popupUserPrompt || 'Explain core intuition';
-      renderPopupTabContent();
-
-      nanoModule.explainSolutionWithNano({
-        problem,
-        pattern,
-        code: activeCode,
-        lang: popupActiveLang,
-        prompt: popupUserPrompt
-      }).then(res => {
-        popupNanoLoading = false;
-        popupNanoOutputHtml = res.html;
-        renderPopupTabContent();
-      }).catch(err => {
-        popupNanoLoading = false;
-        popupNanoOutputHtml = `<div style="color:#dc2626;">Error: ${escapeHtml(err.message)}</div>`;
-        renderPopupTabContent();
-      });
-    };
-
-    const askBtn = document.getElementById('popup-nano-ask-btn');
-    const promptInput = document.getElementById('popup-ai-prompt-input');
-    if (askBtn && promptInput) {
-      askBtn.onclick = () => {
-        askPopupPrompt(promptInput.value.trim());
-      };
-      promptInput.onkeydown = (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          askPopupPrompt(promptInput.value.trim());
-        }
-      };
-    }
-
-    const chips = document.querySelectorAll('.popup-prompt-chip');
-    chips.forEach(chip => {
-      chip.onclick = () => {
-        const p = chip.getAttribute('data-prompt') || '';
-        popupUserPrompt = p;
-        askPopupPrompt(p);
-      };
-    });
   } else if (popupActiveTab === 'complexity') {
     if (!isVerified) {
       contentEl.innerHTML = `
@@ -1089,3 +1091,10 @@ if (footerDashBtn) {
 checkServer();
 checkLeetCodeLogin();
 autoDetectActiveLeetCodeProblem();
+
+// Clean up Prompt API session on popup unload
+window.addEventListener('beforeunload', () => {
+  if (globalThis.NanoChatService && typeof globalThis.NanoChatService.destroySession === 'function') {
+    globalThis.NanoChatService.destroySession();
+  }
+});

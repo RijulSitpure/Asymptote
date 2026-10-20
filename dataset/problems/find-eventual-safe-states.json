@@ -1,0 +1,79 @@
+{
+  "slug": "find-eventual-safe-states",
+  "number": 802,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Reverse Terminal Reachability Obstacle",
+      "text": "Nodes leading exclusively to terminal nodes are safe, while any path entering a cycle is unsafe. Rather than tracing paths forward from every node, how can reversing directions propagate certainty from terminal nodes backward?"
+    },
+    {
+      "level": 2,
+      "title": "Terminal Outdegree Invariant",
+      "text": "Terminal nodes have an outdegree of zero. Inverting graph directions allows propagating safety backward to any node whose entire set of outbound transitions reaches verified safe targets."
+    },
+    {
+      "level": 3,
+      "title": "Reverse Graph Indegree Elimination Procedure",
+      "text": "Construct a reversed graph and count the original outgoing edges for each node. Seed an active collection with terminal nodes that have zero outgoing edges. Trace backward through reversed edges, decrementing the original outgoing count for each source. When a source count drops to zero, mark it safe. Return all marked indices in ascending order."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def eventualSafeNodes(self, graph: List[List[int]]) -> List[int]:\n        from collections import deque\n        n = len(graph)\n        rev_adj = [[] for _ in range(n)]\n        outdegree = [0] * n\n        for u in range(n):\n            outdegree[u] = len(graph[u])\n            for v in graph[u]:\n                rev_adj[v].append(u)\n        q = deque([i for i in range(n) if outdegree[i] == 0])\n        safe = [False] * n\n        while q:\n            node = q.popleft()\n            safe[node] = True\n            for prev in rev_adj[node]:\n                outdegree[prev] -= 1\n                if outdegree[prev] == 0:\n                    q.append(prev)\n        return [i for i in range(n) if safe[i]]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes in graph",
+      "E: total number of directed edges in graph"
+    ],
+    "notes": "Every node and edge is examined once when constructing the reverse graph and once during topological elimination.",
+    "whyNaiveFails": "Tracing exhaustive paths from each node risks infinite cycle loops or O(V * (V + E)) complexity.",
+    "spaceTimeTradeoff": "The reversed adjacency graph and outdegree array take O(V + E) space.",
+    "interviewerExpectation": "Recognizing that terminal nodes have zero outdegree and reversing edges turns cycle detection into Kahn topological sort."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def eventualSafeNodes(self, graph: List[List[int]]) -> List[int]:\n        from collections import deque\n        n = len(graph)\n        rev_adj = [[] for _ in range(n)]\n        outdegree = [0] * n\n        for u in range(n):\n            outdegree[u] = len(graph[u])\n            for v in graph[u]:\n                rev_adj[v].append(u)\n        q = deque([i for i in range(n) if outdegree[i] == 0])\n        safe = [False] * n\n        while q:\n            node = q.popleft()\n            safe[node] = True\n            for prev in rev_adj[node]:\n                outdegree[prev] -= 1\n                if outdegree[prev] == 0:\n                    q.append(prev)\n        return [i for i in range(n) if safe[i]]",
+      "approach": "Reverse graph construction and Kahn topological elimination from terminal nodes",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> eventualSafeNodes(vector<vector<int>>& graph) {\n        int n = graph.size();\n        vector<vector<int>> revAdj(n);\n        vector<int> outdegree(n, 0);\n        for (int u = 0; u < n; ++u) {\n            outdegree[u] = graph[u].size();\n            for (int v : graph[u]) {\n                revAdj[v].push_back(u);\n            }\n        }\n        queue<int> q;\n        for (int i = 0; i < n; ++i) {\n            if (outdegree[i] == 0) q.push(i);\n        }\n        vector<bool> safe(n, false);\n        while (!q.empty()) {\n            int node = q.front();\n            q.pop();\n            safe[node] = true;\n            for (int prev : revAdj[node]) {\n                if (--outdegree[prev] == 0) q.push(prev);\n            }\n        }\n        vector<int> res;\n        for (int i = 0; i < n; ++i) {\n            if (safe[i]) res.push_back(i);\n        }\n        return res;\n    }\n};",
+      "approach": "Reverse graph construction and Kahn topological elimination from terminal nodes",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<Integer> eventualSafeNodes(int[][] graph) {\n        int n = graph.length;\n        List<List<Integer>> revAdj = new ArrayList<>();\n        for (int i = 0; i < n; i++) revAdj.add(new ArrayList<>());\n        int[] outdegree = new int[n];\n        for (int u = 0; u < n; u++) {\n            outdegree[u] = graph[u].length;\n            for (int v : graph[u]) {\n                revAdj.get(v).add(u);\n            }\n        }\n        Queue<Integer> q = new ArrayDeque<>();\n        for (int i = 0; i < n; i++) {\n            if (outdegree[i] == 0) q.add(i);\n        }\n        boolean[] safe = new boolean[n];\n        while (!q.isEmpty()) {\n            int node = q.poll();\n            safe[node] = true;\n            for (int prev : revAdj.get(node)) {\n                if (--outdegree[prev] == 0) q.add(prev);\n            }\n        }\n        List<Integer> res = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            if (safe[i]) res.add(i);\n        }\n        return res;\n    }\n}",
+      "approach": "Reverse graph construction and Kahn topological elimination from terminal nodes",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var eventualSafeNodes = function(graph) {\n    const n = graph.length;\n    const revAdj = Array.from({ length: n }, () => []);\n    const outdegree = new Array(n).fill(0);\n    for (let u = 0; u < n; u++) {\n        outdegree[u] = graph[u].length;\n        for (const v of graph[u]) {\n            revAdj[v].push(u);\n        }\n    }\n    const q = [];\n    for (let i = 0; i < n; i++) {\n        if (outdegree[i] === 0) q.push(i);\n    }\n    const safe = new Array(n).fill(false);\n    let head = 0;\n    while (head < q.length) {\n        const node = q[head++];\n        safe[node] = true;\n        for (const prev of revAdj[node]) {\n            outdegree[prev]--;\n            if (outdegree[prev] === 0) q.push(prev);\n        }\n    }\n    const res = [];\n    for (let i = 0; i < n; i++) {\n        if (safe[i]) res.push(i);\n    }\n    return res;\n};",
+      "approach": "Reverse graph construction and Kahn topological elimination from terminal nodes",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

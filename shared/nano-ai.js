@@ -22,13 +22,21 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // 3. Fenced code blocks
-    html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_match, _lang, code) => {
-      return `<pre style="background:#f6f8fa; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin:8px 0; overflow-x:auto; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; color:#1e2033; line-height:1.5;"><code>${code.trim()}</code></pre>`;
+    // 3. Fenced code blocks with language badge, copy button, and horizontal scroll inside the block only
+    html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_match, lang, code) => {
+      const displayLang = (lang && lang.trim()) || 'code';
+      const cleanCode = code.trim();
+      return `<div class="asymptote-code-block" style="background:#f6f8fa; border:1px solid #e2e8f0; border-radius:8px; margin:10px 0; overflow:hidden;">` +
+        `<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 10px; background:#f1f5f9; border-bottom:1px solid #e2e8f0; font-size:11px; color:#64748b;">` +
+          `<span>${displayLang}</span>` +
+          `<button type="button" class="asymptote-code-copy-btn" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 8px; font-size:11px; color:#475569; cursor:pointer;">Copy</button>` +
+        `</div>` +
+        `<pre style="margin:0; padding:10px 12px; overflow-x:auto; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; color:#1e2033; line-height:1.5;"><code>${cleanCode}</code></pre>` +
+      `</div>`;
     });
 
     // 4. Inline code
-    html = html.replace(/`([^`\n]+)`/g, '<code style="background:#f1f5f9; padding:2px 5px; border-radius:4px; font-size:12px; font-family:ui-monospace, monospace; color:#0f172a; border:1px solid #e2e8f0;">$1</code>');
+    html = html.replace(/`([^`\n]+)`/g, '<code style="background:#f1f5f9; padding:2px 5px; border-radius:4px; font-size:12.5px; font-family:ui-monospace, monospace; color:#0f172a; border:1px solid #e2e8f0;">$1</code>');
 
     // 5. Math symbols like $O(N)$
     html = html.replace(/\$([^\$\n]+)\$/g, '<code style="background:#f1f5f9; padding:1px 4px; border-radius:4px; font-size:12px; font-family:ui-monospace, monospace; color:#047857; font-weight:600;">$1</code>');
@@ -61,38 +69,70 @@
   }
 
   /**
-   * Checks availability of Chrome's built-in Gemini Nano Prompt API.
-   * Returns: { available: 'readily' | 'after-download' | 'no', isNative: boolean }
+   * Checks availability of Chrome's built-in Gemini Nano Prompt API (LanguageModel).
+   * Returns: { available: 'available' | 'downloadable' | 'downloading' | 'unavailable', isNative: boolean, statusText: string }
    */
   async function checkNanoAIAvailability() {
     try {
-      if (typeof ai !== 'undefined' && ai.languageModel && typeof ai.languageModel.capabilities === 'function') {
-        const caps = await ai.languageModel.capabilities();
+      const lm = (typeof LanguageModel !== 'undefined')
+        ? LanguageModel
+        : (typeof globalThis !== 'undefined' && globalThis.LanguageModel
+          ? globalThis.LanguageModel
+          : (typeof window !== 'undefined' && window.LanguageModel ? window.LanguageModel : null));
+
+      if (lm && typeof lm.availability === 'function') {
+        let status;
+        try {
+          status = await lm.availability({
+            expectedOutputLanguages: ['en'],
+            expectedInputLanguages: ['en'],
+            outputLanguage: 'en'
+          });
+        } catch (_optsErr) {
+          status = await lm.availability();
+        }
+        const isNative = status === 'available' || status === 'downloadable' || status === 'downloading';
         return {
-          available: caps.available || 'no',
-          isNative: caps.available === 'readily' || caps.available === 'after-download',
-          statusText: caps.available === 'readily' 
-            ? 'Gemini Nano Ready (On-device)' 
-            : (caps.available === 'after-download' ? 'Gemini Nano Downloading...' : 'Gemini Nano Offline')
+          available: status,
+          isNative,
+          statusText: status === 'available'
+            ? 'Gemini Nano Ready (On-device)'
+            : (status === 'downloadable'
+              ? 'Gemini Nano Ready to Download'
+              : (status === 'downloading' ? 'Gemini Nano Downloading...' : 'Gemini Nano Unavailable'))
         };
       }
-      if (typeof window !== 'undefined' && window.ai && window.ai.languageModel && typeof window.ai.languageModel.capabilities === 'function') {
-        const caps = await window.ai.languageModel.capabilities();
+
+      // Legacy window.ai fallback (Chrome 127-128 early experiments)
+      if (typeof ai !== 'undefined' && ai?.languageModel && typeof ai.languageModel.capabilities === 'function') {
+        const caps = await ai.languageModel.capabilities();
+        const mapped = caps.available === 'readily' ? 'available' : (caps.available === 'after-download' ? 'downloadable' : 'unavailable');
         return {
-          available: caps.available || 'no',
-          isNative: caps.available === 'readily' || caps.available === 'after-download',
-          statusText: caps.available === 'readily' 
-            ? 'Gemini Nano Ready (On-device)' 
-            : (caps.available === 'after-download' ? 'Gemini Nano Downloading...' : 'Gemini Nano Offline')
+          available: mapped,
+          isNative: mapped === 'available' || mapped === 'downloadable',
+          statusText: mapped === 'available'
+            ? 'Gemini Nano Ready (On-device)'
+            : (mapped === 'downloadable' ? 'Gemini Nano Downloading...' : 'Gemini Nano Offline')
+        };
+      }
+      if (typeof window !== 'undefined' && window.ai?.languageModel && typeof window.ai.languageModel.capabilities === 'function') {
+        const caps = await window.ai.languageModel.capabilities();
+        const mapped = caps.available === 'readily' ? 'available' : (caps.available === 'after-download' ? 'downloadable' : 'unavailable');
+        return {
+          available: mapped,
+          isNative: mapped === 'available' || mapped === 'downloadable',
+          statusText: mapped === 'available'
+            ? 'Gemini Nano Ready (On-device)'
+            : (mapped === 'downloadable' ? 'Gemini Nano Downloading...' : 'Gemini Nano Offline')
         };
       }
     } catch (_e) {
-      // Prompt API capabilities call failed or unsupported
+      // Prompt API availability call failed
     }
     return {
-      available: 'no',
+      available: 'unavailable',
       isNative: false,
-      statusText: 'Asymptote Socratic Engine (Deterministic)'
+      statusText: 'Gemini Nano Unavailable'
     };
   }
 
@@ -220,16 +260,31 @@ Format your response in concise, markdown bullet points. Do not include introduc
     const avail = await checkNanoAIAvailability();
 
     // 1. If Gemini Nano is native & available, run on-device prompt
-    if (avail.isNative && avail.available === 'readily') {
+    if (avail.isNative && (avail.available === 'available' || avail.available === 'readily')) {
       try {
-        const aiProvider = (typeof ai !== 'undefined' && ai.languageModel) 
-          ? ai.languageModel 
-          : (typeof window !== 'undefined' && window.ai?.languageModel ? window.ai.languageModel : null);
+        const lm = (typeof LanguageModel !== 'undefined')
+          ? LanguageModel
+          : (typeof globalThis !== 'undefined' && globalThis.LanguageModel ? globalThis.LanguageModel : null);
+
+        const aiProvider = lm || ((typeof ai !== 'undefined' && ai?.languageModel)
+          ? ai.languageModel
+          : (typeof window !== 'undefined' && window.ai?.languageModel ? window.ai.languageModel : null));
 
         if (aiProvider) {
-          const session = await aiProvider.create({
-            systemPrompt: 'You are Asymptote Socratic Mentor. You explain algorithmic patterns cleanly, concisely, and with precision using bullet points. Avoid filler.'
-          });
+          const createOptions = {
+            systemPrompt: 'You are Asymptote Socratic Mentor. You explain algorithmic patterns cleanly, concisely, and with precision using bullet points. Avoid filler.',
+            expectedOutputLanguages: ['en'],
+            expectedInputLanguages: ['en'],
+            outputLanguage: 'en'
+          };
+          let session;
+          try {
+            session = await aiProvider.create(createOptions);
+          } catch (_createErr) {
+            session = await aiProvider.create({
+              systemPrompt: createOptions.systemPrompt
+            });
+          }
 
           const fullPrompt = buildNanoPrompt({ problem, pattern, code, lang, prompt, mode });
 

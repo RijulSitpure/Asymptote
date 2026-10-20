@@ -1,0 +1,80 @@
+{
+  "slug": "accounts-merge",
+  "number": 721,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Shared Email Equivalence Merge Obstacle",
+      "text": "Accounts that share even a single email address belong to the same person. How can linking every subsequent email to the first email in an account cluster all aliases under a unified representative?"
+    },
+    {
+      "level": 2,
+      "title": "Component Connected Email Invariant",
+      "text": "Shared emails define connected components over the email set. Merging all emails within each individual record groups overlapping accounts into disjoint components."
+    },
+    {
+      "level": 3,
+      "title": "Disjoint Set Email Grouping Procedure",
+      "text": "Assign each unique email to a parent mapping initialized to itself and record its owner name. In each account, union every subsequent email with the first email. Group all emails by their canonical representative, sort the emails within each group, and prepend the account name. Return the list of merged accounts."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def accountsMerge(self, accounts: List[List[str]]) -> List[List[str]]:\n        from collections import defaultdict\n        parent = {}\n        email_to_name = {}\n        def find(x):\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n        def union(x, y):\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n        for acc in accounts:\n            name = acc[0]\n            first_email = acc[1]\n            for email in acc[1:]:\n                if email not in parent:\n                    parent[email] = email\n                email_to_name[email] = name\n                union(first_email, email)\n        groups = defaultdict(list)\n        for email in parent:\n            root = find(email)\n            groups[root].append(email)\n        return [[email_to_name[root]] + sorted(emails) for root, emails in groups.items()]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E * log E * alpha(N))",
+    "space": "O(E)",
+    "variables": [
+      "E: total number of emails across all accounts",
+      "N: number of accounts",
+      "alpha: inverse Ackermann function"
+    ],
+    "notes": "DSU unions each email in near-linear time; sorting emails in each connected component dominates.",
+    "whyNaiveFails": "Pairwise account intersection checks take O(N^2 * E) which is too slow.",
+    "spaceTimeTradeoff": "Email parent and name dictionaries require O(E) auxiliary space.",
+    "interviewerExpectation": "Using DSU on email strings directly or mapping emails to integer IDs."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def accountsMerge(self, accounts: List[List[str]]) -> List[List[str]]:\n        from collections import defaultdict\n        parent = {}\n        email_to_name = {}\n        def find(x):\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n        def union(x, y):\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n        for acc in accounts:\n            name = acc[0]\n            first_email = acc[1]\n            for email in acc[1:]:\n                if email not in parent:\n                    parent[email] = email\n                email_to_name[email] = name\n                union(first_email, email)\n        groups = defaultdict(list)\n        for email in parent:\n            root = find(email)\n            groups[root].append(email)\n        return [[email_to_name[root]] + sorted(emails) for root, emails in groups.items()]",
+      "approach": "String-based disjoint set union with email canonical grouping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<vector<string>> accountsMerge(vector<vector<string>>& accounts) {\n        unordered_map<string, string> parent;\n        unordered_map<string, string> emailToName;\n        auto find = [&](auto self, const string& x) -> string {\n            if (parent[x] != x) parent[x] = self(self, parent[x]);\n            return parent[x];\n        };\n        auto unite = [&](const string& x, const string& y) {\n            string rx = find(find, x), ry = find(find, y);\n            if (rx != ry) parent[rx] = ry;\n        };\n        for (const auto& acc : accounts) {\n            const string& name = acc[0];\n            const string& firstEmail = acc[1];\n            for (size_t i = 1; i < acc.size(); ++i) {\n                const string& email = acc[i];\n                if (!parent.count(email)) parent[email] = email;\n                emailToName[email] = name;\n                unite(firstEmail, email);\n            }\n        }\n        unordered_map<string, vector<string>> groups;\n        for (const auto& pair : parent) {\n            string root = find(find, pair.first);\n            groups[root].push_back(pair.first);\n        }\n        vector<vector<string>> res;\n        for (auto& pair : groups) {\n            sort(pair.second.begin(), pair.second.end());\n            vector<string> entry = {emailToName[pair.first]};\n            entry.insert(entry.end(), pair.second.begin(), pair.second.end());\n            res.push_back(entry);\n        }\n        return res;\n    }\n};",
+      "approach": "String-based disjoint set union with email canonical grouping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<List<String>> accountsMerge(List<List<String>> accounts) {\n        Map<String, String> parent = new HashMap<>();\n        Map<String, String> emailToName = new HashMap<>();\n        for (List<String> acc : accounts) {\n            String name = acc.get(0);\n            String firstEmail = acc.get(1);\n            for (int i = 1; i < acc.size(); i++) {\n                String email = acc.get(i);\n                parent.putIfAbsent(email, email);\n                emailToName.put(email, name);\n                union(parent, firstEmail, email);\n            }\n        }\n        Map<String, List<String>> groups = new HashMap<>();\n        for (String email : parent.keySet()) {\n            String root = find(parent, email);\n            groups.computeIfAbsent(root, k -> new ArrayList<>()).add(email);\n        }\n        List<List<String>> res = new ArrayList<>();\n        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {\n            List<String> emails = entry.getValue();\n            Collections.sort(emails);\n            List<String> merged = new ArrayList<>();\n            merged.add(emailToName.get(entry.getKey()));\n            merged.addAll(emails);\n            res.add(merged);\n        }\n        return res;\n    }\n    private String find(Map<String, String> parent, String x) {\n        if (!parent.get(x).equals(x)) {\n            parent.put(x, find(parent, parent.get(x)));\n        }\n        return parent.get(x);\n    }\n    private void union(Map<String, String> parent, String x, String y) {\n        String rx = find(parent, x), ry = find(parent, y);\n        if (!rx.equals(ry)) parent.put(rx, ry);\n    }\n}",
+      "approach": "String-based disjoint set union with email canonical grouping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var accountsMerge = function(accounts) {\n    const parent = new Map();\n    const emailToName = new Map();\n    const find = (x) => {\n        if (parent.get(x) !== x) {\n            parent.set(x, find(parent.get(x)));\n        }\n        return parent.get(x);\n    };\n    const union = (x, y) => {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) parent.set(rx, ry);\n    };\n    for (const acc of accounts) {\n        const name = acc[0];\n        const firstEmail = acc[1];\n        for (let i = 1; i < acc.length; i++) {\n            const email = acc[i];\n            if (!parent.has(email)) parent.set(email, email);\n            emailToName.set(email, name);\n            union(firstEmail, email);\n        }\n    }\n    const groups = new Map();\n    for (const email of parent.keys()) {\n        const root = find(email);\n        if (!groups.has(root)) groups.set(root, []);\n        groups.get(root).push(email);\n    }\n    const res = [];\n    for (const [root, emails] of groups.entries()) {\n        emails.sort();\n        res.push([emailToName.get(root), ...emails]);\n    }\n    return res;\n};",
+      "approach": "String-based disjoint set union with email canonical grouping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

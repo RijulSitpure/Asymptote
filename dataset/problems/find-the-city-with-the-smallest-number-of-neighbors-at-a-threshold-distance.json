@@ -1,0 +1,79 @@
+{
+  "slug": "find-the-city-with-the-smallest-number-of-neighbors-at-a-threshold-distance",
+  "number": 1334,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "All-Pairs Shortest Path Obstacle",
+      "text": "Finding the city that reaches the fewest neighbors within distance threshold requires calculating shortest paths between all pairs of cities. How can repeated single-source shortest path relaxation determine neighbor counts?"
+    },
+    {
+      "level": 2,
+      "title": "All-Pairs Distance Threshold Invariant",
+      "text": "Running Dijkstra or Floyd-Warshall computes the exact minimum distance between every pair of cities. A neighbor j is reachable from i if dist[i][j] <= distanceThreshold."
+    },
+    {
+      "level": 3,
+      "title": "Shortest Path Neighbor Counting Procedure",
+      "text": "For each city i from 0 to n - 1, run Dijkstra to compute shortest distances to all other cities. Count distinct cities j other than i with distance at most distanceThreshold. Track city with minimum reachable count, preferring larger city index in ties."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def findTheCity(self, n: int, edges: List[List[int]], distanceThreshold: int) -> int:\n        import heapq\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((w, v))\n            adj[v].append((w, u))\n        def get_reachable(src: int) -> int:\n            dist = {}\n            pq = [(0, src)]\n            while pq:\n                d, u = heapq.heappop(pq)\n                if u in dist:\n                    continue\n                dist[u] = d\n                for w, v in adj[u]:\n                    if v not in dist and d + w <= distanceThreshold:\n                        heapq.heappush(pq, (d + w, v))\n            return len(dist) - 1\n        min_count = float('inf')\n        best_city = -1\n        for i in range(n):\n            count = get_reachable(i)\n            if count <= min_count:\n                min_count = count\n                best_city = i\n        return best_city\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V * E log V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of cities (2 <= V <= 100)",
+      "E: number of bidirectional edges (E <= V * (V - 1) / 2)"
+    ],
+    "notes": "Running Dijkstra from each of the V vertices takes O(V * E log V) time.",
+    "whyNaiveFails": "Unbounded branch search explores sub-optimal paths exceeding distance threshold repeatedly.",
+    "spaceTimeTradeoff": "Adjacency graph consumes O(V + E) auxiliary space.",
+    "interviewerExpectation": "Breaking ties by choosing the city with the greater numerical index."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def findTheCity(self, n: int, edges: List[List[int]], distanceThreshold: int) -> int:\n        import heapq\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((w, v))\n            adj[v].append((w, u))\n        def get_reachable(src: int) -> int:\n            dist = {}\n            pq = [(0, src)]\n            while pq:\n                d, u = heapq.heappop(pq)\n                if u in dist:\n                    continue\n                dist[u] = d\n                for w, v in adj[u]:\n                    if v not in dist and d + w <= distanceThreshold:\n                        heapq.heappush(pq, (d + w, v))\n            return len(dist) - 1\n        min_count = float('inf')\n        best_city = -1\n        for i in range(n):\n            count = get_reachable(i)\n            if count <= min_count:\n                min_count = count\n                best_city = i\n        return best_city",
+      "approach": "Dijkstra shortest path execution per vertex with distance threshold bound",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int findTheCity(int n, vector<vector<int>>& edges, int distanceThreshold) {\n        vector<vector<pair<int, int>>> adj(n);\n        for (auto& e : edges) {\n            adj[e[0]].push_back({e[2], e[1]});\n            adj[e[1]].push_back({e[2], e[0]});\n        }\n        auto getReachable = [&](int src) -> int {\n            vector<int> dist(n, -1);\n            priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;\n            pq.push({0, src});\n            int count = 0;\n            while (!pq.empty()) {\n                auto [d, u] = pq.top(); pq.pop();\n                if (dist[u] != -1) continue;\n                dist[u] = d;\n                if (u != src) ++count;\n                for (auto& [w, v] : adj[u]) {\n                    if (dist[v] == -1 && d + w <= distanceThreshold) {\n                        pq.push({d + w, v});\n                    }\n                }\n            }\n            return count;\n        };\n        int minCount = 1e9, bestCity = -1;\n        for (int i = 0; i < n; ++i) {\n            int count = getReachable(i);\n            if (count <= minCount) {\n                minCount = count;\n                bestCity = i;\n            }\n        }\n        return bestCity;\n    }\n};",
+      "approach": "Dijkstra shortest path execution per vertex with distance threshold bound",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int findTheCity(int n, int[][] edges, int distanceThreshold) {\n        List<List<int[]>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(new int[]{e[2], e[1]});\n            adj.get(e[1]).add(new int[]{e[2], e[0]});\n        }\n        int minCount = Integer.MAX_VALUE, bestCity = -1;\n        for (int i = 0; i < n; i++) {\n            int count = getReachable(i, n, adj, distanceThreshold);\n            if (count <= minCount) {\n                minCount = count;\n                bestCity = i;\n            }\n        }\n        return bestCity;\n    }\n    private int getReachable(int src, int n, List<List<int[]>> adj, int threshold) {\n        int[] dist = new int[n];\n        Arrays.fill(dist, -1);\n        PriorityQueue<int[]> pq = new PriorityQueue<>(Comparator.comparingInt(a -> a[0]));\n        pq.add(new int[]{0, src});\n        int count = 0;\n        while (!pq.isEmpty()) {\n            int[] cur = pq.poll();\n            int d = cur[0], u = cur[1];\n            if (dist[u] != -1) continue;\n            dist[u] = d;\n            if (u != src) count++;\n            for (int[] edge : adj.get(u)) {\n                int w = edge[0], v = edge[1];\n                if (dist[v] == -1 && d + w <= threshold) {\n                    pq.add(new int[]{d + w, v});\n                }\n            }\n        }\n        return count;\n    }\n}",
+      "approach": "Dijkstra shortest path execution per vertex with distance threshold bound",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findTheCity = function(n, edges, distanceThreshold) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        adj[u].push([w, v]);\n        adj[v].push([w, u]);\n    }\n    function getReachable(src) {\n        const dist = new Array(n).fill(-1);\n        const pq = [[0, src]];\n        let count = 0;\n        while (pq.length > 0) {\n            pq.sort((a, b) => a[0] - b[0]);\n            const [d, u] = pq.shift();\n            if (dist[u] !== -1) continue;\n            dist[u] = d;\n            if (u !== src) count++;\n            for (const [w, v] of adj[u]) {\n                if (dist[v] === -1 && d + w <= distanceThreshold) {\n                    pq.push([d + w, v]);\n                }\n            }\n        }\n        return count;\n    }\n    let minCount = Infinity, bestCity = -1;\n    for (let i = 0; i < n; i++) {\n        const count = getReachable(i);\n        if (count <= minCount) {\n            minCount = count;\n            bestCity = i;\n        }\n    }\n    return bestCity;\n};",
+      "approach": "Dijkstra shortest path execution per vertex with distance threshold bound",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

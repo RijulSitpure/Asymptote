@@ -1,0 +1,79 @@
+{
+  "slug": "network-delay-time",
+  "number": 743,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Weighted Signal Latency Obstacle",
+      "text": "Signals propagate along directed network links with varying positive traversal times. How can greedily processing the smallest accumulated arrival time guarantee earliest signal reception across all nodes?"
+    },
+    {
+      "level": 2,
+      "title": "Greedy Shortest Distance Invariant",
+      "text": "Extracting the unvisited node with the minimum tentative signal arrival time guarantees that its distance is final because all edge weights are strictly positive."
+    },
+    {
+      "level": 3,
+      "title": "Dijkstra Shortest Path Procedure",
+      "text": "Build an adjacency list adj[u] = list of (time, v). Maintain min-arrival distances mapping dist with source node k at time 0. Push (0, k) into a min-priority collection. While collection has entries: pop (d, u). If d > dist[u], continue. For each (w, v) from u: if d + w < dist.get(v, inf), record dist[v] = d + w and push (d + w, v). Return max(dist.values()) if len(dist) == n else -1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def networkDelayTime(self, times: List[List[int]], n: int, k: int) -> int:\n        from collections import defaultdict\n        import heapq\n        adj = defaultdict(list)\n        for u, v, w in times:\n            adj[u].append((w, v))\n        min_heap = [(0, k)]\n        dist = {}\n        while min_heap:\n            d, u = heapq.heappop(min_heap)\n            if u in dist:\n                continue\n            dist[u] = d\n            for w, v in adj[u]:\n                if v not in dist:\n                    heapq.heappush(min_heap, (d + w, v))\n        return max(dist.values()) if len(dist) == n else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E log V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes (1 <= V <= 100)",
+      "E: number of directed edges (1 <= E <= 6000)"
+    ],
+    "notes": "Min-heap operations take logarithmic time per edge relaxation.",
+    "whyNaiveFails": "Bellman-Ford or unweighted level searches incur redundant passes across dense network edges.",
+    "spaceTimeTradeoff": "Adjacency graph and priority heap consume O(V + E) auxiliary space.",
+    "interviewerExpectation": "Using Dijkstra's algorithm for non-negative edge weights and checking all nodes were reached."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def networkDelayTime(self, times: List[List[int]], n: int, k: int) -> int:\n        from collections import defaultdict\n        import heapq\n        adj = defaultdict(list)\n        for u, v, w in times:\n            adj[u].append((w, v))\n        min_heap = [(0, k)]\n        dist = {}\n        while min_heap:\n            d, u = heapq.heappop(min_heap)\n            if u in dist:\n                continue\n            dist[u] = d\n            for w, v in adj[u]:\n                if v not in dist:\n                    heapq.heappush(min_heap, (d + w, v))\n        return max(dist.values()) if len(dist) == n else -1",
+      "approach": "Dijkstra shortest path algorithm with min-heap priority collection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int networkDelayTime(vector<vector<int>>& times, int n, int k) {\n        vector<vector<pair<int, int>>> adj(n + 1);\n        for (auto& t : times) {\n            adj[t[0]].push_back({t[2], t[1]});\n        }\n        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;\n        vector<int> dist(n + 1, -1);\n        pq.push({0, k});\n        int count = 0, maxDist = 0;\n        while (!pq.empty()) {\n            auto [d, u] = pq.top(); pq.pop();\n            if (dist[u] != -1) continue;\n            dist[u] = d;\n            ++count;\n            maxDist = max(maxDist, d);\n            for (auto& [w, v] : adj[u]) {\n                if (dist[v] == -1) {\n                    pq.push({d + w, v});\n                }\n            }\n        }\n        return count == n ? maxDist : -1;\n    }\n};",
+      "approach": "Dijkstra shortest path algorithm with min-heap priority collection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int networkDelayTime(int[][] times, int n, int k) {\n        List<List<int[]>> adj = new ArrayList<>();\n        for (int i = 0; i <= n; i++) adj.add(new ArrayList<>());\n        for (int[] t : times) adj.get(t[0]).add(new int[]{t[2], t[1]});\n        PriorityQueue<int[]> pq = new PriorityQueue<>(Comparator.comparingInt(a -> a[0]));\n        pq.add(new int[]{0, k});\n        int[] dist = new int[n + 1];\n        Arrays.fill(dist, -1);\n        int count = 0, maxDist = 0;\n        while (!pq.isEmpty()) {\n            int[] cur = pq.poll();\n            int d = cur[0], u = cur[1];\n            if (dist[u] != -1) continue;\n            dist[u] = d;\n            count++;\n            maxDist = Math.max(maxDist, d);\n            for (int[] edge : adj.get(u)) {\n                int w = edge[0], v = edge[1];\n                if (dist[v] == -1) pq.add(new int[]{d + w, v});\n            }\n        }\n        return count == n ? maxDist : -1;\n    }\n}",
+      "approach": "Dijkstra shortest path algorithm with min-heap priority collection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var networkDelayTime = function(times, n, k) {\n    const adj = Array.from({ length: n + 1 }, () => []);\n    for (const [u, v, w] of times) adj[u].push([w, v]);\n    const dist = new Array(n + 1).fill(-1);\n    const pq = [[0, k]];\n    let count = 0, maxDist = 0;\n    while (pq.length > 0) {\n        pq.sort((a, b) => a[0] - b[0]);\n        const [d, u] = pq.shift();\n        if (dist[u] !== -1) continue;\n        dist[u] = d;\n        count++;\n        maxDist = Math.max(maxDist, d);\n        for (const [w, v] of adj[u]) {\n            if (dist[v] === -1) pq.push([d + w, v]);\n        }\n    }\n    return count === n ? maxDist : -1;\n};",
+      "approach": "Dijkstra shortest path algorithm with min-heap priority collection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

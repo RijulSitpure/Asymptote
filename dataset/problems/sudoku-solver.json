@@ -1,0 +1,78 @@
+{
+  "slug": "sudoku-solver",
+  "number": 37,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-grid-dfs"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Constraint Satisfaction Obstacle",
+      "text": "With up to 81 cells, brute force testing 9^empty configurations is impossible. How can validating row, column, and 3x3 box constraints after each digit placement prune invalid boards immediately?"
+    },
+    {
+      "level": 2,
+      "title": "Row Column Box Triplet Invariant",
+      "text": "A digit d in cell (r, c) is valid if and only if d does not already exist in row r, column c, or the 3x3 block containing (r, c)."
+    },
+    {
+      "level": 3,
+      "title": "Cell-by-Cell Backtracking Procedure",
+      "text": "Scan for the next empty cell '.'. If none remains, return true. Try digits '1' through '9'. If the digit is valid in its row, column, and 3x3 subgrid, assign it and recurse. If the recursive call returns true, propagate true; otherwise reset the cell back to '.' and continue."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def solveSudoku(self, board: List[List[str]]) -> None:\n        def is_valid(r: int, c: int, ch: str) -> bool:\n            for i in range(9):\n                if board[r][i] == ch or board[i][c] == ch:\n                    return False\n                br, bc = 3 * (r // 3) + i // 3, 3 * (c // 3) + i % 3\n                if board[br][bc] == ch:\n                    return False\n            return True\n        def solve() -> bool:\n            for r in range(9):\n                for c in range(9):\n                    if board[r][c] == '.':\n                        for ch in '123456789':\n                            if is_valid(r, c, ch):\n                                board[r][c] = ch\n                                if solve():\n                                    return True\n                                board[r][c] = '.'\n                        return False\n            return True\n        solve()\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(9^(E))",
+    "space": "O(E)",
+    "variables": [
+      "E: number of empty cells on 9x9 board (E <= 81)"
+    ],
+    "notes": "Constraint propagation and early termination prune the search space drastically in practice.",
+    "whyNaiveFails": "Exponential permutation of 81 cells exceeds computable time limits without constraint checking.",
+    "spaceTimeTradeoff": "Recursion depth equals at most the number of empty cells E.",
+    "interviewerExpectation": "In-place board mutation and correct 3x3 subgrid coordinate mapping."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def solveSudoku(self, board: List[List[str]]) -> None:\n        def is_valid(r: int, c: int, ch: str) -> bool:\n            for i in range(9):\n                if board[r][i] == ch or board[i][c] == ch:\n                    return False\n                br, bc = 3 * (r // 3) + i // 3, 3 * (c // 3) + i % 3\n                if board[br][bc] == ch:\n                    return False\n            return True\n        def solve() -> bool:\n            for r in range(9):\n                for c in range(9):\n                    if board[r][c] == '.':\n                        for ch in '123456789':\n                            if is_valid(r, c, ch):\n                                board[r][c] = ch\n                                if solve():\n                                    return True\n                                board[r][c] = '.'\n                        return False\n            return True\n        solve()",
+      "approach": "Cell-by-cell backtracking with 3-way constraint validation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    void solveSudoku(vector<vector<char>>& board) {\n        auto isValid = [&](int r, int c, char ch) -> bool {\n            for (int i = 0; i < 9; ++i) {\n                if (board[r][i] == ch || board[i][c] == ch) return false;\n                int br = 3 * (r / 3) + i / 3;\n                int bc = 3 * (c / 3) + i % 3;\n                if (board[br][bc] == ch) return false;\n            }\n            return true;\n        };\n        auto solve = [&](auto& self) -> bool {\n            for (int r = 0; r < 9; ++r) {\n                for (int c = 0; c < 9; ++c) {\n                    if (board[r][c] == '.') {\n                        for (char ch = '1'; ch <= '9'; ++ch) {\n                            if (isValid(r, c, ch)) {\n                                board[r][c] = ch;\n                                if (self(self)) return true;\n                                board[r][c] = '.';\n                            }\n                        }\n                        return false;\n                    }\n                }\n            }\n            return true;\n        };\n        solve(solve);\n    }\n};",
+      "approach": "Cell-by-cell backtracking with 3-way constraint validation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public void solveSudoku(char[][] board) {\n        solve(board);\n    }\n    private boolean solve(char[][] board) {\n        for (int r = 0; r < 9; r++) {\n            for (int c = 0; c < 9; c++) {\n                if (board[r][c] == '.') {\n                    for (char ch = '1'; ch <= '9'; ch++) {\n                        if (isValid(board, r, c, ch)) {\n                            board[r][c] = ch;\n                            if (solve(board)) return true;\n                            board[r][c] = '.';\n                        }\n                    }\n                    return false;\n                }\n            }\n        }\n        return true;\n    }\n    private boolean isValid(char[][] board, int r, int c, char ch) {\n        for (int i = 0; i < 9; i++) {\n            if (board[r][i] == ch || board[i][c] == ch) return false;\n            int br = 3 * (r / 3) + i / 3;\n            int bc = 3 * (c / 3) + i % 3;\n            if (board[br][bc] == ch) return false;\n        }\n        return true;\n    }\n}",
+      "approach": "Cell-by-cell backtracking with 3-way constraint validation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var solveSudoku = function(board) {\n    function isValid(r, c, ch) {\n        for (let i = 0; i < 9; i++) {\n            if (board[r][i] === ch || board[i][c] === ch) return false;\n            const br = 3 * Math.floor(r / 3) + Math.floor(i / 3);\n            const bc = 3 * Math.floor(c / 3) + (i % 3);\n            if (board[br][bc] === ch) return false;\n        }\n        return true;\n    }\n    function solve() {\n        for (let r = 0; r < 9; r++) {\n            for (let c = 0; c < 9; c++) {\n                if (board[r][c] === '.') {\n                    for (let d = 1; d <= 9; d++) {\n                        const ch = String(d);\n                        if (isValid(r, c, ch)) {\n                            board[r][c] = ch;\n                            if (solve()) return true;\n                            board[r][c] = '.';\n                        }\n                    }\n                    return false;\n                }\n            }\n        }\n        return true;\n    }\n    solve();\n};",
+      "approach": "Cell-by-cell backtracking with 3-way constraint validation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

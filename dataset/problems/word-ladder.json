@@ -1,0 +1,79 @@
+{
+  "slug": "word-ladder",
+  "number": 127,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Word Graph Shortest Path Obstacle",
+      "text": "Finding the shortest transformation sequence by comparing every pair of words takes O(N^2 * L) time, which times out on thousands of words. How can generating 26 single-letter mutations locate neighbors in O(26 * L) per word?"
+    },
+    {
+      "level": 2,
+      "title": "Bidirectional Boundary Wave Invariant",
+      "text": "Expanding from the smaller frontier towards the other frontier minimizes the branching exponent, stopping as soon as the forward and backward frontiers intersect."
+    },
+    {
+      "level": 3,
+      "title": "Two-End Frontier Expansion Procedure",
+      "text": "Convert wordList into a set. If endWord is absent, return 0. Maintain two frontiers: begin_set containing beginWord and end_set containing endWord. At each step, expand the smaller set: for each word, mutate each character with all 26 lowercase letters. If mutated word is in opposite set, return step count + 1. If in word set, record in next set and remove from word set."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def ladderLength(self, beginWord: str, endWord: str, wordList: List[str]) -> int:\n        word_set = set(wordList)\n        if endWord not in word_set:\n            return 0\n        begin_set = {beginWord}\n        end_set = {endWord}\n        length = 1\n        while begin_set and end_set:\n            if len(begin_set) > len(end_set):\n                begin_set, end_set = end_set, begin_set\n            next_set = set()\n            for word in begin_set:\n                for i in range(len(word)):\n                    for c in 'abcdefghijklmnopqrstuvwxyz':\n                        next_word = word[:i] + c + word[i+1:]\n                        if next_word in end_set:\n                            return length + 1\n                        if next_word in word_set:\n                            next_set.add(next_word)\n                            word_set.remove(next_word)\n            begin_set = next_set\n            length += 1\n        return 0\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * L * 26)",
+    "space": "O(N * L)",
+    "variables": [
+      "N: number of words in wordList (1 <= N <= 5000)",
+      "L: length of each word (1 <= L <= 10)"
+    ],
+    "notes": "Bidirectional expansion limits explored vertices to O(b^(d/2)) where b is the branching factor.",
+    "whyNaiveFails": "Building an explicit adjacency graph via pairwise word comparisons takes quadratic time.",
+    "spaceTimeTradeoff": "Set membership achieves constant-time string lookup at the cost of O(N * L) space.",
+    "interviewerExpectation": "Using bidirectional frontier swapping to dramatically reduce expansion branching factor."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def ladderLength(self, beginWord: str, endWord: str, wordList: List[str]) -> int:\n        word_set = set(wordList)\n        if endWord not in word_set:\n            return 0\n        begin_set = {beginWord}\n        end_set = {endWord}\n        length = 1\n        while begin_set and end_set:\n            if len(begin_set) > len(end_set):\n                begin_set, end_set = end_set, begin_set\n            next_set = set()\n            for word in begin_set:\n                for i in range(len(word)):\n                    for c in 'abcdefghijklmnopqrstuvwxyz':\n                        next_word = word[:i] + c + word[i+1:]\n                        if next_word in end_set:\n                            return length + 1\n                        if next_word in word_set:\n                            next_set.add(next_word)\n                            word_set.remove(next_word)\n            begin_set = next_set\n            length += 1\n        return 0",
+      "approach": "Bidirectional frontier expansion with 26-character mutations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int ladderLength(string beginWord, string endWord, vector<string>& wordList) {\n        unordered_set<string> wordSet(wordList.begin(), wordList.end());\n        if (!wordSet.count(endWord)) return 0;\n        unordered_set<string> beginSet{beginWord}, endSet{endWord};\n        int length = 1;\n        while (!beginSet.empty() && !endSet.empty()) {\n            if (beginSet.size() > endSet.size()) swap(beginSet, endSet);\n            unordered_set<string> nextSet;\n            for (string word : beginSet) {\n                for (int i = 0; i < (int)word.size(); ++i) {\n                    char original = word[i];\n                    for (char c = 'a'; c <= 'z'; ++c) {\n                        word[i] = c;\n                        if (endSet.count(word)) return length + 1;\n                        if (wordSet.count(word)) {\n                            nextSet.insert(word);\n                            wordSet.erase(word);\n                        }\n                    }\n                    word[i] = original;\n                }\n            }\n            beginSet = move(nextSet);\n            ++length;\n        }\n        return 0;\n    }\n};",
+      "approach": "Bidirectional frontier expansion with 26-character mutations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int ladderLength(String beginWord, String endWord, List<String> wordList) {\n        Set<String> wordSet = new HashSet<>(wordList);\n        if (!wordSet.contains(endWord)) return 0;\n        Set<String> beginSet = new HashSet<>();\n        Set<String> endSet = new HashSet<>();\n        beginSet.add(beginWord);\n        endSet.add(endWord);\n        int length = 1;\n        while (!beginSet.isEmpty() && !endSet.isEmpty()) {\n            if (beginSet.size() > endSet.size()) {\n                Set<String> tmp = beginSet;\n                beginSet = endSet;\n                endSet = tmp;\n            }\n            Set<String> nextSet = new HashSet<>();\n            for (String word : beginSet) {\n                char[] chs = word.toCharArray();\n                for (int i = 0; i < chs.length; i++) {\n                    char orig = chs[i];\n                    for (char c = 'a'; c <= 'z'; c++) {\n                        chs[i] = c;\n                        String nextWord = new String(chs);\n                        if (endSet.contains(nextWord)) return length + 1;\n                        if (wordSet.contains(nextWord)) {\n                            nextSet.add(nextWord);\n                            wordSet.remove(nextWord);\n                        }\n                    }\n                    chs[i] = orig;\n                }\n            }\n            beginSet = nextSet;\n            length++;\n        }\n        return 0;\n    }\n}",
+      "approach": "Bidirectional frontier expansion with 26-character mutations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var ladderLength = function(beginWord, endWord, wordList) {\n    const wordSet = new Set(wordList);\n    if (!wordSet.has(endWord)) return 0;\n    let beginSet = new Set([beginWord]);\n    let endSet = new Set([endWord]);\n    let length = 1;\n    while (beginSet.size > 0 && endSet.size > 0) {\n        if (beginSet.size > endSet.size) {\n            const tmp = beginSet;\n            beginSet = endSet;\n            endSet = tmp;\n        }\n        const nextSet = new Set();\n        for (const word of beginSet) {\n            for (let i = 0; i < word.length; i++) {\n                for (let code = 97; code <= 122; code++) {\n                    const c = String.fromCharCode(code);\n                    const nextWord = word.slice(0, i) + c + word.slice(i + 1);\n                    if (endSet.has(nextWord)) return length + 1;\n                    if (wordSet.has(nextWord)) {\n                        nextSet.add(nextWord);\n                        wordSet.delete(nextWord);\n                    }\n                }\n            }\n        }\n        beginSet = nextSet;\n        length++;\n    }\n    return 0;\n};",
+      "approach": "Bidirectional frontier expansion with 26-character mutations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

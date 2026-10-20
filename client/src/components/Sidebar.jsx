@@ -18,12 +18,12 @@ export function Sidebar({
 
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-    { id: 'roadmap', label: 'Curriculum', icon: GraduationCap },
     { id: 'queue', label: 'Review', icon: RotateCcw, badge: queueCount > 0 ? `${queueCount}` : null },
     { id: 'patterns', label: 'Patterns', icon: Compass },
     { id: 'solver', label: 'Solver', icon: Lightbulb },
     { id: 'wizard', label: 'Pattern finder', icon: Sparkles },
     { id: 'solved', label: 'Solved', icon: CheckCircle2, badge: totalSolved > 0 ? `${totalSolved}` : null },
+    { id: 'roadmap', label: 'Curriculum', icon: GraduationCap },
   ];
 
   const username = stats?.username || 'Rijul-Sitpure';

@@ -1,0 +1,79 @@
+{
+  "slug": "critical-connections-in-a-network",
+  "number": 1192,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Biconnectivity and Bridge Discovery Obstacle",
+      "text": "A connection is critical if removing it disconnects the network, meaning it belongs to no cycle. How can recording entry timestamps and the lowest reachable discovery step in a recursive walk detect such bridge edges?"
+    },
+    {
+      "level": 2,
+      "title": "Back-Edge Ancestor Reachability Invariant",
+      "text": "An edge (u, v) is a bridge if and only if no back-edge from the subtree of v can reach u or any ancestor of u."
+    },
+    {
+      "level": 3,
+      "title": "Tarjan Low-Link Bridge Detection Procedure",
+      "text": "Track discovery time and the lowest reachable time for every vertex during traversal. For each unvisited neighbor v of u, recurse on v and update the lowest reachable time of u with that of v. If the lowest reachable time of v remains strictly greater than the discovery time of u, then edge (u, v) has no alternative path back to u or its ancestors, so record it as a bridge."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def criticalConnections(self, n: int, connections: List[List[int]]) -> List[List[int]]:\n        adj = [[] for _ in range(n)]\n        for u, v in connections:\n            adj[u].append(v)\n            adj[v].append(u)\n        tin = [-1] * n\n        low = [-1] * n\n        timer = 0\n        bridges = []\n        def dfs(u, p):\n            nonlocal timer\n            tin[u] = low[u] = timer\n            timer += 1\n            for v in adj[u]:\n                if v == p:\n                    continue\n                if tin[v] != -1:\n                    low[u] = min(low[u], tin[v])\n                else:\n                    dfs(v, u)\n                    low[u] = min(low[u], low[v])\n                    if low[v] > tin[u]:\n                        bridges.append([u, v])\n        dfs(0, -1)\n        return bridges\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of servers n",
+      "E: number of connections"
+    ],
+    "notes": "Tarjan bridge algorithm visits every vertex and explores each undirected edge exactly twice.",
+    "whyNaiveFails": "Simulating edge removal one by one takes O(E * (V + E)) which causes TLE for 10^5 edges.",
+    "spaceTimeTradeoff": "Adjacency lists and timing arrays require O(V + E) memory.",
+    "interviewerExpectation": "Implementing Tarjan low-link bridge finding algorithm in a single linear pass."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def criticalConnections(self, n: int, connections: List[List[int]]) -> List[List[int]]:\n        adj = [[] for _ in range(n)]\n        for u, v in connections:\n            adj[u].append(v)\n            adj[v].append(u)\n        tin = [-1] * n\n        low = [-1] * n\n        timer = 0\n        bridges = []\n        def dfs(u, p):\n            nonlocal timer\n            tin[u] = low[u] = timer\n            timer += 1\n            for v in adj[u]:\n                if v == p:\n                    continue\n                if tin[v] != -1:\n                    low[u] = min(low[u], tin[v])\n                else:\n                    dfs(v, u)\n                    low[u] = min(low[u], low[v])\n                    if low[v] > tin[u]:\n                        bridges.append([u, v])\n        dfs(0, -1)\n        return bridges",
+      "approach": "Tarjan low-link discovery time DFS bridge detection algorithm",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<vector<int>> criticalConnections(int n, vector<vector<int>>& connections) {\n        vector<vector<int>> adj(n);\n        for (const auto& c : connections) {\n            adj[c[0]].push_back(c[1]);\n            adj[c[1]].push_back(c[0]);\n        }\n        vector<int> tin(n, -1), low(n, -1);\n        int timer = 0;\n        vector<vector<int>> bridges;\n        auto dfs = [&](auto self, int u, int p) -> void {\n            tin[u] = low[u] = timer++;\n            for (int v : adj[u]) {\n                if (v == p) continue;\n                if (tin[v] != -1) {\n                    low[u] = min(low[u], tin[v]);\n                } else {\n                    self(self, v, u);\n                    low[u] = min(low[u], low[v]);\n                    if (low[v] > tin[u]) {\n                        bridges.push_back({u, v});\n                    }\n                }\n            }\n        };\n        dfs(dfs, 0, -1);\n        return bridges;\n    }\n};",
+      "approach": "Tarjan low-link discovery time DFS bridge detection algorithm",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int timer = 0;\n    public List<List<Integer>> criticalConnections(int n, List<List<Integer>> connections) {\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (List<Integer> c : connections) {\n            adj.get(c.get(0)).add(c.get(1));\n            adj.get(c.get(1)).add(c.get(0));\n        }\n        int[] tin = new int[n];\n        int[] low = new int[n];\n        Arrays.fill(tin, -1);\n        Arrays.fill(low, -1);\n        List<List<Integer>> bridges = new ArrayList<>();\n        dfs(0, -1, adj, tin, low, bridges);\n        return bridges;\n    }\n    private void dfs(int u, int p, List<List<Integer>> adj, int[] tin, int[] low, List<List<Integer>> bridges) {\n        tin[u] = low[u] = timer++;\n        for (int v : adj.get(u)) {\n            if (v == p) continue;\n            if (tin[v] != -1) {\n                low[u] = Math.min(low[u], tin[v]);\n            } else {\n                dfs(v, u, adj, tin, low, bridges);\n                low[u] = Math.min(low[u], low[v]);\n                if (low[v] > tin[u]) {\n                    bridges.add(Arrays.asList(u, v));\n                }\n            }\n        }\n    }\n}",
+      "approach": "Tarjan low-link discovery time DFS bridge detection algorithm",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var criticalConnections = function(n, connections) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of connections) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const tin = new Array(n).fill(-1);\n    const low = new Array(n).fill(-1);\n    let timer = 0;\n    const bridges = [];\n    const dfs = (u, p) => {\n        tin[u] = low[u] = timer++;\n        for (const v of adj[u]) {\n            if (v === p) continue;\n            if (tin[v] !== -1) {\n                low[u] = Math.min(low[u], tin[v]);\n            } else {\n                dfs(v, u);\n                low[u] = Math.min(low[u], low[v]);\n                if (low[v] > tin[u]) {\n                    bridges.push([u, v]);\n                }\n            }\n        }\n    };\n    dfs(0, -1);\n    return bridges;\n};",
+      "approach": "Tarjan low-link discovery time DFS bridge detection algorithm",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

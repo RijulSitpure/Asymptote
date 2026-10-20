@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-height-trees",
+  "number": 310,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tree Centroid Convergence Obstacle",
+      "text": "A tree has at most two centroids that minimize root-to-leaf path length. Finding them by testing every node is inefficient. How can trimming boundary extremities layer by layer converge to the geometric center?"
+    },
+    {
+      "level": 2,
+      "title": "Centroid Degree-One Trimming Invariant",
+      "text": "Centroids lie at the midpoint of the longest tree diameter. Removing all current nodes with degree one preserves the central nodes until at most two remain."
+    },
+    {
+      "level": 3,
+      "title": "Leaf Elimination Inward Pruning Procedure",
+      "text": "If n <= 2, return all nodes directly. Build an adjacency structure and locate all nodes with degree 1. Repeatedly peel off degree 1 nodes layer by layer, updating degrees and isolating new degree 1 nodes until two or fewer nodes remain. Return those remaining nodes."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def findMinHeightTrees(self, n: int, edges: List[List[int]]) -> List[int]:\n        if n <= 2:\n            return list(range(n))\n        adj = [set() for _ in range(n)]\n        for u, v in edges:\n            adj[u].add(v)\n            adj[v].add(u)\n        leaves = [i for i in range(n) if len(adj[i]) == 1]\n        remaining = n\n        while remaining > 2:\n            remaining -= len(leaves)\n            new_leaves = []\n            for leaf in leaves:\n                neighbor = adj[leaf].pop()\n                adj[neighbor].remove(leaf)\n                if len(adj[neighbor]) == 1:\n                    new_leaves.append(neighbor)\n            leaves = new_leaves\n        return leaves\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V)",
+    "space": "O(V)",
+    "variables": [
+      "V: number of nodes n",
+      "E: V - 1 tree edges"
+    ],
+    "notes": "Each vertex and edge is removed at most once during leaf trimming.",
+    "whyNaiveFails": "Running path calculations from every vertex takes O(V^2) time.",
+    "spaceTimeTradeoff": "Adjacency sets and leaves buffers consume linear space O(V).",
+    "interviewerExpectation": "Recognizing that any tree has either 1 or 2 centroids and trimming leaves inwards."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def findMinHeightTrees(self, n: int, edges: List[List[int]]) -> List[int]:\n        if n <= 2:\n            return list(range(n))\n        adj = [set() for _ in range(n)]\n        for u, v in edges:\n            adj[u].add(v)\n            adj[v].add(u)\n        leaves = [i for i in range(n) if len(adj[i]) == 1]\n        remaining = n\n        while remaining > 2:\n            remaining -= len(leaves)\n            new_leaves = []\n            for leaf in leaves:\n                neighbor = adj[leaf].pop()\n                adj[neighbor].remove(leaf)\n                if len(adj[neighbor]) == 1:\n                    new_leaves.append(neighbor)\n            leaves = new_leaves\n        return leaves",
+      "approach": "Leaf trimming topological peel to isolate tree centroids",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> findMinHeightTrees(int n, vector<vector<int>>& edges) {\n        if (n <= 2) {\n            vector<int> res(n);\n            iota(res.begin(), res.end(), 0);\n            return res;\n        }\n        vector<unordered_set<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].insert(e[1]);\n            adj[e[1]].insert(e[0]);\n        }\n        vector<int> leaves;\n        for (int i = 0; i < n; ++i) {\n            if (adj[i].size() == 1) leaves.push_back(i);\n        }\n        int remaining = n;\n        while (remaining > 2) {\n            remaining -= leaves.size();\n            vector<int> newLeaves;\n            for (int leaf : leaves) {\n                int neighbor = *adj[leaf].begin();\n                adj[neighbor].erase(leaf);\n                if (adj[neighbor].size() == 1) newLeaves.push_back(neighbor);\n            }\n            leaves = move(newLeaves);\n        }\n        return leaves;\n    }\n};",
+      "approach": "Leaf trimming topological peel to isolate tree centroids",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<Integer> findMinHeightTrees(int n, int[][] edges) {\n        if (n <= 2) {\n            List<Integer> res = new ArrayList<>();\n            for (int i = 0; i < n; i++) res.add(i);\n            return res;\n        }\n        List<Set<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new HashSet<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        List<Integer> leaves = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            if (adj.get(i).size() == 1) leaves.add(i);\n        }\n        int remaining = n;\n        while (remaining > 2) {\n            remaining -= leaves.size();\n            List<Integer> newLeaves = new ArrayList<>();\n            for (int leaf : leaves) {\n                int neighbor = adj.get(leaf).iterator().next();\n                adj.get(neighbor).remove(leaf);\n                if (adj.get(neighbor).size() == 1) newLeaves.add(neighbor);\n            }\n            leaves = newLeaves;\n        }\n        return leaves;\n    }\n}",
+      "approach": "Leaf trimming topological peel to isolate tree centroids",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findMinHeightTrees = function(n, edges) {\n    if (n <= 2) {\n        return Array.from({ length: n }, (_, i) => i);\n    }\n    const adj = Array.from({ length: n }, () => new Set());\n    for (const [u, v] of edges) {\n        adj[u].add(v);\n        adj[v].add(u);\n    }\n    let leaves = [];\n    for (let i = 0; i < n; i++) {\n        if (adj[i].size === 1) leaves.push(i);\n    }\n    let remaining = n;\n    while (remaining > 2) {\n        remaining -= leaves.length;\n        const newLeaves = [];\n        for (const leaf of leaves) {\n            const neighbor = adj[leaf].values().next().value;\n            adj[neighbor].delete(leaf);\n            if (adj[neighbor].size === 1) newLeaves.push(neighbor);\n        }\n        leaves = newLeaves;\n    }\n    return leaves;\n};",
+      "approach": "Leaf trimming topological peel to isolate tree centroids",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

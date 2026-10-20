@@ -1,0 +1,80 @@
+{
+  "slug": "alien-dictionary",
+  "number": 269,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Lexicographical Comparison Obstacle",
+      "text": "Deriving an alphabet ordering from a sorted dictionary requires comparing adjacent words to discover precedence pairs. How can pairwise character relations sequence unique symbols while spotting prefix violations or cycles?"
+    },
+    {
+      "level": 2,
+      "title": "Prefix Order and Precedence Invariant",
+      "text": "Adjacent word comparison isolates the first differing character as a directed precedence rule. An earlier word cannot be strictly longer than a subsequent word if it matches its full prefix."
+    },
+    {
+      "level": 3,
+      "title": "Topological Character Order Procedure",
+      "text": "Build a directed graph for all unique characters by inspecting the first differing letter between adjacent words. Tally incoming edges. Process characters with zero incoming edges, decrementing outgoing targets. If all unique characters are processed, return the joined string, else return an empty string."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def alienOrder(self, words: List[str]) -> str:\n        from collections import deque\n        adj = {c: set() for w in words for c in w}\n        indegree = {c: 0 for c in adj}\n        for i in range(len(words) - 1):\n            w1, w2 = words[i], words[i + 1]\n            min_len = min(len(w1), len(w2))\n            if len(w1) > len(w2) and w1[:min_len] == w2[:min_len]:\n                return \"\"\n            for j in range(min_len):\n                if w1[j] != w2[j]:\n                    if w2[j] not in adj[w1[j]]:\n                        adj[w1[j]].add(w2[j])\n                        indegree[w2[j]] += 1\n                    break\n        q = deque([c for c, d in indegree.items() if d == 0])\n        res = []\n        while q:\n            c = q.popleft()\n            res.append(c)\n            for nxt in adj[c]:\n                indegree[nxt] -= 1\n                if indegree[nxt] == 0:\n                    q.append(nxt)\n        return \"\".join(res) if len(res) == len(indegree) else \"\"\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(C)",
+    "space": "O(U + min(U^2, N))",
+    "variables": [
+      "C: total length of all words combined",
+      "U: number of unique characters (at most 26)",
+      "N: number of words"
+    ],
+    "notes": "Prefix checking and edge generation scan words once; topological sort processes at most 26 vertices.",
+    "whyNaiveFails": "Generating all character permutations takes 26! which is impossible.",
+    "spaceTimeTradeoff": "Adjacency set and indegree hash maps occupy constant bounded space for lowercase letters.",
+    "interviewerExpectation": "Handling the invalid prefix case (e.g. ['abc', 'ab']) and cycle detection."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def alienOrder(self, words: List[str]) -> str:\n        from collections import deque\n        adj = {c: set() for w in words for c in w}\n        indegree = {c: 0 for c in adj}\n        for i in range(len(words) - 1):\n            w1, w2 = words[i], words[i + 1]\n            min_len = min(len(w1), len(w2))\n            if len(w1) > len(w2) and w1[:min_len] == w2[:min_len]:\n                return \"\"\n            for j in range(min_len):\n                if w1[j] != w2[j]:\n                    if w2[j] not in adj[w1[j]]:\n                        adj[w1[j]].add(w2[j])\n                        indegree[w2[j]] += 1\n                    break\n        q = deque([c for c, d in indegree.items() if d == 0])\n        res = []\n        while q:\n            c = q.popleft()\n            res.append(c)\n            for nxt in adj[c]:\n                indegree[nxt] -= 1\n                if indegree[nxt] == 0:\n                    q.append(nxt)\n        return \"\".join(res) if len(res) == len(indegree) else \"\"",
+      "approach": "Pairwise word comparison graph construction and Kahn topological sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    string alienOrder(vector<string>& words) {\n        unordered_map<char, unordered_set<char>> adj;\n        unordered_map<char, int> indegree;\n        for (const string& w : words) {\n            for (char c : w) {\n                if (!indegree.count(c)) {\n                    indegree[c] = 0;\n                    adj[c] = unordered_set<char>();\n                }\n            }\n        }\n        for (size_t i = 0; i + 1 < words.size(); ++i) {\n            const string& w1 = words[i];\n            const string& w2 = words[i + 1];\n            size_t minLen = min(w1.size(), w2.size());\n            if (w1.size() > w2.size() && w1.substr(0, minLen) == w2.substr(0, minLen)) {\n                return \"\";\n            }\n            for (size_t j = 0; j < minLen; ++j) {\n                if (w1[j] != w2[j]) {\n                    if (!adj[w1[j]].count(w2[j])) {\n                        adj[w1[j]].insert(w2[j]);\n                        indegree[w2[j]]++;\n                    }\n                    break;\n                }\n            }\n        }\n        queue<char> q;\n        for (const auto& pair : indegree) {\n            if (pair.second == 0) q.push(pair.first);\n        }\n        string res = \"\";\n        while (!q.empty()) {\n            char c = q.front();\n            q.pop();\n            res += c;\n            for (char nxt : adj[c]) {\n                if (--indegree[nxt] == 0) q.push(nxt);\n            }\n        }\n        return res.size() == indegree.size() ? res : \"\";\n    }\n};",
+      "approach": "Pairwise word comparison graph construction and Kahn topological sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public String alienOrder(String[] words) {\n        Map<Character, Set<Character>> adj = new HashMap<>();\n        Map<Character, Integer> indegree = new HashMap<>();\n        for (String w : words) {\n            for (char c : w.toCharArray()) {\n                adj.putIfAbsent(c, new HashSet<>());\n                indegree.putIfAbsent(c, 0);\n            }\n        }\n        for (int i = 0; i < words.length - 1; i++) {\n            String w1 = words[i], w2 = words[i + 1];\n            int minLen = Math.min(w1.length(), w2.length());\n            if (w1.length() > w2.length() && w1.startsWith(w2)) return \"\";\n            for (int j = 0; j < minLen; j++) {\n                char c1 = w1.charAt(j), c2 = w2.charAt(j);\n                if (c1 != c2) {\n                    if (adj.get(c1).add(c2)) {\n                        indegree.put(c2, indegree.get(c2) + 1);\n                    }\n                    break;\n                }\n            }\n        }\n        Queue<Character> q = new ArrayDeque<>();\n        for (char c : indegree.keySet()) {\n            if (indegree.get(c) == 0) q.add(c);\n        }\n        StringBuilder sb = new StringBuilder();\n        while (!q.isEmpty()) {\n            char c = q.poll();\n            sb.append(c);\n            for (char next : adj.get(c)) {\n                int deg = indegree.get(next) - 1;\n                indegree.put(next, deg);\n                if (deg == 0) q.add(next);\n            }\n        }\n        return sb.length() == indegree.size() ? sb.toString() : \"\";\n    }\n}",
+      "approach": "Pairwise word comparison graph construction and Kahn topological sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var alienOrder = function(words) {\n    const adj = new Map();\n    const indegree = new Map();\n    for (const w of words) {\n        for (const c of w) {\n            if (!adj.has(c)) adj.set(c, new Set());\n            if (!indegree.has(c)) indegree.set(c, 0);\n        }\n    }\n    for (let i = 0; i < words.length - 1; i++) {\n        const w1 = words[i], w2 = words[i + 1];\n        const minLen = Math.min(w1.length(), w2.length());\n        if (w1.length() > w2.length() && w1.slice(0, minLen) === w2.slice(0, minLen)) {\n            return \"\";\n        }\n        for (let j = 0; j < minLen; j++) {\n            if (w1[j] !== w2[j]) {\n                if (!adj.get(w1[j]).has(w2[j])) {\n                    adj.get(w1[j]).add(w2[j]);\n                    indegree.set(w2[j], indegree.get(w2[j]) + 1);\n                }\n                break;\n            }\n        }\n    }\n    const q = [];\n    for (const [c, deg] of indegree.entries()) {\n        if (deg === 0) q.push(c);\n    }\n    const res = [];\n    let head = 0;\n    while (head < q.length) {\n        const c = q[head++];\n        res.push(c);\n        for (const next of adj.get(c)) {\n            const deg = indegree.get(next) - 1;\n            indegree.set(next, deg);\n            if (deg === 0) q.push(next);\n        }\n    }\n    return res.length === indegree.size ? res.join(\"\") : \"\";\n};",
+      "approach": "Pairwise word comparison graph construction and Kahn topological sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

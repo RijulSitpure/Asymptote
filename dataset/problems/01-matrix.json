@@ -1,0 +1,79 @@
+{
+  "slug": "01-matrix",
+  "number": 542,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-multi-source-bfs"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Multi-Source Distance Diffusion Obstacle",
+      "text": "Computing distance to the nearest 0 by searching outward from every 1 cell repeats paths across identical subgrids. How can multi-source propagation starting from all 0 cells determine minimum distances simultaneously?"
+    },
+    {
+      "level": 2,
+      "title": "Wavefront Layer Monotonicity Invariant",
+      "text": "All 0 cells have distance 0. Expanding simultaneously layer by layer guarantees that any cell reached at wave step d receives its minimal distance d."
+    },
+    {
+      "level": 3,
+      "title": "Multi-Source Wave Queue Procedure",
+      "text": "Initialize a distance matrix dist with -1. Enqueue all coordinates with value 0, setting dist[r][c] = 0. While the queue has elements, pop (r, c). For each 4-directional neighbor (nr, nc): if within bounds and dist[nr][nc] == -1, set dist[nr][nc] = dist[r][c] + 1 and enqueue (nr, nc)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def updateMatrix(self, mat: List[List[int]]) -> List[List[int]]:\n        m, n = len(mat), len(mat[0])\n        from collections import deque\n        q = deque()\n        dist = [[-1] * n for _ in range(m)]\n        for r in range(m):\n            for c in range(n):\n                if mat[r][c] == 0:\n                    dist[r][c] = 0\n                    q.append((r, c))\n        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]\n        while q:\n            r, c = q.popleft()\n            for dr, dc in directions:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and dist[nr][nc] == -1:\n                    dist[nr][nc] = dist[r][c] + 1\n                    q.append((nr, nc))\n        return dist\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N)",
+    "space": "O(M * N)",
+    "variables": [
+      "M: matrix rows count (1 <= M <= 10^4)",
+      "N: matrix columns count (M * N <= 10^4)"
+    ],
+    "notes": "Every cell is enqueued and processed exactly once in linear time.",
+    "whyNaiveFails": "Searching outward from every 1 cell takes O((M * N)^2) time.",
+    "spaceTimeTradeoff": "Distance matrix and queue occupy O(M * N) auxiliary memory.",
+    "interviewerExpectation": "Using all 0 cells as the multi-source origin wave."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def updateMatrix(self, mat: List[List[int]]) -> List[List[int]]:\n        m, n = len(mat), len(mat[0])\n        from collections import deque\n        q = deque()\n        dist = [[-1] * n for _ in range(m)]\n        for r in range(m):\n            for c in range(n):\n                if mat[r][c] == 0:\n                    dist[r][c] = 0\n                    q.append((r, c))\n        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]\n        while q:\n            r, c = q.popleft()\n            for dr, dc in directions:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and dist[nr][nc] == -1:\n                    dist[nr][nc] = dist[r][c] + 1\n                    q.append((nr, nc))\n        return dist",
+      "approach": "Multi-source breadth-first expansion from all zero cells",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<vector<int>> updateMatrix(vector<vector<int>>& mat) {\n        int m = mat.size(), n = mat[0].size();\n        vector<vector<int>> dist(m, vector<int>(n, -1));\n        queue<pair<int, int>> q;\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (mat[r][c] == 0) {\n                    dist[r][c] = 0;\n                    q.push({r, c});\n                }\n            }\n        }\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!q.empty()) {\n            auto [r, c] = q.front(); q.pop();\n            for (auto& d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && dist[nr][nc] == -1) {\n                    dist[nr][nc] = dist[r][c] + 1;\n                    q.push({nr, nc});\n                }\n            }\n        }\n        return dist;\n    }\n};",
+      "approach": "Multi-source breadth-first expansion from all zero cells",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[][] updateMatrix(int[][] mat) {\n        int m = mat.length, n = mat[0].length;\n        int[][] dist = new int[m][n];\n        for (int[] row : dist) Arrays.fill(row, -1);\n        Queue<int[]> q = new LinkedList<>();\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                if (mat[r][c] == 0) {\n                    dist[r][c] = 0;\n                    q.add(new int[]{r, c});\n                }\n            }\n        }\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!q.isEmpty()) {\n            int[] cur = q.poll();\n            int r = cur[0], c = cur[1];\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && dist[nr][nc] == -1) {\n                    dist[nr][nc] = dist[r][c] + 1;\n                    q.add(new int[]{nr, nc});\n                }\n            }\n        }\n        return dist;\n    }\n}",
+      "approach": "Multi-source breadth-first expansion from all zero cells",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var updateMatrix = function(mat) {\n    const m = mat.length, n = mat[0].length;\n    const dist = Array.from({ length: m }, () => new Array(n).fill(-1));\n    const q = [];\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            if (mat[r][c] === 0) {\n                dist[r][c] = 0;\n                q.push([r, c]);\n            }\n        }\n    }\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    let head = 0;\n    while (head < q.length) {\n        const [r, c] = q[head++];\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && dist[nr][nc] === -1) {\n                dist[nr][nc] = dist[r][c] + 1;\n                q.push([nr, nc]);\n            }\n        }\n    }\n    return dist;\n};",
+      "approach": "Multi-source breadth-first expansion from all zero cells",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}
