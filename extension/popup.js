@@ -344,7 +344,7 @@ function renderPopupTabContent() {
             Reveal hint ${popupCurrentHintLevel + 1}: ${nextTitle}
           </button>
         ` : `
-          <div style="text-align:center; font-size:12px; color:#047857; font-weight:600; background:#f0fdf4; border:1px solid #a7f3d0; border-radius:8px; padding:8px; margin-top:8px;">
+          <div id="popup-all-hints-unlocked-banner" style="text-align:center; font-size:12px; color:#047857; font-weight:600; background:#f0fdf4; border:1px solid #a7f3d0; border-radius:8px; padding:8px; margin-top:8px; scroll-margin-bottom:24px;">
             All hints unlocked
           </div>
         `}
@@ -357,9 +357,12 @@ function renderPopupTabContent() {
         popupCurrentHintLevel++;
         renderPopupTabContent();
         setTimeout(() => {
-          const newlyUnlocked = document.getElementById(`popup-hint-card-${popupCurrentHintLevel}`) || document.getElementById('popup-reveal-hint-btn');
-          if (newlyUnlocked && typeof newlyUnlocked.scrollIntoView === 'function') {
-            newlyUnlocked.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          const nextActionBtn = document.getElementById('popup-reveal-hint-btn');
+          const allUnlockedEl = document.getElementById('popup-all-hints-unlocked-banner');
+          const newlyUnlocked = document.getElementById(`popup-hint-card-${popupCurrentHintLevel}`);
+          const targetEl = nextActionBtn || allUnlockedEl || newlyUnlocked;
+          if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
         }, 80);
       };

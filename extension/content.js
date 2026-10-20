@@ -554,6 +554,7 @@ function injectFloatingButtons() {
       overflow-y: auto;
       flex: 1;
       font-size: 13px;
+      scroll-behavior: smooth;
     }
     .drawer-body::-webkit-scrollbar {
       width: 5px;
@@ -644,6 +645,7 @@ function injectFloatingButtons() {
       cursor: pointer;
       text-align: center;
       transition: background 0.15s ease;
+      scroll-margin-bottom: 24px;
     }
     .btn-amber-reveal:hover {
       background-color: #d97706;
@@ -1144,7 +1146,7 @@ function renderDrawerTabContent() {
             Reveal hint ${currentLevel + 1}: ${nextGenericTitle}
           </button>
         ` : `
-          <div style="text-align:center; padding:12px; color:#047857; font-size:13px; font-weight:500; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px;">
+          <div id="all-hints-unlocked-banner" style="text-align:center; padding:12px; color:#047857; font-size:13px; font-weight:500; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; scroll-margin-bottom:24px;">
             All hints unlocked
           </div>
         `}
@@ -1157,9 +1159,12 @@ function renderDrawerTabContent() {
         currentLevel++;
         renderDrawerTabContent();
         setTimeout(() => {
-          const unlockedEl = shadow.getElementById(`hint-row-${currentLevel}`) || shadow.getElementById('btn-reveal-next');
-          if (unlockedEl && typeof unlockedEl.scrollIntoView === 'function') {
-            unlockedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          const nextActionBtn = shadow.getElementById('btn-reveal-next');
+          const allUnlockedEl = shadow.getElementById('all-hints-unlocked-banner');
+          const newlyUnlocked = shadow.getElementById(`hint-row-${currentLevel}`);
+          const targetEl = nextActionBtn || allUnlockedEl || newlyUnlocked;
+          if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
         }, 80);
       };
