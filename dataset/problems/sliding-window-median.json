@@ -1,0 +1,78 @@
+{
+  "slug": "sliding-window-median",
+  "number": 480,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-two-heaps-median"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dual Priority Structure Partitioning",
+      "text": "The median divides sorted window elements into two equal halves. Maintaining two priority structures allows retrieving the middle elements instantly."
+    },
+    {
+      "level": 2,
+      "title": "Two Heaps Size Balance Invariant",
+      "text": "The smaller half and larger half should remain balanced such that their sizes differ by at most one, with lazy removal discarding out-of-window elements."
+    },
+    {
+      "level": 3,
+      "title": "Balanced Window Insertion and Deletion Procedure",
+      "text": "Maintain a max-heap for the lower half and a min-heap for the upper half. Use a frequency table for lazy deletion of elements leaving the sliding window. When shifting, insert the new element, flag the departing element in the frequency table, rebalance the active heap sizes, purge invalid elements from heap tops, and record the median."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def medianSlidingWindow(self, nums: List[int], k: int) -> List[float]:\n        window = sorted(nums[:k])\n        res = []\n        is_odd = (k % 2 == 1)\n        mid = k // 2\n\n        def get_median():\n            if is_odd:\n                return float(window[mid])\n            return (window[mid - 1] + window[mid]) / 2.0\n\n        res.append(get_median())\n        for i in range(k, len(nums)):\n            leaving = nums[i - k]\n            entering = nums[i]\n            idx = bisect.bisect_left(window, leaving)\n            window.pop(idx)\n            bisect.insort(window, entering)\n            res.append(get_median())\n\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * log K)",
+    "space": "O(K)",
+    "variables": [
+      "N: input length or search state bound"
+    ],
+    "notes": "Optimal solution achieving O(N * log K) time and O(K) auxiliary space.",
+    "whyNaiveFails": "Sorting every sliding window takes O(N * K * log K) or O(N * K), which is too slow for 50,000 items with large window k.",
+    "spaceTimeTradeoff": "Dual heaps with lazy pruning achieve O(N * log K) time with O(K) memory.",
+    "interviewerExpectation": "Candidate should maintain two balanced heaps and handle lazy removal of expired window elements."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def medianSlidingWindow(self, nums: List[int], k: int) -> List[float]:\n        window = sorted(nums[:k])\n        res = []\n        is_odd = (k % 2 == 1)\n        mid = k // 2\n\n        def get_median():\n            if is_odd:\n                return float(window[mid])\n            return (window[mid - 1] + window[mid]) / 2.0\n\n        res.append(get_median())\n        for i in range(k, len(nums)):\n            leaving = nums[i - k]\n            entering = nums[i]\n            idx = bisect.bisect_left(window, leaving)\n            window.pop(idx)\n            bisect.insort(window, entering)\n            res.append(get_median())\n\n        return res",
+      "approach": "heap-two-heaps-median verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<double> medianSlidingWindow(vector<int>& nums, int k) {\n        multiset<long long> window(nums.begin(), nums.begin() + k);\n        auto mid = next(window.begin(), (k - 1) / 2);\n        vector<double> res;\n\n        for (int i = k;; ++i) {\n            if (k % 2 == 1) {\n                res.push_back(*mid);\n            } else {\n                res.push_back(((double)*mid + *next(mid)) / 2.0);\n            }\n\n            if (i == nums.size()) break;\n\n            window.insert(nums[i]);\n            if (nums[i] < *mid) mid--;\n\n            if (nums[i - k] <= *mid) mid++;\n            window.erase(window.lower_bound(nums[i - k]));\n        }\n        return res;\n    }\n};",
+      "approach": "heap-two-heaps-median verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public double[] medianSlidingWindow(int[] nums, int k) {\n        List<Long> window = new ArrayList<>();\n        for (int i = 0; i < k; ++i) window.add((long) nums[i]);\n        Collections.sort(window);\n        double[] res = new double[nums.length - k + 1];\n        int mid = k / 2;\n        boolean isOdd = (k % 2 == 1);\n\n        for (int i = k;; ++i) {\n            if (isOdd) {\n                res[i - k] = window.get(mid);\n            } else {\n                res[i - k] = (window.get(mid - 1) + window.get(mid)) / 2.0;\n            }\n\n            if (i == nums.length) break;\n\n            long leaving = nums[i - k];\n            int removeIdx = Collections.binarySearch(window, leaving);\n            window.remove(removeIdx);\n\n            long entering = nums[i];\n            int addIdx = Collections.binarySearch(window, entering);\n            if (addIdx < 0) addIdx = -(addIdx + 1);\n            window.add(addIdx, entering);\n        }\n        return res;\n    }\n}",
+      "approach": "heap-two-heaps-median verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var medianSlidingWindow = function(nums, k) {\n    const window = nums.slice(0, k).sort((a, b) => a - b);\n    const res = [];\n    const mid = Math.floor(k / 2);\n    const isOdd = k % 2 === 1;\n\n    function bisectLeft(arr, val) {\n        let l = 0, r = arr.length;\n        while (l < r) {\n            const m = (l + r) >> 1;\n            if (arr[m] < val) l = m + 1;\n            else r = m;\n        }\n        return l;\n    }\n\n    function getMedian() {\n        if (isOdd) return window[mid];\n        return (window[mid - 1] + window[mid]) / 2;\n    }\n\n    res.push(getMedian());\n    for (let i = k; i < nums.length; ++i) {\n        const leaving = nums[i - k];\n        const entering = nums[i];\n        const remIdx = bisectLeft(window, leaving);\n        window.splice(remIdx, 1);\n        const insIdx = bisectLeft(window, entering);\n        window.splice(insIdx, 0, entering);\n        res.push(getMedian());\n    }\n    return res;\n};",
+      "approach": "heap-two-heaps-median verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-students-taking-exam",
+  "number": 1349,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Row Seating Bit Encoding",
+      "text": "Classroom rows have at most eight desks. A bit sequence where set bits designate seated students neatly models any row configuration."
+    },
+    {
+      "level": 2,
+      "title": "Adjacent and Diagonal Sightline Invariants",
+      "text": "Students cannot sit next to each other in the same row, nor diagonally adjacent to students in the preceding row."
+    },
+    {
+      "level": 3,
+      "title": "Row by Row Submask DP Procedure",
+      "text": "For each row, filter broken seats into a valid seat mask. Enumerate every submask with no adjacent bits. Ensure no intersection with prev_mask shifted left or right by one. Advance row by row, adding the number of seated students to the optimal result of the next row. Return maximum students."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def maxStudents(self, seats: List[List[str]]) -> int:\n        m, n = len(seats), len(seats[0])\n        valid_masks = []\n        for r in range(m):\n            mask = 0\n            for c in range(n):\n                if seats[r][c] == '.':\n                    mask |= (1 << c)\n            valid_masks.append(mask)\n        memo = {}\n        def dfs(row, prev_mask):\n            if row == m:\n                return 0\n            state = (row, prev_mask)\n            if state in memo:\n                return memo[state]\n            ans = 0\n            row_mask = valid_masks[row]\n            sub = row_mask\n            while True:\n                if not (sub & (sub << 1)):\n                    if not (sub & (prev_mask << 1)) and not (sub & (prev_mask >> 1)):\n                        ans = max(ans, bin(sub).count('1') + dfs(row + 1, sub))\n                if sub == 0:\n                    break\n                sub = (sub - 1) & row_mask\n            memo[state] = ans\n            return ans\n        return dfs(0, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * 2^(2N))",
+    "space": "O(M * 2^N)",
+    "variables": [
+      "N: input size or search state bound"
+    ],
+    "notes": "Optimal solution achieving O(M * 2^(2N)) time and O(M * 2^N) auxiliary space.",
+    "whyNaiveFails": "Trying all seat configurations naively has 2^(m*n) states, which equals 2^64 in the worst case.",
+    "spaceTimeTradeoff": "Row-by-row bitmask DP stores O(m * 2^n) states and transitions in O(m * 2^(2n)) time.",
+    "interviewerExpectation": "Candidate should model seating constraints using bitwise shifts and submask enumeration per row."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maxStudents(self, seats: List[List[str]]) -> int:\n        m, n = len(seats), len(seats[0])\n        valid_masks = []\n        for r in range(m):\n            mask = 0\n            for c in range(n):\n                if seats[r][c] == '.':\n                    mask |= (1 << c)\n            valid_masks.append(mask)\n        memo = {}\n        def dfs(row, prev_mask):\n            if row == m:\n                return 0\n            state = (row, prev_mask)\n            if state in memo:\n                return memo[state]\n            ans = 0\n            row_mask = valid_masks[row]\n            sub = row_mask\n            while True:\n                if not (sub & (sub << 1)):\n                    if not (sub & (prev_mask << 1)) and not (sub & (prev_mask >> 1)):\n                        ans = max(ans, bin(sub).count('1') + dfs(row + 1, sub))\n                if sub == 0:\n                    break\n                sub = (sub - 1) & row_mask\n            memo[state] = ans\n            return ans\n        return dfs(0, 0)",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int memo[9][1 << 8];\n    int valid[9];\n    int dfs(int row, int prev_mask, int m, int n) {\n        if (row == m) return 0;\n        if (memo[row][prev_mask] != -1) return memo[row][prev_mask];\n        int ans = 0;\n        int row_mask = valid[row];\n        int sub = row_mask;\n        while (true) {\n            if (!(sub & (sub << 1))) {\n                if (!(sub & (prev_mask << 1)) && !(sub & (prev_mask >> 1))) {\n                    ans = max(ans, __builtin_popcount(sub) + dfs(row + 1, sub, m, n));\n                }\n            }\n            if (sub == 0) break;\n            sub = (sub - 1) & row_mask;\n        }\n        return memo[row][prev_mask] = ans;\n    }\npublic:\n    int maxStudents(vector<vector<char>>& seats) {\n        int m = seats.size(), n = seats[0].size();\n        memset(memo, -1, sizeof(memo));\n        for (int r = 0; r < m; ++r) {\n            int mask = 0;\n            for (int c = 0; c < n; ++c) {\n                if (seats[r][c] == '.') mask |= (1 << c);\n            }\n            valid[r] = mask;\n        }\n        return dfs(0, 0, m, n);\n    }\n};",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int[][] memo;\n    private int[] valid;\n    public int maxStudents(char[][] seats) {\n        int m = seats.length, n = seats[0].length;\n        memo = new int[m + 1][1 << n];\n        for (int[] row : memo) Arrays.fill(row, -1);\n        valid = new int[m];\n        for (int r = 0; r < m; ++r) {\n            int mask = 0;\n            for (int c = 0; c < n; ++c) {\n                if (seats[r][c] == '.') mask |= (1 << c);\n            }\n            valid[r] = mask;\n        }\n        return dfs(0, 0, m, n);\n    }\n    private int dfs(int row, int prevMask, int m, int n) {\n        if (row == m) return 0;\n        if (memo[row][prevMask] != -1) return memo[row][prevMask];\n        int ans = 0;\n        int rowMask = valid[row];\n        int sub = rowMask;\n        while (true) {\n            if ((sub & (sub << 1)) == 0) {\n                if ((sub & (prevMask << 1)) == 0 && (sub & (prevMask >> 1)) == 0) {\n                    ans = Math.max(ans, Integer.bitCount(sub) + dfs(row + 1, sub, m, n));\n                }\n            }\n            if (sub == 0) break;\n            sub = (sub - 1) & rowMask;\n        }\n        return memo[row][prevMask] = ans;\n    }\n}",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxStudents = function(seats) {\n    const m = seats.length, n = seats[0].length;\n    const memo = Array.from({ length: m + 1 }, () => new Int32Array(1 << n).fill(-1));\n    const valid = new Int32Array(m);\n    for (let r = 0; r < m; ++r) {\n        let mask = 0;\n        for (let c = 0; c < n; ++c) {\n            if (seats[r][c] === '.') mask |= (1 << c);\n        }\n        valid[r] = mask;\n    }\n    function countBits(x) {\n        let cnt = 0;\n        while (x > 0) {\n            cnt += x & 1;\n            x >>= 1;\n        }\n        return cnt;\n    }\n    function dfs(row, prevMask) {\n        if (row === m) return 0;\n        if (memo[row][prevMask] !== -1) return memo[row][prevMask];\n        let ans = 0;\n        const rowMask = valid[row];\n        let sub = rowMask;\n        while (true) {\n            if (!(sub & (sub << 1))) {\n                if (!(sub & (prevMask << 1)) && !(sub & (prevMask >> 1))) {\n                    ans = Math.max(ans, countBits(sub) + dfs(row + 1, sub));\n                }\n            }\n            if (sub === 0) break;\n            sub = (sub - 1) & rowMask;\n        }\n        return memo[row][prevMask] = ans;\n    }\n    return dfs(0, 0);\n};",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

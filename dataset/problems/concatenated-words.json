@@ -1,0 +1,78 @@
+{
+  "slug": "concatenated-words",
+  "number": 472,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Word Segmentation Subproblem Ordering",
+      "text": "A concatenated word must be composed entirely of shorter valid dictionary words. Sorting words by length enables building valid prefixes progressively."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Composition Invariant",
+      "text": "Word w can be formed if there exists some split index k such that prefix w[:k] can be formed and suffix w[k:] is an existing dictionary word."
+    },
+    {
+      "level": 3,
+      "title": "Length Sorted Dynamic Search Procedure",
+      "text": "Sort all words ascending by length. For each word, check if it can be segmented into words currently present in the seen dictionary using standard word break validation. If valid, record it in the results list; otherwise add the word into the seen dictionary set."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def findAllConcatenatedWordsInADict(self, words: List[str]) -> List[str]:\n        words.sort(key=len)\n        word_set = set()\n        res = []\n\n        def can_form(word):\n            if not word_set:\n                return False\n            dp = [False] * (len(word) + 1)\n            dp[0] = True\n            for i in range(1, len(word) + 1):\n                for j in range(i):\n                    if dp[j] and word[j:i] in word_set:\n                        dp[i] = True\n                        break\n            return dp[len(word)]\n\n        for word in words:\n            if can_form(word):\n                res.append(word)\n            word_set.add(word)\n\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * L^2)",
+    "space": "O(N * L)",
+    "variables": [
+      "N: input length or search state bound"
+    ],
+    "notes": "Optimal solution achieving O(N * L^2) time and O(N * L) auxiliary space.",
+    "whyNaiveFails": "Checking all pairs or subsegment combinations without length ordering leads to cyclic dependencies and high exponential overhead.",
+    "spaceTimeTradeoff": "Sorting by length and testing segmentation takes O(N * L^2) time using O(N * L) set storage for previously inspected words.",
+    "interviewerExpectation": "Candidate should recognize that sorting by length guarantees that potential sub-words are always processed before the compound word."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def findAllConcatenatedWordsInADict(self, words: List[str]) -> List[str]:\n        words.sort(key=len)\n        word_set = set()\n        res = []\n\n        def can_form(word):\n            if not word_set:\n                return False\n            dp = [False] * (len(word) + 1)\n            dp[0] = True\n            for i in range(1, len(word) + 1):\n                for j in range(i):\n                    if dp[j] and word[j:i] in word_set:\n                        dp[i] = True\n                        break\n            return dp[len(word)]\n\n        for word in words:\n            if can_form(word):\n                res.append(word)\n            word_set.add(word)\n\n        return res",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    bool canForm(const string& word, const unordered_set<string>& wordSet) {\n        if (wordSet.empty()) return false;\n        int n = word.size();\n        vector<bool> dp(n + 1, false);\n        dp[0] = true;\n        for (int i = 1; i <= n; ++i) {\n            for (int j = 0; j < i; ++j) {\n                if (dp[j] && wordSet.count(word.substr(j, i - j))) {\n                    dp[i] = true;\n                    break;\n                }\n            }\n        }\n        return dp[n];\n    }\npublic:\n    vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {\n        sort(words.begin(), words.end(), [](const string& a, const string& b) {\n            return a.size() < b.size();\n        });\n        unordered_set<string> wordSet;\n        vector<string> res;\n        for (const string& w : words) {\n            if (canForm(w, wordSet)) {\n                res.push_back(w);\n            }\n            wordSet.insert(w);\n        }\n        return res;\n    }\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private boolean canForm(String word, Set<String> wordSet) {\n        if (wordSet.isEmpty()) return false;\n        int n = word.length();\n        boolean[] dp = new boolean[n + 1];\n        dp[0] = true;\n        for (int i = 1; i <= n; ++i) {\n            for (int j = 0; j < i; ++j) {\n                if (dp[j] && wordSet.contains(word.substring(j, i))) {\n                    dp[i] = true;\n                    break;\n                }\n            }\n        }\n        return dp[n];\n    }\n    public List<String> findAllConcatenatedWordsInADict(String[] words) {\n        Arrays.sort(words, Comparator.comparingInt(String::length));\n        Set<String> wordSet = new HashSet<>();\n        List<String> res = new ArrayList<>();\n        for (String w : words) {\n            if (canForm(w, wordSet)) {\n                res.add(w);\n            }\n            wordSet.add(w);\n        }\n        return res;\n    }\n}",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findAllConcatenatedWordsInADict = function(words) {\n    words.sort((a, b) => a.length - b.length);\n    const wordSet = new Set();\n    const res = [];\n\n    function canForm(word) {\n        if (wordSet.size === 0) return false;\n        const n = word.length;\n        const dp = new Array(n + 1).fill(false);\n        dp[0] = true;\n        for (let i = 1; i <= n; ++i) {\n            for (let j = 0; j < i; ++j) {\n                if (dp[j] && wordSet.has(word.slice(j, i))) {\n                    dp[i] = true;\n                    break;\n                }\n            }\n        }\n        return dp[n];\n    }\n\n    for (const w of words) {\n        if (canForm(w)) res.push(w);\n        wordSet.add(w);\n    }\n    return res;\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

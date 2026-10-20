@@ -1,0 +1,78 @@
+{
+  "slug": "remove-boxes",
+  "number": 546,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-interval"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Non-Adjacent Box Merging Payoff",
+      "text": "Removing consecutive identical boxes awards the square of their count. Often clearing intervening boxes first allows distant identical boxes to merge into a much higher scoring cluster."
+    },
+    {
+      "level": 2,
+      "title": "Augmented State with Contiguous Suffix",
+      "text": "A simple range [i, j] cannot predict incoming matching boxes. Track (i, j, k) where k is the number of boxes preceding or following that share the same color."
+    },
+    {
+      "level": 3,
+      "title": "Dual Option Recursive Evaluation Procedure",
+      "text": "Compress contiguous identical boxes at the boundary. Option one: eliminate the current block of size k + 1 for (k + 1)^2 points and solve the remaining interval. Option two: find any matching box m inside the interval and clear intermediate elements first to combine both segments. Memoize results for state tuple (l, r, k)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def removeBoxes(self, boxes: List[int]) -> int:\n        memo = {}\n        def dp(l, r, k):\n            if l > r:\n                return 0\n            while l + 1 <= r and boxes[l] == boxes[l + 1]:\n                l += 1\n                k += 1\n            state = (l, r, k)\n            if state in memo:\n                return memo[state]\n            res = (k + 1) * (k + 1) + dp(l + 1, r, 0)\n            for m in range(l + 1, r + 1):\n                if boxes[m] == boxes[l]:\n                    res = max(res, dp(l + 1, m - 1, 0) + dp(m, r, k + 1))\n            memo[state] = res\n            return res\n        return dp(0, len(boxes) - 1, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^4)",
+    "space": "O(N^3)",
+    "variables": [
+      "N: input size or search state bound"
+    ],
+    "notes": "Optimal solution achieving O(N^4) time and O(N^3) auxiliary space.",
+    "whyNaiveFails": "Greedy choice fails because deferring a removal to accumulate a larger clump can score exponentially higher.",
+    "spaceTimeTradeoff": "3D state (l, r, k) requires O(n^3) space and runs in O(n^4) time with memoization.",
+    "interviewerExpectation": "Candidate should recognize why standard 2D interval DP is insufficient and augment the state with a trailing identical box count."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def removeBoxes(self, boxes: List[int]) -> int:\n        memo = {}\n        def dp(l, r, k):\n            if l > r:\n                return 0\n            while l + 1 <= r and boxes[l] == boxes[l + 1]:\n                l += 1\n                k += 1\n            state = (l, r, k)\n            if state in memo:\n                return memo[state]\n            res = (k + 1) * (k + 1) + dp(l + 1, r, 0)\n            for m in range(l + 1, r + 1):\n                if boxes[m] == boxes[l]:\n                    res = max(res, dp(l + 1, m - 1, 0) + dp(m, r, k + 1))\n            memo[state] = res\n            return res\n        return dp(0, len(boxes) - 1, 0)",
+      "approach": "dp-interval verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int memo[100][100][100];\n    int solve(vector<int>& boxes, int l, int r, int k) {\n        if (l > r) return 0;\n        while (l + 1 <= r && boxes[l] == boxes[l + 1]) {\n            l++;\n            k++;\n        }\n        if (memo[l][r][k] > 0) return memo[l][r][k];\n        int res = (k + 1) * (k + 1) + solve(boxes, l + 1, r, 0);\n        for (int m = l + 1; m <= r; ++m) {\n            if (boxes[m] == boxes[l]) {\n                res = max(res, solve(boxes, l + 1, m - 1, 0) + solve(boxes, m, r, k + 1));\n            }\n        }\n        return memo[l][r][k] = res;\n    }\npublic:\n    int removeBoxes(vector<int>& boxes) {\n        memset(memo, 0, sizeof(memo));\n        return solve(boxes, 0, boxes.size() - 1, 0);\n    }\n};",
+      "approach": "dp-interval verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int[][][] memo;\n    public int removeBoxes(int[] boxes) {\n        int n = boxes.length;\n        memo = new int[n][n][n];\n        return solve(boxes, 0, n - 1, 0);\n    }\n    private int solve(int[] boxes, int l, int r, int k) {\n        if (l > r) return 0;\n        while (l + 1 <= r && boxes[l] == boxes[l + 1]) {\n            l++;\n            k++;\n        }\n        if (memo[l][r][k] > 0) return memo[l][r][k];\n        int res = (k + 1) * (k + 1) + solve(boxes, l + 1, r, 0);\n        for (int m = l + 1; m <= r; ++m) {\n            if (boxes[m] == boxes[l]) {\n                res = Math.max(res, solve(boxes, l + 1, m - 1, 0) + solve(boxes, m, r, k + 1));\n            }\n        }\n        return memo[l][r][k] = res;\n    }\n}",
+      "approach": "dp-interval verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var removeBoxes = function(boxes) {\n    const memo = new Map();\n    function dp(l, r, k) {\n        if (l > r) return 0;\n        while (l + 1 <= r && boxes[l] === boxes[l + 1]) {\n            l++;\n            k++;\n        }\n        const key = (l << 16) | (r << 8) | k;\n        if (memo.has(key)) return memo.get(key);\n        let res = (k + 1) * (k + 1) + dp(l + 1, r, 0);\n        for (let m = l + 1; m <= r; ++m) {\n            if (boxes[m] === boxes[l]) {\n                res = Math.max(res, dp(l + 1, m - 1, 0) + dp(m, r, k + 1));\n            }\n        }\n        memo.set(key, res);\n        return res;\n    }\n    return dp(0, boxes.length - 1, 0);\n};",
+      "approach": "dp-interval verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

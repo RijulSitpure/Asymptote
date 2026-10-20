@@ -1,0 +1,78 @@
+{
+  "slug": "stickers-to-spell-word",
+  "number": 691,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Target Character Bitmask Representation",
+      "text": "The target word has length at most fifteen. Tracking which target character indices are covered via a bitmask allows fast state representation."
+    },
+    {
+      "level": 2,
+      "title": "First Uncovered Character Anchor",
+      "text": "To avoid symmetric duplicate paths, always choose a sticker that covers the first unfulfilled character in the target string."
+    },
+    {
+      "level": 3,
+      "title": "Subproblem Search and Transition Procedure",
+      "text": "Precompute letter frequency maps for each sticker. Identify the lowest unset bit in mask. Filter stickers that provide this character, simulate consumed characters from the sticker, and compute next bitmask. Memoize and return minimum stickers required."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def minStickers(self, stickers: List[str], target: str) -> int:\n        n = len(target)\n        memo = {(1 << n) - 1: 0}\n        def dfs(mask):\n            if mask in memo:\n                return memo[mask]\n            first = -1\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    first = i\n                    break\n            if first == -1:\n                return 0\n            ans = float('inf')\n            for stick in stickers:\n                if target[first] not in stick:\n                    continue\n                next_mask = mask\n                counts = collections.Counter(stick)\n                for i in range(n):\n                    if not (next_mask & (1 << i)) and counts[target[i]] > 0:\n                        counts[target[i]] -= 1\n                        next_mask |= (1 << i)\n                ans = min(ans, 1 + dfs(next_mask))\n            memo[mask] = ans\n            return ans\n        res = dfs(0)\n        return res if res != float('inf') else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(S * 2^T)",
+    "space": "O(2^T)",
+    "variables": [
+      "N: input size or search state bound"
+    ],
+    "notes": "Optimal solution achieving O(S * 2^T) time and O(2^T) auxiliary space.",
+    "whyNaiveFails": "Unconstrained recursive search explores an unbounded branching factor across repetitive stickers.",
+    "spaceTimeTradeoff": "Bitmask memoization on 2^|target| states with first-unset pruning runs in O(S * 2^T) time where T <= 15.",
+    "interviewerExpectation": "Candidate must optimize sticker search by enforcing coverage of the first uncovered character to avoid duplicate permutations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minStickers(self, stickers: List[str], target: str) -> int:\n        n = len(target)\n        memo = {(1 << n) - 1: 0}\n        def dfs(mask):\n            if mask in memo:\n                return memo[mask]\n            first = -1\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    first = i\n                    break\n            if first == -1:\n                return 0\n            ans = float('inf')\n            for stick in stickers:\n                if target[first] not in stick:\n                    continue\n                next_mask = mask\n                counts = collections.Counter(stick)\n                for i in range(n):\n                    if not (next_mask & (1 << i)) and counts[target[i]] > 0:\n                        counts[target[i]] -= 1\n                        next_mask |= (1 << i)\n                ans = min(ans, 1 + dfs(next_mask))\n            memo[mask] = ans\n            return ans\n        res = dfs(0)\n        return res if res != float('inf') else -1",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int memo[1 << 15];\npublic:\n    int minStickers(vector<string>& stickers, string target) {\n        int n = target.size();\n        memset(memo, -1, sizeof(memo));\n        memo[(1 << n) - 1] = 0;\n        int m = stickers.size();\n        vector<vector<int>> counts(m, vector<int>(26, 0));\n        for (int i = 0; i < m; ++i) {\n            for (char c : stickers[i]) counts[i][c - 'a']++;\n        }\n        auto dfs = [&](auto& self, int mask) -> int {\n            if (memo[mask] != -1) return memo[mask];\n            int first = -1;\n            for (int i = 0; i < n; ++i) {\n                if (!(mask & (1 << i))) {\n                    first = i;\n                    break;\n                }\n            }\n            if (first == -1) return 0;\n            int ans = 1e9;\n            for (int j = 0; j < m; ++j) {\n                if (counts[j][target[first] - 'a'] == 0) continue;\n                int next_mask = mask;\n                vector<int> rem = counts[j];\n                for (int i = 0; i < n; ++i) {\n                    if (!(next_mask & (1 << i)) && rem[target[i] - 'a'] > 0) {\n                        rem[target[i] - 'a']--;\n                        next_mask |= (1 << i);\n                    }\n                }\n                ans = min(ans, 1 + self(self, next_mask));\n            }\n            return memo[mask] = ans;\n        };\n        int res = dfs(dfs, 0);\n        return res >= 1e9 ? -1 : res;\n    }\n};",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int[] memo;\n    public int minStickers(String[] stickers, String target) {\n        int n = target.length();\n        int m = stickers.length;\n        memo = new int[1 << n];\n        Arrays.fill(memo, -1);\n        memo[(1 << n) - 1] = 0;\n        int[][] counts = new int[m][26];\n        for (int i = 0; i < m; ++i) {\n            for (char c : stickers[i].toCharArray()) counts[i][c - 'a']++;\n        }\n        int res = dfs(0, target, stickers, counts);\n        return res >= 1000000 ? -1 : res;\n    }\n    private int dfs(int mask, String target, String[] stickers, int[][] counts) {\n        if (memo[mask] != -1) return memo[mask];\n        int n = target.length();\n        int first = -1;\n        for (int i = 0; i < n; ++i) {\n            if ((mask & (1 << i)) == 0) {\n                first = i;\n                break;\n            }\n        }\n        if (first == -1) return 0;\n        int ans = 1000000;\n        for (int j = 0; j < stickers.length; ++j) {\n            if (counts[j][target.charAt(first) - 'a'] == 0) continue;\n            int nextMask = mask;\n            int[] rem = counts[j].clone();\n            for (int i = 0; i < n; ++i) {\n                if ((nextMask & (1 << i)) == 0 && rem[target.charAt(i) - 'a'] > 0) {\n                    rem[target.charAt(i) - 'a']--;\n                    nextMask |= (1 << i);\n                }\n            }\n            ans = Math.min(ans, 1 + dfs(nextMask, target, stickers, counts));\n        }\n        return memo[mask] = ans;\n    }\n}",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minStickers = function(stickers, target) {\n    const n = target.length;\n    const memo = new Int32Array(1 << n).fill(-1);\n    memo[(1 << n) - 1] = 0;\n    const counts = stickers.map(s => {\n        const arr = new Int32Array(26);\n        for (let i = 0; i < s.length; ++i) arr[s.charCodeAt(i) - 97]++;\n        return arr;\n    });\n    function dfs(mask) {\n        if (memo[mask] !== -1) return memo[mask];\n        let first = -1;\n        for (let i = 0; i < n; ++i) {\n            if (!(mask & (1 << i))) {\n                first = i;\n                break;\n            }\n        }\n        if (first === -1) return 0;\n        let ans = 1e9;\n        const targetChar = target.charCodeAt(first) - 97;\n        for (let j = 0; j < stickers.length; ++j) {\n            if (counts[j][targetChar] === 0) continue;\n            let nextMask = mask;\n            const rem = new Int32Array(counts[j]);\n            for (let i = 0; i < n; ++i) {\n                const c = target.charCodeAt(i) - 97;\n                if (!(nextMask & (1 << i)) && rem[c] > 0) {\n                    rem[c]--;\n                    nextMask |= (1 << i);\n                }\n            }\n            ans = Math.min(ans, 1 + dfs(nextMask));\n        }\n        return memo[mask] = ans;\n    }\n    const res = dfs(0);\n    return res >= 1e9 ? -1 : res;\n};",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "word-search-ii",
+  "number": 212,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Tree Guided Grid Search",
+      "text": "Searching for multiple target words simultaneously across a 2D character matrix can quickly repeat redundant path explorations if conducted word by word."
+    },
+    {
+      "level": 2,
+      "title": "Trie Node Guided Pruning Invariant",
+      "text": "Step onto a cell only if its character exists as a child of the current prefix tree node. Clear the word marker upon collection to avoid duplicate matches."
+    },
+    {
+      "level": 3,
+      "title": "Backtracking Grid Traversal Procedure",
+      "text": "Insert all words into a prefix tree. For each grid cell, initiate depth-first traversal tracking the current tree node. Mark visited cells with a sentinel character to prevent reuse, recurse to orthogonal neighbors matching next letters, and restore cell contents on retreat. Prune leaf nodes on backtracking."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def findWords(self, board: List[List[str]], words: List[str]) -> List[str]:\n        trie = {}\n        for word in words:\n            curr = trie\n            for ch in word:\n                if ch not in curr:\n                    curr[ch] = {}\n                curr = curr[ch]\n            curr['$'] = word\n            \n        m, n = len(board), len(board[0])\n        res = []\n\n        def dfs(r, c, parent):\n            ch = board[r][c]\n            curr = parent[ch]\n            if '$' in curr:\n                res.append(curr['$'])\n                del curr['$']\n            \n            board[r][c] = '#'\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and board[nr][nc] in curr:\n                    dfs(nr, nc, curr)\n            board[r][c] = ch\n\n            if not curr:\n                del parent[ch]\n\n        for r in range(m):\n            for c in range(n):\n                if board[r][c] in trie:\n                    dfs(r, c, trie)\n                    \n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N * 4^L)",
+    "space": "O(total words length)",
+    "variables": [
+      "N: input length or search state bound"
+    ],
+    "notes": "Optimal solution achieving O(M * N * 4^L) time and O(total words length) auxiliary space.",
+    "whyNaiveFails": "Running individual DFS searches for each of W words yields O(W * M * N * 4^L), timing out on dense character grids.",
+    "spaceTimeTradeoff": "A shared prefix tree compresses common prefixes, bounding worst-case traversal to O(M * N * 4^L) with tree space proportional to total word characters.",
+    "interviewerExpectation": "Candidate must integrate prefix tree node transitions directly into grid DFS and deregister matched words to avoid duplicate outputs."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def findWords(self, board: List[List[str]], words: List[str]) -> List[str]:\n        trie = {}\n        for word in words:\n            curr = trie\n            for ch in word:\n                if ch not in curr:\n                    curr[ch] = {}\n                curr = curr[ch]\n            curr['$'] = word\n            \n        m, n = len(board), len(board[0])\n        res = []\n\n        def dfs(r, c, parent):\n            ch = board[r][c]\n            curr = parent[ch]\n            if '$' in curr:\n                res.append(curr['$'])\n                del curr['$']\n            \n            board[r][c] = '#'\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and board[nr][nc] in curr:\n                    dfs(nr, nc, curr)\n            board[r][c] = ch\n\n            if not curr:\n                del parent[ch]\n\n        for r in range(m):\n            for c in range(n):\n                if board[r][c] in trie:\n                    dfs(r, c, trie)\n                    \n        return res",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    struct TrieNode {\n        TrieNode* children[26] = {};\n        string word = \"\";\n    };\n    int m, n;\n    vector<string> res;\n\n    void dfs(vector<vector<char>>& board, int r, int c, TrieNode* curr) {\n        char ch = board[r][c];\n        int idx = ch - 'a';\n        if (!curr->children[idx]) return;\n        curr = curr->children[idx];\n        if (!curr->word.empty()) {\n            res.push_back(curr->word);\n            curr->word = \"\";\n        }\n\n        board[r][c] = '#';\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (auto& d : dirs) {\n            int nr = r + d[0], nc = c + d[1];\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && board[nr][nc] != '#') {\n                dfs(board, nr, nc, curr);\n            }\n        }\n        board[r][c] = ch;\n    }\npublic:\n    vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {\n        TrieNode* root = new TrieNode();\n        for (const string& w : words) {\n            TrieNode* curr = root;\n            for (char c : w) {\n                int idx = c - 'a';\n                if (!curr->children[idx]) curr->children[idx] = new TrieNode();\n                curr = curr->children[idx];\n            }\n            curr->word = w;\n        }\n\n        m = board.size();\n        n = board[0].size();\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                dfs(board, r, c, root);\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    static class TrieNode {\n        TrieNode[] children = new TrieNode[26];\n        String word = null;\n    }\n    private int m, n;\n    private List<String> res = new ArrayList<>();\n\n    public List<String> findWords(char[][] board, String[] words) {\n        TrieNode root = new TrieNode();\n        for (String w : words) {\n            TrieNode curr = root;\n            for (char c : w.toCharArray()) {\n                int idx = c - 'a';\n                if (curr.children[idx] == null) curr.children[idx] = new TrieNode();\n                curr = curr.children[idx];\n            }\n            curr.word = w;\n        }\n\n        m = board.length;\n        n = board[0].length;\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                dfs(board, r, c, root);\n            }\n        }\n        return res;\n    }\n\n    private void dfs(char[][] board, int r, int c, TrieNode curr) {\n        char ch = board[r][c];\n        int idx = ch - 'a';\n        if (curr.children[idx] == null) return;\n        curr = curr.children[idx];\n        if (curr.word != null) {\n            res.add(curr.word);\n            curr.word = null;\n        }\n\n        board[r][c] = '#';\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int[] d : dirs) {\n            int nr = r + d[0], nc = c + d[1];\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && board[nr][nc] != '#') {\n                dfs(board, nr, nc, curr);\n            }\n        }\n        board[r][c] = ch;\n    }\n}",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findWords = function(board, words) {\n    const root = {};\n    for (const w of words) {\n        let curr = root;\n        for (const ch of w) {\n            if (!curr[ch]) curr[ch] = {};\n            curr = curr[ch];\n        }\n        curr['$'] = w;\n    }\n\n    const m = board.length, n = board[0].length;\n    const res = [];\n\n    function dfs(r, c, curr) {\n        const ch = board[r][c];\n        if (!curr[ch]) return;\n        curr = curr[ch];\n        if (curr['$']) {\n            res.push(curr['$']);\n            delete curr['$'];\n        }\n\n        board[r][c] = '#';\n        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && board[nr][nc] !== '#') {\n                dfs(nr, nc, curr);\n            }\n        }\n        board[r][c] = ch;\n    }\n\n    for (let r = 0; r < m; ++r) {\n        for (let c = 0; c < n; ++c) {\n            dfs(r, c, root);\n        }\n    }\n    return res;\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}
