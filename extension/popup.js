@@ -227,10 +227,9 @@ let popupActiveTab = 'clues'; // 'clues' | 'solution' | 'complexity' | 'notes'
 let popupActiveLang = 'python3';
 let popupCurrentHintLevel = 1;
 let popupCachedData = null;
-let popupNanoMode = 'intuition';
-let popupNanoOutput = null;
+let popupUserPrompt = '';
+let popupNanoOutputHtml = null;
 let popupNanoLoading = false;
-let popupNanoProvider = null;
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -434,44 +433,28 @@ function renderPopupTabContent() {
         </div>
         <pre class="code-preview"><code>${activeCode}</code></pre>
         <div style="margin-top:10px; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:10px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div style="display:flex; align-items:center; gap:5px;">
-              <span style="font-size:13px;">✨</span>
-              <span style="font-family:'Space Grotesk', sans-serif; font-size:12px; font-weight:700; color:#1e2033;">
-                AI Solution Mentor
-              </span>
-            </div>
-            <span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:9999px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;">
-              ${popupNanoProvider === 'gemini-nano' ? 'Gemini Nano' : 'On-Device AI'}
-            </span>
+          <div style="font-family:'Space Grotesk', sans-serif; font-size:13px; font-weight:700; color:#1e2033; margin-bottom:8px;">
+            AI Explanation
           </div>
 
-          <div style="display:flex; gap:4px; margin-bottom:8px;">
-            <button id="popup-nano-mode-intuition" class="btn-secondary" style="flex:1; font-size:10px; padding:3px 2px; ${popupNanoMode === 'intuition' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
-              Intuition
-            </button>
-            <button id="popup-nano-mode-walkthrough" class="btn-secondary" style="flex:1; font-size:10px; padding:3px 2px; ${popupNanoMode === 'walkthrough' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
-              Walkthrough
-            </button>
-            <button id="popup-nano-mode-edge" class="btn-secondary" style="flex:1; font-size:10px; padding:3px 2px; ${popupNanoMode === 'edge_cases' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
-              Edge Cases
-            </button>
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
+            <input id="popup-ai-prompt-input" type="text" placeholder="Ask anything about this solution..." value="${escapeHtml(popupUserPrompt)}" style="flex:1; min-width:0; background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:6px 10px; font-size:12px; color:#1e2033; outline:none; font-family:inherit;" />
+            <button id="popup-nano-ask-btn" class="btn-amber-reveal" style="font-size:11px; font-weight:700; padding:6px 12px; margin-top:0; border-radius:6px; white-space:nowrap; width:auto; cursor:pointer;">Ask</button>
+          </div>
+
+          <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
+            <button type="button" class="popup-prompt-chip" data-prompt="Explain core intuition" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px; font-size:10px; color:#475569; cursor:pointer;">💡 Intuition</button>
+            <button type="button" class="popup-prompt-chip" data-prompt="Step-by-step code trace" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px; font-size:10px; color:#475569; cursor:pointer;">🔍 Code trace</button>
+            <button type="button" class="popup-prompt-chip" data-prompt="Critical edge cases" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:2px 6px; font-size:10px; color:#475569; cursor:pointer;">⚠️ Edge cases</button>
           </div>
 
           ${popupNanoLoading ? `
             <div style="text-align:center; padding:10px; font-size:11px; color:#64748b;">
-              ⏳ Generating on-device explanation...
+              ⏳ Generating explanation...
             </div>
-          ` : popupNanoOutput ? `
-            <div style="font-size:11px; color:#334155; line-height:1.5; white-space:pre-wrap; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; max-height:150px; overflow-y:auto; margin-bottom:6px;">${popupNanoOutput}</div>
-            <button id="popup-nano-explain-btn" class="btn-secondary" style="width:100%; font-size:10px; font-weight:600; padding:3px 6px;">
-              Regenerate
-            </button>
-          ` : `
-            <button id="popup-nano-explain-btn" class="btn-amber-reveal" style="font-size:11px; padding:6px 10px; width:100%; margin-top:2px;">
-              Explain with Local AI (Gemini Nano)
-            </button>
-          `}
+          ` : popupNanoOutputHtml ? `
+            <div style="font-size:11px; color:#334155; line-height:1.55; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px 10px; max-height:160px; overflow-y:auto; margin-bottom:6px;">${popupNanoOutputHtml}</div>
+          ` : ''}
         </div>
 
         <div style="text-align:center; margin-top:12px;">
@@ -510,57 +493,52 @@ function renderPopupTabContent() {
       };
     }
 
-    const nanoBtn = document.getElementById('popup-nano-explain-btn');
-    if (nanoBtn) {
-      nanoBtn.onclick = () => {
-        const nanoModule = globalThis.NanoAIModule || window.NanoAIModule || null;
-        if (nanoModule) {
-          popupNanoLoading = true;
-          renderPopupTabContent();
-          nanoModule.explainSolutionWithNano({
-            problem,
-            pattern,
-            code: activeCode,
-            lang: popupActiveLang,
-            mode: popupNanoMode
-          }).then(res => {
-            popupNanoLoading = false;
-            popupNanoOutput = res.text;
-            popupNanoProvider = res.provider;
-            renderPopupTabContent();
-          }).catch(err => {
-            popupNanoLoading = false;
-            popupNanoOutput = 'Error: ' + err.message;
-            renderPopupTabContent();
-          });
+    const askPopupPrompt = (promptText) => {
+      const nanoModule = globalThis.NanoAIModule || window.NanoAIModule || null;
+      if (!nanoModule) return;
+      popupNanoLoading = true;
+      popupUserPrompt = promptText || popupUserPrompt || 'Explain core intuition';
+      renderPopupTabContent();
+
+      nanoModule.explainSolutionWithNano({
+        problem,
+        pattern,
+        code: activeCode,
+        lang: popupActiveLang,
+        prompt: popupUserPrompt
+      }).then(res => {
+        popupNanoLoading = false;
+        popupNanoOutputHtml = res.html;
+        renderPopupTabContent();
+      }).catch(err => {
+        popupNanoLoading = false;
+        popupNanoOutputHtml = `<div style="color:#dc2626;">Error: ${escapeHtml(err.message)}</div>`;
+        renderPopupTabContent();
+      });
+    };
+
+    const askBtn = document.getElementById('popup-nano-ask-btn');
+    const promptInput = document.getElementById('popup-ai-prompt-input');
+    if (askBtn && promptInput) {
+      askBtn.onclick = () => {
+        askPopupPrompt(promptInput.value.trim());
+      };
+      promptInput.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          askPopupPrompt(promptInput.value.trim());
         }
       };
     }
 
-    const modeInt = document.getElementById('popup-nano-mode-intuition');
-    if (modeInt) {
-      modeInt.onclick = () => {
-        popupNanoMode = 'intuition';
-        popupNanoOutput = null;
-        renderPopupTabContent();
+    const chips = document.querySelectorAll('.popup-prompt-chip');
+    chips.forEach(chip => {
+      chip.onclick = () => {
+        const p = chip.getAttribute('data-prompt') || '';
+        popupUserPrompt = p;
+        askPopupPrompt(p);
       };
-    }
-    const modeWalk = document.getElementById('popup-nano-mode-walkthrough');
-    if (modeWalk) {
-      modeWalk.onclick = () => {
-        popupNanoMode = 'walkthrough';
-        popupNanoOutput = null;
-        renderPopupTabContent();
-      };
-    }
-    const modeEdge = document.getElementById('popup-nano-mode-edge');
-    if (modeEdge) {
-      modeEdge.onclick = () => {
-        popupNanoMode = 'edge_cases';
-        popupNanoOutput = null;
-        renderPopupTabContent();
-      };
-    }
+    });
   } else if (popupActiveTab === 'complexity') {
     if (!isVerified) {
       contentEl.innerHTML = `
@@ -1105,14 +1083,6 @@ if (headerDashBtn) {
 const footerDashBtn = document.getElementById('btn-popup-footer-dashboard');
 if (footerDashBtn) {
   footerDashBtn.addEventListener('click', openFullDashboard);
-}
-
-const footerRoadmapBtn = document.getElementById('btn-popup-footer-roadmap');
-if (footerRoadmapBtn) {
-  footerRoadmapBtn.addEventListener('click', () => {
-    const dashboardUrl = chrome.runtime.getURL('dashboard/index.html?tab=roadmap');
-    chrome.tabs.create({ url: dashboardUrl });
-  });
 }
 
 // Initial check & auto-detect

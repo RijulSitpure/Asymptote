@@ -1,11 +1,65 @@
 /**
  * Asymptote - On-Device AI Mentor Module (Gemini Nano Prompt API)
  * Universal module: works in browser, Node.js, and Chrome Extension content script / popup.
- * Provides live on-device LLM explanations using Chrome's built-in Gemini Nano (window.ai.languageModel),
+ * Provides on-device LLM explanations using Chrome's built-in Gemini Nano (window.ai.languageModel),
  * with deterministic Socratic fallback when Gemini Nano is not enabled.
  */
 
 (function (global) {
+  /**
+   * Lightweight markdown-to-HTML parser for rendering AI responses cleanly
+   */
+  function renderMarkdownToHtml(markdown) {
+    if (!markdown) return '';
+    let html = String(markdown).trim();
+
+    // 1. Normalize linebreaks
+    html = html.replace(/\r\n/g, '\n');
+
+    // 2. Escape HTML entities
+    html = html
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // 3. Fenced code blocks
+    html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_match, _lang, code) => {
+      return `<pre style="background:#f6f8fa; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin:8px 0; overflow-x:auto; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; color:#1e2033; line-height:1.5;"><code>${code.trim()}</code></pre>`;
+    });
+
+    // 4. Inline code
+    html = html.replace(/`([^`\n]+)`/g, '<code style="background:#f1f5f9; padding:2px 5px; border-radius:4px; font-size:12px; font-family:ui-monospace, monospace; color:#0f172a; border:1px solid #e2e8f0;">$1</code>');
+
+    // 5. Math symbols like $O(N)$
+    html = html.replace(/\$([^\$\n]+)\$/g, '<code style="background:#f1f5f9; padding:1px 4px; border-radius:4px; font-size:12px; font-family:ui-monospace, monospace; color:#047857; font-weight:600;">$1</code>');
+
+    // 6. Headings (###, ##, #)
+    html = html.replace(/^### (.*$)/gim, '<h4 style="font-family:\'Space Grotesk\', sans-serif; font-size:14px; font-weight:700; color:#1e2033; margin:10px 0 4px 0;">$1</h4>');
+    html = html.replace(/^## (.*$)/gim, '<h3 style="font-family:\'Space Grotesk\', sans-serif; font-size:15px; font-weight:700; color:#1e2033; margin:12px 0 5px 0;">$1</h3>');
+    html = html.replace(/^# (.*$)/gim, '<h2 style="font-family:\'Space Grotesk\', sans-serif; font-size:16px; font-weight:700; color:#1e2033; margin:14px 0 6px 0;">$1</h2>');
+
+    // 7. Bold & Italic
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight:700; color:#1e2033;">$1</strong>');
+    html = html.replace(/\*([^*]+)\*/g, '<em style="font-style:italic;">$1</em>');
+
+    // 8. Numbered lists (1. item)
+    html = html.replace(/^\s*(\d+)\.\s+(.*$)/gim, '<div style="margin-left:18px; margin-bottom:4px; display:flex; align-items:flex-start; gap:6px;"><span style="font-weight:700; color:#64748b; font-size:12px; line-height:1.6;">$1.</span><span style="flex:1; line-height:1.6;">$2</span></div>');
+
+    // 9. Bullet lists (- or *)
+    html = html.replace(/^\s*[-*]\s+(.*$)/gim, '<div style="margin-left:18px; margin-bottom:4px; display:flex; align-items:flex-start; gap:8px;"><span style="color:#059669; font-size:14px; line-height:1.4;">•</span><span style="flex:1; line-height:1.6;">$1</span></div>');
+
+    // 10. Line breaks
+    html = html.replace(/\n\n+/g, '<div style="margin-bottom:8px;"></div>');
+    html = html.replace(/\n/g, '<br/>');
+
+    // Clean up extra <br/> following headings, blocks, or lists
+    html = html.replace(/(<\/h[234]>)\s*<br\/>/gi, '$1');
+    html = html.replace(/(<\/pre>)\s*<br\/>/gi, '$1');
+    html = html.replace(/(<\/div>)\s*<br\/>/gi, '$1');
+
+    return html;
+  }
+
   /**
    * Checks availability of Chrome's built-in Gemini Nano Prompt API.
    * Returns: { available: 'readily' | 'after-download' | 'no', isNative: boolean }
@@ -43,9 +97,9 @@
   }
 
   /**
-   * Build the structured prompt for the LLM based on user mode.
+   * Build the structured prompt for the LLM based on user prompt / request.
    */
-  function buildNanoPrompt({ problem, pattern, code, lang, mode = 'intuition' }) {
+  function buildNanoPrompt({ problem, pattern, code, lang, prompt: userPrompt = '', mode = 'intuition' }) {
     const title = problem?.title || 'Algorithmic Problem';
     const number = problem?.number || problem?.frontend_id || '';
     const patternTitle = pattern?.title || problem?.pattern_title || 'Algorithmic Pattern';
@@ -53,12 +107,13 @@
     const complexitySpace = problem?.complexity?.space || 'N/A';
 
     let taskInstruction = '';
-    if (mode === 'walkthrough') {
+    if (userPrompt && userPrompt.trim()) {
+      taskInstruction = `User's question: "${userPrompt.trim()}". Answer specifically, clearly, and concisely for this solution without generic fluff.`;
+    } else if (mode === 'walkthrough') {
       taskInstruction = `Provide a clean, step-by-step code walkthrough of how this ${lang} solution executes on an example input. Highlight variable updates, loops, and termination conditions.`;
     } else if (mode === 'edge_cases') {
       taskInstruction = `Identify the 3-4 most critical edge cases (e.g. empty inputs, duplicates, off-by-one bounds, overflows, recursion depth) for this problem and specifically explain how this code safely handles them.`;
     } else {
-      // default: intuition
       taskInstruction = `Explain the core algorithmic intuition: what invariant or mathematical property makes this ${patternTitle} approach optimal, and why a naive brute-force approach fails. Provide 3-4 concise bullet points.`;
     }
 
@@ -83,7 +138,7 @@ Format your response in concise, markdown bullet points. Do not include introduc
    * Used when Chrome's Gemini Nano is unavailable or disabled.
    * Synthesizes 4-level hints + complexity analysis into a coherent explanation.
    */
-  function synthesizeOfflineSocraticExplanation({ problem, pattern, code: _code, lang: _lang, mode = 'intuition' }) {
+  function synthesizeOfflineSocraticExplanation({ problem, pattern, code: _code, lang: _lang, prompt: userPrompt = '', mode = 'intuition' }) {
     const patternTitle = pattern?.title || problem?.pattern_title || 'Algorithmic Pattern';
     const complexity = problem?.complexity || {};
     const hints = problem?.hints || [];
@@ -92,7 +147,9 @@ Format your response in concise, markdown bullet points. Do not include introduc
     const h2 = hints[1]?.content || 'Identify the structural invariant that preserves state across transitions.';
     const h3 = hints[2]?.content || 'Execute step-by-step state progression.';
 
-    if (mode === 'walkthrough') {
+    const q = (userPrompt || '').toLowerCase();
+
+    if (mode === 'walkthrough' || q.includes('walkthrough') || q.includes('trace') || q.includes('step') || q.includes('how does')) {
       return `### Step-by-Step Code Walkthrough (${patternTitle})
 
 1. **State Initialization**:
@@ -105,7 +162,7 @@ Format your response in concise, markdown bullet points. Do not include introduc
    - The loop or recursion terminates when boundary conditions are satisfied, returning the computed result in $O(${complexity.time || 'N'})$ time.`;
     }
 
-    if (mode === 'edge_cases') {
+    if (mode === 'edge_cases' || q.includes('edge') || q.includes('corner') || q.includes('overflow') || q.includes('bound') || q.includes('null') || q.includes('empty')) {
       return `### Critical Boundary Cases & Defenses
 
 - **Boundary Constraints & Naive Bottleneck**:
@@ -118,8 +175,14 @@ Format your response in concise, markdown bullet points. Do not include introduc
   - ${complexity.spaceTimeTradeoff || `Consumes auxiliary space of $O(${complexity.space || '1'})$ to achieve target runtime.`}`;
     }
 
-    // Default: 'intuition'
-    return `### Core Algorithmic Intuition (${patternTitle})
+    // Default: 'intuition' or custom user prompt
+    const cleanTime = String(complexity.time || 'N').replace(/^O\((.*)\)$/i, '$1');
+    const cleanSpace = String(complexity.space || '1').replace(/^O\((.*)\)$/i, '$1');
+    const heading = userPrompt && userPrompt.trim()
+      ? `### AI Explanation: "${userPrompt.trim().length > 60 ? userPrompt.trim().slice(0, 60) + '...' : userPrompt.trim()}"`
+      : `### Core Algorithmic Intuition (${patternTitle})`;
+
+    return `${heading}
 
 - **The Core Obstacle**:
   - ${h1}
@@ -127,9 +190,12 @@ Format your response in concise, markdown bullet points. Do not include introduc
 - **Key Invariant**:
   - ${h2}
 
+- **Execution Procedure**:
+  - ${h3}
+
 - **Complexity Efficiency**:
-  - **Runtime**: $O(${complexity.time || 'N'})$ — avoids combinatorial explosion.
-  - **Memory**: $O(${complexity.space || '1'})$ auxiliary storage.
+  - **Runtime**: $O(${cleanTime})$ — avoids combinatorial explosion.
+  - **Memory**: $O(${cleanSpace})$ auxiliary storage.
   - **Why Naive Fails**: ${complexity.whyNaiveFails || 'Naive iteration checks redundant subsets.'}`;
   }
 
@@ -143,6 +209,7 @@ Format your response in concise, markdown bullet points. Do not include introduc
     pattern,
     code,
     lang = 'python3',
+    prompt = '',
     mode = 'intuition',
     onChunk = null
   }) {
@@ -164,10 +231,10 @@ Format your response in concise, markdown bullet points. Do not include introduc
             systemPrompt: 'You are Asymptote Socratic Mentor. You explain algorithmic patterns cleanly, concisely, and with precision using bullet points. Avoid filler.'
           });
 
-          const prompt = buildNanoPrompt({ problem, pattern, code, lang, mode });
+          const fullPrompt = buildNanoPrompt({ problem, pattern, code, lang, prompt, mode });
 
           if (typeof onChunk === 'function' && typeof session.promptStreaming === 'function') {
-            const stream = session.promptStreaming(prompt);
+            const stream = session.promptStreaming(fullPrompt);
             let fullText = '';
             for await (const chunk of stream) {
               fullText = chunk;
@@ -176,16 +243,18 @@ Format your response in concise, markdown bullet points. Do not include introduc
             return {
               success: true,
               text: fullText,
+              html: renderMarkdownToHtml(fullText),
               provider: 'gemini-nano',
               mode,
               isNative: true
             };
           }
 
-          const response = await session.prompt(prompt);
+          const response = await session.prompt(fullPrompt);
           return {
             success: true,
             text: response,
+            html: renderMarkdownToHtml(response),
             provider: 'gemini-nano',
             mode,
             isNative: true
@@ -197,7 +266,8 @@ Format your response in concise, markdown bullet points. Do not include introduc
     }
 
     // 2. Fallback: Offline deterministic Socratic Synthesizer
-    const fallbackText = synthesizeOfflineSocraticExplanation({ problem, pattern, code, lang, mode });
+    const fallbackText = synthesizeOfflineSocraticExplanation({ problem, pattern, code, lang, prompt, mode });
+    const formattedHtml = renderMarkdownToHtml(fallbackText);
     if (typeof onChunk === 'function') {
       onChunk(fallbackText);
     }
@@ -205,14 +275,15 @@ Format your response in concise, markdown bullet points. Do not include introduc
     return {
       success: true,
       text: fallbackText,
+      html: formattedHtml,
       provider: 'socratic-engine',
       mode,
-      isNative: false,
-      note: 'Generated offline via verified pattern dataset. Enable chrome://flags/#prompt-api-for-gemini-nano in Chrome 128+ for live neural streaming.'
+      isNative: false
     };
   }
 
   const api = {
+    renderMarkdownToHtml,
     checkNanoAIAvailability,
     buildNanoPrompt,
     synthesizeOfflineSocraticExplanation,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Copy, Check, HelpCircle, Sparkles } from 'lucide-react';
+import { Copy, Check, HelpCircle } from 'lucide-react';
 import { Card } from './Card';
 import { Chip } from './Chip';
 import { useToast } from './Toast';
@@ -59,10 +59,9 @@ export function SocraticSolver({ initialProblemQuery, problems = [] }) {
   const [error, setError] = useState(null);
   const [solverLang, setSolverLang] = useState('python3');
   const [codeCopied, setCodeCopied] = useState(false);
-  const [nanoMode, setNanoMode] = useState('intuition');
-  const [nanoOutput, setNanoOutput] = useState(null);
+  const [userPrompt, setUserPrompt] = useState('');
+  const [nanoOutputHtml, setNanoOutputHtml] = useState(null);
   const [nanoLoading, setNanoLoading] = useState(false);
-  const [nanoProvider, setNanoProvider] = useState(null);
 
   const isVerified = Boolean(data?.problem?.verified === 1 || data?.problem?.verified === true);
   const isProblemSolved = useMemo(() => {
@@ -98,11 +97,31 @@ export function SocraticSolver({ initialProblemQuery, problems = [] }) {
     }
   }, [supportedLangs, data, solverLang]);
 
+  const handleAskNano = async (promptOverride) => {
+    const promptToSend = promptOverride !== undefined ? promptOverride : userPrompt;
+    setNanoLoading(true);
+    try {
+      const code = getProblemSolutionCode(data?.problem, solverLang);
+      const res = await explainSolutionWithNano({
+        problem: data?.problem,
+        pattern: data?.pattern,
+        code,
+        lang: solverLang,
+        prompt: promptToSend
+      });
+      setNanoOutputHtml(res.html || res.text);
+    } catch (err) {
+      setNanoOutputHtml(`<div class="text-rose-600">Error: ${err.message}</div>`);
+    } finally {
+      setNanoLoading(false);
+    }
+  };
+
   const loadProblemHints = async (searchQuery) => {
     if (!searchQuery) return;
     setLoading(true);
     setError(null);
-    setNanoOutput(null);
+    setNanoOutputHtml(null);
     setNanoLoading(false);
     try {
       const json = await fetchProblemHints(searchQuery);
@@ -498,118 +517,71 @@ export function SocraticSolver({ initialProblemQuery, problems = [] }) {
                             <code>{code}</code>
                           </pre>
 
-                          {/* AI Solution Mentor (Gemini Nano) Card */}
+                          {/* AI Explanation Card */}
                           <div className="bg-white border border-[#cbd5e1] rounded-lg p-4 space-y-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-[#10b981]" />
-                                <span className="font-heading text-[14px] font-bold text-[#1e2033]">
-                                  AI Solution Mentor
-                                </span>
-                              </div>
-                              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0]">
-                                {nanoProvider === 'gemini-nano' ? 'Gemini Nano (On-device)' : 'On-Device AI'}
-                              </span>
+                            <div className="font-heading text-[14px] font-bold text-[#1e2033]">
+                              AI Explanation
                             </div>
 
-                            {/* Mode Selector */}
-                            <div className="flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => { setNanoMode('intuition'); setNanoOutput(null); }}
-                                className={`px-3 py-1 rounded-md text-[13px] font-medium transition-colors ${
-                                  nanoMode === 'intuition'
-                                    ? 'bg-[#1e2033] text-white font-bold'
-                                    : 'bg-[#f8fafc] text-[#475569] border border-[#e2e8f0] hover:text-[#1e2033]'
-                                }`}
-                              >
-                                Intuition
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => { setNanoMode('walkthrough'); setNanoOutput(null); }}
-                                className={`px-3 py-1 rounded-md text-[13px] font-medium transition-colors ${
-                                  nanoMode === 'walkthrough'
-                                    ? 'bg-[#1e2033] text-white font-bold'
-                                    : 'bg-[#f8fafc] text-[#475569] border border-[#e2e8f0] hover:text-[#1e2033]'
-                                }`}
-                              >
-                                Code Walkthrough
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => { setNanoMode('edge_cases'); setNanoOutput(null); }}
-                                className={`px-3 py-1 rounded-md text-[13px] font-medium transition-colors ${
-                                  nanoMode === 'edge_cases'
-                                    ? 'bg-[#1e2033] text-white font-bold'
-                                    : 'bg-[#f8fafc] text-[#475569] border border-[#e2e8f0] hover:text-[#1e2033]'
-                                }`}
-                              >
-                                Edge Cases
-                              </button>
-                            </div>
-
-                            {/* Output or Generate Action */}
-                            {nanoLoading ? (
-                              <div className="text-center py-4 text-[13px] text-[#64748b]">
-                                ⏳ Generating on-device explanation with Gemini Nano...
-                              </div>
-                            ) : nanoOutput ? (
-                              <div className="space-y-3">
-                                <div className="text-[13px] text-[#334155] leading-relaxed whitespace-pre-wrap bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3.5">
-                                  {nanoOutput}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    setNanoLoading(true);
-                                    try {
-                                      const res = await explainSolutionWithNano({
-                                        problem: data.problem,
-                                        pattern: data.pattern,
-                                        code,
-                                        lang: solverLang,
-                                        mode: nanoMode
-                                      });
-                                      setNanoOutput(res.text);
-                                      setNanoProvider(res.provider);
-                                    } catch (err) {
-                                      setNanoOutput('Error: ' + err.message);
-                                    } finally {
-                                      setNanoLoading(false);
-                                    }
-                                  }}
-                                  className="btn-secondary !py-1 !px-3 !text-[12px]"
-                                >
-                                  Regenerate explanation
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  setNanoLoading(true);
-                                  try {
-                                    const res = await explainSolutionWithNano({
-                                      problem: data.problem,
-                                      pattern: data.pattern,
-                                      code,
-                                      lang: solverLang,
-                                      mode: nanoMode
-                                    });
-                                    setNanoOutput(res.text);
-                                    setNanoProvider(res.provider);
-                                  } catch (err) {
-                                    setNanoOutput('Error: ' + err.message);
-                                  } finally {
-                                    setNanoLoading(false);
+                            {/* Custom Prompt Input Bar */}
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                placeholder="Ask anything about this solution..."
+                                value={userPrompt}
+                                onChange={(e) => setUserPrompt(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAskNano();
                                   }
                                 }}
-                                className="btn-amber-reveal !py-2 !px-4 !text-[13px] !w-auto"
+                                className="flex-1 min-w-0 bg-[#f8fafc] border border-[#cbd5e1] rounded-lg px-3 py-2 text-[13px] text-[#1e2033] placeholder:text-[#94a3b8] focus:outline-none focus:ring-1 focus:ring-[#1e2033] focus:border-[#1e2033]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleAskNano()}
+                                disabled={nanoLoading}
+                                className="btn-amber-reveal !w-auto !py-2 !px-4 !text-[13px] !mt-0 font-bold shrink-0 disabled:opacity-50"
                               >
-                                Explain with Local AI (Gemini Nano)
+                                Ask
                               </button>
-                            )}
+                            </div>
+
+                            {/* Quick Starter Chips */}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {[
+                                { label: '💡 Intuition', prompt: 'Explain core intuition' },
+                                { label: '🔍 Code trace', prompt: 'Step-by-step code trace' },
+                                { label: '⚠️ Edge cases', prompt: 'Critical edge cases' }
+                              ].map((chip) => (
+                                <button
+                                  key={chip.label}
+                                  type="button"
+                                  onClick={() => {
+                                    setUserPrompt(chip.prompt);
+                                    handleAskNano(chip.prompt);
+                                  }}
+                                  className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-[#f8fafc] text-[#475569] border border-[#e2e8f0] hover:text-[#1e2033] hover:border-[#cbd5e1] transition-colors"
+                                >
+                                  {chip.label}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Output or Loading state */}
+                            {nanoLoading ? (
+                              <div className="text-center py-4 text-[13px] text-[#64748b]">
+                                ⏳ Generating explanation...
+                              </div>
+                            ) : nanoOutputHtml ? (
+                              <div className="space-y-3">
+                                <div 
+                                  className="text-[13px] text-[#334155] leading-relaxed bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3.5 max-h-[300px] overflow-y-auto"
+                                  dangerouslySetInnerHTML={{ __html: nanoOutputHtml }}
+                                />
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>

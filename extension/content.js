@@ -366,10 +366,19 @@ const LanguagesModule = globalThis.LanguagesModule || window.LanguagesModule || 
 
 let activeSolutionLang = 'python3';
 let activeSolutionView = 'scaffold'; // 'scaffold' | 'twists' | 'notes'
-let contentNanoMode = 'intuition';
-let contentNanoOutput = null;
+let contentUserPrompt = '';
+let contentNanoOutputHtml = null;
 let contentNanoLoading = false;
-let contentNanoProvider = null;
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 function getSupportedLanguages(problem) {
   if (LanguagesModule && LanguagesModule.getSupportedLanguagesForProblem) {
@@ -1238,44 +1247,28 @@ function renderDrawerTabContent() {
 
     const nanoCardHtml = `
       <div class="card-white" style="margin-top:12px; border-color:#cbd5e1; background:#ffffff;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:14px;">✨</span>
-            <span style="font-family:'Space Grotesk', sans-serif; font-size:13px; font-weight:700; color:#1e2033;">
-              AI Solution Mentor
-            </span>
-          </div>
-          <span style="font-size:10px; font-weight:600; padding:2px 7px; border-radius:9999px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;">
-            ${contentNanoProvider === 'gemini-nano' ? 'Gemini Nano (On-device)' : 'On-Device AI'}
-          </span>
+        <div style="font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:700; color:#1e2033; margin-bottom:8px;">
+          AI Explanation
         </div>
 
-        <div style="display:flex; gap:4px; margin-bottom:8px;">
-          <button id="btn-nano-mode-intuition" class="btn-secondary" style="flex:1; font-size:11px; padding:4px 4px; ${contentNanoMode === 'intuition' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
-            Intuition
-          </button>
-          <button id="btn-nano-mode-walkthrough" class="btn-secondary" style="flex:1; font-size:11px; padding:4px 4px; ${contentNanoMode === 'walkthrough' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
-            Walkthrough
-          </button>
-          <button id="btn-nano-mode-edge" class="btn-secondary" style="flex:1; font-size:11px; padding:4px 4px; ${contentNanoMode === 'edge_cases' ? 'background:#1e2033; color:#ffffff; border-color:#1e2033; font-weight:700;' : ''}">
-            Edge Cases
-          </button>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <input id="lc-ai-prompt-input" type="text" placeholder="Ask anything about this solution..." value="${escapeHtml(contentUserPrompt)}" style="flex:1; min-width:0; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px 12px; font-size:13px; color:#1e2033; outline:none; font-family:inherit;" />
+          <button id="lc-nano-ask-btn" class="btn-amber-reveal" style="font-size:13px; font-weight:700; padding:8px 16px; margin-top:0; border-radius:8px; white-space:nowrap; width:auto; cursor:pointer;">Ask</button>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+          <button type="button" class="lc-prompt-chip" data-prompt="Explain core intuition" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:11px; color:#475569; cursor:pointer;">💡 Intuition</button>
+          <button type="button" class="lc-prompt-chip" data-prompt="Step-by-step code trace" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:11px; color:#475569; cursor:pointer;">🔍 Code trace</button>
+          <button type="button" class="lc-prompt-chip" data-prompt="Critical edge cases" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:11px; color:#475569; cursor:pointer;">⚠️ Edge cases</button>
         </div>
 
         ${contentNanoLoading ? `
-          <div style="text-align:center; padding:14px 8px; font-size:12px; color:#64748b;">
-            ⏳ Generating on-device explanation...
+          <div style="text-align:center; padding:16px 8px; font-size:13px; color:#64748b;">
+            ⏳ Generating explanation...
           </div>
-        ` : contentNanoOutput ? `
-          <div style="font-size:12px; color:#334155; line-height:1.55; white-space:pre-wrap; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; max-height:200px; overflow-y:auto; margin-bottom:8px;">${contentNanoOutput}</div>
-          <button id="btn-nano-explain" class="btn-secondary" style="width:100%; font-size:11px; font-weight:600; padding:4px 8px;">
-            Regenerate explanation
-          </button>
-        ` : `
-          <button id="btn-nano-explain" class="btn-amber-reveal" style="font-size:12px; padding:8px 10px; width:100%;">
-            Explain with Local AI (Gemini Nano)
-          </button>
-        `}
+        ` : contentNanoOutputHtml ? `
+          <div style="font-size:13px; color:#334155; line-height:1.6; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; max-height:220px; overflow-y:auto; margin-bottom:8px;">${contentNanoOutputHtml}</div>
+        ` : ''}
       </div>
     `;
 
@@ -1369,57 +1362,52 @@ function renderDrawerTabContent() {
         };
       }
 
-      const nanoBtn = shadow.getElementById('btn-nano-explain');
-      if (nanoBtn) {
-        nanoBtn.onclick = () => {
-          const nanoModule = globalThis.NanoAIModule || window.NanoAIModule || null;
-          if (nanoModule) {
-            contentNanoLoading = true;
-            renderDrawerTabContent();
-            nanoModule.explainSolutionWithNano({
-              problem,
-              pattern,
-              code: activeCode,
-              lang: activeSolutionLang,
-              mode: contentNanoMode
-            }).then(res => {
-              contentNanoLoading = false;
-              contentNanoOutput = res.text;
-              contentNanoProvider = res.provider;
-              renderDrawerTabContent();
-            }).catch(err => {
-              contentNanoLoading = false;
-              contentNanoOutput = 'Error generating explanation: ' + err.message;
-              renderDrawerTabContent();
-            });
+      const askLcPrompt = (promptText) => {
+        const nanoModule = globalThis.NanoAIModule || window.NanoAIModule || null;
+        if (!nanoModule) return;
+        contentNanoLoading = true;
+        contentUserPrompt = promptText || contentUserPrompt || 'Explain core intuition';
+        renderDrawerTabContent();
+
+        nanoModule.explainSolutionWithNano({
+          problem,
+          pattern,
+          code: activeCode,
+          lang: activeSolutionLang,
+          prompt: contentUserPrompt
+        }).then(res => {
+          contentNanoLoading = false;
+          contentNanoOutputHtml = res.html;
+          renderDrawerTabContent();
+        }).catch(err => {
+          contentNanoLoading = false;
+          contentNanoOutputHtml = `<div style="color:#dc2626;">Error generating explanation: ${escapeHtml(err.message)}</div>`;
+          renderDrawerTabContent();
+        });
+      };
+
+      const askBtn = shadow.getElementById('lc-nano-ask-btn');
+      const promptInput = shadow.getElementById('lc-ai-prompt-input');
+      if (askBtn && promptInput) {
+        askBtn.onclick = () => {
+          askLcPrompt(promptInput.value.trim());
+        };
+        promptInput.onkeydown = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            askLcPrompt(promptInput.value.trim());
           }
         };
       }
 
-      const modeInt = shadow.getElementById('btn-nano-mode-intuition');
-      if (modeInt) {
-        modeInt.onclick = () => {
-          contentNanoMode = 'intuition';
-          contentNanoOutput = null;
-          renderDrawerTabContent();
+      const chips = shadow.querySelectorAll('.lc-prompt-chip');
+      chips.forEach(chip => {
+        chip.onclick = () => {
+          const p = chip.getAttribute('data-prompt') || '';
+          contentUserPrompt = p;
+          askLcPrompt(p);
         };
-      }
-      const modeWalk = shadow.getElementById('btn-nano-mode-walkthrough');
-      if (modeWalk) {
-        modeWalk.onclick = () => {
-          contentNanoMode = 'walkthrough';
-          contentNanoOutput = null;
-          renderDrawerTabContent();
-        };
-      }
-      const modeEdge = shadow.getElementById('btn-nano-mode-edge');
-      if (modeEdge) {
-        modeEdge.onclick = () => {
-          contentNanoMode = 'edge_cases';
-          contentNanoOutput = null;
-          renderDrawerTabContent();
-        };
-      }
+      });
     }
   }
 

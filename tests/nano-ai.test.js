@@ -134,4 +134,34 @@ describe('Gemini Nano On-Device AI Mentor Module', () => {
 
     delete globalThis.ai;
   });
+
+  it('5. renderMarkdownToHtml formats headings, lists, bold text, and code cleanly', () => {
+    const rawMarkdown = `### Core Intuition\n\n1. **Step One**: Initialize pointers.\n- Sub-bullet: Test point.\n\nCode snippet:\n\`\`\`python\nx = 1\n\`\`\`\n\nTime complexity is $O(N)$ and variable is \`x\`.`;
+    const html = NanoAI.renderMarkdownToHtml(rawMarkdown);
+
+    expect(html).toContain('<h4');
+    expect(html).toContain('Core Intuition</h4>');
+    expect(html).toContain('<strong');
+    expect(html).toContain('Step One</strong>');
+    expect(html).toContain('<pre');
+    expect(html).toContain('x = 1');
+    expect(html).toContain('O(N)');
+    expect(html).not.toContain('###');
+    expect(html).not.toContain('**');
+  });
+
+  it('6. Accepts custom user prompt and synthesizes targeted explanation', async () => {
+    const customPrompt = 'How do we handle duplicate elements?';
+    const res = await NanoAI.explainSolutionWithNano({
+      problem: sampleProblem,
+      pattern: samplePattern,
+      code: sampleCode,
+      lang: 'python3',
+      prompt: customPrompt
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.text).toContain(customPrompt);
+    expect(res.html).toContain('<h4');
+  });
 });
