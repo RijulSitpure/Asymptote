@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-profit-in-job-scheduling",
+  "number": 1235,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-lis"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Non-Overlapping Interval Profit Maximization Obstacle",
+      "text": "Each job has a start time, end time, and profit, and chosen jobs cannot overlap. How can sorting jobs by end time and finding the latest compatible predecessor job maximize cumulative profit?"
+    },
+    {
+      "level": 2,
+      "title": "Compatible Job Binary Search Invariant",
+      "text": "For a job ending at E with profit P and start time S, the maximum profit including this job is P plus the maximum profit achievable among jobs ending on or before S."
+    },
+    {
+      "level": 3,
+      "title": "Sorted End Time Bisection Procedure",
+      "text": "Zip and sort jobs by end time. Maintain an array of end-time and cumulative-profit pairs initialized with [0, 0]. For each job (start, end, profit), bisect the end times to find the latest job finishing at or before start. If that prior profit + current profit exceeds the latest recorded profit, append (end, new_profit). Return the final recorded profit."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def jobScheduling(self, startTime: List[int], endTime: List[int], profit: List[int]) -> int:\n        import bisect\n        jobs = sorted(zip(endTime, startTime, profit))\n        dp = [[0, 0]]\n        for e, s, p in jobs:\n            idx = bisect.bisect_right(dp, [s, float('inf')]) - 1\n            total = dp[idx][1] + p\n            if total > dp[-1][1]:\n                dp.append([e, total])\n        return dp[-1][1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of jobs (up to 50000)"
+    ],
+    "notes": "Sorting takes O(N log N); for each job, bisection takes O(log N).",
+    "whyNaiveFails": "Recursive branching without ordered bisection evaluates 2^N schedules.",
+    "spaceTimeTradeoff": "Array of (endTime, profit) pairs consumes linear space O(N).",
+    "interviewerExpectation": "Sorting by end time and using bisection to quickly locate the latest compatible job."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def jobScheduling(self, startTime: List[int], endTime: List[int], profit: List[int]) -> int:\n        import bisect\n        jobs = sorted(zip(endTime, startTime, profit))\n        dp = [[0, 0]]\n        for e, s, p in jobs:\n            idx = bisect.bisect_right(dp, [s, float('inf')]) - 1\n            total = dp[idx][1] + p\n            if total > dp[-1][1]:\n                dp.append([e, total])\n        return dp[-1][1]",
+      "approach": "End-time sorted intervals with bisection lookup of compatible predecessor profit",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int jobScheduling(vector<int>& startTime, vector<int>& endTime, vector<int>& profit) {\n        int n = startTime.size();\n        vector<tuple<int, int, int>> jobs(n);\n        for (int i = 0; i < n; ++i) {\n            jobs[i] = {endTime[i], startTime[i], profit[i]};\n        }\n        sort(jobs.begin(), jobs.end());\n        vector<pair<int, int>> dp = {{0, 0}};\n        for (const auto& [e, s, p] : jobs) {\n            auto it = upper_bound(dp.begin(), dp.end(), make_pair(s, (int)2e9));\n            --it;\n            int total = it->second + p;\n            if (total > dp.back().second) {\n                dp.push_back({e, total});\n            }\n        }\n        return dp.back().second;\n    }\n};",
+      "approach": "End-time sorted intervals with bisection lookup of compatible predecessor profit",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int jobScheduling(int[] startTime, int[] endTime, int[] profit) {\n        int n = startTime.length;\n        int[][] jobs = new int[n][3];\n        for (int i = 0; i < n; i++) {\n            jobs[i] = new int[]{endTime[i], startTime[i], profit[i]};\n        }\n        Arrays.sort(jobs, (a, b) -> a[0] - b[0]);\n        TreeMap<Integer, Integer> dp = new TreeMap<>();\n        dp.put(0, 0);\n        for (int[] job : jobs) {\n            int e = job[0], s = job[1], p = job[2];\n            int cur = dp.floorEntry(s).getValue() + p;\n            if (cur > dp.lastEntry().getValue()) {\n                dp.put(e, cur);\n            }\n        }\n        return dp.lastEntry().getValue();\n    }\n}",
+      "approach": "End-time sorted intervals with bisection lookup of compatible predecessor profit",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var jobScheduling = function(startTime, endTime, profit) {\n    const n = startTime.length;\n    const jobs = [];\n    for (let i = 0; i < n; i++) {\n        jobs.push([endTime[i], startTime[i], profit[i]]);\n    }\n    jobs.sort((a, b) => a[0] - b[0]);\n    const dp = [[0, 0]];\n    for (const [e, s, p] of jobs) {\n        let l = 0, r = dp.length - 1, best = 0;\n        while (l <= r) {\n            const m = Math.floor((l + r) / 2);\n            if (dp[m][0] <= s) {\n                best = dp[m][1];\n                l = m + 1;\n            } else {\n                r = m - 1;\n            }\n        }\n        const total = best + p;\n        if (total > dp[dp.length - 1][1]) {\n            dp.push([e, total]);\n        }\n    }\n    return dp[dp.length - 1][1];\n};",
+      "approach": "End-time sorted intervals with bisection lookup of compatible predecessor profit",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

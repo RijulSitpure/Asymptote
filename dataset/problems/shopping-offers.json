@@ -1,0 +1,80 @@
+{
+  "slug": "shopping-offers",
+  "number": 638,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-knapsack-variants"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Multi-Item Bundle Selection Obstacle",
+      "text": "Special offers bundle quantities of items for a discounted price, but cannot exceed needed quantities. How can checking both direct item purchase and each valid special bundle recursively find the minimum spend?"
+    },
+    {
+      "level": 2,
+      "title": "Needs State Subproblem Invariant",
+      "text": "The lowest cost to satisfy remaining needs tuple is the minimum over buying remaining items individually and applying any valid special offer."
+    },
+    {
+      "level": 3,
+      "title": "Tuple State Exploration Procedure",
+      "text": "Compute base cost by multiplying each item in the current needs tuple by its single-item price. For each special offer, verify that none of its item amounts exceed the current need. If valid, recursively solve for the reduced needs tuple, adding the special offer price. Cache results by needs tuple to avoid recomputation. Return the minimal cost."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def shoppingOffers(self, price: List[int], special: List[List[int]], needs: List[int]) -> int:\n        memo = {}\n        def dfs(cur_needs):\n            tup = tuple(cur_needs)\n            if tup in memo:\n                return memo[tup]\n            cost = sum(p * n for p, n in zip(price, cur_needs))\n            for offer in special:\n                nxt = []\n                for i in range(len(cur_needs)):\n                    if cur_needs[i] < offer[i]:\n                        break\n                    nxt.append(cur_needs[i] - offer[i])\n                if len(nxt) == len(cur_needs):\n                    cost = min(cost, offer[-1] + dfs(nxt))\n            memo[tup] = cost\n            return cost\n        return dfs(needs)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(S * B^N)",
+    "space": "O(B^N)",
+    "variables": [
+      "N: number of distinct items (up to 6)",
+      "B: max need per item (up to 10)",
+      "S: number of special offers"
+    ],
+    "notes": "At most B^N unique needs states are cached during exploration.",
+    "whyNaiveFails": "Uncached branching across offers takes exponential time with redundant state evaluation.",
+    "spaceTimeTradeoff": "State cache stores up to B^N states to prune duplicate needs paths.",
+    "interviewerExpectation": "Filtering out invalid special offers that exceed current needs."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def shoppingOffers(self, price: List[int], special: List[List[int]], needs: List[int]) -> int:\n        memo = {}\n        def dfs(cur_needs):\n            tup = tuple(cur_needs)\n            if tup in memo:\n                return memo[tup]\n            cost = sum(p * n for p, n in zip(price, cur_needs))\n            for offer in special:\n                nxt = []\n                for i in range(len(cur_needs)):\n                    if cur_needs[i] < offer[i]:\n                        break\n                    nxt.append(cur_needs[i] - offer[i])\n                if len(nxt) == len(cur_needs):\n                    cost = min(cost, offer[-1] + dfs(nxt))\n            memo[tup] = cost\n            return cost\n        return dfs(needs)",
+      "approach": "Multi-dimensional needs tuple search with bundle price optimization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int shoppingOffers(vector<int>& price, vector<vector<int>>& special, vector<int>& needs) {\n        map<vector<int>, int> memo;\n        auto dfs = [&](auto self, vector<int> cur) -> int {\n            if (memo.count(cur)) return memo[cur];\n            int cost = 0;\n            for (size_t i = 0; i < cur.size(); ++i) cost += cur[i] * price[i];\n            for (const auto& offer : special) {\n                vector<int> nxt;\n                for (size_t i = 0; i < cur.size(); ++i) {\n                    if (cur[i] < offer[i]) break;\n                    nxt.push_back(cur[i] - offer[i]);\n                }\n                if (nxt.size() == cur.size()) {\n                    cost = min(cost, offer.back() + self(self, nxt));\n                }\n            }\n            return memo[cur] = cost;\n        };\n        return dfs(dfs, needs);\n    }\n};",
+      "approach": "Multi-dimensional needs tuple search with bundle price optimization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int shoppingOffers(List<Integer> price, List<List<Integer>> special, List<Integer> needs) {\n        Map<List<Integer>, Integer> memo = new HashMap<>();\n        return dfs(price, special, needs, memo);\n    }\n    private int dfs(List<Integer> price, List<List<Integer>> special, List<Integer> cur, Map<List<Integer>, Integer> memo) {\n        if (memo.containsKey(cur)) return memo.get(cur);\n        int cost = 0;\n        for (int i = 0; i < cur.size(); i++) cost += cur.get(i) * price.get(i);\n        for (List<Integer> offer : special) {\n            List<Integer> nxt = new ArrayList<>();\n            for (int i = 0; i < cur.size(); i++) {\n                if (cur.get(i) < offer.get(i)) break;\n                nxt.add(cur.get(i) - offer.get(i));\n            }\n            if (nxt.size() == cur.size()) {\n                cost = Math.min(cost, offer.get(offer.size() - 1) + dfs(price, special, nxt, memo));\n            }\n        }\n        memo.put(cur, cost);\n        return cost;\n    }\n}",
+      "approach": "Multi-dimensional needs tuple search with bundle price optimization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var shoppingOffers = function(price, special, needs) {\n    const memo = new Map();\n    const dfs = (cur) => {\n        const key = cur.join(',');\n        if (memo.has(key)) return memo.get(key);\n        let cost = 0;\n        for (let i = 0; i < cur.length; i++) cost += cur[i] * price[i];\n        for (const offer of special) {\n            const nxt = [];\n            for (let i = 0; i < cur.length; i++) {\n                if (cur[i] < offer[i]) break;\n                nxt.push(cur[i] - offer[i]);\n            }\n            if (nxt.length === cur.length) {\n                cost = Math.min(cost, offer[offer.length - 1] + dfs(nxt));\n            }\n        }\n        memo.set(key, cost);\n        return cost;\n    };\n    return dfs(needs);\n};",
+      "approach": "Multi-dimensional needs tuple search with bundle price optimization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

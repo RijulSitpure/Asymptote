@@ -1,0 +1,78 @@
+{
+  "slug": "word-break-ii",
+  "number": 140,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sentence Suffix Reconstitution Obstacle",
+      "text": "Partitioning string s into space-separated dictionary words can produce multiple valid combinations. How can breaking off valid dictionary prefixes and solving suffixes avoid recomputing overlapping sub-problems?"
+    },
+    {
+      "level": 2,
+      "title": "Suffix Sentence Subproblem Invariant",
+      "text": "The valid sentences that can be formed from suffix s[i:] depend only on dictionary words matching s[i:j] combined with sentences formed from s[j:]."
+    },
+    {
+      "level": 3,
+      "title": "Recursive Prefix Partitioning Procedure",
+      "text": "Convert the dictionary into a fast lookup collection. Recursively find all valid sentence partitions for suffix s[start:]. For every prefix of the suffix matching a dictionary word, recursively obtain valid sentence suffixes for the remaining string and prepend the matching word. Cache suffix results to prevent redundant branch work. Return the completed sentences."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def wordBreak(self, s: str, wordDict: List[str]) -> List[str]:\n        words = set(wordDict)\n        memo = {}\n        def dfs(idx):\n            if idx == len(s):\n                return [\"\"]\n            if idx in memo:\n                return memo[idx]\n            res = []\n            for end in range(idx + 1, len(s) + 1):\n                prefix = s[idx:end]\n                if prefix in words:\n                    sub_sentences = dfs(end)\n                    for sub in sub_sentences:\n                        res.append(prefix if not sub else prefix + \" \" + sub)\n            memo[idx] = res\n            return res\n        return dfs(0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(2^N + N^2)",
+    "space": "O(2^N * N)",
+    "variables": [
+      "N: length of input string s"
+    ],
+    "notes": "In the worst case, every substring partition is valid, resulting in exponential output size.",
+    "whyNaiveFails": "Pure recursive exploration without caching identical suffixes repeats redundant sub-trees.",
+    "spaceTimeTradeoff": "Caching computed sentences for each suffix index prevents redundant recursive subproblem traversals.",
+    "interviewerExpectation": "Combining prefix lookup with cached suffix recursion to assemble all valid sentence configurations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def wordBreak(self, s: str, wordDict: List[str]) -> List[str]:\n        words = set(wordDict)\n        memo = {}\n        def dfs(idx):\n            if idx == len(s):\n                return [\"\"]\n            if idx in memo:\n                return memo[idx]\n            res = []\n            for end in range(idx + 1, len(s) + 1):\n                prefix = s[idx:end]\n                if prefix in words:\n                    sub_sentences = dfs(end)\n                    for sub in sub_sentences:\n                        res.append(prefix if not sub else prefix + \" \" + sub)\n            memo[idx] = res\n            return res\n        return dfs(0)",
+      "approach": "Suffix recursion with prefix word matching and sub-sentence assembly",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<string> wordBreak(string s, vector<string>& wordDict) {\n        unordered_set<string> words(wordDict.begin(), wordDict.end());\n        unordered_map<int, vector<string>> memo;\n        auto dfs = [&](auto self, int idx) -> vector<string> {\n            if (idx == (int)s.size()) return {\"\"};\n            if (memo.count(idx)) return memo[idx];\n            vector<string> res;\n            for (int end = idx + 1; end <= (int)s.size(); ++end) {\n                string prefix = s.substr(idx, end - idx);\n                if (words.count(prefix)) {\n                    vector<string> subSentences = self(self, end);\n                    for (const string& sub : subSentences) {\n                        res.push_back(sub.empty() ? prefix : prefix + \" \" + sub);\n                    }\n                }\n            }\n            return memo[idx] = res;\n        };\n        return dfs(dfs, 0);\n    }\n};",
+      "approach": "Suffix recursion with prefix word matching and sub-sentence assembly",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<String> wordBreak(String s, List<String> wordDict) {\n        Set<String> words = new HashSet<>(wordDict);\n        Map<Integer, List<String>> memo = new HashMap<>();\n        return dfs(s, 0, words, memo);\n    }\n    private List<String> dfs(String s, int idx, Set<String> words, Map<Integer, List<String>> memo) {\n        if (idx == s.length()) {\n            List<String> base = new ArrayList<>();\n            base.add(\"\");\n            return base;\n        }\n        if (memo.containsKey(idx)) return memo.get(idx);\n        List<String> res = new ArrayList<>();\n        for (int end = idx + 1; end <= s.length(); end++) {\n            String prefix = s.substring(idx, end);\n            if (words.contains(prefix)) {\n                List<String> subSentences = dfs(s, end, words, memo);\n                for (String sub : subSentences) {\n                    res.add(sub.isEmpty() ? prefix : prefix + \" \" + sub);\n                }\n            }\n        }\n        memo.put(idx, res);\n        return res;\n    }\n}",
+      "approach": "Suffix recursion with prefix word matching and sub-sentence assembly",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var wordBreak = function(s, wordDict) {\n    const words = new Set(wordDict);\n    const memo = new Map();\n    const dfs = (idx) => {\n        if (idx === s.length) return [\"\"];\n        if (memo.has(idx)) return memo.get(idx);\n        const res = [];\n        for (let end = idx + 1; end <= s.length; end++) {\n            const prefix = s.slice(idx, end);\n            if (words.has(prefix)) {\n                const subSentences = dfs(end);\n                for (const sub of subSentences) {\n                    res.push(sub === \"\" ? prefix : prefix + \" \" + sub);\n                }\n            }\n        }\n        memo.set(idx, res);\n        return res;\n    };\n    return dfs(0);\n};",
+      "approach": "Suffix recursion with prefix word matching and sub-sentence assembly",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

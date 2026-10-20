@@ -413,13 +413,13 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(revInt.supported_languages.length).toBeGreaterThanOrEqual(4);
     expect(revInt.supported_languages.some(l => l.id === 'python3')).toBe(true);
 
-    // Problem #51 (N-Queens) - uncurated, in catalog with mapped pattern backtracking-grid-dfs
-    const nQueens = await engine.getProblemHints('n-queens');
-    expect(nQueens.problem).not.toBeNull();
-    expect(nQueens.problem.number).toBe(51);
-    expect(nQueens.suggested_pattern).not.toBeNull();
-    expect(nQueens.suggested_pattern.id).toBe('backtracking-grid-dfs');
-    expect(nQueens.problem.verified).toBe(0);
+    // Problem #2850 (Minimum Moves to Spread Stones Over Grid) - uncurated, in catalog with mapped pattern backtracking-grid-dfs
+    const uncuratedProb = await engine.getProblemHints('minimum-moves-to-spread-stones-over-grid');
+    expect(uncuratedProb.problem).not.toBeNull();
+    expect(uncuratedProb.problem.number).toBe(2850);
+    expect(uncuratedProb.suggested_pattern).not.toBeNull();
+    expect(uncuratedProb.suggested_pattern.id).toBe('backtracking-grid-dfs');
+    expect(uncuratedProb.problem.verified).toBe(0);
 
     // Syncing an uncurated catalog problem inherits its true category and number
     const syncRes = await engine.syncBatch({

@@ -1,0 +1,78 @@
+{
+  "slug": "cherry-pickup",
+  "number": 741,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-grid-2d"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dual Round-Trip Traversal Obstacle",
+      "text": "Traversing from (0, 0) to (N-1, N-1) and back to pick up cherries cannot be done sequentially because first-path choices alter available cherries. How can stepping two walkers simultaneously from (0, 0) synchronize cherry pickup?"
+    },
+    {
+      "level": 2,
+      "title": "Simultaneous Step-Count Invariant",
+      "text": "When both walkers take k steps, r1 + c1 = k and r2 + c2 = k. They collect cherries at (r1, c1) and (r2, c2), taking the cell cherry only once if r1 == r2."
+    },
+    {
+      "level": 3,
+      "title": "2D State Step Rolling Procedure",
+      "text": "Represent states by step count k and row coordinates r1, r2. At each step, both walkers move right or down (4 transitions). Update transitions where neither walker lands on a thorn (-1). If both land on the same cell, add cherry count once, otherwise add both. Return 0 if the destination is unreachable."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def cherryPickup(self, grid: List[List[int]]) -> int:\n        n = len(grid)\n        dp = [[-1] * n for _ in range(n)]\n        dp[0][0] = grid[0][0]\n        for step in range(1, 2 * n - 1):\n            nxt = [[-1] * n for _ in range(n)]\n            for r1 in range(max(0, step - (n - 1)), min(n, step + 1)):\n                c1 = step - r1\n                if grid[r1][c1] == -1:\n                    continue\n                for r2 in range(r1, min(n, step + 1)):\n                    c2 = step - r2\n                    if grid[r2][c2] == -1:\n                        continue\n                    prev = -1\n                    for dr1 in (0, 1):\n                        for dr2 in (0, 1):\n                            pr1, pr2 = r1 - dr1, r2 - dr2\n                            if 0 <= pr1 < n and 0 <= pr2 < n and dp[pr1][pr2] != -1:\n                                prev = max(prev, dp[pr1][pr2])\n                    if prev != -1:\n                        cherries = grid[r1][c1] if r1 == r2 else grid[r1][c1] + grid[r2][c2]\n                        nxt[r1][r2] = prev + cherries\n            dp = nxt\n        return max(0, dp[n - 1][n - 1])\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^3)",
+    "space": "O(N^2)",
+    "variables": [
+      "N: grid size (N x N)"
+    ],
+    "notes": "Iterates through 2N steps with N x N state transitions per step.",
+    "whyNaiveFails": "Solving two paths sequentially fails greedily because the optimal first path can starve the return path.",
+    "spaceTimeTradeoff": "Storing only previous step matrix requires O(N^2) space instead of O(N^3).",
+    "interviewerExpectation": "Converting a round-trip path into two simultaneous forward paths."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def cherryPickup(self, grid: List[List[int]]) -> int:\n        n = len(grid)\n        dp = [[-1] * n for _ in range(n)]\n        dp[0][0] = grid[0][0]\n        for step in range(1, 2 * n - 1):\n            nxt = [[-1] * n for _ in range(n)]\n            for r1 in range(max(0, step - (n - 1)), min(n, step + 1)):\n                c1 = step - r1\n                if grid[r1][c1] == -1:\n                    continue\n                for r2 in range(r1, min(n, step + 1)):\n                    c2 = step - r2\n                    if grid[r2][c2] == -1:\n                        continue\n                    prev = -1\n                    for dr1 in (0, 1):\n                        for dr2 in (0, 1):\n                            pr1, pr2 = r1 - dr1, r2 - dr2\n                            if 0 <= pr1 < n and 0 <= pr2 < n and dp[pr1][pr2] != -1:\n                                prev = max(prev, dp[pr1][pr2])\n                    if prev != -1:\n                        cherries = grid[r1][c1] if r1 == r2 else grid[r1][c1] + grid[r2][c2]\n                        nxt[r1][r2] = prev + cherries\n            dp = nxt\n        return max(0, dp[n - 1][n - 1])",
+      "approach": "Dual-walker synchronous forward step tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int cherryPickup(vector<vector<int>>& grid) {\n        int n = grid.size();\n        vector<vector<int>> dp(n, vector<int>(n, -1));\n        dp[0][0] = grid[0][0];\n        for (int step = 1; step < 2 * n - 1; ++step) {\n            vector<vector<int>> nxt(n, vector<int>(n, -1));\n            for (int r1 = max(0, step - (n - 1)); r1 <= min(n - 1, step); ++r1) {\n                int c1 = step - r1;\n                if (grid[r1][c1] == -1) continue;\n                for (int r2 = r1; r2 <= min(n - 1, step); ++r2) {\n                    int c2 = step - r2;\n                    if (grid[r2][c2] == -1) continue;\n                    int prevMax = -1;\n                    for (int dr1 : {0, 1}) {\n                        for (int dr2 : {0, 1}) {\n                            int pr1 = r1 - dr1, pr2 = r2 - dr2;\n                            if (pr1 >= 0 && pr2 >= 0 && dp[pr1][pr2] != -1) {\n                                prevMax = max(prevMax, dp[pr1][pr2]);\n                            }\n                        }\n                    }\n                    if (prevMax != -1) {\n                        int cherries = (r1 == r2) ? grid[r1][c1] : grid[r1][c1] + grid[r2][c2];\n                        nxt[r1][r2] = prevMax + cherries;\n                    }\n                }\n            }\n            dp = move(nxt);\n        }\n        return max(0, dp[n - 1][n - 1]);\n    }\n};",
+      "approach": "Dual-walker synchronous forward step tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int cherryPickup(int[][] grid) {\n        int n = grid.length;\n        int[][] dp = new int[n][n];\n        for (int[] row : dp) Arrays.fill(row, -1);\n        dp[0][0] = grid[0][0];\n        for (int step = 1; step < 2 * n - 1; step++) {\n            int[][] nxt = new int[n][n];\n            for (int[] row : nxt) Arrays.fill(row, -1);\n            for (int r1 = Math.max(0, step - (n - 1)); r1 <= Math.min(n - 1, step); r1++) {\n                int c1 = step - r1;\n                if (grid[r1][c1] == -1) continue;\n                for (int r2 = r1; r2 <= Math.min(n - 1, step); r2++) {\n                    int c2 = step - r2;\n                    if (grid[r2][c2] == -1) continue;\n                    int prevMax = -1;\n                    for (int dr1 = 0; dr1 <= 1; dr1++) {\n                        for (int dr2 = 0; dr2 <= 1; dr2++) {\n                            int pr1 = r1 - dr1, pr2 = r2 - dr2;\n                            if (pr1 >= 0 && pr2 >= 0 && dp[pr1][pr2] != -1) {\n                                prevMax = Math.max(prevMax, dp[pr1][pr2]);\n                            }\n                        }\n                    }\n                    if (prevMax != -1) {\n                        int cherries = (r1 == r2) ? grid[r1][c1] : grid[r1][c1] + grid[r2][c2];\n                        nxt[r1][r2] = prevMax + cherries;\n                    }\n                }\n            }\n            dp = nxt;\n        }\n        return Math.max(0, dp[n - 1][n - 1]);\n    }\n}",
+      "approach": "Dual-walker synchronous forward step tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var cherryPickup = function(grid) {\n    const n = grid.length;\n    let dp = Array.from({ length: n }, () => new Array(n).fill(-1));\n    dp[0][0] = grid[0][0];\n    for (let step = 1; step < 2 * n - 1; step++) {\n        const nxt = Array.from({ length: n }, () => new Array(n).fill(-1));\n        for (let r1 = Math.max(0, step - (n - 1)); r1 <= Math.min(n - 1, step); r1++) {\n            const c1 = step - r1;\n            if (grid[r1][c1] === -1) continue;\n            for (let r2 = r1; r2 <= Math.min(n - 1, step); r2++) {\n                const c2 = step - r2;\n                if (grid[r2][c2] === -1) continue;\n                let prevMax = -1;\n                for (const dr1 of [0, 1]) {\n                    for (const dr2 of [0, 1]) {\n                        const pr1 = r1 - dr1, pr2 = r2 - dr2;\n                        if (pr1 >= 0 && pr2 >= 0 && dp[pr1][pr2] !== -1) {\n                            prevMax = Math.max(prevMax, dp[pr1][pr2]);\n                        }\n                    }\n                }\n                if (prevMax !== -1) {\n                    const cherries = (r1 === r2) ? grid[r1][c1] : grid[r1][c1] + grid[r2][c2];\n                    nxt[r1][r2] = prevMax + cherries;\n                }\n            }\n        }\n        dp = nxt;\n    }\n    return Math.max(0, dp[n - 1][n - 1]);\n};",
+      "approach": "Dual-walker synchronous forward step tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "cherry-pickup-ii",
+  "number": 1463,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-grid-2d"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two-Robot Simultaneous Descent Obstacle",
+      "text": "Two robots move down one row simultaneously from top-left and top-right corners. How can synchronizing their simultaneous row progression track the optimal column positions for both robots without double-counting shared cells?"
+    },
+    {
+      "level": 2,
+      "title": "Row Synchronization Column Pair Invariant",
+      "text": "At row r, both robots are on row r at columns c1 and c2. In the next row, robot 1 can move to c1 - 1, c1, or c1 + 1, and robot 2 can move to c2 - 1, c2, or c2 + 1."
+    },
+    {
+      "level": 3,
+      "title": "2D Column-Pair Table Rolling Procedure",
+      "text": "Initialize a table of dimensions cols x cols with -1, setting entry (0, cols - 1) to the combined cherries of both starting corners. For each row from 1 to rows - 1, compute the next row table across all 9 movement pairs (dc1, dc2 in -1, 0, 1). If both robots share a column, collect the value once, otherwise add both. Return the maximum value in the final table."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def cherryPickup(self, grid: List[List[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        dp = [[-1] * cols for _ in range(cols)]\n        dp[0][cols - 1] = grid[0][0] + (grid[0][cols - 1] if cols > 1 else 0)\n        for r in range(1, rows):\n            nxt = [[-1] * cols for _ in range(cols)]\n            for c1 in range(cols):\n                for c2 in range(cols):\n                    if dp[c1][c2] == -1:\n                        continue\n                    for d1 in (-1, 0, 1):\n                        nc1 = c1 + d1\n                        if not (0 <= nc1 < cols):\n                            continue\n                        for d2 in (-1, 0, 1):\n                            nc2 = c2 + d2\n                            if not (0 <= nc2 < cols):\n                                continue\n                            cherries = grid[r][nc1] if nc1 == nc2 else grid[r][nc1] + grid[r][nc2]\n                            nxt[nc1][nc2] = max(nxt[nc1][nc2], dp[c1][c2] + cherries)\n            dp = nxt\n        return max(max(row) for row in dp)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R * C^2)",
+    "space": "O(C^2)",
+    "variables": [
+      "R: rows in grid",
+      "C: columns in grid (up to 70)"
+    ],
+    "notes": "For each row, evaluates 9 transitions for up to C^2 column pairs.",
+    "whyNaiveFails": "Recursive search explores 9^R possibilities, which is astronomical for R=70.",
+    "spaceTimeTradeoff": "Maintaining only the current row column-pair table uses O(C^2) memory.",
+    "interviewerExpectation": "Synchronizing row descent so robots move in lockstep through a 2D column-pair state space."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def cherryPickup(self, grid: List[List[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        dp = [[-1] * cols for _ in range(cols)]\n        dp[0][cols - 1] = grid[0][0] + (grid[0][cols - 1] if cols > 1 else 0)\n        for r in range(1, rows):\n            nxt = [[-1] * cols for _ in range(cols)]\n            for c1 in range(cols):\n                for c2 in range(cols):\n                    if dp[c1][c2] == -1:\n                        continue\n                    for d1 in (-1, 0, 1):\n                        nc1 = c1 + d1\n                        if not (0 <= nc1 < cols):\n                            continue\n                        for d2 in (-1, 0, 1):\n                            nc2 = c2 + d2\n                            if not (0 <= nc2 < cols):\n                                continue\n                            cherries = grid[r][nc1] if nc1 == nc2 else grid[r][nc1] + grid[r][nc2]\n                            nxt[nc1][nc2] = max(nxt[nc1][nc2], dp[c1][c2] + cherries)\n            dp = nxt\n        return max(max(row) for row in dp)",
+      "approach": "Synchronous row-by-row dual-robot column-pair progression",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int cherryPickup(vector<vector<int>>& grid) {\n        int rows = grid.size(), cols = grid[0].size();\n        vector<vector<int>> dp(cols, vector<int>(cols, -1));\n        dp[0][cols - 1] = grid[0][0] + (cols > 1 ? grid[0][cols - 1] : 0);\n        for (int r = 1; r < rows; ++r) {\n            vector<vector<int>> nxt(cols, vector<int>(cols, -1));\n            for (int c1 = 0; c1 < cols; ++c1) {\n                for (int c2 = 0; c2 < cols; ++c2) {\n                    if (dp[c1][c2] == -1) continue;\n                    for (int d1 = -1; d1 <= 1; ++d1) {\n                        int nc1 = c1 + d1;\n                        if (nc1 < 0 || nc1 >= cols) continue;\n                        for (int d2 = -1; d2 <= 1; ++d2) {\n                            int nc2 = c2 + d2;\n                            if (nc2 < 0 || nc2 >= cols) continue;\n                            int cherries = (nc1 == nc2) ? grid[r][nc1] : grid[r][nc1] + grid[r][nc2];\n                            nxt[nc1][nc2] = max(nxt[nc1][nc2], dp[c1][c2] + cherries);\n                        }\n                    }\n                }\n            }\n            dp = move(nxt);\n        }\n        int res = 0;\n        for (int c1 = 0; c1 < cols; ++c1) {\n            for (int c2 = 0; c2 < cols; ++c2) {\n                res = max(res, dp[c1][c2]);\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "Synchronous row-by-row dual-robot column-pair progression",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int cherryPickup(int[][] grid) {\n        int rows = grid.length, cols = grid[0].length;\n        int[][] dp = new int[cols][cols];\n        for (int[] row : dp) Arrays.fill(row, -1);\n        dp[0][cols - 1] = grid[0][0] + (cols > 1 ? grid[0][cols - 1] : 0);\n        for (int r = 1; r < rows; r++) {\n            int[][] nxt = new int[cols][cols];\n            for (int[] row : nxt) Arrays.fill(row, -1);\n            for (int c1 = 0; c1 < cols; c1++) {\n                for (int c2 = 0; c2 < cols; c2++) {\n                    if (dp[c1][c2] == -1) continue;\n                    for (int d1 = -1; d1 <= 1; d1++) {\n                        int nc1 = c1 + d1;\n                        if (nc1 < 0 || nc1 >= cols) continue;\n                        for (int d2 = -1; d2 <= 1; d2++) {\n                            int nc2 = c2 + d2;\n                            if (nc2 < 0 || nc2 >= cols) continue;\n                            int cherries = (nc1 == nc2) ? grid[r][nc1] : grid[r][nc1] + grid[r][nc2];\n                            nxt[nc1][nc2] = Math.max(nxt[nc1][nc2], dp[c1][c2] + cherries);\n                        }\n                    }\n                }\n            }\n            dp = nxt;\n        }\n        int res = 0;\n        for (int c1 = 0; c1 < cols; c1++) {\n            for (int c2 = 0; c2 < cols; c2++) {\n                res = Math.max(res, dp[c1][c2]);\n            }\n        }\n        return res;\n    }\n}",
+      "approach": "Synchronous row-by-row dual-robot column-pair progression",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    },
+    {
+      "lang": "javascript",
+      "code": "var cherryPickup = function(grid) {\n    const rows = grid.length, cols = grid[0].length;\n    let dp = Array.from({ length: cols }, () => new Array(cols).fill(-1));\n    dp[0][cols - 1] = grid[0][0] + (cols > 1 ? grid[0][cols - 1] : 0);\n    for (let r = 1; r < rows; r++) {\n        const nxt = Array.from({ length: cols }, () => new Array(cols).fill(-1));\n        for (let c1 = 0; c1 < cols; c1++) {\n            for (let c2 = 0; c2 < cols; c2++) {\n                if (dp[c1][c2] === -1) continue;\n                for (let d1 = -1; d1 <= 1; d1++) {\n                    const nc1 = c1 + d1;\n                    if (nc1 < 0 || nc1 >= cols) continue;\n                    for (let d2 = -1; d2 <= 1; d2++) {\n                        const nc2 = c2 + d2;\n                        if (nc2 < 0 || nc2 >= cols) continue;\n                        const cherries = (nc1 === nc2) ? grid[r][nc1] : grid[r][nc1] + grid[r][nc2];\n                        nxt[nc1][nc2] = Math.max(nxt[nc1][nc2], dp[c1][c2] + cherries);\n                    }\n                }\n            }\n        }\n        dp = nxt;\n    }\n    let res = 0;\n    for (let c1 = 0; c1 < cols; c1++) {\n        for (let c2 = 0; c2 < cols; c2++) {\n            res = Math.max(res, dp[c1][c2]);\n        }\n    }\n    return res;\n};",
+      "approach": "Synchronous row-by-row dual-robot column-pair progression",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-21"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-21T00:00:00.000Z"
+}
