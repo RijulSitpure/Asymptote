@@ -398,20 +398,20 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
 
   // 10. Full LeetCode Problem Catalog Index Resolution
   it('10. Resolves uncurated problem metadata, category, supported languages, and suggested pattern from catalog.json', async () => {
-    // Problem #7 (Reverse Integer) - uncurated, in catalog
-    const revInt = await engine.getProblemHints(7);
-    expect(revInt.problem).not.toBeNull();
-    expect(revInt.problem.number).toBe(7);
-    expect(revInt.problem.slug).toBe('reverse-integer');
-    expect(revInt.problem.title).toBe('Reverse Integer');
-    expect(revInt.problem.difficulty).toBe('Medium');
-    expect(revInt.problem.category).toBe('Algorithms');
-    expect(revInt.problem.verified).toBe(0);
-    expect(revInt.problem.verification_tier).toBe('unverified');
-    expect(revInt.problem.hints).toEqual([]);
-    expect(revInt.complexity).toBeNull();
-    expect(revInt.supported_languages.length).toBeGreaterThanOrEqual(4);
-    expect(revInt.supported_languages.some(l => l.id === 'python3')).toBe(true);
+    // Problem #6 (Zigzag Conversion) - uncurated, in catalog
+    const uncurated = await engine.getProblemHints(6);
+    expect(uncurated.problem).not.toBeNull();
+    expect(uncurated.problem.number).toBe(6);
+    expect(uncurated.problem.slug).toBe('zigzag-conversion');
+    expect(uncurated.problem.title).toBe('Zigzag Conversion');
+    expect(uncurated.problem.difficulty).toBe('Medium');
+    expect(uncurated.problem.category).toBe('Algorithms');
+    expect(uncurated.problem.verified).toBe(0);
+    expect(uncurated.problem.verification_tier).toBe('unverified');
+    expect(uncurated.problem.hints).toEqual([]);
+    expect(uncurated.complexity).toBeNull();
+    expect(uncurated.supported_languages.length).toBeGreaterThanOrEqual(4);
+    expect(uncurated.supported_languages.some(l => l.id === 'python3')).toBe(true);
 
     // Problem #2850 (Minimum Moves to Spread Stones Over Grid) - uncurated, in catalog with mapped pattern backtracking-grid-dfs
     const uncuratedProb = await engine.getProblemHints('minimum-moves-to-spread-stones-over-grid');
@@ -426,7 +426,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
       username: 'CatalogTester',
       problems: [
         {
-          title_slug: 'reverse-integer',
+          title_slug: 'zigzag-conversion',
           languages: ['python3']
         }
       ]
@@ -434,11 +434,11 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(syncRes.success).toBe(true);
 
     const problems = await engine.getProblems();
-    const syncedRev = problems.find(p => p.slug === 'reverse-integer');
-    expect(syncedRev).toBeDefined();
-    expect(syncedRev.number).toBe(7);
-    expect(syncedRev.title).toBe('Reverse Integer');
-    expect(syncedRev.category).toBe('Algorithms');
+    const syncedProb = problems.find(p => p.slug === 'zigzag-conversion');
+    expect(syncedProb).toBeDefined();
+    expect(syncedProb.number).toBe(6);
+    expect(syncedProb.title).toBe('Zigzag Conversion');
+    expect(syncedProb.category).toBe('Algorithms');
   });
 
   // 11. Bidirectional Key Resolution & "Unclassified" Pattern Prevention

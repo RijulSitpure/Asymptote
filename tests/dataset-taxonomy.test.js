@@ -271,14 +271,14 @@ describe('Dataset Taxonomy and Content Verification Tests', () => {
   });
 
   it('asserts problem files tested review status and verified solutions', () => {
-    expect(allProblems.length).toBe(370);
+    expect(allProblems.length).toBe(420);
     for (const { file, data } of allProblems) {
       expect(data.review?.status, `${file} review.status must be "tested"`).toBe('tested');
       expect(Array.isArray(data.solutions), `${file} must have solutions array`).toBe(true);
       expect(data.solutions.length).toBeGreaterThan(0);
       for (const sol of data.solutions) {
         expect(sol.verifiedBy, `${file} solution verifiedBy must be "tests"`).toBe('tests');
-        expect(sol.testedOn, `${file} solution testedOn must be set`).toMatch(/^2026-10-(?:1[78]|2[01])$/);
+        expect(sol.testedOn, `${file} solution testedOn must be set`).toMatch(/^2026-10-(?:1[78]|2[013])$/);
       }
     }
   });
@@ -295,7 +295,7 @@ describe('Dataset Taxonomy and Content Verification Tests', () => {
   });
 
   it('asserts 3-part structured complexity analysis on all curated problems', () => {
-    expect(allProblems.length).toBe(370);
+    expect(allProblems.length).toBe(420);
     for (const { file, data } of allProblems) {
       expect(data.complexity, `${file} must have complexity`).toBeDefined();
       expect(typeof data.complexity.whyNaiveFails, `${file} whyNaiveFails must be string`).toBe('string');
@@ -311,7 +311,7 @@ describe('Dataset Taxonomy and Content Verification Tests', () => {
 
   it('asserts multi-language solutions across curated categories', () => {
     const algoProblems = allProblems.filter(({ data }) => data.category === 'Algorithms');
-    expect(algoProblems.length).toBe(338);
+    expect(algoProblems.length).toBe(388);
     for (const { file, data } of algoProblems) {
       const langs = (data.solutions || []).map(s => s.lang);
       expect(langs, `${file} must support python3, cpp, java, javascript`).toEqual(
