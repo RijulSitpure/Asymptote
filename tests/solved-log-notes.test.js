@@ -21,7 +21,7 @@ describe('Solved Log & In-Extension Note-Taking Verification', () => {
 
   it('1. Verifies that problems start unsolved and updateProblemUserState persists notes and rating', async () => {
     const initial = await engine.getProblems();
-    expect(initial.length).toBe(420);
+    expect(initial.length).toBe(470);
     // Initial state: no problems solved
     const initiallySolved = initial.filter(p => Boolean(p.is_solved));
     expect(initiallySolved.length).toBe(0);
