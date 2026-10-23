@@ -83,14 +83,31 @@
 
       if (lm && typeof lm.availability === 'function') {
         let status;
+        const availabilityOptions = {
+          expectedInputs: [{ type: 'text', languages: ['en'] }],
+          expectedOutputs: [{ type: 'text', languages: ['en'] }],
+          expectedOutputLanguages: ['en'],
+          expectedInputLanguages: ['en'],
+          outputLanguage: 'en'
+        };
         try {
-          status = await lm.availability({
-            expectedOutputLanguages: ['en'],
-            expectedInputLanguages: ['en'],
-            outputLanguage: 'en'
-          });
+          status = await lm.availability(availabilityOptions);
         } catch (_optsErr) {
-          status = await lm.availability();
+          try {
+            status = await lm.availability({
+              expectedInputs: [{ type: 'text', languages: ['en'] }],
+              expectedOutputs: [{ type: 'text', languages: ['en'] }]
+            });
+          } catch (_optsErr2) {
+            try {
+              status = await lm.availability({
+                expectedOutputLanguages: ['en'],
+                outputLanguage: 'en'
+              });
+            } catch (_optsErr3) {
+              status = await lm.availability();
+            }
+          }
         }
         const isNative = status === 'available' || status === 'downloadable' || status === 'downloading';
         return {
@@ -274,6 +291,8 @@ Format your response in concise, markdown bullet points. Do not include introduc
         if (aiProvider) {
           const createOptions = {
             systemPrompt: 'You are Asymptote Socratic Mentor. You explain algorithmic patterns cleanly, concisely, and with precision using bullet points. Avoid filler.',
+            expectedInputs: [{ type: 'text', languages: ['en'] }],
+            expectedOutputs: [{ type: 'text', languages: ['en'] }],
             expectedOutputLanguages: ['en'],
             expectedInputLanguages: ['en'],
             outputLanguage: 'en'
@@ -282,9 +301,20 @@ Format your response in concise, markdown bullet points. Do not include introduc
           try {
             session = await aiProvider.create(createOptions);
           } catch (_createErr) {
-            session = await aiProvider.create({
-              systemPrompt: createOptions.systemPrompt
-            });
+            try {
+              session = await aiProvider.create({
+                systemPrompt: createOptions.systemPrompt,
+                expectedInputs: [{ type: 'text', languages: ['en'] }],
+                expectedOutputs: [{ type: 'text', languages: ['en'] }],
+                expectedOutputLanguages: ['en'],
+                outputLanguage: 'en'
+              });
+            } catch (_fallbackErr) {
+              session = await aiProvider.create({
+                systemPrompt: createOptions.systemPrompt,
+                expectedOutputs: [{ type: 'text', languages: ['en'] }]
+              });
+            }
           }
 
           const fullPrompt = buildNanoPrompt({ problem, pattern, code, lang, prompt, mode });

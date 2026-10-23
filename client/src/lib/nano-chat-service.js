@@ -160,6 +160,8 @@
           setTimeout(() => reject(new Error('LanguageModel availability check timed out')), 1500);
         });
         const availabilityOptions = {
+          expectedInputs: [{ type: 'text', languages: ['en'] }],
+          expectedOutputs: [{ type: 'text', languages: ['en'] }],
           expectedOutputLanguages: ['en'],
           expectedInputLanguages: ['en'],
           outputLanguage: 'en'
@@ -168,7 +170,27 @@
         try {
           status = await Promise.race([lm.availability(availabilityOptions), timeoutPromise]);
         } catch (_optsErr) {
-          status = await Promise.race([lm.availability(), timeoutPromise]);
+          try {
+            status = await Promise.race([
+              lm.availability({
+                expectedInputs: [{ type: 'text', languages: ['en'] }],
+                expectedOutputs: [{ type: 'text', languages: ['en'] }]
+              }),
+              timeoutPromise
+            ]);
+          } catch (_secOptsErr) {
+            try {
+              status = await Promise.race([
+                lm.availability({
+                  expectedOutputLanguages: ['en'],
+                  outputLanguage: 'en'
+                }),
+                timeoutPromise
+              ]);
+            } catch (_thirdOptsErr) {
+              status = await Promise.race([lm.availability(), timeoutPromise]);
+            }
+          }
         }
         if (['available', 'downloadable', 'downloading', 'unavailable'].includes(status)) {
           return status;
@@ -366,6 +388,8 @@
 
     const createOptions = {
       systemPrompt,
+      expectedInputs: [{ type: 'text', languages: ['en'] }],
+      expectedOutputs: [{ type: 'text', languages: ['en'] }],
       expectedOutputLanguages: ['en'],
       expectedInputLanguages: ['en'],
       outputLanguage: 'en',
@@ -400,15 +424,45 @@
         try {
           session = await lm.create(createOptions);
         } catch (_retryErr) {
-          const minimalOptions = { systemPrompt: createOptions.systemPrompt, monitor: createOptions.monitor };
-          session = await lm.create(minimalOptions);
+          const fallbackOptions = {
+            systemPrompt: createOptions.systemPrompt,
+            expectedInputs: [{ type: 'text', languages: ['en'] }],
+            expectedOutputs: [{ type: 'text', languages: ['en'] }],
+            expectedOutputLanguages: ['en'],
+            outputLanguage: 'en',
+            monitor: createOptions.monitor
+          };
+          try {
+            session = await lm.create(fallbackOptions);
+          } catch (_minErr) {
+            session = await lm.create({
+              systemPrompt: createOptions.systemPrompt,
+              expectedOutputs: [{ type: 'text', languages: ['en'] }],
+              monitor: createOptions.monitor
+            });
+          }
         }
       } else {
         try {
-          const minimalOptions = { systemPrompt: createOptions.systemPrompt, monitor: createOptions.monitor };
-          session = await lm.create(minimalOptions);
+          const fallbackOptions = {
+            systemPrompt: createOptions.systemPrompt,
+            expectedInputs: [{ type: 'text', languages: ['en'] }],
+            expectedOutputs: [{ type: 'text', languages: ['en'] }],
+            expectedOutputLanguages: ['en'],
+            outputLanguage: 'en',
+            monitor: createOptions.monitor
+          };
+          session = await lm.create(fallbackOptions);
         } catch (_minimalErr) {
-          throw err;
+          try {
+            session = await lm.create({
+              systemPrompt: createOptions.systemPrompt,
+              expectedOutputs: [{ type: 'text', languages: ['en'] }],
+              monitor: createOptions.monitor
+            });
+          } catch (_lastErr) {
+            throw err;
+          }
         }
       }
     }

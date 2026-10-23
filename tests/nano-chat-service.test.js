@@ -85,7 +85,7 @@ describe('NanoChatService Unit & Prompt API Tests (Step 2)', () => {
       expect(thrownStatus).toBe('unavailable');
     });
 
-    it('passes expectedOutputLanguages: ["en"] to availability for safety attestation', async () => {
+    it('passes expectedOutputs and expectedOutputLanguages: ["en"] to availability for safety attestation', async () => {
       const availSpy = vi.fn().mockResolvedValue('available');
       globalThis.LanguageModel = {
         availability: availSpy
@@ -93,7 +93,8 @@ describe('NanoChatService Unit & Prompt API Tests (Step 2)', () => {
       await service.checkAvailability();
       expect(availSpy).toHaveBeenCalled();
       expect(availSpy.mock.calls[0][0]).toMatchObject({
-        expectedOutputLanguages: ['en']
+        expectedOutputLanguages: ['en'],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }]
       });
     });
   });
@@ -185,7 +186,8 @@ describe('NanoChatService Unit & Prompt API Tests (Step 2)', () => {
       expect(res.success).toBe(true);
       expect(createSpy).toHaveBeenCalled();
       expect(createSpy.mock.calls[0][0]).toMatchObject({
-        expectedOutputLanguages: ['en']
+        expectedOutputLanguages: ['en'],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }]
       });
       // Prompt sent to model must contain problem grounding
       expect(promptReceivedByModel).toContain('#1 Two Sum');
