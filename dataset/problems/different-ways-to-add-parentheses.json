@@ -1,0 +1,78 @@
+{
+  "slug": "different-ways-to-add-parentheses",
+  "number": 241,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-interval"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Operator Bisection Splitting",
+      "text": "Every operator in the expression can serve as the final operation performed. Splitting at operator index splits the problem into independent left and right subexpressions."
+    },
+    {
+      "level": 2,
+      "title": "Subexpression Cartesian Combination",
+      "text": "For each operator, recursively compute all possible evaluation outcomes of the left side and right side, then combine each pair using that operator."
+    },
+    {
+      "level": 3,
+      "title": "Base Case String Parsing",
+      "text": "If the string contains no operators, convert it directly to an integer and return as a single-element list. Cache subproblem results to avoid repeated evaluations."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def diffWaysToCompute(self, expression: str) -> List[int]:\n        memo = {}\n        def compute(expr: str) -> list:\n            if expr in memo:\n                return memo[expr]\n            res = []\n            for i, ch in enumerate(expr):\n                if ch in \"+-*\":\n                    left = compute(expr[:i])\n                    right = compute(expr[i + 1:])\n                    for l in left:\n                        for r in right:\n                            if ch == \"+\":\n                                res.append(l + r)\n                            elif ch == \"-\":\n                                res.append(l - r)\n                            elif ch == \"*\":\n                                res.append(l * r)\n            if not res:\n                res = [int(expr)]\n            memo[expr] = res\n            return res\n        return compute(expression)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(4^N / N^(3/2))",
+    "space": "O(4^N / N^(3/2))",
+    "variables": [
+      "N: number of operators (Catalan number growth)"
+    ],
+    "notes": "Optimal solution achieving Catalan complexity time and space.",
+    "whyNaiveFails": "Recomputing overlapping subexpression trees without caching does duplicate evaluations for common subranges.",
+    "spaceTimeTradeoff": "Interval memoization caches subexpression results, bounding compute to unique substring slices.",
+    "interviewerExpectation": "Candidate should recognize Catalan structure and implement clean divide-and-conquer on operator boundaries."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def diffWaysToCompute(self, expression: str) -> List[int]:\n        memo = {}\n        def compute(expr: str) -> list:\n            if expr in memo:\n                return memo[expr]\n            res = []\n            for i, ch in enumerate(expr):\n                if ch in \"+-*\":\n                    left = compute(expr[:i])\n                    right = compute(expr[i + 1:])\n                    for l in left:\n                        for r in right:\n                            if ch == \"+\":\n                                res.append(l + r)\n                            elif ch == \"-\":\n                                res.append(l - r)\n                            elif ch == \"*\":\n                                res.append(l * r)\n            if not res:\n                res = [int(expr)]\n            memo[expr] = res\n            return res\n        return compute(expression)",
+      "approach": "dp-interval verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> diffWaysToCompute(string expression) {\n        unordered_map<string, vector<int>> memo;\n        auto compute = [&](auto& self, string expr) -> vector<int> {\n            if (memo.count(expr)) return memo[expr];\n            vector<int> res;\n            for (int i = 0; i < (int)expr.size(); i++) {\n                char ch = expr[i];\n                if (ch == '+' || ch == '-' || ch == '*') {\n                    vector<int> left = self(self, expr.substr(0, i));\n                    vector<int> right = self(self, expr.substr(i + 1));\n                    for (int l : left) {\n                        for (int r : right) {\n                            if (ch == '+') res.push_back(l + r);\n                            else if (ch == '-') res.push_back(l - r);\n                            else if (ch == '*') res.push_back(l * r);\n                        }\n                    }\n                }\n            }\n            if (res.empty()) {\n                res.push_back(stoi(expr));\n            }\n            return memo[expr] = res;\n        };\n        return compute(compute, expression);\n    }\n};",
+      "approach": "dp-interval verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private Map<String, List<Integer>> memo = new HashMap<>();\n\n    public List<Integer> diffWaysToCompute(String expression) {\n        if (memo.containsKey(expression)) return memo.get(expression);\n        List<Integer> res = new ArrayList<>();\n        for (int i = 0; i < expression.length(); i++) {\n            char ch = expression.charAt(i);\n            if (ch == '+' || ch == '-' || ch == '*') {\n                List<Integer> left = diffWaysToCompute(expression.substring(0, i));\n                List<Integer> right = diffWaysToCompute(expression.substring(i + 1));\n                for (int l : left) {\n                    for (int r : right) {\n                        if (ch == '+') res.add(l + r);\n                        else if (ch == '-') res.add(l - r);\n                        else if (ch == '*') res.add(l * r);\n                    }\n                }\n            }\n        }\n        if (res.isEmpty()) {\n            res.add(Integer.parseInt(expression));\n        }\n        memo.put(expression, res);\n        return res;\n    }\n}",
+      "approach": "dp-interval verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var diffWaysToCompute = function(expression) {\n    const memo = new Map();\n    const compute = (expr) => {\n        if (memo.has(expr)) return memo.get(expr);\n        const res = [];\n        for (let i = 0; i < expr.length; i++) {\n            const ch = expr[i];\n            if (ch === '+' || ch === '-' || ch === '*') {\n                const left = compute(expr.slice(0, i));\n                const right = compute(expr.slice(i + 1));\n                for (const l of left) {\n                    for (const r of right) {\n                        if (ch === '+') res.push(l + r);\n                        else if (ch === '-') res.push(l - r);\n                        else if (ch === '*') res.push(l * r);\n                    }\n                }\n            }\n        }\n        if (res.length === 0) {\n            res.push(Number(expr));\n        }\n        memo.set(expr, res);\n        return res;\n    };\n    return compute(expression);\n};",
+      "approach": "dp-interval verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

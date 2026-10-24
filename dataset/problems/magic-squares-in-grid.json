@@ -1,0 +1,79 @@
+{
+  "slug": "magic-squares-in-grid",
+  "number": 840,
+  "category": "Algorithms",
+  "patterns": [
+    "matrix-simulation"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Magic Constant and Center Invariant",
+      "text": "Every three-by-three magic square formed by integers one through nine has a fixed row, column, and diagonal sum of fifteen. Which cell value is strictly constant across all valid configurations?"
+    },
+    {
+      "level": 2,
+      "title": "Center Digit Five Filter",
+      "text": "The center cell of any three-by-three magic square using numbers one through nine must be five. Any subgrid whose center is not five can be immediately skipped."
+    },
+    {
+      "level": 3,
+      "title": "Constant-Time Subgrid Verification",
+      "text": "Slide a three-by-three window across every candidate top-left coordinate. Verify that the center cell equals five, all nine values are distinct digits from one to nine, and the sums of each row, column, and diagonal equal fifteen. Increment the counter for each matching subgrid."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def numMagicSquaresInside(self, grid: List[List[int]]) -> int:\n        R, C = len(grid), len(grid[0])\n        if R < 3 or C < 3:\n            return 0\n\n        def isMagic(r: int, c: int) -> bool:\n            if grid[r + 1][c + 1] != 5:\n                return False\n            vals = [grid[r + i][c + j] for i in range(3) for j in range(3)]\n            if sorted(vals) != list(range(1, 10)):\n                return False\n            for i in range(3):\n                if sum(grid[r + i][c + j] for j in range(3)) != 15:\n                    return False\n            for j in range(3):\n                if sum(grid[r + i][c + j] for i in range(3)) != 15:\n                    return False\n            if grid[r][c] + grid[r + 1][c + 1] + grid[r + 2][c + 2] != 15:\n                return False\n            if grid[r][c + 2] + grid[r + 1][c + 1] + grid[r + 2][c] != 15:\n                return False\n            return True\n\n        count = 0\n        for r in range(R - 2):\n            for c in range(C - 2):\n                if isMagic(r, c):\n                    count += 1\n        return count\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R * C)",
+    "space": "O(1)",
+    "variables": [
+      "R: grid rows",
+      "C: grid columns"
+    ],
+    "notes": "Optimal solution achieving O(R * C) time and O(1) auxiliary space.",
+    "whyNaiveFails": "Generating all permutations of digits for each subgrid is wasteful when direct constant-time invariant checking is available.",
+    "spaceTimeTradeoff": "Checking each 3x3 window in O(1) arithmetic operations achieves O(R * C) overall runtime with strictly O(1) auxiliary space.",
+    "interviewerExpectation": "Candidate should leverage mathematical properties of 3x3 magic squares such as magic sum 15 and center cell 5."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def numMagicSquaresInside(self, grid: List[List[int]]) -> int:\n        R, C = len(grid), len(grid[0])\n        if R < 3 or C < 3:\n            return 0\n\n        def isMagic(r: int, c: int) -> bool:\n            if grid[r + 1][c + 1] != 5:\n                return False\n            vals = [grid[r + i][c + j] for i in range(3) for j in range(3)]\n            if sorted(vals) != list(range(1, 10)):\n                return False\n            for i in range(3):\n                if sum(grid[r + i][c + j] for j in range(3)) != 15:\n                    return False\n            for j in range(3):\n                if sum(grid[r + i][c + j] for i in range(3)) != 15:\n                    return False\n            if grid[r][c] + grid[r + 1][c + 1] + grid[r + 2][c + 2] != 15:\n                return False\n            if grid[r][c + 2] + grid[r + 1][c + 1] + grid[r + 2][c] != 15:\n                return False\n            return True\n\n        count = 0\n        for r in range(R - 2):\n            for c in range(C - 2):\n                if isMagic(r, c):\n                    count += 1\n        return count",
+      "approach": "matrix-simulation verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int numMagicSquaresInside(vector<vector<int>>& grid) {\n        int R = grid.size(), C = grid[0].size();\n        if (R < 3 || C < 3) return 0;\n\n        auto isMagic = [&](int r, int c) -> bool {\n            if (grid[r + 1][c + 1] != 5) return false;\n            vector<int> count(16, 0);\n            for (int i = 0; i < 3; ++i) {\n                for (int j = 0; j < 3; ++j) {\n                    int val = grid[r + i][c + j];\n                    if (val < 1 || val > 9 || count[val] > 0) return false;\n                    count[val]++;\n                }\n            }\n            for (int i = 0; i < 3; ++i) {\n                if (grid[r + i][c] + grid[r + i][c + 1] + grid[r + i][c + 2] != 15) return false;\n            }\n            for (int j = 0; j < 3; ++j) {\n                if (grid[r][c + j] + grid[r + 1][c + j] + grid[r + 2][c + j] != 15) return false;\n            }\n            if (grid[r][c] + grid[r + 1][c + 1] + grid[r + 2][c + 2] != 15) return false;\n            if (grid[r][c + 2] + grid[r + 1][c + 1] + grid[r + 2][c] != 15) return false;\n            return true;\n        };\n\n        int count = 0;\n        for (int r = 0; r + 2 < R; ++r) {\n            for (int c = 0; c + 2 < C; ++c) {\n                if (isMagic(r, c)) count++;\n            }\n        }\n        return count;\n    }\n};",
+      "approach": "matrix-simulation verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int numMagicSquaresInside(int[][] grid) {\n        int R = grid.length, C = grid[0].length;\n        if (R < 3 || C < 3) return 0;\n\n        int count = 0;\n        for (int r = 0; r + 2 < R; ++r) {\n            for (int c = 0; c + 2 < C; ++c) {\n                if (isMagic(grid, r, c)) {\n                    count++;\n                }\n            }\n        }\n        return count;\n    }\n\n    private boolean isMagic(int[][] grid, int r, int c) {\n        if (grid[r + 1][c + 1] != 5) return false;\n        int[] freq = new int[16];\n        for (int i = 0; i < 3; ++i) {\n            for (int j = 0; j < 3; ++j) {\n                int val = grid[r + i][c + j];\n                if (val < 1 || val > 9 || freq[val] > 0) return false;\n                freq[val]++;\n            }\n        }\n        for (int i = 0; i < 3; ++i) {\n            if (grid[r + i][c] + grid[r + i][c + 1] + grid[r + i][c + 2] != 15) return false;\n        }\n        for (int j = 0; j < 3; ++j) {\n            if (grid[r][c + j] + grid[r + 1][c + j] + grid[r + 2][c + j] != 15) return false;\n        }\n        if (grid[r][c] + grid[r + 1][c + 1] + grid[r + 2][c + 2] != 15) return false;\n        if (grid[r][c + 2] + grid[r + 1][c + 1] + grid[r + 2][c] != 15) return false;\n        return true;\n    }\n}",
+      "approach": "matrix-simulation verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} grid\n * @return {number}\n */\nvar numMagicSquaresInside = function(grid) {\n    const R = grid.length;\n    const C = grid[0].length;\n    if (R < 3 || C < 3) return 0;\n\n    function isMagic(r, c) {\n        if (grid[r + 1][c + 1] !== 5) return false;\n        const seen = new Array(10).fill(false);\n        for (let i = 0; i < 3; i++) {\n            for (let j = 0; j < 3; j++) {\n                const val = grid[r + i][c + j];\n                if (val < 1 || val > 9 || seen[val]) return false;\n                seen[val] = true;\n            }\n        }\n        for (let i = 0; i < 3; i++) {\n            if (grid[r + i][c] + grid[r + i][c + 1] + grid[r + i][c + 2] !== 15) return false;\n        }\n        for (let j = 0; j < 3; j++) {\n            if (grid[r][c + j] + grid[r + 1][c + j] + grid[r + 2][c + j] !== 15) return false;\n        }\n        if (grid[r][c] + grid[r + 1][c + 1] + grid[r + 2][c + 2] !== 15) return false;\n        if (grid[r][c + 2] + grid[r + 1][c + 1] + grid[r + 2][c] !== 15) return false;\n        return true;\n    }\n\n    let count = 0;\n    for (let r = 0; r + 2 < R; r++) {\n        for (let c = 0; c + 2 < C; c++) {\n            if (isMagic(r, c)) count++;\n        }\n    }\n    return count;\n};",
+      "approach": "matrix-simulation verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}
