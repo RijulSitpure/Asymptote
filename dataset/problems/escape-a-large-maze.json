@@ -1,0 +1,78 @@
+{
+  "slug": "escape-a-large-maze",
+  "number": 1036,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bounded Enclosure Area",
+      "text": "Although the grid has 10^6 x 10^6 cells, the number of blocked cells is at most 200. A set of B blocked cells can enclose at most B * (B - 1) // 2 free cells."
+    },
+    {
+      "level": 2,
+      "title": "Bidirectional Traversal Threshold",
+      "text": "If a breadth-first search from source visits more than 20,000 cells without becoming trapped, the source is definitely not trapped. The same check must hold starting from target."
+    },
+    {
+      "level": 3,
+      "title": "Meeting or Escape",
+      "text": "Perform BFS from source: succeed if target is reached or step count exceeds threshold. Perform BFS from target: succeed if source is reached or step count exceeds threshold. Return true only if both succeed."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def isEscapePossible(self, blocked: list[list[int]], source: list[list[int]], target: list[list[int]]) -> bool:\n        blocked_set = set(map(tuple, blocked))\n        MAX_VISIT = len(blocked) * (len(blocked) - 1) // 2\n\n        def bfs(start, dest):\n            visited = {start}\n            q = deque([start])\n            while q and len(visited) <= MAX_VISIT:\n                r, c = q.popleft()\n                if (r, c) == dest:\n                    return True\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < 10**6 and 0 <= nc < 10**6 and (nr, nc) not in blocked_set and (nr, nc) not in visited:\n                        visited.add((nr, nc))\n                        q.append((nr, nc))\n            return len(visited) > MAX_VISIT\n\n        s = tuple(source)\n        t = tuple(target)\n        return bfs(s, t) and bfs(t, s)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(B^2)",
+    "space": "O(B^2)",
+    "variables": [
+      "B: number of blocked cells (B <= 200)"
+    ],
+    "whyNaiveFails": "Traversing the entire 10^6 x 10^6 grid times out and exhausts memory.",
+    "spaceTimeTradeoff": "Bounding search depth by the maximum area enclosed by B obstacles limits exploration to at most 20,000 cells.",
+    "interviewerExpectation": "Candidate should recognize that 200 blocks cannot enclose more than B*(B-1)/2 cells and use bounded BFS from both ends.",
+    "notes": "B <= 200 implies at most 19,900 enclosed cells."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def isEscapePossible(self, blocked: list[list[int]], source: list[list[int]], target: list[list[int]]) -> bool:\n        blocked_set = set(map(tuple, blocked))\n        MAX_VISIT = len(blocked) * (len(blocked) - 1) // 2\n\n        def bfs(start, dest):\n            visited = {start}\n            q = deque([start])\n            while q and len(visited) <= MAX_VISIT:\n                r, c = q.popleft()\n                if (r, c) == dest:\n                    return True\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < 10**6 and 0 <= nc < 10**6 and (nr, nc) not in blocked_set and (nr, nc) not in visited:\n                        visited.add((nr, nc))\n                        q.append((nr, nc))\n            return len(visited) > MAX_VISIT\n\n        s = tuple(source)\n        t = tuple(target)\n        return bfs(s, t) and bfs(t, s)",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    bool isEscapePossible(vector<vector<int>>& blocked, vector<int>& source, vector<int>& target) {\n        unordered_set<long long> blocked_set;\n        for (const auto& b : blocked) {\n            blocked_set.insert(((long long)b[0] << 32) | (unsigned int)b[1]);\n        }\n        long long max_visit = (long long)blocked.size() * ((long long)blocked.size() - 1) / 2;\n\n        auto bfs = [&](long long start, long long dest) -> bool {\n            unordered_set<long long> visited;\n            visited.insert(start);\n            queue<long long> q;\n            q.push(start);\n            int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n            while (!q.empty() && (long long)visited.size() <= max_visit) {\n                long long curr = q.front();\n                q.pop();\n                if (curr == dest) return true;\n                int r = curr >> 32;\n                int c = curr & 0xFFFFFFFF;\n                for (int d = 0; d < 4; ++d) {\n                    int nr = r + dirs[d][0], nc = c + dirs[d][1];\n                    if (nr >= 0 && nr < 1000000 && nc >= 0 && nc < 1000000) {\n                        long long nxt = ((long long)nr << 32) | (unsigned int)nc;\n                        if (blocked_set.find(nxt) == blocked_set.end() && visited.find(nxt) == visited.end()) {\n                            visited.insert(nxt);\n                            q.push(nxt);\n                        }\n                    }\n                }\n            }\n            return (long long)visited.size() > max_visit;\n        };\n\n        long long s = ((long long)source[0] << 32) | (unsigned int)source[1];\n        long long t = ((long long)target[0] << 32) | (unsigned int)target[1];\n        return bfs(s, t) && bfs(t, s);\n    }\n};",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public boolean isEscapePossible(int[][] blocked, int[] source, int[] target) {\n        Set<Long> blockedSet = new HashSet<>();\n        for (int[] b : blocked) {\n            blockedSet.add((((long) b[0]) << 32) | (b[1] & 0xFFFFFFFFL));\n        }\n        long maxVisit = ((long) blocked.length) * (blocked.length - 1) / 2;\n\n        long s = (((long) source[0]) << 32) | (source[1] & 0xFFFFFFFFL);\n        long t = (((long) target[0]) << 32) | (target[1] & 0xFFFFFFFFL);\n\n        return bfs(s, t, blockedSet, maxVisit) && bfs(t, s, blockedSet, maxVisit);\n    }\n\n    private boolean bfs(long start, long dest, Set<Long> blockedSet, long maxVisit) {\n        Set<Long> visited = new HashSet<>();\n        visited.add(start);\n        Queue<Long> q = new ArrayDeque<>();\n        q.add(start);\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        while (!q.isEmpty() && visited.size() <= maxVisit) {\n            long curr = q.poll();\n            if (curr == dest) return true;\n            int r = (int) (curr >> 32);\n            int c = (int) curr;\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < 1000000 && nc >= 0 && nc < 1000000) {\n                    long nxt = (((long) nr) << 32) | (nc & 0xFFFFFFFFL);\n                    if (!blockedSet.contains(nxt) && visited.add(nxt)) {\n                        q.add(nxt);\n                    }\n                }\n            }\n        }\n        return visited.size() > maxVisit;\n    }\n}",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var isEscapePossible = function(blocked, source, target) {\n    const blockedSet = new Set();\n    for (const [r, c] of blocked) {\n        blockedSet.add(`${r},${c}`);\n    }\n    const maxVisit = Math.floor(blocked.length * (blocked.length - 1) / 2);\n\n    const bfs = (start, dest) => {\n        const visited = new Set();\n        visited.add(`${start[0]},${start[1]}`);\n        const q = [start];\n        let head = 0;\n        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n\n        while (head < q.length && visited.size <= maxVisit) {\n            const [r, c] = q[head++];\n            if (r === dest[0] && c === dest[1]) return true;\n            for (const [dr, dc] of dirs) {\n                const nr = r + dr, nc = c + dc;\n                if (nr >= 0 && nr < 1000000 && nc >= 0 && nc < 1000000) {\n                    const key = `${nr},${nc}`;\n                    if (!blockedSet.has(key) && !visited.has(key)) {\n                        visited.add(key);\n                        q.push([nr, nc]);\n                    }\n                }\n            }\n        }\n        return visited.size > maxVisit;\n    };\n\n    return bfs(source, target) && bfs(target, source);\n};",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

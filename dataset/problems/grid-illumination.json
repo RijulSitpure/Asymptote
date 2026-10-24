@@ -1,0 +1,79 @@
+{
+  "slug": "grid-illumination",
+  "number": 1001,
+  "category": "Algorithms",
+  "patterns": [
+    "hash-map-lookup"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Line Projection Invariants",
+      "text": "A lamp at cell r, c illuminates all cells sharing row r, column c, primary diagonal r - c, and secondary diagonal r + c. Use frequency counts for these four projections."
+    },
+    {
+      "level": 2,
+      "title": "Deduplicated Active Lamps",
+      "text": "Input lamps may contain duplicate coordinates. Maintain unique active lamp positions in a coordinate container to prevent multiple increments from the exact same lamp."
+    },
+    {
+      "level": 3,
+      "title": "Neighbor Extinguishment",
+      "text": "For each query, answer 1 if any of the 4 projections has count > 0, else 0. Then examine all 9 neighboring cells around the query: if a lamp exists there, remove it and decrement the 4 projection tallies."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def gridIllumination(self, n: int, lamps: list[list[int]], queries: list[list[int]]) -> list[int]:\n        active = set()\n        row_cnt = defaultdict(int)\n        col_cnt = defaultdict(int)\n        diag1_cnt = defaultdict(int)\n        diag2_cnt = defaultdict(int)\n\n        for r, c in lamps:\n            if (r, c) not in active:\n                active.add((r, c))\n                row_cnt[r] += 1\n                col_cnt[c] += 1\n                diag1_cnt[r - c] += 1\n                diag2_cnt[r + c] += 1\n\n        ans = []\n        for r, c in queries:\n            if row_cnt[r] > 0 or col_cnt[c] > 0 or diag1_cnt[r - c] > 0 or diag2_cnt[r + c] > 0:\n                ans.append(1)\n            else:\n                ans.append(0)\n\n            for dr in (-1, 0, 1):\n                for dc in (-1, 0, 1):\n                    nr, nc = r + dr, c + dc\n                    if (nr, nc) in active:\n                        active.remove((nr, nc))\n                        row_cnt[nr] -= 1\n                        col_cnt[nc] -= 1\n                        diag1_cnt[nr - nc] -= 1\n                        diag2_cnt[nr + nc] -= 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(L + Q)",
+    "space": "O(L)",
+    "variables": [
+      "L: number of unique lamps",
+      "Q: number of queries"
+    ],
+    "whyNaiveFails": "Maintaining an explicit N x N grid times out and exceeds memory limits when N is up to 10^9.",
+    "spaceTimeTradeoff": "Storing frequency counts for active lines in projection dictionaries scales linearly with lamp and query counts.",
+    "interviewerExpectation": "Candidate should recognize that N is up to 10^9, map line coordinates using row, col, r-c, r+c, and turn off adjacent lamps.",
+    "notes": "Checking 9 neighboring cells per query is O(1) per query."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def gridIllumination(self, n: int, lamps: list[list[int]], queries: list[list[int]]) -> list[int]:\n        active = set()\n        row_cnt = defaultdict(int)\n        col_cnt = defaultdict(int)\n        diag1_cnt = defaultdict(int)\n        diag2_cnt = defaultdict(int)\n\n        for r, c in lamps:\n            if (r, c) not in active:\n                active.add((r, c))\n                row_cnt[r] += 1\n                col_cnt[c] += 1\n                diag1_cnt[r - c] += 1\n                diag2_cnt[r + c] += 1\n\n        ans = []\n        for r, c in queries:\n            if row_cnt[r] > 0 or col_cnt[c] > 0 or diag1_cnt[r - c] > 0 or diag2_cnt[r + c] > 0:\n                ans.append(1)\n            else:\n                ans.append(0)\n\n            for dr in (-1, 0, 1):\n                for dc in (-1, 0, 1):\n                    nr, nc = r + dr, c + dc\n                    if (nr, nc) in active:\n                        active.remove((nr, nc))\n                        row_cnt[nr] -= 1\n                        col_cnt[nc] -= 1\n                        diag1_cnt[nr - nc] -= 1\n                        diag2_cnt[nr + nc] -= 1\n        return ans",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> gridIllumination(int n, vector<vector<int>>& lamps, vector<vector<int>>& queries) {\n        unordered_set<long long> active;\n        unordered_map<int, int> row_cnt, col_cnt, diag1_cnt, diag2_cnt;\n\n        auto encode = [&](int r, int c) -> long long {\n            return ((long long)r << 32) | (unsigned int)c;\n        };\n\n        for (const auto& lamp : lamps) {\n            int r = lamp[0], c = lamp[1];\n            long long code = encode(r, c);\n            if (active.find(code) == active.end()) {\n                active.insert(code);\n                row_cnt[r]++;\n                col_cnt[c]++;\n                diag1_cnt[r - c]++;\n                diag2_cnt[r + c]++;\n            }\n        }\n\n        vector<int> ans;\n        ans.reserve(queries.size());\n\n        for (const auto& q : queries) {\n            int r = q[0], c = q[1];\n            if (row_cnt[r] > 0 || col_cnt[c] > 0 || diag1_cnt[r - c] > 0 || diag2_cnt[r + c] > 0) {\n                ans.push_back(1);\n            } else {\n                ans.push_back(0);\n            }\n\n            for (int dr = -1; dr <= 1; ++dr) {\n                for (int dc = -1; dc <= 1; ++dc) {\n                    int nr = r + dr, nc = c + dc;\n                    long long code = encode(nr, nc);\n                    if (active.erase(code)) {\n                        row_cnt[nr]--;\n                        col_cnt[nc]--;\n                        diag1_cnt[nr - nc]--;\n                        diag2_cnt[nr + nc]--;\n                    }\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[] gridIllumination(int n, int[][] lamps, int[][] queries) {\n        Set<Long> active = new HashSet<>();\n        Map<Integer, Integer> rowCnt = new HashMap<>();\n        Map<Integer, Integer> colCnt = new HashMap<>();\n        Map<Integer, Integer> diag1Cnt = new HashMap<>();\n        Map<Integer, Integer> diag2Cnt = new HashMap<>();\n\n        for (int[] lamp : lamps) {\n            int r = lamp[0], c = lamp[1];\n            long code = (((long) r) << 32) | (c & 0xFFFFFFFFL);\n            if (active.add(code)) {\n                rowCnt.put(r, rowCnt.getOrDefault(r, 0) + 1);\n                colCnt.put(c, colCnt.getOrDefault(c, 0) + 1);\n                diag1Cnt.put(r - c, diag1Cnt.getOrDefault(r - c, 0) + 1);\n                diag2Cnt.put(r + c, diag2Cnt.getOrDefault(r + c, 0) + 1);\n            }\n        }\n\n        int[] ans = new int[queries.length];\n        for (int i = 0; i < queries.length; ++i) {\n            int r = queries[i][0], c = queries[i][1];\n            if (rowCnt.getOrDefault(r, 0) > 0 || colCnt.getOrDefault(c, 0) > 0 ||\n                diag1Cnt.getOrDefault(r - c, 0) > 0 || diag2Cnt.getOrDefault(r + c, 0) > 0) {\n                ans[i] = 1;\n            } else {\n                ans[i] = 0;\n            }\n\n            for (int dr = -1; dr <= 1; ++dr) {\n                for (int dc = -1; dc <= 1; ++dc) {\n                    int nr = r + dr, nc = c + dc;\n                    long code = (((long) nr) << 32) | (nc & 0xFFFFFFFFL);\n                    if (active.remove(code)) {\n                        rowCnt.put(nr, rowCnt.get(nr) - 1);\n                        colCnt.put(nc, colCnt.get(nc) - 1);\n                        diag1Cnt.put(nr - nc, diag1Cnt.get(nr - nc) - 1);\n                        diag2Cnt.put(nr + nc, diag2Cnt.get(nr + nc) - 1);\n                    }\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var gridIllumination = function(n, lamps, queries) {\n    const active = new Set();\n    const rowCnt = new Map();\n    const colCnt = new Map();\n    const diag1Cnt = new Map();\n    const diag2Cnt = new Map();\n\n    const inc = (map, key) => map.set(key, (map.get(key) || 0) + 1);\n    const dec = (map, key) => map.set(key, (map.get(key) || 0) - 1);\n\n    for (const [r, c] of lamps) {\n        const key = `${r},${c}`;\n        if (!active.has(key)) {\n            active.add(key);\n            inc(rowCnt, r);\n            inc(colCnt, c);\n            inc(diag1Cnt, r - c);\n            inc(diag2Cnt, r + c);\n        }\n    }\n\n    const ans = [];\n    for (const [r, c] of queries) {\n        if ((rowCnt.get(r) || 0) > 0 || (colCnt.get(c) || 0) > 0 ||\n            (diag1Cnt.get(r - c) || 0) > 0 || (diag2Cnt.get(r + c) || 0) > 0) {\n            ans.push(1);\n        } else {\n            ans.push(0);\n        }\n\n        for (let dr = -1; dr <= 1; dr++) {\n            for (let dc = -1; dc <= 1; dc++) {\n                const nr = r + dr, nc = c + dc;\n                const key = `${nr},${nc}`;\n                if (active.has(key)) {\n                    active.delete(key);\n                    dec(rowCnt, nr);\n                    dec(colCnt, nc);\n                    dec(diag1Cnt, nr - nc);\n                    dec(diag2Cnt, nr + nc);\n                }\n            }\n        }\n    }\n    return ans;\n};",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

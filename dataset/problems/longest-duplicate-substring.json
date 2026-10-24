@@ -1,0 +1,78 @@
+{
+  "slug": "longest-duplicate-substring",
+  "number": 1044,
+  "category": "Algorithms",
+  "patterns": [
+    "string-matching"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monotonic Length Feasibility",
+      "text": "If a duplicate substring of length L exists, any of its subsegments of length smaller than L is also duplicated. This monotonic property allows testing candidate lengths logarithmically rather than checking every length sequentially."
+    },
+    {
+      "level": 2,
+      "title": "Rolling Fingerprint Verification",
+      "text": "For a candidate length L, slide a window across the string and compute polynomial rolling hashes to detect duplicate occurrences in linear time."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search Over Length",
+      "text": "Perform binary search on L in range [1, n - 1]. In the checking step, return the starting index of a duplicate if found. Adjust binary search boundaries accordingly."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def longestDupSubstring(self, s: str) -> str:\n        n = len(s)\n        nums = [ord(c) - ord('a') for c in s]\n        mod = (1 << 61) - 1\n\n        def search(L: int) -> int:\n            h = 0\n            base_L = pow(26, L, mod)\n            for i in range(L):\n                h = (h * 26 + nums[i]) % mod\n            seen = {h}\n            for start in range(1, n - L + 1):\n                h = (h * 26 - nums[start - 1] * base_L + nums[start + L - 1]) % mod\n                if h in seen:\n                    return start\n                seen.add(h)\n            return -1\n\n        low, high = 1, n - 1\n        best_start = -1\n        best_len = 0\n        while low <= high:\n            mid = (low + high) // 2\n            start = search(mid)\n            if start != -1:\n                best_start = start\n                best_len = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n\n        return s[best_start:best_start + best_len] if best_len > 0 else \"\"\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of string s"
+    ],
+    "whyNaiveFails": "Checking all pairs of substrings takes O(N^3) time which times out for N = 30,000.",
+    "spaceTimeTradeoff": "Binary search on length combined with rolling hash verification runs in O(N log N) time.",
+    "interviewerExpectation": "Candidate should recognize binary search on answer length and apply Rabin-Karp or Suffix Automaton.",
+    "notes": "Using a large prime modulus such as (1 << 61) - 1 prevents hash collisions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def longestDupSubstring(self, s: str) -> str:\n        n = len(s)\n        nums = [ord(c) - ord('a') for c in s]\n        mod = (1 << 61) - 1\n\n        def search(L: int) -> int:\n            h = 0\n            base_L = pow(26, L, mod)\n            for i in range(L):\n                h = (h * 26 + nums[i]) % mod\n            seen = {h}\n            for start in range(1, n - L + 1):\n                h = (h * 26 - nums[start - 1] * base_L + nums[start + L - 1]) % mod\n                if h in seen:\n                    return start\n                seen.add(h)\n            return -1\n\n        low, high = 1, n - 1\n        best_start = -1\n        best_len = 0\n        while low <= high:\n            mid = (low + high) // 2\n            start = search(mid)\n            if start != -1:\n                best_start = start\n                best_len = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n\n        return s[best_start:best_start + best_len] if best_len > 0 else \"\"",
+      "approach": "string-matching verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    string longestDupSubstring(string s) {\n        int n = s.size();\n        vector<int> nums(n);\n        for (int i = 0; i < n; ++i) nums[i] = s[i] - 'a';\n        unsigned long long mod = 1000000007ULL;\n\n        auto search = [&](int L) -> int {\n            unsigned long long h = 0, base_L = 1;\n            for (int i = 0; i < L; ++i) {\n                h = (h * 26 + nums[i]) % mod;\n                if (i > 0) base_L = (base_L * 26) % mod;\n            }\n            unordered_map<unsigned long long, vector<int>> seen;\n            seen[h].push_back(0);\n            for (int start = 1; start <= n - L; ++start) {\n                h = (h + mod - (nums[start - 1] * base_L) % mod) % mod;\n                h = (h * 26 + nums[start + L - 1]) % mod;\n                if (seen.find(h) != seen.end()) {\n                    for (int prev : seen[h]) {\n                        if (s.compare(prev, L, s, start, L) == 0) return start;\n                    }\n                }\n                seen[h].push_back(start);\n            }\n            return -1;\n        };\n\n        int low = 1, high = n - 1;\n        int best_start = -1, best_len = 0;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            int start = search(mid);\n            if (start != -1) {\n                best_start = start;\n                best_len = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        return best_len > 0 ? s.substr(best_start, best_len) : \"\";\n    }\n};",
+      "approach": "string-matching verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public String longestDupSubstring(String s) {\n        int n = s.length();\n        int[] nums = new int[n];\n        for (int i = 0; i < n; ++i) nums[i] = s.charAt(i) - 'a';\n        long mod = 1000000007L;\n\n        int low = 1, high = n - 1;\n        int bestStart = -1, bestLen = 0;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            int start = search(nums, s, mid, mod);\n            if (start != -1) {\n                bestStart = start;\n                bestLen = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        return bestLen > 0 ? s.substring(bestStart, bestStart + bestLen) : \"\";\n    }\n\n    private int search(int[] nums, String s, int L, long mod) {\n        int n = nums.length;\n        long h = 0, baseL = 1;\n        for (int i = 0; i < L; ++i) {\n            h = (h * 26 + nums[i]) % mod;\n            if (i > 0) baseL = (baseL * 26) % mod;\n        }\n        Map<Long, List<Integer>> seen = new HashMap<>();\n        seen.computeIfAbsent(h, k -> new ArrayList<>()).add(0);\n        for (int start = 1; start <= n - L; ++start) {\n            h = (h + mod - (nums[start - 1] * baseL) % mod) % mod;\n            h = (h * 26 + nums[start + L - 1]) % mod;\n            if (seen.containsKey(h)) {\n                String sub = s.substring(start, start + L);\n                for (int prev : seen.get(h)) {\n                    if (s.startsWith(sub, prev)) return start;\n                }\n            }\n            seen.computeIfAbsent(h, k -> new ArrayList<>()).add(start);\n        }\n        return -1;\n    }\n}",
+      "approach": "string-matching verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var longestDupSubstring = function(s) {\n    const n = s.length;\n    let low = 1, high = n - 1;\n    let bestStart = -1, bestLen = 0;\n\n    const check = (L) => {\n        const seen = new Set();\n        for (let i = 0; i <= n - L; i++) {\n            const sub = s.slice(i, i + L);\n            if (seen.has(sub)) return i;\n            seen.add(sub);\n        }\n        return -1;\n    };\n\n    while (low <= high) {\n        const mid = Math.floor((low + high) / 2);\n        const start = check(mid);\n        if (start !== -1) {\n            bestStart = start;\n            bestLen = mid;\n            low = mid + 1;\n        } else {\n            high = mid - 1;\n        }\n    }\n    return bestLen > 0 ? s.slice(bestStart, bestStart + bestLen) : \"\";\n};",
+      "approach": "string-matching verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

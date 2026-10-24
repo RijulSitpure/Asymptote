@@ -1,0 +1,79 @@
+{
+  "slug": "coloring-a-border",
+  "number": 1034,
+  "category": "Algorithms",
+  "patterns": [
+    "grid-flood-fill"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Component Connectedness",
+      "text": "The component consists of all cells sharing the original starting color reachable via 4-directional steps from (row, col)."
+    },
+    {
+      "level": 2,
+      "title": "Border Identification",
+      "text": "A cell in the component belongs to the border if it sits on the grid perimeter or if at least one of its four orthogonal neighbors has a different color."
+    },
+    {
+      "level": 3,
+      "title": "Deferred Modification",
+      "text": "Collect all identified border coordinates in a separate list during traversal. Overwriting cell colors during traversal would disrupt subsequent neighbor checks."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def colorBorder(self, grid: list[list[int]], row: int, col: int, color: int) -> list[list[int]]:\n        m, n = len(grid), len(grid[0])\n        start_color = grid[row][col]\n        if start_color == color:\n            return grid\n\n        borders = []\n        visited = set()\n\n        def dfs(r: int, c: int):\n            visited.add((r, c))\n            is_border = False\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if nr < 0 or nr >= m or nc < 0 or nc >= n:\n                    is_border = True\n                elif (nr, nc) not in visited:\n                    if grid[nr][nc] == start_color:\n                        dfs(nr, nc)\n                    else:\n                        is_border = True\n            if is_border:\n                borders.append((r, c))\n\n        dfs(row, col)\n        for r, c in borders:\n            grid[r][c] = color\n        return grid\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N)",
+    "space": "O(M * N)",
+    "variables": [
+      "M: number of rows",
+      "N: number of columns"
+    ],
+    "whyNaiveFails": "Modifying cells immediately during traversal distorts component connectivity checks for neighboring cells.",
+    "spaceTimeTradeoff": "Recording border cells into a list and applying paint in a second pass ensures linear time and safe updates.",
+    "interviewerExpectation": "Candidate should define border condition clearly and defer mutation until the component is identified.",
+    "notes": "If starting color equals target color, matrix can be returned immediately."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def colorBorder(self, grid: list[list[int]], row: int, col: int, color: int) -> list[list[int]]:\n        m, n = len(grid), len(grid[0])\n        start_color = grid[row][col]\n        if start_color == color:\n            return grid\n\n        borders = []\n        visited = set()\n\n        def dfs(r: int, c: int):\n            visited.add((r, c))\n            is_border = False\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if nr < 0 or nr >= m or nc < 0 or nc >= n:\n                    is_border = True\n                elif (nr, nc) not in visited:\n                    if grid[nr][nc] == start_color:\n                        dfs(nr, nc)\n                    else:\n                        is_border = True\n            if is_border:\n                borders.append((r, c))\n\n        dfs(row, col)\n        for r, c in borders:\n            grid[r][c] = color\n        return grid",
+      "approach": "grid-flood-fill verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<vector<int>> colorBorder(vector<vector<int>>& grid, int row, int col, int color) {\n        int m = grid.size(), n = grid[0].size();\n        int start_color = grid[row][col];\n        if (start_color == color) return grid;\n\n        vector<pair<int, int>> borders;\n        vector<vector<bool>> visited(m, vector<bool>(n, false));\n\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        auto dfs = [&](auto& self, int r, int c) -> void {\n            visited[r][c] = true;\n            bool is_border = false;\n            for (int d = 0; d < 4; ++d) {\n                int nr = r + dirs[d][0], nc = c + dirs[d][1];\n                if (nr < 0 || nr >= m || nc < 0 || nc >= n) {\n                    is_border = true;\n                } else if (!visited[nr][nc]) {\n                    if (grid[nr][nc] == start_color) {\n                        self(self, nr, nc);\n                    } else {\n                        is_border = true;\n                    }\n                }\n            }\n            if (is_border) borders.push_back({r, c});\n        };\n\n        dfs(dfs, row, col);\n        for (const auto& p : borders) {\n            grid[p.first][p.second] = color;\n        }\n        return grid;\n    }\n};",
+      "approach": "grid-flood-fill verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[][] colorBorder(int[][] grid, int row, int col, int color) {\n        int m = grid.length, n = grid[0].length;\n        int startColor = grid[row][col];\n        if (startColor == color) return grid;\n\n        List<int[]> borders = new ArrayList<>();\n        boolean[][] visited = new boolean[m][n];\n\n        dfs(grid, row, col, startColor, visited, borders, m, n);\n\n        for (int[] p : borders) {\n            grid[p[0]][p[1]] = color;\n        }\n        return grid;\n    }\n\n    private void dfs(int[][] grid, int r, int c, int startColor, boolean[][] visited, List<int[]> borders, int m, int n) {\n        visited[r][c] = true;\n        boolean isBorder = false;\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int[] d : dirs) {\n            int nr = r + d[0], nc = c + d[1];\n            if (nr < 0 || nr >= m || nc < 0 || nc >= n) {\n                isBorder = true;\n            } else if (!visited[nr][nc]) {\n                if (grid[nr][nc] == startColor) {\n                    dfs(grid, nr, nc, startColor, visited, borders, m, n);\n                } else {\n                    isBorder = true;\n                }\n            }\n        }\n        if (isBorder) borders.add(new int[]{r, c});\n    }\n}",
+      "approach": "grid-flood-fill verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var colorBorder = function(grid, row, col, color) {\n    const m = grid.length;\n    const n = grid[0].length;\n    const startColor = grid[row][col];\n    if (startColor === color) return grid;\n\n    const borders = [];\n    const visited = new Array(m).fill(null).map(() => new Array(n).fill(false));\n\n    const dfs = (r, c) => {\n        visited[r][c] = true;\n        let isBorder = false;\n        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr < 0 || nr >= m || nc < 0 || nc >= n) {\n                isBorder = true;\n            } else if (!visited[nr][nc]) {\n                if (grid[nr][nc] === startColor) {\n                    dfs(nr, nc);\n                } else {\n                    isBorder = true;\n                }\n            }\n        }\n        if (isBorder) borders.push([r, c]);\n    };\n\n    dfs(row, col);\n    for (const [r, c] of borders) {\n        grid[r][c] = color;\n    }\n    return grid;\n};",
+      "approach": "grid-flood-fill verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}
