@@ -1,0 +1,79 @@
+{
+  "slug": "largest-component-size-by-common-factor",
+  "number": 952,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prime Factor Connectivity",
+      "text": "Two numbers share a common factor greater than 1 if and only if they share at least one prime factor."
+    },
+    {
+      "level": 2,
+      "title": "Factor Graph Reduction",
+      "text": "Instead of checking all pairs of numbers, connect each number directly to all of its prime factors in a disjoint set."
+    },
+    {
+      "level": 3,
+      "title": "Disjoint Set Component Count",
+      "text": "For each number x in nums, find all prime factors d where d * d <= x. Union x with each prime factor d (and with x // d if prime). Finally, find the root representative of each number in nums and find the maximum frequency."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import Counter\n\nclass Solution:\n    def largestComponentSize(self, nums: list[int]) -> int:\n        parent = {}\n        def find(x: int) -> int:\n            if parent.setdefault(x, x) != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n        def union(x: int, y: int):\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n        for num in nums:\n            d = 2\n            val = num\n            while d * d <= val:\n                if val % d == 0:\n                    union(num, d)\n                    while val % d == 0:\n                        val //= d\n                d += 1\n            if val > 1:\n                union(num, val)\n        counts = Counter(find(num) for num in nums)\n        return max(counts.values())\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * sqrt(M) * alpha(M))",
+    "space": "O(N + M)",
+    "variables": [
+      "N: length of nums",
+      "M: maximum value in nums (up to 100,000)"
+    ],
+    "whyNaiveFails": "Pairwise GCD checks between all pairs of elements requires O(N^2 * log M) steps, triggering severe timeout.",
+    "spaceTimeTradeoff": "Connecting each number to its prime factors introduces at most O(sqrt(M)) operations per number.",
+    "interviewerExpectation": "Candidate should recognize that prime factor sharing is transitive: if A and B share prime p, they belong to the same component.",
+    "notes": "Counting component sizes should only tally original numbers in nums, not arbitrary prime factors."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "from collections import Counter\n\nclass Solution:\n    def largestComponentSize(self, nums: list[int]) -> int:\n        parent = {}\n        def find(x: int) -> int:\n            if parent.setdefault(x, x) != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n        def union(x: int, y: int):\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n        for num in nums:\n            d = 2\n            val = num\n            while d * d <= val:\n                if val % d == 0:\n                    union(num, d)\n                    while val % d == 0:\n                        val //= d\n                d += 1\n            if val > 1:\n                union(num, val)\n        counts = Counter(find(num) for num in nums)\n        return max(counts.values())"
+    },
+    {
+      "lang": "cpp",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution {\npublic:\n    int largestComponentSize(vector<int>& nums) {\n        int max_val = 0;\n        for (int x : nums) max_val = max(max_val, x);\n        vector<int> parent(max_val + 1);\n        iota(parent.begin(), parent.end(), 0);\n\n        auto find = [&](auto& self, int x) -> int {\n            if (parent[x] != x) parent[x] = self(self, parent[x]);\n            return parent[x];\n        };\n        auto unite = [&](int x, int y) {\n            int rx = find(find, x), ry = find(find, y);\n            if (rx != ry) parent[rx] = ry;\n        };\n\n        for (int num : nums) {\n            int val = num;\n            for (int d = 2; d * d <= val; ++d) {\n                if (val % d == 0) {\n                    unite(num, d);\n                    while (val % d == 0) val /= d;\n                }\n            }\n            if (val > 1) unite(num, val);\n        }\n\n        unordered_map<int, int> counts;\n        int max_size = 0;\n        for (int num : nums) {\n            int root = find(find, num);\n            max_size = max(max_size, ++counts[root]);\n        }\n        return max_size;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution {\n    private int[] parent;\n\n    private int find(int x) {\n        if (parent[x] != x) {\n            parent[x] = find(parent[x]);\n        }\n        return parent[x];\n    }\n\n    private void union(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) {\n            parent[rx] = ry;\n        }\n    }\n\n    public int largestComponentSize(int[] nums) {\n        int maxVal = 0;\n        for (int x : nums) maxVal = Math.max(maxVal, x);\n        parent = new int[maxVal + 1];\n        for (int i = 0; i <= maxVal; i++) parent[i] = i;\n\n        for (int num : nums) {\n            int val = num;\n            for (int d = 2; d * d <= val; d++) {\n                if (val % d == 0) {\n                    union(num, d);\n                    while (val % d == 0) val /= d;\n                }\n            }\n            if (val > 1) union(num, val);\n        }\n\n        Map<Integer, Integer> counts = new HashMap<>();\n        int maxSize = 0;\n        for (int num : nums) {\n            int root = find(num);\n            int count = counts.getOrDefault(root, 0) + 1;\n            counts.put(root, count);\n            maxSize = Math.max(maxSize, count);\n        }\n        return maxSize;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "var largestComponentSize = function(nums) {\n    let maxVal = 0;\n    for (const x of nums) if (x > maxVal) maxVal = x;\n    const parent = new Int32Array(maxVal + 1);\n    for (let i = 0; i <= maxVal; i++) parent[i] = i;\n\n    const find = (x) => {\n        if (parent[x] !== x) {\n            parent[x] = find(parent[x]);\n        }\n        return parent[x];\n    };\n    const union = (x, y) => {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) parent[rx] = ry;\n    };\n\n    for (const num of nums) {\n        let val = num;\n        for (let d = 2; d * d <= val; d++) {\n            if (val % d === 0) {\n                union(num, d);\n                while (val % d === 0) val = Math.floor(val / d);\n            }\n        }\n        if (val > 1) union(num, val);\n    }\n\n    const counts = new Map();\n    let maxSize = 0;\n    for (const num of nums) {\n        const root = find(num);\n        const count = (counts.get(root) || 0) + 1;\n        counts.set(root, count);\n        if (count > maxSize) maxSize = count;\n    }\n    return maxSize;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

@@ -1,0 +1,80 @@
+{
+  "slug": "vowel-spellchecker",
+  "number": 966,
+  "category": "Algorithms",
+  "patterns": [
+    "hash-map-lookup"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Priority Cascade Matching",
+      "text": "Queries match with three priority tiers: exact match first, case-insensitive match second, and vowel-error match third."
+    },
+    {
+      "level": 2,
+      "title": "Canonical Vowel Key Masking",
+      "text": "Replace every vowel in lowercase words with a wildcard placeholder like asterisk to handle vowel variations."
+    },
+    {
+      "level": 3,
+      "title": "Three Tier Lookup Table",
+      "text": "Store words in exact set. In a map, store lowercase word to first original word seen. In another map, store devoweled lowercase word to first original word seen. For each query, test exact, then lowercase, then devoweled, else return empty string."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def spellchecker(self, wordlist: list[str], queries: list[str]) -> list[str]:\n        exact = set(wordlist)\n        cap_map = {}\n        vowel_map = {}\n        def devowel(w: str) -> str:\n            return \"\".join(\"*\" if c in \"aeiou\" else c for c in w.lower())\n        for w in wordlist:\n            lower = w.lower()\n            cap_map.setdefault(lower, w)\n            vowel_map.setdefault(devowel(w), w)\n        res = []\n        for q in queries:\n            if q in exact:\n                res.append(q)\n            elif q.lower() in cap_map:\n                res.append(cap_map[q.lower()])\n            elif devowel(q) in vowel_map:\n                res.append(vowel_map[devowel(q)])\n            else:\n                res.append(\"\")\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((W + Q) * L)",
+    "space": "O(W * L)",
+    "variables": [
+      "W: number of words in wordlist",
+      "Q: number of queries",
+      "L: maximum word length"
+    ],
+    "whyNaiveFails": "Scanning the wordlist for each query sequentially takes O(W * Q * L) operations, causing Time Limit Exceeded.",
+    "spaceTimeTradeoff": "Hashing exact words, lowercase forms, and masked vowel keys enables O(L) resolution per query with linear auxiliary space.",
+    "interviewerExpectation": "Candidate should preserve the first appearance rule for case-insensitive and vowel-insensitive ties using setdefault.",
+    "notes": "Y is treated as a consonant by the problem specification."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution:\n    def spellchecker(self, wordlist: list[str], queries: list[str]) -> list[str]:\n        exact = set(wordlist)\n        cap_map = {}\n        vowel_map = {}\n        def devowel(w: str) -> str:\n            return \"\".join(\"*\" if c in \"aeiou\" else c for c in w.lower())\n        for w in wordlist:\n            lower = w.lower()\n            cap_map.setdefault(lower, w)\n            vowel_map.setdefault(devowel(w), w)\n        res = []\n        for q in queries:\n            if q in exact:\n                res.append(q)\n            elif q.lower() in cap_map:\n                res.append(cap_map[q.lower()])\n            elif devowel(q) in vowel_map:\n                res.append(vowel_map[devowel(q)])\n            else:\n                res.append(\"\")\n        return res"
+    },
+    {
+      "lang": "cpp",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution {\npublic:\n    vector<string> spellchecker(vector<string>& wordlist, vector<string>& queries) {\n        unordered_set<string> exact(wordlist.begin(), wordlist.end());\n        unordered_map<string, string> cap_map, vowel_map;\n        auto to_lower = [](string s) {\n            for (char& c : s) c = tolower(c);\n            return s;\n        };\n        auto devowel = [&](string s) {\n            s = to_lower(s);\n            for (char& c : s) {\n                if (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u') c = '*';\n            }\n            return s;\n        };\n        for (const string& w : wordlist) {\n            string low = to_lower(w);\n            if (!cap_map.count(low)) cap_map[low] = w;\n            string dev = devowel(w);\n            if (!vowel_map.count(dev)) vowel_map[dev] = w;\n        }\n        vector<string> res;\n        for (const string& q : queries) {\n            if (exact.count(q)) {\n                res.push_back(q);\n            } else {\n                string low = to_lower(q);\n                if (cap_map.count(low)) {\n                    res.push_back(cap_map[low]);\n                } else {\n                    string dev = devowel(q);\n                    if (vowel_map.count(dev)) {\n                        res.push_back(vowel_map[dev]);\n                    } else {\n                        res.push_back(\"\");\n                    }\n                }\n            }\n        }\n        return res;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution {\n    private String devowel(String w) {\n        StringBuilder sb = new StringBuilder();\n        for (char c : w.toLowerCase().toCharArray()) {\n            if (\"aeiou\".indexOf(c) >= 0) sb.append('*');\n            else sb.append(c);\n        }\n        return sb.toString();\n    }\n    public String[] spellchecker(String[] wordlist, String[] queries) {\n        Set<String> exact = new HashSet<>(Arrays.asList(wordlist));\n        Map<String, String> capMap = new HashMap<>();\n        Map<String, String> vowelMap = new HashMap<>();\n        for (String w : wordlist) {\n            String lower = w.toLowerCase();\n            capMap.putIfAbsent(lower, w);\n            vowelMap.putIfAbsent(devowel(w), w);\n        }\n        String[] res = new String[queries.length];\n        for (int i = 0; i < queries.length; i++) {\n            String q = queries[i];\n            if (exact.contains(q)) {\n                res[i] = q;\n            } else if (capMap.containsKey(q.toLowerCase())) {\n                res[i] = capMap.get(q.toLowerCase());\n            } else if (vowelMap.containsKey(devowel(q))) {\n                res[i] = vowelMap.get(devowel(q));\n            } else {\n                res[i] = \"\";\n            }\n        }\n        return res;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "var spellchecker = function(wordlist, queries) {\n    const exact = new Set(wordlist);\n    const capMap = new Map();\n    const vowelMap = new Map();\n    const devowel = (w) => w.toLowerCase().replace(/[aeiou]/g, '*');\n    for (const w of wordlist) {\n        const lower = w.toLowerCase();\n        if (!capMap.has(lower)) capMap.set(lower, w);\n        const dev = devowel(w);\n        if (!vowelMap.has(dev)) vowelMap.set(dev, w);\n    }\n    return queries.map(q => {\n        if (exact.has(q)) return q;\n        const lower = q.toLowerCase();\n        if (capMap.has(lower)) return capMap.get(lower);\n        const dev = devowel(q);\n        if (vowelMap.has(dev)) return vowelMap.get(dev);\n        return \"\";\n    });\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

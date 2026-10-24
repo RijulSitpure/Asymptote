@@ -1,0 +1,79 @@
+{
+  "slug": "stamping-the-sequence",
+  "number": 936,
+  "category": "Algorithms",
+  "patterns": [
+    "greedy-general"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Backward Wildcard Simulation",
+      "text": "Think in reverse. The last stamp applied must match the target characters perfectly. Once identified, replace its characters with wildcard placeholders."
+    },
+    {
+      "level": 2,
+      "title": "Greedy Window Matching",
+      "text": "A wildcard placeholder can match any letter on earlier stamping passes. Greedily unstamp any window of length equal to the stamp that matches with wildcards and at least one non-wildcard."
+    },
+    {
+      "level": 3,
+      "title": "Iterative Unstamping Queue",
+      "text": "While un-stamped characters count < target length, scan all start indices from 0 to target.length - stamp.length. If stamp matches window (with ? as wildcard) and introduces >= 1 wildcard, mark the characters as ? and record the index. Reverse the recorded sequence at the end."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def movesToStamp(self, stamp: str, target: str) -> list[int]:\n        s_len, t_len = len(stamp), len(target)\n        s_arr = list(stamp)\n        t_arr = list(target)\n        res = []\n        changed = True\n        total_stamped = 0\n        def can_stamp(idx: int) -> int:\n            new_wildcards = 0\n            for i in range(s_len):\n                if t_arr[idx + i] == \"?\":\n                    continue\n                if t_arr[idx + i] != s_arr[i]:\n                    return 0\n                new_wildcards += 1\n            return new_wildcards\n        while total_stamped < t_len and changed:\n            changed = False\n            for i in range(t_len - s_len + 1):\n                cnt = can_stamp(i)\n                if cnt > 0:\n                    res.append(i)\n                    total_stamped += cnt\n                    changed = True\n                    for j in range(s_len):\n                        t_arr[i + j] = \"?\"\n                    if total_stamped == t_len:\n                        break\n        return res[::-1] if total_stamped == t_len else []\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((T - S) * T * S)",
+    "space": "O(T)",
+    "variables": [
+      "S: length of stamp",
+      "T: length of target"
+    ],
+    "whyNaiveFails": "Forward simulation branches exponentially because multiple stamping locations can overwrite earlier work.",
+    "spaceTimeTradeoff": "Working backward greedily turns overlapping ambiguities into flexible wildcard matches, running in polynomial time.",
+    "interviewerExpectation": "Candidate should recognize backward simulation where the last stamp is completely visible and subsequent ones can be partially obscured.",
+    "notes": "If no further window can be unstamped and question marks remain, target is impossible to stamp."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def movesToStamp(self, stamp: str, target: str) -> list[int]:\n        s_len, t_len = len(stamp), len(target)\n        s_arr = list(stamp)\n        t_arr = list(target)\n        res = []\n        changed = True\n        total_stamped = 0\n        def can_stamp(idx: int) -> int:\n            new_wildcards = 0\n            for i in range(s_len):\n                if t_arr[idx + i] == \"?\":\n                    continue\n                if t_arr[idx + i] != s_arr[i]:\n                    return 0\n                new_wildcards += 1\n            return new_wildcards\n        while total_stamped < t_len and changed:\n            changed = False\n            for i in range(t_len - s_len + 1):\n                cnt = can_stamp(i)\n                if cnt > 0:\n                    res.append(i)\n                    total_stamped += cnt\n                    changed = True\n                    for j in range(s_len):\n                        t_arr[i + j] = \"?\"\n                    if total_stamped == t_len:\n                        break\n        return res[::-1] if total_stamped == t_len else []",
+      "approach": "greedy-general verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> movesToStamp(string stamp, string target) {\n        int s_len = stamp.size(), t_len = target.size();\n        vector<int> res;\n        int total_stamped = 0;\n        bool changed = true;\n\n        auto can_stamp = [&](int idx) -> int {\n            int new_wildcards = 0;\n            for (int i = 0; i < s_len; ++i) {\n                if (target[idx + i] == '?') continue;\n                if (target[idx + i] != stamp[i]) return 0;\n                new_wildcards++;\n            }\n            return new_wildcards;\n        };\n\n        while (total_stamped < t_len && changed) {\n            changed = false;\n            for (int i = 0; i <= t_len - s_len; ++i) {\n                int cnt = can_stamp(i);\n                if (cnt > 0) {\n                    res.push_back(i);\n                    total_stamped += cnt;\n                    changed = true;\n                    for (int j = 0; j < s_len; ++j) target[i + j] = '?';\n                    if (total_stamped == t_len) break;\n                }\n            }\n        }\n\n        if (total_stamped != t_len) return {};\n        reverse(res.begin(), res.end());\n        return res;\n    }\n};",
+      "approach": "greedy-general verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[] movesToStamp(String stamp, String target) {\n        int sLen = stamp.length(), tLen = target.length();\n        char[] sArr = stamp.toCharArray();\n        char[] tArr = target.toCharArray();\n        List<Integer> res = new ArrayList<>();\n        int totalStamped = 0;\n        boolean changed = true;\n\n        while (totalStamped < tLen && changed) {\n            changed = false;\n            for (int i = 0; i <= tLen - sLen; i++) {\n                int newWildcards = 0;\n                boolean valid = true;\n                for (int j = 0; j < sLen; j++) {\n                    if (tArr[i + j] == '?') continue;\n                    if (tArr[i + j] != sArr[j]) {\n                        valid = false;\n                        break;\n                    }\n                    newWildcards++;\n                }\n                if (valid && newWildcards > 0) {\n                    res.add(i);\n                    totalStamped += newWildcards;\n                    changed = true;\n                    for (int j = 0; j < sLen; j++) tArr[i + j] = '?';\n                    if (totalStamped == tLen) break;\n                }\n            }\n        }\n\n        if (totalStamped != tLen) return new int[0];\n        int[] ans = new int[res.size()];\n        for (int i = 0; i < res.size(); i++) {\n            ans[i] = res.get(res.size() - 1 - i);\n        }\n        return ans;\n    }\n}",
+      "approach": "greedy-general verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var movesToStamp = function(stamp, target) {\n    const sLen = stamp.length, tLen = target.length;\n    const tArr = target.split('');\n    const res = [];\n    let totalStamped = 0;\n    let changed = true;\n\n    const canStamp = (idx) => {\n        let newWildcards = 0;\n        for (let i = 0; i < sLen; i++) {\n            if (tArr[idx + i] === '?') continue;\n            if (tArr[idx + i] !== stamp[i]) return 0;\n            newWildcards++;\n        }\n        return newWildcards;\n    };\n\n    while (totalStamped < tLen && changed) {\n        changed = false;\n        for (let i = 0; i <= tLen - sLen; i++) {\n            const cnt = canStamp(i);\n            if (cnt > 0) {\n                res.push(i);\n                totalStamped += cnt;\n                changed = true;\n                for (let j = 0; j < sLen; j++) tArr[i + j] = '?';\n                if (totalStamped === tLen) break;\n            }\n        }\n    }\n\n    if (totalStamped !== tLen) return [];\n    return res.reverse();\n};",
+      "approach": "greedy-general verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

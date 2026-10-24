@@ -1,0 +1,78 @@
+{
+  "slug": "regions-cut-by-slashes",
+  "number": 959,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Cell Quadrant Sub-division",
+      "text": "Subdivide each one-by-one cell into four triangular regions: top, right, bottom, and left."
+    },
+    {
+      "level": 2,
+      "title": "Slash Connectivity Rules",
+      "text": "A forward slash connects top with left and right with bottom. A backslash connects top with right and bottom with left. A space connects all four quadrants."
+    },
+    {
+      "level": 3,
+      "title": "Boundary Sharing Disjoint Sets",
+      "text": "Number quadrants across the n by n grid as 4 * (r * n + c) + k for k in [0, 1, 2, 3]. Connect internal quadrants per character, and connect each cell bottom quadrant to the cell below top quadrant, and right quadrant to neighbor left quadrant. Count distinct root components."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def regionsBySlashes(self, grid: list[str]) -> int:\n        n = len(grid)\n        parent = list(range(4 * n * n))\n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n        def union(x: int, y: int):\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n        for r in range(n):\n            for c in range(n):\n                root = 4 * (r * n + c)\n                val = grid[r][c]\n                if val == \"/\":\n                    union(root + 0, root + 3)\n                    union(root + 1, root + 2)\n                elif val == \"\\\\\":\n                    union(root + 0, root + 1)\n                    union(root + 2, root + 3)\n                else:\n                    union(root + 0, root + 1)\n                    union(root + 1, root + 2)\n                    union(root + 2, root + 3)\n                if r + 1 < n:\n                    union(root + 2, 4 * ((r + 1) * n + c) + 0)\n                if c + 1 < n:\n                    union(root + 1, 4 * (r * n + (c + 1)) + 3)\n        return len({find(x) for x in range(4 * n * n)})\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2 * alpha(N^2))",
+    "space": "O(N^2)",
+    "variables": [
+      "N: side length of grid"
+    ],
+    "whyNaiveFails": "Graph flood fill on fractional boundaries is cumbersome without sub-pixel grid dilation or quadrant decomposition.",
+    "spaceTimeTradeoff": "Splitting each cell into 4 quadrants produces exactly 4 * N^2 disjoint set elements with near-constant union-find operations.",
+    "interviewerExpectation": "Candidate should recognize that 4 triangles per grid cell cleanly represent planar connectivity without floating point math.",
+    "notes": "An alternative is 3x3 pixel dilation with standard BFS flood fill, but 4-quadrant DSU uses less memory."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution:\n    def regionsBySlashes(self, grid: list[str]) -> int:\n        n = len(grid)\n        parent = list(range(4 * n * n))\n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n        def union(x: int, y: int):\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n        for r in range(n):\n            for c in range(n):\n                root = 4 * (r * n + c)\n                val = grid[r][c]\n                if val == \"/\":\n                    union(root + 0, root + 3)\n                    union(root + 1, root + 2)\n                elif val == \"\\\\\":\n                    union(root + 0, root + 1)\n                    union(root + 2, root + 3)\n                else:\n                    union(root + 0, root + 1)\n                    union(root + 1, root + 2)\n                    union(root + 2, root + 3)\n                if r + 1 < n:\n                    union(root + 2, 4 * ((r + 1) * n + c) + 0)\n                if c + 1 < n:\n                    union(root + 1, 4 * (r * n + (c + 1)) + 3)\n        return len({find(x) for x in range(4 * n * n)})"
+    },
+    {
+      "lang": "cpp",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution {\npublic:\n    int regionsBySlashes(vector<string>& grid) {\n        int n = grid.size();\n        vector<int> parent(4 * n * n);\n        iota(parent.begin(), parent.end(), 0);\n        auto find = [&](auto& self, int x) -> int {\n            if (parent[x] != x) parent[x] = self(self, parent[x]);\n            return parent[x];\n        };\n        auto unite = [&](int x, int y) {\n            int rx = find(find, x), ry = find(find, y);\n            if (rx != ry) parent[rx] = ry;\n        };\n        for (int r = 0; r < n; ++r) {\n            for (int c = 0; c < n; ++c) {\n                int root = 4 * (r * n + c);\n                char val = grid[r][c];\n                if (val == '/') {\n                    unite(root + 0, root + 3);\n                    unite(root + 1, root + 2);\n                } else if (val == '\\\\') {\n                    unite(root + 0, root + 1);\n                    unite(root + 2, root + 3);\n                } else {\n                    unite(root + 0, root + 1);\n                    unite(root + 1, root + 2);\n                    unite(root + 2, root + 3);\n                }\n                if (r + 1 < n) unite(root + 2, 4 * ((r + 1) * n + c) + 0);\n                if (c + 1 < n) unite(root + 1, 4 * (r * n + (c + 1)) + 3);\n            }\n        }\n        int count = 0;\n        for (int i = 0; i < 4 * n * n; ++i) {\n            if (find(find, i) == i) count++;\n        }\n        return count;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution {\n    private int[] parent;\n    private int find(int x) {\n        if (parent[x] != x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    private void union(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) parent[rx] = ry;\n    }\n    public int regionsBySlashes(String[] grid) {\n        int n = grid.length;\n        parent = new int[4 * n * n];\n        for (int i = 0; i < 4 * n * n; i++) parent[i] = i;\n        for (int r = 0; r < n; r++) {\n            for (int c = 0; c < n; c++) {\n                int root = 4 * (r * n + c);\n                char val = grid[r].charAt(c);\n                if (val == '/') {\n                    union(root + 0, root + 3);\n                    union(root + 1, root + 2);\n                } else if (val == '\\\\') {\n                    union(root + 0, root + 1);\n                    union(root + 2, root + 3);\n                } else {\n                    union(root + 0, root + 1);\n                    union(root + 1, root + 2);\n                    union(root + 2, root + 3);\n                }\n                if (r + 1 < n) union(root + 2, 4 * ((r + 1) * n + c) + 0);\n                if (c + 1 < n) union(root + 1, 4 * (r * n + (c + 1)) + 3);\n            }\n        }\n        int count = 0;\n        for (int i = 0; i < 4 * n * n; i++) {\n            if (find(i) == i) count++;\n        }\n        return count;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "var regionsBySlashes = function(grid) {\n    const n = grid.length;\n    const parent = new Int32Array(4 * n * n);\n    for (let i = 0; i < 4 * n * n; i++) parent[i] = i;\n    const find = (x) => {\n        if (parent[x] !== x) parent[x] = find(parent[x]);\n        return parent[x];\n    };\n    const union = (x, y) => {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) parent[rx] = ry;\n    };\n    for (let r = 0; r < n; r++) {\n        for (let c = 0; c < n; c++) {\n            const root = 4 * (r * n + c);\n            const val = grid[r][c];\n            if (val === '/') {\n                union(root + 0, root + 3);\n                union(root + 1, root + 2);\n            } else if (val === '\\\\') {\n                union(root + 0, root + 1);\n                union(root + 2, root + 3);\n            } else {\n                union(root + 0, root + 1);\n                union(root + 1, root + 2);\n                union(root + 2, root + 3);\n            }\n            if (r + 1 < n) union(root + 2, 4 * ((r + 1) * n + c) + 0);\n            if (c + 1 < n) union(root + 1, 4 * (r * n + (c + 1)) + 3);\n        }\n    }\n    let count = 0;\n    for (let i = 0; i < 4 * n * n; i++) {\n        if (find(i) === i) count++;\n    }\n    return count;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

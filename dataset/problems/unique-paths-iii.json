@@ -1,0 +1,79 @@
+{
+  "slug": "unique-paths-iii",
+  "number": 980,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Hamiltonian Grid Path Search",
+      "text": "The problem asks for paths that start at 1, end at 2, and visit every empty square (0) exactly once."
+    },
+    {
+      "level": 2,
+      "title": "Empty Cell Target Counting",
+      "text": "Count all non-obstacle cells (empty cells plus start). A valid path reaching 2 must have exactly decremented the remaining cell count to 0."
+    },
+    {
+      "level": 3,
+      "title": "Backtracking Grid Traversal",
+      "text": "Find start coordinate and total walkable squares. Use recursive search: mark current cell as obstacle (-1), explore 4 neighbors. When landing on 2, return 1 if remaining walkable squares equals 0, else 0. Restore cell after recursive calls."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def uniquePathsIII(self, grid: list[list[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        sr, sc = 0, 0\n        walkable = 0\n        for r in range(rows):\n            for c in range(cols):\n                if grid[r][c] != -1:\n                    walkable += 1\n                if grid[r][c] == 1:\n                    sr, sc = r, c\n        def dfs(r: int, c: int, remain: int) -> int:\n            if grid[r][c] == 2:\n                return 1 if remain == 1 else 0\n            temp = grid[r][c]\n            grid[r][c] = -1\n            paths = 0\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] != -1:\n                    paths += dfs(nr, nc, remain - 1)\n            grid[r][c] = temp\n            return paths\n        return dfs(sr, sc, walkable)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(4^(R * C))",
+    "space": "O(R * C)",
+    "variables": [
+      "R: rows of grid (up to 20)",
+      "C: columns of grid (R * C <= 20)"
+    ],
+    "whyNaiveFails": "Simple DP fails because paths can move in all four directions and must remember exact visited sets.",
+    "spaceTimeTradeoff": "Since grid size R * C <= 20, exhaustive backtracking explores only valid self-avoiding paths within tight runtime limits.",
+    "interviewerExpectation": "Candidate should count non-obstacle cells beforehand and verify that all cells were visited when reaching cell 2.",
+    "notes": "In-place cell modification (setting grid[r][c] = -1) eliminates auxiliary visited matrices."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution:\n    def uniquePathsIII(self, grid: list[list[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        sr, sc = 0, 0\n        walkable = 0\n        for r in range(rows):\n            for c in range(cols):\n                if grid[r][c] != -1:\n                    walkable += 1\n                if grid[r][c] == 1:\n                    sr, sc = r, c\n        def dfs(r: int, c: int, remain: int) -> int:\n            if grid[r][c] == 2:\n                return 1 if remain == 1 else 0\n            temp = grid[r][c]\n            grid[r][c] = -1\n            paths = 0\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] != -1:\n                    paths += dfs(nr, nc, remain - 1)\n            grid[r][c] = temp\n            return paths\n        return dfs(sr, sc, walkable)"
+    },
+    {
+      "lang": "cpp",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution {\npublic:\n    int uniquePathsIII(vector<vector<int>>& grid) {\n        int rows = grid.size(), cols = grid[0].size();\n        int sr = 0, sc = 0, walkable = 0;\n        for (int r = 0; r < rows; ++r) {\n            for (int c = 0; c < cols; ++c) {\n                if (grid[r][c] != -1) walkable++;\n                if (grid[r][c] == 1) {\n                    sr = r;\n                    sc = c;\n                }\n            }\n        }\n        auto dfs = [&](auto& self, int r, int c, int remain) -> int {\n            if (grid[r][c] == 2) return remain == 1 ? 1 : 0;\n            int temp = grid[r][c];\n            grid[r][c] = -1;\n            int paths = 0;\n            int dr[4] = {-1, 1, 0, 0};\n            int dc[4] = {0, 0, -1, 1};\n            for (int k = 0; k < 4; ++k) {\n                int nr = r + dr[k], nc = c + dc[k];\n                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && grid[nr][nc] != -1) {\n                    paths += self(self, nr, nc, remain - 1);\n                }\n            }\n            grid[r][c] = temp;\n            return paths;\n        };\n        return dfs(dfs, sr, sc, walkable);\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "class Solution {\n    private int rows, cols;\n    private int dfs(int[][] grid, int r, int c, int remain) {\n        if (grid[r][c] == 2) return remain == 1 ? 1 : 0;\n        int temp = grid[r][c];\n        grid[r][c] = -1;\n        int paths = 0;\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int[] d : dirs) {\n            int nr = r + d[0], nc = c + d[1];\n            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && grid[nr][nc] != -1) {\n                paths += dfs(grid, nr, nc, remain - 1);\n            }\n        }\n        grid[r][c] = temp;\n        return paths;\n    }\n    public int uniquePathsIII(int[][] grid) {\n        rows = grid.length;\n        cols = grid[0].length;\n        int sr = 0, sc = 0, walkable = 0;\n        for (int r = 0; r < rows; r++) {\n            for (int c = 0; c < cols; c++) {\n                if (grid[r][c] != -1) walkable++;\n                if (grid[r][c] == 1) {\n                    sr = r;\n                    sc = c;\n                }\n            }\n        }\n        return dfs(grid, sr, sc, walkable);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24",
+      "code": "var uniquePathsIII = function(grid) {\n    const rows = grid.length, cols = grid[0].length;\n    let sr = 0, sc = 0, walkable = 0;\n    for (let r = 0; r < rows; r++) {\n        for (let c = 0; c < cols; c++) {\n            if (grid[r][c] !== -1) walkable++;\n            if (grid[r][c] === 1) {\n                sr = r;\n                sc = c;\n            }\n        }\n    }\n    const dfs = (r, c, remain) => {\n        if (grid[r][c] === 2) return remain === 1 ? 1 : 0;\n        const temp = grid[r][c];\n        grid[r][c] = -1;\n        let paths = 0;\n        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && grid[nr][nc] !== -1) {\n                paths += dfs(nr, nc, remain - 1);\n            }\n        }\n        grid[r][c] = temp;\n        return paths;\n    };\n    return dfs(sr, sc, walkable);\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}
