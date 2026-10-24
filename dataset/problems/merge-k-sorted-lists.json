@@ -1,0 +1,79 @@
+{
+  "slug": "merge-k-sorted-lists",
+  "number": 23,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tracking Active Head Nodes",
+      "text": "At any point during merging, only the current smallest head node among all lists needs to be appended next."
+    },
+    {
+      "level": 2,
+      "title": "Maintaining Minimum Node Candidates",
+      "text": "Store the current head of each non-empty list in a priority-ordered structure. Extract the minimum and advance its pointer."
+    },
+    {
+      "level": 3,
+      "title": "Priority Queue Multi-List Merging",
+      "text": "Insert initial list heads into a min collection ordered by node value. Repeatedly extract the node with minimum value, append it to the merged chain, and if that node has a subsequent element, insert its successor into the collection."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport heapq\nfrom typing import List, Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\nclass Solution:\n    def mergeKLists(self, lists: List[Optional[ListNode]]) -> Optional[ListNode]:\n        heap = []\n        for i, node in enumerate(lists):\n            if node:\n                heapq.heappush(heap, (node.val, i, node))\n        dummy = ListNode(0)\n        curr = dummy\n        while heap:\n            val, i, node = heapq.heappop(heap)\n            curr.next = node\n            curr = curr.next\n            if node.next:\n                heapq.heappush(heap, (node.next.val, i, node.next))\n        return dummy.next\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log K)",
+    "space": "O(K)",
+    "variables": [
+      "N: total number of nodes",
+      "K: number of linked lists"
+    ],
+    "notes": "Optimal min-heap merging maintaining at most K candidates.",
+    "whyNaiveFails": "Comparing all K list heads linearly at every step yields O(N * K) time.",
+    "spaceTimeTradeoff": "Min-heap of size K yields logarithmic node insertion and retrieval.",
+    "interviewerExpectation": "Use index tie-breakers in Python tuple heaps to avoid comparing ListNode instances directly."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\nfrom typing import List, Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\nclass Solution:\n    def mergeKLists(self, lists: List[Optional[ListNode]]) -> Optional[ListNode]:\n        heap = []\n        for i, node in enumerate(lists):\n            if node:\n                heapq.heappush(heap, (node.val, i, node))\n        dummy = ListNode(0)\n        curr = dummy\n        while heap:\n            val, i, node = heapq.heappop(heap)\n            curr.next = node\n            curr = curr.next\n            if node.next:\n                heapq.heappush(heap, (node.next.val, i, node.next))\n        return dummy.next",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    ListNode* mergeKLists(vector<ListNode*>& lists) {\n        auto comp = [](ListNode* a, ListNode* b) { return a->val > b->val; };\n        priority_queue<ListNode*, vector<ListNode*>, decltype(comp)> pq(comp);\n        for (auto list : lists) {\n            if (list) pq.push(list);\n        }\n        ListNode dummy(0);\n        ListNode* curr = &dummy;\n        while (!pq.empty()) {\n            ListNode* node = pq.top();\n            pq.pop();\n            curr->next = node;\n            curr = curr->next;\n            if (node->next) pq.push(node->next);\n        }\n        return dummy.next;\n    }\n};",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public ListNode mergeKLists(ListNode[] lists) {\n        java.util.PriorityQueue<ListNode> pq = new java.util.PriorityQueue<>(java.util.Comparator.comparingInt(a -> a.val));\n        for (ListNode node : lists) {\n            if (node != null) pq.offer(node);\n        }\n        ListNode dummy = new ListNode(0);\n        ListNode curr = dummy;\n        while (!pq.isEmpty()) {\n            ListNode node = pq.poll();\n            curr.next = node;\n            curr = curr.next;\n            if (node.next != null) pq.offer(node.next);\n        }\n        return dummy.next;\n    }\n}",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {ListNode[]} lists\n * @return {ListNode}\n */\nvar mergeKLists = function(lists) {\n    const heap = [];\n    const push = (node) => {\n        heap.push(node);\n        let i = heap.length - 1;\n        while (i > 0) {\n            const p = Math.floor((i - 1) / 2);\n            if (heap[p].val <= heap[i].val) break;\n            [heap[p], heap[i]] = [heap[i], heap[p]];\n            i = p;\n        }\n    };\n    const pop = () => {\n        const top = heap[0];\n        const last = heap.pop();\n        if (heap.length > 0) {\n            heap[0] = last;\n            let i = 0;\n            while (true) {\n                let best = i;\n                const l = 2 * i + 1, r = 2 * i + 2;\n                if (l < heap.length && heap[l].val < heap[best].val) best = l;\n                if (r < heap.length && heap[r].val < heap[best].val) best = r;\n                if (best === i) break;\n                [heap[i], heap[best]] = [heap[best], heap[i]];\n                i = best;\n            }\n        }\n        return top;\n    };\n    for (const node of lists) {\n        if (node) push(node);\n    }\n    const dummy = { val: 0, next: null };\n    let curr = dummy;\n    while (heap.length > 0) {\n        const node = pop();\n        curr.next = node;\n        curr = curr.next;\n        if (node.next) push(node.next);\n    }\n    return dummy.next;\n};",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

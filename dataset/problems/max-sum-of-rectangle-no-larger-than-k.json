@@ -1,0 +1,79 @@
+{
+  "slug": "max-sum-of-rectangle-no-larger-than-k",
+  "number": 363,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "2D to 1D Subarray Reduction",
+      "text": "Fix the left and right column boundaries to compress the 2D rectangle problem into finding a 1D continuous subarray sum at most k."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Sum Ceiling Search",
+      "text": "For each 1D row sum array, compute running prefix sums. We seek previous prefix sum S such that current prefix sum minus S is at most k, or S is at least current prefix sum minus k."
+    },
+    {
+      "level": 3,
+      "title": "Ordered Set Binary Lookups",
+      "text": "Maintain ordered prefix sums seen so far. For the running prefix sum, find the smallest element greater than or equal to current prefix sum minus k. Update maximum sum found. If the maximum reaches k exactly, terminate early."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport bisect\nfrom typing import List\n\nclass Solution:\n    def maxSumSubmatrix(self, matrix: List[List[int]], k: int) -> int:\n        m, n = len(matrix), len(matrix[0])\n        if m < n:\n            matrix = [list(col) for col in zip(*matrix)]\n            m, n = n, m\n\n        max_sum = float(\"-inf\")\n        for left in range(n):\n            row_sums = [0] * m\n            for right in range(left, n):\n                for i in range(m):\n                    row_sums[i] += matrix[i][right]\n\n                curr_max = float(\"-inf\")\n                run = 0\n                max_sub = float(\"-inf\")\n                for val in row_sums:\n                    run = max(val, run + val)\n                    max_sub = max(max_sub, run)\n                if max_sub <= k:\n                    max_sum = max(max_sum, max_sub)\n                    if max_sum == k:\n                        return k\n                    continue\n\n                sorted_prefixes = [0]\n                prefix = 0\n                for val in row_sums:\n                    prefix += val\n                    target = prefix - k\n                    idx = bisect.bisect_left(sorted_prefixes, target)\n                    if idx < len(sorted_prefixes):\n                        max_sum = max(max_sum, prefix - sorted_prefixes[idx])\n                        if max_sum == k:\n                            return k\n                    bisect.insort(sorted_prefixes, prefix)\n\n        return max_sum\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(min(M, N)^2 * max(M, N) * log(max(M, N)))",
+    "space": "O(max(M, N))",
+    "variables": [
+      "M: row count of matrix",
+      "N: col count of matrix"
+    ],
+    "notes": "Prefix sums and sorted container binary search over compressed rows.",
+    "whyNaiveFails": "Evaluating all 4 corners of rectangles takes O(M^2 * N^2) time which is too slow.",
+    "spaceTimeTradeoff": "Sorted prefix sums container provides logarithmic threshold lookup.",
+    "interviewerExpectation": "Compress dimension with smaller size and apply prefix sums with binary search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\nfrom typing import List\n\nclass Solution:\n    def maxSumSubmatrix(self, matrix: List[List[int]], k: int) -> int:\n        m, n = len(matrix), len(matrix[0])\n        if m < n:\n            matrix = [list(col) for col in zip(*matrix)]\n            m, n = n, m\n\n        max_sum = float(\"-inf\")\n        for left in range(n):\n            row_sums = [0] * m\n            for right in range(left, n):\n                for i in range(m):\n                    row_sums[i] += matrix[i][right]\n\n                curr_max = float(\"-inf\")\n                run = 0\n                max_sub = float(\"-inf\")\n                for val in row_sums:\n                    run = max(val, run + val)\n                    max_sub = max(max_sub, run)\n                if max_sub <= k:\n                    max_sum = max(max_sum, max_sub)\n                    if max_sum == k:\n                        return k\n                    continue\n\n                sorted_prefixes = [0]\n                prefix = 0\n                for val in row_sums:\n                    prefix += val\n                    target = prefix - k\n                    idx = bisect.bisect_left(sorted_prefixes, target)\n                    if idx < len(sorted_prefixes):\n                        max_sum = max(max_sum, prefix - sorted_prefixes[idx])\n                        if max_sum == k:\n                            return k\n                    bisect.insort(sorted_prefixes, prefix)\n\n        return max_sum",
+      "approach": "binary-search-basic verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int maxSumSubmatrix(vector<vector<int>>& matrix, int k) {\n        int m = matrix.size();\n        int n = matrix[0].size();\n        if (m < n) {\n            vector<vector<int>> trans(n, vector<int>(m));\n            for (int i = 0; i < m; i++) {\n                for (int j = 0; j < n; j++) trans[j][i] = matrix[i][j];\n            }\n            matrix = move(trans);\n            swap(m, n);\n        }\n\n        int maxSum = INT_MIN;\n        for (int l = 0; l < n; l++) {\n            vector<int> rowSums(m, 0);\n            for (int r = l; r < n; r++) {\n                for (int i = 0; i < m; i++) {\n                    rowSums[i] += matrix[i][r];\n                }\n\n                int maxSub = INT_MIN, cur = 0;\n                for (int x : rowSums) {\n                    cur = max(x, cur + x);\n                    maxSub = max(maxSub, cur);\n                }\n                if (maxSub <= k) {\n                    maxSum = max(maxSum, maxSub);\n                    if (maxSum == k) return k;\n                    continue;\n                }\n\n                set<int> prefixes = {0};\n                int prefix = 0;\n                for (int x : rowSums) {\n                    prefix += x;\n                    auto it = prefixes.lower_bound(prefix - k);\n                    if (it != prefixes.end()) {\n                        maxSum = max(maxSum, prefix - *it);\n                        if (maxSum == k) return k;\n                    }\n                    prefixes.insert(prefix);\n                }\n            } \n        }\n        return maxSum;\n    }\n};",
+      "approach": "binary-search-basic verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int maxSumSubmatrix(int[][] matrix, int k) {\n        int m = matrix.length;\n        int n = matrix[0].length;\n        if (m < n) {\n            int[][] trans = new int[n][m];\n            for (int i = 0; i < m; i++) {\n                for (int j = 0; j < n; j++) trans[j][i] = matrix[i][j];\n            }\n            matrix = trans;\n            int tmp = m; m = n; n = tmp;\n        }\n\n        int maxSum = Integer.MIN_VALUE;\n        for (int l = 0; l < n; l++) {\n            int[] rowSums = new int[m];\n            for (int r = l; r < n; r++) {\n                for (int i = 0; i < m; i++) {\n                    rowSums[i] += matrix[i][r];\n                }\n\n                int maxSub = Integer.MIN_VALUE, cur = 0;\n                for (int x : rowSums) {\n                    cur = Math.max(x, cur + x);\n                    maxSub = Math.max(maxSub, cur);\n                }\n                if (maxSub <= k) {\n                    maxSum = Math.max(maxSum, maxSub);\n                    if (maxSum == k) return k;\n                    continue;\n                }\n\n                TreeSet<Integer> prefixes = new TreeSet<>();\n                prefixes.add(0);\n                int prefix = 0;\n                for (int x : rowSums) {\n                    prefix += x;\n                    Integer target = prefixes.ceiling(prefix - k);\n                    if (target != null) {\n                        maxSum = Math.max(maxSum, prefix - target);\n                        if (maxSum == k) return k;\n                    }\n                    prefixes.add(prefix);\n                }\n            }\n        }\n        return maxSum;\n    }\n}",
+      "approach": "binary-search-basic verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxSumSubmatrix = function(matrix, k) {\n    let m = matrix.length;\n    let n = matrix[0].length;\n    if (m < n) {\n        const trans = Array.from({ length: n }, () => new Array(m).fill(0));\n        for (let i = 0; i < m; i++) {\n            for (let j = 0; j < n; j++) trans[j][i] = matrix[i][j];\n        }\n        matrix = trans;\n        const tmp = m; m = n; n = tmp;\n    }\n\n    let maxSum = -Infinity;\n    for (let l = 0; l < n; l++) {\n        const rowSums = new Array(m).fill(0);\n        for (let r = l; r < n; r++) {\n            for (let i = 0; i < m; i++) {\n                rowSums[i] += matrix[i][r];\n            }\n\n            let maxSub = -Infinity;\n            let cur = 0;\n            for (const x of rowSums) {\n                cur = Math.max(x, cur + x);\n                maxSub = Math.max(maxSub, cur);\n            }\n            if (maxSub <= k) {\n                maxSum = Math.max(maxSum, maxSub);\n                if (maxSum === k) return k;\n                continue;\n            }\n\n            const prefixes = [0];\n            let prefix = 0;\n            for (const x of rowSums) {\n                prefix += x;\n                const target = prefix - k;\n                let low = 0, high = prefixes.length - 1, ceilIdx = -1;\n                while (low <= high) {\n                    const mid = (low + high) >> 1;\n                    if (prefixes[mid] >= target) {\n                        ceilIdx = mid;\n                        high = mid - 1;\n                    } else {\n                        low = mid + 1;\n                    }\n                }\n                if (ceilIdx !== -1) {\n                    maxSum = Math.max(maxSum, prefix - prefixes[ceilIdx]);\n                    if (maxSum === k) return k;\n                }\n                let ins = 0;\n                while (ins < prefixes.length && prefixes[ins] < prefix) ins++;\n                prefixes.splice(ins, 0, prefix);\n            }\n        }\n    }\n    return maxSum;\n};",
+      "approach": "binary-search-basic verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

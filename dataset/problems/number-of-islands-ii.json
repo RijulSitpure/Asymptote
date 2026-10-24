@@ -1,0 +1,80 @@
+{
+  "slug": "number-of-islands-ii",
+  "number": 305,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Incremental Component Union",
+      "text": "When adding a land cell, treat it as an isolated component and merge with neighboring land components."
+    },
+    {
+      "level": 2,
+      "title": "Disjoint Set Flat Indexing",
+      "text": "Map 2D coordinates (r, c) to 1D integer keys r * n + c for union-find operations with rank and path compression."
+    },
+    {
+      "level": 3,
+      "title": "Dynamic Island Count Tracking",
+      "text": "Maintain parent array initialized to -1. For each position [r, c]: if already land, append current count. Else set parent[id] = id, increment count by one, and check 4 neighbors. For each adjacent land cell, union sets and decrement count on successful merge."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def numIslands2(self, m: int, n: int, positions: List[List[int]]) -> List[int]:\n        parent = {}\n\n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n\n        def union(x: int, y: int) -> bool:\n            rx, ry = find(x), find(y)\n            if rx == ry:\n                return False\n            parent[rx] = ry\n            return True\n\n        res = []\n        count = 0\n        dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]\n\n        for r, c in positions:\n            key = r * n + c\n            if key in parent:\n                res.append(count)\n                continue\n            parent[key] = key\n            count += 1\n            for dr, dc in dirs:\n                nr, nc = r + dr, c + dc\n                nkey = nr * n + nc\n                if 0 <= nr < m and 0 <= nc < n and nkey in parent:\n                    if union(key, nkey):\n                        count -= 1\n            res.append(count)\n\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(K * alpha(M * N))",
+    "space": "O(M * N)",
+    "variables": [
+      "M: rows",
+      "N: columns",
+      "K: number of positions"
+    ],
+    "notes": "Optimal dynamic connectivity using union-find with path compression.",
+    "whyNaiveFails": "Re-running full grid BFS from scratch for each added position takes O(K * M * N) time.",
+    "spaceTimeTradeoff": "Disjoint set data structure processes each land addition in almost constant amortized time.",
+    "interviewerExpectation": "Handle duplicate positions gracefully without re-incrementing the island count."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def numIslands2(self, m: int, n: int, positions: List[List[int]]) -> List[int]:\n        parent = {}\n\n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n\n        def union(x: int, y: int) -> bool:\n            rx, ry = find(x), find(y)\n            if rx == ry:\n                return False\n            parent[rx] = ry\n            return True\n\n        res = []\n        count = 0\n        dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]\n\n        for r, c in positions:\n            key = r * n + c\n            if key in parent:\n                res.append(count)\n                continue\n            parent[key] = key\n            count += 1\n            for dr, dc in dirs:\n                nr, nc = r + dr, c + dc\n                nkey = nr * n + nc\n                if 0 <= nr < m and 0 <= nc < n and nkey in parent:\n                    if union(key, nkey):\n                        count -= 1\n            res.append(count)\n\n        return res",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> numIslands2(int m, int n, vector<vector<int>>& positions) {\n        vector<int> parent(m * n, -1);\n        function<int(int)> find = [&](int x) {\n            return parent[x] == x ? x : (parent[x] = find(parent[x]));\n        };\n        vector<int> res;\n        int count = 0;\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (const auto& pos : positions) {\n            int r = pos[0], c = pos[1];\n            int key = r * n + c;\n            if (parent[key] != -1) {\n                res.push_back(count);\n                continue;\n            }\n            parent[key] = key;\n            count++;\n            for (auto& d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                int nkey = nr * n + nc;\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && parent[nkey] != -1) {\n                    int root1 = find(key), root2 = find(nkey);\n                    if (root1 != root2) {\n                        parent[root1] = root2;\n                        count--;\n                    }\n                }\n            }\n            res.push_back(count);\n        }\n        return res;\n    }\n};",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<Integer> numIslands2(int m, int n, int[][] positions) {\n        int[] parent = new int[m * n];\n        java.util.Arrays.fill(parent, -1);\n        List<Integer> res = new ArrayList<>();\n        int count = 0;\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int[] pos : positions) {\n            int r = pos[0], c = pos[1];\n            int key = r * n + c;\n            if (parent[key] != -1) {\n                res.add(count);\n                continue;\n            }\n            parent[key] = key;\n            count++;\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                int nkey = nr * n + nc;\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && parent[nkey] != -1) {\n                    int root1 = find(parent, key), root2 = find(parent, nkey);\n                    if (root1 != root2) {\n                        parent[root1] = root2;\n                        count--;\n                    }\n                }\n            }\n            res.add(count);\n        }\n        return res;\n    }\n    private int find(int[] parent, int x) {\n        return parent[x] == x ? x : (parent[x] = find(parent, parent[x]));\n    }\n}",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} m\n * @param {number} n\n * @param {number[][]} positions\n * @return {number[]}\n */\nvar numIslands2 = function(m, n, positions) {\n    const parent = new Array(m * n).fill(-1);\n    const find = (x) => parent[x] === x ? x : (parent[x] = find(parent[x]));\n    const res = [];\n    let count = 0;\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    for (const [r, c] of positions) {\n        const key = r * n + c;\n        if (parent[key] !== -1) {\n            res.push(count);\n            continue;\n        }\n        parent[key] = key;\n        count++;\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            const nkey = nr * n + nc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && parent[nkey] !== -1) {\n                const r1 = find(key), r2 = find(nkey);\n                if (r1 !== r2) {\n                    parent[r1] = r2;\n                    count--;\n                }\n            }\n        }\n        res.push(count);\n    }\n    return res;\n};",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

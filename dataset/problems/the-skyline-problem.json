@@ -1,0 +1,78 @@
+{
+  "slug": "the-skyline-problem",
+  "number": 218,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Boundary Event Sweeping",
+      "text": "Track building start and end edges in ascending coordinate order, maintaining visible peak height changes."
+    },
+    {
+      "level": 2,
+      "title": "Negative Start and Positive End Sorting",
+      "text": "Distinguish building start edges from end edges using sign. This natural ordering handles overlapping edges cleanly."
+    },
+    {
+      "level": 3,
+      "title": "Sweep-Line with Active Heights",
+      "text": "Record events (L, -H) and (R, H). Sort events by coordinate with height tie-breaking. Maintain a multiset or max heap of active building heights starting with ground height 0. When the maximum active height changes at an x-coordinate, add [x, max_height] to the skyline."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport heapq\nfrom typing import List\n\nclass Solution:\n    def getSkyline(self, buildings: List[List[int]]) -> List[List[int]]:\n        events = []\n        for L, R, H in buildings:\n            events.append((L, -H, R))\n            events.append((R, 0, 0))\n        events.sort()\n\n        res = [[0, 0]]\n        heap = [(0, float(\"inf\"))]\n\n        for x, neg_h, r in events:\n            if neg_h != 0:\n                heapq.heappush(heap, (neg_h, r))\n            while heap[0][1] <= x:\n                heapq.heappop(heap)\n            max_h = -heap[0][0]\n            if res[-1][1] != max_h:\n                res.append([x, max_h])\n\n        return res[1:]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of buildings"
+    ],
+    "notes": "Optimal sweep-line with lazy max-heap pruning.",
+    "whyNaiveFails": "Maintaining a full coordinate height array takes memory and time proportional to coordinate span.",
+    "spaceTimeTradeoff": "Event sorting and priority queue height tracking executes in O(N log N) time.",
+    "interviewerExpectation": "Use negative height for start edges to handle ties where taller buildings mask shorter ones."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\nfrom typing import List\n\nclass Solution:\n    def getSkyline(self, buildings: List[List[int]]) -> List[List[int]]:\n        events = []\n        for L, R, H in buildings:\n            events.append((L, -H, R))\n            events.append((R, 0, 0))\n        events.sort()\n\n        res = [[0, 0]]\n        heap = [(0, float(\"inf\"))]\n\n        for x, neg_h, r in events:\n            if neg_h != 0:\n                heapq.heappush(heap, (neg_h, r))\n            while heap[0][1] <= x:\n                heapq.heappop(heap)\n            max_h = -heap[0][0]\n            if res[-1][1] != max_h:\n                res.append([x, max_h])\n\n        return res[1:]",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<vector<int>> getSkyline(vector<vector<int>>& buildings) {\n        vector<tuple<int, int, int>> events;\n        for (const auto& b : buildings) {\n            events.emplace_back(b[0], -b[2], b[1]);\n            events.emplace_back(b[1], 0, 0);\n        }\n        sort(events.begin(), events.end());\n        priority_queue<pair<int, int>> pq; // (height, right)\n        pq.push({0, INT_MAX});\n        vector<vector<int>> res;\n        int prev_h = 0;\n        for (const auto& [x, neg_h, r] : events) {\n            if (neg_h != 0) {\n                pq.push({-neg_h, r});\n            }\n            while (pq.top().second <= x) {\n                pq.pop();\n            }\n            int curr_h = pq.top().first;\n            if (curr_h != prev_h) {\n                res.push_back({x, curr_h});\n                prev_h = curr_h;\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<List<Integer>> getSkyline(int[][] buildings) {\n        List<int[]> events = new ArrayList<>();\n        for (int[] b : buildings) {\n            events.add(new int[]{b[0], -b[2], b[1]});\n            events.add(new int[]{b[1], 0, 0});\n        }\n        events.sort((a, b) -> a[0] != b[0] ? Integer.compare(a[0], b[0]) : Integer.compare(a[1], b[1]));\n        java.util.PriorityQueue<int[]> pq = new java.util.PriorityQueue<>((a, b) -> Integer.compare(b[0], a[0]));\n        pq.offer(new int[]{0, Integer.MAX_VALUE});\n        List<List<Integer>> res = new ArrayList<>();\n        int prevH = 0;\n        for (int[] ev : events) {\n            int x = ev[0], negH = ev[1], r = ev[2];\n            if (negH != 0) pq.offer(new int[]{-negH, r});\n            while (pq.peek()[1] <= x) pq.poll();\n            int currH = pq.peek()[0];\n            if (currH != prevH) {\n                res.add(java.util.Arrays.asList(x, currH));\n                prevH = currH;\n            }\n        }\n        return res;\n    }\n}",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} buildings\n * @return {number[][]}\n */\nvar getSkyline = function(buildings) {\n    const events = [];\n    for (const [L, R, H] of buildings) {\n        events.push([L, -H, R]);\n        events.push([R, 0, 0]);\n    }\n    events.sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]);\n    const heap = [[0, Infinity]];\n    const push = (item) => {\n        heap.push(item);\n        let i = heap.length - 1;\n        while (i > 0) {\n            const p = Math.floor((i - 1) / 2);\n            if (heap[p][0] >= heap[i][0]) break;\n            [heap[p], heap[i]] = [heap[i], heap[p]];\n            i = p;\n        }\n    };\n    const pop = () => {\n        const top = heap[0];\n        const last = heap.pop();\n        if (heap.length > 0) {\n            heap[0] = last;\n            let i = 0;\n            while (true) {\n                let best = i;\n                const l = 2 * i + 1, r = 2 * i + 2;\n                if (l < heap.length && heap[l][0] > heap[best][0]) best = l;\n                if (r < heap.length && heap[r][0] > heap[best][0]) best = r;\n                if (best === i) break;\n                [heap[i], heap[best]] = [heap[best], heap[i]];\n                i = best;\n            }\n        }\n        return top;\n    };\n    const res = [];\n    let prevH = 0;\n    for (const [x, negH, r] of events) {\n        if (negH !== 0) push([-negH, r]);\n        while (heap[0][1] <= x) pop();\n        const currH = heap[0][0];\n        if (currH !== prevH) {\n            res.push([x, currH]);\n            prevH = currH;\n        }\n    }\n    return res;\n};",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

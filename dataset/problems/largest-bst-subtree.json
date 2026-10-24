@@ -1,0 +1,79 @@
+{
+  "slug": "largest-bst-subtree",
+  "number": 333,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bst-properties"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subtree Validation Properties",
+      "text": "A tree is a valid BST if the current value is strictly greater than the maximum in its left subtree and strictly less than the minimum in its right subtree."
+    },
+    {
+      "level": 2,
+      "title": "Bottom-Up Post-Order Traversal",
+      "text": "Process children first. Return four values from each node: whether the subtree is a BST, its total node count, its minimum key, and its maximum key."
+    },
+    {
+      "level": 3,
+      "title": "Size Aggregation on Valid Subtrees",
+      "text": "For an empty node, return true, count 0, infinity, and negative infinity. For a non-empty node, if both left and right subtrees are BSTs and the left max is less than node value and node value is less than right min, mark this node as a BST of size 1 plus left count plus right count. Otherwise, propagate the max count seen so far."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def largestBSTSubtree(self, root: Optional[TreeNode]) -> int:\n        max_size = 0\n\n        def dfs(node):\n            nonlocal max_size\n            if not node:\n                return True, 0, float(\"inf\"), float(\"-inf\")\n            is_l, cnt_l, min_l, max_l = dfs(node.left)\n            is_r, cnt_r, min_r, max_r = dfs(node.right)\n            if is_l and is_r and max_l < node.val < min_r:\n                curr_size = 1 + cnt_l + cnt_r\n                max_size = max(max_size, curr_size)\n                return True, curr_size, min(min_l, node.val), max(max_r, node.val)\n            return False, max(cnt_l, cnt_r), 0, 0\n\n        dfs(root)\n        return max_size\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(H)",
+    "variables": [
+      "N: number of nodes in binary tree",
+      "H: height of binary tree"
+    ],
+    "notes": "Single bottom-up traversal visits every node once.",
+    "whyNaiveFails": "Validating each subtree independently from the top down requires quadratic O(N^2) time in the worst case.",
+    "spaceTimeTradeoff": "Synthesizing BST properties bottom-up avoids redundant traversals.",
+    "interviewerExpectation": "Traverse bottom-up and synthesize BST bounds and size in O(N) time."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def largestBSTSubtree(self, root: Optional[TreeNode]) -> int:\n        max_size = 0\n\n        def dfs(node):\n            nonlocal max_size\n            if not node:\n                return True, 0, float(\"inf\"), float(\"-inf\")\n            is_l, cnt_l, min_l, max_l = dfs(node.left)\n            is_r, cnt_r, min_r, max_r = dfs(node.right)\n            if is_l and is_r and max_l < node.val < min_r:\n                curr_size = 1 + cnt_l + cnt_r\n                max_size = max(max_size, curr_size)\n                return True, curr_size, min(min_l, node.val), max(max_r, node.val)\n            return False, max(cnt_l, cnt_r), 0, 0\n\n        dfs(root)\n        return max_size",
+      "approach": "tree-bst-properties verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int maxSize = 0;\n    struct Info {\n        bool isBST;\n        int size;\n        int minVal;\n        int maxVal;\n    };\n    Info dfs(TreeNode* node) {\n        if (!node) return {true, 0, INT_MAX, INT_MIN};\n        auto left = dfs(node->left);\n        auto right = dfs(node->right);\n        if (left.isBST && right.isBST && left.maxVal < node->val && node->val < right.minVal) {\n            int sz = 1 + left.size + right.size;\n            maxSize = max(maxSize, sz);\n            int mn = (node->left ? left.minVal : node->val);\n            int mx = (node->right ? right.maxVal : node->val);\n            return {true, sz, mn, mx};\n        }\n        return {false, max(left.size, right.size), 0, 0};\n    }\npublic:\n    int largestBSTSubtree(TreeNode* root) {\n        maxSize = 0;\n        dfs(root);\n        return maxSize;\n    }\n};",
+      "approach": "tree-bst-properties verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int maxSize = 0;\n\n    static class Info {\n        boolean isBST;\n        int size;\n        int minVal;\n        int maxVal;\n        Info(boolean isBST, int size, int minVal, int maxVal) {\n            this.isBST = isBST;\n            this.size = size;\n            this.minVal = minVal;\n            this.maxVal = maxVal;\n        }\n    }\n\n    private Info dfs(TreeNode node) {\n        if (node == null) return new Info(true, 0, Integer.MAX_VALUE, Integer.MIN_VALUE);\n        Info left = dfs(node.left);\n        Info right = dfs(node.right);\n        if (left.isBST && right.isBST && left.maxVal < node.val && node.val < right.minVal) {\n            int sz = 1 + left.size + right.size;\n            maxSize = Math.max(maxSize, sz);\n            int mn = (node.left != null ? left.minVal : node.val);\n            int mx = (node.right != null ? right.maxVal : node.val);\n            return new Info(true, sz, mn, mx);\n        }\n        return new Info(false, Math.max(left.size, right.size), 0, 0);\n    }\n\n    public int largestBSTSubtree(TreeNode root) {\n        maxSize = 0;\n        dfs(root);\n        return maxSize;\n    }\n}",
+      "approach": "tree-bst-properties verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var largestBSTSubtree = function(root) {\n    let maxSize = 0;\n\n    function dfs(node) {\n        if (!node) return [true, 0, Infinity, -Infinity];\n        const [isL, cntL, minL, maxL] = dfs(node.left);\n        const [isR, cntR, minR, maxR] = dfs(node.right);\n        if (isL && isR && maxL < node.val && node.val < minR) {\n            const sz = 1 + cntL + cntR;\n            maxSize = Math.max(maxSize, sz);\n            return [true, sz, Math.min(minL, node.val), Math.max(maxR, node.val)];\n        }\n        return [false, Math.max(cntL, cntR), 0, 0];\n    }\n\n    dfs(root);\n    return maxSize;\n};",
+      "approach": "tree-bst-properties verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

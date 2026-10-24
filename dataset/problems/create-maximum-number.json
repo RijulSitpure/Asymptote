@@ -1,0 +1,80 @@
+{
+  "slug": "create-maximum-number",
+  "number": 321,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-monotonic-next-greater"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subsequence Extraction and Merging",
+      "text": "Extract maximal length i and length k minus i subsequences from the two arrays and merge them lexicographically."
+    },
+    {
+      "level": 2,
+      "title": "Monotonic Subsequence Selection",
+      "text": "Use a decreasing monotonic stack to extract the largest subsequence of length count from a single array."
+    },
+    {
+      "level": 3,
+      "title": "Lexicographical Suffix Merging",
+      "text": "Iterate i from max(0, k - len(nums2)) to min(k, len(nums1)). Extract max subsequences of lengths i and k - i using monotonic stack. Merge the two arrays by greedily comparing remaining suffixes. Track the maximum merged result."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def maxNumber(self, nums1: List[int], nums2: List[int], k: int) -> List[int]:\n        def max_single(nums: List[int], count: int) -> List[int]:\n            stack = []\n            drop = len(nums) - count\n            for x in nums:\n                while drop > 0 and stack and stack[-1] < x:\n                    stack.pop()\n                    drop -= 1\n                stack.append(x)\n            return stack[:count]\n\n        def merge(a: List[int], b: List[int]) -> List[int]:\n            res = []\n            i, j = 0, 0\n            while i < len(a) or j < len(b):\n                if a[i:] > b[j:]:\n                    res.append(a[i])\n                    i += 1\n                else:\n                    res.append(b[j])\n                    j += 1\n            return res\n\n        best = []\n        for i in range(max(0, k - len(nums2)), min(k, len(nums1)) + 1):\n            cand = merge(max_single(nums1, i), max_single(nums2, k - i))\n            if cand > best:\n                best = cand\n        return best\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(K * (M + N)^2)",
+    "space": "O(K + M + N)",
+    "variables": [
+      "M: nums1 length",
+      "N: nums2 length",
+      "K: target subsequence size"
+    ],
+    "notes": "Optimal partition decomposition combining monotonic stacks with suffix comparison merging.",
+    "whyNaiveFails": "Generating all subsequences of lengths i and k - i requires exponential combinations.",
+    "spaceTimeTradeoff": "Monotonic stack extracts optimal single-array subsequences in linear O(N) time.",
+    "interviewerExpectation": "Use full suffix comparison when merging equal leading digits between the two lists."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def maxNumber(self, nums1: List[int], nums2: List[int], k: int) -> List[int]:\n        def max_single(nums: List[int], count: int) -> List[int]:\n            stack = []\n            drop = len(nums) - count\n            for x in nums:\n                while drop > 0 and stack and stack[-1] < x:\n                    stack.pop()\n                    drop -= 1\n                stack.append(x)\n            return stack[:count]\n\n        def merge(a: List[int], b: List[int]) -> List[int]:\n            res = []\n            i, j = 0, 0\n            while i < len(a) or j < len(b):\n                if a[i:] > b[j:]:\n                    res.append(a[i])\n                    i += 1\n                else:\n                    res.append(b[j])\n                    j += 1\n            return res\n\n        best = []\n        for i in range(max(0, k - len(nums2)), min(k, len(nums1)) + 1):\n            cand = merge(max_single(nums1, i), max_single(nums2, k - i))\n            if cand > best:\n                best = cand\n        return best",
+      "approach": "stack-monotonic-next-greater verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    vector<int> maxSingle(const vector<int>& nums, int count) {\n        vector<int> stack;\n        int drop = nums.size() - count;\n        for (int x : nums) {\n            while (drop > 0 && !stack.empty() && stack.back() < x) {\n                stack.pop_back();\n                drop--;\n            }\n            stack.push_back(x);\n        }\n        stack.resize(count);\n        return stack;\n    }\n    bool greaterVec(const vector<int>& a, int i, const vector<int>& b, int j) {\n        while (i < (int)a.size() && j < (int)b.size() && a[i] == b[j]) {\n            i++; j++;\n        }\n        return j == (int)b.size() || (i < (int)a.size() && a[i] > b[j]);\n    }\n    vector<int> merge(const vector<int>& a, const vector<int>& b) {\n        vector<int> res;\n        int i = 0, j = 0;\n        while (i < (int)a.size() || j < (int)b.size()) {\n            if (greaterVec(a, i, b, j)) {\n                res.push_back(a[i++]);\n            } else {\n                res.push_back(b[j++]);\n            }\n        }\n        return res;\n    }\npublic:\n    vector<int> maxNumber(vector<int>& nums1, vector<int>& nums2, int k) {\n        vector<int> best;\n        int m = nums1.size(), n = nums2.size();\n        for (int i = max(0, k - n); i <= min(k, m); i++) {\n            auto cand = merge(maxSingle(nums1, i), maxSingle(nums2, k - i));\n            if (best.empty() || greaterVec(cand, 0, best, 0)) {\n                best = cand;\n            }\n        }\n        return best;\n    }\n};",
+      "approach": "stack-monotonic-next-greater verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[] maxNumber(int[] nums1, int[] nums2, int k) {\n        int[] best = new int[k];\n        int m = nums1.length, n = nums2.length;\n        boolean first = true;\n        for (int i = Math.max(0, k - n); i <= Math.min(k, m); i++) {\n            int[] cand = merge(maxSingle(nums1, i), maxSingle(nums2, k - i), k);\n            if (first || greater(cand, 0, best, 0)) {\n                best = cand;\n                first = false;\n            }\n        }\n        return best;\n    }\n    private int[] maxSingle(int[] nums, int count) {\n        int[] stack = new int[count];\n        int top = -1, drop = nums.length - count;\n        for (int x : nums) {\n            while (drop > 0 && top >= 0 && stack[top] < x) {\n                top--;\n                drop--;\n            }\n            if (top < count - 1) stack[++top] = x;\n            else drop--;\n        }\n        return stack;\n    }\n    private int[] merge(int[] a, int[] b, int k) {\n        int[] res = new int[k];\n        int i = 0, j = 0, idx = 0;\n        while (idx < k) {\n            if (greater(a, i, b, j)) res[idx++] = a[i++];\n            else res[idx++] = b[j++];\n        }\n        return res;\n    }\n    private boolean greater(int[] a, int i, int[] b, int j) {\n        while (i < a.length && j < b.length && a[i] == b[j]) {\n            i++; j++;\n        }\n        return j == b.length || (i < a.length && a[i] > b[j]);\n    }\n}",
+      "approach": "stack-monotonic-next-greater verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums1\n * @param {number[]} nums2\n * @param {number} k\n * @return {number[]}\n */\nvar maxNumber = function(nums1, nums2, k) {\n    const maxSingle = (nums, count) => {\n        const stack = [];\n        let drop = nums.length - count;\n        for (const x of nums) {\n            while (drop > 0 && stack.length > 0 && stack[stack.length - 1] < x) {\n                stack.pop();\n                drop--;\n            }\n            stack.push(x);\n        }\n        return stack.slice(0, count);\n    };\n    const greater = (a, i, b, j) => {\n        while (i < a.length && j < b.length && a[i] === b[j]) {\n            i++; j++;\n        }\n        return j === b.length || (i < a.length && a[i] > b[j]);\n    };\n    const merge = (a, b) => {\n        const res = [];\n        let i = 0, j = 0;\n        while (i < a.length || j < b.length) {\n            if (greater(a, i, b, j)) res.push(a[i++]);\n            else res.push(b[j++]);\n        }\n        return res;\n    };\n    let best = [];\n    const m = nums1.length, n = nums2.length;\n    for (let i = Math.max(0, k - n); i <= Math.min(k, m); i++) {\n        const cand = merge(maxSingle(nums1, i), maxSingle(nums2, k - i));\n        if (best.length === 0 || greater(cand, 0, best, 0)) {\n            best = cand;\n        }\n    }\n    return best;\n};",
+      "approach": "stack-monotonic-next-greater verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

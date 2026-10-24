@@ -1,0 +1,79 @@
+{
+  "slug": "count-of-smaller-numbers-after-self",
+  "number": 315,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Frequency Prefix Accumulation",
+      "text": "Process array elements from right to left, querying how many smaller elements have already been encountered."
+    },
+    {
+      "level": 2,
+      "title": "Coordinate Compression for Sparse Values",
+      "text": "Sort unique array values and map each element to its zero-based or one-based rank for compact frequency tree indexing."
+    },
+    {
+      "level": 3,
+      "title": "Binary Indexed Tree Prefix Query",
+      "text": "Map values to compressed ranks 1 to M. Traverse nums in reverse order: query sum in Fenwick tree for rank - 1, record as answer for this index, then update Fenwick tree at rank by +1."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def countSmaller(self, nums: List[int]) -> List[int]:\n        ranks = {v: i + 1 for i, v in enumerate(sorted(set(nums)))}\n        tree = [0] * (len(ranks) + 1)\n\n        def update(i: int, delta: int):\n            while i < len(tree):\n                tree[i] += delta\n                i += i & (-i)\n\n        def query(i: int) -> int:\n            s = 0\n            while i > 0:\n                s += tree[i]\n                i -= i & (-i)\n            return s\n\n        res = []\n        for x in reversed(nums):\n            r = ranks[x]\n            res.append(query(r - 1))\n            update(r, 1)\n\n        return res[::-1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log U)",
+    "space": "O(U)",
+    "variables": [
+      "N: length of nums",
+      "U: number of unique values in nums"
+    ],
+    "notes": "Optimal Fenwick tree frequency counting on coordinate-compressed ranks.",
+    "whyNaiveFails": "Scanning elements to the right for each index takes quadratic O(N^2) time.",
+    "spaceTimeTradeoff": "Binary Indexed Tree provides logarithmic prefix sum queries and point updates.",
+    "interviewerExpectation": "Use coordinate compression to handle negative and large values cleanly."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def countSmaller(self, nums: List[int]) -> List[int]:\n        ranks = {v: i + 1 for i, v in enumerate(sorted(set(nums)))}\n        tree = [0] * (len(ranks) + 1)\n\n        def update(i: int, delta: int):\n            while i < len(tree):\n                tree[i] += delta\n                i += i & (-i)\n\n        def query(i: int) -> int:\n            s = 0\n            while i > 0:\n                s += tree[i]\n                i -= i & (-i)\n            return s\n\n        res = []\n        for x in reversed(nums):\n            r = ranks[x]\n            res.append(query(r - 1))\n            update(r, 1)\n\n        return res[::-1]",
+      "approach": "segment-tree-fenwick verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> countSmaller(vector<int>& nums) {\n        vector<int> sorted_vals = nums;\n        sort(sorted_vals.begin(), sorted_vals.end());\n        sorted_vals.erase(unique(sorted_vals.begin(), sorted_vals.end()), sorted_vals.end());\n        int u = sorted_vals.size();\n        vector<int> tree(u + 1, 0);\n        auto update = [&](int i, int delta) {\n            for (; i <= u; i += i & (-i)) tree[i] += delta;\n        };\n        auto query = [&](int i) {\n            int sum = 0;\n            for (; i > 0; i -= i & (-i)) sum += tree[i];\n            return sum;\n        };\n        vector<int> res(nums.size());\n        for (int i = (int)nums.size() - 1; i >= 0; i--) {\n            int rank = lower_bound(sorted_vals.begin(), sorted_vals.end(), nums[i]) - sorted_vals.begin() + 1;\n            res[i] = query(rank - 1);\n            update(rank, 1);\n        }\n        return res;\n    }\n};",
+      "approach": "segment-tree-fenwick verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<Integer> countSmaller(int[] nums) {\n        int[] sorted = nums.clone();\n        Arrays.sort(sorted);\n        int u = 0;\n        for (int i = 0; i < sorted.length; i++) {\n            if (i == 0 || sorted[i] != sorted[i - 1]) sorted[u++] = sorted[i];\n        }\n        int[] tree = new int[u + 1];\n        Integer[] res = new Integer[nums.length];\n        for (int i = nums.length - 1; i >= 0; i--) {\n            int rank = Arrays.binarySearch(sorted, 0, u, nums[i]) + 1;\n            res[i] = query(tree, rank - 1);\n            update(tree, rank, 1, u);\n        }\n        return Arrays.asList(res);\n    }\n    private void update(int[] tree, int i, int delta, int max) {\n        for (; i <= max; i += i & (-i)) tree[i] += delta;\n    }\n    private int query(int[] tree, int i) {\n        int sum = 0;\n        for (; i > 0; i -= i & (-i)) sum += tree[i];\n        return sum;\n    }\n}",
+      "approach": "segment-tree-fenwick verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums\n * @return {number[]}\n */\nvar countSmaller = function(nums) {\n    const sorted = Array.from(new Set(nums)).sort((a, b) => a - b);\n    const ranks = new Map();\n    sorted.forEach((v, i) => ranks.set(v, i + 1));\n    const u = sorted.length;\n    const tree = new Array(u + 1).fill(0);\n    const update = (i, delta) => {\n        for (; i <= u; i += i & (-i)) tree[i] += delta;\n    };\n    const query = (i) => {\n        let sum = 0;\n        for (; i > 0; i -= i & (-i)) sum += tree[i];\n        return sum;\n    };\n    const res = new Array(nums.length);\n    for (let i = nums.length - 1; i >= 0; i--) {\n        const rank = ranks.get(nums[i]);\n        res[i] = query(rank - 1);\n        update(rank, 1);\n    }\n    return res;\n};",
+      "approach": "segment-tree-fenwick verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

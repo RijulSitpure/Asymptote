@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-unique-word-abbreviation",
+  "number": 411,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bitmask Character Differences",
+      "text": "Only dictionary words of the same length as the target need consideration. Use bitmasks where bit i is set if word differs from target at position i."
+    },
+    {
+      "level": 2,
+      "title": "Distinguishing Bit Subsets",
+      "text": "An abbreviation keeps characters where mask bit is 1. To avoid matching any dictionary word, the retained character mask must share at least one differing position with every dictionary candidate."
+    },
+    {
+      "level": 3,
+      "title": "Abbreviation Length Minimization",
+      "text": "Search bit subsets with depth search and branch pruning. For each candidate mask, compute its abbreviation length by counting retained letters plus distinct runs of masked zeroes. Choose the valid mask yielding minimum formatted length."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def minAbbreviation(self, target: str, dictionary: List[str]) -> str:\n        m = len(target)\n        diffs = []\n        for word in dictionary:\n            if len(word) != m:\n                continue\n            mask = 0\n            for i in range(m):\n                if target[i] != word[i]:\n                    mask |= (1 << (m - 1 - i))\n            diffs.append(mask)\n\n        if not diffs:\n            return str(m)\n\n        min_len = m\n        best_mask = (1 << m) - 1\n\n        def is_valid(mask: int) -> bool:\n            return all((mask & d) != 0 for d in diffs)\n\n        def dfs(idx: int, curr_mask: int, length: int, prev_zero: bool):\n            nonlocal min_len, best_mask\n            if length >= min_len:\n                return\n            if idx == m:\n                if is_valid(curr_mask):\n                    min_len = length\n                    best_mask = curr_mask\n                return\n            dfs(idx + 1, curr_mask | (1 << (m - 1 - idx)), length + 1, False)\n            dfs(idx + 1, curr_mask, length + (0 if prev_zero else 1), True)\n\n        dfs(0, 0, 0, False)\n\n        res = []\n        zero_count = 0\n        for i in range(m):\n            if (best_mask >> (m - 1 - i)) & 1:\n                if zero_count > 0:\n                    res.append(str(zero_count))\n                    zero_count = 0\n                res.append(target[i])\n            else:\n                zero_count += 1\n        if zero_count > 0:\n            res.append(str(zero_count))\n        return \"\".join(res)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(2^M + D * M)",
+    "space": "O(D)",
+    "variables": [
+      "M: length of target string (<= 21)",
+      "D: count of words in dictionary"
+    ],
+    "notes": "Bitmask search over M positions with early branch-and-bound pruning.",
+    "whyNaiveFails": "Generating all abbreviations and string-matching each against dictionary is combinatorial explosion.",
+    "spaceTimeTradeoff": "Pre-encoding word differences as integer bitmasks speeds conflict testing to single bitwise operations.",
+    "interviewerExpectation": "Model conflicts as bitmasks and optimize abbreviation lengths with branch and bound."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def minAbbreviation(self, target: str, dictionary: List[str]) -> str:\n        m = len(target)\n        diffs = []\n        for word in dictionary:\n            if len(word) != m:\n                continue\n            mask = 0\n            for i in range(m):\n                if target[i] != word[i]:\n                    mask |= (1 << (m - 1 - i))\n            diffs.append(mask)\n\n        if not diffs:\n            return str(m)\n\n        min_len = m\n        best_mask = (1 << m) - 1\n\n        def is_valid(mask: int) -> bool:\n            return all((mask & d) != 0 for d in diffs)\n\n        def dfs(idx: int, curr_mask: int, length: int, prev_zero: bool):\n            nonlocal min_len, best_mask\n            if length >= min_len:\n                return\n            if idx == m:\n                if is_valid(curr_mask):\n                    min_len = length\n                    best_mask = curr_mask\n                return\n            dfs(idx + 1, curr_mask | (1 << (m - 1 - idx)), length + 1, False)\n            dfs(idx + 1, curr_mask, length + (0 if prev_zero else 1), True)\n\n        dfs(0, 0, 0, False)\n\n        res = []\n        zero_count = 0\n        for i in range(m):\n            if (best_mask >> (m - 1 - i)) & 1:\n                if zero_count > 0:\n                    res.append(str(zero_count))\n                    zero_count = 0\n                res.append(target[i])\n            else:\n                zero_count += 1\n        if zero_count > 0:\n            res.append(str(zero_count))\n        return \"\".join(res)",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int m;\n    vector<int> diffs;\n    int minLen;\n    int bestMask;\n\n    bool isValid(int mask) {\n        for (int d : diffs) {\n            if ((mask & d) == 0) return false;\n        }\n        return true;\n    }\n\n    void dfs(int idx, int currMask, int length, bool prevZero) {\n        if (length >= minLen) return;\n        if (idx == m) {\n            if (isValid(currMask)) {\n                minLen = length;\n                bestMask = currMask;\n            }\n            return;\n        }\n        dfs(idx + 1, currMask | (1 << (m - 1 - idx)), length + 1, false);\n        dfs(idx + 1, currMask, length + (prevZero ? 0 : 1), true);\n    }\npublic:\n    string minAbbreviation(string target, vector<string>& dictionary) {\n        m = (int)target.size();\n        diffs.clear();\n        for (const string& w : dictionary) {\n            if ((int)w.size() != m) continue;\n            int mask = 0;\n            for (int i = 0; i < m; i++) {\n                if (target[i] != w[i]) {\n                    mask |= (1 << (m - 1 - i));\n                }\n            }\n            diffs.push_back(mask);\n        }\n\n        if (diffs.empty()) return to_string(m);\n\n        minLen = m;\n        bestMask = (1 << m) - 1;\n        dfs(0, 0, 0, false);\n\n        string res;\n        int zeroCount = 0;\n        for (int i = 0; i < m; i++) {\n            if ((bestMask >> (m - 1 - i)) & 1) {\n                if (zeroCount > 0) {\n                    res += to_string(zeroCount);\n                    zeroCount = 0;\n                }\n                res.push_back(target[i]);\n            } else {\n                zeroCount++;\n            }\n        }\n        if (zeroCount > 0) res += to_string(zeroCount);\n        return res;\n    }\n};",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int m;\n    private List<Integer> diffs = new ArrayList<>();\n    private int minLen;\n    private int bestMask;\n\n    private boolean isValid(int mask) {\n        for (int d : diffs) {\n            if ((mask & d) == 0) return false;\n        }\n        return true;\n    }\n\n    private void dfs(int idx, int currMask, int length, boolean prevZero) {\n        if (length >= minLen) return;\n        if (idx == m) {\n            if (isValid(currMask)) {\n                minLen = length;\n                bestMask = currMask;\n            }\n            return;\n        }\n        dfs(idx + 1, currMask | (1 << (m - 1 - idx)), length + 1, false);\n        dfs(idx + 1, currMask, length + (prevZero ? 0 : 1), true);\n    }\n\n    public String minAbbreviation(String target, String[] dictionary) {\n        m = target.length();\n        diffs.clear();\n        for (String w : dictionary) {\n            if (w.length() != m) continue;\n            int mask = 0;\n            for (int i = 0; i < m; i++) {\n                if (target.charAt(i) != w.charAt(i)) {\n                    mask |= (1 << (m - 1 - i));\n                }\n            }\n            diffs.add(mask);\n        }\n\n        if (diffs.isEmpty()) return String.valueOf(m);\n\n        minLen = m;\n        bestMask = (1 << m) - 1;\n        dfs(0, 0, 0, false);\n\n        StringBuilder sb = new StringBuilder();\n        int zeroCount = 0;\n        for (int i = 0; i < m; i++) {\n            if (((bestMask >> (m - 1 - i)) & 1) == 1) {\n                if (zeroCount > 0) {\n                    sb.append(zeroCount);\n                    zeroCount = 0;\n                }\n                sb.append(target.charAt(i));\n            } else {\n                zeroCount++;\n            }\n        }\n        if (zeroCount > 0) sb.append(zeroCount);\n        return sb.toString();\n    }\n}",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minAbbreviation = function(target, dictionary) {\n    const m = target.length;\n    const diffs = [];\n    for (const w of dictionary) {\n        if (w.length !== m) continue;\n        let mask = 0;\n        for (let i = 0; i < m; i++) {\n            if (target[i] !== w[i]) {\n                mask |= (1 << (m - 1 - i));\n            }\n        }\n        diffs.push(mask);\n    }\n\n    if (diffs.length === 0) return String(m);\n\n    let minLen = m;\n    let bestMask = (1 << m) - 1;\n\n    function isValid(mask) {\n        for (let i = 0; i < diffs.length; i++) {\n            if ((mask & diffs[i]) === 0) return false;\n        }\n        return true;\n    }\n\n    function dfs(idx, currMask, length, prevZero) {\n        if (length >= minLen) return;\n        if (idx === m) {\n            if (isValid(currMask)) {\n                minLen = length;\n                bestMask = currMask;\n            }\n            return;\n        }\n        dfs(idx + 1, currMask | (1 << (m - 1 - idx)), length + 1, false);\n        dfs(idx + 1, currMask, length + (prevZero ? 0 : 1), true);\n    }\n\n    dfs(0, 0, 0, false);\n\n    let res = \"\";\n    let zeroCount = 0;\n    for (let i = 0; i < m; i++) {\n        if ((bestMask >> (m - 1 - i)) & 1) {\n            if (zeroCount > 0) {\n                res += zeroCount;\n                zeroCount = 0;\n            }\n            res += target[i];\n        } else {\n            zeroCount++;\n        }\n    }\n    if (zeroCount > 0) res += zeroCount;\n    return res;\n};",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

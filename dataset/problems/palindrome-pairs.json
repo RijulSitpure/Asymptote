@@ -1,0 +1,79 @@
+{
+  "slug": "palindrome-pairs",
+  "number": 336,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Palindrome Concatenation Slices",
+      "text": "For words u and v to form a palindrome when concatenated as uv, either u or v must contain a palindrome prefix or suffix, while the rest matches the reversal of the other."
+    },
+    {
+      "level": 2,
+      "title": "Index Lookups for Reversed Words",
+      "text": "Store all words reversed with their indices. For each word, consider splitting it into prefix and suffix at every possible position."
+    },
+    {
+      "level": 3,
+      "title": "Prefix and Suffix Palindrome Checks",
+      "text": "If a prefix is palindromic and the reversed suffix exists in the dictionary with a different index, the reversed suffix plus the current word forms a palindrome. Similarly, if the suffix is palindromic and the reversed prefix exists in the dictionary, the current word plus the reversed prefix forms a palindrome."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def palindromePairs(self, words: List[str]) -> List[List[int]]:\n        def is_palindrome(s: str) -> bool:\n            return s == s[::-1]\n\n        lookup = {w: i for i, w in enumerate(words)}\n        res = []\n\n        for i, word in enumerate(words):\n            m = len(word)\n            for j in range(m + 1):\n                pref = word[:j]\n                suff = word[j:]\n                if is_palindrome(pref):\n                    back = suff[::-1]\n                    if back in lookup and lookup[back] != i:\n                        res.append([lookup[back], i])\n                if j < m and is_palindrome(suff):\n                    back = pref[::-1]\n                    if back in lookup and lookup[back] != i:\n                        res.append([i, lookup[back]])\n\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * L^2)",
+    "space": "O(N * L)",
+    "variables": [
+      "N: number of words in list",
+      "L: maximum word length"
+    ],
+    "notes": "Iterating over splits and validating substring palindromes takes O(L^2) per word.",
+    "whyNaiveFails": "Comparing all pairs of words takes O(N^2 * L) which times out for N = 50000.",
+    "spaceTimeTradeoff": "Hash map of reversed strings allows O(L) candidate lookup.",
+    "interviewerExpectation": "Decompose strings into prefixes and suffixes and look up complements."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def palindromePairs(self, words: List[str]) -> List[List[int]]:\n        def is_palindrome(s: str) -> bool:\n            return s == s[::-1]\n\n        lookup = {w: i for i, w in enumerate(words)}\n        res = []\n\n        for i, word in enumerate(words):\n            m = len(word)\n            for j in range(m + 1):\n                pref = word[:j]\n                suff = word[j:]\n                if is_palindrome(pref):\n                    back = suff[::-1]\n                    if back in lookup and lookup[back] != i:\n                        res.append([lookup[back], i])\n                if j < m and is_palindrome(suff):\n                    back = pref[::-1]\n                    if back in lookup and lookup[back] != i:\n                        res.append([i, lookup[back]])\n\n        return res",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    bool isPalindrome(const string& s, int l, int r) {\n        while (l < r) {\n            if (s[l++] != s[r--]) return false;\n        }\n        return true;\n    }\npublic:\n    vector<vector<int>> palindromePairs(vector<string>& words) {\n        unordered_map<string, int> lookup;\n        for (int i = 0; i < (int)words.size(); i++) {\n            lookup[words[i]] = i;\n        }\n        vector<vector<int>> res;\n        for (int i = 0; i < (int)words.size(); i++) {\n            const string& w = words[i];\n            int m = (int)w.size();\n            for (int j = 0; j <= m; j++) {\n                if (isPalindrome(w, 0, j - 1)) {\n                    string back = w.substr(j);\n                    reverse(back.begin(), back.end());\n                    auto it = lookup.find(back);\n                    if (it != lookup.end() && it->second != i) {\n                        res.push_back({it->second, i});\n                    }\n                }\n                if (j < m && isPalindrome(w, j, m - 1)) {\n                    string back = w.substr(0, j);\n                    reverse(back.begin(), back.end());\n                    auto it = lookup.find(back);\n                    if (it != lookup.end() && it->second != i) {\n                        res.push_back({i, it->second});\n                    }\n                }\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private boolean isPalindrome(String s, int l, int r) {\n        while (l < r) {\n            if (s.charAt(l++) != s.charAt(r--)) return false;\n        }\n        return true;\n    }\n\n    public List<List<Integer>> palindromePairs(String[] words) {\n        Map<String, Integer> lookup = new HashMap<>();\n        for (int i = 0; i < words.length; i++) {\n            lookup.put(words[i], i);\n        }\n        List<List<Integer>> res = new ArrayList<>();\n        for (int i = 0; i < words.length; i++) {\n            String w = words[i];\n            int m = w.length();\n            for (int j = 0; j <= m; j++) {\n                if (isPalindrome(w, 0, j - 1)) {\n                    String back = new StringBuilder(w.substring(j)).reverse().toString();\n                    Integer idx = lookup.get(back);\n                    if (idx != null && idx != i) {\n                        res.add(Arrays.asList(idx, i));\n                    }\n                }\n                if (j < m && isPalindrome(w, j, m - 1)) {\n                    String back = new StringBuilder(w.substring(0, j)).reverse().toString();\n                    Integer idx = lookup.get(back);\n                    if (idx != null && idx != i) {\n                        res.add(Arrays.asList(i, idx));\n                    }\n                }\n            }\n        }\n        return res;\n    }\n}",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var palindromePairs = function(words) {\n    function isPalindrome(s, l, r) {\n        while (l < r) {\n            if (s[l++] !== s[r--]) return false;\n        }\n        return true;\n    }\n\n    const lookup = new Map();\n    for (let i = 0; i < words.length; i++) {\n        lookup.set(words[i], i);\n    }\n\n    const res = [];\n    for (let i = 0; i < words.length; i++) {\n        const w = words[i];\n        const m = w.length;\n        for (let j = 0; j <= m; j++) {\n            if (isPalindrome(w, 0, j - 1)) {\n                const back = w.slice(j).split(\"\").reverse().join(\"\");\n                if (lookup.has(back) && lookup.get(back) !== i) {\n                    res.push([lookup.get(back), i]);\n                }\n            }\n            if (j < m && isPalindrome(w, j, m - 1)) {\n                const back = w.slice(0, j).split(\"\").reverse().join(\"\");\n                if (lookup.has(back) && lookup.get(back) !== i) {\n                    res.push([i, lookup.get(back)]);\n                }\n            }\n        }\n    }\n    return res;\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

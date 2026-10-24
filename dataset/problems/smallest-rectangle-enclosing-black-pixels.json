@@ -1,0 +1,79 @@
+{
+  "slug": "smallest-rectangle-enclosing-black-pixels",
+  "number": 302,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Boundary Projection Search",
+      "text": "Project rows and columns into boolean flags to discover the extreme minimum and maximum coordinates of the enclosing box."
+    },
+    {
+      "level": 2,
+      "title": "Monotonic Interval Boundaries",
+      "text": "Because black pixels form a single connected component, row and column projections exhibit monotonic transitions."
+    },
+    {
+      "level": 3,
+      "title": "Four-Way Coordinate Search",
+      "text": "Binary search top row in [0, x], bottom row in [x + 1, m], left col in [0, y], and right col in [y + 1, n]. Check whether a mid row or col contains any 1. Area is (right - left) * (bottom - top)."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def minArea(self, image: List[List[str]], x: int, y: int) -> int:\n        m, n = len(image), len(image[0])\n\n        def search_row(low: int, high: int, check_has_one: bool) -> int:\n            while low < high:\n                mid = (low + high) // 2\n                has_one = any(image[mid][c] == \"1\" for c in range(n))\n                if has_one == check_has_one:\n                    high = mid\n                else:\n                    low = mid + 1\n            return low\n\n        def search_col(low: int, high: int, check_has_one: bool) -> int:\n            while low < high:\n                mid = (low + high) // 2\n                has_one = any(image[r][mid] == \"1\" for r in range(m))\n                if has_one == check_has_one:\n                    high = mid\n                else:\n                    low = mid + 1\n            return low\n\n        top = search_row(0, x, True)\n        bottom = search_row(x + 1, m, False)\n        left = search_col(0, y, True)\n        right = search_col(y + 1, n, False)\n\n        return (bottom - top) * (right - left)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M log N + N log M)",
+    "space": "O(1)",
+    "variables": [
+      "M: rows",
+      "N: columns"
+    ],
+    "notes": "Optimal logarithmic boundary searching via connected component projection.",
+    "whyNaiveFails": "Scanning every pixel takes linear O(M * N) time.",
+    "spaceTimeTradeoff": "Binary search on 4 boundaries reduces checks to logarithmic row/column scans.",
+    "interviewerExpectation": "Use connected component property to ensure projected row and column presence is contiguous."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def minArea(self, image: List[List[str]], x: int, y: int) -> int:\n        m, n = len(image), len(image[0])\n\n        def search_row(low: int, high: int, check_has_one: bool) -> int:\n            while low < high:\n                mid = (low + high) // 2\n                has_one = any(image[mid][c] == \"1\" for c in range(n))\n                if has_one == check_has_one:\n                    high = mid\n                else:\n                    low = mid + 1\n            return low\n\n        def search_col(low: int, high: int, check_has_one: bool) -> int:\n            while low < high:\n                mid = (low + high) // 2\n                has_one = any(image[r][mid] == \"1\" for r in range(m))\n                if has_one == check_has_one:\n                    high = mid\n                else:\n                    low = mid + 1\n            return low\n\n        top = search_row(0, x, True)\n        bottom = search_row(x + 1, m, False)\n        left = search_col(0, y, True)\n        right = search_col(y + 1, n, False)\n\n        return (bottom - top) * (right - left)",
+      "approach": "binary-search-answer verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minArea(vector<vector<char>>& image, int x, int y) {\n        int m = image.size(), n = image[0].size();\n        auto searchRow = [&](int low, int high, bool check) {\n            while (low < high) {\n                int mid = (low + high) / 2;\n                bool hasOne = false;\n                for (int c = 0; c < n; c++) {\n                    if (image[mid][c] == '1') { hasOne = true; break; }\n                }\n                if (hasOne == check) high = mid;\n                else low = mid + 1;\n            }\n            return low;\n        };\n        auto searchCol = [&](int low, int high, bool check) {\n            while (low < high) {\n                int mid = (low + high) / 2;\n                bool hasOne = false;\n                for (int r = 0; r < m; r++) {\n                    if (image[r][mid] == '1') { hasOne = true; break; }\n                }\n                if (hasOne == check) high = mid;\n                else low = mid + 1;\n            }\n            return low;\n        };\n        int top = searchRow(0, x, true);\n        int bottom = searchRow(x + 1, m, false);\n        int left = searchCol(0, y, true);\n        int right = searchCol(y + 1, n, false);\n        return (bottom - top) * (right - left);\n    }\n};",
+      "approach": "binary-search-answer verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int minArea(char[][] image, int x, int y) {\n        int m = image.length, n = image[0].length;\n        int top = searchRow(image, 0, x, true, n);\n        int bottom = searchRow(image, x + 1, m, false, n);\n        int left = searchCol(image, 0, y, true, m);\n        int right = searchCol(image, y + 1, n, false, m);\n        return (bottom - top) * (right - left);\n    }\n    private int searchRow(char[][] image, int low, int high, boolean check, int n) {\n        while (low < high) {\n            int mid = (low + high) / 2;\n            boolean hasOne = false;\n            for (int c = 0; c < n; c++) {\n                if (image[mid][c] == '1') { hasOne = true; break; }\n            }\n            if (hasOne == check) high = mid;\n            else low = mid + 1;\n        }\n        return low;\n    }\n    private int searchCol(char[][] image, int low, int high, boolean check, int m) {\n        while (low < high) {\n            int mid = (low + high) / 2;\n            boolean hasOne = false;\n            for (int r = 0; r < m; r++) {\n                if (image[r][mid] == '1') { hasOne = true; break; }\n            }\n            if (hasOne == check) high = mid;\n            else low = mid + 1;\n        }\n        return low;\n    }\n}",
+      "approach": "binary-search-answer verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {character[][]} image\n * @param {number} x\n * @param {number} y\n * @return {number}\n */\nvar minArea = function(image, x, y) {\n    const m = image.length, n = image[0].length;\n    const searchRow = (low, high, check) => {\n        while (low < high) {\n            const mid = Math.floor((low + high) / 2);\n            let hasOne = false;\n            for (let c = 0; c < n; c++) {\n                if (image[mid][c] === '1') { hasOne = true; break; }\n            }\n            if (hasOne === check) high = mid;\n            else low = mid + 1;\n        }\n        return low;\n    };\n    const searchCol = (low, high, check) => {\n        while (low < high) {\n            const mid = Math.floor((low + high) / 2);\n            let hasOne = false;\n            for (let r = 0; r < m; r++) {\n                if (image[r][mid] === '1') { hasOne = true; break; }\n            }\n            if (hasOne === check) high = mid;\n            else low = mid + 1;\n        }\n        return low;\n    };\n    const top = searchRow(0, x, true);\n    const bottom = searchRow(x + 1, m, false);\n    const left = searchCol(0, y, true);\n    const right = searchCol(y + 1, n, false);\n    return (bottom - top) * (right - left);\n};",
+      "approach": "binary-search-answer verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

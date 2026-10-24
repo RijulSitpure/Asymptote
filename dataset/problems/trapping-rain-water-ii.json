@@ -1,0 +1,79 @@
+{
+  "slug": "trapping-rain-water-ii",
+  "number": 407,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Boundary Spill Limitation",
+      "text": "Water on a 2D surface is bounded by the minimum elevation along its spill path towards any grid boundary."
+    },
+    {
+      "level": 2,
+      "title": "Min-Heap Boundary Expansion",
+      "text": "Push all outer perimeter cells into an ordered min-priority collection and expand inwards from lowest elevation."
+    },
+    {
+      "level": 3,
+      "title": "Water Level Inward Flooding",
+      "text": "Extract the lowest boundary cell. For each unvisited orthogonal neighbor, add water equal to the difference between current boundary height and neighbor elevation if positive. Push neighbor into collection with height equal to max of current height and neighbor height."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport heapq\nfrom typing import List\n\nclass Solution:\n    def trapRainWater(self, heightMap: List[List[int]]) -> int:\n        if not heightMap or not heightMap[0]:\n            return 0\n        m, n = len(heightMap), len(heightMap[0])\n        visited = [[False] * n for _ in range(m)]\n        heap = []\n\n        for r in range(m):\n            for c in range(n):\n                if r == 0 or r == m - 1 or c == 0 or c == n - 1:\n                    heapq.heappush(heap, (heightMap[r][c], r, c))\n                    visited[r][c] = True\n\n        total_water = 0\n        dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]\n\n        while heap:\n            h, r, c = heapq.heappop(heap)\n            for dr, dc in dirs:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and not visited[nr][nc]:\n                    visited[nr][nc] = True\n                    total_water += max(0, h - heightMap[nr][nc])\n                    heapq.heappush(heap, (max(h, heightMap[nr][nc]), nr, nc))\n\n        return total_water\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N * log(M * N))",
+    "space": "O(M * N)",
+    "variables": [
+      "M: row count of heightMap",
+      "N: col count of heightMap"
+    ],
+    "notes": "Min-heap BFS traversing each cell once like Dijkstra shortest path.",
+    "whyNaiveFails": "Row-wise or column-wise 1D water trapping misses diagonal and multidirectional spill boundaries.",
+    "spaceTimeTradeoff": "Min-heap prioritizing lowest boundaries ensures monotonic water containment.",
+    "interviewerExpectation": "Use boundary min-heap BFS to propagate minimum spill heights inward."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\nfrom typing import List\n\nclass Solution:\n    def trapRainWater(self, heightMap: List[List[int]]) -> int:\n        if not heightMap or not heightMap[0]:\n            return 0\n        m, n = len(heightMap), len(heightMap[0])\n        visited = [[False] * n for _ in range(m)]\n        heap = []\n\n        for r in range(m):\n            for c in range(n):\n                if r == 0 or r == m - 1 or c == 0 or c == n - 1:\n                    heapq.heappush(heap, (heightMap[r][c], r, c))\n                    visited[r][c] = True\n\n        total_water = 0\n        dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]\n\n        while heap:\n            h, r, c = heapq.heappop(heap)\n            for dr, dc in dirs:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and not visited[nr][nc]:\n                    visited[nr][nc] = True\n                    total_water += max(0, h - heightMap[nr][nc])\n                    heapq.heappush(heap, (max(h, heightMap[nr][nc]), nr, nc))\n\n        return total_water",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    struct Cell {\n        int h, r, c;\n        bool operator>(const Cell& o) const {\n            return h > o.h;\n        }\n    };\npublic:\n    int trapRainWater(vector<vector<int>>& heightMap) {\n        if (heightMap.empty() || heightMap[0].empty()) return 0;\n        int m = heightMap.size(), n = heightMap[0].size();\n        priority_queue<Cell, vector<Cell>, greater<Cell>> pq;\n        vector<vector<bool>> visited(m, vector<bool>(n, false));\n\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                if (r == 0 || r == m - 1 || c == 0 || c == n - 1) {\n                    pq.push({heightMap[r][c], r, c});\n                    visited[r][c] = true;\n                }\n            }\n        }\n\n        int totalWater = 0;\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        while (!pq.empty()) {\n            auto curr = pq.top();\n            pq.pop();\n            for (int d = 0; d < 4; d++) {\n                int nr = curr.r + dirs[d][0];\n                int nc = curr.c + dirs[d][1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && !visited[nr][nc]) {\n                    visited[nr][nc] = true;\n                    totalWater += max(0, curr.h - heightMap[nr][nc]);\n                    pq.push({max(curr.h, heightMap[nr][nc]), nr, nc});\n                }\n            }\n        }\n        return totalWater;\n    }\n};",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    static class Cell implements Comparable<Cell> {\n        int h, r, c;\n        Cell(int h, int r, int c) {\n            this.h = h;\n            this.r = r;\n            this.c = c;\n        }\n        public int compareTo(Cell o) {\n            return Integer.compare(this.h, o.h);\n        }\n    }\n\n    public int trapRainWater(int[][] heightMap) {\n        if (heightMap == null || heightMap.length == 0 || heightMap[0].length == 0) return 0;\n        int m = heightMap.length, n = heightMap[0].length;\n        PriorityQueue<Cell> pq = new PriorityQueue<>();\n        boolean[][] visited = new boolean[m][n];\n\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                if (r == 0 || r == m - 1 || c == 0 || c == n - 1) {\n                    pq.offer(new Cell(heightMap[r][c], r, c));\n                    visited[r][c] = true;\n                }\n            }\n        }\n\n        int totalWater = 0;\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        while (!pq.isEmpty()) {\n            Cell curr = pq.poll();\n            for (int[] d : dirs) {\n                int nr = curr.r + d[0];\n                int nc = curr.c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && !visited[nr][nc]) {\n                    visited[nr][nc] = true;\n                    totalWater += Math.max(0, curr.h - heightMap[nr][nc]);\n                    pq.offer(new Cell(Math.max(curr.h, heightMap[nr][nc]), nr, nc));\n                }\n            }\n        }\n        return totalWater;\n    }\n}",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var trapRainWater = function(heightMap) {\n    if (!heightMap || !heightMap.length || !heightMap[0].length) return 0;\n    const m = heightMap.length, n = heightMap[0].length;\n    const visited = Array.from({ length: m }, () => new Array(n).fill(false));\n\n    class MinHeap {\n        constructor() { this.data = []; }\n        push(val) {\n            this.data.push(val);\n            this._up(this.data.length - 1);\n        }\n        pop() {\n            if (!this.data.length) return null;\n            const top = this.data[0];\n            const bottom = this.data.pop();\n            if (this.data.length) {\n                this.data[0] = bottom;\n                this._down(0);\n            }\n            return top;\n        }\n        size() { return this.data.length; }\n        _up(i) {\n            while (i > 0) {\n                const p = (i - 1) >> 1;\n                if (this.data[p].h <= this.data[i].h) break;\n                [this.data[p], this.data[i]] = [this.data[i], this.data[p]];\n                i = p;\n            }\n        }\n        _down(i) {\n            const len = this.data.length;\n            while ((i << 1) + 1 < len) {\n                let left = (i << 1) + 1;\n                let right = left + 1;\n                let best = (right < len && this.data[right].h < this.data[left].h) ? right : left;\n                if (this.data[i].h <= this.data[best].h) break;\n                [this.data[i], this.data[best]] = [this.data[best], this.data[i]];\n                i = best;\n            }\n        }\n    }\n\n    const pq = new MinHeap();\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            if (r === 0 || r === m - 1 || c === 0 || c === n - 1) {\n                pq.push({ h: heightMap[r][c], r, c });\n                visited[r][c] = true;\n            }\n        }\n    }\n\n    let totalWater = 0;\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n\n    while (pq.size() > 0) {\n        const curr = pq.pop();\n        for (const [dr, dc] of dirs) {\n            const nr = curr.r + dr;\n            const nc = curr.c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && !visited[nr][nc]) {\n                visited[nr][nc] = true;\n                totalWater += Math.max(0, curr.h - heightMap[nr][nc]);\n                pq.push({ h: Math.max(curr.h, heightMap[nr][nc]), r: nr, c: nc });\n            }\n        }\n    }\n    return totalWater;\n};",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

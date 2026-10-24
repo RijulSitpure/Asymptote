@@ -1,0 +1,80 @@
+{
+  "slug": "word-ladder-ii",
+  "number": 126,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Shortest Transformation Paths",
+      "text": "Explore word mutations layer by layer to identify the minimum distance to the target word before reconstructing paths."
+    },
+    {
+      "level": 2,
+      "title": "Layer-by-Layer Word Erasure",
+      "text": "Remove visited words from the available word set only after an entire breadth level is finished to allow alternate shortest routes."
+    },
+    {
+      "level": 3,
+      "title": "Breadth-First Parents Graph and Depth-First Backtracking",
+      "text": "Run breadth search to determine shortest distance and record predecessor DAG links for words reached at each step. Once the target level is reached, backtrack from endWord back to beginWord using stored predecessor links, then reverse paths."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict, deque\nfrom typing import List\n\nclass Solution:\n    def findLadders(self, beginWord: str, endWord: str, wordList: List[str]) -> List[List[str]]:\n        words = set(wordList)\n        if endWord not in words:\n            return []\n        parents = defaultdict(list)\n        layer = {beginWord}\n        found = False\n\n        while layer and not found:\n            words -= layer\n            next_layer = set()\n            for word in layer:\n                for i in range(len(word)):\n                    for c in \"abcdefghijklmnopqrstuvwxyz\":\n                        cand = word[:i] + c + word[i + 1:]\n                        if cand in words:\n                            if cand == endWord:\n                                found = True\n                            next_layer.add(cand)\n                            parents[cand].append(word)\n            layer = next_layer\n\n        if not found:\n            return []\n\n        res = []\n        def build_paths(curr: str, path: List[str]):\n            if curr == beginWord:\n                res.append(path[::-1])\n                return\n            for p in parents[curr]:\n                path.append(p)\n                build_paths(p, path)\n                path.pop()\n\n        build_paths(endWord, [endWord])\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * L * 26 + P * L)",
+    "space": "O(N * L)",
+    "variables": [
+      "N: words count",
+      "L: length of each word",
+      "P: total output paths"
+    ],
+    "notes": "Optimal level-wise BFS predecessor DAG construction with recursive path assembly.",
+    "whyNaiveFails": "Storing full path lists in BFS queue consumes exponential memory.",
+    "spaceTimeTradeoff": "Predecessor adjacency mapping avoids path duplication during search.",
+    "interviewerExpectation": "Remove visited nodes only after completing an entire level to capture all equidistant shortest paths."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict, deque\nfrom typing import List\n\nclass Solution:\n    def findLadders(self, beginWord: str, endWord: str, wordList: List[str]) -> List[List[str]]:\n        words = set(wordList)\n        if endWord not in words:\n            return []\n        parents = defaultdict(list)\n        layer = {beginWord}\n        found = False\n\n        while layer and not found:\n            words -= layer\n            next_layer = set()\n            for word in layer:\n                for i in range(len(word)):\n                    for c in \"abcdefghijklmnopqrstuvwxyz\":\n                        cand = word[:i] + c + word[i + 1:]\n                        if cand in words:\n                            if cand == endWord:\n                                found = True\n                            next_layer.add(cand)\n                            parents[cand].append(word)\n            layer = next_layer\n\n        if not found:\n            return []\n\n        res = []\n        def build_paths(curr: str, path: List[str]):\n            if curr == beginWord:\n                res.append(path[::-1])\n                return\n            for p in parents[curr]:\n                path.append(p)\n                build_paths(p, path)\n                path.pop()\n\n        build_paths(endWord, [endWord])\n        return res",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<vector<string>> findLadders(string beginWord, string endWord, vector<string>& wordList) {\n        unordered_set<string> words(wordList.begin(), wordList.end());\n        if (!words.count(endWord)) return {};\n        unordered_map<string, vector<string>> parents;\n        unordered_set<string> layer = {beginWord};\n        bool found = false;\n        while (!layer.empty() && !found) {\n            for (const auto& w : layer) words.erase(w);\n            unordered_set<string> next_layer;\n            for (const auto& word : layer) {\n                string cand = word;\n                for (int i = 0; i < (int)word.size(); i++) {\n                    char original = cand[i];\n                    for (char c = 'a'; c <= 'z'; c++) {\n                        cand[i] = c;\n                        if (words.count(cand)) {\n                            if (cand == endWord) found = true;\n                            next_layer.insert(cand);\n                            parents[cand].push_back(word);\n                        }\n                    }\n                    cand[i] = original;\n                }\n            }\n            layer = next_layer;\n        }\n        if (!found) return {};\n        vector<vector<string>> res;\n        vector<string> path = {endWord};\n        function<void(string)> dfs = [&](string curr) {\n            if (curr == beginWord) {\n                vector<string> p = path;\n                reverse(p.begin(), p.end());\n                res.push_back(p);\n                return;\n            }\n            for (const auto& par : parents[curr]) {\n                path.push_back(par);\n                dfs(par);\n                path.pop_back();\n            }\n        };\n        dfs(endWord);\n        return res;\n    }\n};",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList) {\n        Set<String> words = new HashSet<>(wordList);\n        if (!words.contains(endWord)) return new ArrayList<>();\n        Map<String, List<String>> parents = new HashMap<>();\n        Set<String> layer = new HashSet<>();\n        layer.add(beginWord);\n        boolean found = false;\n\n        while (!layer.isEmpty() && !found) {\n            words.removeAll(layer);\n            Set<String> nextLayer = new HashSet<>();\n            for (String word : layer) {\n                char[] arr = word.toCharArray();\n                for (int i = 0; i < arr.length; i++) {\n                    char orig = arr[i];\n                    for (char c = 'a'; c <= 'z'; c++) {\n                        arr[i] = c;\n                        String cand = new String(arr);\n                        if (words.contains(cand)) {\n                            if (cand.equals(endWord)) found = true;\n                            nextLayer.add(cand);\n                            parents.computeIfAbsent(cand, k -> new ArrayList<>()).add(word);\n                        }\n                    }\n                    arr[i] = orig;\n                }\n            }\n            layer = nextLayer;\n        }\n        if (!found) return new ArrayList<>();\n        List<List<String>> res = new ArrayList<>();\n        List<String> path = new ArrayList<>();\n        path.add(endWord);\n        dfs(endWord, beginWord, parents, path, res);\n        return res;\n    }\n\n    private void dfs(String curr, String beginWord, Map<String, List<String>> parents, List<String> path, List<List<String>> res) {\n        if (curr.equals(beginWord)) {\n            List<String> copy = new ArrayList<>(path);\n            Collections.reverse(copy);\n            res.add(copy);\n            return;\n        }\n        if (!parents.containsKey(curr)) return;\n        for (String p : parents.get(curr)) {\n            path.add(p);\n            dfs(p, beginWord, parents, path, res);\n            path.remove(path.size() - 1);\n        }\n    }\n}",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} beginWord\n * @param {string} endWord\n * @param {string[]} wordList\n * @return {string[][]}\n */\nvar findLadders = function(beginWord, endWord, wordList) {\n    const words = new Set(wordList);\n    if (!words.has(endWord)) return [];\n    const parents = new Map();\n    let layer = new Set([beginWord]);\n    let found = false;\n\n    while (layer.size > 0 && !found) {\n        for (const w of layer) words.delete(w);\n        const nextLayer = new Set();\n        for (const word of layer) {\n            const arr = word.split('');\n            for (let i = 0; i < arr.length; i++) {\n                const orig = arr[i];\n                for (let code = 97; code <= 122; code++) {\n                    arr[i] = String.fromCharCode(code);\n                    const cand = arr.join('');\n                    if (words.has(cand)) {\n                        if (cand === endWord) found = true;\n                        nextLayer.add(cand);\n                        if (!parents.has(cand)) parents.set(cand, []);\n                        parents.get(cand).push(word);\n                    }\n                }\n                arr[i] = orig;\n            }\n        }\n        layer = nextLayer;\n    }\n    if (!found) return [];\n    const res = [];\n    const path = [endWord];\n    function dfs(curr) {\n        if (curr === beginWord) {\n            res.push([...path].reverse());\n            return;\n        }\n        const pars = parents.get(curr) || [];\n        for (const p of pars) {\n            path.push(p);\n            dfs(p);\n            path.pop();\n        }\n    }\n    dfs(endWord);\n    return res;\n};",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

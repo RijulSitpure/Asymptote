@@ -1,0 +1,80 @@
+{
+  "slug": "substring-with-concatenation-of-all-words",
+  "number": 30,
+  "category": "Algorithms",
+  "patterns": [
+    "sliding-window-fixed"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Uniform Chunk Window Inspection",
+      "text": "Because all words have the same uniform length, slice the input string into fixed-size chunks of that word length."
+    },
+    {
+      "level": 2,
+      "title": "Offset-Based Segment Alignments",
+      "text": "Run separate scans for each possible starting remainder modulo word length to cover every possible word boundary alignment."
+    },
+    {
+      "level": 3,
+      "title": "Word Frequency Window Tracking",
+      "text": "For each offset from zero to word length minus one, slide a window by word length chunks. Maintain a count of matching words. When a word exceeds its expected frequency or an unknown word appears, shrink the window from the left until counts are valid."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import Counter\nfrom typing import List\n\nclass Solution:\n    def findSubstring(self, s: str, words: List[str]) -> List[int]:\n        if not s or not words:\n            return []\n        word_len = len(words[0])\n        word_count = len(words)\n        total_len = word_len * word_count\n        word_freq = Counter(words)\n        res = []\n\n        for i in range(word_len):\n            left = i\n            curr_map = Counter()\n            count = 0\n            for j in range(i, len(s) - word_len + 1, word_len):\n                sub = s[j:j + word_len]\n                if sub in word_freq:\n                    curr_map[sub] += 1\n                    count += 1\n                    while curr_map[sub] > word_freq[sub]:\n                        curr_map[s[left:left + word_len]] -= 1\n                        count -= 1\n                        left += word_len\n                    if count == word_count:\n                        res.append(left)\n                else:\n                    curr_map.clear()\n                    count = 0\n                    left = j + word_len\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * L)",
+    "space": "O(M * L)",
+    "variables": [
+      "N: string length",
+      "L: length of each word",
+      "M: number of words"
+    ],
+    "notes": "Optimal sliding window shifting across L distinct modular offsets.",
+    "whyNaiveFails": "Rechecking every position from scratch takes O(N * M * L) time.",
+    "spaceTimeTradeoff": "Sliding window per modular offset maintains word counts in O(N) aggregate steps.",
+    "interviewerExpectation": "Decompose the string by starting offset mod word length to reuse adjacent chunk computations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import Counter\nfrom typing import List\n\nclass Solution:\n    def findSubstring(self, s: str, words: List[str]) -> List[int]:\n        if not s or not words:\n            return []\n        word_len = len(words[0])\n        word_count = len(words)\n        total_len = word_len * word_count\n        word_freq = Counter(words)\n        res = []\n\n        for i in range(word_len):\n            left = i\n            curr_map = Counter()\n            count = 0\n            for j in range(i, len(s) - word_len + 1, word_len):\n                sub = s[j:j + word_len]\n                if sub in word_freq:\n                    curr_map[sub] += 1\n                    count += 1\n                    while curr_map[sub] > word_freq[sub]:\n                        curr_map[s[left:left + word_len]] -= 1\n                        count -= 1\n                        left += word_len\n                    if count == word_count:\n                        res.append(left)\n                else:\n                    curr_map.clear()\n                    count = 0\n                    left = j + word_len\n        return res",
+      "approach": "sliding-window-fixed verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> findSubstring(string s, vector<string>& words) {\n        vector<int> res;\n        if (s.empty() || words.empty()) return res;\n        int word_len = words[0].size();\n        int word_count = words.size();\n        unordered_map<string, int> word_freq;\n        for (const auto& w : words) word_freq[w]++;\n\n        for (int i = 0; i < word_len; i++) {\n            int left = i, count = 0;\n            unordered_map<string, int> curr_map;\n            for (int j = i; j + word_len <= (int)s.size(); j += word_len) {\n                string sub = s.substr(j, word_len);\n                if (word_freq.count(sub)) {\n                    curr_map[sub]++;\n                    count++;\n                    while (curr_map[sub] > word_freq[sub]) {\n                        curr_map[s.substr(left, word_len)]--;\n                        count--;\n                        left += word_len;\n                    }\n                    if (count == word_count) res.push_back(left);\n                } else {\n                    curr_map.clear();\n                    count = 0;\n                    left = j + word_len;\n                }\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "sliding-window-fixed verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<Integer> findSubstring(String s, String[] words) {\n        List<Integer> res = new ArrayList<>();\n        if (s == null || s.isEmpty() || words == null || words.length == 0) return res;\n        int wordLen = words[0].length();\n        int wordCount = words.length;\n        Map<String, Integer> wordFreq = new HashMap<>();\n        for (String w : words) wordFreq.put(w, wordFreq.getOrDefault(w, 0) + 1);\n\n        for (int i = 0; i < wordLen; i++) {\n            int left = i, count = 0;\n            Map<String, Integer> currMap = new HashMap<>();\n            for (int j = i; j + wordLen <= s.length(); j += wordLen) {\n                String sub = s.substring(j, j + wordLen);\n                if (wordFreq.containsKey(sub)) {\n                    currMap.put(sub, currMap.getOrDefault(sub, 0) + 1);\n                    count++;\n                    while (currMap.get(sub) > wordFreq.get(sub)) {\n                        String leftWord = s.substring(left, left + wordLen);\n                        currMap.put(leftWord, currMap.get(leftWord) - 1);\n                        count--;\n                        left += wordLen;\n                    }\n                    if (count == wordCount) res.add(left);\n                } else {\n                    currMap.clear();\n                    count = 0;\n                    left = j + wordLen;\n                }\n            }\n        }\n        return res;\n    }\n}",
+      "approach": "sliding-window-fixed verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} s\n * @param {string[]} words\n * @return {number[]}\n */\nvar findSubstring = function(s, words) {\n    const res = [];\n    if (!s || !words || words.length === 0) return res;\n    const wordLen = words[0].length;\n    const wordCount = words.length;\n    const wordFreq = new Map();\n    for (const w of words) wordFreq.set(w, (wordFreq.get(w) || 0) + 1);\n\n    for (let i = 0; i < wordLen; i++) {\n        let left = i, count = 0;\n        const currMap = new Map();\n        for (let j = i; j + wordLen <= s.length; j += wordLen) {\n            const sub = s.slice(j, j + wordLen);\n            if (wordFreq.has(sub)) {\n                currMap.set(sub, (currMap.get(sub) || 0) + 1);\n                count++;\n                while (currMap.get(sub) > wordFreq.get(sub)) {\n                    const leftWord = s.slice(left, left + wordLen);\n                    currMap.set(leftWord, currMap.get(leftWord) - 1);\n                    count--;\n                    left += wordLen;\n                }\n                if (count === wordCount) res.push(left);\n            } else {\n                currMap.clear();\n                count = 0;\n                left = j + wordLen;\n            }\n        }\n    }\n    return res;\n};",
+      "approach": "sliding-window-fixed verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}
