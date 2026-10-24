@@ -1,0 +1,79 @@
+{
+  "slug": "campus-bikes-ii",
+  "number": 1066,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "State Compression of Assigned Bikes",
+      "text": "The number of bikes is at most 10. A binary integer bitmask of length 10 compactly captures which bikes are currently assigned."
+    },
+    {
+      "level": 2,
+      "title": "Sequential Worker Assignment",
+      "text": "Assign bikes to workers in index order: worker 0, then worker 1, up to worker n - 1. When considering worker w, try every unassigned bike bit."
+    },
+    {
+      "level": 3,
+      "title": "Memoized Search",
+      "text": "Define subproblem as (worker_idx, bike_mask). Cache results to avoid recomputing identical bike allocation states across different assignment orderings."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def assignBikes(self, workers: list[list[int]], bikes: list[list[int]]) -> int:\n        n, m = len(workers), len(bikes)\n        memo = {}\n\n        def dfs(w: int, mask: int) -> int:\n            if w == n:\n                return 0\n            state = (w, mask)\n            if state in memo:\n                return memo[state]\n            res = float('inf')\n            wx, wy = workers[w]\n            for b in range(m):\n                if not (mask & (1 << b)):\n                    d = abs(wx - bikes[b][0]) + abs(wy - bikes[b][1])\n                    res = min(res, d + dfs(w + 1, mask | (1 << b)))\n            memo[state] = res\n            return res\n\n        return dfs(0, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * 2^M)",
+    "space": "O(N * 2^M)",
+    "variables": [
+      "N: number of workers (N <= 10)",
+      "M: number of bikes (M <= 10)"
+    ],
+    "whyNaiveFails": "Checking all permutations without memoization explores M! paths (up to 3.6 million operations).",
+    "spaceTimeTradeoff": "Bitmask dynamic programming limits states to 10 * 1024, running within milliseconds.",
+    "interviewerExpectation": "Candidate should recognize small constraints N, M <= 10 and apply bitmask DP.",
+    "notes": "Each worker must be assigned a unique bike."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def assignBikes(self, workers: list[list[int]], bikes: list[list[int]]) -> int:\n        n, m = len(workers), len(bikes)\n        memo = {}\n\n        def dfs(w: int, mask: int) -> int:\n            if w == n:\n                return 0\n            state = (w, mask)\n            if state in memo:\n                return memo[state]\n            res = float('inf')\n            wx, wy = workers[w]\n            for b in range(m):\n                if not (mask & (1 << b)):\n                    d = abs(wx - bikes[b][0]) + abs(wy - bikes[b][1])\n                    res = min(res, d + dfs(w + 1, mask | (1 << b)))\n            memo[state] = res\n            return res\n\n        return dfs(0, 0)",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int assignBikes(vector<vector<int>>& workers, vector<vector<int>>& bikes) {\n        int n = workers.size(), m = bikes.size();\n        vector<vector<int>> memo(n, vector<int>(1 << m, -1));\n\n        auto dfs = [&](auto& self, int w, int mask) -> int {\n            if (w == n) return 0;\n            if (memo[w][mask] != -1) return memo[w][mask];\n            int res = 1e9;\n            for (int b = 0; b < m; ++b) {\n                if (!(mask & (1 << b))) {\n                    int d = abs(workers[w][0] - bikes[b][0]) + abs(workers[w][1] - bikes[b][1]);\n                    res = min(res, d + self(self, w + 1, mask | (1 << b)));\n                }\n            }\n            return memo[w][mask] = res;\n        };\n\n        return dfs(dfs, 0, 0);\n    }\n};",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int assignBikes(int[][] workers, int[][] bikes) {\n        int n = workers.length, m = bikes.length;\n        int[][] memo = new int[n][1 << m];\n        for (int[] row : memo) Arrays.fill(row, -1);\n        return dfs(workers, bikes, 0, 0, n, m, memo);\n    }\n\n    private int dfs(int[][] workers, int[][] bikes, int w, int mask, int n, int m, int[][] memo) {\n        if (w == n) return 0;\n        if (memo[w][mask] != -1) return memo[w][mask];\n        int res = Integer.MAX_VALUE / 2;\n        for (int b = 0; b < m; ++b) {\n            if ((mask & (1 << b)) == 0) {\n                int d = Math.abs(workers[w][0] - bikes[b][0]) + Math.abs(workers[w][1] - bikes[b][1]);\n                res = Math.min(res, d + dfs(workers, bikes, w + 1, mask | (1 << b), n, m, memo));\n            }\n        }\n        return memo[w][mask] = res;\n    }\n}",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var assignBikes = function(workers, bikes) {\n    const n = workers.length, m = bikes.length;\n    const memo = new Map();\n\n    const dfs = (w, mask) => {\n        if (w === n) return 0;\n        const key = (w << 10) | mask;\n        if (memo.has(key)) return memo.get(key);\n        let res = Infinity;\n        const [wx, wy] = workers[w];\n        for (let b = 0; b < m; b++) {\n            if (!(mask & (1 << b))) {\n                const d = Math.abs(wx - bikes[b][0]) + Math.abs(wy - bikes[b][1]);\n                res = Math.min(res, d + dfs(w + 1, mask | (1 << b)));\n            }\n        }\n        memo.set(key, res);\n        return res;\n    };\n\n    return dfs(0, 0);\n};",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

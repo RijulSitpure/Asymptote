@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-submatrices-that-sum-to-target",
+  "number": 1074,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "2D to 1D Row Compression",
+      "text": "Compute horizontal prefix sums for each row. By fixing a left column c1 and right column c2, each row compresses into a single scalar value."
+    },
+    {
+      "level": 2,
+      "title": "Subarray Sum Equals K Reduction",
+      "text": "With columns fixed, the problem reduces to finding 1D vertical subarrays whose cumulative sum equals target, which can be solved in linear time."
+    },
+    {
+      "level": 3,
+      "title": "Running Prefix Accumulator",
+      "text": "Iterate all pairs 0 <= c1 <= c2 < C. Maintain a frequency lookup of running vertical sums initialized with {0: 1}. For each row, add count of (cur - target) to the total."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def numSubmatrixSumTarget(self, matrix: list[list[int]], target: int) -> int:\n        R, C = len(matrix), len(matrix[0])\n        for r in range(R):\n            for c in range(1, C):\n                matrix[r][c] += matrix[r][c - 1]\n\n        res = 0\n        for c1 in range(C):\n            for c2 in range(c1, C):\n                counts = defaultdict(int)\n                counts[0] = 1\n                cur = 0\n                for r in range(R):\n                    row_sum = matrix[r][c2] - (matrix[r][c1 - 1] if c1 > 0 else 0)\n                    cur += row_sum\n                    res += counts[cur - target]\n                    counts[cur] += 1\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(C^2 * R)",
+    "space": "O(R)",
+    "variables": [
+      "R: number of rows",
+      "C: number of columns"
+    ],
+    "whyNaiveFails": "Testing all O(R^2 * C^2) submatrices directly takes quartic time.",
+    "spaceTimeTradeoff": "Fixing column pairs and applying 1D prefix hashing runs in O(C^2 * R) time and O(R) extra memory.",
+    "interviewerExpectation": "Candidate should reduce 2D submatrix sum to 1D subarray sum using column interval compression.",
+    "notes": "If R < C, transposing the matrix achieves O(R^2 * C) time."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def numSubmatrixSumTarget(self, matrix: list[list[int]], target: int) -> int:\n        R, C = len(matrix), len(matrix[0])\n        for r in range(R):\n            for c in range(1, C):\n                matrix[r][c] += matrix[r][c - 1]\n\n        res = 0\n        for c1 in range(C):\n            for c2 in range(c1, C):\n                counts = defaultdict(int)\n                counts[0] = 1\n                cur = 0\n                for r in range(R):\n                    row_sum = matrix[r][c2] - (matrix[r][c1 - 1] if c1 > 0 else 0)\n                    cur += row_sum\n                    res += counts[cur - target]\n                    counts[cur] += 1\n        return res",
+      "approach": "prefix-sum-hashmap verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int numSubmatrixSumTarget(vector<vector<int>>& matrix, int target) {\n        int R = matrix.size(), C = matrix[0].size();\n        for (int r = 0; r < R; ++r) {\n            for (int c = 1; c < C; ++c) {\n                matrix[r][c] += matrix[r][c - 1];\n            }\n        }\n\n        int res = 0;\n        for (int c1 = 0; c1 < C; ++c1) {\n            for (int c2 = c1; c2 < C; ++c2) {\n                unordered_map<int, int> counts;\n                counts[0] = 1;\n                int cur = 0;\n                for (int r = 0; r < R; ++r) {\n                    int row_sum = matrix[r][c2] - (c1 > 0 ? matrix[r][c1 - 1] : 0);\n                    cur += row_sum;\n                    if (counts.find(cur - target) != counts.end()) {\n                        res += counts[cur - target];\n                    }\n                    counts[cur]++;\n                }\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "prefix-sum-hashmap verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int numSubmatrixSumTarget(int[][] matrix, int target) {\n        int R = matrix.length, C = matrix[0].length;\n        for (int r = 0; r < R; ++r) {\n            for (int c = 1; c < C; ++c) {\n                matrix[r][c] += matrix[r][c - 1];\n            }\n        }\n\n        int res = 0;\n        for (int c1 = 0; c1 < C; ++c1) {\n            for (int c2 = c1; c2 < C; ++c2) {\n                Map<Integer, Integer> counts = new HashMap<>();\n                counts.put(0, 1);\n                int cur = 0;\n                for (int r = 0; r < R; ++r) {\n                    int rowSum = matrix[r][c2] - (c1 > 0 ? matrix[r][c1 - 1] : 0);\n                    cur += rowSum;\n                    res += counts.getOrDefault(cur - target, 0);\n                    counts.put(cur, counts.getOrDefault(cur, 0) + 1);\n                }\n            }\n        }\n        return res;\n    }\n}",
+      "approach": "prefix-sum-hashmap verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var numSubmatrixSumTarget = function(matrix, target) {\n    const R = matrix.length, C = matrix[0].length;\n    for (let r = 0; r < R; r++) {\n        for (let c = 1; c < C; c++) {\n            matrix[r][c] += matrix[r][c - 1];\n        }\n    }\n\n    let res = 0;\n    for (let c1 = 0; c1 < C; c1++) {\n        for (let c2 = c1; c2 < C; c2++) {\n            const counts = new Map();\n            counts.set(0, 1);\n            let cur = 0;\n            for (let r = 0; r < R; r++) {\n                const rowSum = matrix[r][c2] - (c1 > 0 ? matrix[r][c1 - 1] : 0);\n                cur += rowSum;\n                res += (counts.get(cur - target) || 0);\n                counts.set(cur, (counts.get(cur) || 0) + 1);\n            }\n        }\n    }\n    return res;\n};",
+      "approach": "prefix-sum-hashmap verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "smallest-sufficient-team",
+  "number": 1125,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bitmask Representation of Skills",
+      "text": "Since the number of required skills is at most 16, encode the skill set into a bitmask of length up to 16."
+    },
+    {
+      "level": 2,
+      "title": "Subproblem by Skill Mask",
+      "text": "Let state mask store the minimum list of person indices that cover that subset of skills."
+    },
+    {
+      "level": 3,
+      "title": "Dynamic State Expansion",
+      "text": "For each candidate person with personal skill mask, transition from existing reached states to union masks, updating when a smaller team is found."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def smallestSufficientTeam(self, req_skills: list[str], people: list[list[str]]) -> list[int]:\n        n = len(req_skills)\n        skill_map = {s: i for i, s in enumerate(req_skills)}\n        dp = {0: []}\n        \n        for i, p_skills in enumerate(people):\n            p_mask = 0\n            for s in p_skills:\n                if s in skill_map:\n                    p_mask |= (1 << skill_map[s])\n            if p_mask == 0:\n                continue\n            \n            new_dp = {}\n            for mask, team in dp.items():\n                combined = mask | p_mask\n                if combined not in dp or len(team) + 1 < len(dp[combined]):\n                    if combined not in new_dp or len(team) + 1 < len(new_dp[combined]):\n                        new_dp[combined] = team + [i]\n            dp.update(new_dp)\n        \n        return dp[(1 << n) - 1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * 2^N)",
+    "space": "O(2^N)",
+    "variables": [
+      "N: number of required skills (<= 16)",
+      "M: number of people (<= 60)"
+    ],
+    "whyNaiveFails": "Exploring all subsets of people takes 2^M time, which is astronomically large for M=60.",
+    "spaceTimeTradeoff": "Inverting to bitmask over required skills reduces the state space to 2^N <= 65536.",
+    "interviewerExpectation": "Candidate should recognize that N <= 16 signals bitmask dynamic programming over skills rather than people.",
+    "notes": "Initial state has mask 0 requiring 0 people."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def smallestSufficientTeam(self, req_skills: list[str], people: list[list[str]]) -> list[int]:\n        n = len(req_skills)\n        skill_map = {s: i for i, s in enumerate(req_skills)}\n        dp = {0: []}\n        \n        for i, p_skills in enumerate(people):\n            p_mask = 0\n            for s in p_skills:\n                if s in skill_map:\n                    p_mask |= (1 << skill_map[s])\n            if p_mask == 0:\n                continue\n            \n            new_dp = {}\n            for mask, team in dp.items():\n                combined = mask | p_mask\n                if combined not in dp or len(team) + 1 < len(dp[combined]):\n                    if combined not in new_dp or len(team) + 1 < len(new_dp[combined]):\n                        new_dp[combined] = team + [i]\n            dp.update(new_dp)\n        \n        return dp[(1 << n) - 1]",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> smallestSufficientTeam(vector<string>& req_skills, vector<vector<string>>& people) {\n        int n = req_skills.size();\n        unordered_map<string, int> skill_map;\n        for (int i = 0; i < n; ++i) skill_map[req_skills[i]] = i;\n        \n        int total_masks = 1 << n;\n        vector<vector<int>> dp(total_masks);\n        vector<bool> reached(total_masks, false);\n        reached[0] = true;\n        \n        for (int i = 0; i < (int)people.size(); ++i) {\n            int p_mask = 0;\n            for (const string& s : people[i]) {\n                if (skill_map.count(s)) p_mask |= (1 << skill_map[s]);\n            }\n            if (p_mask == 0) continue;\n            \n            for (int mask = 0; mask < total_masks; ++mask) {\n                if (!reached[mask]) continue;\n                int combined = mask | p_mask;\n                if (!reached[combined] || dp[mask].size() + 1 < dp[combined].size()) {\n                    reached[combined] = true;\n                    dp[combined] = dp[mask];\n                    dp[combined].push_back(i);\n                }\n            }\n        }\n        return dp[total_masks - 1];\n    }\n};",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] smallestSufficientTeam(String[] req_skills, List<List<String>> people) {\n        int n = req_skills.length;\n        Map<String, Integer> skillMap = new HashMap<>();\n        for (int i = 0; i < n; i++) skillMap.put(req_skills[i], i);\n        \n        int totalMasks = 1 << n;\n        List<Integer>[] dp = new List[totalMasks];\n        dp[0] = new ArrayList<>();\n        \n        for (int i = 0; i < people.size(); i++) {\n            int pMask = 0;\n            for (String s : people.get(i)) {\n                if (skillMap.containsKey(s)) {\n                    pMask |= (1 << skillMap.get(s));\n                }\n            }\n            if (pMask == 0) continue;\n            \n            for (int mask = 0; mask < totalMasks; mask++) {\n                if (dp[mask] == null) continue;\n                int combined = mask | pMask;\n                if (dp[combined] == null || dp[mask].size() + 1 < dp[combined].size()) {\n                    dp[combined] = new ArrayList<>(dp[mask]);\n                    dp[combined].add(i);\n                }\n            }\n        }\n        \n        List<Integer> best = dp[totalMasks - 1];\n        int[] res = new int[best.size()];\n        for (int i = 0; i < best.size(); i++) res[i] = best.get(i);\n        return res;\n    }\n}",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var smallestSufficientTeam = function(req_skills, people) {\n    const n = req_skills.length;\n    const skillMap = new Map();\n    for (let i = 0; i < n; i++) skillMap.set(req_skills[i], i);\n    \n    const dp = new Map();\n    dp.set(0, []);\n    \n    for (let i = 0; i < people.length; i++) {\n        let pMask = 0;\n        for (const s of people[i]) {\n            if (skillMap.has(s)) {\n                pMask |= (1 << skillMap.get(s));\n            }\n        }\n        if (pMask === 0) continue;\n        \n        const newEntries = [];\n        for (const [mask, team] of dp.entries()) {\n            const combined = mask | pMask;\n            if (!dp.has(combined) || team.length + 1 < dp.get(combined).length) {\n                newEntries.push([combined, team.concat(i)]);\n            }\n        }\n        for (const [m, t] of newEntries) {\n            if (!dp.has(m) || t.length < dp.get(m).length) {\n                dp.set(m, t);\n            }\n        }\n    }\n    return dp.get((1 << n) - 1);\n};",
+      "approach": "dp-bitmask verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
