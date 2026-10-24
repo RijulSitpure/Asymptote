@@ -1,0 +1,79 @@
+{
+  "slug": "the-maze-ii",
+  "number": 505,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Weighted Edge State Graph",
+      "text": "View stopping positions as nodes and rolling distances between them as weighted edges. Find the path with minimum total weight."
+    },
+    {
+      "level": 2,
+      "title": "Priority-Ordered State Exploration",
+      "text": "Use a distance array to track the minimum cost to reach each stopping point. Expand states in increasing order of cumulative distance."
+    },
+    {
+      "level": 3,
+      "title": "Shortest Path Relaxation",
+      "text": "Initialize all distances to infinity except start at zero. At each extracted state, roll in four directions until walls. If the new cumulative distance is less than the recorded distance for that stop, relax it and continue exploring."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport heapq\nfrom typing import List\n\nclass Solution:\n    def shortestDistance(self, maze: List[List[int]], start: List[int], destination: List[int]) -> int:\n        m, n = len(maze), len(maze[0])\n        dist = [[float('inf')] * n for _ in range(m)]\n        dist[start[0]][start[1]] = 0\n        pq = [(0, start[0], start[1])]\n        dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]\n\n        while pq:\n            d, r, c = heapq.heappop(pq)\n            if d > dist[r][c]:\n                continue\n            if r == destination[0] and c == destination[1]:\n                return d\n            for dr, dc in dirs:\n                nr, nc = r, c\n                count = 0\n                while 0 <= nr + dr < m and 0 <= nc + dc < n and maze[nr + dr][nc + dc] == 0:\n                    nr += dr\n                    nc += dc\n                    count += 1\n                if d + count < dist[nr][nc]:\n                    dist[nr][nc] = d + count\n                    heapq.heappush(pq, (d + count, nr, nc))\n\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N * max(M, N) * log(M * N))",
+    "space": "O(M * N)",
+    "variables": [
+      "M: rows",
+      "N: columns"
+    ],
+    "notes": "Optimal Dijkstra search on the graph formed by ball stopping points.",
+    "whyNaiveFails": "Unweighted BFS can find the fewest stops, but not necessarily the fewest total rolling steps.",
+    "spaceTimeTradeoff": "Dijkstra priority exploration tracks minimum rolling distance per stopping state.",
+    "interviewerExpectation": "Recognize that edges have variable non-negative weights representing the roll length."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\nfrom typing import List\n\nclass Solution:\n    def shortestDistance(self, maze: List[List[int]], start: List[int], destination: List[int]) -> int:\n        m, n = len(maze), len(maze[0])\n        dist = [[float('inf')] * n for _ in range(m)]\n        dist[start[0]][start[1]] = 0\n        pq = [(0, start[0], start[1])]\n        dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]\n\n        while pq:\n            d, r, c = heapq.heappop(pq)\n            if d > dist[r][c]:\n                continue\n            if r == destination[0] and c == destination[1]:\n                return d\n            for dr, dc in dirs:\n                nr, nc = r, c\n                count = 0\n                while 0 <= nr + dr < m and 0 <= nc + dc < n and maze[nr + dr][nc + dc] == 0:\n                    nr += dr\n                    nc += dc\n                    count += 1\n                if d + count < dist[nr][nc]:\n                    dist[nr][nc] = d + count\n                    heapq.heappush(pq, (d + count, nr, nc))\n\n        return -1",
+      "approach": "graph-dijkstra verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int shortestDistance(vector<vector<int>>& maze, vector<int>& start, vector<int>& destination) {\n        int m = maze.size(), n = maze[0].size();\n        vector<vector<int>> dist(m, vector<int>(n, INT_MAX));\n        dist[start[0]][start[1]] = 0;\n        using Node = tuple<int, int, int>;\n        priority_queue<Node, vector<Node>, greater<Node>> pq;\n        pq.push({0, start[0], start[1]});\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        while (!pq.empty()) {\n            auto [d, r, c] = pq.top();\n            pq.pop();\n            if (d > dist[r][c]) continue;\n            if (r == destination[0] && c == destination[1]) return d;\n            for (auto& dir : dirs) {\n                int nr = r, nc = c, count = 0;\n                while (nr + dir[0] >= 0 && nr + dir[0] < m && nc + dir[1] >= 0 && nc + dir[1] < n && maze[nr + dir[0]][nc + dir[1]] == 0) {\n                    nr += dir[0];\n                    nc += dir[1];\n                    count++;\n                }\n                if (d + count < dist[nr][nc]) {\n                    dist[nr][nc] = d + count;\n                    pq.push({d + count, nr, nc});\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "graph-dijkstra verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int shortestDistance(int[][] maze, int[] start, int[] destination) {\n        int m = maze.length, n = maze[0].length;\n        int[][] dist = new int[m][n];\n        for (int[] row : dist) java.util.Arrays.fill(row, Integer.MAX_VALUE);\n        dist[start[0]][start[1]] = 0;\n        java.util.PriorityQueue<int[]> pq = new java.util.PriorityQueue<>(java.util.Comparator.comparingInt(a -> a[0]));\n        pq.offer(new int[]{0, start[0], start[1]});\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        while (!pq.isEmpty()) {\n            int[] top = pq.poll();\n            int d = top[0], r = top[1], c = top[2];\n            if (d > dist[r][c]) continue;\n            if (r == destination[0] && c == destination[1]) return d;\n            for (int[] dir : dirs) {\n                int nr = r, nc = c, count = 0;\n                while (nr + dir[0] >= 0 && nr + dir[0] < m && nc + dir[1] >= 0 && nc + dir[1] < n && maze[nr + dir[0]][nc + dir[1]] == 0) {\n                    nr += dir[0];\n                    nc += dir[1];\n                    count++;\n                }\n                if (d + count < dist[nr][nc]) {\n                    dist[nr][nc] = d + count;\n                    pq.offer(new int[]{d + count, nr, nc});\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "approach": "graph-dijkstra verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} maze\n * @param {number[]} start\n * @param {number[]} destination\n * @return {number}\n */\nvar shortestDistance = function(maze, start, destination) {\n    const m = maze.length, n = maze[0].length;\n    const dist = Array.from({ length: m }, () => Array(n).fill(Infinity));\n    dist[start[0]][start[1]] = 0;\n    const q = [[0, start[0], start[1]]];\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n\n    while (q.length > 0) {\n        q.sort((a, b) => a[0] - b[0]);\n        const [d, r, c] = q.shift();\n        if (d > dist[r][c]) continue;\n        if (r === destination[0] && c === destination[1]) return d;\n        for (const [dr, dc] of dirs) {\n            let nr = r, nc = c, count = 0;\n            while (nr + dr >= 0 && nr + dr < m && nc + dc >= 0 && nc + dc < n && maze[nr + dr][nc + dc] === 0) {\n                nr += dr;\n                nc += dc;\n                count++;\n            }\n            if (d + count < dist[nr][nc]) {\n                dist[nr][nc] = d + count;\n                q.push([d + count, nr, nc]);\n            }\n        }\n    }\n    return -1;\n};",
+      "approach": "graph-dijkstra verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

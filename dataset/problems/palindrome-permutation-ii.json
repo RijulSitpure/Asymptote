@@ -1,0 +1,78 @@
+{
+  "slug": "palindrome-permutation-ii",
+  "number": 267,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Single Odd Frequency Constraint for Symmetry",
+      "text": "A string can form palindromes only if at most one character occurs an odd number of times, which must serve as the central pivot."
+    },
+    {
+      "level": 2,
+      "title": "Permuting Symmetrical Half Characters",
+      "text": "Form a multiset containing half the counts of each character. Generating unique permutations of this half creates all possible palindromes by mirror reflection."
+    },
+    {
+      "level": 3,
+      "title": "Backtracking Half-Strings with Skip on Duplicate",
+      "text": "Sort the half characters. Backtrack through distinct permutations using a boolean visited list and skipping identical adjacent unused characters. For each valid half, construct half plus central char plus reversed half."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def generatePalindromes(self, s: str) -> List[str]:\n        from collections import Counter\n        counts = Counter(s)\n        odd_char = \"\"\n        for c, cnt in counts.items():\n            if cnt % 2 == 1:\n                if odd_char:\n                    return []\n                odd_char = c\n        half = []\n        for c, cnt in counts.items():\n            half.extend([c] * (cnt // 2))\n        half.sort()\n        res = []\n        visited = [False] * len(half)\n        def backtrack(path: List[str]):\n            if len(path) == len(half):\n                h = \"\".join(path)\n                res.append(h + odd_char + h[::-1])\n                return\n            for i in range(len(half)):\n                if visited[i]:\n                    continue\n                if i > 0 and half[i] == half[i - 1] and not visited[i - 1]:\n                    continue\n                visited[i] = True\n                path.append(half[i])\n                backtrack(path)\n                path.pop()\n                visited[i] = False\n        backtrack([])\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((N/2)!)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of string s"
+    ],
+    "notes": "Optimal solution generating each unique palindrome directly in O((N/2)!) time.",
+    "whyNaiveFails": "Permuting the entire string of length N takes O(N!) time and generates many non-palindromic duplicates.",
+    "spaceTimeTradeoff": "Permuting only half the characters cuts factorial branching by half and guarantees palindrome symmetry.",
+    "interviewerExpectation": "Candidate should handle duplicate character permutations correctly to avoid redundant results."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def generatePalindromes(self, s: str) -> List[str]:\n        from collections import Counter\n        counts = Counter(s)\n        odd_char = \"\"\n        for c, cnt in counts.items():\n            if cnt % 2 == 1:\n                if odd_char:\n                    return []\n                odd_char = c\n        half = []\n        for c, cnt in counts.items():\n            half.extend([c] * (cnt // 2))\n        half.sort()\n        res = []\n        visited = [False] * len(half)\n        def backtrack(path: List[str]):\n            if len(path) == len(half):\n                h = \"\".join(path)\n                res.append(h + odd_char + h[::-1])\n                return\n            for i in range(len(half)):\n                if visited[i]:\n                    continue\n                if i > 0 and half[i] == half[i - 1] and not visited[i - 1]:\n                    continue\n                visited[i] = True\n                path.append(half[i])\n                backtrack(path)\n                path.pop()\n                visited[i] = False\n        backtrack([])\n        return res",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<string> generatePalindromes(string s) {\n        unordered_map<char, int> counts;\n        for (char c : s) counts[c]++;\n        string oddChar = \"\";\n        for (const auto& p : counts) {\n            if (p.second % 2 == 1) {\n                if (!oddChar.empty()) return {};\n                oddChar = p.first;\n            }\n        }\n        string half = \"\";\n        for (const auto& p : counts) {\n            half.append(p.second / 2, p.first);\n        }\n        sort(half.begin(), half.end());\n        vector<string> res;\n        vector<bool> visited(half.size(), false);\n        string path = \"\";\n        backtrack(half, visited, path, oddChar, res);\n        return res;\n    }\n\nprivate:\n    void backtrack(const string& half, vector<bool>& visited, string& path, const string& oddChar, vector<string>& res) {\n        if (path.size() == half.size()) {\n            string rev = path;\n            reverse(rev.begin(), rev.end());\n            res.push_back(path + oddChar + rev);\n            return;\n        }\n        for (size_t i = 0; i < half.size(); ++i) {\n            if (visited[i]) continue;\n            if (i > 0 && half[i] == half[i - 1] && !visited[i - 1]) continue;\n            visited[i] = true;\n            path.push_back(half[i]);\n            backtrack(half, visited, path, oddChar, res);\n            path.pop_back();\n            visited[i] = false;\n        }\n    }\n};",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<String> generatePalindromes(String s) {\n        Map<Character, Integer> counts = new HashMap<>();\n        for (char c : s.toCharArray()) {\n            counts.put(c, counts.getOrDefault(c, 0) + 1);\n        }\n        String oddChar = \"\";\n        for (Map.Entry<Character, Integer> entry : counts.entrySet()) {\n            if (entry.getValue() % 2 == 1) {\n                if (!oddChar.isEmpty()) return new ArrayList<>();\n                oddChar = String.valueOf(entry.getKey());\n            }\n        }\n        List<Character> half = new ArrayList<>();\n        for (Map.Entry<Character, Integer> entry : counts.entrySet()) {\n            int times = entry.getValue() / 2;\n            for (int i = 0; i < times; i++) half.add(entry.getKey());\n        }\n        Collections.sort(half);\n        List<String> res = new ArrayList<>();\n        boolean[] visited = new boolean[half.size()];\n        StringBuilder path = new StringBuilder();\n        backtrack(half, visited, path, oddChar, res);\n        return res;\n    }\n\n    private void backtrack(List<Character> half, boolean[] visited, StringBuilder path, String oddChar, List<String> res) {\n        if (path.length() == half.size()) {\n            String h = path.toString();\n            String rev = new StringBuilder(h).reverse().toString();\n            res.add(h + oddChar + rev);\n            return;\n        }\n        for (int i = 0; i < half.size(); i++) {\n            if (visited[i]) continue;\n            if (i > 0 && half.get(i).equals(half.get(i - 1)) && !visited[i - 1]) continue;\n            visited[i] = true;\n            path.append(half.get(i));\n            backtrack(half, visited, path, oddChar, res);\n            path.setLength(path.length() - 1);\n            visited[i] = false;\n        }\n    }\n}",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} s\n * @return {string[]}\n */\nvar generatePalindromes = function(s) {\n    const counts = new Map();\n    for (const c of s) counts.set(c, (counts.get(c) || 0) + 1);\n    let oddChar = \"\";\n    for (const [c, cnt] of counts) {\n        if (cnt % 2 === 1) {\n            if (oddChar !== \"\") return [];\n            oddChar = c;\n        }\n    }\n    const half = [];\n    for (const [c, cnt] of counts) {\n        const times = Math.floor(cnt / 2);\n        for (let i = 0; i < times; i++) half.push(c);\n    }\n    half.sort();\n    const res = [];\n    const visited = new Array(half.length).fill(false);\n    function backtrack(path) {\n        if (path.length === half.length) {\n            const h = path.join(\"\");\n            const rev = path.slice().reverse().join(\"\");\n            res.push(h + oddChar + rev);\n            return;\n        }\n        for (let i = 0; i < half.length; i++) {\n            if (visited[i]) continue;\n            if (i > 0 && half[i] === half[i - 1] && !visited[i - 1]) continue;\n            visited[i] = true;\n            path.push(half[i]);\n            backtrack(path);\n            path.pop();\n            visited[i] = false;\n        }\n    }\n    backtrack([]);\n    return res;\n};",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

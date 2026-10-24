@@ -1,0 +1,79 @@
+{
+  "slug": "word-pattern-ii",
+  "number": 291,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bijection Mapping Across Variable Length Tokens",
+      "text": "Because word boundaries are unstated, test all substring lengths for each pattern letter while enforcing one-to-one bidirectional uniqueness."
+    },
+    {
+      "level": 2,
+      "title": "Pruning with Existing Mappings",
+      "text": "If a pattern symbol already maps to a word, check if the string prefix matches that word exactly, advancing without trying other segment lengths."
+    },
+    {
+      "level": 3,
+      "title": "Backtracking with Forward Match Search",
+      "text": "Maintain two maps p2w and w2p. If pattern[p] is bound, verify string match and recurse. If unbound, test all end indices k, checking that substring s[s_idx:k] is not yet mapped."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def wordPatternMatch(self, pattern: str, s: str) -> bool:\n        p2w = {}\n        w2p = {}\n        def backtrack(p_idx: int, s_idx: int) -> bool:\n            if p_idx == len(pattern) and s_idx == len(s):\n                return True\n            if p_idx == len(pattern) or s_idx == len(s):\n                return False\n            ch = pattern[p_idx]\n            if ch in p2w:\n                w = p2w[ch]\n                if not s.startswith(w, s_idx):\n                    return False\n                return backtrack(p_idx + 1, s_idx + len(w))\n            for k in range(s_idx + 1, len(s) + 1):\n                sub = s[s_idx:k]\n                if sub in w2p:\n                    continue\n                p2w[ch] = sub\n                w2p[sub] = ch\n                if backtrack(p_idx + 1, k):\n                    return True\n                del p2w[ch]\n                del w2p[sub]\n            return False\n        return backtrack(0, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * C(S - 1, P - 1))",
+    "space": "O(P + S)",
+    "variables": [
+      "P: pattern length",
+      "S: string s length"
+    ],
+    "notes": "Worst-case combinatorial branching across string partitions with rapid pruning via bijection checks.",
+    "whyNaiveFails": "Trying all combinations of word lengths without bidirectional binding pruning creates immense exponential branching.",
+    "spaceTimeTradeoff": "Dual dictionaries ensure instant O(1) membership checks to abort conflicting mappings.",
+    "interviewerExpectation": "Candidate should maintain both pattern-to-word and word-to-pattern maps to ensure a true bijection."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def wordPatternMatch(self, pattern: str, s: str) -> bool:\n        p2w = {}\n        w2p = {}\n        def backtrack(p_idx: int, s_idx: int) -> bool:\n            if p_idx == len(pattern) and s_idx == len(s):\n                return True\n            if p_idx == len(pattern) or s_idx == len(s):\n                return False\n            ch = pattern[p_idx]\n            if ch in p2w:\n                w = p2w[ch]\n                if not s.startswith(w, s_idx):\n                    return False\n                return backtrack(p_idx + 1, s_idx + len(w))\n            for k in range(s_idx + 1, len(s) + 1):\n                sub = s[s_idx:k]\n                if sub in w2p:\n                    continue\n                p2w[ch] = sub\n                w2p[sub] = ch\n                if backtrack(p_idx + 1, k):\n                    return True\n                del p2w[ch]\n                del w2p[sub]\n            return False\n        return backtrack(0, 0)",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    bool wordPatternMatch(string pattern, string s) {\n        unordered_map<char, string> p2w;\n        unordered_map<string, char> w2p;\n        return backtrack(pattern, 0, s, 0, p2w, w2p);\n    }\n\nprivate:\n    bool backtrack(const string& p, size_t pIdx, const string& s, size_t sIdx,\n                   unordered_map<char, string>& p2w, unordered_map<string, char>& w2p) {\n        if (pIdx == p.size() && sIdx == s.size()) return true;\n        if (pIdx == p.size() || sIdx == s.size()) return false;\n        char ch = p[pIdx];\n        if (p2w.count(ch)) {\n            const string& w = p2w[ch];\n            if (s.compare(sIdx, w.size(), w) != 0) return false;\n            return backtrack(p, pIdx + 1, s, sIdx + w.size(), p2w, w2p);\n        }\n        for (size_t k = sIdx + 1; k <= s.size(); ++k) {\n            string sub = s.substr(sIdx, k - sIdx);\n            if (w2p.count(sub)) continue;\n            p2w[ch] = sub;\n            w2p[sub] = ch;\n            if (backtrack(p, pIdx + 1, s, k, p2w, w2p)) return true;\n            p2w.erase(ch);\n            w2p.erase(sub);\n        }\n        return false;\n    }\n};",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public boolean wordPatternMatch(String pattern, String s) {\n        Map<Character, String> p2w = new HashMap<>();\n        Map<String, Character> w2p = new HashMap<>();\n        return backtrack(pattern, 0, s, 0, p2w, w2p);\n    }\n\n    private boolean backtrack(String p, int pIdx, String s, int sIdx,\n                              Map<Character, String> p2w, Map<String, Character> w2p) {\n        if (pIdx == p.length() && sIdx == s.length()) return true;\n        if (pIdx == p.length() || sIdx == s.length()) return false;\n        char ch = p.charAt(pIdx);\n        if (p2w.containsKey(ch)) {\n            String w = p2w.get(ch);\n            if (!s.startsWith(w, sIdx)) return false;\n            return backtrack(p, pIdx + 1, s, sIdx + w.length(), p2w, w2p);\n        }\n        for (int k = sIdx + 1; k <= s.length(); k++) {\n            String sub = s.substring(sIdx, k);\n            if (w2p.containsKey(sub)) continue;\n            p2w.put(ch, sub);\n            w2p.put(sub, ch);\n            if (backtrack(p, pIdx + 1, s, k, p2w, w2p)) return true;\n            p2w.remove(ch);\n            w2p.remove(sub);\n        }\n        return false;\n    }\n}",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} pattern\n * @param {string} s\n * @return {boolean}\n */\nvar wordPatternMatch = function(pattern, s) {\n    const p2w = new Map();\n    const w2p = new Map();\n    function backtrack(pIdx, sIdx) {\n        if (pIdx === pattern.length && sIdx === s.length) return true;\n        if (pIdx === pattern.length || sIdx === s.length) return false;\n        const ch = pattern[pIdx];\n        if (p2w.has(ch)) {\n            const w = p2w.get(ch);\n            if (!s.startsWith(w, sIdx)) return false;\n            return backtrack(pIdx + 1, sIdx + w.length);\n        }\n        for (let k = sIdx + 1; k <= s.length; k++) {\n            const sub = s.slice(sIdx, k);\n            if (w2p.has(sub)) continue;\n            p2w.set(ch, sub);\n            w2p.set(sub, ch);\n            if (backtrack(pIdx + 1, k)) return true;\n            p2w.delete(ch);\n            w2p.delete(sub);\n        }\n        return false;\n    }\n    return backtrack(0, 0);\n};",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

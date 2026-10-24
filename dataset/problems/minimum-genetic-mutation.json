@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-genetic-mutation",
+  "number": 433,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Single-Character Edit Graph Shortest Path",
+      "text": "View gene strings as graph nodes where edges connect sequences differing by exactly one character. Use breadth exploration to find minimum mutations."
+    },
+    {
+      "level": 2,
+      "title": "Mutating Positions Over 4 Nucleotides",
+      "text": "At each node, generate candidate mutations by swapping each position with A, C, G, or T, checking whether the candidate exists in the gene bank."
+    },
+    {
+      "level": 3,
+      "title": "Level Order Queue Traversal with Bank Lookup",
+      "text": "Convert bank into a set. Enqueue startGene with step 0. While queue is non-empty, pop node. If node matches endGene return step. Mutate each position; if neighbor in bank, remove from bank and enqueue."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def minMutation(self, startGene: str, endGene: str, bank: List[str]) -> int:\n        from collections import deque\n        bank_set = set(bank)\n        if endGene not in bank_set:\n            return -1\n        q = deque([(startGene, 0)])\n        visited = {startGene}\n        while q:\n            curr, step = q.popleft()\n            if curr == endGene:\n                return step\n            for i in range(len(curr)):\n                for ch in \"ACGT\":\n                    if ch != curr[i]:\n                        neighbor = curr[:i] + ch + curr[i + 1:]\n                        if neighbor in bank_set and neighbor not in visited:\n                            visited.add(neighbor)\n                            q.append((neighbor, step + 1))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(B * L * 4)",
+    "space": "O(B)",
+    "variables": [
+      "B: number of genes in bank",
+      "L: gene string length (fixed at 8)"
+    ],
+    "notes": "Optimal breadth-first search finding shortest mutation path in linear time proportional to bank size.",
+    "whyNaiveFails": "Depth-first search risks exploring long sub-optimal mutation cycles.",
+    "spaceTimeTradeoff": "Hash set representation of bank enables constant O(1) membership checks.",
+    "interviewerExpectation": "Candidate should check early that endGene exists in the bank before running search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minMutation(self, startGene: str, endGene: str, bank: List[str]) -> int:\n        from collections import deque\n        bank_set = set(bank)\n        if endGene not in bank_set:\n            return -1\n        q = deque([(startGene, 0)])\n        visited = {startGene}\n        while q:\n            curr, step = q.popleft()\n            if curr == endGene:\n                return step\n            for i in range(len(curr)):\n                for ch in \"ACGT\":\n                    if ch != curr[i]:\n                        neighbor = curr[:i] + ch + curr[i + 1:]\n                        if neighbor in bank_set and neighbor not in visited:\n                            visited.add(neighbor)\n                            q.append((neighbor, step + 1))\n        return -1",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minMutation(string startGene, string endGene, vector<string>& bank) {\n        unordered_set<string> bankSet(bank.begin(), bank.end());\n        if (!bankSet.count(endGene)) return -1;\n        queue<pair<string, int>> q;\n        q.push({startGene, 0});\n        unordered_set<string> visited;\n        visited.insert(startGene);\n        const string nuc = \"ACGT\";\n        while (!q.empty()) {\n            auto [curr, step] = q.front();\n            q.pop();\n            if (curr == endGene) return step;\n            for (size_t i = 0; i < curr.size(); ++i) {\n                char orig = curr[i];\n                for (char c : nuc) {\n                    if (c == orig) continue;\n                    curr[i] = c;\n                    if (bankSet.count(curr) && !visited.count(curr)) {\n                        visited.insert(curr);\n                        q.push({curr, step + 1});\n                    }\n                }\n                curr[i] = orig;\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int minMutation(String startGene, String endGene, String[] bank) {\n        Set<String> bankSet = new HashSet<>(Arrays.asList(bank));\n        if (!bankSet.contains(endGene)) return -1;\n        Queue<Pair> q = new LinkedList<>();\n        q.offer(new Pair(startGene, 0));\n        Set<String> visited = new HashSet<>();\n        visited.add(startGene);\n        char[] nuc = {'A', 'C', 'G', 'T'};\n        while (!q.isEmpty()) {\n            Pair cur = q.poll();\n            if (cur.gene.equals(endGene)) return cur.step;\n            char[] arr = cur.gene.toCharArray();\n            for (int i = 0; i < arr.length; i++) {\n                char orig = arr[i];\n                for (char c : nuc) {\n                    if (c == orig) continue;\n                    arr[i] = c;\n                    String next = new String(arr);\n                    if (bankSet.contains(next) && !visited.contains(next)) {\n                        visited.add(next);\n                        q.offer(new Pair(next, cur.step + 1));\n                    }\n                }\n                arr[i] = orig;\n            }\n        }\n        return -1;\n    }\n\n    static class Pair {\n        String gene;\n        int step;\n        Pair(String g, int s) { this.gene = g; this.step = s; }\n    }\n}",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} startGene\n * @param {string} endGene\n * @param {string[]} bank\n * @return {number}\n */\nvar minMutation = function(startGene, endGene, bank) {\n    const bankSet = new Set(bank);\n    if (!bankSet.has(endGene)) return -1;\n    const q = [[startGene, 0]];\n    const visited = new Set([startGene]);\n    const nuc = ['A', 'C', 'G', 'T'];\n    while (q.length > 0) {\n        const [curr, step] = q.shift();\n        if (curr === endGene) return step;\n        for (let i = 0; i < curr.length; i++) {\n            for (const c of nuc) {\n                if (c === curr[i]) continue;\n                const next = curr.slice(0, i) + c + curr.slice(i + 1);\n                if (bankSet.has(next) && !visited.has(next)) {\n                    visited.add(next);\n                    q.push([next, step + 1]);\n                }\n            }\n        }\n    }\n    return -1;\n};",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

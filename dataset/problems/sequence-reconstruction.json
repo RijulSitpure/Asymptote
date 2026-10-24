@@ -1,0 +1,79 @@
+{
+  "slug": "sequence-reconstruction",
+  "number": 444,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Directed Graph from Precedence Pairs",
+      "text": "Each adjacent pair in sequences defines a directed edge representing necessary relative ordering between elements."
+    },
+    {
+      "level": 2,
+      "title": "Uniqueness Requires Single Candidate Queue",
+      "text": "For the shortest common supersequence to be unique, the zero in-degree candidate collection must contain exactly one element at every topological step."
+    },
+    {
+      "level": 3,
+      "title": "Kahn Algorithm with Single Element Queue Invariant",
+      "text": "Build adjacency graph and in-degree counts from sequences. Enqueue nodes with in-degree 0. At each step, if queue size is not 1, return false. Check that popped element matches nums[step]."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def sequenceReconstruction(self, nums: List[int], sequences: List[List[int]]) -> bool:\n        from collections import defaultdict, deque\n        graph = defaultdict(set)\n        indegree = {x: 0 for x in nums}\n        for seq in sequences:\n            for i in range(len(seq) - 1):\n                u, v = seq[i], seq[i + 1]\n                if u in indegree and v in indegree and v not in graph[u]:\n                    graph[u].add(v)\n                    indegree[v] += 1\n        q = deque([x for x, d in indegree.items() if d == 0])\n        idx = 0\n        while q:\n            if len(q) > 1:\n                return False\n            curr = q.popleft()\n            if curr != nums[idx]:\n                return False\n            idx += 1\n            for neighbor in graph[curr]:\n                indegree[neighbor] -= 1\n                if indegree[neighbor] == 0:\n                    q.append(neighbor)\n        return idx == len(nums)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes in nums",
+      "E: total number of sequence edges"
+    ],
+    "notes": "Optimal topological sort running in linear O(V + E) time and space.",
+    "whyNaiveFails": "Testing all possible permutations or sub-sequences is factorial O(N!).",
+    "spaceTimeTradeoff": "Kahn algorithm validates both topological existence and strict path uniqueness.",
+    "interviewerExpectation": "Candidate should recognize that uniqueness of topological sort requires queue length strictly 1 at each step."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def sequenceReconstruction(self, nums: List[int], sequences: List[List[int]]) -> bool:\n        from collections import defaultdict, deque\n        graph = defaultdict(set)\n        indegree = {x: 0 for x in nums}\n        for seq in sequences:\n            for i in range(len(seq) - 1):\n                u, v = seq[i], seq[i + 1]\n                if u in indegree and v in indegree and v not in graph[u]:\n                    graph[u].add(v)\n                    indegree[v] += 1\n        q = deque([x for x, d in indegree.items() if d == 0])\n        idx = 0\n        while q:\n            if len(q) > 1:\n                return False\n            curr = q.popleft()\n            if curr != nums[idx]:\n                return False\n            idx += 1\n            for neighbor in graph[curr]:\n                indegree[neighbor] -= 1\n                if indegree[neighbor] == 0:\n                    q.append(neighbor)\n        return idx == len(nums)",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    bool sequenceReconstruction(vector<int>& nums, vector<vector<int>>& sequences) {\n        unordered_map<int, unordered_set<int>> graph;\n        unordered_map<int, int> indegree;\n        for (int x : nums) indegree[x] = 0;\n        for (const auto& seq : sequences) {\n            for (size_t i = 0; i + 1 < seq.size(); ++i) {\n                int u = seq[i], v = seq[i + 1];\n                if (indegree.count(u) && indegree.count(v) && !graph[u].count(v)) {\n                    graph[u].insert(v);\n                    indegree[v]++;\n                }\n            }\n        }\n        queue<int> q;\n        for (const auto& p : indegree) {\n            if (p.second == 0) q.push(p.first);\n        }\n        size_t idx = 0;\n        while (!q.empty()) {\n            if (q.size() > 1) return false;\n            int curr = q.front(); q.pop();\n            if (curr != nums[idx++]) return false;\n            for (int neighbor : graph[curr]) {\n                if (--indegree[neighbor] == 0) {\n                    q.push(neighbor);\n                }\n            }\n        }\n        return idx == nums.size();\n    }\n};",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public boolean sequenceReconstruction(int[] nums, List<List<Integer>> sequences) {\n        Map<Integer, Set<Integer>> graph = new HashMap<>();\n        Map<Integer, Integer> indegree = new HashMap<>();\n        for (int x : nums) indegree.put(x, 0);\n        for (List<Integer> seq : sequences) {\n            for (int i = 0; i < seq.size() - 1; i++) {\n                int u = seq.get(i), v = seq.get(i + 1);\n                if (indegree.containsKey(u) && indegree.containsKey(v)) {\n                    graph.computeIfAbsent(u, k -> new HashSet<>());\n                    if (graph.get(u).add(v)) {\n                        indegree.put(v, indegree.get(v) + 1);\n                    }\n                }\n            }\n        }\n        Queue<Integer> q = new LinkedList<>();\n        for (Map.Entry<Integer, Integer> entry : indegree.entrySet()) {\n            if (entry.getValue() == 0) q.offer(entry.getKey());\n        }\n        int idx = 0;\n        while (!q.isEmpty()) {\n            if (q.size() > 1) return false;\n            int curr = q.poll();\n            if (curr != nums[idx++]) return false;\n            if (graph.containsKey(curr)) {\n                for (int neighbor : graph.get(curr)) {\n                    indegree.put(neighbor, indegree.get(neighbor) - 1);\n                    if (indegree.get(neighbor) == 0) q.offer(neighbor);\n                }\n            }\n        }\n        return idx == nums.length;\n    }\n}",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums\n * @param {number[][]} sequences\n * @return {boolean}\n */\nvar sequenceReconstruction = function(nums, sequences) {\n    const graph = new Map();\n    const indegree = new Map();\n    for (const x of nums) indegree.set(x, 0);\n    for (const seq of sequences) {\n        for (let i = 0; i < seq.length - 1; i++) {\n            const u = seq[i], v = seq[i + 1];\n            if (indegree.has(u) && indegree.has(v)) {\n                if (!graph.has(u)) graph.set(u, new Set());\n                if (!graph.get(u).has(v)) {\n                    graph.get(u).add(v);\n                    indegree.set(v, indegree.get(v) + 1);\n                }\n            }\n        }\n    }\n    const q = [];\n    for (const [x, d] of indegree) {\n        if (d === 0) q.push(x);\n    }\n    let idx = 0;\n    while (q.length > 0) {\n        if (q.length > 1) return false;\n        const curr = q.shift();\n        if (curr !== nums[idx++]) return false;\n        if (graph.has(curr)) {\n            for (const neighbor of graph.get(curr)) {\n                indegree.set(neighbor, indegree.get(neighbor) - 1);\n                if (indegree.get(neighbor) === 0) q.push(neighbor);\n            }\n        }\n    }\n    return idx === nums.length;\n};",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "rearrange-string-k-distance-apart",
+  "number": 358,
+  "category": "Algorithms",
+  "patterns": [
+    "greedy-general"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Greedy Highest Frequency Selection",
+      "text": "Always schedule the available character with the greatest remaining count that has satisfied the separation constraint."
+    },
+    {
+      "level": 2,
+      "title": "Buffer Cooldown Delay",
+      "text": "After placing a character, place it into a waiting line so that it cannot be selected again until k steps have elapsed."
+    },
+    {
+      "level": 3,
+      "title": "Max Frequency Heap with FIFO Cooldown",
+      "text": "Count frequencies into a max-heap. Pop the highest count character, decrement count, and push to a cooldown queue. When queue length reaches k, release cooled characters back to heap."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def rearrangeString(self, s: str, k: int) -> str:\n        if k <= 1:\n            return s\n        from collections import Counter, deque\n        import heapq\n        counts = Counter(s)\n        max_heap = [(-cnt, ch) for ch, cnt in counts.items()]\n        heapq.heapify(max_heap)\n        cooldown = deque()\n        res = []\n        while max_heap:\n            cnt, ch = heapq.heappop(max_heap)\n            res.append(ch)\n            cooldown.append((cnt + 1, ch))\n            if len(cooldown) >= k:\n                ready_cnt, ready_ch = cooldown.popleft()\n                if ready_cnt < 0:\n                    heapq.heappush(max_heap, (ready_cnt, ready_ch))\n        return \"\".join(res) if len(res) == len(s) else \"\"\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log A)",
+    "space": "O(A)",
+    "variables": [
+      "N: length of string s",
+      "A: size of alphabet (at most 26)"
+    ],
+    "notes": "Optimal greedy solution running in O(N log A) time and O(A) auxiliary space bounded by alphabet size.",
+    "whyNaiveFails": "Arbitrary placement quickly creates unavoidable adjacent traps with leftover frequent letters.",
+    "spaceTimeTradeoff": "Max-heap prioritizes urgent characters while cooldown queue enforces minimum k separation.",
+    "interviewerExpectation": "Candidate should handle edge cases k = 0 or k = 1 and detect impossible configurations when result length < s length."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def rearrangeString(self, s: str, k: int) -> str:\n        if k <= 1:\n            return s\n        from collections import Counter, deque\n        import heapq\n        counts = Counter(s)\n        max_heap = [(-cnt, ch) for ch, cnt in counts.items()]\n        heapq.heapify(max_heap)\n        cooldown = deque()\n        res = []\n        while max_heap:\n            cnt, ch = heapq.heappop(max_heap)\n            res.append(ch)\n            cooldown.append((cnt + 1, ch))\n            if len(cooldown) >= k:\n                ready_cnt, ready_ch = cooldown.popleft()\n                if ready_cnt < 0:\n                    heapq.heappush(max_heap, (ready_cnt, ready_ch))\n        return \"\".join(res) if len(res) == len(s) else \"\"",
+      "approach": "greedy-general verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    string rearrangeString(string s, int k) {\n        if (k <= 1) return s;\n        unordered_map<char, int> counts;\n        for (char c : s) counts[c]++;\n        priority_queue<pair<int, char>> pq;\n        for (const auto& p : counts) pq.push({p.second, p.first});\n        queue<pair<int, char>> cooldown;\n        string res = \"\";\n        while (!pq.empty()) {\n            auto [cnt, ch] = pq.top();\n            pq.pop();\n            res.push_back(ch);\n            cooldown.push({cnt - 1, ch});\n            if (cooldown.size() >= static_cast<size_t>(k)) {\n                auto ready = cooldown.front();\n                cooldown.pop();\n                if (ready.first > 0) pq.push(ready);\n            }\n        }\n        return res.size() == s.size() ? res : \"\";\n    }\n};",
+      "approach": "greedy-general verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public String rearrangeString(String s, int k) {\n        if (k <= 1) return s;\n        Map<Character, Integer> counts = new HashMap<>();\n        for (char c : s.toCharArray()) counts.put(c, counts.getOrDefault(c, 0) + 1);\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(b[0], a[0]));\n        for (Map.Entry<Character, Integer> entry : counts.entrySet()) {\n            pq.offer(new int[]{entry.getValue(), entry.getKey()});\n        }\n        Queue<int[]> cooldown = new LinkedList<>();\n        StringBuilder res = new StringBuilder();\n        while (!pq.isEmpty()) {\n            int[] cur = pq.poll();\n            res.append((char) cur[1]);\n            cur[0]--;\n            cooldown.offer(cur);\n            if (cooldown.size() >= k) {\n                int[] ready = cooldown.poll();\n                if (ready[0] > 0) pq.offer(ready);\n            }\n        }\n        return res.length() == s.length() ? res.toString() : \"\";\n    }\n}",
+      "approach": "greedy-general verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} s\n * @param {number} k\n * @return {string}\n */\nvar rearrangeString = function(s, k) {\n    if (k <= 1) return s;\n    const counts = new Map();\n    for (const c of s) counts.set(c, (counts.get(c) || 0) + 1);\n    const list = Array.from(counts.entries()).map(([ch, cnt]) => ({ ch, cnt }));\n    const cooldown = [];\n    const res = [];\n    while (list.length > 0) {\n        list.sort((a, b) => b.cnt - a.cnt);\n        const top = list.shift();\n        res.push(top.ch);\n        top.cnt--;\n        cooldown.push(top);\n        if (cooldown.length >= k) {\n            const ready = cooldown.shift();\n            if (ready.cnt > 0) list.push(ready);\n        }\n    }\n    return res.length === s.length ? res.join('') : '';\n};",
+      "approach": "greedy-general verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}
