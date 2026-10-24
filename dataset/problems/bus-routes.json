@@ -1,0 +1,79 @@
+{
+  "slug": "bus-routes",
+  "number": 815,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Transit Line Network",
+      "text": "Model bus routes as interconnected nodes in a transit network where changing lines costs one transfer."
+    },
+    {
+      "level": 2,
+      "title": "Stop to Route Inverted Index",
+      "text": "Map each bus stop to the set of routes passing through it to quickly identify transfers."
+    },
+    {
+      "level": 3,
+      "title": "Route-Level Level Order Search",
+      "text": "Explore line-by-line rather than stop-by-stop. Track visited routes and visited stops to find the minimum buses needed to reach target."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict, deque\nfrom typing import List\n\nclass Solution:\n    def numBusesToDestination(self, routes: List[List[int]], source: int, target: int) -> int:\n        if source == target:\n            return 0\n\n        stop_to_buses = defaultdict(list)\n        for b, route in enumerate(routes):\n            for stop in route:\n                stop_to_buses[stop].append(b)\n\n        if source not in stop_to_buses or target not in stop_to_buses:\n            return -1\n\n        queue = deque()\n        visited_buses = set()\n        visited_stops = {source}\n\n        for b in stop_to_buses[source]:\n            queue.append((b, 1))\n            visited_buses.add(b)\n\n        while queue:\n            b, step = queue.popleft()\n            for stop in routes[b]:\n                if stop == target:\n                    return step\n                if stop not in visited_stops:\n                    visited_stops.add(stop)\n                    for nxt_b in stop_to_buses[stop]:\n                        if nxt_b not in visited_buses:\n                            visited_buses.add(nxt_b)\n                            queue.append((nxt_b, step + 1))\n\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(B * R)",
+    "space": "O(B * R)",
+    "variables": [
+      "B: number of bus routes",
+      "R: average route length"
+    ],
+    "notes": "BFS traversing bus routes using inverted stop-to-route lookup.",
+    "whyNaiveFails": "Graph search directly over all stops creates up to 10^5 nodes with dense transfer cliques.",
+    "spaceTimeTradeoff": "Inverted map stores every (stop, route) incident edge once.",
+    "interviewerExpectation": "Model routes as graph vertices to minimize BFS branching factor."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict, deque\nfrom typing import List\n\nclass Solution:\n    def numBusesToDestination(self, routes: List[List[int]], source: int, target: int) -> int:\n        if source == target:\n            return 0\n\n        stop_to_buses = defaultdict(list)\n        for b, route in enumerate(routes):\n            for stop in route:\n                stop_to_buses[stop].append(b)\n\n        if source not in stop_to_buses or target not in stop_to_buses:\n            return -1\n\n        queue = deque()\n        visited_buses = set()\n        visited_stops = {source}\n\n        for b in stop_to_buses[source]:\n            queue.append((b, 1))\n            visited_buses.add(b)\n\n        while queue:\n            b, step = queue.popleft()\n            for stop in routes[b]:\n                if stop == target:\n                    return step\n                if stop not in visited_stops:\n                    visited_stops.add(stop)\n                    for nxt_b in stop_to_buses[stop]:\n                        if nxt_b not in visited_buses:\n                            visited_buses.add(nxt_b)\n                            queue.append((nxt_b, step + 1))\n\n        return -1",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int numBusesToDestination(vector<vector<int>>& routes, int source, int target) {\n        if (source == target) return 0;\n        unordered_map<int, vector<int>> stop_to_buses;\n        int n = routes.size();\n        for (int i = 0; i < n; i++) {\n            for (int s : routes[i]) stop_to_buses[s].push_back(i);\n        }\n        if (!stop_to_buses.count(source) || !stop_to_buses.count(target)) return -1;\n        queue<pair<int, int>> q;\n        vector<bool> visited_buses(n, false);\n        unordered_set<int> visited_stops = {source};\n        for (int b : stop_to_buses[source]) {\n            q.push({b, 1});\n            visited_buses[b] = true;\n        }\n        while (!q.empty()) {\n            auto [b, step] = q.front();\n            q.pop();\n            for (int stop : routes[b]) {\n                if (stop == target) return step;\n                if (!visited_stops.count(stop)) {\n                    visited_stops.insert(stop);\n                    for (int nxt_b : stop_to_buses[stop]) {\n                        if (!visited_buses[nxt_b]) {\n                            visited_buses[nxt_b] = true;\n                            q.push({nxt_b, step + 1});\n                        }\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int numBusesToDestination(int[][] routes, int source, int target) {\n        if (source == target) return 0;\n        Map<Integer, List<Integer>> stopToBuses = new HashMap<>();\n        int n = routes.length;\n        for (int i = 0; i < n; i++) {\n            for (int s : routes[i]) {\n                stopToBuses.computeIfAbsent(s, k -> new ArrayList<>()).add(i);\n            }\n        }\n        if (!stopToBuses.containsKey(source) || !stopToBuses.containsKey(target)) return -1;\n        Queue<int[]> q = new ArrayDeque<>();\n        boolean[] visitedBuses = new boolean[n];\n        Set<Integer> visitedStops = new HashSet<>();\n        visitedStops.add(source);\n        for (int b : stopToBuses.get(source)) {\n            q.add(new int[]{b, 1});\n            visitedBuses[b] = true;\n        }\n        while (!q.isEmpty()) {\n            int[] cur = q.poll();\n            int b = cur[0], step = cur[1];\n            for (int stop : routes[b]) {\n                if (stop == target) return step;\n                if (!visitedStops.contains(stop)) {\n                    visitedStops.add(stop);\n                    for (int nxtB : stopToBuses.get(stop)) {\n                        if (!visitedBuses[nxtB]) {\n                            visitedBuses[nxtB] = true;\n                            q.add(new int[]{nxtB, step + 1});\n                        }\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var numBusesToDestination = function(routes, source, target) {\n    if (source === target) return 0;\n    const stopToBuses = new Map();\n    const n = routes.length;\n    for (let i = 0; i < n; i++) {\n        for (const s of routes[i]) {\n            if (!stopToBuses.has(s)) stopToBuses.set(s, []);\n            stopToBuses.get(s).push(i);\n        }\n    }\n    if (!stopToBuses.has(source) || !stopToBuses.has(target)) return -1;\n    const q = [];\n    const visitedBuses = new Array(n).fill(false);\n    const visitedStops = new Set([source]);\n    for (const b of stopToBuses.get(source)) {\n        q.push([b, 1]);\n        visitedBuses[b] = true;\n    }\n    while (q.length > 0) {\n        const [b, step] = q.shift();\n        for (const stop of routes[b]) {\n            if (stop === target) return step;\n            if (!visitedStops.has(stop)) {\n                visitedStops.add(stop);\n                for (const nxtB of stopToBuses.get(stop)) {\n                    if (!visitedBuses[nxtB]) {\n                        visitedBuses[nxtB] = true;\n                        q.push([nxtB, step + 1]);\n                    }\n                }\n            }\n        }\n    }\n    return -1;\n};",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "shortest-path-to-get-all-keys",
+  "number": 864,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bitmask-all-nodes"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Augmented State Modeling",
+      "text": "Incorporate the set of collected keys directly into each position state."
+    },
+    {
+      "level": 2,
+      "title": "Bitmask Inventory Representation",
+      "text": "Represent the inventory of collected keys using an integer bitmask up to 2 raised to key count."
+    },
+    {
+      "level": 3,
+      "title": "Lock Access Validation",
+      "text": "Traverse neighbors in four directions, verifying that any encountered lock has its corresponding key bit enabled in the current bitmask."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\nfrom collections import deque\n\nclass Solution:\n    def shortestPathAllKeys(self, grid: List[str]) -> int:\n        m, n = len(grid), len(grid[0])\n        start_r = start_c = 0\n        total_keys = 0\n        for i in range(m):\n            for j in range(n):\n                ch = grid[i][j]\n                if ch == '@':\n                    start_r, start_c = i, j\n                elif 'a' <= ch <= 'f':\n                    total_keys = max(total_keys, ord(ch) - ord('a') + 1)\n\n        target_mask = (1 << total_keys) - 1\n        q = deque([(start_r, start_c, 0, 0)])\n        visited = {(start_r, start_c, 0)}\n\n        while q:\n            r, c, mask, dist = q.popleft()\n            if mask == target_mask:\n                return dist\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    ch = grid[nr][nc]\n                    if ch == '#':\n                        continue\n                    if 'A' <= ch <= 'F' and not (mask & (1 << (ord(ch) - ord('A')))):\n                        continue\n                    nmask = mask\n                    if 'a' <= ch <= 'f':\n                        nmask |= (1 << (ord(ch) - ord('a')))\n                    state = (nr, nc, nmask)\n                    if state not in visited:\n                        visited.add(state)\n                        q.append((nr, nc, nmask, dist + 1))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N * 2^K)",
+    "space": "O(M * N * 2^K)",
+    "variables": [
+      "M, N: grid dimensions",
+      "K: total number of distinct keys (at most 6)"
+    ],
+    "notes": "Breadth-first search over states (row, col, collected_keys_mask).",
+    "whyNaiveFails": "Standard 2D grid searches without tracking key states cannot revisit cells legitimately.",
+    "spaceTimeTradeoff": "Visited state array scales exponentially with the number of keys (2^K <= 64).",
+    "interviewerExpectation": "Model search states with bitmasks and apply shortest path exploration."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\nfrom collections import deque\n\nclass Solution:\n    def shortestPathAllKeys(self, grid: List[str]) -> int:\n        m, n = len(grid), len(grid[0])\n        start_r = start_c = 0\n        total_keys = 0\n        for i in range(m):\n            for j in range(n):\n                ch = grid[i][j]\n                if ch == '@':\n                    start_r, start_c = i, j\n                elif 'a' <= ch <= 'f':\n                    total_keys = max(total_keys, ord(ch) - ord('a') + 1)\n\n        target_mask = (1 << total_keys) - 1\n        q = deque([(start_r, start_c, 0, 0)])\n        visited = {(start_r, start_c, 0)}\n\n        while q:\n            r, c, mask, dist = q.popleft()\n            if mask == target_mask:\n                return dist\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    ch = grid[nr][nc]\n                    if ch == '#':\n                        continue\n                    if 'A' <= ch <= 'F' and not (mask & (1 << (ord(ch) - ord('A')))):\n                        continue\n                    nmask = mask\n                    if 'a' <= ch <= 'f':\n                        nmask |= (1 << (ord(ch) - ord('a')))\n                    state = (nr, nc, nmask)\n                    if state not in visited:\n                        visited.add(state)\n                        q.append((nr, nc, nmask, dist + 1))\n        return -1",
+      "approach": "graph-bitmask-all-nodes verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int shortestPathAllKeys(vector<string>& grid) {\n        int m = grid.size(), n = grid[0].size();\n        int start_r = 0, start_c = 0, total_keys = 0;\n        for (int i = 0; i < m; i++) {\n            for (int j = 0; j < n; j++) {\n                char ch = grid[i][j];\n                if (ch == '@') {\n                    start_r = i; start_c = j;\n                } else if (ch >= 'a' && ch <= 'f') {\n                    total_keys = max(total_keys, ch - 'a' + 1);\n                }\n            }\n        }\n        int target_mask = (1 << total_keys) - 1;\n        queue<tuple<int, int, int, int>> q;\n        vector<vector<vector<bool>>> visited(m, vector<vector<bool>>(n, vector<bool>(1 << total_keys, false)));\n        q.push({start_r, start_c, 0, 0});\n        visited[start_r][start_c][0] = true;\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!q.empty()) {\n            auto [r, c, mask, dist] = q.front();\n            q.pop();\n            if (mask == target_mask) return dist;\n            for (auto& d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    char ch = grid[nr][nc];\n                    if (ch == '#') continue;\n                    if (ch >= 'A' && ch <= 'F' && !(mask & (1 << (ch - 'A')))) continue;\n                    int nmask = mask;\n                    if (ch >= 'a' && ch <= 'f') nmask |= (1 << (ch - 'a'));\n                    if (!visited[nr][nc][nmask]) {\n                        visited[nr][nc][nmask] = true;\n                        q.push({nr, nc, nmask, dist + 1});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "graph-bitmask-all-nodes verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int shortestPathAllKeys(String[] grid) {\n        int m = grid.length, n = grid[0].length();\n        int startR = 0, startC = 0, totalKeys = 0;\n        for (int i = 0; i < m; i++) {\n            for (int j = 0; j < n; j++) {\n                char ch = grid[i].charAt(j);\n                if (ch == '@') {\n                    startR = i; startC = j;\n                } else if (ch >= 'a' && ch <= 'f') {\n                    totalKeys = Math.max(totalKeys, ch - 'a' + 1);\n                }\n            }\n        }\n        int targetMask = (1 << totalKeys) - 1;\n        Queue<int[]> q = new LinkedList<>();\n        boolean[][][] visited = new boolean[m][n][1 << totalKeys];\n        q.offer(new int[]{startR, startC, 0, 0});\n        visited[startR][startC][0] = true;\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!q.isEmpty()) {\n            int[] curr = q.poll();\n            int r = curr[0], c = curr[1], mask = curr[2], dist = curr[3];\n            if (mask == targetMask) return dist;\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    char ch = grid[nr].charAt(nc);\n                    if (ch == '#') continue;\n                    if (ch >= 'A' && ch <= 'F' && (mask & (1 << (ch - 'A'))) == 0) continue;\n                    int nmask = mask;\n                    if (ch >= 'a' && ch <= 'f') nmask |= (1 << (ch - 'a'));\n                    if (!visited[nr][nc][nmask]) {\n                        visited[nr][nc][nmask] = true;\n                        q.offer(new int[]{nr, nc, nmask, dist + 1});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "approach": "graph-bitmask-all-nodes verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var shortestPathAllKeys = function(grid) {\n    const m = grid.length, n = grid[0].length;\n    let startR = 0, startC = 0, totalKeys = 0;\n    for (let i = 0; i < m; i++) {\n        for (let j = 0; j < n; j++) {\n            const ch = grid[i][j];\n            if (ch === '@') {\n                startR = i; startC = j;\n            } else if (ch >= 'a' && ch <= 'f') {\n                totalKeys = Math.max(totalKeys, ch.charCodeAt(0) - 97 + 1);\n            }\n        }\n    }\n    const targetMask = (1 << totalKeys) - 1;\n    const q = [[startR, startC, 0, 0]];\n    const visited = new Set([`${startR},${startC},0`]);\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    while (q.length > 0) {\n        const [r, c, mask, dist] = q.shift();\n        if (mask === targetMask) return dist;\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                const ch = grid[nr][nc];\n                if (ch === '#') continue;\n                if (ch >= 'A' && ch <= 'F' && !(mask & (1 << (ch.charCodeAt(0) - 65)))) continue;\n                let nmask = mask;\n                if (ch >= 'a' && ch <= 'f') {\n                    nmask |= (1 << (ch.charCodeAt(0) - 97));\n                }\n                const key = `${nr},${nc},${nmask}`;\n                if (!visited.has(key)) {\n                    visited.add(key);\n                    q.push([nr, nc, nmask, dist + 1]);\n                }\n            }\n        }\n    }\n    return -1;\n};",
+      "approach": "graph-bitmask-all-nodes verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

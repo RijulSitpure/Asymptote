@@ -1,0 +1,78 @@
+{
+  "slug": "making-a-large-island",
+  "number": 827,
+  "category": "Algorithms",
+  "patterns": [
+    "grid-flood-fill"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Pre-Labeling Connected Masses",
+      "text": "Precalculate the area of each connected land mass with distinct identifiers before checking empty cells."
+    },
+    {
+      "level": 2,
+      "title": "Neighboring Island Unions",
+      "text": "For each zero cell, sum the areas of distinct neighboring island identifiers plus one for the converted bridge cell."
+    },
+    {
+      "level": 3,
+      "title": "Global Maximum Bridge",
+      "text": "Color each island with a unique tag >= 2 and map tag to component area. Iterate over all 0s, deduplicate adjacent tags, and return the maximum merged size."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def largestIsland(self, grid: List[List[int]]) -> int:\n        n = len(grid)\n        area = {}\n        tag = 2\n\n        def dfs(r: int, c: int, t: int) -> int:\n            grid[r][c] = t\n            cnt = 1\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < n and 0 <= nc < n and grid[nr][nc] == 1:\n                    cnt += dfs(nr, nc, t)\n            return cnt\n\n        for r in range(n):\n            for c in range(n):\n                if grid[r][c] == 1:\n                    area[tag] = dfs(r, c, tag)\n                    tag += 1\n\n        ans = max(area.values(), default=0)\n        for r in range(n):\n            for c in range(n):\n                if grid[r][c] == 0:\n                    seen = set()\n                    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                        nr, nc = r + dr, c + dc\n                        if 0 <= nr < n and 0 <= nc < n and grid[nr][nc] > 1:\n                            seen.add(grid[nr][nc])\n                    cand = 1 + sum(area[t] for t in seen)\n                    if cand > ans:\n                        ans = cand\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2)",
+    "space": "O(N^2)",
+    "variables": [
+      "N: grid dimension"
+    ],
+    "notes": "Two-pass algorithm: DFS flood fill followed by constant-time neighbor lookups per zero.",
+    "whyNaiveFails": "Recomputing flood fill for every 0 cell takes O(N^4) time and causes timeout.",
+    "spaceTimeTradeoff": "Grid labels and island area dictionary require O(N^2) space.",
+    "interviewerExpectation": "Use unique island tags (starting at 2) in-place to avoid separate visited arrays."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def largestIsland(self, grid: List[List[int]]) -> int:\n        n = len(grid)\n        area = {}\n        tag = 2\n\n        def dfs(r: int, c: int, t: int) -> int:\n            grid[r][c] = t\n            cnt = 1\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < n and 0 <= nc < n and grid[nr][nc] == 1:\n                    cnt += dfs(nr, nc, t)\n            return cnt\n\n        for r in range(n):\n            for c in range(n):\n                if grid[r][c] == 1:\n                    area[tag] = dfs(r, c, tag)\n                    tag += 1\n\n        ans = max(area.values(), default=0)\n        for r in range(n):\n            for c in range(n):\n                if grid[r][c] == 0:\n                    seen = set()\n                    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                        nr, nc = r + dr, c + dc\n                        if 0 <= nr < n and 0 <= nc < n and grid[nr][nc] > 1:\n                            seen.add(grid[nr][nc])\n                    cand = 1 + sum(area[t] for t in seen)\n                    if cand > ans:\n                        ans = cand\n\n        return ans",
+      "approach": "grid-flood-fill verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int n;\n    int dfs(vector<vector<int>>& grid, int r, int c, int tag) {\n        grid[r][c] = tag;\n        int cnt = 1;\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (auto& d : dirs) {\n            int nr = r + d[0], nc = c + d[1];\n            if (nr >= 0 && nr < n && nc >= 0 && nc < n && grid[nr][nc] == 1) {\n                cnt += dfs(grid, nr, nc, tag);\n            }\n        }\n        return cnt;\n    }\npublic:\n    int largestIsland(vector<vector<int>>& grid) {\n        n = grid.size();\n        unordered_map<int, int> area;\n        int tag = 2;\n        for (int r = 0; r < n; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 1) {\n                    area[tag] = dfs(grid, r, c, tag);\n                    tag++;\n                }\n            }\n        }\n        int ans = 0;\n        for (const auto& [t, a] : area) ans = max(ans, a);\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int r = 0; r < n; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 0) {\n                    unordered_set<int> seen;\n                    for (auto& d : dirs) {\n                        int nr = r + d[0], nc = c + d[1];\n                        if (nr >= 0 && nr < n && nc >= 0 && nc < n && grid[nr][nc] > 1) {\n                            seen.insert(grid[nr][nc]);\n                        }\n                    }\n                    int cand = 1;\n                    for (int t : seen) cand += area[t];\n                    ans = max(ans, cand);\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "grid-flood-fill verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int n;\n    private int dfs(int[][] grid, int r, int c, int tag) {\n        grid[r][c] = tag;\n        int cnt = 1;\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int[] d : dirs) {\n            int nr = r + d[0], nc = c + d[1];\n            if (nr >= 0 && nr < n && nc >= 0 && nc < n && grid[nr][nc] == 1) {\n                cnt += dfs(grid, nr, nc, tag);\n            }\n        }\n        return cnt;\n    }\n    public int largestIsland(int[][] grid) {\n        n = grid.length;\n        Map<Integer, Integer> area = new HashMap<>();\n        int tag = 2;\n        for (int r = 0; r < n; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 1) {\n                    area.put(tag, dfs(grid, r, c, tag));\n                    tag++;\n                }\n            }\n        }\n        int ans = 0;\n        for (int a : area.values()) ans = Math.max(ans, a);\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int r = 0; r < n; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 0) {\n                    Set<Integer> seen = new HashSet<>();\n                    for (int[] d : dirs) {\n                        int nr = r + d[0], nc = c + d[1];\n                        if (nr >= 0 && nr < n && nc >= 0 && nc < n && grid[nr][nc] > 1) {\n                            seen.add(grid[nr][nc]);\n                        }\n                    }\n                    int cand = 1;\n                    for (int t : seen) cand += area.get(t);\n                    ans = Math.max(ans, cand);\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "grid-flood-fill verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var largestIsland = function(grid) {\n    const n = grid.length;\n    const area = new Map();\n    let tag = 2;\n    function dfs(r, c, t) {\n        grid[r][c] = t;\n        let cnt = 1;\n        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < n && nc >= 0 && nc < n && grid[nr][nc] === 1) {\n                cnt += dfs(nr, nc, t);\n            }\n        }\n        return cnt;\n    }\n    for (let r = 0; r < n; r++) {\n        for (let c = 0; c < n; c++) {\n            if (grid[r][c] === 1) {\n                area.set(tag, dfs(r, c, tag));\n                tag++;\n            }\n        }\n    }\n    let ans = 0;\n    for (const a of area.values()) if (a > ans) ans = a;\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    for (let r = 0; r < n; r++) {\n        for (let c = 0; c < n; c++) {\n            if (grid[r][c] === 0) {\n                const seen = new Set();\n                for (const [dr, dc] of dirs) {\n                    const nr = r + dr, nc = c + dc;\n                    if (nr >= 0 && nr < n && nc >= 0 && nc < n && grid[nr][nc] > 1) {\n                        seen.add(grid[nr][nc]);\n                    }\n                }\n                let cand = 1;\n                for (const t of seen) cand += area.get(t);\n                if (cand > ans) ans = cand;\n            }\n        }\n    }\n    return ans;\n};",
+      "approach": "grid-flood-fill verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

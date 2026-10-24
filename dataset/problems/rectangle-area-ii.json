@@ -1,0 +1,78 @@
+{
+  "slug": "rectangle-area-ii",
+  "number": 850,
+  "category": "Algorithms",
+  "patterns": [
+    "greedy-interval-scheduling"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Vertical Slice Decomposition",
+      "text": "Divide the 2D plane into vertical strips bounded by unique horizontal coordinates."
+    },
+    {
+      "level": 2,
+      "title": "Filter Overlapping Strips",
+      "text": "For each strip [x1, x2], gather all rectangles that span across the strip horizontally."
+    },
+    {
+      "level": 3,
+      "title": "One-Dimensional Interval Merging",
+      "text": "Merge overlapping vertical segments inside the strip to find the total height, then add height times width modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def rectangleArea(self, rectangles: List[List[int]]) -> int:\n        MOD = 1_000_000_007\n        xs = sorted(list(set([r[0] for r in rectangles] + [r[2] for r in rectangles])))\n        total_area = 0\n\n        for i in range(len(xs) - 1):\n            x1, x2 = xs[i], xs[i + 1]\n            width = x2 - x1\n            intervals = []\n            for rx1, ry1, rx2, ry2 in rectangles:\n                if rx1 <= x1 and rx2 >= x2:\n                    intervals.append((ry1, ry2))\n            intervals.sort()\n            covered_y = 0\n            cur_bottom = -1\n            for y1, y2 in intervals:\n                cur_bottom = max(cur_bottom, y1)\n                if y2 > cur_bottom:\n                    covered_y += y2 - cur_bottom\n                    cur_bottom = y2\n            total_area = (total_area + covered_y * width) % MOD\n\n        return total_area\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2 log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of rectangles"
+    ],
+    "notes": "Coordinate slicing with 1D vertical interval merging per slice.",
+    "whyNaiveFails": "Discrete pixel grid allocation overflows memory for coordinates up to 10^9.",
+    "spaceTimeTradeoff": "Unique coordinate boundaries and 1D interval list require O(N) space.",
+    "interviewerExpectation": "Coordinate compression with sweep-line or vertical slice merging."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def rectangleArea(self, rectangles: List[List[int]]) -> int:\n        MOD = 1_000_000_007\n        xs = sorted(list(set([r[0] for r in rectangles] + [r[2] for r in rectangles])))\n        total_area = 0\n\n        for i in range(len(xs) - 1):\n            x1, x2 = xs[i], xs[i + 1]\n            width = x2 - x1\n            intervals = []\n            for rx1, ry1, rx2, ry2 in rectangles:\n                if rx1 <= x1 and rx2 >= x2:\n                    intervals.append((ry1, ry2))\n            intervals.sort()\n            covered_y = 0\n            cur_bottom = -1\n            for y1, y2 in intervals:\n                cur_bottom = max(cur_bottom, y1)\n                if y2 > cur_bottom:\n                    covered_y += y2 - cur_bottom\n                    cur_bottom = y2\n            total_area = (total_area + covered_y * width) % MOD\n\n        return total_area",
+      "approach": "greedy-interval-scheduling verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int rectangleArea(vector<vector<int>>& rectangles) {\n        long long MOD = 1000000007;\n        set<int> xs_set;\n        for (auto& r : rectangles) {\n            xs_set.insert(r[0]);\n            xs_set.insert(r[2]);\n        }\n        vector<int> xs(xs_set.begin(), xs_set.end());\n        long long total_area = 0;\n        for (size_t i = 0; i + 1 < xs.size(); i++) {\n            long long x1 = xs[i], x2 = xs[i + 1];\n            long long width = x2 - x1;\n            vector<pair<int, int>> intervals;\n            for (auto& r : rectangles) {\n                if (r[0] <= x1 && r[2] >= x2) {\n                    intervals.push_back({r[1], r[3]});\n                }\n            }\n            sort(intervals.begin(), intervals.end());\n            long long covered_y = 0;\n            int cur_bottom = -1;\n            for (auto& p : intervals) {\n                cur_bottom = max(cur_bottom, p.first);\n                if (p.second > cur_bottom) {\n                    covered_y += p.second - cur_bottom;\n                    cur_bottom = p.second;\n                }\n            }\n            total_area = (total_area + covered_y * width) % MOD;\n        }\n        return total_area;\n    }\n};",
+      "approach": "greedy-interval-scheduling verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int rectangleArea(int[][] rectangles) {\n        long MOD = 1_000_000_007L;\n        TreeSet<Integer> xsSet = new TreeSet<>();\n        for (int[] r : rectangles) {\n            xsSet.add(r[0]);\n            xsSet.add(r[2]);\n        }\n        List<Integer> xs = new ArrayList<>(xsSet);\n        long totalArea = 0;\n        for (int i = 0; i + 1 < xs.size(); i++) {\n            long x1 = xs.get(i), x2 = xs.get(i + 1);\n            long width = x2 - x1;\n            List<int[]> intervals = new ArrayList<>();\n            for (int[] r : rectangles) {\n                if (r[0] <= x1 && r[2] >= x2) {\n                    intervals.add(new int[]{r[1], r[3]});\n                }\n            }\n            intervals.sort((a, b) -> Integer.compare(a[0], b[0]));\n            long coveredY = 0;\n            int curBottom = -1;\n            for (int[] interval : intervals) {\n                curBottom = Math.max(curBottom, interval[0]);\n                if (interval[1] > curBottom) {\n                    coveredY += interval[1] - curBottom;\n                    curBottom = interval[1];\n                }\n            }\n            totalArea = (totalArea + coveredY * width) % MOD;\n        }\n        return (int) totalArea;\n    }\n}",
+      "approach": "greedy-interval-scheduling verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var rectangleArea = function(rectangles) {\n    const MOD = 1000000007n;\n    const xs = Array.from(new Set(rectangles.flatMap(r => [r[0], r[2]]))).sort((a, b) => a - b);\n    let totalArea = 0n;\n    for (let i = 0; i + 1 < xs.length; i++) {\n        const x1 = xs[i], x2 = xs[i + 1];\n        const width = BigInt(x2 - x1);\n        const intervals = [];\n        for (const [rx1, ry1, rx2, ry2] of rectangles) {\n            if (rx1 <= x1 && rx2 >= x2) {\n                intervals.push([ry1, ry2]);\n            }\n        }\n        intervals.sort((a, b) => a[0] - b[0]);\n        let coveredY = 0n;\n        let curBottom = -1;\n        for (const [y1, y2] of intervals) {\n            curBottom = Math.max(curBottom, y1);\n            if (y2 > curBottom) {\n                coveredY += BigInt(y2 - curBottom);\n                curBottom = y2;\n            }\n        }\n        totalArea = (totalArea + coveredY * width) % MOD;\n    }\n    return Number(totalArea);\n};",
+      "approach": "greedy-interval-scheduling verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

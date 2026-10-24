@@ -1,0 +1,78 @@
+{
+  "slug": "split-array-with-same-average",
+  "number": 805,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-knapsack-variants"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Zero Average Transformation",
+      "text": "Subtracting the overall average from every element shifts the target average to zero."
+    },
+    {
+      "level": 2,
+      "title": "Integer Scaling and Division",
+      "text": "Multiply all elements by n and subtract the total sum to perform all arithmetic with exact integers."
+    },
+    {
+      "level": 3,
+      "title": "Meet in the Middle Partitioning",
+      "text": "Split the zero-sum array into two halves of size up to fifteen. Generate all subset sums for each half and check if an opposite sum exists, excluding the empty and complete subsets."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def splitArraySameAverage(self, nums: List[int]) -> bool:\n        n = len(nums)\n        total = sum(nums)\n        if n == 1:\n            return False\n\n        transformed = [n * x - total for x in nums]\n        mid = n // 2\n        left_half = transformed[:mid]\n        right_half = transformed[mid:]\n\n        left_sums = {0}\n        for x in left_half:\n            left_sums |= {s + x for s in left_sums}\n\n        right_sums = {0}\n        for x in right_half:\n            right_sums |= {s + x for s in right_sums}\n\n        total_left = sum(left_half)\n        total_right = sum(right_half)\n\n        for s in left_sums:\n            if s == 0 and s != total_left:\n                if s in {s for s in left_sums if s != 0 or len(left_half) > 1}:\n                    pass\n\n        left_sums.discard(0)\n        left_sums.discard(total_left)\n        if 0 in left_sums:\n            return True\n\n        if 0 in {s for s in right_sums if s != 0 and s != total_right}:\n            return True\n\n        for s in left_sums:\n            if -s in right_sums:\n                return True\n\n        return False\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(2^(N / 2))",
+    "space": "O(2^(N / 2))",
+    "variables": [
+      "N: length of array nums (N <= 30)"
+    ],
+    "notes": "Meet-in-the-middle on 15 elements with zero-average scaled integers.",
+    "whyNaiveFails": "Full subset generation 2^30 exceeds 10^9 operations and times out.",
+    "spaceTimeTradeoff": "Hash sets hold at most 2^15 = 32768 integer sums.",
+    "interviewerExpectation": "Scale elements by n and subtract sum to avoid floating-point errors and simplify to subset sum zero."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def splitArraySameAverage(self, nums: List[int]) -> bool:\n        n = len(nums)\n        total = sum(nums)\n        if n == 1:\n            return False\n\n        transformed = [n * x - total for x in nums]\n        mid = n // 2\n        left_half = transformed[:mid]\n        right_half = transformed[mid:]\n\n        left_sums = {0}\n        for x in left_half:\n            left_sums |= {s + x for s in left_sums}\n\n        right_sums = {0}\n        for x in right_half:\n            right_sums |= {s + x for s in right_sums}\n\n        total_left = sum(left_half)\n        total_right = sum(right_half)\n\n        for s in left_sums:\n            if s == 0 and s != total_left:\n                if s in {s for s in left_sums if s != 0 or len(left_half) > 1}:\n                    pass\n\n        left_sums.discard(0)\n        left_sums.discard(total_left)\n        if 0 in left_sums:\n            return True\n\n        if 0 in {s for s in right_sums if s != 0 and s != total_right}:\n            return True\n\n        for s in left_sums:\n            if -s in right_sums:\n                return True\n\n        return False",
+      "approach": "dp-knapsack-variants verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    bool splitArraySameAverage(vector<int>& nums) {\n        int n = nums.size();\n        int total = accumulate(nums.begin(), nums.end(), 0);\n        if (n == 1) return false;\n        vector<int> t(n);\n        for (int i = 0; i < n; i++) t[i] = n * nums[i] - total;\n        int mid = n / 2;\n        unordered_set<int> left_sums = {0};\n        for (int i = 0; i < mid; i++) {\n            vector<int> temp(left_sums.begin(), left_sums.end());\n            for (int s : temp) left_sums.insert(s + t[i]);\n        }\n        unordered_set<int> right_sums = {0};\n        for (int i = mid; i < n; i++) {\n            vector<int> temp(right_sums.begin(), right_sums.end());\n            for (int s : temp) right_sums.insert(s + t[i]);\n        }\n        int total_left = 0, total_right = 0;\n        for (int i = 0; i < mid; i++) total_left += t[i];\n        for (int i = mid; i < n; i++) total_right += t[i];\n        left_sums.erase(0);\n        left_sums.erase(total_left);\n        if (left_sums.count(0)) return true;\n        for (int s : right_sums) {\n            if (s != 0 && s != total_right && s == 0) return true;\n        }\n        for (int s : left_sums) {\n            if (right_sums.count(-s)) return true;\n        }\n        return false;\n    }\n};",
+      "approach": "dp-knapsack-variants verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public boolean splitArraySameAverage(int[] nums) {\n        int n = nums.length;\n        int total = 0;\n        for (int x : nums) total += x;\n        if (n == 1) return false;\n        int[] t = new int[n];\n        for (int i = 0; i < n; i++) t[i] = n * nums[i] - total;\n        int mid = n / 2;\n        Set<Integer> leftSums = new HashSet<>();\n        leftSums.add(0);\n        for (int i = 0; i < mid; i++) {\n            Set<Integer> next = new HashSet<>(leftSums);\n            for (int s : leftSums) next.add(s + t[i]);\n            leftSums = next;\n        }\n        Set<Integer> rightSums = new HashSet<>();\n        rightSums.add(0);\n        for (int i = mid; i < n; i++) {\n            Set<Integer> next = new HashSet<>(rightSums);\n            for (int s : rightSums) next.add(s + t[i]);\n            rightSums = next;\n        }\n        int totalLeft = 0, totalRight = 0;\n        for (int i = 0; i < mid; i++) totalLeft += t[i];\n        for (int i = mid; i < n; i++) totalRight += t[i];\n        leftSums.remove(0);\n        leftSums.remove(totalLeft);\n        if (leftSums.contains(0)) return true;\n        for (int s : leftSums) {\n            if (rightSums.contains(-s)) return true;\n        }\n        return false;\n    }\n}",
+      "approach": "dp-knapsack-variants verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var splitArraySameAverage = function(nums) {\n    const n = nums.length;\n    const total = nums.reduce((a, b) => a + b, 0);\n    if (n === 1) return false;\n    const t = nums.map(x => n * x - total);\n    const mid = Math.floor(n / 2);\n    let leftSums = new Set([0]);\n    for (let i = 0; i < mid; i++) {\n        const next = new Set(leftSums);\n        for (const s of leftSums) next.add(s + t[i]);\n        leftSums = next;\n    }\n    let rightSums = new Set([0]);\n    for (let i = mid; i < n; i++) {\n        const next = new Set(rightSums);\n        for (const s of rightSums) next.add(s + t[i]);\n        rightSums = next;\n    }\n    let totalLeft = 0;\n    for (let i = 0; i < mid; i++) totalLeft += t[i];\n    leftSums.delete(0);\n    leftSums.delete(totalLeft);\n    if (leftSums.has(0)) return true;\n    for (const s of leftSums) {\n        if (rightSums.has(-s)) return true;\n    }\n    return false;\n};",
+      "approach": "dp-knapsack-variants verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

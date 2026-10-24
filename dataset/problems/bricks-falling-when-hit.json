@@ -1,0 +1,80 @@
+{
+  "slug": "bricks-falling-when-hit",
+  "number": 803,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Reverse Event Time",
+      "text": "Reversing the sequence of brick removals transforms the problem into incrementally adding bricks back."
+    },
+    {
+      "level": 2,
+      "title": "Top Row Roof Component",
+      "text": "Create a virtual ceiling node that connects to all stable bricks in row zero."
+    },
+    {
+      "level": 3,
+      "title": "Incremental Connectivity Count",
+      "text": "Erase all hit bricks first, build disjoint sets, then add hit bricks backwards. The increase in roof component size minus one gives the count of falling bricks."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def hitBricks(self, grid: List[List[int]], hits: List[List[int]]) -> List[int]:\n        R, C = len(grid), len(grid[0])\n        g = [row[:] for row in grid]\n        for r, c in hits:\n            g[r][c] -= 1\n\n        parent = list(range(R * C + 1))\n        sz = [1] * (R * C + 1)\n        roof = R * C\n\n        def find(x: int) -> int:\n            while parent[x] != x:\n                parent[x] = parent[parent[x]]\n                x = parent[x]\n            return x\n\n        def union(x: int, y: int) -> None:\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n                sz[ry] += sz[rx]\n\n        for c in range(C):\n            if g[0][c] == 1:\n                union(c, roof)\n\n        for r in range(R):\n            for c in range(C):\n                if g[r][c] == 1:\n                    idx = r * C + c\n                    if r + 1 < R and g[r + 1][c] == 1:\n                        union(idx, (r + 1) * C + c)\n                    if c + 1 < C and g[r][c + 1] == 1:\n                        union(idx, r * C + c + 1)\n\n        ans = []\n        for r, c in reversed(hits):\n            g[r][c] += 1\n            if g[r][c] != 1:\n                ans.append(0)\n                continue\n            prev = sz[find(roof)]\n            idx = r * C + c\n            if r == 0:\n                union(idx, roof)\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < R and 0 <= nc < C and g[nr][nc] == 1:\n                    union(idx, nr * C + nc)\n            cur = sz[find(roof)]\n            if find(idx) == find(roof):\n                ans.append(max(0, cur - prev - 1))\n            else:\n                ans.append(0)\n\n        ans.reverse()\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((R * C + H) * alpha(R * C))",
+    "space": "O(R * C)",
+    "variables": [
+      "R: grid rows",
+      "C: grid columns",
+      "H: number of hits"
+    ],
+    "notes": "Reverse time union-find with virtual ceiling supernode.",
+    "whyNaiveFails": "Recomputing connected components after each removal takes O(H * R * C) time, leading to timeout.",
+    "spaceTimeTradeoff": "Parent and size arrays require O(R * C) auxiliary space.",
+    "interviewerExpectation": "Model stability via virtual roof node and process queries in reverse order."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def hitBricks(self, grid: List[List[int]], hits: List[List[int]]) -> List[int]:\n        R, C = len(grid), len(grid[0])\n        g = [row[:] for row in grid]\n        for r, c in hits:\n            g[r][c] -= 1\n\n        parent = list(range(R * C + 1))\n        sz = [1] * (R * C + 1)\n        roof = R * C\n\n        def find(x: int) -> int:\n            while parent[x] != x:\n                parent[x] = parent[parent[x]]\n                x = parent[x]\n            return x\n\n        def union(x: int, y: int) -> None:\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n                sz[ry] += sz[rx]\n\n        for c in range(C):\n            if g[0][c] == 1:\n                union(c, roof)\n\n        for r in range(R):\n            for c in range(C):\n                if g[r][c] == 1:\n                    idx = r * C + c\n                    if r + 1 < R and g[r + 1][c] == 1:\n                        union(idx, (r + 1) * C + c)\n                    if c + 1 < C and g[r][c + 1] == 1:\n                        union(idx, r * C + c + 1)\n\n        ans = []\n        for r, c in reversed(hits):\n            g[r][c] += 1\n            if g[r][c] != 1:\n                ans.append(0)\n                continue\n            prev = sz[find(roof)]\n            idx = r * C + c\n            if r == 0:\n                union(idx, roof)\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < R and 0 <= nc < C and g[nr][nc] == 1:\n                    union(idx, nr * C + nc)\n            cur = sz[find(roof)]\n            if find(idx) == find(roof):\n                ans.append(max(0, cur - prev - 1))\n            else:\n                ans.append(0)\n\n        ans.reverse()\n        return ans",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    vector<int> parent, sz;\n    int find(int x) {\n        while (parent[x] != x) {\n            parent[x] = parent[parent[x]];\n            x = parent[x];\n        }\n        return x;\n    }\n    void unite(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) {\n            parent[rx] = ry;\n            sz[ry] += sz[rx];\n        }\n    }\npublic:\n    vector<int> hitBricks(vector<vector<int>>& grid, vector<vector<int>>& hits) {\n        int R = grid.size(), C = grid[0].size();\n        vector<vector<int>> g = grid;\n        for (const auto& h : hits) g[h[0]][h[1]]--;\n        int total = R * C, roof = total;\n        parent.resize(total + 1);\n        iota(parent.begin(), parent.end(), 0);\n        sz.assign(total + 1, 1);\n        for (int c = 0; c < C; c++) if (g[0][c] == 1) unite(c, roof);\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                if (g[r][c] == 1) {\n                    int idx = r * C + c;\n                    if (r + 1 < R && g[r + 1][c] == 1) unite(idx, (r + 1) * C + c);\n                    if (c + 1 < C && g[r][c + 1] == 1) unite(idx, r * C + c + 1);\n                }\n            }\n        }\n        vector<int> ans;\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int i = (int)hits.size() - 1; i >= 0; i--) {\n            int r = hits[i][0], c = hits[i][1];\n            g[r][c]++;\n            if (g[r][c] != 1) { ans.push_back(0); continue; }\n            int prev = sz[find(roof)];\n            int idx = r * C + c;\n            if (r == 0) unite(idx, roof);\n            for (auto& d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < R && nc >= 0 && nc < C && g[nr][nc] == 1) {\n                    unite(idx, nr * C + nc);\n                }\n            }\n            int cur = sz[find(roof)];\n            if (find(idx) == find(roof)) ans.push_back(max(0, cur - prev - 1));\n            else ans.push_back(0);\n        }\n        reverse(ans.begin(), ans.end());\n        return ans;\n    }\n};",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int[] parent, sz;\n    private int find(int x) {\n        while (parent[x] != x) {\n            parent[x] = parent[parent[x]];\n            x = parent[x];\n        }\n        return x;\n    }\n    private void union(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) {\n            parent[rx] = ry;\n            sz[ry] += sz[rx];\n        }\n    }\n    public int[] hitBricks(int[][] grid, int[][] hits) {\n        int R = grid.length, C = grid[0].length;\n        int[][] g = new int[R][C];\n        for (int r = 0; r < R; r++) System.arraycopy(grid[r], 0, g[r], 0, C);\n        for (int[] h : hits) g[h[0]][h[1]]--;\n        int total = R * C, roof = total;\n        parent = new int[total + 1];\n        sz = new int[total + 1];\n        for (int i = 0; i <= total; i++) { parent[i] = i; sz[i] = 1; }\n        for (int c = 0; c < C; c++) if (g[0][c] == 1) union(c, roof);\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                if (g[r][c] == 1) {\n                    int idx = r * C + c;\n                    if (r + 1 < R && g[r + 1][c] == 1) union(idx, (r + 1) * C + c);\n                    if (c + 1 < C && g[r][c + 1] == 1) union(idx, r * C + c + 1);\n                }\n            }\n        }\n        int[] ans = new int[hits.length];\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int i = hits.length - 1; i >= 0; i--) {\n            int r = hits[i][0], c = hits[i][1];\n            g[r][c]++;\n            if (g[r][c] != 1) { ans[i] = 0; continue; }\n            int prev = sz[find(roof)];\n            int idx = r * C + c;\n            if (r == 0) union(idx, roof);\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < R && nc >= 0 && nc < C && g[nr][nc] == 1) {\n                    union(idx, nr * C + nc);\n                }\n            }\n            int cur = sz[find(roof)];\n            ans[i] = (find(idx) == find(roof)) ? Math.max(0, cur - prev - 1) : 0;\n        }\n        return ans;\n    }\n}",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var hitBricks = function(grid, hits) {\n    const R = grid.length, C = grid[0].length;\n    const g = grid.map(row => row.slice());\n    for (const [r, c] of hits) g[r][c]--;\n    const total = R * C, roof = total;\n    const parent = Array.from({ length: total + 1 }, (_, i) => i);\n    const sz = new Array(total + 1).fill(1);\n    function find(x) {\n        while (parent[x] !== x) {\n            parent[x] = parent[parent[x]];\n            x = parent[x];\n        }\n        return x;\n    }\n    function union(x, y) {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) {\n            parent[rx] = ry;\n            sz[ry] += sz[rx];\n        }\n    }\n    for (let c = 0; c < C; c++) if (g[0][c] === 1) union(c, roof);\n    for (let r = 0; r < R; r++) {\n        for (let c = 0; c < C; c++) {\n            if (g[r][c] === 1) {\n                const idx = r * C + c;\n                if (r + 1 < R && g[r + 1][c] === 1) union(idx, (r + 1) * C + c);\n                if (c + 1 < C && g[r][c + 1] === 1) union(idx, r * C + c + 1);\n            }\n        }\n    }\n    const ans = new Array(hits.length).fill(0);\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    for (let i = hits.length - 1; i >= 0; i--) {\n        const [r, c] = hits[i];\n        g[r][c]++;\n        if (g[r][c] !== 1) continue;\n        const prev = sz[find(roof)];\n        const idx = r * C + c;\n        if (r === 0) union(idx, roof);\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < R && nc >= 0 && nc < C && g[nr][nc] === 1) {\n                union(idx, nr * C + nc);\n            }\n        }\n        const cur = sz[find(roof)];\n        ans[i] = (find(idx) === find(roof)) ? Math.max(0, cur - prev - 1) : 0;\n    }\n    return ans;\n};",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}
