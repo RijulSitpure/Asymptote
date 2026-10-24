@@ -1,0 +1,79 @@
+{
+  "slug": "word-squares",
+  "number": 425,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Symmetric Matrix Property",
+      "text": "In a valid word square, row k and column k must be identical strings, meaning the kth letter of every row forms the kth column."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Map or Trie Lookup",
+      "text": "To select the kth row, all letters from row 0 to k minus 1 at column k establish the prefix that the kth word must start with."
+    },
+    {
+      "level": 3,
+      "title": "Backtracking with Prefix Filter",
+      "text": "Index words by all possible prefixes. Start with an empty square and try each word as row 0. At step k, compute the required prefix from previously chosen rows, fetch all candidate words with that prefix, append each candidate, and recurse."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def wordSquares(self, words: List[str]) -> List[List[str]]:\n        n = len(words[0])\n        prefix_map = defaultdict(list)\n        for w in words:\n            for i in range(n + 1):\n                prefix_map[w[:i]].append(w)\n\n        res = []\n        curr = []\n\n        def backtrack(step: int):\n            if step == n:\n                res.append(list(curr))\n                return\n            prefix = \"\".join(curr[i][step] for i in range(step))\n            for candidate in prefix_map.get(prefix, []):\n                curr.append(candidate)\n                backtrack(step + 1)\n                curr.pop()\n\n        for w in words:\n            curr.append(w)\n            backtrack(1)\n            curr.pop()\n\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * 26^L)",
+    "space": "O(N * L)",
+    "variables": [
+      "N: number of words",
+      "L: length of each word"
+    ],
+    "notes": "Prefix dictionary allows constant-time candidate filtering per backtracking step.",
+    "whyNaiveFails": "Testing all permutations of words takes O(N^L) which is completely infeasible.",
+    "spaceTimeTradeoff": "Prefix dictionary consumes O(N * L) space to prune search branches instantaneously.",
+    "interviewerExpectation": "Model column symmetry as prefix lookups for subsequent rows."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def wordSquares(self, words: List[str]) -> List[List[str]]:\n        n = len(words[0])\n        prefix_map = defaultdict(list)\n        for w in words:\n            for i in range(n + 1):\n                prefix_map[w[:i]].append(w)\n\n        res = []\n        curr = []\n\n        def backtrack(step: int):\n            if step == n:\n                res.append(list(curr))\n                return\n            prefix = \"\".join(curr[i][step] for i in range(step))\n            for candidate in prefix_map.get(prefix, []):\n                curr.append(candidate)\n                backtrack(step + 1)\n                curr.pop()\n\n        for w in words:\n            curr.append(w)\n            backtrack(1)\n            curr.pop()\n\n        return res",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int n;\n    unordered_map<string, vector<string>> prefixMap;\n    vector<vector<string>> res;\n    vector<string> curr;\n\n    void backtrack(int step) {\n        if (step == n) {\n            res.push_back(curr);\n            return;\n        }\n        string prefix = \"\";\n        for (int i = 0; i < step; i++) {\n            prefix += curr[i][step];\n        }\n        auto it = prefixMap.find(prefix);\n        if (it != prefixMap.end()) {\n            for (const string& cand : it->second) {\n                curr.push_back(cand);\n                backtrack(step + 1);\n                curr.pop_back();\n            }\n        }\n    }\npublic:\n    vector<vector<string>> wordSquares(vector<string>& words) {\n        n = words[0].size();\n        prefixMap.clear();\n        res.clear();\n        curr.clear();\n\n        for (const string& w : words) {\n            for (int i = 0; i <= n; i++) {\n                prefixMap[w.substr(0, i)].push_back(w);\n            }\n        }\n\n        for (const string& w : words) {\n            curr.push_back(w);\n            backtrack(1);\n            curr.pop_back();\n        }\n        return res;\n    }\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int n;\n    private Map<String, List<String>> prefixMap = new HashMap<>();\n    private List<List<String>> res = new ArrayList<>();\n    private List<String> curr = new ArrayList<>();\n\n    private void backtrack(int step) {\n        if (step == n) {\n            res.add(new ArrayList<>(curr));\n            return;\n        }\n        StringBuilder sb = new StringBuilder();\n        for (int i = 0; i < step; i++) {\n            sb.append(curr.get(i).charAt(step));\n        }\n        String prefix = sb.toString();\n        List<String> cands = prefixMap.get(prefix);\n        if (cands != null) {\n            for (String cand : cands) {\n                curr.add(cand);\n                backtrack(step + 1);\n                curr.remove(curr.size() - 1);\n            }\n        }\n    }\n\n    public List<List<String>> wordSquares(String[] words) {\n        n = words[0].length();\n        prefixMap.clear();\n        res.clear();\n        curr.clear();\n\n        for (String w : words) {\n            for (int i = 0; i <= n; i++) {\n                String pref = w.substring(0, i);\n                prefixMap.computeIfAbsent(pref, k -> new ArrayList<>()).add(w);\n            }\n        }\n\n        for (String w : words) {\n            curr.add(w);\n            backtrack(1);\n            curr.remove(curr.size() - 1);\n        }\n        return res;\n    }\n}",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var wordSquares = function(words) {\n    const n = words[0].length;\n    const prefixMap = new Map();\n    for (const w of words) {\n        for (let i = 0; i <= n; i++) {\n            const pref = w.slice(0, i);\n            if (!prefixMap.has(pref)) prefixMap.set(pref, []);\n            prefixMap.get(pref).push(w);\n        }\n    }\n\n    const res = [];\n    const curr = [];\n\n    function backtrack(step) {\n        if (step === n) {\n            res.push([...curr]);\n            return;\n        }\n        let prefix = \"\";\n        for (let i = 0; i < step; i++) {\n            prefix += curr[i][step];\n        }\n        const cands = prefixMap.get(prefix) || [];\n        for (const cand of cands) {\n            curr.push(cand);\n            backtrack(step + 1);\n            curr.pop();\n        }\n    }\n\n    for (const w of words) {\n        curr.push(w);\n        backtrack(1);\n        curr.pop();\n    }\n    return res;\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

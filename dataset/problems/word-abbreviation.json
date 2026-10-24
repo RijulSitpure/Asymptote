@@ -1,0 +1,79 @@
+{
+  "slug": "word-abbreviation",
+  "number": 527,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Abbreviation Collision Resolution",
+      "text": "Words of the same length and matching first and last characters can collide under the initial abbreviation scheme."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Length Incrementing",
+      "text": "Start every word with prefix of length 1. For any duplicate abbreviations, increment prefix lengths of conflicting words until distinct."
+    },
+    {
+      "level": 3,
+      "title": "Grouped Conflict Resolution",
+      "text": "Group indices by their generated abbreviation string. For groups with size > 1, increment prefix length k for all words in the group and recompute abbreviation. Repeat until all abbreviations are distinct."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def wordsAbbreviation(self, words: List[str]) -> List[str]:\n        n = len(words)\n        prefix_lens = [1] * n\n\n        def make_abbr(word: str, k: int) -> str:\n            if len(word) - 1 - k <= 1:\n                return word\n            return word[:k] + str(len(word) - 1 - k) + word[-1]\n\n        ans = [make_abbr(w, 1) for w in words]\n\n        while True:\n            groups = defaultdict(list)\n            for i, abbr in enumerate(ans):\n                groups[abbr].append(i)\n            has_conflict = False\n            for abbr, indices in groups.items():\n                if len(indices) > 1:\n                    has_conflict = True\n                    for idx in indices:\n                        prefix_lens[idx] += 1\n                        ans[idx] = make_abbr(words[idx], prefix_lens[idx])\n            if not has_conflict:\n                break\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * L^2)",
+    "space": "O(N * L)",
+    "variables": [
+      "N: number of words",
+      "L: maximum word length"
+    ],
+    "notes": "Grouped resolution recomputes abbreviations up to word length L.",
+    "whyNaiveFails": "Pairwise string comparisons without grouping leads to redundant O(N^2 * L) work.",
+    "spaceTimeTradeoff": "Hash map grouping collisions isolates updates only to conflicting subsets.",
+    "interviewerExpectation": "Iteratively extend prefix lengths for collision groups."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def wordsAbbreviation(self, words: List[str]) -> List[str]:\n        n = len(words)\n        prefix_lens = [1] * n\n\n        def make_abbr(word: str, k: int) -> str:\n            if len(word) - 1 - k <= 1:\n                return word\n            return word[:k] + str(len(word) - 1 - k) + word[-1]\n\n        ans = [make_abbr(w, 1) for w in words]\n\n        while True:\n            groups = defaultdict(list)\n            for i, abbr in enumerate(ans):\n                groups[abbr].append(i)\n            has_conflict = False\n            for abbr, indices in groups.items():\n                if len(indices) > 1:\n                    has_conflict = True\n                    for idx in indices:\n                        prefix_lens[idx] += 1\n                        ans[idx] = make_abbr(words[idx], prefix_lens[idx])\n            if not has_conflict:\n                break\n\n        return ans",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    string makeAbbr(const string& w, int k) {\n        if ((int)w.size() - 1 - k <= 1) return w;\n        return w.substr(0, k) + to_string((int)w.size() - 1 - k) + w.back();\n    }\npublic:\n    vector<string> wordsAbbreviation(vector<string>& words) {\n        int n = words.size();\n        vector<int> prefixLens(n, 1);\n        vector<string> ans(n);\n        for (int i = 0; i < n; i++) ans[i] = makeAbbr(words[i], 1);\n\n        while (true) {\n            unordered_map<string, vector<int>> groups;\n            for (int i = 0; i < n; i++) {\n                groups[ans[i]].push_back(i);\n            }\n            bool hasConflict = false;\n            for (auto& [abbr, indices] : groups) {\n                if (indices.size() > 1) {\n                    hasConflict = true;\n                    for (int idx : indices) {\n                        prefixLens[idx]++;\n                        ans[idx] = makeAbbr(words[idx], prefixLens[idx]);\n                    }\n                }\n            }\n            if (!hasConflict) break;\n        }\n        return ans;\n    }\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private String makeAbbr(String w, int k) {\n        if (w.length() - 1 - k <= 1) return w;\n        return w.substring(0, k) + (w.length() - 1 - k) + w.charAt(w.length() - 1);\n    }\n\n    public List<String> wordsAbbreviation(List<String> words) {\n        int n = words.size();\n        int[] prefixLens = new int[n];\n        Arrays.fill(prefixLens, 1);\n        List<String> ans = new ArrayList<>(n);\n        for (int i = 0; i < n; i++) {\n            ans.add(makeAbbr(words.get(i), 1));\n        }\n\n        while (true) {\n            Map<String, List<Integer>> groups = new HashMap<>();\n            for (int i = 0; i < n; i++) {\n                groups.computeIfAbsent(ans.get(i), k -> new ArrayList<>()).add(i);\n            }\n            boolean hasConflict = false;\n            for (List<Integer> indices : groups.values()) {\n                if (indices.size() > 1) {\n                    hasConflict = true;\n                    for (int idx : indices) {\n                        prefixLens[idx]++;\n                        ans.set(idx, makeAbbr(words.get(idx), prefixLens[idx]));\n                    }\n                }\n            }\n            if (!hasConflict) break;\n        }\n        return ans;\n    }\n}",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var wordsAbbreviation = function(words) {\n    const n = words.length;\n    const prefixLens = new Array(n).fill(1);\n\n    function makeAbbr(w, k) {\n        if (w.length - 1 - k <= 1) return w;\n        return w.slice(0, k) + (w.length - 1 - k) + w[w.length - 1];\n    }\n\n    const ans = words.map(w => makeAbbr(w, 1));\n\n    while (true) {\n        const groups = new Map();\n        for (let i = 0; i < n; i++) {\n            if (!groups.has(ans[i])) groups.set(ans[i], []);\n            groups.get(ans[i]).push(i);\n        }\n        let hasConflict = false;\n        for (const indices of groups.values()) {\n            if (indices.length > 1) {\n                hasConflict = true;\n                for (const idx of indices) {\n                    prefixLens[idx]++;\n                    ans[idx] = makeAbbr(words[idx], prefixLens[idx]);\n                }\n            }\n        }\n        if (!hasConflict) break;\n    }\n    return ans;\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

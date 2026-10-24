@@ -1,0 +1,78 @@
+{
+  "slug": "find-the-closest-palindrome",
+  "number": 564,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Mirroring Symmetry",
+      "text": "A numerical palindrome is determined by mirroring its left half digits onto its right half."
+    },
+    {
+      "level": 2,
+      "title": "Five Finite Candidates",
+      "text": "Only five palindrome candidates can be closest: prefixes minus 1, same, plus 1 mirrored, along with boundary candidates 10^(L-1) - 1 and 10^L + 1."
+    },
+    {
+      "level": 3,
+      "title": "Candidate Distance Comparison",
+      "text": "Extract the first ceil(L/2) digits as prefix. Construct palindromes for prefix - 1, prefix, and prefix + 1. Add edge cases 99...9 and 100...001. Filter out the original number, sort by absolute difference, and choose the minimum numerical value on ties."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def nearestPalindromic(self, n: str) -> str:\n        L = len(n)\n        candidates = {str(10**(L - 1) - 1), str(10**L + 1)}\n        prefix = int(n[:(L + 1) // 2])\n\n        for p in (prefix - 1, prefix, prefix + 1):\n            s = str(p)\n            if L % 2 == 0:\n                pal = s + s[::-1]\n            else:\n                pal = s + s[:-1][::-1]\n            candidates.add(pal)\n\n        candidates.discard(n)\n        orig = int(n)\n        return min(candidates, key=lambda x: (abs(int(x) - orig), int(x)))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(L)",
+    "space": "O(L)",
+    "variables": [
+      "L: number of digits in string n (<= 18)"
+    ],
+    "notes": "Constant candidate generation of 5 mirrored numbers.",
+    "whyNaiveFails": "Incrementing or decrementing one by one takes O(10^L) time.",
+    "spaceTimeTradeoff": "Mirroring the prefix identifies closest palindrome candidates in O(1) mathematical cases.",
+    "interviewerExpectation": "Exhaust the 5 palindrome candidates around prefix and boundary transitions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def nearestPalindromic(self, n: str) -> str:\n        L = len(n)\n        candidates = {str(10**(L - 1) - 1), str(10**L + 1)}\n        prefix = int(n[:(L + 1) // 2])\n\n        for p in (prefix - 1, prefix, prefix + 1):\n            s = str(p)\n            if L % 2 == 0:\n                pal = s + s[::-1]\n            else:\n                pal = s + s[:-1][::-1]\n            candidates.add(pal)\n\n        candidates.discard(n)\n        orig = int(n)\n        return min(candidates, key=lambda x: (abs(int(x) - orig), int(x)))",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    string nearestPalindromic(string n) {\n        int L = n.size();\n        long long orig = stoll(n);\n        unordered_set<long long> cands;\n        cands.insert((long long)pow(10, L - 1) - 1);\n        cands.insert((long long)pow(10, L) + 1);\n\n        long long prefix = stoll(n.substr(0, (L + 1) / 2));\n        for (long long p : {prefix - 1, prefix, prefix + 1}) {\n            string s = to_string(p);\n            string rev = s;\n            if (L % 2 != 0) rev.pop_back();\n            reverse(rev.begin(), rev.end());\n            cands.insert(stoll(s + rev));\n        }\n        cands.erase(orig);\n\n        long long best = -1;\n        for (long long c : cands) {\n            if (best == -1 || abs(c - orig) < abs(best - orig) || (abs(c - orig) == abs(best - orig) && c < best)) {\n                best = c;\n            }\n        }\n        return to_string(best);\n    }\n};",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public String nearestPalindromic(String n) {\n        int L = n.length();\n        long orig = Long.parseLong(n);\n        Set<Long> cands = new HashSet<>();\n        cands.add((long) Math.pow(10, L - 1) - 1);\n        cands.add((long) Math.pow(10, L) + 1);\n\n        long prefix = Long.parseLong(n.substring(0, (L + 1) / 2));\n        for (long p : new long[]{prefix - 1, prefix, prefix + 1}) {\n            String s = Long.toString(p);\n            StringBuilder sb = new StringBuilder(s);\n            if (L % 2 != 0) sb.deleteCharAt(sb.length() - 1);\n            cands.add(Long.parseLong(s + sb.reverse().toString()));\n        }\n        cands.remove(orig);\n\n        long best = -1;\n        for (long c : cands) {\n            if (best == -1 || Math.abs(c - orig) < Math.abs(best - orig) || (Math.abs(c - orig) == Math.abs(best - orig) && c < best)) {\n                best = c;\n            }\n        }\n        return String.valueOf(best);\n    }\n}",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var nearestPalindromic = function(n) {\n    const L = n.length;\n    const orig = BigInt(n);\n    const cands = new Set();\n    cands.add(BigInt(10 ** (L - 1) - 1));\n    cands.add(BigInt(10 ** L + 1));\n\n    const prefix = BigInt(n.slice(0, Math.floor((L + 1) / 2)));\n    for (const p of [prefix - 1n, prefix, prefix + 1n]) {\n        const s = p.toString();\n        let rev = s.split(\"\").reverse().join(\"\");\n        if (L % 2 !== 0) {\n            rev = s.slice(0, -1).split(\"\").reverse().join(\"\");\n        }\n        cands.add(BigInt(s + rev));\n    }\n    cands.delete(orig);\n\n    let best = null;\n    for (const c of cands) {\n        const diff = c > orig ? c - orig : orig - c;\n        if (best === null) {\n            best = c;\n        } else {\n            const bestDiff = best > orig ? best - orig : orig - best;\n            if (diff < bestDiff || (diff === bestDiff && c < best)) {\n                best = c;\n            }\n        }\n    }\n    return best.toString();\n};",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

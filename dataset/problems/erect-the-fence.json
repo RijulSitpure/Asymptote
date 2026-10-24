@@ -1,0 +1,78 @@
+{
+  "slug": "erect-the-fence",
+  "number": 587,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Convex Hull Boundary Envelope",
+      "text": "The fence is the convex hull enclosing all points, including all collinear points along the boundary."
+    },
+    {
+      "level": 2,
+      "title": "2D Cross Product Orientation",
+      "text": "For points p, q, and r, compute cross product (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]). Negative cross product denotes strict right turn."
+    },
+    {
+      "level": 3,
+      "title": "Monotone Chain Graham Scan",
+      "text": "Sort trees by x then y. Build lower hull by keeping collinear points (pop while cross product < 0). Build upper hull by iterating backwards with the same rule. Combine and deduplicate points."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def outerTrees(self, trees: List[List[int]]) -> List[List[int]]:\n        trees.sort()\n\n        def cross(o, a, b):\n            return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])\n\n        lower = []\n        for p in trees:\n            while len(lower) >= 2 and cross(lower[-2], lower[-1], p) < 0:\n                lower.pop()\n            lower.append(p)\n\n        upper = []\n        for p in reversed(trees):\n            while len(upper) >= 2 and cross(upper[-2], upper[-1], p) < 0:\n                upper.pop()\n            upper.append(p)\n\n        return list({tuple(p): p for p in (lower + upper)}.values())\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of tree coordinate points"
+    ],
+    "notes": "Monotone chain convex hull with collinear point preservation.",
+    "whyNaiveFails": "Gift wrapping Jarvis march runs in O(N * H) which degrades on degenerate collinear shapes.",
+    "spaceTimeTradeoff": "Sorting points executes in O(N log N) with linear hull stack traversal.",
+    "interviewerExpectation": "Use Monotone Chain convex hull retaining cross product == 0 collinear points."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def outerTrees(self, trees: List[List[int]]) -> List[List[int]]:\n        trees.sort()\n\n        def cross(o, a, b):\n            return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])\n\n        lower = []\n        for p in trees:\n            while len(lower) >= 2 and cross(lower[-2], lower[-1], p) < 0:\n                lower.pop()\n            lower.append(p)\n\n        upper = []\n        for p in reversed(trees):\n            while len(upper) >= 2 and cross(upper[-2], upper[-1], p) < 0:\n                upper.pop()\n            upper.append(p)\n\n        return list({tuple(p): p for p in (lower + upper)}.values())",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int cross(const vector<int>& o, const vector<int>& a, const vector<int>& b) {\n        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);\n    }\npublic:\n    vector<vector<int>> outerTrees(vector<vector<int>>& trees) {\n        sort(trees.begin(), trees.end());\n        vector<vector<int>> lower;\n        for (const auto& p : trees) {\n            while (lower.size() >= 2 && cross(lower[lower.size() - 2], lower.back(), p) < 0) {\n                lower.pop_back();\n            }\n            lower.push_back(p);\n        }\n\n        vector<vector<int>> upper;\n        for (int i = (int)trees.size() - 1; i >= 0; i--) {\n            const auto& p = trees[i];\n            while (upper.size() >= 2 && cross(upper[upper.size() - 2], upper.back(), p) < 0) {\n                upper.pop_back();\n            }\n            upper.push_back(p);\n        }\n\n        set<vector<int>> unique(lower.begin(), lower.end());\n        unique.insert(upper.begin(), upper.end());\n        return vector<vector<int>>(unique.begin(), unique.end());\n    }\n};",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int cross(int[] o, int[] a, int[] b) {\n        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);\n    }\n\n    public int[][] outerTrees(int[][] trees) {\n        Arrays.sort(trees, (a, b) -> a[0] != b[0] ? Integer.compare(a[0], b[0]) : Integer.compare(a[1], b[1]));\n        List<int[]> lower = new ArrayList<>();\n        for (int[] p : trees) {\n            while (lower.size() >= 2 && cross(lower.get(lower.size() - 2), lower.get(lower.size() - 1), p) < 0) {\n                lower.remove(lower.size() - 1);\n            }\n            lower.add(p);\n        }\n\n        List<int[]> upper = new ArrayList<>();\n        for (int i = trees.length - 1; i >= 0; i--) {\n            int[] p = trees[i];\n            while (upper.size() >= 2 && cross(upper.get(upper.size() - 2), upper.get(upper.size() - 1), p) < 0) {\n                upper.remove(upper.size() - 1);\n            }\n            upper.add(p);\n        }\n\n        Set<String> seen = new HashSet<>();\n        List<int[]> res = new ArrayList<>();\n        for (int[] p : lower) {\n            if (seen.add(p[0] + \",\" + p[1])) res.add(p);\n        }\n        for (int[] p : upper) {\n            if (seen.add(p[0] + \",\" + p[1])) res.add(p);\n        }\n        return res.toArray(new int[res.size()][]);\n    }\n}",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var outerTrees = function(trees) {\n    trees.sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]);\n\n    function cross(o, a, b) {\n        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);\n    }\n\n    const lower = [];\n    for (const p of trees) {\n        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) < 0) {\n            lower.pop();\n        }\n        lower.push(p);\n    }\n\n    const upper = [];\n    for (let i = trees.length - 1; i >= 0; i--) {\n        const p = trees[i];\n        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) < 0) {\n            upper.pop();\n        }\n        upper.push(p);\n    }\n\n    const seen = new Set();\n    const res = [];\n    for (const p of [...lower, ...upper]) {\n        const key = `${p[0]},${p[1]}`;\n        if (!seen.has(key)) {\n            seen.add(key);\n            res.push(p);\n        }\n    }\n    return res;\n};",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

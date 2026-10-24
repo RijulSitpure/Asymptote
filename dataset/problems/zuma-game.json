@@ -1,0 +1,79 @@
+{
+  "slug": "zuma-game",
+  "number": 488,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-parentheses-parser"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Color Run Insertion and Collapse",
+      "text": "Inserting balls into the sequence triggers cascading collapses whenever three or more adjacent balls share identical colors."
+    },
+    {
+      "level": 2,
+      "title": "Recursive Board Cleaning",
+      "text": "Implement a cleanup function that repeatedly scans for runs of three or more consecutive identical balls and splices them out until no runs remain."
+    },
+    {
+      "level": 3,
+      "title": "Breadth-First State Search with Pruning",
+      "text": "Search state pairs of board string and hand inventory. Insert each available hand color only at promising locations: adjacent to same color or between two balls of equal color differing from insert color."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport re\nfrom collections import deque\n\nclass Solution:\n    def findMinStep(self, board: str, hand: str) -> int:\n        def clean(s: str) -> str:\n            n = 0\n            while len(s) != n:\n                n = len(s)\n                s = re.sub(r\"([A-Z])\\1{2,}\", \"\", s)\n            return s\n\n        hand = \"\".join(sorted(hand))\n        queue = deque([(board, hand, 0)])\n        visited = {(board, hand)}\n\n        while queue:\n            curr_b, curr_h, step = queue.popleft()\n            if not curr_b:\n                return step\n            for i in range(len(curr_h)):\n                if i > 0 and curr_h[i] == curr_h[i - 1]:\n                    continue\n                c = curr_h[i]\n                next_h = curr_h[:i] + curr_h[i + 1:]\n                for j in range(len(curr_b) + 1):\n                    if j > 0 and curr_b[j - 1] == c:\n                        continue\n                    pick = False\n                    if j < len(curr_b) and curr_b[j] == c:\n                        pick = True\n                    elif 0 < j < len(curr_b) and curr_b[j - 1] == curr_b[j] and curr_b[j] != c:\n                        pick = True\n                    if pick:\n                        nb = clean(curr_b[:j] + c + curr_b[j:])\n                        if (nb, next_h) not in visited:\n                            visited.add((nb, next_h))\n                            queue.append((nb, next_h, step + 1))\n\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(B * (H!) * 5^H)",
+    "space": "O(B * H)",
+    "variables": [
+      "B: initial board length (<= 16)",
+      "H: hand ball count (<= 5)"
+    ],
+    "notes": "State-space BFS with duplicate pruning and regex run cleaning.",
+    "whyNaiveFails": "Inserting into arbitrary positions generates vast combinatorial cycles.",
+    "spaceTimeTradeoff": "Visited hash set prunes duplicate (board, hand) states.",
+    "interviewerExpectation": "Define board collapse correctly and explore valid insertion positions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import re\nfrom collections import deque\n\nclass Solution:\n    def findMinStep(self, board: str, hand: str) -> int:\n        def clean(s: str) -> str:\n            n = 0\n            while len(s) != n:\n                n = len(s)\n                s = re.sub(r\"([A-Z])\\1{2,}\", \"\", s)\n            return s\n\n        hand = \"\".join(sorted(hand))\n        queue = deque([(board, hand, 0)])\n        visited = {(board, hand)}\n\n        while queue:\n            curr_b, curr_h, step = queue.popleft()\n            if not curr_b:\n                return step\n            for i in range(len(curr_h)):\n                if i > 0 and curr_h[i] == curr_h[i - 1]:\n                    continue\n                c = curr_h[i]\n                next_h = curr_h[:i] + curr_h[i + 1:]\n                for j in range(len(curr_b) + 1):\n                    if j > 0 and curr_b[j - 1] == c:\n                        continue\n                    pick = False\n                    if j < len(curr_b) and curr_b[j] == c:\n                        pick = True\n                    elif 0 < j < len(curr_b) and curr_b[j - 1] == curr_b[j] and curr_b[j] != c:\n                        pick = True\n                    if pick:\n                        nb = clean(curr_b[:j] + c + curr_b[j:])\n                        if (nb, next_h) not in visited:\n                            visited.add((nb, next_h))\n                            queue.append((nb, next_h, step + 1))\n\n        return -1",
+      "approach": "stack-parentheses-parser verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    string clean(string s) {\n        bool collapsed = true;\n        while (collapsed) {\n            collapsed = false;\n            for (int i = 0; i < (int)s.size();) {\n                int j = i;\n                while (j < (int)s.size() && s[j] == s[i]) j++;\n                if (j - i >= 3) {\n                    s.erase(i, j - i);\n                    collapsed = true;\n                    break;\n                } else {\n                    i = j;\n                }\n            }\n        }\n        return s;\n    }\npublic:\n    int findMinStep(string board, string hand) {\n        sort(hand.begin(), hand.end());\n        queue<tuple<string, string, int>> q;\n        unordered_set<string> visited;\n\n        q.push({board, hand, 0});\n        visited.insert(board + \"#\" + hand);\n\n        while (!q.empty()) {\n            auto [currB, currH, step] = q.front();\n            q.pop();\n            if (currB.empty()) return step;\n\n            for (int i = 0; i < (int)currH.size(); i++) {\n                if (i > 0 && currH[i] == currH[i - 1]) continue;\n                char c = currH[i];\n                string nextH = currH.substr(0, i) + currH.substr(i + 1);\n\n                for (int j = 0; j <= (int)currB.size(); j++) {\n                    if (j > 0 && currB[j - 1] == c) continue;\n                    bool pick = false;\n                    if (j < (int)currB.size() && currB[j] == c) pick = true;\n                    else if (j > 0 && j < (int)currB.size() && currB[j - 1] == currB[j] && currB[j] != c) pick = true;\n                    if (pick) {\n                        string nb = clean(currB.substr(0, j) + c + currB.substr(j));\n                        string state = nb + \"#\" + nextH;\n                        if (!visited.count(state)) {\n                            visited.insert(state);\n                            q.push({nb, nextH, step + 1});\n                        }\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "stack-parentheses-parser verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private String clean(String s) {\n        boolean collapsed = true;\n        while (collapsed) {\n            collapsed = false;\n            for (int i = 0; i < s.length();) {\n                int j = i;\n                while (j < s.length() && s.charAt(j) == s.charAt(i)) j++;\n                if (j - i >= 3) {\n                    s = s.substring(0, i) + s.substring(j);\n                    collapsed = true;\n                    break;\n                } else {\n                    i = j;\n                }\n            }\n        }\n        return s;\n    }\n\n    public int findMinStep(String board, String hand) {\n        char[] hArr = hand.toCharArray();\n        Arrays.sort(hArr);\n        hand = new String(hArr);\n\n        Queue<String[]> q = new LinkedList<>();\n        Set<String> visited = new HashSet<>();\n        q.offer(new String[]{board, hand, \"0\"});\n        visited.add(board + \"#\" + hand);\n\n        while (!q.isEmpty()) {\n            String[] cur = q.poll();\n            String currB = cur[0], currH = cur[1];\n            int step = Integer.parseInt(cur[2]);\n            if (currB.isEmpty()) return step;\n\n            for (int i = 0; i < currH.length(); i++) {\n                if (i > 0 && currH.charAt(i) == currH.charAt(i - 1)) continue;\n                char c = currH.charAt(i);\n                String nextH = currH.substring(0, i) + currH.substring(i + 1);\n\n                for (int j = 0; j <= currB.length(); j++) {\n                    if (j > 0 && currB.charAt(j - 1) == c) continue;\n                    boolean pick = false;\n                    if (j < currB.length() && currB.charAt(j) == c) pick = true;\n                    else if (j > 0 && j < currB.length() && currB.charAt(j - 1) == currB.charAt(j) && currB.charAt(j) != c) pick = true;\n                    if (pick) {\n                        String nb = clean(currB.substring(0, j) + c + currB.substring(j));\n                        String state = nb + \"#\" + nextH;\n                        if (!visited.contains(state)) {\n                            visited.add(state);\n                            q.offer(new String[]{nb, nextH, String.valueOf(step + 1)});\n                        }\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "approach": "stack-parentheses-parser verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findMinStep = function(board, hand) {\n    function clean(s) {\n        let collapsed = true;\n        while (collapsed) {\n            collapsed = false;\n            for (let i = 0; i < s.length;) {\n                let j = i;\n                while (j < s.length && s[j] === s[i]) j++;\n                if (j - i >= 3) {\n                    s = s.slice(0, i) + s.slice(j);\n                    collapsed = true;\n                    break;\n                } else {\n                    i = j;\n                }\n            }\n        }\n        return s;\n    }\n\n    const sortedHand = hand.split(\"\").sort().join(\"\");\n    const queue = [[board, sortedHand, 0]];\n    const visited = new Set();\n    visited.add(board + \"#\" + sortedHand);\n\n    while (queue.length > 0) {\n        const [currB, currH, step] = queue.shift();\n        if (currB.length === 0) return step;\n\n        for (let i = 0; i < currH.length; i++) {\n            if (i > 0 && currH[i] === currH[i - 1]) continue;\n            const c = currH[i];\n            const nextH = currH.slice(0, i) + currH.slice(i + 1);\n\n            for (let j = 0; j <= currB.length; j++) {\n                if (j > 0 && currB[j - 1] === c) continue;\n                let pick = false;\n                if (j < currB.length && currB[j] === c) pick = true;\n                else if (j > 0 && j < currB.length && currB[j - 1] === currB[j] && currB[j] !== c) pick = true;\n                if (pick) {\n                    const nb = clean(currB.slice(0, j) + c + currB.slice(j));\n                    const state = nb + \"#\" + nextH;\n                    if (!visited.has(state)) {\n                        visited.add(state);\n                        queue.push([nb, nextH, step + 1]);\n                    }\n                }\n            }\n        }\n    }\n    return -1;\n};",
+      "approach": "stack-parentheses-parser verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "smallest-range-covering-elements-from-k-lists",
+  "number": 632,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Multi-List Coverage Window",
+      "text": "A valid range must contain at least one element from each of the k sorted input lists."
+    },
+    {
+      "level": 2,
+      "title": "Min-Heap Pointers and Maximum Tracker",
+      "text": "Insert the first element of each list into a min-priority queue and track the current maximum element in the window."
+    },
+    {
+      "level": 3,
+      "title": "Advancing Minimum List Pointer",
+      "text": "Pop min element from heap. Update best range with [min_val, max_val] if window is narrower. Advance pointer in the list containing min_val, update max_val, and push next element into heap. Terminate when any list is exhausted."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport heapq\nfrom typing import List\n\nclass Solution:\n    def smallestRange(self, nums: List[List[int]]) -> List[int]:\n        heap = []\n        curr_max = float(\"-inf\")\n        for i in range(len(nums)):\n            heapq.heappush(heap, (nums[i][0], i, 0))\n            curr_max = max(curr_max, nums[i][0])\n\n        best_range = [float(\"-inf\"), float(\"inf\")]\n\n        while heap:\n            val, r, c = heapq.heappop(heap)\n            if curr_max - val < best_range[1] - best_range[0]:\n                best_range = [val, curr_max]\n            if c + 1 == len(nums[r]):\n                break\n            nxt_val = nums[r][c + 1]\n            curr_max = max(curr_max, nxt_val)\n            heapq.heappush(heap, (nxt_val, r, c + 1))\n\n        return best_range\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log K)",
+    "space": "O(K)",
+    "variables": [
+      "N: total number of elements across all lists",
+      "K: number of sorted lists"
+    ],
+    "notes": "Min-heap maintains active window across all K lists.",
+    "whyNaiveFails": "Testing all possible pair bounds requires combinatorial checks.",
+    "spaceTimeTradeoff": "Min-heap of size K guarantees optimal window span maintenance in logarithmic time.",
+    "interviewerExpectation": "Use a min-heap to advance the minimum pointer and maintain the current window max."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\nfrom typing import List\n\nclass Solution:\n    def smallestRange(self, nums: List[List[int]]) -> List[int]:\n        heap = []\n        curr_max = float(\"-inf\")\n        for i in range(len(nums)):\n            heapq.heappush(heap, (nums[i][0], i, 0))\n            curr_max = max(curr_max, nums[i][0])\n\n        best_range = [float(\"-inf\"), float(\"inf\")]\n\n        while heap:\n            val, r, c = heapq.heappop(heap)\n            if curr_max - val < best_range[1] - best_range[0]:\n                best_range = [val, curr_max]\n            if c + 1 == len(nums[r]):\n                break\n            nxt_val = nums[r][c + 1]\n            curr_max = max(curr_max, nxt_val)\n            heapq.heappush(heap, (nxt_val, r, c + 1))\n\n        return best_range",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    struct Element {\n        int val, r, c;\n        bool operator>(const Element& o) const {\n            return val > o.val;\n        }\n    };\npublic:\n    vector<int> smallestRange(vector<vector<int>>& nums) {\n        priority_queue<Element, vector<Element>, greater<Element>> pq;\n        int currMax = INT_MIN;\n        for (int i = 0; i < (int)nums.size(); i++) {\n            pq.push({nums[i][0], i, 0});\n            currMax = max(currMax, nums[i][0]);\n        }\n\n        int bestMin = -1e6, bestMax = 1e6;\n\n        while (!pq.empty()) {\n            auto [val, r, c] = pq.top();\n            pq.pop();\n            if ((long long)currMax - val < (long long)bestMax - bestMin) {\n                bestMin = val;\n                bestMax = currMax;\n            }\n            if (c + 1 == (int)nums[r].size()) break;\n            int nxt = nums[r][c + 1];\n            currMax = max(currMax, nxt);\n            pq.push({nxt, r, c + 1});\n        }\n        return {bestMin, bestMax};\n    }\n};",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    static class Element implements Comparable<Element> {\n        int val, r, c;\n        Element(int val, int r, int c) {\n            this.val = val;\n            this.r = r;\n            this.c = c;\n        }\n        public int compareTo(Element o) {\n            return Integer.compare(this.val, o.val);\n        }\n    }\n\n    public int[] smallestRange(List<List<Integer>> nums) {\n        PriorityQueue<Element> pq = new PriorityQueue<>();\n        int currMax = Integer.MIN_VALUE;\n        for (int i = 0; i < nums.size(); i++) {\n            int v = nums.get(i).get(0);\n            pq.offer(new Element(v, i, 0));\n            currMax = Math.max(currMax, v);\n        }\n\n        int bestMin = (int) -1e6, bestMax = (int) 1e6;\n\n        while (!pq.isEmpty()) {\n            Element el = pq.poll();\n            if ((long) currMax - el.val < (long) bestMax - bestMin) {\n                bestMin = el.val;\n                bestMax = currMax;\n            }\n            if (el.c + 1 == nums.get(el.r).size()) break;\n            int nxt = nums.get(el.r).get(el.c + 1);\n            currMax = Math.max(currMax, nxt);\n            pq.offer(new Element(nxt, el.r, el.c + 1));\n        }\n        return new int[]{bestMin, bestMax};\n    }\n}",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var smallestRange = function(nums) {\n    class MinHeap {\n        constructor() { this.data = []; }\n        push(item) {\n            this.data.push(item);\n            this._up(this.data.length - 1);\n        }\n        pop() {\n            const top = this.data[0];\n            const bottom = this.data.pop();\n            if (this.data.length > 0) {\n                this.data[0] = bottom;\n                this._down(0);\n            }\n            return top;\n        }\n        size() { return this.data.length; }\n        _up(i) {\n            while (i > 0) {\n                const p = (i - 1) >> 1;\n                if (this.data[p].val <= this.data[i].val) break;\n                [this.data[p], this.data[i]] = [this.data[i], this.data[p]];\n                i = p;\n            }\n        }\n        _down(i) {\n            while ((i << 1) + 1 < this.data.length) {\n                let left = (i << 1) + 1, right = left + 1;\n                let best = (right < this.data.length && this.data[right].val < this.data[left].val) ? right : left;\n                if (this.data[i].val <= this.data[best].val) break;\n                [this.data[i], this.data[best]] = [this.data[best], this.data[i]];\n                i = best;\n            }\n        }\n    }\n\n    const pq = new MinHeap();\n    let currMax = -Infinity;\n    for (let i = 0; i < nums.length; i++) {\n        pq.push({ val: nums[i][0], r: i, c: 0 });\n        currMax = Math.max(currMax, nums[i][0]);\n    }\n\n    let bestMin = -1e6, bestMax = 1e6;\n\n    while (pq.size() > 0) {\n        const el = pq.pop();\n        if (currMax - el.val < bestMax - bestMin) {\n            bestMin = el.val;\n            bestMax = currMax;\n        }\n        if (el.c + 1 === nums[el.r].length) break;\n        const nxt = nums[el.r][el.c + 1];\n        currMax = Math.max(currMax, nxt);\n        pq.push({ val: nxt, r: el.r, c: el.c + 1 });\n    }\n    return [bestMin, bestMax];\n};",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

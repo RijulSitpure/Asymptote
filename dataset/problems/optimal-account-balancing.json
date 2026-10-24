@@ -1,0 +1,78 @@
+{
+  "slug": "optimal-account-balancing",
+  "number": 465,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Net Debts Consolidation",
+      "text": "Compute each person net balance. Only individuals with non-zero balances need to settle debts among opposite balance signs."
+    },
+    {
+      "level": 2,
+      "title": "Zero Balance Pairing Optimization",
+      "text": "When debts[start] and debts[i] sum to exactly zero, pairing them immediately reduces the transaction count optimally."
+    },
+    {
+      "level": 3,
+      "title": "Branch-and-Bound Debt Transfer",
+      "text": "Recursively settle the first non-zero balance by testing transfers with every remaining person of opposite sign. Add current debt to debts[i], explore deeper, and backtrack."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def minTransfers(self, transactions: List[List[int]]) -> int:\n        balance = defaultdict(int)\n        for u, v, amount in transactions:\n            balance[u] -= amount\n            balance[v] += amount\n\n        debts = [b for b in balance.values() if b != 0]\n        n = len(debts)\n\n        def dfs(start: int) -> int:\n            while start < n and debts[start] == 0:\n                start += 1\n            if start == n:\n                return 0\n            min_ops = float(\"inf\")\n            for i in range(start + 1, n):\n                if debts[start] * debts[i] < 0:\n                    debts[i] += debts[start]\n                    min_ops = min(min_ops, 1 + dfs(start + 1))\n                    debts[i] -= debts[start]\n                    if debts[start] + debts[i] == 0:\n                        break\n            return min_ops\n\n        return dfs(0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N!)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of people with non-zero balance (<= 12)"
+    ],
+    "notes": "Branch and bound search over debt clearing partitions.",
+    "whyNaiveFails": "Greedy heuristic matching fails to find the global minimum transaction count on cyclic dependencies.",
+    "spaceTimeTradeoff": "Exact zero-sum pair pruning cuts recursive factorial exploration dramatically.",
+    "interviewerExpectation": "Aggregate net balances first and apply pruned recursive search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def minTransfers(self, transactions: List[List[int]]) -> int:\n        balance = defaultdict(int)\n        for u, v, amount in transactions:\n            balance[u] -= amount\n            balance[v] += amount\n\n        debts = [b for b in balance.values() if b != 0]\n        n = len(debts)\n\n        def dfs(start: int) -> int:\n            while start < n and debts[start] == 0:\n                start += 1\n            if start == n:\n                return 0\n            min_ops = float(\"inf\")\n            for i in range(start + 1, n):\n                if debts[start] * debts[i] < 0:\n                    debts[i] += debts[start]\n                    min_ops = min(min_ops, 1 + dfs(start + 1))\n                    debts[i] -= debts[start]\n                    if debts[start] + debts[i] == 0:\n                        break\n            return min_ops\n\n        return dfs(0)",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int dfs(int start, vector<int>& debts) {\n        int n = debts.size();\n        while (start < n && debts[start] == 0) start++;\n        if (start == n) return 0;\n        int minOps = INT_MAX;\n        for (int i = start + 1; i < n; i++) {\n            if ((long long)debts[start] * debts[i] < 0) {\n                debts[i] += debts[start];\n                minOps = min(minOps, 1 + dfs(start + 1, debts));\n                debts[i] -= debts[start];\n                if (debts[start] + debts[i] == 0) break;\n            }\n        }\n        return minOps;\n    }\npublic:\n    int minTransfers(vector<vector<int>>& transactions) {\n        unordered_map<int, int> balance;\n        for (const auto& t : transactions) {\n            balance[t[0]] -= t[2];\n            balance[t[1]] += t[2];\n        }\n        vector<int> debts;\n        for (auto& [person, bal] : balance) {\n            if (bal != 0) debts.push_back(bal);\n        }\n        return dfs(0, debts);\n    }\n};",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int dfs(int start, List<Integer> debts) {\n        int n = debts.size();\n        while (start < n && debts.get(start) == 0) start++;\n        if (start == n) return 0;\n        int minOps = Integer.MAX_VALUE;\n        for (int i = start + 1; i < n; i++) {\n            if ((long) debts.get(start) * debts.get(i) < 0) {\n                debts.set(i, debts.get(i) + debts.get(start));\n                minOps = Math.min(minOps, 1 + dfs(start + 1, debts));\n                debts.set(i, debts.get(i) - debts.get(start));\n                if (debts.get(start) + debts.get(i) == 0) break;\n            }\n        }\n        return minOps;\n    }\n\n    public int minTransfers(int[][] transactions) {\n        Map<Integer, Integer> balance = new HashMap<>();\n        for (int[] t : transactions) {\n            balance.put(t[0], balance.getOrDefault(t[0], 0) - t[2]);\n            balance.put(t[1], balance.getOrDefault(t[1], 0) + t[2]);\n        }\n        List<Integer> debts = new ArrayList<>();\n        for (int bal : balance.values()) {\n            if (bal != 0) debts.add(bal);\n        }\n        return dfs(0, debts);\n    }\n}",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minTransfers = function(transactions) {\n    const balance = new Map();\n    for (const [u, v, amount] of transactions) {\n        balance.set(u, (balance.get(u) || 0) - amount);\n        balance.set(v, (balance.get(v) || 0) + amount);\n    }\n    const debts = [];\n    for (const bal of balance.values()) {\n        if (bal !== 0) debts.push(bal);\n    }\n    const n = debts.length;\n\n    function dfs(start) {\n        while (start < n && debts[start] === 0) start++;\n        if (start === n) return 0;\n        let minOps = Infinity;\n        for (let i = start + 1; i < n; i++) {\n            if (debts[start] * debts[i] < 0) {\n                debts[i] += debts[start];\n                minOps = Math.min(minOps, 1 + dfs(start + 1));\n                debts[i] -= debts[start];\n                if (debts[start] + debts[i] === 0) break;\n            }\n        }\n        return minOps;\n    }\n\n    return dfs(0);\n};",
+      "approach": "backtracking-subsets-perm verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

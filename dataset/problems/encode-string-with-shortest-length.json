@@ -1,0 +1,78 @@
+{
+  "slug": "encode-string-with-shortest-length",
+  "number": 471,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Optimal Substring Compression",
+      "text": "Examine substrings of increasing lengths and evaluate whether compressing repetitions or concatenating sub-encodings yields shorter text."
+    },
+    {
+      "level": 2,
+      "title": "String Doubling for Periodicity",
+      "text": "A string s contains repeated periods if (s + s).find(s, 1) is strictly less than len(s), indicating period length p = pos."
+    },
+    {
+      "level": 3,
+      "title": "2D Interval Dynamic Programming",
+      "text": "Define dp[i][j] as shortest encoding of s[i..j]. Base case length < 5 cannot be compressed. For each span, compare candidate k[encoded_period] against splits dp[i][k] + dp[k+1][j] for all intermediate k."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def encode(self, s: str) -> str:\n        n = len(s)\n        dp = [[\"\"] * n for _ in range(n)]\n\n        for length in range(1, n + 1):\n            for i in range(n - length + 1):\n                j = i + length - 1\n                sub = s[i:j + 1]\n                dp[i][j] = sub\n                if length < 5:\n                    continue\n\n                pos = (sub + sub).find(sub, 1)\n                if pos < len(sub):\n                    period = dp[i][i + pos - 1]\n                    compressed = f\"{len(sub) // pos}[{period}]\"\n                    if len(compressed) < len(dp[i][j]):\n                        dp[i][j] = compressed\n\n                for k in range(i, j):\n                    if len(dp[i][k]) + len(dp[k + 1][j]) < len(dp[i][j]):\n                        dp[i][j] = dp[i][k] + dp[k + 1][j]\n\n        return dp[0][n - 1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^3)",
+    "space": "O(N^2)",
+    "variables": [
+      "N: length of string s (<= 160)"
+    ],
+    "notes": "Interval DP testing split points and periodic prefix compression.",
+    "whyNaiveFails": "Evaluating all parenthesizations of compression brackets has Catalan-number complexity.",
+    "spaceTimeTradeoff": "2D memoization table preserves minimal string encodings for every subsegment.",
+    "interviewerExpectation": "Use interval DP and double-string search to detect repeating patterns."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def encode(self, s: str) -> str:\n        n = len(s)\n        dp = [[\"\"] * n for _ in range(n)]\n\n        for length in range(1, n + 1):\n            for i in range(n - length + 1):\n                j = i + length - 1\n                sub = s[i:j + 1]\n                dp[i][j] = sub\n                if length < 5:\n                    continue\n\n                pos = (sub + sub).find(sub, 1)\n                if pos < len(sub):\n                    period = dp[i][i + pos - 1]\n                    compressed = f\"{len(sub) // pos}[{period}]\"\n                    if len(compressed) < len(dp[i][j]):\n                        dp[i][j] = compressed\n\n                for k in range(i, j):\n                    if len(dp[i][k]) + len(dp[k + 1][j]) < len(dp[i][j]):\n                        dp[i][j] = dp[i][k] + dp[k + 1][j]\n\n        return dp[0][n - 1]",
+      "approach": "dp-1d-fib-linear verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    string encode(string s) {\n        int n = s.size();\n        vector<vector<string>> dp(n, vector<string>(n, \"\"));\n\n        for (int len = 1; len <= n; len++) {\n            for (int i = 0; i <= n - len; i++) {\n                int j = i + len - 1;\n                string sub = s.substr(i, len);\n                dp[i][j] = sub;\n                if (len < 5) continue;\n\n                string doubled = sub + sub;\n                size_t pos = doubled.find(sub, 1);\n                if (pos < sub.size()) {\n                    string period = dp[i][i + (int)pos - 1];\n                    string compressed = to_string(sub.size() / pos) + \"[\" + period + \"]\";\n                    if (compressed.size() < dp[i][j].size()) {\n                        dp[i][j] = compressed;\n                    }\n                }\n\n                for (int k = i; k < j; k++) {\n                    if (dp[i][k].size() + dp[k + 1][j].size() < dp[i][j].size()) {\n                        dp[i][j] = dp[i][k] + dp[k + 1][j];\n                    }\n                }\n            }\n        }\n        return dp[0][n - 1];\n    }\n};",
+      "approach": "dp-1d-fib-linear verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public String encode(String s) {\n        int n = s.length();\n        String[][] dp = new String[n][n];\n\n        for (int len = 1; len <= n; len++) {\n            for (int i = 0; i <= n - len; i++) {\n                int j = i + len - 1;\n                String sub = s.substring(i, j + 1);\n                dp[i][j] = sub;\n                if (len < 5) continue;\n\n                String doubled = sub + sub;\n                int pos = doubled.indexOf(sub, 1);\n                if (pos < sub.length()) {\n                    String period = dp[i][i + pos - 1];\n                    String compressed = (sub.length() / pos) + \"[\" + period + \"]\";\n                    if (compressed.length() < dp[i][j].length()) {\n                        dp[i][j] = compressed;\n                    }\n                }\n\n                for (int k = i; k < j; k++) {\n                    if (dp[i][k].length() + dp[k + 1][j].length() < dp[i][j].length()) {\n                        dp[i][j] = dp[i][k] + dp[k + 1][j];\n                    }\n                }\n            }\n        }\n        return dp[0][n - 1];\n    }\n}",
+      "approach": "dp-1d-fib-linear verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var encode = function(s) {\n    const n = s.length;\n    const dp = Array.from({ length: n }, () => new Array(n).fill(\"\"));\n\n    for (let len = 1; len <= n; len++) {\n        for (let i = 0; i <= n - len; i++) {\n            const j = i + len - 1;\n            const sub = s.slice(i, j + 1);\n            dp[i][j] = sub;\n            if (len < 5) continue;\n\n            const doubled = sub + sub;\n            const pos = doubled.indexOf(sub, 1);\n            if (pos < sub.length) {\n                const period = dp[i][i + pos - 1];\n                const compressed = `${Math.floor(sub.length / pos)}[${period}]`;\n                if (compressed.length < dp[i][j].length) {\n                    dp[i][j] = compressed;\n                }\n            }\n\n            for (let k = i; k < j; k++) {\n                if (dp[i][k].length + dp[k + 1][j].length < dp[i][j].length) {\n                    dp[i][j] = dp[i][k] + dp[k + 1][j];\n                }\n            }\n        }\n    }\n    return dp[0][n - 1];\n};",
+      "approach": "dp-1d-fib-linear verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

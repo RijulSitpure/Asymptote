@@ -1,0 +1,79 @@
+{
+  "slug": "the-maze-iii",
+  "number": 499,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Hole-Stopping Rolling Ball",
+      "text": "The ball rolls continuously in a chosen cardinal direction until it reaches a boundary wall or drops into the target hole."
+    },
+    {
+      "level": 2,
+      "title": "Lexicographical Direction Ordering",
+      "text": "Tie-break paths with identical step distances lexicographically using directional characters d, l, r, and u."
+    },
+    {
+      "level": 3,
+      "title": "Dijkstra Priority Exploration",
+      "text": "Queue states with tuple (dist, path, r, c). When expanding, roll until striking a wall or landing exactly on hole coordinates. Update minimum distance and string path at landing spots."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport heapq\nfrom typing import List\n\nclass Solution:\n    def findShortestWay(self, maze: List[List[int]], ball: List[int], hole: List[int]) -> str:\n        m, n = len(maze), len(maze[0])\n        hr, hc = hole\n        pq = [(0, \"\", ball[0], ball[1])]\n        dist = {}\n        dist[(ball[0], ball[1])] = (0, \"\")\n\n        directions = [(1, 0, \"d\"), (0, -1, \"l\"), (0, 1, \"r\"), (-1, 0, \"u\")]\n\n        while pq:\n            d, path, r, c = heapq.heappop(pq)\n            if (r, c) == (hr, hc):\n                return path\n            if (d, path) > dist.get((r, c), (float(\"inf\"), \"\")):\n                continue\n\n            for dr, dc, move in directions:\n                nr, nc, step = r, c, 0\n                while 0 <= nr + dr < m and 0 <= nc + dc < n and maze[nr + dr][nc + dc] == 0:\n                    nr += dr\n                    nc += dc\n                    step += 1\n                    if (nr, nc) == (hr, hc):\n                        break\n\n                cand = (d + step, path + move)\n                if cand < dist.get((nr, nc), (float(\"inf\"), \"\")):\n                    dist[(nr, nc)] = cand\n                    heapq.heappush(pq, (cand[0], cand[1], nr, nc))\n\n        return \"impossible\"\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N * log(M * N))",
+    "space": "O(M * N)",
+    "variables": [
+      "M: rows in maze",
+      "N: cols in maze"
+    ],
+    "notes": "Dijkstra shortest path with roll raycasts and lexicographical string comparison.",
+    "whyNaiveFails": "Simple BFS misses shortest paths that require fewer total roll steps.",
+    "spaceTimeTradeoff": "Min-heap orders candidate landings by (distance, path string) in O(M * N) space.",
+    "interviewerExpectation": "Use Dijkstra with hole boundary interruption and lexicographical tie-breaking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\nfrom typing import List\n\nclass Solution:\n    def findShortestWay(self, maze: List[List[int]], ball: List[int], hole: List[int]) -> str:\n        m, n = len(maze), len(maze[0])\n        hr, hc = hole\n        pq = [(0, \"\", ball[0], ball[1])]\n        dist = {}\n        dist[(ball[0], ball[1])] = (0, \"\")\n\n        directions = [(1, 0, \"d\"), (0, -1, \"l\"), (0, 1, \"r\"), (-1, 0, \"u\")]\n\n        while pq:\n            d, path, r, c = heapq.heappop(pq)\n            if (r, c) == (hr, hc):\n                return path\n            if (d, path) > dist.get((r, c), (float(\"inf\"), \"\")):\n                continue\n\n            for dr, dc, move in directions:\n                nr, nc, step = r, c, 0\n                while 0 <= nr + dr < m and 0 <= nc + dc < n and maze[nr + dr][nc + dc] == 0:\n                    nr += dr\n                    nc += dc\n                    step += 1\n                    if (nr, nc) == (hr, hc):\n                        break\n\n                cand = (d + step, path + move)\n                if cand < dist.get((nr, nc), (float(\"inf\"), \"\")):\n                    dist[(nr, nc)] = cand\n                    heapq.heappush(pq, (cand[0], cand[1], nr, nc))\n\n        return \"impossible\"",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    struct State {\n        int d;\n        string path;\n        int r, c;\n        bool operator>(const State& o) const {\n            if (d != o.d) return d > o.d;\n            return path > o.path;\n        }\n    };\npublic:\n    string findShortestWay(vector<vector<int>>& maze, vector<int>& ball, vector<int>& hole) {\n        int m = maze.size(), n = maze[0].size();\n        priority_queue<State, vector<State>, greater<State>> pq;\n        vector<vector<pair<int, string>>> dist(m, vector<pair<int, string>>(n, {INT_MAX, \"\"}));\n\n        pq.push({0, \"\", ball[0], ball[1]});\n        dist[ball[0]][ball[1]] = {0, \"\"};\n\n        vector<tuple<int, int, char>> dirs = {{1, 0, 'd'}, {0, -1, 'l'}, {0, 1, 'r'}, {-1, 0, 'u'}};\n\n        while (!pq.empty()) {\n            auto [d, path, r, c] = pq.top();\n            pq.pop();\n            if (r == hole[0] && c == hole[1]) return path;\n            if (make_pair(d, path) > dist[r][c]) continue;\n\n            for (auto [dr, dc, move] : dirs) {\n                int nr = r, nc = c, step = 0;\n                while (nr + dr >= 0 && nr + dr < m && nc + dc >= 0 && nc + dc < n && maze[nr + dr][nc + dc] == 0) {\n                    nr += dr;\n                    nc += dc;\n                    step++;\n                    if (nr == hole[0] && nc == hole[1]) break;\n                }\n                pair<int, string> cand = {d + step, path + move};\n                if (cand < dist[nr][nc]) {\n                    dist[nr][nc] = cand;\n                    pq.push({cand.first, cand.second, nr, nc});\n                }\n            }\n        }\n        return \"impossible\";\n    }\n};",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    static class State implements Comparable<State> {\n        int d;\n        String path;\n        int r, c;\n        State(int d, String path, int r, int c) {\n            this.d = d;\n            this.path = path;\n            this.r = r;\n            this.c = c;\n        }\n        public int compareTo(State o) {\n            if (this.d != o.d) return Integer.compare(this.d, o.d);\n            return this.path.compareTo(o.path);\n        }\n    }\n\n    public String findShortestWay(int[][] maze, int[] ball, int[] hole) {\n        int m = maze.length, n = maze[0].length;\n        PriorityQueue<State> pq = new PriorityQueue<>();\n        int[][] dist = new int[m][n];\n        String[][] pathMap = new String[m][n];\n        for (int i = 0; i < m; i++) {\n            Arrays.fill(dist[i], Integer.MAX_VALUE);\n        }\n\n        pq.offer(new State(0, \"\", ball[0], ball[1]));\n        dist[ball[0]][ball[1]] = 0;\n        pathMap[ball[0]][ball[1]] = \"\";\n\n        int[][] dirs = {{1, 0}, {0, -1}, {0, 1}, {-1, 0}};\n        char[] moves = {'d', 'l', 'r', 'u'};\n\n        while (!pq.isEmpty()) {\n            State cur = pq.poll();\n            if (cur.r == hole[0] && cur.c == hole[1]) return cur.path;\n            if (cur.d > dist[cur.r][cur.c] || (cur.d == dist[cur.r][cur.c] && cur.path.compareTo(pathMap[cur.r][cur.c]) > 0)) {\n                continue;\n            }\n\n            for (int i = 0; i < 4; i++) {\n                int nr = cur.r, nc = cur.c, step = 0;\n                while (nr + dirs[i][0] >= 0 && nr + dirs[i][0] < m && nc + dirs[i][1] >= 0 && nc + dirs[i][1] < n && maze[nr + dirs[i][0]][nc + dirs[i][1]] == 0) {\n                    nr += dirs[i][0];\n                    nc += dirs[i][1];\n                    step++;\n                    if (nr == hole[0] && nc == hole[1]) break;\n                }\n                int newD = cur.d + step;\n                String newPath = cur.path + moves[i];\n                if (newD < dist[nr][nc] || (newD == dist[nr][nc] && newPath.compareTo(pathMap[nr][nc]) < 0)) {\n                    dist[nr][nc] = newD;\n                    pathMap[nr][nc] = newPath;\n                    pq.offer(new State(newD, newPath, nr, nc));\n                }\n            }\n        }\n        return \"impossible\";\n    }\n}",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findShortestWay = function(maze, ball, hole) {\n    const m = maze.length, n = maze[0].length;\n    const dist = Array.from({ length: m }, () => new Array(n).fill(Infinity));\n    const pathMap = Array.from({ length: m }, () => new Array(n).fill(\"\"));\n\n    const dirs = [[1, 0, \"d\"], [0, -1, \"l\"], [0, 1, \"r\"], [-1, 0, \"u\"]];\n    const queue = [[0, \"\", ball[0], ball[1]]];\n    dist[ball[0]][ball[1]] = 0;\n    pathMap[ball[0]][ball[1]] = \"\";\n\n    while (queue.length > 0) {\n        queue.sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : (a[1] < b[1] ? -1 : 1));\n        const [d, path, r, c] = queue.shift();\n        if (r === hole[0] && c === hole[1]) return path;\n        if (d > dist[r][c] || (d === dist[r][c] && path > pathMap[r][c])) continue;\n\n        for (const [dr, dc, move] of dirs) {\n            let nr = r, nc = c, step = 0;\n            while (nr + dr >= 0 && nr + dr < m && nc + dc >= 0 && nc + dc < n && maze[nr + dr][nc + dc] === 0) {\n                nr += dr;\n                nc += dc;\n                step++;\n                if (nr === hole[0] && nc === hole[1]) break;\n            }\n            const newD = d + step;\n            const newPath = path + move;\n            if (newD < dist[nr][nc] || (newD === dist[nr][nc] && newPath < pathMap[nr][nc])) {\n                dist[nr][nc] = newD;\n                pathMap[nr][nc] = newPath;\n                queue.push([newD, newPath, nr, nc]);\n            }\n        }\n    }\n    return \"impossible\";\n};",
+      "approach": "heap-top-k-elements verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

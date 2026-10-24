@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-width-of-binary-tree",
+  "number": 662,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bfs-level-order"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Complete Tree Indexing",
+      "text": "Assign position index i to a node, where its left child receives index two times i and right child receives index two times i plus one."
+    },
+    {
+      "level": 2,
+      "title": "Level Width Difference",
+      "text": "At each depth, the width is the difference between the maximum index and minimum index plus one."
+    },
+    {
+      "level": 3,
+      "title": "Normalize Against Overflow",
+      "text": "To avoid numeric overflow in deeply unbalanced trees, subtract the leftmost index of the current level from all node indices at that level before expanding children."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def widthOfBinaryTree(self, root: Optional[TreeNode]) -> int:\n        if not root:\n            return 0\n        max_width = 0\n        queue = [(root, 0)]\n        while queue:\n            first_idx = queue[0][1]\n            curr_width = queue[-1][1] - first_idx + 1\n            if curr_width > max_width:\n                max_width = curr_width\n            next_queue = []\n            for node, idx in queue:\n                norm_idx = idx - first_idx\n                if node.left:\n                    next_queue.append((node.left, 2 * norm_idx))\n                if node.right:\n                    next_queue.append((node.right, 2 * norm_idx + 1))\n            queue = next_queue\n        return max_width\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in the binary tree"
+    ],
+    "notes": "Level-order traversal tracking 0-based column indices with per-tier offset subtraction.",
+    "whyNaiveFails": "Unbounded heap indexing across deep skewed trees causes 64-bit integer overflow.",
+    "spaceTimeTradeoff": "Normalizing each tier index relative to the leftmost node prevents large numbers without extra space.",
+    "interviewerExpectation": "Use 2 * idx and 2 * idx + 1 indexing and subtract the first index of each tier to prevent integer overflow."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import Optional\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def widthOfBinaryTree(self, root: Optional[TreeNode]) -> int:\n        if not root:\n            return 0\n        max_width = 0\n        queue = [(root, 0)]\n        while queue:\n            first_idx = queue[0][1]\n            curr_width = queue[-1][1] - first_idx + 1\n            if curr_width > max_width:\n                max_width = curr_width\n            next_queue = []\n            for node, idx in queue:\n                norm_idx = idx - first_idx\n                if node.left:\n                    next_queue.append((node.left, 2 * norm_idx))\n                if node.right:\n                    next_queue.append((node.right, 2 * norm_idx + 1))\n            queue = next_queue\n        return max_width",
+      "approach": "tree-bfs-level-order verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int widthOfBinaryTree(TreeNode* root) {\n        if (!root) return 0;\n        unsigned long long maxWidth = 0;\n        vector<pair<TreeNode*, unsigned long long>> q = {{root, 0}};\n        while (!q.empty()) {\n            unsigned long long firstIdx = q.front().second;\n            unsigned long long lastIdx = q.back().second;\n            maxWidth = max(maxWidth, lastIdx - firstIdx + 1);\n            vector<pair<TreeNode*, unsigned long long>> next_q;\n            for (auto& item : q) {\n                TreeNode* node = item.first;\n                unsigned long long normIdx = item.second - firstIdx;\n                if (node->left) next_q.push_back({node->left, 2 * normIdx});\n                if (node->right) next_q.push_back({node->right, 2 * normIdx + 1});\n            }\n            q = next_q;\n        }\n        return (int)maxWidth;\n    }\n};",
+      "approach": "tree-bfs-level-order verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    static class Item {\n        TreeNode node;\n        long idx;\n        Item(TreeNode node, long idx) {\n            this.node = node;\n            this.idx = idx;\n        }\n    }\n\n    public int widthOfBinaryTree(TreeNode root) {\n        if (root == null) return 0;\n        long maxWidth = 0;\n        Queue<Item> queue = new LinkedList<>();\n        queue.offer(new Item(root, 0L));\n        while (!queue.isEmpty()) {\n            int size = queue.size();\n            long firstIdx = 0, lastIdx = 0;\n            for (int i = 0; i < size; i++) {\n                Item item = queue.poll();\n                TreeNode node = item.node;\n                long idx = item.idx;\n                if (i == 0) firstIdx = idx;\n                if (i == size - 1) lastIdx = idx;\n                long normIdx = idx - firstIdx;\n                if (node.left != null) queue.offer(new Item(node.left, 2 * normIdx));\n                if (node.right != null) queue.offer(new Item(node.right, 2 * normIdx + 1));\n            }\n            maxWidth = Math.max(maxWidth, lastIdx - firstIdx + 1);\n        }\n        return (int) maxWidth;\n    }\n}",
+      "approach": "tree-bfs-level-order verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var widthOfBinaryTree = function(root) {\n    if (!root) return 0;\n    let maxWidth = 0n;\n    let queue = [{ node: root, idx: 0n }];\n    while (queue.length > 0) {\n        const count = queue.length;\n        const firstIdx = queue[0].idx;\n        const lastIdx = queue[count - 1].idx;\n        const width = lastIdx - firstIdx + 1n;\n        if (width > maxWidth) maxWidth = width;\n        const nextQueue = [];\n        for (let i = 0; i < count; i++) {\n            const { node, idx } = queue[i];\n            const normIdx = idx - firstIdx;\n            if (node.left) nextQueue.push({ node: node.left, idx: 2n * normIdx });\n            if (node.right) nextQueue.push({ node: node.right, idx: 2n * normIdx + 1n });\n        }\n        queue = nextQueue;\n    }\n    return Number(maxWidth);\n};",
+      "approach": "tree-bfs-level-order verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}
