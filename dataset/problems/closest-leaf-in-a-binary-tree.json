@@ -1,0 +1,78 @@
+{
+  "slug": "closest-leaf-in-a-binary-tree",
+  "number": 742,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bfs-level-order"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bidirectional Tree Graph",
+      "text": "Convert the parent-child binary tree structure into an undirected adjacency graph, connecting each node to its left child, right child, and parent."
+    },
+    {
+      "level": 2,
+      "title": "Target Identification",
+      "text": "Locate the node whose value equals k, which serves as the starting vertex for path traversal."
+    },
+    {
+      "level": 3,
+      "title": "Shortest Path to Leaf",
+      "text": "Initiate a breadth-first search from the node with value k outward across the graph. The first node popped from the queue that was a leaf in the original tree is the closest leaf."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import Optional\nimport collections\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def findClosestLeaf(self, root: Optional[TreeNode], k: int) -> int:\n        graph = collections.defaultdict(list)\n        leaves = set()\n\n        def dfs(node: Optional[TreeNode]):\n            if not node:\n                return\n            if not node.left and not node.right:\n                leaves.add(node.val)\n            if node.left:\n                graph[node.val].append(node.left.val)\n                graph[node.left.val].append(node.val)\n                dfs(node.left)\n            if node.right:\n                graph[node.val].append(node.right.val)\n                graph[node.right.val].append(node.val)\n                dfs(node.right)\n\n        dfs(root)\n        queue = collections.deque([k])\n        visited = {k}\n\n        while queue:\n            curr = queue.popleft()\n            if curr in leaves:\n                return curr\n            for neighbor in graph[curr]:\n                if neighbor not in visited:\n                    visited.add(neighbor)\n                    queue.append(neighbor)\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in tree"
+    ],
+    "notes": "Graph adjacency conversion followed by unweighted BFS to closest leaf.",
+    "whyNaiveFails": "Traversing only downward from k ignores closest leaves located in parent or sibling branches.",
+    "spaceTimeTradeoff": "Bidirectional graph modeling allows standard shortest path exploration in linear space.",
+    "interviewerExpectation": "Model parent pointers so path distances upwards and downwards are explored symmetrically."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import Optional\nimport collections\n\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def findClosestLeaf(self, root: Optional[TreeNode], k: int) -> int:\n        graph = collections.defaultdict(list)\n        leaves = set()\n\n        def dfs(node: Optional[TreeNode]):\n            if not node:\n                return\n            if not node.left and not node.right:\n                leaves.add(node.val)\n            if node.left:\n                graph[node.val].append(node.left.val)\n                graph[node.left.val].append(node.val)\n                dfs(node.left)\n            if node.right:\n                graph[node.val].append(node.right.val)\n                graph[node.right.val].append(node.val)\n                dfs(node.right)\n\n        dfs(root)\n        queue = collections.deque([k])\n        visited = {k}\n\n        while queue:\n            curr = queue.popleft()\n            if curr in leaves:\n                return curr\n            for neighbor in graph[curr]:\n                if neighbor not in visited:\n                    visited.add(neighbor)\n                    queue.append(neighbor)\n        return -1",
+      "approach": "tree-bfs-level-order verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int findClosestLeaf(TreeNode* root, int k) {\n        unordered_map<int, vector<int>> graph;\n        unordered_set<int> leaves;\n\n        function<void(TreeNode*)> dfs = [&](TreeNode* node) {\n            if (!node) return;\n            if (!node->left && !node->right) leaves.insert(node->val);\n            if (node->left) {\n                graph[node->val].push_back(node->left->val);\n                graph[node->left->val].push_back(node->val);\n                dfs(node->left);\n            }\n            if (node->right) {\n                graph[node->val].push_back(node->right->val);\n                graph[node->right->val].push_back(node->val);\n                dfs(node->right);\n            }\n        };\n        dfs(root);\n\n        queue<int> q;\n        unordered_set<int> visited = {k};\n        q.push(k);\n\n        while (!q.empty()) {\n            int curr = q.front();\n            q.pop();\n            if (leaves.count(curr)) return curr;\n            for (int nxt : graph[curr]) {\n                if (!visited.count(nxt)) {\n                    visited.insert(nxt);\n                    q.push(nxt);\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "tree-bfs-level-order verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int findClosestLeaf(TreeNode root, int k) {\n        Map<Integer, List<Integer>> graph = new HashMap<>();\n        Set<Integer> leaves = new HashSet<>();\n        buildGraph(root, graph, leaves);\n\n        Queue<Integer> queue = new LinkedList<>();\n        Set<Integer> visited = new HashSet<>();\n        queue.offer(k);\n        visited.add(k);\n\n        while (!queue.isEmpty()) {\n            int curr = queue.poll();\n            if (leaves.contains(curr)) return curr;\n            for (int nxt : graph.getOrDefault(curr, Collections.emptyList())) {\n                if (!visited.contains(nxt)) {\n                    visited.add(nxt);\n                    queue.offer(nxt);\n                }\n            }\n        }\n        return -1;\n    }\n\n    private void buildGraph(TreeNode node, Map<Integer, List<Integer>> graph, Set<Integer> leaves) {\n        if (node == null) return;\n        graph.putIfAbsent(node.val, new ArrayList<>());\n        if (node.left == null && node.right == null) leaves.add(node.val);\n        if (node.left != null) {\n            graph.putIfAbsent(node.left.val, new ArrayList<>());\n            graph.get(node.val).add(node.left.val);\n            graph.get(node.left.val).add(node.val);\n            buildGraph(node.left, graph, leaves);\n        }\n        if (node.right != null) {\n            graph.putIfAbsent(node.right.val, new ArrayList<>());\n            graph.get(node.val).add(node.right.val);\n            graph.get(node.right.val).add(node.val);\n            buildGraph(node.right, graph, leaves);\n        }\n    }\n}",
+      "approach": "tree-bfs-level-order verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findClosestLeaf = function(root, k) {\n    const graph = new Map();\n    const leaves = new Set();\n\n    function dfs(node) {\n        if (!node) return;\n        if (!graph.has(node.val)) graph.set(node.val, []);\n        if (!node.left && !node.right) leaves.add(node.val);\n        if (node.left) {\n            if (!graph.has(node.left.val)) graph.set(node.left.val, []);\n            graph.get(node.val).push(node.left.val);\n            graph.get(node.left.val).push(node.val);\n            dfs(node.left);\n        }\n        if (node.right) {\n            if (!graph.has(node.right.val)) graph.set(node.right.val, []);\n            graph.get(node.val).push(node.right.val);\n            graph.get(node.right.val).push(node.val);\n            dfs(node.right);\n        }\n    }\n    dfs(root);\n\n    const queue = [k];\n    const visited = new Set([k]);\n    while (queue.length > 0) {\n        const curr = queue.shift();\n        if (leaves.has(curr)) return curr;\n        for (const nxt of (graph.get(curr) || [])) {\n            if (!visited.has(nxt)) {\n                visited.add(nxt);\n                queue.push(nxt);\n            }\n        }\n    }\n    return -1;\n};",
+      "approach": "tree-bfs-level-order verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

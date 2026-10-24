@@ -1,0 +1,78 @@
+{
+  "slug": "ip-to-cidr",
+  "number": 751,
+  "category": "Algorithms",
+  "patterns": [
+    "bit-manipulation-tricks"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Numeric IP Representation",
+      "text": "Convert the dotted decimal IP address into a 32-bit integer by shifting each octet."
+    },
+    {
+      "level": 2,
+      "title": "Lowest Set Bit Alignment",
+      "text": "The size of the largest power-of-two prefix block that can start at integer x is bounded by its lowest set bit, x & -x."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Block Allocation",
+      "text": "At each step, take block size equal to the largest power of two that is at most n and does not exceed x & -x (or 2^32 if x is zero). Output the prefix string, advance x by block size, and decrement n."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def ipToCIDR(self, ip: str, n: int) -> List[str]:\n        def ip_to_int(s: str) -> int:\n            ans = 0\n            for octet in s.split(\".\"):\n                ans = (ans << 8) + int(octet)\n            return ans\n\n        def int_to_ip(val: int) -> str:\n            return f\"{(val >> 24) & 255}.{(val >> 16) & 255}.{(val >> 8) & 255}.{val & 255}\"\n\n        cur = ip_to_int(ip)\n        res = []\n\n        while n > 0:\n            lowbit = cur & -cur if cur > 0 else (1 << 32)\n            while lowbit > n:\n                lowbit //= 2\n            mask = 32 - (lowbit.bit_length() - 1)\n            res.append(f\"{int_to_ip(cur)}/{mask}\")\n            cur += lowbit\n            n -= lowbit\n\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log N)",
+    "space": "O(log N)",
+    "variables": [
+      "N: number of IP addresses to cover"
+    ],
+    "notes": "Greedy power-of-two decomposition using bitwise low-bit extraction.",
+    "whyNaiveFails": "Emitting single-IP /32 blocks results in N entries instead of the minimal logarithmic covering.",
+    "spaceTimeTradeoff": "Bitwise integer arithmetic requires O(log N) operations and space for formatted result strings.",
+    "interviewerExpectation": "Use lowest set bit (cur & -cur) to establish alignment and greedily reduce while exceeding remaining n."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def ipToCIDR(self, ip: str, n: int) -> List[str]:\n        def ip_to_int(s: str) -> int:\n            ans = 0\n            for octet in s.split(\".\"):\n                ans = (ans << 8) + int(octet)\n            return ans\n\n        def int_to_ip(val: int) -> str:\n            return f\"{(val >> 24) & 255}.{(val >> 16) & 255}.{(val >> 8) & 255}.{val & 255}\"\n\n        cur = ip_to_int(ip)\n        res = []\n\n        while n > 0:\n            lowbit = cur & -cur if cur > 0 else (1 << 32)\n            while lowbit > n:\n                lowbit //= 2\n            mask = 32 - (lowbit.bit_length() - 1)\n            res.append(f\"{int_to_ip(cur)}/{mask}\")\n            cur += lowbit\n            n -= lowbit\n\n        return res",
+      "approach": "bit-manipulation-tricks verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    long ipToInt(const string& ip) {\n        long ans = 0;\n        stringstream ss(ip);\n        string token;\n        while (getline(ss, token, '.')) {\n            ans = (ans << 8) + stoi(token);\n        }\n        return ans;\n    }\n    string intToIp(long val) {\n        return to_string((val >> 24) & 255) + \".\" +\n               to_string((val >> 16) & 255) + \".\" +\n               to_string((val >> 8) & 255) + \".\" +\n               to_string(val & 255);\n    }\npublic:\n    vector<string> ipToCIDR(string ip, int n) {\n        long cur = ipToInt(ip);\n        vector<string> res;\n        while (n > 0) {\n            long lowbit = (cur > 0) ? (cur & -cur) : (1L << 32);\n            while (lowbit > n) lowbit /= 2;\n            int len = 0;\n            long tmp = lowbit;\n            while (tmp > 1) { len++; tmp /= 2; }\n            int mask = 32 - len;\n            res.push_back(intToIp(cur) + \"/\" + to_string(mask));\n            cur += lowbit;\n            n -= lowbit;\n        }\n        return res;\n    }\n};",
+      "approach": "bit-manipulation-tricks verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<String> ipToCIDR(String ip, int n) {\n        long cur = ipToInt(ip);\n        List<String> res = new ArrayList<>();\n        while (n > 0) {\n            long lowbit = (cur > 0) ? (cur & -cur) : (1L << 32);\n            while (lowbit > n) lowbit /= 2;\n            int len = Long.numberOfTrailingZeros(lowbit);\n            int mask = 32 - len;\n            res.add(intToIp(cur) + \"/\" + mask);\n            cur += lowbit;\n            n -= (int) lowbit;\n        }\n        return res;\n    }\n    private long ipToInt(String ip) {\n        long ans = 0;\n        for (String octet : ip.split(\"\\\\.\")) {\n            ans = (ans << 8) + Long.parseLong(octet);\n        }\n        return ans;\n    }\n    private String intToIp(long val) {\n        return ((val >> 24) & 255) + \".\" + ((val >> 16) & 255) + \".\" + ((val >> 8) & 255) + \".\" + (val & 255);\n    }\n}",
+      "approach": "bit-manipulation-tricks verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var ipToCIDR = function(ip, n) {\n    function ipToInt(s) {\n        return s.split('.').reduce((acc, octet) => (acc * 256) + Number(octet), 0);\n    }\n    function intToIp(val) {\n        return [\n            (val >>> 24) & 255,\n            (val >>> 16) & 255,\n            (val >>> 8) & 255,\n            val & 255\n        ].join('.');\n    }\n    let cur = ipToInt(ip);\n    const res = [];\n    while (n > 0) {\n        let lowbit = (cur > 0) ? (cur & -cur) : 0x100000000;\n        while (lowbit > n) lowbit = Math.floor(lowbit / 2);\n        const len = Math.log2(lowbit);\n        const mask = 32 - len;\n        res.push(`${intToIp(cur)}/${mask}`);\n        cur += lowbit;\n        n -= lowbit;\n    }\n    return res;\n};",
+      "approach": "bit-manipulation-tricks verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

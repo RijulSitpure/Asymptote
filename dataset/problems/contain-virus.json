@@ -1,0 +1,78 @@
+{
+  "slug": "contain-virus",
+  "number": 749,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Connected Region Identification",
+      "text": "Each round, use graph traversal to identify all separate connected components of unquarantined infected cells."
+    },
+    {
+      "level": 2,
+      "title": "Threat Metric Calculation",
+      "text": "For each region, compute its threatened boundary (set of adjacent uninfected cells) and count the number of walls required to enclose it."
+    },
+    {
+      "level": 3,
+      "title": "Quarantine and Spread Simulation",
+      "text": "Pick the region threatening the greatest number of uninfected cells and convert its cells to quarantined. For all other infected regions, spread virus to their adjacent uninfected cells. Repeat until no virus can spread."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def containVirus(self, isInfected: List[List[int]]) -> int:\n        m, n = len(isInfected), len(isInfected[0])\n        total_walls = 0\n\n        while True:\n            visited = set()\n            regions = []\n            threats = []\n            walls_needed = []\n\n            for r in range(m):\n                for c in range(n):\n                    if isInfected[r][c] == 1 and (r, c) not in visited:\n                        region = []\n                        threat = set()\n                        walls = 0\n                        stack = [(r, c)]\n                        visited.add((r, c))\n                        while stack:\n                            cr, cc = stack.pop()\n                            region.append((cr, cc))\n                            for nr, nc in ((cr + 1, cc), (cr - 1, cc), (cr, cc + 1), (cr, cc - 1)):\n                                if 0 <= nr < m and 0 <= nc < n:\n                                    if isInfected[nr][nc] == 1 and (nr, nc) not in visited:\n                                        visited.add((nr, nc))\n                                        stack.append((nr, nc))\n                                    elif isInfected[nr][nc] == 0:\n                                        threat.add((nr, nc))\n                                        walls += 1\n                        regions.append(region)\n                        threats.append(threat)\n                        walls_needed.append(walls)\n\n            if not regions:\n                break\n\n            idx = -1\n            max_threat = 0\n            for i in range(len(threats)):\n                if len(threats[i]) > max_threat:\n                    max_threat = len(threats[i])\n                    idx = i\n\n            if idx == -1:\n                break\n\n            total_walls += walls_needed[idx]\n            for r, c in regions[idx]:\n                isInfected[r][c] = 2\n\n            for i in range(len(regions)):\n                if i != idx:\n                    for r, c in threats[i]:\n                        isInfected[r][c] = 1\n\n        return total_walls\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((M * N)^2)",
+    "space": "O(M * N)",
+    "variables": [
+      "M, N: grid dimensions"
+    ],
+    "notes": "Iterative round simulation identifying virus components, selecting maximum threat, and spreading remainder.",
+    "whyNaiveFails": "Wall placement without measuring uninfected neighborhood sizes allows explosive exponential infection.",
+    "spaceTimeTradeoff": "Simulating state in grid coordinates requires O(M * N) memory per round.",
+    "interviewerExpectation": "Distinguish between number of threatened cells (unique coordinates) and wall perimeter (shared edges count multiple times)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def containVirus(self, isInfected: List[List[int]]) -> int:\n        m, n = len(isInfected), len(isInfected[0])\n        total_walls = 0\n\n        while True:\n            visited = set()\n            regions = []\n            threats = []\n            walls_needed = []\n\n            for r in range(m):\n                for c in range(n):\n                    if isInfected[r][c] == 1 and (r, c) not in visited:\n                        region = []\n                        threat = set()\n                        walls = 0\n                        stack = [(r, c)]\n                        visited.add((r, c))\n                        while stack:\n                            cr, cc = stack.pop()\n                            region.append((cr, cc))\n                            for nr, nc in ((cr + 1, cc), (cr - 1, cc), (cr, cc + 1), (cr, cc - 1)):\n                                if 0 <= nr < m and 0 <= nc < n:\n                                    if isInfected[nr][nc] == 1 and (nr, nc) not in visited:\n                                        visited.add((nr, nc))\n                                        stack.append((nr, nc))\n                                    elif isInfected[nr][nc] == 0:\n                                        threat.add((nr, nc))\n                                        walls += 1\n                        regions.append(region)\n                        threats.append(threat)\n                        walls_needed.append(walls)\n\n            if not regions:\n                break\n\n            idx = -1\n            max_threat = 0\n            for i in range(len(threats)):\n                if len(threats[i]) > max_threat:\n                    max_threat = len(threats[i])\n                    idx = i\n\n            if idx == -1:\n                break\n\n            total_walls += walls_needed[idx]\n            for r, c in regions[idx]:\n                isInfected[r][c] = 2\n\n            for i in range(len(regions)):\n                if i != idx:\n                    for r, c in threats[i]:\n                        isInfected[r][c] = 1\n\n        return total_walls",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int containVirus(vector<vector<int>>& isInfected) {\n        int m = isInfected.size(), n = isInfected[0].size();\n        int totalWalls = 0;\n        int dirs[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};\n\n        while (true) {\n            vector<vector<bool>> visited(m, vector<bool>(n, false));\n            vector<vector<pair<int, int>>> regions;\n            vector<set<pair<int, int>>> threats;\n            vector<int> wallsNeeded;\n\n            for (int r = 0; r < m; r++) {\n                for (int c = 0; c < n; c++) {\n                    if (isInfected[r][c] == 1 && !visited[r][c]) {\n                        vector<pair<int, int>> region;\n                        set<pair<int, int>> threat;\n                        int walls = 0;\n                        vector<pair<int, int>> stk = {{r, c}};\n                        visited[r][c] = true;\n                        while (!stk.empty()) {\n                            auto [cr, cc] = stk.back();\n                            stk.pop_back();\n                            region.push_back({cr, cc});\n                            for (auto& dir : dirs) {\n                                int nr = cr + dir[0], nc = cc + dir[1];\n                                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                                    if (isInfected[nr][nc] == 1 && !visited[nr][nc]) {\n                                        visited[nr][nc] = true;\n                                        stk.push_back({nr, nc});\n                                    } else if (isInfected[nr][nc] == 0) {\n                                        threat.insert({nr, nc});\n                                        walls++;\n                                    }\n                                }\n                            }\n                        }\n                        regions.push_back(region);\n                        threats.push_back(threat);\n                        wallsNeeded.push_back(walls);\n                    }\n                }\n            }\n\n            if (regions.empty()) break;\n            int idx = -1, maxThreat = 0;\n            for (int i = 0; i < (int)threats.size(); i++) {\n                if ((int)threats[i].size() > maxThreat) {\n                    maxThreat = threats[i].size();\n                    idx = i;\n                }\n            }\n            if (idx == -1) break;\n\n            totalWalls += wallsNeeded[idx];\n            for (auto& [r, c] : regions[idx]) isInfected[r][c] = 2;\n            for (int i = 0; i < (int)regions.size(); i++) {\n                if (i != idx) {\n                    for (auto& [r, c] : threats[i]) isInfected[r][c] = 1;\n                }\n            }\n        }\n        return totalWalls;\n    }\n};",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int containVirus(int[][] isInfected) {\n        int m = isInfected.length, n = isInfected[0].length;\n        int totalWalls = 0;\n        int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};\n\n        while (true) {\n            boolean[][] visited = new boolean[m][n];\n            List<List<int[]>> regions = new ArrayList<>();\n            List<Set<Integer>> threats = new ArrayList<>();\n            List<Integer> wallsNeeded = new ArrayList<>();\n\n            for (int r = 0; r < m; r++) {\n                for (int c = 0; c < n; c++) {\n                    if (isInfected[r][c] == 1 && !visited[r][c]) {\n                        List<int[]> region = new ArrayList<>();\n                        Set<Integer> threat = new HashSet<>();\n                        int walls = 0;\n                        Deque<int[]> stk = new ArrayDeque<>();\n                        stk.push(new int[]{r, c});\n                        visited[r][c] = true;\n                        while (!stk.isEmpty()) {\n                            int[] curr = stk.pop();\n                            int cr = curr[0], cc = curr[1];\n                            region.add(new int[]{cr, cc});\n                            for (int[] dir : dirs) {\n                                int nr = cr + dir[0], nc = cc + dir[1];\n                                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                                    if (isInfected[nr][nc] == 1 && !visited[nr][nc]) {\n                                        visited[nr][nc] = true;\n                                        stk.push(new int[]{nr, nc});\n                                    } else if (isInfected[nr][nc] == 0) {\n                                        threat.add(nr * n + nc);\n                                        walls++;\n                                    }\n                                }\n                            }\n                        }\n                        regions.add(region);\n                        threats.add(threat);\n                        wallsNeeded.add(walls);\n                    }\n                }\n            }\n\n            if (regions.isEmpty()) break;\n            int idx = -1, maxThreat = 0;\n            for (int i = 0; i < threats.size(); i++) {\n                if (threats.get(i).size() > maxThreat) {\n                    maxThreat = threats.get(i).size();\n                    idx = i;\n                }\n            }\n            if (idx == -1) break;\n\n            totalWalls += wallsNeeded.get(idx);\n            for (int[] p : regions.get(idx)) isInfected[p[0]][p[1]] = 2;\n            for (int i = 0; i < regions.size(); i++) {\n                if (i != idx) {\n                    for (int code : threats.get(i)) isInfected[code / n][code % n] = 1;\n                }\n            }\n        }\n        return totalWalls;\n    }\n}",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var containVirus = function(isInfected) {\n    const m = isInfected.length, n = isInfected[0].length;\n    let totalWalls = 0;\n    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];\n\n    while (true) {\n        const visited = Array.from({ length: m }, () => new Array(n).fill(false));\n        const regions = [];\n        const threats = [];\n        const wallsNeeded = [];\n\n        for (let r = 0; r < m; r++) {\n            for (let c = 0; c < n; c++) {\n                if (isInfected[r][c] === 1 && !visited[r][c]) {\n                    const region = [];\n                    const threat = new Set();\n                    let walls = 0;\n                    const stk = [[r, c]];\n                    visited[r][c] = true;\n                    while (stk.length > 0) {\n                        const [cr, cc] = stk.pop();\n                        region.push([cr, cc]);\n                        for (const [dr, dc] of dirs) {\n                            const nr = cr + dr, nc = cc + dc;\n                            if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                                if (isInfected[nr][nc] === 1 && !visited[nr][nc]) {\n                                    visited[nr][nc] = true;\n                                    stk.push([nr, nc]);\n                                } else if (isInfected[nr][nc] === 0) {\n                                    threat.add(`${nr},${nc}`);\n                                    walls++;\n                                }\n                            }\n                        }\n                    }\n                    regions.push(region);\n                    threats.push(threat);\n                    wallsNeeded.push(walls);\n                }\n            }\n        }\n\n        if (regions.length === 0) break;\n        let idx = -1, maxThreat = 0;\n        for (let i = 0; i < threats.length; i++) {\n            if (threats[i].size > maxThreat) {\n                maxThreat = threats[i].size;\n                idx = i;\n            }\n        }\n        if (idx === -1) break;\n\n        totalWalls += wallsNeeded[idx];\n        for (const [r, c] of regions[idx]) isInfected[r][c] = 2;\n        for (let i = 0; i < regions.length; i++) {\n            if (i !== idx) {\n                for (const pos of threats[i]) {\n                    const [r, c] = pos.split(',').map(Number);\n                    isInfected[r][c] = 1;\n                }\n            }\n        }\n    }\n    return totalWalls;\n};",
+      "approach": "graph-bfs-shortest-path verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

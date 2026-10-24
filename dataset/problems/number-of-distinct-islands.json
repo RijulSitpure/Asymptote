@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-distinct-islands",
+  "number": 694,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Translation Invariance",
+      "text": "Two islands have the same shape if their cell coordinates relative to the top-left starting cell of the island are identical."
+    },
+    {
+      "level": 2,
+      "title": "Relative Coordinate Offsets",
+      "text": "When discovering an unvisited land cell at (r0, c0), traverse the connected component and record each cell as (r minus r0, c minus c0)."
+    },
+    {
+      "level": 3,
+      "title": "Canonical Signature Storage",
+      "text": "Collect the relative coordinate tuples for the island in a consistent traversal order. Convert the list of relative coordinates into a signature and add to a collection of distinct island shapes."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def numDistinctIslands(self, grid: List[List[int]]) -> int:\n        m, n = len(grid), len(grid[0])\n        visited = set()\n        distinct = set()\n\n        for r in range(m):\n            for c in range(n):\n                if grid[r][c] == 1 and (r, c) not in visited:\n                    shape = []\n                    stack = [(r, c)]\n                    visited.add((r, c))\n                    while stack:\n                        cr, cc = stack.pop()\n                        shape.append((cr - r, cc - c))\n                        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n                            nr, nc = cr + dr, cc + dc\n                            if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == 1 and (nr, nc) not in visited:\n                                visited.add((nr, nc))\n                                stack.append((nr, nc))\n                    distinct.add(tuple(sorted(shape)))\n\n        return len(distinct)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N log K)",
+    "space": "O(M * N)",
+    "variables": [
+      "M, N: grid dimensions",
+      "K: maximum island size"
+    ],
+    "notes": "DFS shape canonicalization relative to top-left starting coordinates.",
+    "whyNaiveFails": "Comparing absolute coordinates fails because islands at different grid locations can have identical translated shapes.",
+    "spaceTimeTradeoff": "Normalizing each island relative to its origin enables set deduplication in O(M * N) space.",
+    "interviewerExpectation": "Normalize coordinates by subtracting (r0, c0) and sort or serialize path direction strings."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\n\nclass Solution:\n    def numDistinctIslands(self, grid: List[List[int]]) -> int:\n        m, n = len(grid), len(grid[0])\n        visited = set()\n        distinct = set()\n\n        for r in range(m):\n            for c in range(n):\n                if grid[r][c] == 1 and (r, c) not in visited:\n                    shape = []\n                    stack = [(r, c)]\n                    visited.add((r, c))\n                    while stack:\n                        cr, cc = stack.pop()\n                        shape.append((cr - r, cc - c))\n                        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n                            nr, nc = cr + dr, cc + dc\n                            if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == 1 and (nr, nc) not in visited:\n                                visited.add((nr, nc))\n                                stack.append((nr, nc))\n                    distinct.add(tuple(sorted(shape)))\n\n        return len(distinct)",
+      "approach": "tree-dfs-subproblem verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int numDistinctIslands(vector<vector<int>>& grid) {\n        int m = grid.size(), n = grid[0].size();\n        vector<vector<bool>> visited(m, vector<bool>(n, false));\n        set<vector<pair<int, int>>> distinct;\n        int dirs[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};\n\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 1 && !visited[r][c]) {\n                    vector<pair<int, int>> shape;\n                    vector<pair<int, int>> stk = {{r, c}};\n                    visited[r][c] = true;\n                    while (!stk.empty()) {\n                        auto [cr, cc] = stk.back();\n                        stk.pop_back();\n                        shape.push_back({cr - r, cc - c});\n                        for (auto& dir : dirs) {\n                            int nr = cr + dir[0], nc = cc + dir[1];\n                            if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == 1 && !visited[nr][nc]) {\n                                visited[nr][nc] = true;\n                                stk.push_back({nr, nc});\n                            }\n                        }\n                    }\n                    sort(shape.begin(), shape.end());\n                    distinct.insert(shape);\n                }\n            }\n        }\n        return distinct.size();\n    }\n};",
+      "approach": "tree-dfs-subproblem verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int numDistinctIslands(int[][] grid) {\n        int m = grid.length, n = grid[0].length;\n        boolean[][] visited = new boolean[m][n];\n        Set<String> distinct = new HashSet<>();\n        int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};\n\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 1 && !visited[r][c]) {\n                    List<String> shape = new ArrayList<>();\n                    Deque<int[]> stk = new ArrayDeque<>();\n                    stk.push(new int[]{r, c});\n                    visited[r][c] = true;\n                    while (!stk.isEmpty()) {\n                        int[] curr = stk.pop();\n                        int cr = curr[0], cc = curr[1];\n                        shape.add((cr - r) + \":\" + (cc - c));\n                        for (int[] dir : dirs) {\n                            int nr = cr + dir[0], nc = cc + dir[1];\n                            if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == 1 && !visited[nr][nc]) {\n                                visited[nr][nc] = true;\n                                stk.push(new int[]{nr, nc});\n                            }\n                        }\n                    }\n                    Collections.sort(shape);\n                    distinct.add(String.join(\",\", shape));\n                }\n            }\n        }\n        return distinct.size();\n    }\n}",
+      "approach": "tree-dfs-subproblem verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var numDistinctIslands = function(grid) {\n    const m = grid.length, n = grid[0].length;\n    const visited = Array.from({ length: m }, () => new Array(n).fill(false));\n    const distinct = new Set();\n    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];\n\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            if (grid[r][c] === 1 && !visited[r][c]) {\n                const shape = [];\n                const stk = [[r, c]];\n                visited[r][c] = true;\n                while (stk.length > 0) {\n                    const [cr, cc] = stk.pop();\n                    shape.push(`${cr - r}:${cc - c}`);\n                    for (const [dr, dc] of dirs) {\n                        const nr = cr + dr, nc = cc + dc;\n                        if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] === 1 && !visited[nr][nc]) {\n                            visited[nr][nc] = true;\n                            stk.push([nr, nc]);\n                        }\n                    }\n                }\n                shape.sort();\n                distinct.add(shape.join(','));\n            }\n        }\n    }\n    return distinct.size;\n};",
+      "approach": "tree-dfs-subproblem verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

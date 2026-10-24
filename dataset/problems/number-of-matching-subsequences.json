@@ -1,0 +1,80 @@
+{
+  "slug": "number-of-matching-subsequences",
+  "number": 792,
+  "category": "Algorithms",
+  "patterns": [
+    "string-matching"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Inverted Index for Characters",
+      "text": "Preprocess character positions in the target string to speed up subsequence matching."
+    },
+    {
+      "level": 2,
+      "title": "Sorted Position Lookups",
+      "text": "Store indices for each character in sorted order, finding next occurrences via index searches."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search Index Advancement",
+      "text": "For each character in a word, advance the current index to the smallest position strictly greater than the previous index using bisect."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport bisect\nfrom collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def numMatchingSubseq(self, s: str, words: List[str]) -> int:\n        pos = defaultdict(list)\n        for i, ch in enumerate(s):\n            pos[ch].append(i)\n\n        ans = 0\n        memo = {}\n        for word in words:\n            if word in memo:\n                if memo[word]:\n                    ans += 1\n                continue\n\n            idx = -1\n            match = True\n            for ch in word:\n                lst = pos[ch]\n                it = bisect.bisect_right(lst, idx)\n                if it == len(lst):\n                    match = False\n                    break\n                idx = lst[it]\n\n            memo[word] = match\n            if match:\n                ans += 1\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(S + W * L * log S)",
+    "space": "O(S + W)",
+    "variables": [
+      "S: length of string s",
+      "W: number of words",
+      "L: max word length"
+    ],
+    "notes": "Inverted index with binary search per character and word-level memoization.",
+    "whyNaiveFails": "Scanning string s independently for each word requires O(W * S) operations, which times out.",
+    "spaceTimeTradeoff": "Positions list stores S indices total across 26 character buckets.",
+    "interviewerExpectation": "Use inverted index with bisect_right or bucket waiting queues to match all words concurrently."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\nfrom collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def numMatchingSubseq(self, s: str, words: List[str]) -> int:\n        pos = defaultdict(list)\n        for i, ch in enumerate(s):\n            pos[ch].append(i)\n\n        ans = 0\n        memo = {}\n        for word in words:\n            if word in memo:\n                if memo[word]:\n                    ans += 1\n                continue\n\n            idx = -1\n            match = True\n            for ch in word:\n                lst = pos[ch]\n                it = bisect.bisect_right(lst, idx)\n                if it == len(lst):\n                    match = False\n                    break\n                idx = lst[it]\n\n            memo[word] = match\n            if match:\n                ans += 1\n\n        return ans",
+      "approach": "string-matching verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int numMatchingSubseq(string s, vector<string>& words) {\n        vector<int> pos[26];\n        for (int i = 0; i < (int)s.length(); i++) {\n            pos[s[i] - 'a'].push_back(i);\n        }\n        int ans = 0;\n        unordered_map<string, bool> memo;\n        for (const string& w : words) {\n            if (memo.count(w)) {\n                if (memo[w]) ans++;\n                continue;\n            }\n            int idx = -1;\n            bool match = true;\n            for (char ch : w) {\n                const auto& vec = pos[ch - 'a'];\n                auto it = upper_bound(vec.begin(), vec.end(), idx);\n                if (it == vec.end()) {\n                    match = false;\n                    break;\n                }\n                idx = *it;\n            }\n            memo[w] = match;\n            if (match) ans++;\n        }\n        return ans;\n    }\n};",
+      "approach": "string-matching verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int numMatchingSubseq(String s, String[] words) {\n        List<Integer>[] pos = new ArrayList[26];\n        for (int i = 0; i < 26; i++) pos[i] = new ArrayList<>();\n        for (int i = 0; i < s.length(); i++) {\n            pos[s.charAt(i) - 'a'].add(i);\n        }\n        int ans = 0;\n        Map<String, Boolean> memo = new HashMap<>();\n        for (String w : words) {\n            if (memo.containsKey(w)) {\n                if (memo.get(w)) ans++;\n                continue;\n            }\n            int idx = -1;\n            boolean match = true;\n            for (int i = 0; i < w.length(); i++) {\n                List<Integer> list = pos[w.charAt(i) - 'a'];\n                int posIdx = Collections.binarySearch(list, idx + 1);\n                if (posIdx < 0) posIdx = -posIdx - 1;\n                if (posIdx >= list.size()) {\n                    match = false;\n                    break;\n                }\n                idx = list.get(posIdx);\n            }\n            memo.put(w, match);\n            if (match) ans++;\n        }\n        return ans;\n    }\n}",
+      "approach": "string-matching verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var numMatchingSubseq = function(s, words) {\n    const pos = Array.from({ length: 26 }, () => []);\n    for (let i = 0; i < s.length; i++) {\n        pos[s.charCodeAt(i) - 97].push(i);\n    }\n    let ans = 0;\n    const memo = new Map();\n    for (const w of words) {\n        if (memo.has(w)) {\n            if (memo.get(w)) ans++;\n            continue;\n        }\n        let idx = -1;\n        let match = true;\n        for (let i = 0; i < w.length; i++) {\n            const arr = pos[w.charCodeAt(i) - 97];\n            let low = 0, high = arr.length;\n            while (low < high) {\n                const mid = (low + high) >> 1;\n                if (arr[mid] > idx) high = mid;\n                else low = mid + 1;\n            }\n            if (low === arr.length) {\n                match = false;\n                break;\n            }\n            idx = arr[low];\n        }\n        memo.set(w, match);\n        if (match) ans++;\n    }\n    return ans;\n};",
+      "approach": "string-matching verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}
