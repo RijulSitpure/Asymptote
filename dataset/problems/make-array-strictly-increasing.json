@@ -1,0 +1,79 @@
+{
+  "slug": "make-array-strictly-increasing",
+  "number": 1187,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-lis"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sort and Deduplicate Replacement Values",
+      "text": "Sorting replacement candidates allows quick logarithmic lookup for the smallest valid substitute value greater than the preceding choice."
+    },
+    {
+      "level": 2,
+      "title": "Track Minimum Operations per Ending Value",
+      "text": "At each position, decide whether to keep the original element or substitute it with the smallest strictly larger available candidate."
+    },
+    {
+      "level": 3,
+      "title": "Dynamic State Compression",
+      "text": "Maintain a dictionary mapping each possible ending value to the minimum replacements needed up to the current index."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def makeArrayIncreasing(self, arr1: list[int], arr2: list[int]) -> int:\n        arr2 = sorted(set(arr2))\n        dp = {-1: 0}\n        \n        for x in arr1:\n            nxt = {}\n            for val, ops in dp.items():\n                if x > val:\n                    nxt[x] = min(nxt.get(x, float('inf')), ops)\n                idx = bisect.bisect_right(arr2, val)\n                if idx < len(arr2):\n                    rep = arr2[idx]\n                    nxt[rep] = min(nxt.get(rep, float('inf')), ops + 1)\n            dp = nxt\n            if not dp:\n                return -1\n        return min(dp.values())\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * min(N, M) * log M)",
+    "space": "O(min(N, M))",
+    "variables": [
+      "N: length of arr1",
+      "M: length of arr2"
+    ],
+    "whyNaiveFails": "Trying every combination of keep or replace across N positions explores exponential branches.",
+    "spaceTimeTradeoff": "Retaining only the minimum replacements for each distinct endpoint bounds active states at each stage.",
+    "interviewerExpectation": "Candidate should recognize that only the smallest valid replacement value needs to be considered greedily.",
+    "notes": "Sorting and deduplicating arr2 reduces binary search overhead."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass Solution:\n    def makeArrayIncreasing(self, arr1: list[int], arr2: list[int]) -> int:\n        arr2 = sorted(set(arr2))\n        dp = {-1: 0}\n        \n        for x in arr1:\n            nxt = {}\n            for val, ops in dp.items():\n                if x > val:\n                    nxt[x] = min(nxt.get(x, float('inf')), ops)\n                idx = bisect.bisect_right(arr2, val)\n                if idx < len(arr2):\n                    rep = arr2[idx]\n                    nxt[rep] = min(nxt.get(rep, float('inf')), ops + 1)\n            dp = nxt\n            if not dp:\n                return -1\n        return min(dp.values())",
+      "approach": "dp-lis verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int makeArrayIncreasing(std::vector<int>& arr1, std::vector<int>& arr2) {\n        std::sort(arr2.begin(), arr2.end());\n        arr2.erase(std::unique(arr2.begin(), arr2.end()), arr2.end());\n        \n        std::unordered_map<int, int> dp;\n        dp[-1] = 0;\n        \n        for (int x : arr1) {\n            std::unordered_map<int, int> nxt;\n            for (auto const& [val, ops] : dp) {\n                if (x > val) {\n                    if (nxt.find(x) == nxt.end() || ops < nxt[x]) nxt[x] = ops;\n                }\n                auto it = std::upper_bound(arr2.begin(), arr2.end(), val);\n                if (it != arr2.end()) {\n                    int rep = *it;\n                    if (nxt.find(rep) == nxt.end() || ops + 1 < nxt[rep]) nxt[rep] = ops + 1;\n                }\n            }\n            dp = std::move(nxt);\n            if (dp.empty()) return -1;\n        }\n        \n        int ans = 1e9;\n        for (auto const& [val, ops] : dp) ans = std::min(ans, ops);\n        return ans == 1e9 ? -1 : ans;\n    }\n};",
+      "approach": "dp-lis verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int makeArrayIncreasing(int[] arr1, int[] arr2) {\n        java.util.TreeSet<Integer> set = new java.util.TreeSet<>();\n        for (int x : arr2) set.add(x);\n        \n        java.util.Map<Integer, Integer> dp = new java.util.HashMap<>();\n        dp.put(-1, 0);\n        \n        for (int x : arr1) {\n            java.util.Map<Integer, Integer> nxt = new java.util.HashMap<>();\n            for (java.util.Map.Entry<Integer, Integer> entry : dp.entrySet()) {\n                int val = entry.getKey();\n                int ops = entry.getValue();\n                \n                if (x > val) {\n                    nxt.put(x, Math.min(nxt.getOrDefault(x, Integer.MAX_VALUE), ops));\n                }\n                Integer rep = set.higher(val);\n                if (rep != null) {\n                    nxt.put(rep, Math.min(nxt.getOrDefault(rep, Integer.MAX_VALUE), ops + 1));\n                }\n            }\n            dp = nxt;\n            if (dp.isEmpty()) return -1;\n        }\n        \n        int ans = Integer.MAX_VALUE;\n        for (int ops : dp.values()) ans = Math.min(ans, ops);\n        return ans == Integer.MAX_VALUE ? -1 : ans;\n    }\n}",
+      "approach": "dp-lis verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var makeArrayIncreasing = function(arr1, arr2) {\n    const sorted2 = Array.from(new Set(arr2)).sort((a, b) => a - b);\n    let dp = new Map([[-1, 0]]);\n    \n    const bisectRight = (arr, target) => {\n        let l = 0, r = arr.length;\n        while (l < r) {\n            const mid = (l + r) >> 1;\n            if (arr[mid] <= target) l = mid + 1;\n            else r = mid;\n        }\n        return l;\n    };\n    \n    for (const x of arr1) {\n        const nxt = new Map();\n        for (const [val, ops] of dp.entries()) {\n            if (x > val) {\n                const prev = nxt.get(x) ?? Infinity;\n                if (ops < prev) nxt.set(x, ops);\n            }\n            const idx = bisectRight(sorted2, val);\n            if (idx < sorted2.length) {\n                const rep = sorted2[idx];\n                const prev = nxt.get(rep) ?? Infinity;\n                if (ops + 1 < prev) nxt.set(rep, ops + 1);\n            }\n        }\n        dp = nxt;\n        if (dp.size === 0) return -1;\n    }\n    \n    let ans = Infinity;\n    for (const ops of dp.values()) ans = Math.min(ans, ops);\n    return ans === Infinity ? -1 : ans;\n};",
+      "approach": "dp-lis verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "parallel-courses",
+  "number": 1136,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dependency Ordering",
+      "text": "A course can only be taken once all its prerequisite courses are completed in earlier semesters."
+    },
+    {
+      "level": 2,
+      "title": "Indegree Waves",
+      "text": "Calculate in-degree for each course. Courses with in-degree zero can all be taken concurrently in the current semester."
+    },
+    {
+      "level": 3,
+      "title": "Cycle Detection and Wave Count",
+      "text": "Reduce in-degrees of dependent courses and advance wave by wave. If the count of taken courses equals n, return semester count; else return negative 1."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def minimumSemesters(self, n: int, relations: list[list[int]]) -> int:\n        adj = [[] for _ in range(n + 1)]\n        in_degree = [0] * (n + 1)\n        for u, v in relations:\n            adj[u].append(v)\n            in_degree[v] += 1\n        \n        q = deque([i for i in range(1, n + 1) if in_degree[i] == 0])\n        semesters = 0\n        taken = 0\n        \n        while q:\n            semesters += 1\n            for _ in range(len(q)):\n                node = q.popleft()\n                taken += 1\n                for nxt in adj[node]:\n                    in_degree[nxt] -= 1\n                    if in_degree[nxt] == 0:\n                        q.append(nxt)\n        \n        return semesters if taken == n else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of courses",
+      "E: number of prerequisite relations"
+    ],
+    "whyNaiveFails": "Depth-first search path tracking without topological level tracking requires complex cycle detection.",
+    "spaceTimeTradeoff": "Kahn algorithm with in-degree tracking evaluates prerequisite layers and detects cycles in linear time.",
+    "interviewerExpectation": "Candidate should recognize that parallel course execution equals the diameter or depth of the DAG in topological waves.",
+    "notes": "Returns -1 if a cycle prevents graduating from all courses."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def minimumSemesters(self, n: int, relations: list[list[int]]) -> int:\n        adj = [[] for _ in range(n + 1)]\n        in_degree = [0] * (n + 1)\n        for u, v in relations:\n            adj[u].append(v)\n            in_degree[v] += 1\n        \n        q = deque([i for i in range(1, n + 1) if in_degree[i] == 0])\n        semesters = 0\n        taken = 0\n        \n        while q:\n            semesters += 1\n            for _ in range(len(q)):\n                node = q.popleft()\n                taken += 1\n                for nxt in adj[node]:\n                    in_degree[nxt] -= 1\n                    if in_degree[nxt] == 0:\n                        q.append(nxt)\n        \n        return semesters if taken == n else -1",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minimumSemesters(int n, vector<vector<int>>& relations) {\n        vector<vector<int>> adj(n + 1);\n        vector<int> in_degree(n + 1, 0);\n        for (const auto& r : relations) {\n            adj[r[0]].push_back(r[1]);\n            in_degree[r[1]]++;\n        }\n        \n        queue<int> q;\n        for (int i = 1; i <= n; ++i) {\n            if (in_degree[i] == 0) q.push(i);\n        }\n        \n        int semesters = 0, taken = 0;\n        while (!q.empty()) {\n            semesters++;\n            int sz = q.size();\n            for (int i = 0; i < sz; ++i) {\n                int node = q.front();\n                q.pop();\n                taken++;\n                for (int nxt : adj[node]) {\n                    if (--in_degree[nxt] == 0) q.push(nxt);\n                }\n            }\n        }\n        return taken == n ? semesters : -1;\n    }\n};",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minimumSemesters(int n, int[][] relations) {\n        List<Integer>[] adj = new List[n + 1];\n        for (int i = 0; i <= n; i++) adj[i] = new ArrayList<>();\n        int[] inDegree = new int[n + 1];\n        \n        for (int[] r : relations) {\n            adj[r[0]].add(r[1]);\n            inDegree[r[1]]++;\n        }\n        \n        Queue<Integer> q = new ArrayDeque<>();\n        for (int i = 1; i <= n; i++) {\n            if (inDegree[i] == 0) q.offer(i);\n        }\n        \n        int semesters = 0, taken = 0;\n        while (!q.isEmpty()) {\n            semesters++;\n            int sz = q.size();\n            for (int i = 0; i < sz; i++) {\n                int node = q.poll();\n                taken++;\n                for (int nxt : adj[node]) {\n                    if (--inDegree[nxt] == 0) q.offer(nxt);\n                }\n            }\n        }\n        return taken == n ? semesters : -1;\n    }\n}",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minimumSemesters = function(n, relations) {\n    const adj = Array.from({ length: n + 1 }, () => []);\n    const inDegree = new Array(n + 1).fill(0);\n    for (const [u, v] of relations) {\n        adj[u].push(v);\n        inDegree[v]++;\n    }\n    \n    let q = [];\n    for (let i = 1; i <= n; i++) {\n        if (inDegree[i] === 0) q.push(i);\n    }\n    \n    let semesters = 0;\n    let taken = 0;\n    while (q.length > 0) {\n        semesters++;\n        const nextQ = [];\n        for (const node of q) {\n            taken++;\n            for (const nxt of adj[node]) {\n                inDegree[nxt]--;\n                if (inDegree[nxt] === 0) nextQ.push(nxt);\n            }\n        }\n        q = nextQ;\n    }\n    return taken === n ? semesters : -1;\n};",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

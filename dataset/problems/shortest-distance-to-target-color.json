@@ -1,0 +1,79 @@
+{
+  "slug": "shortest-distance-to-target-color",
+  "number": 1182,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Group Positions by Color",
+      "text": "Store the indices where each of the colors 1, 2, and 3 appears in sorted position lists."
+    },
+    {
+      "level": 2,
+      "title": "Logarithmic Nearest Neighbor Lookup",
+      "text": "For a query target index and color, locate the closest position in that color index list using binary division."
+    },
+    {
+      "level": 3,
+      "title": "Evaluate Flanking Indices",
+      "text": "Check the element at insertion index and insertion index minus 1. Take the minimum absolute difference, or return negative 1 if the color list is empty."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def shortestDistanceColor(self, colors: list[int], queries: list[list[int]]) -> list[int]:\n        pos = {1: [], 2: [], 3: []}\n        for i, c in enumerate(colors):\n            pos[c].append(i)\n        \n        res = []\n        for idx, c in queries:\n            arr = pos[c]\n            if not arr:\n                res.append(-1)\n                continue\n            i = bisect.bisect_left(arr, idx)\n            best = float('inf')\n            if i < len(arr):\n                best = min(best, abs(arr[i] - idx))\n            if i > 0:\n                best = min(best, abs(arr[i - 1] - idx))\n            res.append(best)\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N + Q log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of colors array",
+      "Q: number of queries"
+    ],
+    "whyNaiveFails": "Scanning outward from index for each query takes quadratic O(Q * N) time.",
+    "spaceTimeTradeoff": "Sorted index arrays per color allow logarithmic closest-neighbor queries.",
+    "interviewerExpectation": "Candidate should implement logarithmic nearest-neighbor search checking both left and right adjacent elements.",
+    "notes": "Can also be solved using two-pass prefix/suffix arrays in O(N + Q) time."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass Solution:\n    def shortestDistanceColor(self, colors: list[int], queries: list[list[int]]) -> list[int]:\n        pos = {1: [], 2: [], 3: []}\n        for i, c in enumerate(colors):\n            pos[c].append(i)\n        \n        res = []\n        for idx, c in queries:\n            arr = pos[c]\n            if not arr:\n                res.append(-1)\n                continue\n            i = bisect.bisect_left(arr, idx)\n            best = float('inf')\n            if i < len(arr):\n                best = min(best, abs(arr[i] - idx))\n            if i > 0:\n                best = min(best, abs(arr[i - 1] - idx))\n            res.append(best)\n        return res",
+      "approach": "binary-search-basic verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> shortestDistanceColor(vector<int>& colors, vector<vector<int>>& queries) {\n        vector<vector<int>> pos(4);\n        for (int i = 0; i < (int)colors.size(); ++i) {\n            pos[colors[i]].push_back(i);\n        }\n        vector<int> res;\n        res.reserve(queries.size());\n        for (const auto& q : queries) {\n            int idx = q[0], c = q[1];\n            const auto& arr = pos[c];\n            if (arr.empty()) {\n                res.push_back(-1);\n                continue;\n            }\n            auto it = lower_bound(arr.begin(), arr.end(), idx);\n            int best = INT_MAX;\n            if (it != arr.end()) best = min(best, abs(*it - idx));\n            if (it != arr.begin()) best = min(best, abs(*prev(it) - idx));\n            res.push_back(best);\n        }\n        return res;\n    }\n};",
+      "approach": "binary-search-basic verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public List<Integer> shortestDistanceColor(int[] colors, int[][] queries) {\n        List<Integer>[] pos = new List[4];\n        for (int i = 1; i <= 3; i++) pos[i] = new ArrayList<>();\n        for (int i = 0; i < colors.length; i++) {\n            pos[colors[i]].add(i);\n        }\n        \n        List<Integer> res = new ArrayList<>(queries.length);\n        for (int[] q : queries) {\n            int idx = q[0], c = q[1];\n            List<Integer> arr = pos[c];\n            if (arr.isEmpty()) {\n                res.add(-1);\n                continue;\n            }\n            int l = 0, r = arr.size();\n            while (l < r) {\n                int mid = l + (r - l) / 2;\n                if (arr.get(mid) >= idx) r = mid;\n                else l = mid + 1;\n            }\n            int best = Integer.MAX_VALUE;\n            if (l < arr.size()) best = Math.min(best, Math.abs(arr.get(l) - idx));\n            if (l > 0) best = Math.min(best, Math.abs(arr.get(l - 1) - idx));\n            res.add(best);\n        }\n        return res;\n    }\n}",
+      "approach": "binary-search-basic verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var shortestDistanceColor = function(colors, queries) {\n    const pos = { 1: [], 2: [], 3: [] };\n    for (let i = 0; i < colors.length; i++) {\n        pos[colors[i]].push(i);\n    }\n    \n    return queries.map(([idx, c]) => {\n        const arr = pos[c];\n        if (!arr || arr.length === 0) return -1;\n        let l = 0, r = arr.length;\n        while (l < r) {\n            const mid = Math.floor((l + r) / 2);\n            if (arr[mid] >= idx) r = mid;\n            else l = mid + 1;\n        }\n        let best = Infinity;\n        if (l < arr.length) best = Math.min(best, Math.abs(arr[l] - idx));\n        if (l > 0) best = Math.min(best, Math.abs(arr[l - 1] - idx));\n        return best;\n    });\n};",
+      "approach": "binary-search-basic verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

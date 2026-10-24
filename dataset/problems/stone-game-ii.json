@@ -1,0 +1,78 @@
+{
+  "slug": "stone-game-ii",
+  "number": 1140,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Suffix Sum Transformation",
+      "text": "The total stones remaining from index i onward is suffix_sum[i]. A player aims to maximize their stones by minimizing the opponent answer."
+    },
+    {
+      "level": 2,
+      "title": "State Representation",
+      "text": "Define subproblem state by the current pile index i and current multiplier M. Candidate choices allow taking X piles where 1 <= X <= 2 * M."
+    },
+    {
+      "level": 3,
+      "title": "Transition Relation",
+      "text": "Score at state (i, M) is suffix_sum[i] minus the minimum over valid X of state (i + X, max(M, X))."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def stoneGameII(self, piles: list[int]) -> int:\n        n = len(piles)\n        suffix = [0] * (n + 1)\n        for i in range(n - 1, -1, -1):\n            suffix[i] = suffix[i + 1] + piles[i]\n        \n        memo = {}\n        \n        def dp(i, m):\n            if i + 2 * m >= n:\n                return suffix[i]\n            state = (i, m)\n            if state in memo:\n                return memo[state]\n            \n            res = 0\n            for x in range(1, 2 * m + 1):\n                opp = dp(i + x, max(m, x))\n                res = max(res, suffix[i] - opp)\n            memo[state] = res\n            return res\n        \n        return dp(0, 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^3)",
+    "space": "O(N^2)",
+    "variables": [
+      "N: number of piles"
+    ],
+    "whyNaiveFails": "Exhaustive game tree exploration yields exponential branching.",
+    "spaceTimeTradeoff": "Memoizing states indexed by (i, M) limits unique subproblems to N * N.",
+    "interviewerExpectation": "Candidate should recognize minimax game theory and formulate suffix sum complementary transitions.",
+    "notes": "Initial parameters are i = 0 and M = 1."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def stoneGameII(self, piles: list[int]) -> int:\n        n = len(piles)\n        suffix = [0] * (n + 1)\n        for i in range(n - 1, -1, -1):\n            suffix[i] = suffix[i + 1] + piles[i]\n        \n        memo = {}\n        \n        def dp(i, m):\n            if i + 2 * m >= n:\n                return suffix[i]\n            state = (i, m)\n            if state in memo:\n                return memo[state]\n            \n            res = 0\n            for x in range(1, 2 * m + 1):\n                opp = dp(i + x, max(m, x))\n                res = max(res, suffix[i] - opp)\n            memo[state] = res\n            return res\n        \n        return dp(0, 1)",
+      "approach": "prefix-sum-hashmap verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int stoneGameII(vector<int>& piles) {\n        int n = piles.size();\n        vector<int> suffix(n + 1, 0);\n        for (int i = n - 1; i >= 0; --i) suffix[i] = suffix[i + 1] + piles[i];\n        vector<vector<int>> memo(n + 1, vector<int>(n + 1, 0));\n        \n        auto dp = [&](auto& self, int i, int m) -> int {\n            if (i + 2 * m >= n) return suffix[i];\n            if (memo[i][m] != 0) return memo[i][m];\n            \n            int res = 0;\n            for (int x = 1; x <= 2 * m; ++x) {\n                int opp = self(self, i + x, max(m, x));\n                res = max(res, suffix[i] - opp);\n            }\n            return memo[i][m] = res;\n        };\n        \n        return dp(dp, 0, 1);\n    }\n};",
+      "approach": "prefix-sum-hashmap verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    int[][] memo;\n    int[] suffix;\n    int n;\n    \n    int dp(int i, int m) {\n        if (i + 2 * m >= n) return suffix[i];\n        if (memo[i][m] != 0) return memo[i][m];\n        \n        int res = 0;\n        for (int x = 1; x <= 2 * m; x++) {\n            int opp = dp(i + x, Math.max(m, x));\n            res = Math.max(res, suffix[i] - opp);\n        }\n        return memo[i][m] = res;\n    }\n    \n    public int stoneGameII(int[] piles) {\n        n = piles.length;\n        suffix = new int[n + 1];\n        for (int i = n - 1; i >= 0; i--) suffix[i] = suffix[i + 1] + piles[i];\n        memo = new int[n + 1][n + 1];\n        return dp(0, 1);\n    }\n}",
+      "approach": "prefix-sum-hashmap verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var stoneGameII = function(piles) {\n    const n = piles.length;\n    const suffix = new Array(n + 1).fill(0);\n    for (let i = n - 1; i >= 0; i--) suffix[i] = suffix[i + 1] + piles[i];\n    const memo = Array.from({ length: n + 1 }, () => new Array(n + 1).fill(0));\n    \n    const dp = (i, m) => {\n        if (i + 2 * m >= n) return suffix[i];\n        if (memo[i][m] !== 0) return memo[i][m];\n        \n        let res = 0;\n        for (let x = 1; x <= 2 * m; x++) {\n            const opp = dp(i + x, Math.max(m, x));\n            res = Math.max(res, suffix[i] - opp);\n        }\n        return memo[i][m] = res;\n    };\n    \n    return dp(0, 1);\n};",
+      "approach": "prefix-sum-hashmap verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

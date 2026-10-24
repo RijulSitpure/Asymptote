@@ -1,0 +1,79 @@
+{
+  "slug": "optimize-water-distribution-in-a-village",
+  "number": 1168,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Virtual Source Transformation",
+      "text": "Model building a well at house i as connecting house i to a virtual reservoir node 0 with edge cost wells[i - 1]."
+    },
+    {
+      "level": 2,
+      "title": "Single Spanning Tree",
+      "text": "Combining pipe connections and virtual well edges converts the problem into finding the Minimum Spanning Tree across n + 1 nodes."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Edge Union",
+      "text": "Sort all pipe and well edges by cost. Apply Kruskal algorithm until n edges are selected connecting all houses to the source."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def minCostToSupplyWater(self, n: int, wells: list[int], pipes: list[list[int]]) -> int:\n        edges = []\n        for i, cost in enumerate(wells):\n            edges.append((cost, 0, i + 1))\n        for u, v, cost in pipes:\n            edges.append((cost, u, v))\n        edges.sort()\n        \n        parent = list(range(n + 1))\n        def find(x):\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n        \n        total_cost = 0\n        count = 0\n        for cost, u, v in edges:\n            pu, pv = find(u), find(v)\n            if pu != pv:\n                parent[pu] = pv\n                total_cost += cost\n                count += 1\n                if count == n:\n                    break\n        return total_cost\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E log E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: n + 1 vertices",
+      "E: n wells + number of pipes"
+    ],
+    "whyNaiveFails": "Separately choosing which houses build wells and which share pipes leads to exponential 2^N combination evaluations.",
+    "spaceTimeTradeoff": "The virtual super-node abstraction enables Kruskal algorithm to solve well-and-pipe allocation in near-linear time.",
+    "interviewerExpectation": "Candidate should recognize the classic super-source graph reduction technique.",
+    "notes": "Virtual source node 0 unifies node weights with edge weights."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minCostToSupplyWater(self, n: int, wells: list[int], pipes: list[list[int]]) -> int:\n        edges = []\n        for i, cost in enumerate(wells):\n            edges.append((cost, 0, i + 1))\n        for u, v, cost in pipes:\n            edges.append((cost, u, v))\n        edges.sort()\n        \n        parent = list(range(n + 1))\n        def find(x):\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n        \n        total_cost = 0\n        count = 0\n        for cost, u, v in edges:\n            pu, pv = find(u), find(v)\n            if pu != pv:\n                parent[pu] = pv\n                total_cost += cost\n                count += 1\n                if count == n:\n                    break\n        return total_cost",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minCostToSupplyWater(int n, vector<int>& wells, vector<vector<int>>& pipes) {\n        vector<tuple<int, int, int>> edges;\n        for (int i = 0; i < n; ++i) {\n            edges.push_back({wells[i], 0, i + 1});\n        }\n        for (const auto& p : pipes) {\n            edges.push_back({p[2], p[0], p[1]});\n        }\n        sort(edges.begin(), edges.end());\n        \n        vector<int> parent(n + 1);\n        iota(parent.begin(), parent.end(), 0);\n        auto find = [&](auto& self, int x) -> int {\n            if (parent[x] != x) parent[x] = self(self, parent[x]);\n            return parent[x];\n        };\n        \n        int total_cost = 0, count = 0;\n        for (const auto& [cost, u, v] : edges) {\n            int pu = find(find, u), pv = find(find, v);\n            if (pu != pv) {\n                parent[pu] = pv;\n                total_cost += cost;\n                count++;\n                if (count == n) break;\n            }\n        }\n        return total_cost;\n    }\n};",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    int[] parent;\n    \n    int find(int x) {\n        if (parent[x] != x) {\n            parent[x] = find(parent[x]);\n        }\n        return parent[x];\n    }\n    \n    public int minCostToSupplyWater(int n, int[] wells, int[][] pipes) {\n        List<int[]> edges = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            edges.add(new int[]{wells[i], 0, i + 1});\n        }\n        for (int[] p : pipes) {\n            edges.add(new int[]{p[2], p[0], p[1]});\n        }\n        edges.sort((a, b) -> Integer.compare(a[0], b[0]));\n        \n        parent = new int[n + 1];\n        for (int i = 0; i <= n; i++) parent[i] = i;\n        \n        int totalCost = 0, count = 0;\n        for (int[] e : edges) {\n            int pu = find(e[1]), pv = find(e[2]);\n            if (pu != pv) {\n                parent[pu] = pv;\n                totalCost += e[0];\n                count++;\n                if (count == n) break;\n            }\n        }\n        return totalCost;\n    }\n}",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minCostToSupplyWater = function(n, wells, pipes) {\n    const edges = [];\n    for (let i = 0; i < n; i++) {\n        edges.push([wells[i], 0, i + 1]);\n    }\n    for (const [u, v, cost] of pipes) {\n        edges.push([cost, u, v]);\n    }\n    edges.sort((a, b) => a[0] - b[0]);\n    \n    const parent = Array.from({ length: n + 1 }, (_, i) => i);\n    const find = (x) => {\n        if (parent[x] !== x) parent[x] = find(parent[x]);\n        return parent[x];\n    };\n    \n    let totalCost = 0, count = 0;\n    for (const [cost, u, v] of edges) {\n        const pu = find(u), pv = find(v);\n        if (pu !== pv) {\n            parent[pu] = pv;\n            totalCost += cost;\n            count++;\n            if (count === n) break;\n        }\n    }\n    return totalCost;\n};",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

@@ -1,0 +1,80 @@
+{
+  "slug": "number-of-valid-words-for-each-puzzle",
+  "number": 1178,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bitmask Compression for Words",
+      "text": "Since character order does not matter and puzzle length is exactly 7, compress words into 26-bit integers."
+    },
+    {
+      "level": 2,
+      "title": "Filter Words with Excess Letters",
+      "text": "Words with more than 7 unique characters can never be subsets of a 7-character puzzle, so they can be discarded."
+    },
+    {
+      "level": 3,
+      "title": "Puzzle Submask Iteration",
+      "text": "The puzzle first character bit must always be set. Iterate over all 2^6 = 64 submasks of the remaining 6 puzzle characters and sum their word frequencies."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import Counter\n\nclass Solution:\n    def findNumOfValidWords(self, words: list[str], puzzles: list[str]) -> list[int]:\n        word_counts = Counter()\n        for w in words:\n            mask = 0\n            for c in w:\n                mask |= (1 << (ord(c) - ord('a')))\n            if bin(mask).count('1') <= 7:\n                word_counts[mask] += 1\n        \n        res = []\n        for p in puzzles:\n            first_bit = 1 << (ord(p[0]) - ord('a'))\n            rest_mask = 0\n            for c in p[1:]:\n                rest_mask |= (1 << (ord(c) - ord('a')))\n            \n            total = word_counts[first_bit]\n            submask = rest_mask\n            while submask > 0:\n                total += word_counts[submask | first_bit]\n                submask = (submask - 1) & rest_mask\n            res.append(total)\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(W * L + P * 2^6)",
+    "space": "O(W)",
+    "variables": [
+      "W: number of words",
+      "L: max word length",
+      "P: number of puzzles"
+    ],
+    "whyNaiveFails": "Testing all word-puzzle pairs naively takes quadratic O(W * P * L) time.",
+    "spaceTimeTradeoff": "Iterating over all 64 submasks of each puzzle takes constant 2^6 steps per puzzle.",
+    "interviewerExpectation": "Candidate should recognize that 7-letter puzzles suggest submask iteration over 2^6 combinations.",
+    "notes": "First letter of puzzle is mandatory for every matching word."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import Counter\n\nclass Solution:\n    def findNumOfValidWords(self, words: list[str], puzzles: list[str]) -> list[int]:\n        word_counts = Counter()\n        for w in words:\n            mask = 0\n            for c in w:\n                mask |= (1 << (ord(c) - ord('a')))\n            if bin(mask).count('1') <= 7:\n                word_counts[mask] += 1\n        \n        res = []\n        for p in puzzles:\n            first_bit = 1 << (ord(p[0]) - ord('a'))\n            rest_mask = 0\n            for c in p[1:]:\n                rest_mask |= (1 << (ord(c) - ord('a')))\n            \n            total = word_counts[first_bit]\n            submask = rest_mask\n            while submask > 0:\n                total += word_counts[submask | first_bit]\n                submask = (submask - 1) & rest_mask\n            res.append(total)\n        return res",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> findNumOfValidWords(vector<string>& words, vector<string>& puzzles) {\n        unordered_map<int, int> word_counts;\n        for (const string& w : words) {\n            int mask = 0;\n            for (char c : w) mask |= (1 << (c - 'a'));\n            if (__builtin_popcount(mask) <= 7) {\n                word_counts[mask]++;\n            }\n        }\n        \n        vector<int> res;\n        res.reserve(puzzles.size());\n        for (const string& p : puzzles) {\n            int first_bit = 1 << (p[0] - 'a');\n            int rest_mask = 0;\n            for (int i = 1; i < 7; ++i) rest_mask |= (1 << (p[i] - 'a'));\n            \n            int total = word_counts[first_bit];\n            int submask = rest_mask;\n            while (submask > 0) {\n                if (word_counts.count(submask | first_bit)) {\n                    total += word_counts[submask | first_bit];\n                }\n                submask = (submask - 1) & rest_mask;\n            }\n            res.push_back(total);\n        }\n        return res;\n    }\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public List<Integer> findNumOfValidWords(String[] words, String[] puzzles) {\n        Map<Integer, Integer> wordCounts = new HashMap<>();\n        for (String w : words) {\n            int mask = 0;\n            for (char c : w.toCharArray()) mask |= (1 << (c - 'a'));\n            if (Integer.bitCount(mask) <= 7) {\n                wordCounts.put(mask, wordCounts.getOrDefault(mask, 0) + 1);\n            }\n        }\n        \n        List<Integer> res = new ArrayList<>(puzzles.length);\n        for (String p : puzzles) {\n            int firstBit = 1 << (p.charAt(0) - 'a');\n            int restMask = 0;\n            for (int i = 1; i < 7; i++) restMask |= (1 << (p.charAt(i) - 'a'));\n            \n            int total = wordCounts.getOrDefault(firstBit, 0);\n            int submask = restMask;\n            while (submask > 0) {\n                total += wordCounts.getOrDefault(submask | firstBit, 0);\n                submask = (submask - 1) & restMask;\n            }\n            res.add(total);\n        }\n        return res;\n    }\n}",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findNumOfValidWords = function(words, puzzles) {\n    const wordCounts = new Map();\n    const countBits = (n) => {\n        let cnt = 0;\n        while (n > 0) { cnt += n & 1; n >>= 1; }\n        return cnt;\n    };\n    \n    for (const w of words) {\n        let mask = 0;\n        for (const c of w) mask |= (1 << (c.charCodeAt(0) - 97));\n        if (countBits(mask) <= 7) {\n            wordCounts.set(mask, (wordCounts.get(mask) || 0) + 1);\n        }\n    }\n    \n    return puzzles.map(p => {\n        const firstBit = 1 << (p.charCodeAt(0) - 97);\n        let restMask = 0;\n        for (let i = 1; i < 7; i++) restMask |= (1 << (p.charCodeAt(i) - 97));\n        \n        let total = wordCounts.get(firstBit) || 0;\n        let submask = restMask;\n        while (submask > 0) {\n            total += wordCounts.get(submask | firstBit) || 0;\n            submask = (submask - 1) & restMask;\n        }\n        return total;\n    });\n};",
+      "approach": "tree-trie-prefix verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

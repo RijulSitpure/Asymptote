@@ -1,0 +1,79 @@
+{
+  "slug": "smallest-string-with-swaps",
+  "number": 1202,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Group Connected Indices",
+      "text": "Any positions connected through a chain of allowable swap pairs can be arbitrarily permuted among themselves."
+    },
+    {
+      "level": 2,
+      "title": "Collect Characters per Component",
+      "text": "Group indices belonging to the same component and extract their corresponding characters from the original string."
+    },
+    {
+      "level": 3,
+      "title": "Sort and Distribute Lexicographically",
+      "text": "Sort both the list of indices and their characters ascending, placing sorted characters into the sorted index locations."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def smallestStringWithSwaps(self, s: str, pairs: list[list[int]]) -> str:\n        parent = list(range(len(s)))\n        \n        def find(i):\n            if parent[i] != i:\n                parent[i] = find(parent[i])\n            return parent[i]\n            \n        def union(i, j):\n            root_i, root_j = find(i), find(j)\n            if root_i != root_j:\n                parent[root_i] = root_j\n                \n        for u, v in pairs:\n            union(u, v)\n            \n        groups = defaultdict(list)\n        for i in range(len(s)):\n            groups[find(i)].append(i)\n            \n        res = list(s)\n        for idxs in groups.values():\n            chars = sorted(res[i] for i in idxs)\n            idxs.sort()\n            for i, c in zip(idxs, chars):\n                res[i] = c\n                \n        return ''.join(res)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((V + E) * alpha(V) + V log V)",
+    "space": "O(V)",
+    "variables": [
+      "V: length of string s",
+      "E: number of swap pairs"
+    ],
+    "whyNaiveFails": "Simulating individual swap operations leads to infinite cycles or exponential permutations.",
+    "spaceTimeTradeoff": "Connected component identification with disjoint set union groups indices in near-linear time.",
+    "interviewerExpectation": "Candidate should recognize that transitivity of swaps allows sorting characters within each connected component independently.",
+    "notes": "Sorting characters within each component yields the lexicographically smallest result."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def smallestStringWithSwaps(self, s: str, pairs: list[list[int]]) -> str:\n        parent = list(range(len(s)))\n        \n        def find(i):\n            if parent[i] != i:\n                parent[i] = find(parent[i])\n            return parent[i]\n            \n        def union(i, j):\n            root_i, root_j = find(i), find(j)\n            if root_i != root_j:\n                parent[root_i] = root_j\n                \n        for u, v in pairs:\n            union(u, v)\n            \n        groups = defaultdict(list)\n        for i in range(len(s)):\n            groups[find(i)].append(i)\n            \n        res = list(s)\n        for idxs in groups.values():\n            chars = sorted(res[i] for i in idxs)\n            idxs.sort()\n            for i, c in zip(idxs, chars):\n                res[i] = c\n                \n        return ''.join(res)",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    std::vector<int> parent;\n    int find(int i) {\n        if (parent[i] == i) return i;\n        return parent[i] = find(parent[i]);\n    }\n    void unite(int i, int j) {\n        int rootI = find(i), rootJ = find(j);\n        if (rootI != rootJ) parent[rootI] = rootJ;\n    }\npublic:\n    std::string smallestStringWithSwaps(std::string s, std::vector<std::vector<int>>& pairs) {\n        int n = s.size();\n        parent.resize(n);\n        std::iota(parent.begin(), parent.end(), 0);\n        \n        for (const auto& p : pairs) unite(p[0], p[1]);\n        \n        std::unordered_map<int, std::vector<int>> groups;\n        for (int i = 0; i < n; ++i) groups[find(i)].push_back(i);\n        \n        for (auto& [root, idxs] : groups) {\n            std::string chars = \"\";\n            for (int i : idxs) chars += s[i];\n            std::sort(chars.begin(), chars.end());\n            std::sort(idxs.begin(), idxs.end());\n            for (int k = 0; k < idxs.size(); ++k) s[idxs[k]] = chars[k];\n        }\n        return s;\n    }\n};",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    int[] parent;\n    int find(int i) {\n        if (parent[i] == i) return i;\n        return parent[i] = find(parent[i]);\n    }\n    void union(int i, int j) {\n        int rootI = find(i), rootJ = find(j);\n        if (rootI != rootJ) parent[rootI] = rootJ;\n    }\n    \n    public String smallestStringWithSwaps(String s, java.util.List<java.util.List<Integer>> pairs) {\n        int n = s.length();\n        parent = new int[n];\n        for (int i = 0; i < n; i++) parent[i] = i;\n        \n        for (java.util.List<Integer> p : pairs) union(p.get(0), p.get(1));\n        \n        java.util.Map<Integer, java.util.List<Integer>> groups = new java.util.HashMap<>();\n        for (int i = 0; i < n; i++) {\n            groups.computeIfAbsent(find(i), k -> new java.util.ArrayList<>()).add(i);\n        }\n        \n        char[] res = s.toCharArray();\n        for (java.util.List<Integer> idxs : groups.values()) {\n            java.util.List<Character> chars = new java.util.ArrayList<>();\n            for (int i : idxs) chars.add(res[i]);\n            java.util.Collections.sort(chars);\n            java.util.Collections.sort(idxs);\n            for (int k = 0; k < idxs.size(); k++) {\n                res[idxs.get(k)] = chars.get(k);\n            }\n        }\n        return new String(res);\n    }\n}",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var smallestStringWithSwaps = function(s, pairs) {\n    const n = s.length;\n    const parent = Array.from({ length: n }, (_, i) => i);\n    const find = (i) => {\n        if (parent[i] !== i) parent[i] = find(parent[i]);\n        return parent[i];\n    };\n    const union = (i, j) => {\n        const rootI = find(i), rootJ = find(j);\n        if (rootI !== rootJ) parent[rootI] = rootJ;\n    };\n    \n    for (const [u, v] of pairs) union(u, v);\n    \n    const groups = new Map();\n    for (let i = 0; i < n; i++) {\n        const root = find(i);\n        if (!groups.has(root)) groups.set(root, []);\n        groups.get(root).push(i);\n    }\n    \n    const res = s.split('');\n    for (const idxs of groups.values()) {\n        const chars = idxs.map(i => res[i]).sort();\n        idxs.sort((a, b) => a - b);\n        for (let k = 0; k < idxs.length; k++) {\n            res[idxs[k]] = chars[k];\n        }\n    }\n    return res.join('');\n};",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

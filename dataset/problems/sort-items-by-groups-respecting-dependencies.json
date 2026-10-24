@@ -1,0 +1,79 @@
+{
+  "slug": "sort-items-by-groups-respecting-dependencies",
+  "number": 1203,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Assign Ungrouped Items Unique Groups",
+      "text": "Items without an assigned group should each receive a new distinct group identifier to avoid false grouping constraints."
+    },
+    {
+      "level": 2,
+      "title": "Construct Item and Group Dependency Graphs",
+      "text": "Build two separate directed acyclic graphs: one representing dependencies between items, and another between groups."
+    },
+    {
+      "level": 3,
+      "title": "Perform Two-Level Topological Ordering",
+      "text": "Topologically sort items and groups independently; return empty if either ordering encounters a directed cycle."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict, deque\n\nclass Solution:\n    def sortItems(self, n: int, m: int, group: list[int], beforeItems: list[list[int]]) -> list[int]:\n        for i in range(n):\n            if group[i] == -1:\n                group[i] = m\n                m += 1\n                \n        item_graph = defaultdict(list)\n        item_indegree = [0] * n\n        group_graph = defaultdict(list)\n        group_indegree = [0] * m\n        \n        for curr, prevs in enumerate(beforeItems):\n            for prev in prevs:\n                item_graph[prev].append(curr)\n                item_indegree[curr] += 1\n                if group[prev] != group[curr]:\n                    group_graph[group[prev]].append(group[curr])\n                    group_indegree[group[curr]] += 1\n                    \n        def topo_sort(graph, indegree, count):\n            q = deque([node for node in range(count) if indegree[node] == 0])\n            res = []\n            while q:\n                node = q.popleft()\n                res.append(node)\n                for neighbor in graph[node]:\n                    indegree[neighbor] -= 1\n                    if indegree[neighbor] == 0:\n                        q.append(neighbor)\n            return res if len(res) == count else []\n            \n        item_order = topo_sort(item_graph, item_indegree, n)\n        group_order = topo_sort(group_graph, group_indegree, m)\n        \n        if not item_order or not group_order:\n            return []\n            \n        grouped_items = defaultdict(list)\n        for item in item_order:\n            grouped_items[group[item]].append(item)\n            \n        ans = []\n        for grp in group_order:\n            ans.extend(grouped_items[grp])\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: total items n plus groups m",
+      "E: total dependency relations"
+    ],
+    "whyNaiveFails": "Single-level topological ordering fails to maintain contiguous grouping of items.",
+    "spaceTimeTradeoff": "Decomposing the hierarchy into item-level and group-level Kahn sorts ensures linear running time and correct grouping.",
+    "interviewerExpectation": "Candidate should recognize two-level topological sorting and properly isolate items with group = -1.",
+    "notes": "If either graph contains a directed cycle, no valid sequence exists."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict, deque\n\nclass Solution:\n    def sortItems(self, n: int, m: int, group: list[int], beforeItems: list[list[int]]) -> list[int]:\n        for i in range(n):\n            if group[i] == -1:\n                group[i] = m\n                m += 1\n                \n        item_graph = defaultdict(list)\n        item_indegree = [0] * n\n        group_graph = defaultdict(list)\n        group_indegree = [0] * m\n        \n        for curr, prevs in enumerate(beforeItems):\n            for prev in prevs:\n                item_graph[prev].append(curr)\n                item_indegree[curr] += 1\n                if group[prev] != group[curr]:\n                    group_graph[group[prev]].append(group[curr])\n                    group_indegree[group[curr]] += 1\n                    \n        def topo_sort(graph, indegree, count):\n            q = deque([node for node in range(count) if indegree[node] == 0])\n            res = []\n            while q:\n                node = q.popleft()\n                res.append(node)\n                for neighbor in graph[node]:\n                    indegree[neighbor] -= 1\n                    if indegree[neighbor] == 0:\n                        q.append(neighbor)\n            return res if len(res) == count else []\n            \n        item_order = topo_sort(item_graph, item_indegree, n)\n        group_order = topo_sort(group_graph, group_indegree, m)\n        \n        if not item_order or not group_order:\n            return []\n            \n        grouped_items = defaultdict(list)\n        for item in item_order:\n            grouped_items[group[item]].append(item)\n            \n        ans = []\n        for grp in group_order:\n            ans.extend(grouped_items[grp])\n        return ans",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    std::vector<int> topoSort(std::unordered_map<int, std::vector<int>>& graph, std::vector<int>& indegree, int count) {\n        std::queue<int> q;\n        for (int i = 0; i < count; ++i) if (indegree[i] == 0) q.push(i);\n        std::vector<int> res;\n        while (!q.empty()) {\n            int node = q.front();\n            q.pop();\n            res.push_back(node);\n            for (int neighbor : graph[node]) {\n                if (--indegree[neighbor] == 0) q.push(neighbor);\n            }\n        }\n        return res.size() == count ? res : std::vector<int>();\n    }\npublic:\n    std::vector<int> sortItems(int n, int m, std::vector<int>& group, std::vector<std::vector<int>>& beforeItems) {\n        for (int i = 0; i < n; ++i) {\n            if (group[i] == -1) group[i] = m++;\n        }\n        \n        std::unordered_map<int, std::vector<int>> itemGraph, groupGraph;\n        std::vector<int> itemIndegree(n, 0), groupIndegree(m, 0);\n        \n        for (int curr = 0; curr < n; ++curr) {\n            for (int prev : beforeItems[curr]) {\n                itemGraph[prev].push_back(curr);\n                itemIndegree[curr]++;\n                if (group[prev] != group[curr]) {\n                    groupGraph[group[prev]].push_back(group[curr]);\n                    groupIndegree[group[curr]]++;\n                }\n            }\n        }\n        \n        std::vector<int> itemOrder = topoSort(itemGraph, itemIndegree, n);\n        std::vector<int> groupOrder = topoSort(groupGraph, groupIndegree, m);\n        \n        if (itemOrder.empty() || groupOrder.empty()) return {};\n        \n        std::unordered_map<int, std::vector<int>> groupedItems;\n        for (int item : itemOrder) groupedItems[group[item]].push_back(item);\n        \n        std::vector<int> ans;\n        for (int grp : groupOrder) {\n            for (int item : groupedItems[grp]) ans.push_back(item);\n        }\n        return ans;\n    }\n};",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    java.util.List<Integer> topoSort(java.util.Map<Integer, java.util.List<Integer>> graph, int[] indegree, int count) {\n        java.util.Queue<Integer> q = new java.util.LinkedList<>();\n        for (int i = 0; i < count; i++) if (indegree[i] == 0) q.add(i);\n        java.util.List<Integer> res = new java.util.ArrayList<>();\n        while (!q.isEmpty()) {\n            int node = q.poll();\n            res.add(node);\n            for (int neighbor : graph.getOrDefault(node, java.util.List.of())) {\n                if (--indegree[neighbor] == 0) q.add(neighbor);\n            }\n        }\n        return res.size() == count ? res : java.util.List.of();\n    }\n    \n    public int[] sortItems(int n, int m, int[] group, java.util.List<java.util.List<Integer>> beforeItems) {\n        for (int i = 0; i < n; i++) {\n            if (group[i] == -1) group[i] = m++;\n        }\n        \n        java.util.Map<Integer, java.util.List<Integer>> itemGraph = new java.util.HashMap<>();\n        java.util.Map<Integer, java.util.List<Integer>> groupGraph = new java.util.HashMap<>();\n        int[] itemIndegree = new int[n];\n        int[] groupIndegree = new int[m];\n        \n        for (int curr = 0; curr < n; curr++) {\n            for (int prev : beforeItems.get(curr)) {\n                itemGraph.computeIfAbsent(prev, k -> new java.util.ArrayList<>()).add(curr);\n                itemIndegree[curr]++;\n                if (group[prev] != group[curr]) {\n                    groupGraph.computeIfAbsent(group[prev], k -> new java.util.ArrayList<>()).add(group[curr]);\n                    groupIndegree[group[curr]]++;\n                }\n            }\n        }\n        \n        java.util.List<Integer> itemOrder = topoSort(itemGraph, itemIndegree, n);\n        java.util.List<Integer> groupOrder = topoSort(groupGraph, groupIndegree, m);\n        \n        if (itemOrder.isEmpty() || groupOrder.isEmpty()) return new int[0];\n        \n        java.util.Map<Integer, java.util.List<Integer>> grouped = new java.util.HashMap<>();\n        for (int item : itemOrder) {\n            grouped.computeIfAbsent(group[item], k -> new java.util.ArrayList<>()).add(item);\n        }\n        \n        int[] ans = new int[n];\n        int idx = 0;\n        for (int grp : groupOrder) {\n            for (int item : grouped.getOrDefault(grp, java.util.List.of())) {\n                ans[idx++] = item;\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var sortItems = function(n, m, group, beforeItems) {\n    for (let i = 0; i < n; i++) {\n        if (group[i] === -1) group[i] = m++;\n    }\n    \n    const itemGraph = new Map(), groupGraph = new Map();\n    const itemIndegree = new Array(n).fill(0);\n    const groupIndegree = new Array(m).fill(0);\n    \n    for (let curr = 0; curr < n; curr++) {\n        for (const prev of beforeItems[curr]) {\n            if (!itemGraph.has(prev)) itemGraph.set(prev, []);\n            itemGraph.get(prev).push(curr);\n            itemIndegree[curr]++;\n            if (group[prev] !== group[curr]) {\n                if (!groupGraph.has(group[prev])) groupGraph.set(group[prev], []);\n                groupGraph.get(group[prev]).push(group[curr]);\n                groupIndegree[group[curr]]++;\n            }\n        }\n    }\n    \n    const topoSort = (graph, indegree, count) => {\n        const q = [];\n        for (let i = 0; i < count; i++) if (indegree[i] === 0) q.push(i);\n        const res = [];\n        while (q.length > 0) {\n            const node = q.shift();\n            res.push(node);\n            for (const neighbor of graph.get(node) || []) {\n                if (--indegree[neighbor] === 0) q.push(neighbor);\n            }\n        }\n        return res.length === count ? res : [];\n    };\n    \n    const itemOrder = topoSort(itemGraph, itemIndegree, n);\n    const groupOrder = topoSort(groupGraph, groupIndegree, m);\n    \n    if (itemOrder.length === 0 || groupOrder.length === 0) return [];\n    \n    const grouped = new Map();\n    for (const item of itemOrder) {\n        const grp = group[item];\n        if (!grouped.has(grp)) grouped.set(grp, []);\n        grouped.get(grp).push(item);\n    }\n    \n    const ans = [];\n    for (const grp of groupOrder) {\n        for (const item of grouped.get(grp) || []) {\n            ans.push(item);\n        }\n    }\n    return ans;\n};",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

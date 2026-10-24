@@ -1,0 +1,78 @@
+{
+  "slug": "invalid-transactions",
+  "number": 1169,
+  "category": "Algorithms",
+  "patterns": [
+    "hash-map-lookup"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two Invalidation Criteria",
+      "text": "A transaction is invalid if amount exceeds 1000 or if another transaction with the same name occurs in a different city within 60 minutes."
+    },
+    {
+      "level": 2,
+      "title": "Parse and Index Transactions",
+      "text": "Parse strings into structured records with name, time, amount, city, and original index. Group transactions by customer name."
+    },
+    {
+      "level": 3,
+      "title": "Cross-Record Conflict Marking",
+      "text": "For each person, compare pairs of transactions. If their cities differ and their absolute time difference is <= 60, mark both as invalid."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def invalidTransactions(self, transactions: list[str]) -> list[str]:\n        parsed = []\n        name_map = defaultdict(list)\n        \n        for i, t in enumerate(transactions):\n            name, time_str, amount_str, city = t.split(\",\")\n            time, amount = int(time_str), int(amount_str)\n            parsed.append((name, time, amount, city))\n            name_map[name].append(i)\n        \n        invalid_indices = set()\n        for i, (name, time, amount, city) in enumerate(parsed):\n            if amount > 1000:\n                invalid_indices.add(i)\n            for j in name_map[name]:\n                if i != j:\n                    other_time, other_city = parsed[j][1], parsed[j][3]\n                    if other_city != city and abs(time - other_time) <= 60:\n                        invalid_indices.add(i)\n                        invalid_indices.add(j)\n        \n        return [transactions[i] for i in invalid_indices]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of transactions"
+    ],
+    "whyNaiveFails": "Comparing all pairs across all users naively without grouping by name takes unnecessary cross-user comparison time.",
+    "spaceTimeTradeoff": "Grouping transactions by customer name partitions comparisons and preserves original string entries.",
+    "interviewerExpectation": "Candidate should accurately parse string tokens and mark both conflicting transactions when a violation is found.",
+    "notes": "Preserves duplicate identical transaction strings if multiple violations occur."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def invalidTransactions(self, transactions: list[str]) -> list[str]:\n        parsed = []\n        name_map = defaultdict(list)\n        \n        for i, t in enumerate(transactions):\n            name, time_str, amount_str, city = t.split(\",\")\n            time, amount = int(time_str), int(amount_str)\n            parsed.append((name, time, amount, city))\n            name_map[name].append(i)\n        \n        invalid_indices = set()\n        for i, (name, time, amount, city) in enumerate(parsed):\n            if amount > 1000:\n                invalid_indices.add(i)\n            for j in name_map[name]:\n                if i != j:\n                    other_time, other_city = parsed[j][1], parsed[j][3]\n                    if other_city != city and abs(time - other_time) <= 60:\n                        invalid_indices.add(i)\n                        invalid_indices.add(j)\n        \n        return [transactions[i] for i in invalid_indices]",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<string> invalidTransactions(vector<string>& transactions) {\n        struct Tx {\n            string name;\n            int time;\n            int amount;\n            string city;\n            int id;\n        };\n        int n = transactions.size();\n        vector<Tx> txs;\n        unordered_map<string, vector<int>> name_map;\n        \n        for (int i = 0; i < n; ++i) {\n            stringstream ss(transactions[i]);\n            string name, time_str, amount_str, city;\n            getline(ss, name, ',');\n            getline(ss, time_str, ',');\n            getline(ss, amount_str, ',');\n            getline(ss, city, ',');\n            txs.push_back({name, stoi(time_str), stoi(amount_str), city, i});\n            name_map[name].push_back(i);\n        }\n        \n        vector<bool> invalid(n, false);\n        for (int i = 0; i < n; ++i) {\n            if (txs[i].amount > 1000) invalid[i] = true;\n            for (int j : name_map[txs[i].name]) {\n                if (i != j && txs[i].city != txs[j].city && abs(txs[i].time - txs[j].time) <= 60) {\n                    invalid[i] = true;\n                    invalid[j] = true;\n                }\n            }\n        }\n        \n        vector<string> res;\n        for (int i = 0; i < n; ++i) {\n            if (invalid[i]) res.push_back(transactions[i]);\n        }\n        return res;\n    }\n};",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class Tx {\n        String name;\n        int time;\n        int amount;\n        String city;\n        int id;\n        Tx(String name, int time, int amount, String city, int id) {\n            this.name = name;\n            this.time = time;\n            this.amount = amount;\n            this.city = city;\n            this.id = id;\n        }\n    }\n    \n    public List<String> invalidTransactions(String[] transactions) {\n        int n = transactions.length;\n        Tx[] txs = new Tx[n];\n        Map<String, List<Integer>> nameMap = new HashMap<>();\n        \n        for (int i = 0; i < n; i++) {\n            String[] parts = transactions[i].split(\",\");\n            txs[i] = new Tx(parts[0], Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), parts[3], i);\n            nameMap.computeIfAbsent(parts[0], k -> new ArrayList<>()).add(i);\n        }\n        \n        boolean[] invalid = new boolean[n];\n        for (int i = 0; i < n; i++) {\n            if (txs[i].amount > 1000) invalid[i] = true;\n            for (int j : nameMap.get(txs[i].name)) {\n                if (i != j && !txs[i].city.equals(txs[j].city) && Math.abs(txs[i].time - txs[j].time) <= 60) {\n                    invalid[i] = true;\n                    invalid[j] = true;\n                }\n            }\n        }\n        \n        List<String> res = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            if (invalid[i]) res.add(transactions[i]);\n        }\n        return res;\n    }\n}",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var invalidTransactions = function(transactions) {\n    const n = transactions.length;\n    const txs = [];\n    const nameMap = new Map();\n    \n    for (let i = 0; i < n; i++) {\n        const [name, timeStr, amountStr, city] = transactions[i].split(',');\n        txs.push({ name, time: Number(timeStr), amount: Number(amountStr), city, id: i });\n        if (!nameMap.has(name)) nameMap.set(name, []);\n        nameMap.get(name).push(i);\n    }\n    \n    const invalid = new Set();\n    for (let i = 0; i < n; i++) {\n        if (txs[i].amount > 1000) invalid.add(i);\n        for (const j of nameMap.get(txs[i].name)) {\n            if (i !== j && txs[i].city !== txs[j].city && Math.abs(txs[i].time - txs[j].time) <= 60) {\n                invalid.add(i);\n                invalid.add(j);\n            }\n        }\n    }\n    \n    const res = [];\n    for (let i = 0; i < n; i++) {\n        if (invalid.has(i)) res.push(transactions[i]);\n    }\n    return res;\n};",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

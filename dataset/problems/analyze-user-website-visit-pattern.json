@@ -1,0 +1,80 @@
+{
+  "slug": "analyze-user-website-visit-pattern",
+  "number": 1152,
+  "category": "Algorithms",
+  "patterns": [
+    "hash-map-lookup"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Group and Sort by Timestamp",
+      "text": "Group visits by username and sort each user browsing history chronologically."
+    },
+    {
+      "level": 2,
+      "title": "Form Distinct 3-Sequences",
+      "text": "For each user with at least three visits, generate all unique ordered 3-tuples of visited websites."
+    },
+    {
+      "level": 3,
+      "title": "Global Score and Lexicographical Comparison",
+      "text": "Aggregate frequency across distinct users for each 3-sequence. Find the pattern with the highest user frequency, resolving ties lexicographically."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict, Counter\nfrom itertools import combinations\n\nclass Solution:\n    def mostVisitedPattern(self, username: list[str], timestamp: list[int], website: list[str]) -> list[str]:\n        visits = sorted(zip(timestamp, username, website))\n        user_history = defaultdict(list)\n        for t, u, w in visits:\n            user_history[u].append(w)\n        \n        pattern_counts = Counter()\n        for u, history in user_history.items():\n            if len(history) >= 3:\n                unique_patterns = set(combinations(history, 3))\n                for pat in unique_patterns:\n                    pattern_counts[pat] += 1\n        \n        best_pattern = min(pattern_counts.keys(), key=lambda p: (-pattern_counts[p], p))\n        return list(best_pattern)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N + U * K^3)",
+    "space": "O(N + U * K^3)",
+    "variables": [
+      "N: total visits",
+      "U: number of users",
+      "K: max visits per user"
+    ],
+    "whyNaiveFails": "Evaluating permutations instead of strictly ordered 3-combinations ignores timestamp constraints and balloons state size.",
+    "spaceTimeTradeoff": "Generating combinations per user and recording unique sets per user avoids overcounting duplicate patterns.",
+    "interviewerExpectation": "Candidate should handle chronological sorting and tie-breaking lexicographically.",
+    "notes": "Each user contributes at most once to any given 3-sequence."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict, Counter\nfrom itertools import combinations\n\nclass Solution:\n    def mostVisitedPattern(self, username: list[str], timestamp: list[int], website: list[str]) -> list[str]:\n        visits = sorted(zip(timestamp, username, website))\n        user_history = defaultdict(list)\n        for t, u, w in visits:\n            user_history[u].append(w)\n        \n        pattern_counts = Counter()\n        for u, history in user_history.items():\n            if len(history) >= 3:\n                unique_patterns = set(combinations(history, 3))\n                for pat in unique_patterns:\n                    pattern_counts[pat] += 1\n        \n        best_pattern = min(pattern_counts.keys(), key=lambda p: (-pattern_counts[p], p))\n        return list(best_pattern)",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<string> mostVisitedPattern(vector<string>& username, vector<int>& timestamp, vector<string>& website) {\n        int n = username.size();\n        vector<tuple<int, string, string>> visits;\n        for (int i = 0; i < n; ++i) {\n            visits.push_back({timestamp[i], username[i], website[i]});\n        }\n        sort(visits.begin(), visits.end());\n        \n        unordered_map<string, vector<string>> user_history;\n        for (const auto& [t, u, w] : visits) {\n            user_history[u].push_back(w);\n        }\n        \n        map<vector<string>, int> pattern_counts;\n        for (const auto& [u, history] : user_history) {\n            int sz = history.size();\n            set<vector<string>> unique_patterns;\n            for (int i = 0; i < sz; ++i) {\n                for (int j = i + 1; j < sz; ++j) {\n                    for (int k = j + 1; k < sz; ++k) {\n                        unique_patterns.insert({history[i], history[j], history[k]});\n                    }\n                }\n            }\n            for (const auto& pat : unique_patterns) {\n                pattern_counts[pat]++;\n            }\n        }\n        \n        int max_cnt = 0;\n        vector<string> best;\n        for (const auto& [pat, cnt] : pattern_counts) {\n            if (cnt > max_cnt) {\n                max_cnt = cnt;\n                best = pat;\n            }\n        }\n        return best;\n    }\n};",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public List<String> mostVisitedPattern(String[] username, int[] timestamp, String[] website) {\n        int n = username.length;\n        List<int[]> order = new ArrayList<>();\n        for (int i = 0; i < n; i++) order.add(new int[]{timestamp[i], i});\n        order.sort(Comparator.comparingInt(a -> a[0]));\n        \n        Map<String, List<String>> userHistory = new HashMap<>();\n        for (int[] item : order) {\n            int i = item[1];\n            userHistory.computeIfAbsent(username[i], k -> new ArrayList<>()).add(website[i]);\n        }\n        \n        Map<String, Integer> counts = new HashMap<>();\n        int maxCnt = 0;\n        String bestPatternStr = \"\";\n        \n        for (List<String> history : userHistory.values()) {\n            int sz = history.size();\n            Set<String> unique = new HashSet<>();\n            for (int i = 0; i < sz; i++) {\n                for (int j = i + 1; j < sz; j++) {\n                    for (int k = j + 1; k < sz; k++) {\n                        unique.add(history.get(i) + \" \" + history.get(j) + \" \" + history.get(k));\n                    }\n                }\n            }\n            for (String pat : unique) {\n                int c = counts.getOrDefault(pat, 0) + 1;\n                counts.put(pat, c);\n                if (c > maxCnt || (c == maxCnt && pat.compareTo(bestPatternStr) < 0)) {\n                    maxCnt = c;\n                    bestPatternStr = pat;\n                }\n            }\n        }\n        return Arrays.asList(bestPatternStr.split(\" \"));\n    }\n}",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var mostVisitedPattern = function(username, timestamp, website) {\n    const n = username.length;\n    const visits = [];\n    for (let i = 0; i < n; i++) {\n        visits.push({ t: timestamp[i], u: username[i], w: website[i] });\n    }\n    visits.sort((a, b) => a.t - b.t);\n    \n    const userHistory = new Map();\n    for (const { u, w } of visits) {\n        if (!userHistory.has(u)) userHistory.set(u, []);\n        userHistory.get(u).push(w);\n    }\n    \n    const patternCounts = new Map();\n    for (const history of userHistory.values()) {\n        const sz = history.length;\n        const unique = new Set();\n        for (let i = 0; i < sz; i++) {\n            for (let j = i + 1; j < sz; j++) {\n                for (let k = j + 1; k < sz; k++) {\n                    unique.add(history[i] + '###' + history[j] + '###' + history[k]);\n                }\n            }\n        }\n        for (const pat of unique) {\n            patternCounts.set(pat, (patternCounts.get(pat) || 0) + 1);\n        }\n    }\n    \n    let best = '';\n    let maxCnt = 0;\n    for (const [pat, cnt] of patternCounts.entries()) {\n        if (cnt > maxCnt || (cnt === maxCnt && pat < best)) {\n            maxCnt = cnt;\n            best = pat;\n        }\n    }\n    return best.split('###');\n};",
+      "approach": "hash-map-lookup verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
