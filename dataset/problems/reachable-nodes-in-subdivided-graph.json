@@ -1,0 +1,79 @@
+{
+  "slug": "reachable-nodes-in-subdivided-graph",
+  "number": 882,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Edge Weight Formulation",
+      "text": "Treat each subdivided edge with count intermediate nodes as a weighted edge of weight count plus one."
+    },
+    {
+      "level": 2,
+      "title": "Shortest Distances to Original Nodes",
+      "text": "Find shortest path distances from node zero to all original graph vertices using move budget as maximum allowable distance."
+    },
+    {
+      "level": 3,
+      "title": "Internal Node Coverage Sum",
+      "text": "For each edge (u, v), calculate reachable subdivided nodes from end u and from end v, taking the sum bounded by original subdivision count."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\nimport heapq\n\nclass Solution:\n    def reachableNodes(self, edges: List[List[int]], maxMoves: int, n: int) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n\n        dist = {}\n        pq = [(0, 0)]\n        while pq:\n            d, u = heapq.heappop(pq)\n            if u in dist:\n                continue\n            dist[u] = d\n            for v, w in adj[u]:\n                if v not in dist and d + w + 1 <= maxMoves:\n                    heapq.heappush(pq, (d + w + 1, v))\n\n        ans = len(dist)\n        for u, v, w in edges:\n            a = max(0, maxMoves - dist[u]) if u in dist else 0\n            b = max(0, maxMoves - dist[v]) if v in dist else 0\n            ans += min(w, a + b)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E log N)",
+    "space": "O(N + E)",
+    "variables": [
+      "N: number of nodes",
+      "E: number of edges"
+    ],
+    "notes": "Priority shortest path exploration followed by per-edge internal node accounting.",
+    "whyNaiveFails": "Simulating movement across all subdivided nodes individually expands graph to millions of nodes.",
+    "spaceTimeTradeoff": "Adjacency list and distance map scale with vertices and edges.",
+    "interviewerExpectation": "Transform subdivided edges into weighted edges of length cnt + 1."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\nimport heapq\n\nclass Solution:\n    def reachableNodes(self, edges: List[List[int]], maxMoves: int, n: int) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n\n        dist = {}\n        pq = [(0, 0)]\n        while pq:\n            d, u = heapq.heappop(pq)\n            if u in dist:\n                continue\n            dist[u] = d\n            for v, w in adj[u]:\n                if v not in dist and d + w + 1 <= maxMoves:\n                    heapq.heappush(pq, (d + w + 1, v))\n\n        ans = len(dist)\n        for u, v, w in edges:\n            a = max(0, maxMoves - dist[u]) if u in dist else 0\n            b = max(0, maxMoves - dist[v]) if v in dist else 0\n            ans += min(w, a + b)\n        return ans",
+      "approach": "graph-dijkstra verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int reachableNodes(vector<vector<int>>& edges, int maxMoves, int n) {\n        vector<vector<pair<int, int>>> adj(n);\n        for (auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            adj[e[1]].push_back({e[0], e[2]});\n        }\n        vector<int> dist(n, -1);\n        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;\n        pq.push({0, 0});\n        while (!pq.empty()) {\n            auto [d, u] = pq.top();\n            pq.pop();\n            if (dist[u] != -1) continue;\n            dist[u] = d;\n            for (auto& [v, w] : adj[u]) {\n                if (dist[v] == -1 && d + w + 1 <= maxMoves) {\n                    pq.push({d + w + 1, v});\n                }\n            }\n        }\n        int ans = 0;\n        for (int i = 0; i < n; i++) if (dist[i] != -1) ans++;\n        for (auto& e : edges) {\n            int u = e[0], v = e[1], w = e[2];\n            int a = (dist[u] != -1) ? max(0, maxMoves - dist[u]) : 0;\n            int b = (dist[v] != -1) ? max(0, maxMoves - dist[v]) : 0;\n            ans += min(w, a + b);\n        }\n        return ans;\n    }\n};",
+      "approach": "graph-dijkstra verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int reachableNodes(int[][] edges, int maxMoves, int n) {\n        List<int[]>[] adj = new ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(new int[]{e[1], e[2]});\n            adj[e[1]].add(new int[]{e[0], e[2]});\n        }\n        int[] dist = new int[n];\n        Arrays.fill(dist, -1);\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        pq.offer(new int[]{0, 0});\n        while (!pq.isEmpty()) {\n            int[] top = pq.poll();\n            int d = top[0], u = top[1];\n            if (dist[u] != -1) continue;\n            dist[u] = d;\n            for (int[] nxt : adj[u]) {\n                int v = nxt[0], w = nxt[1];\n                if (dist[v] == -1 && d + w + 1 <= maxMoves) {\n                    pq.offer(new int[]{d + w + 1, v});\n                }\n            }\n        }\n        int ans = 0;\n        for (int i = 0; i < n; i++) if (dist[i] != -1) ans++;\n        for (int[] e : edges) {\n            int u = e[0], v = e[1], w = e[2];\n            int a = (dist[u] != -1) ? Math.max(0, maxMoves - dist[u]) : 0;\n            int b = (dist[v] != -1) ? Math.max(0, maxMoves - dist[v]) : 0;\n            ans += Math.min(w, a + b);\n        }\n        return ans;\n    }\n}",
+      "approach": "graph-dijkstra verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var reachableNodes = function(edges, maxMoves, n) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        adj[u].push([v, w]);\n        adj[v].push([u, w]);\n    }\n    const dist = new Array(n).fill(-1);\n    const pq = [[0, 0]];\n    while (pq.length > 0) {\n        pq.sort((a, b) => a[0] - b[0]);\n        const [d, u] = pq.shift();\n        if (dist[u] !== -1) continue;\n        dist[u] = d;\n        for (const [v, w] of adj[u]) {\n            if (dist[v] === -1 && d + w + 1 <= maxMoves) {\n                pq.push([d + w + 1, v]);\n            }\n        }\n    }\n    let ans = 0;\n    for (let i = 0; i < n; i++) if (dist[i] !== -1) ans++;\n    for (const [u, v, w] of edges) {\n        const a = dist[u] !== -1 ? Math.max(0, maxMoves - dist[u]) : 0;\n        const b = dist[v] !== -1 ? Math.max(0, maxMoves - dist[v]) : 0;\n        ans += Math.min(w, a + b);\n    }\n    return ans;\n};",
+      "approach": "graph-dijkstra verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}

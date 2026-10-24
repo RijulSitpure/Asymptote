@@ -1,0 +1,78 @@
+{
+  "slug": "cat-and-mouse",
+  "number": 913,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Retrograde Game State Induction",
+      "text": "Work backwards from known winning and losing states using game state degrees and retrograde analysis."
+    },
+    {
+      "level": 2,
+      "title": "Terminal Base Conditions",
+      "text": "The mouse wins immediately when reaching hole zero. The cat wins immediately whenever it catches the mouse at the same position."
+    },
+    {
+      "level": 3,
+      "title": "Degree Depletion Propagation",
+      "text": "Propagate terminal colors to predecessor game states. If a predecessor can move to a winning state, it wins. If all moves lead to opponent wins, it loses."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom typing import List\nfrom collections import deque\n\nclass Solution:\n    def catMouseGame(self, graph: List[List[int]]) -> int:\n        n = len(graph)\n        MOUSE, CAT = 1, 2\n        DRAW, MOUSE_WIN, CAT_WIN = 0, 1, 2\n\n        color = {}\n        degree = {}\n\n        for m in range(n):\n            for c in range(n):\n                degree[m, c, MOUSE] = len(graph[m])\n                degree[m, c, CAT] = len([nxt for nxt in graph[c] if nxt != 0])\n\n        q = deque()\n        for c in range(1, n):\n            color[0, c, MOUSE] = MOUSE_WIN\n            color[0, c, CAT] = MOUSE_WIN\n            q.append((0, c, MOUSE, MOUSE_WIN))\n            q.append((0, c, CAT, MOUSE_WIN))\n            color[c, c, MOUSE] = CAT_WIN\n            color[c, c, CAT] = CAT_WIN\n            q.append((c, c, MOUSE, CAT_WIN))\n            q.append((c, c, CAT, CAT_WIN))\n\n        while q:\n            m, c, turn, result = q.popleft()\n            if m == 1 and c == 2 and turn == MOUSE:\n                return result\n            prev_turn = CAT if turn == MOUSE else MOUSE\n            parents = []\n            if prev_turn == MOUSE:\n                parents = [(prev_m, c) for prev_m in graph[m]]\n            else:\n                parents = [(m, prev_c) for prev_c in graph[c] if prev_c != 0]\n\n            for prev_m, prev_c in parents:\n                state = (prev_m, prev_c, prev_turn)\n                if state in color:\n                    continue\n                if (prev_turn == MOUSE and result == MOUSE_WIN) or (prev_turn == CAT and result == CAT_WIN):\n                    color[state] = result\n                    q.append((prev_m, prev_c, prev_turn, result))\n                else:\n                    degree[state] -= 1\n                    if degree[state] == 0:\n                        lose_res = CAT_WIN if prev_turn == MOUSE else MOUSE_WIN\n                        color[state] = lose_res\n                        q.append((prev_m, prev_c, prev_turn, lose_res))\n        return 0\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^3)",
+    "space": "O(N^2)",
+    "variables": [
+      "N: number of nodes in graph"
+    ],
+    "notes": "Retrograde analysis across game states with degree tracking.",
+    "whyNaiveFails": "Standard minimax recursion without cycle detection encounters infinite loops.",
+    "spaceTimeTradeoff": "Degree dictionary and color table require O(N^2) memory.",
+    "interviewerExpectation": "Model state graph and apply retrograde analysis with in-degree counters."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from typing import List\nfrom collections import deque\n\nclass Solution:\n    def catMouseGame(self, graph: List[List[int]]) -> int:\n        n = len(graph)\n        MOUSE, CAT = 1, 2\n        DRAW, MOUSE_WIN, CAT_WIN = 0, 1, 2\n\n        color = {}\n        degree = {}\n\n        for m in range(n):\n            for c in range(n):\n                degree[m, c, MOUSE] = len(graph[m])\n                degree[m, c, CAT] = len([nxt for nxt in graph[c] if nxt != 0])\n\n        q = deque()\n        for c in range(1, n):\n            color[0, c, MOUSE] = MOUSE_WIN\n            color[0, c, CAT] = MOUSE_WIN\n            q.append((0, c, MOUSE, MOUSE_WIN))\n            q.append((0, c, CAT, MOUSE_WIN))\n            color[c, c, MOUSE] = CAT_WIN\n            color[c, c, CAT] = CAT_WIN\n            q.append((c, c, MOUSE, CAT_WIN))\n            q.append((c, c, CAT, CAT_WIN))\n\n        while q:\n            m, c, turn, result = q.popleft()\n            if m == 1 and c == 2 and turn == MOUSE:\n                return result\n            prev_turn = CAT if turn == MOUSE else MOUSE\n            parents = []\n            if prev_turn == MOUSE:\n                parents = [(prev_m, c) for prev_m in graph[m]]\n            else:\n                parents = [(m, prev_c) for prev_c in graph[c] if prev_c != 0]\n\n            for prev_m, prev_c in parents:\n                state = (prev_m, prev_c, prev_turn)\n                if state in color:\n                    continue\n                if (prev_turn == MOUSE and result == MOUSE_WIN) or (prev_turn == CAT and result == CAT_WIN):\n                    color[state] = result\n                    q.append((prev_m, prev_c, prev_turn, result))\n                else:\n                    degree[state] -= 1\n                    if degree[state] == 0:\n                        lose_res = CAT_WIN if prev_turn == MOUSE else MOUSE_WIN\n                        color[state] = lose_res\n                        q.append((prev_m, prev_c, prev_turn, lose_res))\n        return 0",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int catMouseGame(vector<vector<int>>& graph) {\n        int n = graph.size();\n        int color[50][50][3] = {0};\n        int degree[50][50][3] = {0};\n        for (int m = 0; m < n; m++) {\n            for (int c = 0; c < n; c++) {\n                degree[m][c][1] = graph[m].size();\n                degree[m][c][2] = graph[c].size();\n                for (int x : graph[c]) if (x == 0) degree[m][c][2]--;\n            }\n        }\n        queue<tuple<int, int, int, int>> q;\n        for (int c = 1; c < n; c++) {\n            color[0][c][1] = color[0][c][2] = 1;\n            q.push({0, c, 1, 1});\n            q.push({0, c, 2, 1});\n            color[c][c][1] = color[c][c][2] = 2;\n            q.push({c, c, 1, 2});\n            q.push({c, c, 2, 2});\n        }\n        while (!q.empty()) {\n            auto [m, c, turn, result] = q.front();\n            q.pop();\n            if (m == 1 && c == 2 && turn == 1) return result;\n            int prev_turn = (turn == 1) ? 2 : 1;\n            vector<pair<int, int>> parents;\n            if (prev_turn == 1) {\n                for (int pm : graph[m]) parents.push_back({pm, c});\n            } else {\n                for (int pc : graph[c]) if (pc != 0) parents.push_back({m, pc});\n            }\n            for (auto [pm, pc] : parents) {\n                if (color[pm][pc][prev_turn] != 0) continue;\n                if ((prev_turn == 1 && result == 1) || (prev_turn == 2 && result == 2)) {\n                    color[pm][pc][prev_turn] = result;\n                    q.push({pm, pc, prev_turn, result});\n                } else {\n                    degree[pm][pc][prev_turn]--;\n                    if (degree[pm][pc][prev_turn] == 0) {\n                        int lose_res = (prev_turn == 1) ? 2 : 1;\n                        color[pm][pc][prev_turn] = lose_res;\n                        q.push({pm, pc, prev_turn, lose_res});\n                    }\n                }\n            }\n        }\n        return 0;\n    }\n};",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int catMouseGame(int[][] graph) {\n        int n = graph.length;\n        int[][][] color = new int[n][n][3];\n        int[][][] degree = new int[n][n][3];\n        for (int m = 0; m < n; m++) {\n            for (int c = 0; c < n; c++) {\n                degree[m][c][1] = graph[m].length;\n                degree[m][c][2] = graph[c].length;\n                for (int x : graph[c]) if (x == 0) degree[m][c][2]--;\n            }\n        }\n        Queue<int[]> q = new LinkedList<>();\n        for (int c = 1; c < n; c++) {\n            color[0][c][1] = color[0][c][2] = 1;\n            q.offer(new int[]{0, c, 1, 1});\n            q.offer(new int[]{0, c, 2, 1});\n            color[c][c][1] = color[c][c][2] = 2;\n            q.offer(new int[]{c, c, 1, 2});\n            q.offer(new int[]{c, c, 2, 2});\n        }\n        while (!q.isEmpty()) {\n            int[] curr = q.poll();\n            int m = curr[0], c = curr[1], turn = curr[2], result = curr[3];\n            if (m == 1 && c == 2 && turn == 1) return result;\n            int prevTurn = (turn == 1) ? 2 : 1;\n            List<int[]> parents = new ArrayList<>();\n            if (prevTurn == 1) {\n                for (int pm : graph[m]) parents.add(new int[]{pm, c});\n            } else {\n                for (int pc : graph[c]) if (pc != 0) parents.add(new int[]{m, pc});\n            }\n            for (int[] p : parents) {\n                int pm = p[0], pc = p[1];\n                if (color[pm][pc][prevTurn] != 0) continue;\n                if ((prevTurn == 1 && result == 1) || (prevTurn == 2 && result == 2)) {\n                    color[pm][pc][prevTurn] = result;\n                    q.offer(new int[]{pm, pc, prevTurn, result});\n                } else {\n                    degree[pm][pc][prevTurn]--;\n                    if (degree[pm][pc][prevTurn] == 0) {\n                        int loseRes = (prevTurn == 1) ? 2 : 1;\n                        color[pm][pc][prevTurn] = loseRes;\n                        q.offer(new int[]{pm, pc, prevTurn, loseRes});\n                    }\n                }\n            }\n        }\n        return 0;\n    }\n}",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "var catMouseGame = function(graph) {\n    const n = graph.length;\n    const color = Array.from({ length: n }, () => Array.from({ length: n }, () => [0, 0, 0]));\n    const degree = Array.from({ length: n }, () => Array.from({ length: n }, () => [0, 0, 0]));\n    for (let m = 0; m < n; m++) {\n        for (let c = 0; c < n; c++) {\n            degree[m][c][1] = graph[m].length;\n            degree[m][c][2] = graph[c].length;\n            for (const x of graph[c]) if (x === 0) degree[m][c][2]--;\n        }\n    }\n    const q = [];\n    for (let c = 1; c < n; c++) {\n        color[0][c][1] = color[0][c][2] = 1;\n        q.push([0, c, 1, 1]);\n        q.push([0, c, 2, 1]);\n        color[c][c][1] = color[c][c][2] = 2;\n        q.push([c, c, 1, 2]);\n        q.push([c, c, 2, 2]);\n    }\n    while (q.length > 0) {\n        const [m, c, turn, result] = q.shift();\n        if (m === 1 && c === 2 && turn === 1) return result;\n        const prevTurn = turn === 1 ? 2 : 1;\n        const parents = [];\n        if (prevTurn === 1) {\n            for (const pm of graph[m]) parents.push([pm, c]);\n        } else {\n            for (const pc of graph[c]) if (pc !== 0) parents.push([m, pc]);\n        }\n        for (const [pm, pc] of parents) {\n            if (color[pm][pc][prevTurn] !== 0) continue;\n            if ((prevTurn === 1 && result === 1) || (prevTurn === 2 && result === 2)) {\n                color[pm][pc][prevTurn] = result;\n                q.push([pm, pc, prevTurn, result]);\n            } else {\n                degree[pm][pc][prevTurn]--;\n                if (degree[pm][pc][prevTurn] === 0) {\n                    const loseRes = prevTurn === 1 ? 2 : 1;\n                    color[pm][pc][prevTurn] = loseRes;\n                    q.push([pm, pc, prevTurn, loseRes]);\n                }\n            }\n        }\n    }\n    return 0;\n};",
+      "approach": "graph-topo-kahn verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}
