@@ -1,0 +1,78 @@
+{
+  "slug": "solve-the-equation",
+  "number": 640,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Separating Linear Terms and Constants",
+      "text": "Split the expression by the equality symbol, parsing each side into total variable coefficient and total constant value."
+    },
+    {
+      "level": 2,
+      "title": "Parsing Signs and Implicit Coefficients",
+      "text": "Scan each side character by character, tracking the current sign. Handle tokens ending with the variable symbol, noting that an isolated symbol implies coefficient one."
+    },
+    {
+      "level": 3,
+      "title": "Simplifying to Canonical Linear Form",
+      "text": "Let left yield c1 * x + k1 and right yield c2 * x + k2. Subtract to form (c1 - c2) * x = k2 - k1. If coefficient is zero, check if constant is zero for infinite solutions versus no solution; otherwise divide."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def solveEquation(self, equation: str) -> str:\n        def parse(side: str):\n            coeff = 0\n            const = 0\n            i = 0\n            n = len(side)\n            sign = 1\n            while i < n:\n                if side[i] == \"+\":\n                    sign = 1\n                    i += 1\n                elif side[i] == \"-\":\n                    sign = -1\n                    i += 1\n                j = i\n                while j < n and (side[j].isdigit() or side[j] == \"x\"):\n                    j += 1\n                token = side[i:j]\n                i = j\n                if not token:\n                    continue\n                if token.endswith(\"x\"):\n                    val = token[:-1]\n                    c = 1 if val == \"\" else int(val)\n                    coeff += sign * c\n                else:\n                    const += sign * int(token)\n            return coeff, const\n\n        left, right = equation.split(\"=\")\n        c1, k1 = parse(left)\n        c2, k2 = parse(right)\n        coeff = c1 - c2\n        const = k2 - k1\n        if coeff == 0:\n            return \"Infinite solutions\" if const == 0 else \"No solution\"\n        return f\"x={const // coeff}\"\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(1)",
+    "variables": [
+      "N: length of the equation string"
+    ],
+    "notes": "Optimal solution achieving linear O(N) time and O(1) auxiliary space.",
+    "whyNaiveFails": "Full syntax tree parsers are unnecessarily complex for simple linear expressions with only additions and subtractions.",
+    "spaceTimeTradeoff": "Token-based single-pass parsing avoids storing abstract syntax trees.",
+    "interviewerExpectation": "Candidate should handle signs correctly, account for implicit unit coefficients like x or -x, and cover singular cases."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def solveEquation(self, equation: str) -> str:\n        def parse(side: str):\n            coeff = 0\n            const = 0\n            i = 0\n            n = len(side)\n            sign = 1\n            while i < n:\n                if side[i] == \"+\":\n                    sign = 1\n                    i += 1\n                elif side[i] == \"-\":\n                    sign = -1\n                    i += 1\n                j = i\n                while j < n and (side[j].isdigit() or side[j] == \"x\"):\n                    j += 1\n                token = side[i:j]\n                i = j\n                if not token:\n                    continue\n                if token.endswith(\"x\"):\n                    val = token[:-1]\n                    c = 1 if val == \"\" else int(val)\n                    coeff += sign * c\n                else:\n                    const += sign * int(token)\n            return coeff, const\n\n        left, right = equation.split(\"=\")\n        c1, k1 = parse(left)\n        c2, k2 = parse(right)\n        coeff = c1 - c2\n        const = k2 - k1\n        if coeff == 0:\n            return \"Infinite solutions\" if const == 0 else \"No solution\"\n        return f\"x={const // coeff}\"",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    string solveEquation(string equation) {\n        auto parse = [](const string& side) -> pair<int, int> {\n            int coeff = 0, constVal = 0, sign = 1, i = 0, n = side.size();\n            while (i < n) {\n                if (side[i] == '+') {\n                    sign = 1;\n                    i++;\n                } else if (side[i] == '-') {\n                    sign = -1;\n                    i++;\n                }\n                int j = i;\n                while (j < n && (isdigit(side[j]) || side[j] == 'x')) j++;\n                string token = side.substr(i, j - i);\n                i = j;\n                if (token.empty()) continue;\n                if (token.back() == 'x') {\n                    string num = token.substr(0, token.size() - 1);\n                    int val = num.empty() ? 1 : stoi(num);\n                    coeff += sign * val;\n                } else {\n                    constVal += sign * stoi(token);\n                }\n            }\n            return {coeff, constVal};\n        };\n        size_t eq = equation.find('=');\n        auto [c1, k1] = parse(equation.substr(0, eq));\n        auto [c2, k2] = parse(equation.substr(eq + 1));\n        int coeff = c1 - c2;\n        int constVal = k2 - k1;\n        if (coeff == 0) {\n            return constVal == 0 ? \"Infinite solutions\" : \"No solution\";\n        }\n        return \"x=\" + to_string(constVal / coeff);\n    }\n};",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public String solveEquation(String equation) {\n        String[] sides = equation.split(\"=\");\n        int[] left = parse(sides[0]);\n        int[] right = parse(sides[1]);\n        int coeff = left[0] - right[0];\n        int constVal = right[1] - left[1];\n        if (coeff == 0) {\n            return constVal == 0 ? \"Infinite solutions\" : \"No solution\";\n        }\n        return \"x=\" + (constVal / coeff);\n    }\n\n    private int[] parse(String side) {\n        int coeff = 0, constVal = 0, sign = 1, i = 0, n = side.length();\n        while (i < n) {\n            if (side.charAt(i) == '+') {\n                sign = 1;\n                i++;\n            } else if (side.charAt(i) == '-') {\n                sign = -1;\n                i++;\n            }\n            int j = i;\n            while (j < n && (Character.isDigit(side.charAt(j)) || side.charAt(j) == 'x')) {\n                j++;\n            }\n            String token = side.substring(i, j);\n            i = j;\n            if (token.isEmpty()) continue;\n            if (token.endsWith(\"x\")) {\n                String num = token.substring(0, token.length() - 1);\n                int val = num.isEmpty() ? 1 : Integer.parseInt(num);\n                coeff += sign * val;\n            } else {\n                constVal += sign * Integer.parseInt(token);\n            }\n        }\n        return new int[]{coeff, constVal};\n    }\n}",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} equation\n * @return {string}\n */\nvar solveEquation = function(equation) {\n    function parse(side) {\n        let coeff = 0, constVal = 0, sign = 1, i = 0, n = side.length;\n        while (i < n) {\n            if (side[i] === '+') {\n                sign = 1;\n                i++;\n            } else if (side[i] === '-') {\n                sign = -1;\n                i++;\n            }\n            let j = i;\n            while (j < n && ((side[j] >= '0' && side[j] <= '9') || side[j] === 'x')) {\n                j++;\n            }\n            const token = side.slice(i, j);\n            i = j;\n            if (!token) continue;\n            if (token.endsWith('x')) {\n                const num = token.slice(0, -1);\n                const val = num === '' ? 1 : parseInt(num, 10);\n                coeff += sign * val;\n            } else {\n                constVal += sign * parseInt(token, 10);\n            }\n        }\n        return [coeff, constVal];\n    }\n    const [left, right] = equation.split('=');\n    const [c1, k1] = parse(left);\n    const [c2, k2] = parse(right);\n    const coeff = c1 - c2;\n    const constVal = k2 - k1;\n    if (coeff === 0) {\n        return constVal === 0 ? \"Infinite solutions\" : \"No solution\";\n    }\n    return `x=${Math.trunc(constVal / coeff)}`;\n};",
+      "approach": "math-number-theory verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-24"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-24T00:00:00.000Z"
+}
