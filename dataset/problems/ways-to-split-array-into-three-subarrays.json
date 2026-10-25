@@ -1,0 +1,78 @@
+{
+  "slug": "ways-to-split-array-into-three-subarrays",
+  "number": 1712,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Sum Transformation",
+      "text": "Compute prefix sums so subarray sums can be evaluated in constant time."
+    },
+    {
+      "level": 2,
+      "title": "Formulate Inequalities",
+      "text": "For a left split index i, find bounds on middle split j such that pref[i] <= pref[j] - pref[i] <= total - pref[j]."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search for Valid Bounds",
+      "text": "Use binary search to find min j satisfying 2 * pref[i] <= pref[j] and max j satisfying 2 * pref[j] <= total + pref[i]."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def waysToSplit(self, nums: list[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(nums)\n        pref = [0] * (n + 1)\n        for i in range(n):\n            pref[i + 1] = pref[i] + nums[i]\n        total = pref[n]\n        ans = 0\n\n        for i in range(1, n - 1):\n            left_sum = pref[i]\n            if left_sum * 3 > total:\n                break\n            min_j = bisect.bisect_left(pref, 2 * left_sum, i + 1, n)\n            max_j = bisect.bisect_right(pref, (total + left_sum) // 2, i + 1, n) - 1\n            if min_j <= max_j:\n                ans = (ans + (max_j - min_j + 1)) % MOD\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n is length of nums"
+    ],
+    "whyNaiveFails": "Evaluating both split points naively takes O(n^2) time, which times out for n = 10^5.",
+    "spaceTimeTradeoff": "Binary search on monotonic prefix sums finds valid middle boundaries in O(log n) per left boundary.",
+    "interviewerExpectation": "Candidate derives prefix sum inequalities and uses binary search or two pointers to count splits.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Prefix sum inequalities with binary search bounds",
+      "code": "import bisect\n\nclass Solution:\n    def waysToSplit(self, nums: list[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(nums)\n        pref = [0] * (n + 1)\n        for i in range(n):\n            pref[i + 1] = pref[i] + nums[i]\n        total = pref[n]\n        ans = 0\n\n        for i in range(1, n - 1):\n            left_sum = pref[i]\n            if left_sum * 3 > total:\n                break\n            min_j = bisect.bisect_left(pref, 2 * left_sum, i + 1, n)\n            max_j = bisect.bisect_right(pref, (total + left_sum) // 2, i + 1, n) - 1\n            if min_j <= max_j:\n                ans = (ans + (max_j - min_j + 1)) % MOD\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Prefix sum inequalities with binary search bounds",
+      "code": "#include <vector>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    int waysToSplit(vector<int>& nums) {\n        const int MOD = 1e9 + 7;\n        int n = nums.size();\n        vector<int> pref(n + 1, 0);\n        for (int i = 0; i < n; ++i) pref[i + 1] = pref[i] + nums[i];\n        int total = pref[n];\n        long long ans = 0;\n\n        for (int i = 1; i <= n - 2; ++i) {\n            int left_sum = pref[i];\n            if (left_sum * 3 > total) break;\n            auto low = lower_bound(pref.begin() + i + 1, pref.begin() + n, 2 * left_sum);\n            auto high = upper_bound(pref.begin() + i + 1, pref.begin() + n, (total + left_sum) / 2) - 1;\n            if (low <= high) {\n                ans = (ans + (high - low + 1)) % MOD;\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Prefix sum inequalities with binary search bounds",
+      "code": "class Solution {\n    public int waysToSplit(int[] nums) {\n        final int MOD = 1_000_000_007;\n        int n = nums.length;\n        int[] pref = new int[n + 1];\n        for (int i = 0; i < n; ++i) pref[i + 1] = pref[i] + nums[i];\n        int total = pref[n];\n        long ans = 0;\n\n        for (int i = 1; i <= n - 2; ++i) {\n            int leftSum = pref[i];\n            if (leftSum * 3 > total) break;\n\n            int low = i + 1, high = n - 1, minJ = -1;\n            while (low <= high) {\n                int mid = (low + high) / 2;\n                if (pref[mid] >= 2 * leftSum) {\n                    minJ = mid;\n                    high = mid - 1;\n                } else {\n                    low = mid + 1;\n                }\n            }\n\n            low = i + 1; high = n - 1; int maxJ = -1;\n            while (low <= high) {\n                int mid = (low + high) / 2;\n                if (pref[mid] <= (total + leftSum) / 2) {\n                    maxJ = mid;\n                    low = mid + 1;\n                } else {\n                    high = mid - 1;\n                }\n            }\n\n            if (minJ != -1 && maxJ != -1 && minJ <= maxJ) {\n                ans = (ans + (maxJ - minJ + 1)) % MOD;\n            }\n        }\n        return (int)ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Prefix sum inequalities with binary search bounds",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar waysToSplit = function(nums) {\n    const MOD = 1000000007;\n    const n = nums.length;\n    const pref = Array(n + 1).fill(0);\n    for (let i = 0; i < n; ++i) pref[i + 1] = pref[i] + nums[i];\n    const total = pref[n];\n    let ans = 0;\n\n    for (let i = 1; i <= n - 2; ++i) {\n        const leftSum = pref[i];\n        if (leftSum * 3 > total) break;\n\n        let low = i + 1, high = n - 1, minJ = -1;\n        while (low <= high) {\n            const mid = Math.floor((low + high) / 2);\n            if (pref[mid] >= 2 * leftSum) {\n                minJ = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n\n        low = i + 1; high = n - 1; let maxJ = -1;\n        while (low <= high) {\n            const mid = Math.floor((low + high) / 2);\n            if (pref[mid] <= Math.floor((total + leftSum) / 2)) {\n                maxJ = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n\n        if (minJ !== -1 && maxJ !== -1 && minJ <= maxJ) {\n            ans = (ans + (maxJ - minJ + 1)) % MOD;\n        }\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

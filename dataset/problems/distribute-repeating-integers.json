@@ -1,0 +1,79 @@
+{
+  "slug": "distribute-repeating-integers",
+  "number": 1655,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Group Counts",
+      "text": "Group identical integers by frequency count. The specific values do not matter, only frequencies."
+    },
+    {
+      "level": 2,
+      "title": "Sort Quantities Descending",
+      "text": "Sorting the customer quantity demands in descending order prunes failing branches earliest."
+    },
+    {
+      "level": 3,
+      "title": "Backtrack on Customer Allocation",
+      "text": "Try assigning each customer demand to any frequency bucket with sufficient capacity, backtracking if not satisfied."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nfrom collections import Counter\n\nclass Solution:\n    def canDistribute(self, nums: list[int], quantity: list[int]) -> bool:\n        counts = sorted(Counter(nums).values(), reverse=True)\n        counts = counts[:50]\n        quantity.sort(reverse=True)\n\n        def backtrack(q_idx: int) -> bool:\n            if q_idx == len(quantity):\n                return True\n            req = quantity[q_idx]\n            for i in range(len(counts)):\n                if counts[i] >= req:\n                    counts[i] -= req\n                    if backtrack(q_idx + 1):\n                        return True\n                    counts[i] += req\n                if counts[i] == 0:\n                    break\n            return False\n\n        return backtrack(0)\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(m^k)",
+    "space": "O(m)",
+    "variables": [
+      "m is number of unique integer counts (<= 50)",
+      "k is number of customers (<= 10)"
+    ],
+    "whyNaiveFails": "Trying all integer assignments element-by-element takes factorial time.",
+    "spaceTimeTradeoff": "Sorting quantities descending with frequency bucket backtracking terminates quickly on m <= 50, k <= 10.",
+    "interviewerExpectation": "Candidate should recognize that sorting quantities descending drastically reduces recursion tree depth.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Descending quantity allocation with frequency backtracking",
+      "code": "from collections import Counter\n\nclass Solution:\n    def canDistribute(self, nums: list[int], quantity: list[int]) -> bool:\n        counts = sorted(Counter(nums).values(), reverse=True)\n        counts = counts[:50]\n        quantity.sort(reverse=True)\n\n        def backtrack(q_idx: int) -> bool:\n            if q_idx == len(quantity):\n                return True\n            req = quantity[q_idx]\n            for i in range(len(counts)):\n                if counts[i] >= req:\n                    counts[i] -= req\n                    if backtrack(q_idx + 1):\n                        return True\n                    counts[i] += req\n                if counts[i] == 0:\n                    break\n            return False\n\n        return backtrack(0)"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Descending quantity allocation with frequency backtracking",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\n    bool backtrack(vector<int>& counts, vector<int>& quantity, int q_idx) {\n        if (q_idx == (int)quantity.size()) return true;\n        int req = quantity[q_idx];\n        for (size_t i = 0; i < counts.size(); ++i) {\n            if (counts[i] >= req) {\n                counts[i] -= req;\n                if (backtrack(counts, quantity, q_idx + 1)) return true;\n                counts[i] += req;\n            }\n            if (counts[i] == 0) break;\n        }\n        return false;\n    }\npublic:\n    bool canDistribute(vector<int>& nums, vector<int>& quantity) {\n        unordered_map<int, int> freq;\n        for (int x : nums) freq[x]++;\n        vector<int> counts;\n        for (auto& [k, v] : freq) counts.push_back(v);\n        sort(counts.rbegin(), counts.rend());\n        if (counts.size() > 50) counts.resize(50);\n        sort(quantity.rbegin(), quantity.rend());\n        return backtrack(counts, quantity, 0);\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Descending quantity allocation with frequency backtracking",
+      "code": "import java.util.*;\n\nclass Solution {\n    private boolean backtrack(int[] counts, int[] quantity, int qIdx) {\n        if (qIdx == quantity.length) return true;\n        int req = quantity[qIdx];\n        for (int i = 0; i < counts.length; ++i) {\n            if (counts[i] >= req) {\n                counts[i] -= req;\n                if (backtrack(counts, quantity, qIdx + 1)) return true;\n                counts[i] += req;\n            }\n            if (counts[i] == 0) break;\n        }\n        return false;\n    }\n\n    public boolean canDistribute(int[] nums, int[] quantity) {\n        Map<Integer, Integer> freq = new HashMap<>();\n        for (int x : nums) freq.put(x, freq.getOrDefault(x, 0) + 1);\n        List<Integer> list = new ArrayList<>(freq.values());\n        list.sort(Collections.reverseOrder());\n        int m = Math.min(list.size(), 50);\n        int[] counts = new int[m];\n        for (int i = 0; i < m; ++i) counts[i] = list.get(i);\n        Arrays.sort(quantity);\n        int[] q = new int[quantity.length];\n        for (int i = 0; i < quantity.length; ++i) q[i] = quantity[quantity.length - 1 - i];\n        return backtrack(counts, q, 0);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Descending quantity allocation with frequency backtracking",
+      "code": "/**\n * @param {number[]} nums\n * @param {number[]} quantity\n * @return {boolean}\n */\nvar canDistribute = function(nums, quantity) {\n    const freq = new Map();\n    for (const x of nums) {\n        freq.set(x, (freq.get(x) || 0) + 1);\n    }\n    const counts = Array.from(freq.values()).sort((a, b) => b - a).slice(0, 50);\n    quantity.sort((a, b) => b - a);\n\n    function backtrack(qIdx) {\n        if (qIdx === quantity.length) return true;\n        const req = quantity[qIdx];\n        for (let i = 0; i < counts.length; ++i) {\n            if (counts[i] >= req) {\n                counts[i] -= req;\n                if (backtrack(qIdx + 1)) return true;\n                counts[i] += req;\n            }\n            if (counts[i] === 0) break;\n        }\n        return false;\n    }\n\n    return backtrack(0);\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

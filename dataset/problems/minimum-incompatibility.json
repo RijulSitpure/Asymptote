@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-incompatibility",
+  "number": 1681,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Check Cardinality Invariance",
+      "text": "If any number appears more than k times, by pigeonhole principle it is impossible, return negative one."
+    },
+    {
+      "level": 2,
+      "title": "Precompute Valid Subsets",
+      "text": "Identify all subsets of size n / k having strictly distinct numbers and calculate their max minus min incompatibility."
+    },
+    {
+      "level": 3,
+      "title": "Bitmask Dynamic Programming",
+      "text": "Compute dp[mask] as the minimum total incompatibility to partition the elements specified in mask."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nfrom collections import Counter\n\nclass Solution:\n    def minimumIncompatibility(self, nums: list[int], k: int) -> int:\n        n = len(nums)\n        if any(c > k for c in Counter(nums).values()):\n            return -1\n        sz = n // k\n        if sz == 1:\n            return 0\n        valid = {}\n        for mask in range(1 << n):\n            if bin(mask).count(\"1\") == sz:\n                elements = [nums[i] for i in range(n) if mask & (1 << i)]\n                if len(set(elements)) == sz:\n                    valid[mask] = max(elements) - min(elements)\n        dp = [float(\"inf\")] * (1 << n)\n        dp[0] = 0\n        for mask in range(1 << n):\n            if dp[mask] == float(\"inf\"):\n                continue\n            # find first unset bit\n            first_unset = 0\n            while first_unset < n and (mask & (1 << first_unset)):\n                first_unset += 1\n            if first_unset == n:\n                continue\n            for sub, cost in valid.items():\n                if (sub & (1 << first_unset)) and (mask & sub) == 0:\n                    nxt = mask | sub\n                    if dp[mask] + cost < dp[nxt]:\n                        dp[nxt] = dp[mask] + cost\n        return dp[(1 << n) - 1] if dp[(1 << n) - 1] != float(\"inf\") else -1\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(3^n)",
+    "space": "O(2^n)",
+    "variables": [
+      "n is length of nums (<= 16)"
+    ],
+    "whyNaiveFails": "Partitioning combinations grow rapidly without submask dynamic programming.",
+    "spaceTimeTradeoff": "Bitmask DP over 2^16 states runs in well under one second for n <= 16.",
+    "interviewerExpectation": "Candidate identifies pigeonhole impossibility early and iterates valid submasks.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask DP with valid subset precomputation",
+      "code": "from collections import Counter\n\nclass Solution:\n    def minimumIncompatibility(self, nums: list[int], k: int) -> int:\n        n = len(nums)\n        if any(c > k for c in Counter(nums).values()):\n            return -1\n        sz = n // k\n        if sz == 1:\n            return 0\n        valid = {}\n        for mask in range(1 << n):\n            if bin(mask).count(\"1\") == sz:\n                elements = [nums[i] for i in range(n) if mask & (1 << i)]\n                if len(set(elements)) == sz:\n                    valid[mask] = max(elements) - min(elements)\n        dp = [float(\"inf\")] * (1 << n)\n        dp[0] = 0\n        for mask in range(1 << n):\n            if dp[mask] == float(\"inf\"):\n                continue\n            # find first unset bit\n            first_unset = 0\n            while first_unset < n and (mask & (1 << first_unset)):\n                first_unset += 1\n            if first_unset == n:\n                continue\n            for sub, cost in valid.items():\n                if (sub & (1 << first_unset)) and (mask & sub) == 0:\n                    nxt = mask | sub\n                    if dp[mask] + cost < dp[nxt]:\n                        dp[nxt] = dp[mask] + cost\n        return dp[(1 << n) - 1] if dp[(1 << n) - 1] != float(\"inf\") else -1"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask DP with valid subset precomputation",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    int minimumIncompatibility(vector<int>& nums, int k) {\n        int n = nums.size();\n        vector<int> counts(17, 0);\n        for (int x : nums) {\n            if (++counts[x] > k) return -1;\n        }\n        int sz = n / k;\n        if (sz == 1) return 0;\n        vector<pair<int, int>> valid;\n        for (int mask = 0; mask < (1 << n); ++mask) {\n            if (__builtin_popcount(mask) == sz) {\n                int seen = 0;\n                int mn = 100, mx = -1;\n                bool ok = true;\n                for (int i = 0; i < n; ++i) {\n                    if (mask & (1 << i)) {\n                        int v = nums[i];\n                        if (seen & (1 << v)) { ok = false; break; }\n                        seen |= (1 << v);\n                        mn = min(mn, v);\n                        mx = max(mx, v);\n                    }\n                }\n                if (ok) valid.push_back({mask, mx - mn});\n            }\n        }\n        vector<int> dp(1 << n, 1e9);\n        dp[0] = 0;\n        for (int mask = 0; mask < (1 << n); ++mask) {\n            if (dp[mask] == 1e9) continue;\n            int first_unset = 0;\n            while (first_unset < n && (mask & (1 << first_unset))) first_unset++;\n            if (first_unset == n) continue;\n            for (auto& [sub, cost] : valid) {\n                if ((sub & (1 << first_unset)) && (mask & sub) == 0) {\n                    dp[mask | sub] = min(dp[mask | sub], dp[mask] + cost);\n                }\n            }\n        }\n        return dp[(1 << n) - 1] >= 1e9 ? -1 : dp[(1 << n) - 1];\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask DP with valid subset precomputation",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minimumIncompatibility(int[] nums, int k) {\n        int n = nums.length;\n        int[] counts = new int[17];\n        for (int x : nums) {\n            if (++counts[x] > k) return -1;\n        }\n        int sz = n / k;\n        if (sz == 1) return 0;\n        List<int[]> valid = new ArrayList<>();\n        for (int mask = 0; mask < (1 << n); ++mask) {\n            if (Integer.bitCount(mask) == sz) {\n                int seen = 0;\n                int mn = 100, mx = -1;\n                boolean ok = true;\n                for (int i = 0; i < n; ++i) {\n                    if ((mask & (1 << i)) != 0) {\n                        int v = nums[i];\n                        if ((seen & (1 << v)) != 0) { ok = false; break; }\n                        seen |= (1 << v);\n                        mn = Math.min(mn, v);\n                        mx = Math.max(mx, v);\n                    }\n                }\n                if (ok) valid.add(new int[]{mask, mx - mn});\n            }\n        }\n        int[] dp = new int[1 << n];\n        Arrays.fill(dp, (int)1e9);\n        dp[0] = 0;\n        for (int mask = 0; mask < (1 << n); ++mask) {\n            if (dp[mask] == (int)1e9) continue;\n            int firstUnset = 0;\n            while (firstUnset < n && (mask & (1 << firstUnset)) != 0) firstUnset++;\n            if (firstUnset == n) continue;\n            for (int[] p : valid) {\n                int sub = p[0], cost = p[1];\n                if ((sub & (1 << firstUnset)) != 0 && (mask & sub) == 0) {\n                    dp[mask | sub] = Math.min(dp[mask | sub], dp[mask] + cost);\n                }\n            }\n        }\n        return dp[(1 << n) - 1] >= (int)1e9 ? -1 : dp[(1 << n) - 1];\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask DP with valid subset precomputation",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} k\n * @return {number}\n */\nvar minimumIncompatibility = function(nums, k) {\n    const n = nums.length;\n    const counts = Array(17).fill(0);\n    for (const x of nums) {\n        if (++counts[x] > k) return -1;\n    }\n    const sz = Math.floor(n / k);\n    if (sz === 1) return 0;\n    function popcount(x) {\n        let cnt = 0;\n        while (x > 0) { cnt += x & 1; x >>= 1; }\n        return cnt;\n    }\n    const valid = [];\n    for (let mask = 0; mask < (1 << n); ++mask) {\n        if (popcount(mask) === sz) {\n            let seen = 0;\n            let mn = 100, mx = -1;\n            let ok = true;\n            for (let i = 0; i < n; ++i) {\n                if (mask & (1 << i)) {\n                    const v = nums[i];\n                    if (seen & (1 << v)) { ok = false; break; }\n                    seen |= (1 << v);\n                    mn = Math.min(mn, v);\n                    mx = Math.max(mx, v);\n                }\n            }\n            if (ok) valid.push([mask, mx - mn]);\n        }\n    }\n    const dp = Array(1 << n).fill(Infinity);\n    dp[0] = 0;\n    for (let mask = 0; mask < (1 << n); ++mask) {\n        if (dp[mask] === Infinity) continue;\n        let firstUnset = 0;\n        while (firstUnset < n && (mask & (1 << firstUnset))) firstUnset++;\n        if (firstUnset === n) continue;\n        for (const [sub, cost] of valid) {\n            if ((sub & (1 << firstUnset)) && (mask & sub) === 0) {\n                dp[mask | sub] = Math.min(dp[mask | sub], dp[mask] + cost);\n            }\n        }\n    }\n    return dp[(1 << n) - 1] === Infinity ? -1 : dp[(1 << n) - 1];\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

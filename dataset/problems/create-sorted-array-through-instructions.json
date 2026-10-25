@@ -1,0 +1,79 @@
+{
+  "slug": "create-sorted-array-through-instructions",
+  "number": 1649,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Cost per Insertion",
+      "text": "The insertion cost of element x is the minimum of counts of elements strictly less than x and strictly greater than x."
+    },
+    {
+      "level": 2,
+      "title": "Binary Indexed Tree for Dynamic Frequency",
+      "text": "Maintain frequency counts of elements dynamically in a Fenwick tree or segment tree."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Sum Query",
+      "text": "Query prefix sum up to x - 1 for elements smaller than x and total minus query up to x for elements greater than x."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nclass Solution:\n    def createSortedArray(self, instructions: list[int]) -> int:\n        MOD = 10**9 + 7\n        MAX_VAL = max(instructions) + 1\n        tree = [0] * (MAX_VAL + 1)\n\n        def update(idx: int, val: int) -> None:\n            while idx <= MAX_VAL:\n                tree[idx] += val\n                idx += idx & (-idx)\n\n        def query(idx: int) -> int:\n            s = 0\n            while idx > 0:\n                s += tree[idx]\n                idx -= idx & (-idx)\n            return s\n\n        total_cost = 0\n        for i, x in enumerate(instructions):\n            less = query(x - 1)\n            greater = i - query(x)\n            total_cost = (total_cost + min(less, greater)) % MOD\n            update(x, 1)\n        return total_cost\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(n log M)",
+    "space": "O(M)",
+    "variables": [
+      "n is length of instructions",
+      "M is maximum instruction value (100,000)"
+    ],
+    "whyNaiveFails": "Maintaining a sorted list via insertion requires O(n^2) array shifts.",
+    "spaceTimeTradeoff": "A Fenwick tree over coordinate range 1..100,000 allows O(log M) query and update.",
+    "interviewerExpectation": "Candidate should identify Fenwick tree or Segment tree as the optimal data structure for prefix rank queries.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Binary Indexed Tree dynamic prefix queries",
+      "code": "class Solution:\n    def createSortedArray(self, instructions: list[int]) -> int:\n        MOD = 10**9 + 7\n        MAX_VAL = max(instructions) + 1\n        tree = [0] * (MAX_VAL + 1)\n\n        def update(idx: int, val: int) -> None:\n            while idx <= MAX_VAL:\n                tree[idx] += val\n                idx += idx & (-idx)\n\n        def query(idx: int) -> int:\n            s = 0\n            while idx > 0:\n                s += tree[idx]\n                idx -= idx & (-idx)\n            return s\n\n        total_cost = 0\n        for i, x in enumerate(instructions):\n            less = query(x - 1)\n            greater = i - query(x)\n            total_cost = (total_cost + min(less, greater)) % MOD\n            update(x, 1)\n        return total_cost"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Binary Indexed Tree dynamic prefix queries",
+      "code": "#include <vector>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\n    vector<int> tree;\n    int max_val;\n    void update(int idx, int val) {\n        for (; idx <= max_val; idx += idx & (-idx)) tree[idx] += val;\n    }\n    int query(int idx) {\n        int s = 0;\n        for (; idx > 0; idx -= idx & (-idx)) s += tree[idx];\n        return s;\n    }\npublic:\n    int createSortedArray(vector<int>& instructions) {\n        long long MOD = 1e9 + 7;\n        max_val = 0;\n        for (int x : instructions) max_val = max(max_val, x);\n        max_val++;\n        tree.assign(max_val + 1, 0);\n        long long total_cost = 0;\n        for (int i = 0; i < (int)instructions.size(); ++i) {\n            int x = instructions[i];\n            int less = query(x - 1);\n            int greater = i - query(x);\n            total_cost = (total_cost + min(less, greater)) % MOD;\n            update(x, 1);\n        }\n        return total_cost;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Binary Indexed Tree dynamic prefix queries",
+      "code": "class Solution {\n    private int[] tree;\n    private int maxVal;\n\n    private void update(int idx, int val) {\n        for (; idx <= maxVal; idx += idx & (-idx)) tree[idx] += val;\n    }\n\n    private int query(int idx) {\n        int s = 0;\n        for (; idx > 0; idx -= idx & (-idx)) s += tree[idx];\n        return s;\n    }\n\n    public int createSortedArray(int[] instructions) {\n        long MOD = 1000000007L;\n        maxVal = 0;\n        for (int x : instructions) maxVal = Math.max(maxVal, x);\n        maxVal++;\n        tree = new int[maxVal + 1];\n        long totalCost = 0;\n        for (int i = 0; i < instructions.length; ++i) {\n            int x = instructions[i];\n            int less = query(x - 1);\n            int greater = i - query(x);\n            totalCost = (totalCost + Math.min(less, greater)) % MOD;\n            update(x, 1);\n        }\n        return (int)totalCost;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Binary Indexed Tree dynamic prefix queries",
+      "code": "/**\n * @param {number[]} instructions\n * @return {number}\n */\nvar createSortedArray = function(instructions) {\n    const MOD = 1000000007;\n    let maxVal = 0;\n    for (const x of instructions) {\n        if (x > maxVal) maxVal = x;\n    }\n    maxVal++;\n    const tree = Array(maxVal + 1).fill(0);\n\n    function update(idx, val) {\n        for (; idx <= maxVal; idx += idx & (-idx)) tree[idx] += val;\n    }\n\n    function query(idx) {\n        let s = 0;\n        for (; idx > 0; idx -= idx & (-idx)) s += tree[idx];\n        return s;\n    }\n\n    let totalCost = 0;\n    for (let i = 0; i < instructions.length; ++i) {\n        const x = instructions[i];\n        const less = query(x - 1);\n        const greater = i - query(x);\n        totalCost = (totalCost + Math.min(less, greater)) % MOD;\n        update(x, 1);\n    }\n    return totalCost;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

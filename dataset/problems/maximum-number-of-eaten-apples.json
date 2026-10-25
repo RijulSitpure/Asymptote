@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-number-of-eaten-apples",
+  "number": 1705,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Earliest Expiration Priority",
+      "text": "Always choose to eat an apple that will rot earliest to leave fresher apples for later."
+    },
+    {
+      "level": 2,
+      "title": "Priority Management",
+      "text": "Maintain batches of apples in an ordered structure keyed by their expiration date."
+    },
+    {
+      "level": 3,
+      "title": "Simulate Day by Day",
+      "text": "On each day, discard batches where expiration <= current day, then consume one apple from earliest expiring batch."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def eatenApples(self, apples: list[int], days: list[int]) -> int:\n        heap = []\n        i = 0\n        ans = 0\n        n = len(apples)\n        while i < n or heap:\n            if i < n and apples[i] > 0:\n                heapq.heappush(heap, [i + days[i], apples[i]])\n            while heap and heap[0][0] <= i:\n                heapq.heappop(heap)\n            if heap:\n                ans += 1\n                heap[0][1] -= 1\n                if heap[0][1] == 0:\n                    heapq.heappop(heap)\n            i += 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O((n + max_days) log n)",
+    "space": "O(n)",
+    "variables": [
+      "n is length of apples array"
+    ],
+    "whyNaiveFails": "Re-evaluating all available apples linearly each day takes quadratic time.",
+    "spaceTimeTradeoff": "Min-heap ordered by expiration date yields O(log n) insertions and extractions.",
+    "interviewerExpectation": "Candidate implements greedy earliest-deadline-first strategy with min-heap.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Greedy earliest deadline first with min-heap",
+      "code": "import heapq\n\nclass Solution:\n    def eatenApples(self, apples: list[int], days: list[int]) -> int:\n        heap = []\n        i = 0\n        ans = 0\n        n = len(apples)\n        while i < n or heap:\n            if i < n and apples[i] > 0:\n                heapq.heappush(heap, [i + days[i], apples[i]])\n            while heap and heap[0][0] <= i:\n                heapq.heappop(heap)\n            if heap:\n                ans += 1\n                heap[0][1] -= 1\n                if heap[0][1] == 0:\n                    heapq.heappop(heap)\n            i += 1\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Greedy earliest deadline first with min-heap",
+      "code": "#include <vector>\n#include <queue>\nusing namespace std;\n\nclass Solution {\npublic:\n    int eatenApples(vector<int>& apples, vector<int>& days) {\n        using P = pair<int, int>;\n        priority_queue<P, vector<P>, greater<P>> pq;\n        int n = apples.size();\n        int i = 0, ans = 0;\n        while (i < n || !pq.empty()) {\n            if (i < n && apples[i] > 0) {\n                pq.push({i + days[i], apples[i]});\n            }\n            while (!pq.empty() && pq.top().first <= i) {\n                pq.pop();\n            }\n            if (!pq.empty()) {\n                auto [rot, cnt] = pq.top();\n                pq.pop();\n                ans++;\n                if (cnt > 1) {\n                    pq.push({rot, cnt - 1});\n                }\n            }\n            i++;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Greedy earliest deadline first with min-heap",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int eatenApples(int[] apples, int[] days) {\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        int n = apples.length;\n        int i = 0, ans = 0;\n        while (i < n || !pq.isEmpty()) {\n            if (i < n && apples[i] > 0) {\n                pq.offer(new int[]{i + days[i], apples[i]});\n            }\n            while (!pq.isEmpty() && pq.peek()[0] <= i) {\n                pq.poll();\n            }\n            if (!pq.isEmpty()) {\n                int[] top = pq.poll();\n                ans++;\n                top[1]--;\n                if (top[1] > 0) {\n                    pq.offer(top);\n                }\n            }\n            i++;\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Greedy earliest deadline first with min-heap",
+      "code": "/**\n * @param {number[]} apples\n * @param {number[]} days\n * @return {number}\n */\nvar eatenApples = function(apples, days) {\n    const pq = [];\n    const push = (item) => {\n        pq.push(item);\n        let idx = pq.length - 1;\n        while (idx > 0) {\n            const p = Math.floor((idx - 1) / 2);\n            if (pq[p][0] > pq[idx][0]) {\n                [pq[p], pq[idx]] = [pq[idx], pq[p]];\n                idx = p;\n            } else break;\n        }\n    };\n    const pop = () => {\n        if (pq.length === 0) return null;\n        const top = pq[0];\n        const last = pq.pop();\n        if (pq.length > 0) {\n            pq[0] = last;\n            let idx = 0;\n            while (true) {\n                let left = 2 * idx + 1;\n                let right = 2 * idx + 2;\n                let smallest = idx;\n                if (left < pq.length && pq[left][0] < pq[smallest][0]) smallest = left;\n                if (right < pq.length && pq[right][0] < pq[smallest][0]) smallest = right;\n                if (smallest !== idx) {\n                    [pq[idx], pq[smallest]] = [pq[smallest], pq[idx]];\n                    idx = smallest;\n                } else break;\n            }\n        }\n        return top;\n    };\n\n    let i = 0;\n    let ans = 0;\n    const n = apples.length;\n    while (i < n || pq.length > 0) {\n        if (i < n && apples[i] > 0) {\n            push([i + days[i], apples[i]]);\n        }\n        while (pq.length > 0 && pq[0][0] <= i) {\n            pop();\n        }\n        if (pq.length > 0) {\n            ans++;\n            pq[0][1]--;\n            if (pq[0][1] === 0) {\n                pop();\n            }\n        }\n        i++;\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

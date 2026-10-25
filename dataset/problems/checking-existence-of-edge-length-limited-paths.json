@@ -1,0 +1,80 @@
+{
+  "slug": "checking-existence-of-edge-length-limited-paths",
+  "number": 1697,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Offline Query Processing",
+      "text": "Sort the queries in ascending order of their edge weight limits."
+    },
+    {
+      "level": 2,
+      "title": "Sort Graph Edges",
+      "text": "Sort all edges by weight in ascending order."
+    },
+    {
+      "level": 3,
+      "title": "Incremental Disjoint Set Union",
+      "text": "Maintain disjoint sets via union-find, adding all edges with weight strictly below current query limit, then check if query vertices are connected."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nclass Solution:\n    def distanceLimitedPathsExist(self, n: int, edgeList: list[list[int]], queries: list[list[int]]) -> list[bool]:\n        parent = list(range(n))\n\n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n\n        def union(x: int, y: int) -> None:\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n\n        edgeList.sort(key=lambda e: e[2])\n        indexed_queries = sorted(enumerate(queries), key=lambda x: x[1][2])\n        res = [False] * len(queries)\n        e_idx = 0\n        m = len(edgeList)\n\n        for q_idx, (u, v, limit) in indexed_queries:\n            while e_idx < m and edgeList[e_idx][2] < limit:\n                union(edgeList[e_idx][0], edgeList[e_idx][1])\n                e_idx += 1\n            res[q_idx] = (find(u) == find(v))\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(E log E + Q log Q)",
+    "space": "O(V + Q)",
+    "variables": [
+      "E is number of edges",
+      "Q is number of queries",
+      "V is number of vertices"
+    ],
+    "whyNaiveFails": "Running graph searches per query takes O(Q * (V + E)), timing out for 10^5 queries.",
+    "spaceTimeTradeoff": "Sorting queries and edges allows two pointers across edges with DSU in near linear time.",
+    "interviewerExpectation": "Candidate identifies offline query sorting as key technique for dynamic connectivity with weight limits.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query sorting with incremental DSU edge insertion",
+      "code": "class Solution:\n    def distanceLimitedPathsExist(self, n: int, edgeList: list[list[int]], queries: list[list[int]]) -> list[bool]:\n        parent = list(range(n))\n\n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n\n        def union(x: int, y: int) -> None:\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n\n        edgeList.sort(key=lambda e: e[2])\n        indexed_queries = sorted(enumerate(queries), key=lambda x: x[1][2])\n        res = [False] * len(queries)\n        e_idx = 0\n        m = len(edgeList)\n\n        for q_idx, (u, v, limit) in indexed_queries:\n            while e_idx < m and edgeList[e_idx][2] < limit:\n                union(edgeList[e_idx][0], edgeList[e_idx][1])\n                e_idx += 1\n            res[q_idx] = (find(u) == find(v))\n        return res"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query sorting with incremental DSU edge insertion",
+      "code": "#include <vector>\n#include <numeric>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\n    vector<int> parent;\n    int find(int x) {\n        if (parent[x] != x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    void unite(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) parent[rx] = ry;\n    }\npublic:\n    vector<bool> distanceLimitedPathsExist(int n, vector<vector<int>>& edgeList, vector<vector<int>>& queries) {\n        parent.resize(n);\n        iota(parent.begin(), parent.end(), 0);\n        sort(edgeList.begin(), edgeList.end(), [](const vector<int>& a, const vector<int>& b) {\n            return a[2] < b[2];\n        });\n        int q_size = queries.size();\n        vector<int> q_idx(q_size);\n        iota(q_idx.begin(), q_idx.end(), 0);\n        sort(q_idx.begin(), q_idx.end(), [&](int a, int b) {\n            return queries[a][2] < queries[b][2];\n        });\n        vector<bool> res(q_size, false);\n        int e_idx = 0, m = edgeList.size();\n        for (int idx : q_idx) {\n            int limit = queries[idx][2];\n            while (e_idx < m && edgeList[e_idx][2] < limit) {\n                unite(edgeList[e_idx][0], edgeList[e_idx][1]);\n                e_idx++;\n            }\n            res[idx] = (find(queries[idx][0]) == find(queries[idx][1]));\n        }\n        return res;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query sorting with incremental DSU edge insertion",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int[] parent;\n    private int find(int x) {\n        if (parent[x] != x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    private void union(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) parent[rx] = ry;\n    }\n\n    public boolean[] distanceLimitedPathsExist(int n, int[][] edgeList, int[][] queries) {\n        parent = new int[n];\n        for (int i = 0; i < n; ++i) parent[i] = i;\n        Arrays.sort(edgeList, Comparator.comparingInt(a -> a[2]));\n        int qSize = queries.length;\n        Integer[] qIdx = new Integer[qSize];\n        for (int i = 0; i < qSize; ++i) qIdx[i] = i;\n        Arrays.sort(qIdx, Comparator.comparingInt(a -> queries[a][2]));\n        boolean[] res = new boolean[qSize];\n        int eIdx = 0, m = edgeList.length;\n        for (int idx : qIdx) {\n            int limit = queries[idx][2];\n            while (eIdx < m && edgeList[eIdx][2] < limit) {\n                union(edgeList[eIdx][0], edgeList[eIdx][1]);\n                eIdx++;\n            }\n            res[idx] = (find(queries[idx][0]) == find(queries[idx][1]));\n        }\n        return res;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query sorting with incremental DSU edge insertion",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edgeList\n * @param {number[][]} queries\n * @return {boolean[]}\n */\nvar distanceLimitedPathsExist = function(n, edgeList, queries) {\n    const parent = Array.from({ length: n }, (_, i) => i);\n    function find(x) {\n        if (parent[x] !== x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    function union(x, y) {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) parent[rx] = ry;\n    }\n\n    edgeList.sort((a, b) => a[2] - b[2]);\n    const qIdx = Array.from({ length: queries.length }, (_, i) => i);\n    qIdx.sort((a, b) => queries[a][2] - queries[b][2]);\n    const res = Array(queries.length).fill(false);\n    let eIdx = 0, m = edgeList.length;\n\n    for (const idx of qIdx) {\n        const limit = queries[idx][2];\n        while (eIdx < m && edgeList[eIdx][2] < limit) {\n            union(edgeList[eIdx][0], edgeList[eIdx][1]);\n            eIdx++;\n        }\n        res[idx] = (find(queries[idx][0]) === find(queries[idx][1]));\n    }\n    return res;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

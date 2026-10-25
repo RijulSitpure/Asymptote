@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-xor-with-an-element-from-array",
+  "number": 1707,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sort Queries and Numbers",
+      "text": "Sort queries by limit m in ascending order and sort nums in ascending order to answer offline."
+    },
+    {
+      "level": 2,
+      "title": "Binary Bitwise Prefix Tree",
+      "text": "Incrementally insert numbers that are <= current query limit m into a binary bitwise prefix tree."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Bit Traversal",
+      "text": "For query value x, walk down the tree choosing the opposing bit at each position from 30 down to 0 whenever available."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nclass Solution:\n    def maximizeXor(self, nums: list[int], queries: list[list[int]]) -> list[int]:\n        nums.sort()\n        sorted_q = sorted(enumerate(queries), key=lambda x: x[1][1])\n        trie = {}\n\n        def insert(val: int) -> None:\n            node = trie\n            for i in range(30, -1, -1):\n                b = (val >> i) & 1\n                if b not in node:\n                    node[b] = {}\n                node = node[b]\n\n        def query_max(val: int) -> int:\n            if not trie:\n                return -1\n            node = trie\n            res = 0\n            for i in range(30, -1, -1):\n                b = (val >> i) & 1\n                opp = 1 - b\n                if opp in node:\n                    res |= (1 << i)\n                    node = node[opp]\n                else:\n                    node = node[b]\n            return res\n\n        ans = [-1] * len(queries)\n        idx = 0\n        n = len(nums)\n        for orig_idx, (x, m) in sorted_q:\n            while idx < n and nums[idx] <= m:\n                insert(nums[idx])\n                idx += 1\n            ans[orig_idx] = query_max(x)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O((n + q) * 31 + n log n + q log q)",
+    "space": "O(n * 31 + q)",
+    "variables": [
+      "n is length of nums",
+      "q is number of queries"
+    ],
+    "whyNaiveFails": "Comparing every query against all elements takes O(n * q) quadratic time.",
+    "spaceTimeTradeoff": "Offline query sorting with bitwise prefix tree evaluates maximum XOR in O(31) per query.",
+    "interviewerExpectation": "Candidate recognizes offline processing pattern and builds 31-bit prefix tree.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query processing with binary bitwise prefix tree",
+      "code": "class Solution:\n    def maximizeXor(self, nums: list[int], queries: list[list[int]]) -> list[int]:\n        nums.sort()\n        sorted_q = sorted(enumerate(queries), key=lambda x: x[1][1])\n        trie = {}\n\n        def insert(val: int) -> None:\n            node = trie\n            for i in range(30, -1, -1):\n                b = (val >> i) & 1\n                if b not in node:\n                    node[b] = {}\n                node = node[b]\n\n        def query_max(val: int) -> int:\n            if not trie:\n                return -1\n            node = trie\n            res = 0\n            for i in range(30, -1, -1):\n                b = (val >> i) & 1\n                opp = 1 - b\n                if opp in node:\n                    res |= (1 << i)\n                    node = node[opp]\n                else:\n                    node = node[b]\n            return res\n\n        ans = [-1] * len(queries)\n        idx = 0\n        n = len(nums)\n        for orig_idx, (x, m) in sorted_q:\n            while idx < n and nums[idx] <= m:\n                insert(nums[idx])\n                idx += 1\n            ans[orig_idx] = query_max(x)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query processing with binary bitwise prefix tree",
+      "code": "#include <vector>\n#include <algorithm>\nusing namespace std;\n\nstruct Node {\n    Node* child[2] = {nullptr, nullptr};\n};\n\nclass Solution {\n    Node* root = new Node();\n\n    void insert(int val) {\n        Node* curr = root;\n        for (int i = 30; i >= 0; --i) {\n            int b = (val >> i) & 1;\n            if (!curr->child[b]) curr->child[b] = new Node();\n            curr = curr->child[b];\n        }\n    }\n\n    int queryMax(int val) {\n        if (!root->child[0] && !root->child[1]) return -1;\n        Node* curr = root;\n        int res = 0;\n        for (int i = 30; i >= 0; --i) {\n            int b = (val >> i) & 1;\n            int opp = 1 - b;\n            if (curr->child[opp]) {\n                res |= (1 << i);\n                curr = curr->child[opp];\n            } else {\n                curr = curr->child[b];\n            }\n        }\n        return res;\n    }\n\npublic:\n    vector<int> maximizeXor(vector<int>& nums, vector<vector<int>>& queries) {\n        sort(nums.begin(), nums.end());\n        int q = queries.size();\n        vector<int> order(q);\n        for (int i = 0; i < q; ++i) order[i] = i;\n        sort(order.begin(), order.end(), [&](int a, int b) {\n            return queries[a][1] < queries[b][1];\n        });\n        vector<int> ans(q);\n        int idx = 0;\n        int n = nums.size();\n        for (int i : order) {\n            int x = queries[i][0];\n            int m = queries[i][1];\n            while (idx < n && nums[idx] <= m) {\n                insert(nums[idx]);\n                idx++;\n            }\n            ans[i] = queryMax(x);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query processing with binary bitwise prefix tree",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class Node {\n        Node[] child = new Node[2];\n    }\n\n    private Node root = new Node();\n\n    private void insert(int val) {\n        Node curr = root;\n        for (int i = 30; i >= 0; --i) {\n            int b = (val >> i) & 1;\n            if (curr.child[b] == null) curr.child[b] = new Node();\n            curr = curr.child[b];\n        }\n    }\n\n    private int queryMax(int val) {\n        if (root.child[0] == null && root.child[1] == null) return -1;\n        Node curr = root;\n        int res = 0;\n        for (int i = 30; i >= 0; --i) {\n            int b = (val >> i) & 1;\n            int opp = 1 - b;\n            if (curr.child[opp] != null) {\n                res |= (1 << i);\n                curr = curr.child[opp];\n            } else {\n                curr = curr.child[b];\n            }\n        }\n        return res;\n    }\n\n    public int[] maximizeXor(int[] nums, int[][] queries) {\n        Arrays.sort(nums);\n        int q = queries.length;\n        Integer[] order = new Integer[q];\n        for (int i = 0; i < q; ++i) order[i] = i;\n        Arrays.sort(order, (a, b) -> Integer.compare(queries[a][1], queries[b][1]));\n        int[] ans = new int[q];\n        int idx = 0;\n        int n = nums.length;\n        for (int i : order) {\n            int x = queries[i][0];\n            int m = queries[i][1];\n            while (idx < n && nums[idx] <= m) {\n                insert(nums[idx]);\n                idx++;\n            }\n            ans[i] = queryMax(x);\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query processing with binary bitwise prefix tree",
+      "code": "/**\n * @param {number[]} nums\n * @param {number[][]} queries\n * @return {number[]}\n */\nvar maximizeXor = function(nums, queries) {\n    nums.sort((a, b) => a - b);\n    const q = queries.length;\n    const order = Array.from({ length: q }, (_, i) => i);\n    order.sort((a, b) => queries[a][1] - queries[b][1]);\n\n    const root = [null, null];\n    const insert = (val) => {\n        let curr = root;\n        for (let i = 30; i >= 0; --i) {\n            const b = (val >> i) & 1;\n            if (!curr[b]) curr[b] = [null, null];\n            curr = curr[b];\n        }\n    };\n\n    const queryMax = (val) => {\n        if (!root[0] && !root[1]) return -1;\n        let curr = root;\n        let res = 0;\n        for (let i = 30; i >= 0; --i) {\n            const b = (val >> i) & 1;\n            const opp = 1 - b;\n            if (curr[opp]) {\n                res |= (1 << i);\n                curr = curr[opp];\n            } else {\n                curr = curr[b];\n            }\n        }\n        return res;\n    };\n\n    const ans = Array(q);\n    let idx = 0;\n    const n = nums.length;\n    for (const i of order) {\n        const [x, m] = queries[i];\n        while (idx < n && nums[idx] <= m) {\n            insert(nums[idx]);\n            idx++;\n        }\n        ans[i] = queryMax(x);\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

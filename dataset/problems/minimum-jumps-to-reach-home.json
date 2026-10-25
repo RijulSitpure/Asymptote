@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-jumps-to-reach-home",
+  "number": 1654,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "State Representation",
+      "text": "State consists of current position and a boolean flag indicating if the previous jump was backward."
+    },
+    {
+      "level": 2,
+      "title": "Upper Bound Bounding",
+      "text": "Do not explore positions beyond max(x, max(forbidden)) + a + b (roughly 6000)."
+    },
+    {
+      "level": 3,
+      "title": "Breadth-First Exploration",
+      "text": "Enqueue forward jump (position + a, false) and, if previous was not backward, backward jump (position - b, true)."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def minimumJumps(self, forbidden: list[int], a: int, b: int, x: int) -> int:\n        forbidden_set = set(forbidden)\n        limit = max(x, max(forbidden)) + a + b + 2000\n        q = deque([(0, 0, False)])  # (pos, steps, just_backed)\n        visited = {(0, False)}\n        while q:\n            pos, steps, just_backed = q.popleft()\n            if pos == x:\n                return steps\n            # Forward\n            next_f = pos + a\n            if next_f <= limit and next_f not in forbidden_set and (next_f, False) not in visited:\n                visited.add((next_f, False))\n                q.append((next_f, steps + 1, False))\n            # Backward\n            if not just_backed:\n                next_b = pos - b\n                if next_b >= 0 and next_b not in forbidden_set and (next_b, True) not in visited:\n                    visited.add((next_b, True))\n                    q.append((next_b, steps + 1, True))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(LIMIT)",
+    "space": "O(LIMIT)",
+    "variables": [
+      "LIMIT is upper position boundary (~6000)"
+    ],
+    "whyNaiveFails": "Unbounded exploration could loop endlessly without upper position bounding.",
+    "spaceTimeTradeoff": "Visited set tracking (position, can_jump_back) guarantees each state is visited once in O(LIMIT).",
+    "interviewerExpectation": "Candidate should determine reasonable upper limit and avoid consecutive backward jumps.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Breadth-first search with upper bounded coordinate space",
+      "code": "from collections import deque\n\nclass Solution:\n    def minimumJumps(self, forbidden: list[int], a: int, b: int, x: int) -> int:\n        forbidden_set = set(forbidden)\n        limit = max(x, max(forbidden)) + a + b + 2000\n        q = deque([(0, 0, False)])  # (pos, steps, just_backed)\n        visited = {(0, False)}\n        while q:\n            pos, steps, just_backed = q.popleft()\n            if pos == x:\n                return steps\n            # Forward\n            next_f = pos + a\n            if next_f <= limit and next_f not in forbidden_set and (next_f, False) not in visited:\n                visited.add((next_f, False))\n                q.append((next_f, steps + 1, False))\n            # Backward\n            if not just_backed:\n                next_b = pos - b\n                if next_b >= 0 and next_b not in forbidden_set and (next_b, True) not in visited:\n                    visited.add((next_b, True))\n                    q.append((next_b, steps + 1, True))\n        return -1"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Breadth-first search with upper bounded coordinate space",
+      "code": "#include <vector>\n#include <queue>\n#include <unordered_set>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    int minimumJumps(vector<int>& forbidden, int a, int b, int x) {\n        unordered_set<int> forb(forbidden.begin(), forbidden.end());\n        int max_forb = 0;\n        for (int v : forbidden) max_forb = max(max_forb, v);\n        int limit = max(x, max_forb) + a + b + 2000;\n        queue<vector<int>> q;\n        q.push({0, 0, 0}); // pos, steps, just_backed\n        vector<vector<bool>> visited(limit + 1, vector<bool>(2, false));\n        visited[0][0] = true;\n        while (!q.empty()) {\n            auto curr = q.front(); q.pop();\n            int pos = curr[0], steps = curr[1], just_backed = curr[2];\n            if (pos == x) return steps;\n            int next_f = pos + a;\n            if (next_f <= limit && forb.find(next_f) == forb.end() && !visited[next_f][0]) {\n                visited[next_f][0] = true;\n                q.push({next_f, steps + 1, 0});\n            }\n            if (!just_backed) {\n                int next_b = pos - b;\n                if (next_b >= 0 && forb.find(next_b) == forb.end() && !visited[next_b][1]) {\n                    visited[next_b][1] = true;\n                    q.push({next_b, steps + 1, 1});\n                }\n            }\n        }\n        return -1;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Breadth-first search with upper bounded coordinate space",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minimumJumps(int[] forbidden, int a, int b, int x) {\n        Set<Integer> forb = new HashSet<>();\n        int maxForb = 0;\n        for (int v : forbidden) {\n            forb.add(v);\n            maxForb = Math.max(maxForb, v);\n        }\n        int limit = Math.max(x, maxForb) + a + b + 2000;\n        Queue<int[]> q = new LinkedList<>();\n        q.offer(new int[]{0, 0, 0});\n        boolean[][] visited = new boolean[limit + 1][2];\n        visited[0][0] = true;\n        while (!q.isEmpty()) {\n            int[] curr = q.poll();\n            int pos = curr[0], steps = curr[1], justBacked = curr[2];\n            if (pos == x) return steps;\n            int nextF = pos + a;\n            if (nextF <= limit && !forb.contains(nextF) && !visited[nextF][0]) {\n                visited[nextF][0] = true;\n                q.offer(new int[]{nextF, steps + 1, 0});\n            }\n            if (justBacked == 0) {\n                int nextB = pos - b;\n                if (nextB >= 0 && !forb.contains(nextB) && !visited[nextB][1]) {\n                    visited[nextB][1] = true;\n                    q.offer(new int[]{nextB, steps + 1, 1});\n                }\n            }\n        }\n        return -1;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Breadth-first search with upper bounded coordinate space",
+      "code": "/**\n * @param {number[]} forbidden\n * @param {number} a\n * @param {number} b\n * @param {number} x\n * @return {number}\n */\nvar minimumJumps = function(forbidden, a, b, x) {\n    const forb = new Set(forbidden);\n    let maxForb = 0;\n    for (const v of forbidden) {\n        if (v > maxForb) maxForb = v;\n    }\n    const limit = Math.max(x, maxForb) + a + b + 2000;\n    const q = [[0, 0, 0]];\n    const visited = new Set(['0,0']);\n    while (q.length > 0) {\n        const [pos, steps, justBacked] = q.shift();\n        if (pos === x) return steps;\n        const nextF = pos + a;\n        if (nextF <= limit && !forb.has(nextF) && !visited.has(`${nextF},0`)) {\n            visited.add(`${nextF},0`);\n            q.push([nextF, steps + 1, 0]);\n        }\n        if (justBacked === 0) {\n            const nextB = pos - b;\n            if (nextB >= 0 && !forb.has(nextB) && !visited.has(`${nextB},1`)) {\n                visited.add(`${nextB},1`);\n                q.push([nextB, steps + 1, 1]);\n            }\n        }\n    }\n    return -1;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
