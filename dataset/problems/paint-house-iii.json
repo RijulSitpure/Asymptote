@@ -1,0 +1,80 @@
+{
+  "slug": "paint-house-iii",
+  "number": 1473,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "State Representation",
+      "text": "State is (house_idx, target_neighborhoods, prev_color). Track minimum cost to paint houses from house_idx to m - 1."
+    },
+    {
+      "level": 2,
+      "title": "Neighborhood Formation",
+      "text": "When choosing color c for house i, if c does not equal prev_color, neighborhood count decreases by 1."
+    },
+    {
+      "level": 3,
+      "title": "Already Painted vs Unpainted",
+      "text": "If houses[i] is greater than 0, color is fixed and cost is 0. If houses[i] is 0, try all colors 1 to n adding cost[i][c - 1]."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def minCost(self, houses: list[int], cost: list[list[int]], m: int, n: int, target: int) -> int:\n        memo = {}\n        def dp(i, t, prev_c):\n            if t < 0:\n                return float(\"inf\")\n            if i == m:\n                return 0 if t == 0 else float(\"inf\")\n            state = (i, t, prev_c)\n            if state in memo:\n                return memo[state]\n            if houses[i] != 0:\n                c = houses[i]\n                ans = dp(i + 1, t - (1 if c != prev_c else 0), c)\n            else:\n                ans = float(\"inf\")\n                for c in range(1, n + 1):\n                    cost_c = cost[i][c - 1]\n                    ans = min(ans, cost_c + dp(i + 1, t - (1 if c != prev_c else 0), c))\n            memo[state] = ans\n            return ans\n        res = dp(0, target, 0)\n        return res if res != float(\"inf\") else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * Target * N^2)",
+    "space": "O(M * Target * N)",
+    "variables": [
+      "M: houses count",
+      "Target: target neighborhoods",
+      "N: colors count"
+    ],
+    "whyNaiveFails": "Trying all n^m colorings without memoization is exponential.",
+    "spaceTimeTradeoff": "State space M x Target x N with N color choices per transition runs within limits for M, N <= 100.",
+    "interviewerExpectation": "Candidate handles neighborhood increment when prev_color != new_color and respects pre-painted houses.",
+    "notes": "Returns -1 if impossible."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minCost(self, houses: list[int], cost: list[list[int]], m: int, n: int, target: int) -> int:\n        memo = {}\n        def dp(i, t, prev_c):\n            if t < 0:\n                return float(\"inf\")\n            if i == m:\n                return 0 if t == 0 else float(\"inf\")\n            state = (i, t, prev_c)\n            if state in memo:\n                return memo[state]\n            if houses[i] != 0:\n                c = houses[i]\n                ans = dp(i + 1, t - (1 if c != prev_c else 0), c)\n            else:\n                ans = float(\"inf\")\n                for c in range(1, n + 1):\n                    cost_c = cost[i][c - 1]\n                    ans = min(ans, cost_c + dp(i + 1, t - (1 if c != prev_c else 0), c))\n            memo[state] = ans\n            return ans\n        res = dp(0, target, 0)\n        return res if res != float(\"inf\") else -1",
+      "approach": "3D state recursive dynamic programming with memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n#include <cstring>\n\nclass Solution {\n    int memo[105][105][25];\n    int M, N;\n    int dp(int i, int t, int prevC, const std::vector<int>& houses, const std::vector<std::vector<int>>& cost) {\n        if (t < 0) return 1e9;\n        if (i == M) return t == 0 ? 0 : 1e9;\n        if (memo[i][t][prevC] != -1) return memo[i][t][prevC];\n        if (houses[i] != 0) {\n            int c = houses[i];\n            return memo[i][t][prevC] = dp(i + 1, t - (c != prevC ? 1 : 0), c, houses, cost);\n        }\n        int ans = 1e9;\n        for (int c = 1; c <= N; ++c) {\n            ans = std::min(ans, cost[i][c - 1] + dp(i + 1, t - (c != prevC ? 1 : 0), c, houses, cost));\n        }\n        return memo[i][t][prevC] = ans;\n    }\npublic:\n    int minCost(std::vector<int>& houses, std::vector<std::vector<int>>& cost, int m, int n, int target) {\n        M = m; N = n;\n        std::memset(memo, -1, sizeof(memo));\n        int res = dp(0, target, 0, houses, cost);\n        return res >= 1e9 ? -1 : res;\n    }\n};",
+      "approach": "3D state recursive dynamic programming with memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int[][][] memo;\n    private int M, N;\n    private int dp(int i, int t, int prevC, int[] houses, int[][] cost) {\n        if (t < 0) return 1000000000;\n        if (i == M) return t == 0 ? 0 : 1000000000;\n        if (memo[i][t][prevC] != -1) return memo[i][t][prevC];\n        if (houses[i] != 0) {\n            int c = houses[i];\n            return memo[i][t][prevC] = dp(i + 1, t - (c != prevC ? 1 : 0), c, houses, cost);\n        }\n        int ans = 1000000000;\n        for (int c = 1; c <= N; c++) {\n            ans = Math.min(ans, cost[i][c - 1] + dp(i + 1, t - (c != prevC ? 1 : 0), c, houses, cost));\n        }\n        return memo[i][t][prevC] = ans;\n    }\n    public int minCost(int[] houses, int[][] cost, int m, int n, int target) {\n        M = m; N = n;\n        memo = new int[m + 1][target + 1][n + 1];\n        for (int[][] mat : memo) for (int[] row : mat) Arrays.fill(row, -1);\n        int res = dp(0, target, 0, houses, cost);\n        return res >= 1000000000 ? -1 : res;\n    }\n}",
+      "approach": "3D state recursive dynamic programming with memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minCost = function(houses, cost, m, n, target) {\n    const memo = new Map();\n    const dp = (i, t, prevC) => {\n        if (t < 0) return Infinity;\n        if (i === m) return t === 0 ? 0 : Infinity;\n        const key = `${i},${t},${prevC}`;\n        if (memo.has(key)) return memo.get(key);\n        let ans = Infinity;\n        if (houses[i] !== 0) {\n            const c = houses[i];\n            ans = dp(i + 1, t - (c !== prevC ? 1 : 0), c);\n        } else {\n            for (let c = 1; c <= n; c++) {\n                ans = Math.min(ans, cost[i][c - 1] + dp(i + 1, t - (c !== prevC ? 1 : 0), c));\n            }\n        }\n        memo.set(key, ans);\n        return ans;\n    };\n    const res = dp(0, target, 0);\n    return res === Infinity ? -1 : res;\n};",
+      "approach": "3D state recursive dynamic programming with memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

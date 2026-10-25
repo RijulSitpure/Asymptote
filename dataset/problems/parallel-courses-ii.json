@@ -1,0 +1,79 @@
+{
+  "slug": "parallel-courses-ii",
+  "number": 1494,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bitmask of Taken Courses",
+      "text": "Represent the subset of taken courses using an integer mask where bit i set means course i has been completed."
+    },
+    {
+      "level": 2,
+      "title": "Available Courses Filter",
+      "text": "A course i can be taken if it is not yet taken and all its prerequisite courses are contained in the current mask."
+    },
+    {
+      "level": 3,
+      "title": "Submask Transitions",
+      "text": "From all available courses, try all combinations of up to k courses to take in the next semester."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom itertools import combinations\n\nclass Solution:\n    def minNumberOfSemesters(self, n: int, relations: list[list[int]], k: int) -> int:\n        prereq = [0] * n\n        for u, v in relations:\n            prereq[v - 1] |= (1 << (u - 1))\n        dp = [float(\"inf\")] * (1 << n)\n        dp[0] = 0\n        for mask in range(1 << n):\n            if dp[mask] == float(\"inf\"):\n                continue\n            available = 0\n            for i in range(n):\n                if not (mask & (1 << i)) and (prereq[i] & mask) == prereq[i]:\n                    available |= (1 << i)\n            avail_courses = [i for i in range(n) if available & (1 << i)]\n            if len(avail_courses) <= k:\n                next_mask = mask | available\n                dp[next_mask] = min(dp[next_mask], dp[mask] + 1)\n            else:\n                for comb in combinations(avail_courses, k):\n                    next_mask = mask\n                    for c in comb:\n                        next_mask |= (1 << c)\n                    dp[next_mask] = min(dp[next_mask], dp[mask] + 1)\n        return dp[(1 << n) - 1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(3^N)",
+    "space": "O(2^N)",
+    "variables": [
+      "N: number of courses (N <= 15)",
+      "K: max courses per semester"
+    ],
+    "whyNaiveFails": "Greedy selection of courses fails because choosing an unconstrained course early may block prerequisites on the critical path.",
+    "spaceTimeTradeoff": "Bitmask dynamic programming explores all 2^N states with submask transitions within reasonable limits for N <= 15.",
+    "interviewerExpectation": "Candidate realizes greedy topological sorting fails here and formulates exact bitmask dynamic programming.",
+    "notes": "NP-hard problem variant requiring exponential search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from itertools import combinations\n\nclass Solution:\n    def minNumberOfSemesters(self, n: int, relations: list[list[int]], k: int) -> int:\n        prereq = [0] * n\n        for u, v in relations:\n            prereq[v - 1] |= (1 << (u - 1))\n        dp = [float(\"inf\")] * (1 << n)\n        dp[0] = 0\n        for mask in range(1 << n):\n            if dp[mask] == float(\"inf\"):\n                continue\n            available = 0\n            for i in range(n):\n                if not (mask & (1 << i)) and (prereq[i] & mask) == prereq[i]:\n                    available |= (1 << i)\n            avail_courses = [i for i in range(n) if available & (1 << i)]\n            if len(avail_courses) <= k:\n                next_mask = mask | available\n                dp[next_mask] = min(dp[next_mask], dp[mask] + 1)\n            else:\n                for comb in combinations(avail_courses, k):\n                    next_mask = mask\n                    for c in comb:\n                        next_mask |= (1 << c)\n                    dp[next_mask] = min(dp[next_mask], dp[mask] + 1)\n        return dp[(1 << n) - 1]",
+      "approach": "Bitmask dynamic programming over course combinations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minNumberOfSemesters(int n, std::vector<std::vector<int>>& relations, int k) {\n        std::vector<int> prereq(n, 0);\n        for (const auto& r : relations) {\n            prereq[r[1] - 1] |= (1 << (r[0] - 1));\n        }\n        std::vector<int> dp(1 << n, 1e8);\n        dp[0] = 0;\n        for (int mask = 0; mask < (1 << n); ++mask) {\n            if (dp[mask] >= 1e8) continue;\n            int available = 0;\n            for (int i = 0; i < n; ++i) {\n                if (!(mask & (1 << i)) && (prereq[i] & mask) == prereq[i]) {\n                    available |= (1 << i);\n                }\n            }\n            for (int sub = available; sub > 0; sub = (sub - 1) & available) {\n                if (__builtin_popcount(sub) <= k) {\n                    dp[mask | sub] = std::min(dp[mask | sub], dp[mask] + 1);\n                }\n            }\n        }\n        return dp[(1 << n) - 1];\n    }\n};",
+      "approach": "Bitmask dynamic programming over course combinations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minNumberOfSemesters(int n, int[][] relations, int k) {\n        int[] prereq = new int[n];\n        for (int[] r : relations) {\n            prereq[r[1] - 1] |= (1 << (r[0] - 1));\n        }\n        int[] dp = new int[1 << n];\n        Arrays.fill(dp, 100000000);\n        dp[0] = 0;\n        for (int mask = 0; mask < (1 << n); mask++) {\n            if (dp[mask] >= 100000000) continue;\n            int available = 0;\n            for (int i = 0; i < n; i++) {\n                if ((mask & (1 << i)) == 0 && (prereq[i] & mask) == prereq[i]) {\n                    available |= (1 << i);\n                }\n            }\n            for (int sub = available; sub > 0; sub = (sub - 1) & available) {\n                if (Integer.bitCount(sub) <= k) {\n                    dp[mask | sub] = Math.min(dp[mask | sub], dp[mask] + 1);\n                }\n            }\n        }\n        return dp[(1 << n) - 1];\n    }\n}",
+      "approach": "Bitmask dynamic programming over course combinations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minNumberOfSemesters = function(n, relations, k) {\n    const prereq = new Array(n).fill(0);\n    for (const [u, v] of relations) {\n        prereq[v - 1] |= (1 << (u - 1));\n    }\n    const dp = new Array(1 << n).fill(1e8);\n    dp[0] = 0;\n    function countBits(x) {\n        let c = 0;\n        while (x) { c += x & 1; x >>= 1; }\n        return c;\n    }\n    for (let mask = 0; mask < (1 << n); mask++) {\n        if (dp[mask] >= 1e8) continue;\n        let available = 0;\n        for (let i = 0; i < n; i++) {\n            if (!(mask & (1 << i)) && (prereq[i] & mask) === prereq[i]) {\n                available |= (1 << i);\n            }\n        }\n        for (let sub = available; sub > 0; sub = (sub - 1) & available) {\n            if (countBits(sub) <= k) {\n                dp[mask | sub] = Math.min(dp[mask | sub], dp[mask] + 1);\n            }\n        }\n    }\n    return dp[(1 << n) - 1];\n};",
+      "approach": "Bitmask dynamic programming over course combinations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

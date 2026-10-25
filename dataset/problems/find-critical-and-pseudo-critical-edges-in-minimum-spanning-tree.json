@@ -1,0 +1,80 @@
+{
+  "slug": "find-critical-and-pseudo-critical-edges-in-minimum-spanning-tree",
+  "number": 1489,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Kruskal Baseline Weight",
+      "text": "Sort edges by weight and compute the baseline minimum spanning tree weight using disjoint set union."
+    },
+    {
+      "level": 2,
+      "title": "Critical Edge Condition",
+      "text": "An edge is critical if excluding it increases the minimum spanning tree weight or disconnects the graph."
+    },
+    {
+      "level": 3,
+      "title": "Pseudo-Critical Condition",
+      "text": "If an edge is not critical, force its inclusion initially. If the resulting minimum spanning tree weight equals baseline, it is pseudo-critical."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass UnionFind:\n    def __init__(self, n):\n        self.p = list(range(n))\n        self.count = n\n    def find(self, i):\n        if self.p[i] == i:\n            return i\n        self.p[i] = self.find(self.p[i])\n        return self.p[i]\n    def union(self, i, j):\n        pi, pj = self.find(i), self.find(j)\n        if pi != pj:\n            self.p[pi] = pj\n            self.count -= 1\n            return True\n        return False\n\nclass Solution:\n    def findCriticalAndPseudoCriticalEdges(self, n: int, edges: list[list[int]]) -> list[list[int]]:\n        indexed_edges = [[u, v, w, i] for i, (u, v, w) in enumerate(edges)]\n        indexed_edges.sort(key=lambda x: x[2])\n        def get_mst(exclude=-1, include=-1):\n            uf = UnionFind(n)\n            weight = 0\n            if include != -1:\n                u, v, w = edges[include]\n                uf.union(u, v)\n                weight += w\n            for u, v, w, i in indexed_edges:\n                if i == exclude:\n                    continue\n                if uf.union(u, v):\n                    weight += w\n            return weight if uf.count == 1 else float(\"inf\")\n        base = get_mst()\n        critical, pseudo = [], []\n        for i in range(len(edges)):\n            if get_mst(exclude=i) > base:\n                critical.append(i)\n            elif get_mst(include=i) == base:\n                pseudo.append(i)\n        return [critical, pseudo]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E^2 * alpha(V))",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of vertices",
+      "E: number of edges",
+      "alpha: inverse Ackermann"
+    ],
+    "whyNaiveFails": "Combinatorial enumeration of all spanning trees is prohibitively exponential.",
+    "spaceTimeTradeoff": "Running Kruskals algorithm E times to test exclusion and inclusion takes O(E^2 * alpha(V)), well within bounds.",
+    "interviewerExpectation": "Candidate formalizes critical versus pseudo-critical criteria using forced inclusion and exclusion runs of Kruskals.",
+    "notes": "Can also be solved in O(E log E) using Tarjans bridge finding on equal-weight edge blocks."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class UnionFind:\n    def __init__(self, n):\n        self.p = list(range(n))\n        self.count = n\n    def find(self, i):\n        if self.p[i] == i:\n            return i\n        self.p[i] = self.find(self.p[i])\n        return self.p[i]\n    def union(self, i, j):\n        pi, pj = self.find(i), self.find(j)\n        if pi != pj:\n            self.p[pi] = pj\n            self.count -= 1\n            return True\n        return False\n\nclass Solution:\n    def findCriticalAndPseudoCriticalEdges(self, n: int, edges: list[list[int]]) -> list[list[int]]:\n        indexed_edges = [[u, v, w, i] for i, (u, v, w) in enumerate(edges)]\n        indexed_edges.sort(key=lambda x: x[2])\n        def get_mst(exclude=-1, include=-1):\n            uf = UnionFind(n)\n            weight = 0\n            if include != -1:\n                u, v, w = edges[include]\n                uf.union(u, v)\n                weight += w\n            for u, v, w, i in indexed_edges:\n                if i == exclude:\n                    continue\n                if uf.union(u, v):\n                    weight += w\n            return weight if uf.count == 1 else float(\"inf\")\n        base = get_mst()\n        critical, pseudo = [], []\n        for i in range(len(edges)):\n            if get_mst(exclude=i) > base:\n                critical.append(i)\n            elif get_mst(include=i) == base:\n                pseudo.append(i)\n        return [critical, pseudo]",
+      "approach": "Disjoint set Kruskal baseline with edge exclusion and forced inclusion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n#include <numeric>\n\nstruct DSU {\n    std::vector<int> p;\n    int count;\n    DSU(int n) : p(n), count(n) { std::iota(p.begin(), p.end(), 0); }\n    int find(int i) { return p[i] == i ? i : (p[i] = find(p[i])); }\n    bool unite(int i, int j) {\n        int pi = find(i), pj = find(j);\n        if (pi != pj) { p[pi] = pj; count--; return true; }\n        return false;\n    }\n};\n\nclass Solution {\npublic:\n    std::vector<std::vector<int>> findCriticalAndPseudoCriticalEdges(int n, std::vector<std::vector<int>>& edges) {\n        int m = edges.size();\n        std::vector<std::vector<int>> indexedEdges(m);\n        for (int i = 0; i < m; ++i) {\n            indexedEdges[i] = {edges[i][0], edges[i][1], edges[i][2], i};\n        }\n        std::sort(indexedEdges.begin(), indexedEdges.end(), [](const auto& a, const auto& b) {\n            return a[2] < b[2];\n        });\n        auto getMst = [&](int exclude, int include) -> int {\n            DSU dsu(n);\n            int weight = 0;\n            if (include != -1) {\n                dsu.unite(edges[include][0], edges[include][1]);\n                weight += edges[include][2];\n            }\n            for (const auto& e : indexedEdges) {\n                if (e[3] == exclude) continue;\n                if (dsu.unite(e[0], e[1])) weight += e[2];\n            }\n            return dsu.count == 1 ? weight : 1e9;\n        };\n        int base = getMst(-1, -1);\n        std::vector<int> critical, pseudo;\n        for (int i = 0; i < m; ++i) {\n            if (getMst(i, -1) > base) critical.push_back(i);\n            else if (getMst(-1, i) == base) pseudo.push_back(i);\n        }\n        return {critical, pseudo};\n    }\n};",
+      "approach": "Disjoint set Kruskal baseline with edge exclusion and forced inclusion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class DSU {\n        int[] p;\n        int count;\n        DSU(int n) {\n            p = new int[n];\n            for (int i = 0; i < n; i++) p[i] = i;\n            count = n;\n        }\n        int find(int i) { return p[i] == i ? i : (p[i] = find(p[i])); }\n        boolean union(int i, int j) {\n            int pi = find(i), pj = find(j);\n            if (pi != pj) { p[pi] = pj; count--; return true; }\n            return false;\n        }\n    }\n    public List<List<Integer>> findCriticalAndPseudoCriticalEdges(int n, int[][] edges) {\n        int m = edges.length;\n        Integer[] order = new Integer[m];\n        for (int i = 0; i < m; i++) order[i] = i;\n        Arrays.sort(order, (a, b) -> Integer.compare(edges[a][2], edges[b][2]));\n        int base = getMst(n, edges, order, -1, -1);\n        List<Integer> critical = new ArrayList<>();\n        List<Integer> pseudo = new ArrayList<>();\n        for (int i = 0; i < m; i++) {\n            if (getMst(n, edges, order, i, -1) > base) {\n                critical.add(i);\n            } else if (getMst(n, edges, order, -1, i) == base) {\n                pseudo.add(i);\n            }\n        }\n        return Arrays.asList(critical, pseudo);\n    }\n    private int getMst(int n, int[][] edges, Integer[] order, int exclude, int include) {\n        DSU dsu = new DSU(n);\n        int weight = 0;\n        if (include != -1) {\n            dsu.union(edges[include][0], edges[include][1]);\n            weight += edges[include][2];\n        }\n        for (int idx : order) {\n            if (idx == exclude) continue;\n            if (dsu.union(edges[idx][0], edges[idx][1])) {\n                weight += edges[idx][2];\n            }\n        }\n        return dsu.count == 1 ? weight : 1000000000;\n    }\n}",
+      "approach": "Disjoint set Kruskal baseline with edge exclusion and forced inclusion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findCriticalAndPseudoCriticalEdges = function(n, edges) {\n    const m = edges.length;\n    const indexed = edges.map((e, i) => [e[0], e[1], e[2], i]);\n    indexed.sort((a, b) => a[2] - b[2]);\n    function getMst(exclude, include) {\n        const p = Array.from({ length: n }, (_, i) => i);\n        let count = n;\n        function find(i) { return p[i] === i ? i : (p[i] = find(p[i])); }\n        function union(i, j) {\n            const pi = find(i), pj = find(j);\n            if (pi !== pj) { p[pi] = pj; count--; return true; }\n            return false;\n        }\n        let weight = 0;\n        if (include !== -1) {\n            union(edges[include][0], edges[include][1]);\n            weight += edges[include][2];\n        }\n        for (const [u, v, w, i] of indexed) {\n            if (i === exclude) continue;\n            if (union(u, v)) weight += w;\n        }\n        return count === 1 ? weight : 1e9;\n    }\n    const base = getMst(-1, -1);\n    const critical = [];\n    const pseudo = [];\n    for (let i = 0; i < m; i++) {\n        if (getMst(i, -1) > base) {\n            critical.push(i);\n        } else if (getMst(-1, i) === base) {\n            pseudo.push(i);\n        }\n    }\n    return [critical, pseudo];\n};",
+      "approach": "Disjoint set Kruskal baseline with edge exclusion and forced inclusion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

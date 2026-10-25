@@ -1,0 +1,79 @@
+{
+  "slug": "allocate-mailboxes",
+  "number": 1478,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-interval"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Median Minimizes Distance",
+      "text": "Sorting the house locations allows computing the optimal mailbox position for any contiguous segment at the median."
+    },
+    {
+      "level": 2,
+      "title": "Segment Precomputation",
+      "text": "Precalculate cost[i][j] as the minimal distance to cover houses from index i to j with a single mailbox placed at their median."
+    },
+    {
+      "level": 3,
+      "title": "Partition State",
+      "text": "Partition houses into k groups using a recurrence over (current house index, remaining mailboxes)."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def minDistance(self, houses: list[int], k: int) -> int:\n        houses.sort()\n        n = len(houses)\n        cost = [[0] * n for _ in range(n)]\n        for i in range(n):\n            for j in range(i, n):\n                med = houses[(i + j) // 2]\n                for x in range(i, j + 1):\n                    cost[i][j] += abs(houses[x] - med)\n        memo = {}\n        def dp(idx, rem):\n            if rem == 0 and idx == n:\n                return 0\n            if rem == 0 or idx == n:\n                return float(\"inf\")\n            if (idx, rem) in memo:\n                return memo[(idx, rem)]\n            ans = float(\"inf\")\n            for j in range(idx, n):\n                ans = min(ans, cost[idx][j] + dp(j + 1, rem - 1))\n            memo[(idx, rem)] = ans\n            return ans\n        return dp(0, k)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^3 + K * N^2)",
+    "space": "O(N^2 + K * N)",
+    "variables": [
+      "N: houses count",
+      "K: mailboxes count"
+    ],
+    "whyNaiveFails": "Trying all mailbox placement coordinates on a continuous line is impossible without restricting to median intervals.",
+    "spaceTimeTradeoff": "Precalculating O(N^2) interval median costs enables an efficient O(K * N^2) dynamic programming partition.",
+    "interviewerExpectation": "Candidate realizes that for any subset of sorted houses served by one mailbox, placing it at the median minimizes L1 distance.",
+    "notes": "Standard 1D k-median clustering problem."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minDistance(self, houses: list[int], k: int) -> int:\n        houses.sort()\n        n = len(houses)\n        cost = [[0] * n for _ in range(n)]\n        for i in range(n):\n            for j in range(i, n):\n                med = houses[(i + j) // 2]\n                for x in range(i, j + 1):\n                    cost[i][j] += abs(houses[x] - med)\n        memo = {}\n        def dp(idx, rem):\n            if rem == 0 and idx == n:\n                return 0\n            if rem == 0 or idx == n:\n                return float(\"inf\")\n            if (idx, rem) in memo:\n                return memo[(idx, rem)]\n            ans = float(\"inf\")\n            for j in range(idx, n):\n                ans = min(ans, cost[idx][j] + dp(j + 1, rem - 1))\n            memo[(idx, rem)] = ans\n            return ans\n        return dp(0, k)",
+      "approach": "Precompute median segment costs then 2D partition dynamic programming",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n#include <cmath>\n#include <cstring>\n\nclass Solution {\n    int cost[105][105];\n    int memo[105][105];\n    int N;\n    int dp(int idx, int remK) {\n        if (remK == 0 && idx == N) return 0;\n        if (remK == 0 || idx == N) return 1e8;\n        if (memo[idx][remK] != -1) return memo[idx][remK];\n        int ans = 1e8;\n        for (int j = idx; j < N; ++j) {\n            ans = std::min(ans, cost[idx][j] + dp(j + 1, remK - 1));\n        }\n        return memo[idx][remK] = ans;\n    }\npublic:\n    int minDistance(std::vector<int>& houses, int k) {\n        std::sort(houses.begin(), houses.end());\n        N = houses.size();\n        std::memset(cost, 0, sizeof(cost));\n        std::memset(memo, -1, sizeof(memo));\n        for (int i = 0; i < N; ++i) {\n            for (int j = i; j < N; ++j) {\n                int med = houses[(i + j) / 2];\n                for (int x = i; x <= j; ++x) {\n                    cost[i][j] += std::abs(houses[x] - med);\n                }\n            }\n        }\n        return dp(0, k);\n    }\n};",
+      "approach": "Precompute median segment costs then 2D partition dynamic programming",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    int[][] cost;\n    int[][] memo;\n    int n;\n    private int dp(int idx, int remK) {\n        if (remK == 0 && idx == n) return 0;\n        if (remK == 0 || idx == n) return 100000000;\n        if (memo[idx][remK] != -1) return memo[idx][remK];\n        int ans = 100000000;\n        for (int j = idx; j < n; j++) {\n            ans = Math.min(ans, cost[idx][j] + dp(j + 1, remK - 1));\n        }\n        return memo[idx][remK] = ans;\n    }\n    public int minDistance(int[] houses, int k) {\n        Arrays.sort(houses);\n        n = houses.length;\n        cost = new int[n][n];\n        memo = new int[n][k + 1];\n        for (int[] row : memo) Arrays.fill(row, -1);\n        for (int i = 0; i < n; i++) {\n            for (int j = i; j < n; j++) {\n                int med = houses[(i + j) / 2];\n                for (int x = i; x <= j; x++) {\n                    cost[i][j] += Math.abs(houses[x] - med);\n                }\n            }\n        }\n        return dp(0, k);\n    }\n}",
+      "approach": "Precompute median segment costs then 2D partition dynamic programming",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minDistance = function(houses, k) {\n    houses.sort((a, b) => a - b);\n    const n = houses.length;\n    const cost = Array.from({ length: n }, () => new Array(n).fill(0));\n    for (let i = 0; i < n; i++) {\n        for (let j = i; j < n; j++) {\n            const med = houses[Math.floor((i + j) / 2)];\n            for (let x = i; x <= j; x++) {\n                cost[i][j] += Math.abs(houses[x] - med);\n            }\n        }\n    }\n    const memo = Array.from({ length: n }, () => new Array(k + 1).fill(-1));\n    function dp(idx, remK) {\n        if (remK === 0 && idx === n) return 0;\n        if (remK === 0 || idx === n) return 1e8;\n        if (memo[idx][remK] !== -1) return memo[idx][remK];\n        let ans = 1e8;\n        for (let j = idx; j < n; j++) {\n            ans = Math.min(ans, cost[idx][j] + dp(j + 1, remK - 1));\n        }\n        return memo[idx][remK] = ans;\n    }\n    return dp(0, k);\n};",
+      "approach": "Precompute median segment costs then 2D partition dynamic programming",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

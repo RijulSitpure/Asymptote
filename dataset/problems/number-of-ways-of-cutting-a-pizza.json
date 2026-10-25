@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-ways-of-cutting-a-pizza",
+  "number": 1444,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-grid-2d"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Suffix Apple Counts",
+      "text": "Precompute apples[r][c], the count of apples in the rectangular piece from (r, c) to bottom-right (R - 1, C - 1)."
+    },
+    {
+      "level": 2,
+      "title": "Horizontal and Vertical Cuts",
+      "text": "A horizontal cut at row nr is valid if top slice has apples (apples[r][c] - apples[nr][c] > 0) and bottom slice has apples (apples[nr][c] >= remaining cuts)."
+    },
+    {
+      "level": 3,
+      "title": "State Transition with Modulo",
+      "text": "State is (r, c, remaining_cuts). Sum ways across all valid horizontal and vertical cuts modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def ways(self, pizza: list[str], k: int) -> int:\n        MOD = 10**9 + 7\n        R, C = len(pizza), len(pizza[0])\n        apples = [[0] * (C + 1) for _ in range(R + 1)]\n        for r in range(R - 1, -1, -1):\n            for c in range(C - 1, -1, -1):\n                apples[r][c] = (pizza[r][c] == \"A\") + apples[r + 1][c] + apples[r][c + 1] - apples[r + 1][c + 1]\n        memo = {}\n        def dp(r, c, cuts_left):\n            if apples[r][c] < cuts_left + 1:\n                return 0\n            if cuts_left == 0:\n                return 1\n            state = (r, c, cuts_left)\n            if state in memo:\n                return memo[state]\n            ans = 0\n            for nr in range(r + 1, R):\n                if apples[r][c] - apples[nr][c] > 0:\n                    ans = (ans + dp(nr, c, cuts_left - 1)) % MOD\n            for nc in range(c + 1, C):\n                if apples[r][c] - apples[r][nc] > 0:\n                    ans = (ans + dp(r, nc, cuts_left - 1)) % MOD\n            memo[state] = ans\n            return ans\n        return dp(0, 0, k - 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(K * R * C * (R + C))",
+    "space": "O(K * R * C)",
+    "variables": [
+      "R, C: grid dimensions",
+      "K: number of slices k"
+    ],
+    "whyNaiveFails": "Recomputing apple counts repeatedly across overlapping slices causes combinatorial timeout.",
+    "spaceTimeTradeoff": "2D suffix sums provide O(1) apple checks for each candidate cut position.",
+    "interviewerExpectation": "Candidate uses 2D suffix sums and 3D state table (r, c, k) with modulo accumulation.",
+    "notes": "Each piece must contain at least one apple."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def ways(self, pizza: list[str], k: int) -> int:\n        MOD = 10**9 + 7\n        R, C = len(pizza), len(pizza[0])\n        apples = [[0] * (C + 1) for _ in range(R + 1)]\n        for r in range(R - 1, -1, -1):\n            for c in range(C - 1, -1, -1):\n                apples[r][c] = (pizza[r][c] == \"A\") + apples[r + 1][c] + apples[r][c + 1] - apples[r + 1][c + 1]\n        memo = {}\n        def dp(r, c, cuts_left):\n            if apples[r][c] < cuts_left + 1:\n                return 0\n            if cuts_left == 0:\n                return 1\n            state = (r, c, cuts_left)\n            if state in memo:\n                return memo[state]\n            ans = 0\n            for nr in range(r + 1, R):\n                if apples[r][c] - apples[nr][c] > 0:\n                    ans = (ans + dp(nr, c, cuts_left - 1)) % MOD\n            for nc in range(c + 1, C):\n                if apples[r][c] - apples[r][nc] > 0:\n                    ans = (ans + dp(r, nc, cuts_left - 1)) % MOD\n            memo[state] = ans\n            return ans\n        return dp(0, 0, k - 1)",
+      "approach": "suffix 2D prefix sums with 3D recursive state memorization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <string>\n#include <cstring>\n\nclass Solution {\n    int MOD = 1000000007;\n    int memo[55][55][12];\n    int apples[55][55];\n    int R, C;\n    int solve(int r, int c, int cutsLeft) {\n        if (apples[r][c] < cutsLeft + 1) return 0;\n        if (cutsLeft == 0) return 1;\n        if (memo[r][c][cutsLeft] != -1) return memo[r][c][cutsLeft];\n        long long ans = 0;\n        for (int nr = r + 1; nr < R; ++nr) {\n            if (apples[r][c] - apples[nr][c] > 0) {\n                ans = (ans + solve(nr, c, cutsLeft - 1)) % MOD;\n            }\n        }\n        for (int nc = c + 1; nc < C; ++nc) {\n            if (apples[r][c] - apples[r][nc] > 0) {\n                ans = (ans + solve(r, nc, cutsLeft - 1)) % MOD;\n            }\n        }\n        return memo[r][c][cutsLeft] = ans;\n    }\npublic:\n    int ways(std::vector<std::string>& pizza, int k) {\n        R = pizza.size(); C = pizza[0].size();\n        std::memset(apples, 0, sizeof(apples));\n        std::memset(memo, -1, sizeof(memo));\n        for (int r = R - 1; r >= 0; --r) {\n            for (int c = C - 1; c >= 0; --c) {\n                apples[r][c] = (pizza[r][c] == 'A') + apples[r + 1][c] + apples[r][c + 1] - apples[r + 1][c + 1];\n            }\n        }\n        return solve(0, 0, k - 1);\n    }\n};",
+      "approach": "suffix 2D prefix sums with 3D recursive state memorization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int MOD = 1000000007;\n    private int[][][] memo;\n    private int[][] apples;\n    private int R, C;\n    private int solve(int r, int c, int cutsLeft) {\n        if (apples[r][c] < cutsLeft + 1) return 0;\n        if (cutsLeft == 0) return 1;\n        if (memo[r][c][cutsLeft] != -1) return memo[r][c][cutsLeft];\n        long ans = 0;\n        for (int nr = r + 1; nr < R; nr++) {\n            if (apples[r][c] - apples[nr][c] > 0) {\n                ans = (ans + solve(nr, c, cutsLeft - 1)) % MOD;\n            }\n        }\n        for (int nc = c + 1; nc < C; nc++) {\n            if (apples[r][c] - apples[r][nc] > 0) {\n                ans = (ans + solve(r, nc, cutsLeft - 1)) % MOD;\n            }\n        }\n        return memo[r][c][cutsLeft] = (int)ans;\n    }\n    public int ways(String[] pizza, int k) {\n        R = pizza.length; C = pizza[0].length();\n        apples = new int[R + 1][C + 1];\n        memo = new int[R][C][k];\n        for (int[][] row : memo) for (int[] col : row) Arrays.fill(col, -1);\n        for (int r = R - 1; r >= 0; r--) {\n            for (int c = C - 1; c >= 0; c--) {\n                apples[r][c] = (pizza[r].charAt(c) == 'A' ? 1 : 0) + apples[r + 1][c] + apples[r][c + 1] - apples[r + 1][c + 1];\n            }\n        }\n        return solve(0, 0, k - 1);\n    }\n}",
+      "approach": "suffix 2D prefix sums with 3D recursive state memorization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var ways = function(pizza, k) {\n    const MOD = 1000000007;\n    const R = pizza.length, C = pizza[0].length;\n    const apples = Array.from({ length: R + 1 }, () => new Array(C + 1).fill(0));\n    for (let r = R - 1; r >= 0; r--) {\n        for (let c = C - 1; c >= 0; c--) {\n            apples[r][c] = (pizza[r][c] === 'A' ? 1 : 0) + apples[r + 1][c] + apples[r][c + 1] - apples[r + 1][c + 1];\n        }\n    }\n    const memo = new Map();\n    const solve = (r, c, cutsLeft) => {\n        if (apples[r][c] < cutsLeft + 1) return 0;\n        if (cutsLeft === 0) return 1;\n        const key = `${r},${c},${cutsLeft}`;\n        if (memo.has(key)) return memo.get(key);\n        let ans = 0;\n        for (let nr = r + 1; nr < R; nr++) {\n            if (apples[r][c] - apples[nr][c] > 0) {\n                ans = (ans + solve(nr, c, cutsLeft - 1)) % MOD;\n            }\n        }\n        for (let nc = c + 1; nc < C; nc++) {\n            if (apples[r][c] - apples[r][nc] > 0) {\n                ans = (ans + solve(r, nc, cutsLeft - 1)) % MOD;\n            }\n        }\n        memo.set(key, ans);\n        return ans;\n    };\n    return solve(0, 0, k - 1);\n};",
+      "approach": "suffix 2D prefix sums with 3D recursive state memorization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
