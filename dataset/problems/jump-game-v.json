@@ -1,0 +1,80 @@
+{
+  "slug": "jump-game-v",
+  "number": 1340,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear",
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Strictly Lower Decreasing Jumps",
+      "text": "From index i, you can jump to j in range [i-d, i+d] only if arr[j] < arr[i] and all intermediate indices have arr[k] < arr[i]."
+    },
+    {
+      "level": 2,
+      "title": "Directed Acyclic Property",
+      "text": "Because you can only jump to strictly lower heights, there are no cycles. The transitions form a directed acyclic graph."
+    },
+    {
+      "level": 3,
+      "title": "Top-Down Memoization",
+      "text": "Define memoized function dp(i) returning 1 + max(dp(j)) over all valid landing positions j."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def maxJumps(self, arr: list[int], d: int) -> int:\n        n = len(arr)\n        memo = {}\n        def dp(i):\n            if i in memo:\n                return memo[i]\n            ans = 1\n            for step in [1, -1]:\n                for dist in range(1, d + 1):\n                    j = i + step * dist\n                    if not (0 <= j < n) or arr[j] >= arr[i]:\n                        break\n                    ans = max(ans, 1 + dp(j))\n            memo[i] = ans\n            return ans\n        return max(dp(i) for i in range(n))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * D)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of arr",
+      "D: maximum jump distance"
+    ],
+    "whyNaiveFails": "Unmemoized recursive search repeats sub-branches exponentially.",
+    "spaceTimeTradeoff": "Since transitions are strictly height-decreasing, memoization evaluates each of the N states in O(D) time.",
+    "interviewerExpectation": "Candidate identifies DAG property and implements memoized DFS or sorts indices by height.",
+    "notes": "Stopping when arr[j] >= arr[i] is essential because taller or equal pillars block further jumps."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maxJumps(self, arr: list[int], d: int) -> int:\n        n = len(arr)\n        memo = {}\n        def dp(i):\n            if i in memo:\n                return memo[i]\n            ans = 1\n            for step in [1, -1]:\n                for dist in range(1, d + 1):\n                    j = i + step * dist\n                    if not (0 <= j < n) or arr[j] >= arr[i]:\n                        break\n                    ans = max(ans, 1 + dp(j))\n            memo[i] = ans\n            return ans\n        return max(dp(i) for i in range(n))",
+      "approach": "memoized depth-first-search on height DAG",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int memo[1001];\n    int dfs(int i, const std::vector<int>& arr, int d, int n) {\n        if (memo[i] != 0) return memo[i];\n        int ans = 1;\n        for (int step : {1, -1}) {\n            for (int dist = 1; dist <= d; ++dist) {\n                int j = i + step * dist;\n                if (j < 0 || j >= n || arr[j] >= arr[i]) break;\n                ans = std::max(ans, 1 + dfs(j, arr, d, n));\n            }\n        }\n        return memo[i] = ans;\n    }\n    int maxJumps(std::vector<int>& arr, int d) {\n        int n = arr.size();\n        std::fill(memo, memo + n, 0);\n        int res = 1;\n        for (int i = 0; i < n; ++i) {\n            res = std::max(res, dfs(i, arr, d, n));\n        }\n        return res;\n    }\n};",
+      "approach": "memoized depth-first-search on height DAG",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int[] memo;\n    private int dfs(int i, int[] arr, int d, int n) {\n        if (memo[i] != 0) return memo[i];\n        int ans = 1;\n        int[] steps = {1, -1};\n        for (int step : steps) {\n            for (int dist = 1; dist <= d; dist++) {\n                int j = i + step * dist;\n                if (j < 0 || j >= n || arr[j] >= arr[i]) break;\n                ans = Math.max(ans, 1 + dfs(j, arr, d, n));\n            }\n        }\n        return memo[i] = ans;\n    }\n    public int maxJumps(int[] arr, int d) {\n        int n = arr.length;\n        memo = new int[n];\n        int res = 1;\n        for (int i = 0; i < n; i++) {\n            res = Math.max(res, dfs(i, arr, d, n));\n        }\n        return res;\n    }\n}",
+      "approach": "memoized depth-first-search on height DAG",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxJumps = function(arr, d) {\n    const n = arr.length;\n    const memo = new Int32Array(n);\n    const dfs = (i) => {\n        if (memo[i] !== 0) return memo[i];\n        let ans = 1;\n        for (const step of [1, -1]) {\n            for (let dist = 1; dist <= d; dist++) {\n                const j = i + step * dist;\n                if (j < 0 || j >= n || arr[j] >= arr[i]) break;\n                const cand = 1 + dfs(j);\n                if (cand > ans) ans = cand;\n            }\n        }\n        return memo[i] = ans;\n    };\n    let res = 1;\n    for (let i = 0; i < n; i++) {\n        const val = dfs(i);\n        if (val > res) res = val;\n    }\n    return res;\n};",
+      "approach": "memoized depth-first-search on height DAG",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

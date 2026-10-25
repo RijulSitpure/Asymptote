@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-side-length-of-a-square-with-sum-less-than-or-equal-to-threshold",
+  "number": 1292,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap",
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "2D Prefix Sums",
+      "text": "Precompute 2D prefix sums of the matrix to query the sum of any square submatrix in constant time."
+    },
+    {
+      "level": 2,
+      "title": "Monotonicity of Square Sums",
+      "text": "Because all matrix elements are non-negative, larger squares have equal or greater sums."
+    },
+    {
+      "level": 3,
+      "title": "Check Square Feasibility",
+      "text": "Use binary search on the side length L from 1 to min(M, N). If any L x L square has sum <= threshold, L is achievable."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def maxSideLength(self, mat: list[list[int]], threshold: int) -> int:\n        m, n = len(mat), len(mat[0])\n        pref = [[0] * (n + 1) for _ in range(m + 1)]\n        for r in range(m):\n            for c in range(n):\n                pref[r + 1][c + 1] = mat[r][c] + pref[r][c + 1] + pref[r + 1][c] - pref[r][c]\n        def query(r1, c1, r2, c2):\n            return pref[r2][c2] - pref[r1][c2] - pref[r2][c1] + pref[r1][c1]\n        lo, hi = 0, min(m, n)\n        ans = 0\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if mid == 0:\n                lo = mid + 1\n                continue\n            found = False\n            for r in range(m - mid + 1):\n                for c in range(n - mid + 1):\n                    if query(r, c, r + mid, c + mid) <= threshold:\n                        found = True\n                        break\n                if found:\n                    break\n            if found:\n                ans = mid\n                lo = mid + 1\n            else:\n                hi = mid - 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N * log(min(M, N)))",
+    "space": "O(M * N)",
+    "variables": [
+      "M: rows",
+      "N: cols"
+    ],
+    "whyNaiveFails": "Summing square regions repeatedly without prefix sums takes cubic time.",
+    "spaceTimeTradeoff": "A 2D prefix table computes any square sum in O(1), enabling logarithmic search on side length.",
+    "interviewerExpectation": "Candidate correctly implements inclusion-exclusion 2D prefix sum and checks square bounds.",
+    "notes": "Can also be solved in O(M * N) by expanding side length greedily without binary search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maxSideLength(self, mat: list[list[int]], threshold: int) -> int:\n        m, n = len(mat), len(mat[0])\n        pref = [[0] * (n + 1) for _ in range(m + 1)]\n        for r in range(m):\n            for c in range(n):\n                pref[r + 1][c + 1] = mat[r][c] + pref[r][c + 1] + pref[r + 1][c] - pref[r][c]\n        def query(r1, c1, r2, c2):\n            return pref[r2][c2] - pref[r1][c2] - pref[r2][c1] + pref[r1][c1]\n        lo, hi = 0, min(m, n)\n        ans = 0\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if mid == 0:\n                lo = mid + 1\n                continue\n            found = False\n            for r in range(m - mid + 1):\n                for c in range(n - mid + 1):\n                    if query(r, c, r + mid, c + mid) <= threshold:\n                        found = True\n                        break\n                if found:\n                    break\n            if found:\n                ans = mid\n                lo = mid + 1\n            else:\n                hi = mid - 1\n        return ans",
+      "approach": "2D prefix sums with binary search on side length",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxSideLength(std::vector<std::vector<int>>& mat, int threshold) {\n        int m = mat.size(), n = mat[0].size();\n        std::vector<std::vector<int>> pref(m + 1, std::vector<int>(n + 1, 0));\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                pref[r + 1][c + 1] = mat[r][c] + pref[r][c + 1] + pref[r + 1][c] - pref[r][c];\n            }\n        }\n        auto query = [&](int r1, int c1, int r2, int c2) {\n            return pref[r2][c2] - pref[r1][c2] - pref[r2][c1] + pref[r1][c1];\n        };\n        int lo = 0, hi = std::min(m, n), ans = 0;\n        while (lo <= hi) {\n            int mid = lo + (hi - lo) / 2;\n            if (mid == 0) { lo = mid + 1; continue; }\n            bool found = false;\n            for (int r = 0; r <= m - mid; ++r) {\n                for (int c = 0; c <= n - mid; ++c) {\n                    if (query(r, c, r + mid, c + mid) <= threshold) {\n                        found = true;\n                        break;\n                    }\n                }\n                if (found) break;\n            }\n            if (found) {\n                ans = mid;\n                lo = mid + 1;\n            } else {\n                hi = mid - 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "2D prefix sums with binary search on side length",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int maxSideLength(int[][] mat, int threshold) {\n        int m = mat.length, n = mat[0].length;\n        int[][] pref = new int[m + 1][n + 1];\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                pref[r + 1][c + 1] = mat[r][c] + pref[r][c + 1] + pref[r + 1][c] - pref[r][c];\n            }\n        }\n        int lo = 0, hi = Math.min(m, n), ans = 0;\n        while (lo <= hi) {\n            int mid = lo + (hi - lo) / 2;\n            if (mid == 0) { lo = mid + 1; continue; }\n            boolean found = false;\n            for (int r = 0; r <= m - mid; r++) {\n                for (int c = 0; c <= n - mid; c++) {\n                    int sum = pref[r + mid][c + mid] - pref[r][c + mid] - pref[r + mid][c] + pref[r][c];\n                    if (sum <= threshold) {\n                        found = true;\n                        break;\n                    }\n                }\n                if (found) break;\n            }\n            if (found) {\n                ans = mid;\n                lo = mid + 1;\n            } else {\n                hi = mid - 1;\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "2D prefix sums with binary search on side length",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxSideLength = function(mat, threshold) {\n    const m = mat.length, n = mat[0].length;\n    const pref = Array.from({ length: m + 1 }, () => new Int32Array(n + 1));\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            pref[r + 1][c + 1] = mat[r][c] + pref[r][c + 1] + pref[r + 1][c] - pref[r][c];\n        }\n    }\n    const query = (r1, c1, r2, c2) => pref[r2][c2] - pref[r1][c2] - pref[r2][c1] + pref[r1][c1];\n    let lo = 0, hi = Math.min(m, n), ans = 0;\n    while (lo <= hi) {\n        const mid = (lo + hi) >> 1;\n        if (mid === 0) { lo = mid + 1; continue; }\n        let found = false;\n        for (let r = 0; r <= m - mid; r++) {\n            for (let c = 0; c <= n - mid; c++) {\n                if (query(r, c, r + mid, c + mid) <= threshold) {\n                    found = true;\n                    break;\n                }\n            }\n            if (found) break;\n        }\n        if (found) {\n            ans = mid;\n            lo = mid + 1;\n        } else {\n            hi = mid - 1;\n        }\n    }\n    return ans;\n};",
+      "approach": "2D prefix sums with binary search on side length",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

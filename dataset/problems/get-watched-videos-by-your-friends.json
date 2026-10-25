@@ -1,0 +1,81 @@
+{
+  "slug": "get-watched-videos-by-your-friends",
+  "number": 1311,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path",
+    "hash-map-lookup"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Find K-th Level Friends",
+      "text": "Run a level-by-level breadth-first search on the friendship network starting at id, stopping exactly at distance level."
+    },
+    {
+      "level": 2,
+      "title": "Count Watched Videos",
+      "text": "Collect all videos watched by people at distance level. Count the frequency of each video title in a frequency map."
+    },
+    {
+      "level": 3,
+      "title": "Sort by Frequency then Title",
+      "text": "Sort videos by frequency in ascending order. Break frequency ties using alphabetical order."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import deque, Counter\n\nclass Solution:\n    def watchedVideosByFriends(self, watchedVideos: list[list[str]], friends: list[list[int]], id: int, level: int) -> list[str]:\n        q = deque([id])\n        visited = {id}\n        cur_level = 0\n        while q and cur_level < level:\n            for _ in range(len(q)):\n                u = q.popleft()\n                for v in friends[u]:\n                    if v not in visited:\n                        visited.add(v)\n                        q.append(v)\n            cur_level += 1\n        counts = Counter()\n        for friend in q:\n            for vid in watchedVideos[friend]:\n                counts[vid] += 1\n        return sorted(counts.keys(), key=lambda x: (counts[x], x))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E + M * log(M))",
+    "space": "O(V + M)",
+    "variables": [
+      "V: number of people",
+      "E: total friendship edges",
+      "M: number of distinct videos watched at level k"
+    ],
+    "whyNaiveFails": "Unbounded path searches visit redundant branches without level-bounded shortest path pruning.",
+    "spaceTimeTradeoff": "BFS cleanly visits each person once and delivers exact k-th degree friends.",
+    "interviewerExpectation": "Candidate manages the BFS level cutoff and multi-criteria sort (frequency, then lexicographical).",
+    "notes": "People already visited at lower levels must not be included at higher levels."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque, Counter\n\nclass Solution:\n    def watchedVideosByFriends(self, watchedVideos: list[list[str]], friends: list[list[int]], id: int, level: int) -> list[str]:\n        q = deque([id])\n        visited = {id}\n        cur_level = 0\n        while q and cur_level < level:\n            for _ in range(len(q)):\n                u = q.popleft()\n                for v in friends[u]:\n                    if v not in visited:\n                        visited.add(v)\n                        q.append(v)\n            cur_level += 1\n        counts = Counter()\n        for friend in q:\n            for vid in watchedVideos[friend]:\n                counts[vid] += 1\n        return sorted(counts.keys(), key=lambda x: (counts[x], x))",
+      "approach": "k-hop level breadth-first-search and frequency sorting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <string>\n#include <queue>\n#include <unordered_map>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<std::string> watchedVideosByFriends(std::vector<std::vector<std::string>>& watchedVideos, std::vector<std::vector<int>>& friends, int id, int level) {\n        int n = friends.size();\n        std::vector<bool> visited(n, false);\n        std::queue<int> q;\n        q.push(id);\n        visited[id] = true;\n        int curLevel = 0;\n        while (!q.empty() && curLevel < level) {\n            int sz = q.size();\n            for (int i = 0; i < sz; ++i) {\n                int u = q.front();\n                q.pop();\n                for (int v : friends[u]) {\n                    if (!visited[v]) {\n                        visited[v] = true;\n                        q.push(v);\n                    }\n                }\n            }\n            curLevel++;\n        }\n        std::unordered_map<std::string, int> counts;\n        while (!q.empty()) {\n            int u = q.front();\n            q.pop();\n            for (const auto& vid : watchedVideos[u]) counts[vid]++;\n        }\n        std::vector<std::pair<std::string, int>> items(counts.begin(), counts.end());\n        std::sort(items.begin(), items.end(), [](const auto& a, const auto& b) {\n            if (a.second != b.second) return a.second < b.second;\n            return a.first < b.first;\n        });\n        std::vector<std::string> res;\n        for (const auto& item : items) res.push_back(item.first);\n        return res;\n    }\n};",
+      "approach": "k-hop level breadth-first-search and frequency sorting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public List<String> watchedVideosByFriends(List<List<String>> watchedVideos, int[][] friends, int id, int level) {\n        int n = friends.length;\n        boolean[] visited = new boolean[n];\n        Queue<Integer> q = new LinkedList<>();\n        q.offer(id);\n        visited[id] = true;\n        int curLevel = 0;\n        while (!q.isEmpty() && curLevel < level) {\n            int sz = q.size();\n            for (int i = 0; i < sz; i++) {\n                int u = q.poll();\n                for (int v : friends[u]) {\n                    if (!visited[v]) {\n                        visited[v] = true;\n                        q.offer(v);\n                    }\n                }\n            }\n            curLevel++;\n        }\n        Map<String, Integer> counts = new HashMap<>();\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            for (String vid : watchedVideos.get(u)) {\n                counts.put(vid, counts.getOrDefault(vid, 0) + 1);\n            }\n        }\n        List<String> res = new ArrayList<>(counts.keySet());\n        res.sort((a, b) -> {\n            int ca = counts.get(a), cb = counts.get(b);\n            if (ca != cb) return Integer.compare(ca, cb);\n            return a.compareTo(b);\n        });\n        return res;\n    }\n}",
+      "approach": "k-hop level breadth-first-search and frequency sorting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var watchedVideosByFriends = function(watchedVideos, friends, id, level) {\n    const n = friends.length;\n    const visited = new Uint8Array(n);\n    let q = [id];\n    visited[id] = 1;\n    let curLevel = 0;\n    while (q.length > 0 && curLevel < level) {\n        const nextQ = [];\n        for (const u of q) {\n            for (const v of friends[u]) {\n                if (!visited[v]) {\n                    visited[v] = 1;\n                    nextQ.push(v);\n                }\n            }\n        }\n        q = nextQ;\n        curLevel++;\n    }\n    const counts = new Map();\n    for (const friend of q) {\n        for (const vid of watchedVideos[friend]) {\n            counts.set(vid, (counts.get(vid) || 0) + 1);\n        }\n    }\n    return Array.from(counts.keys()).sort((a, b) => {\n        const ca = counts.get(a), cb = counts.get(b);\n        if (ca !== cb) return ca - cb;\n        return a < b ? -1 : (a > b ? 1 : 0);\n    });\n};",
+      "approach": "k-hop level breadth-first-search and frequency sorting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-number-of-flips-to-convert-binary-matrix-to-zero-matrix",
+  "number": 1284,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path",
+    "bit-manipulation-tricks"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "State Representation",
+      "text": "The matrix dimensions are small, at most 3 by 3. Encode the entire grid into an integer bitmask of at most 9 bits."
+    },
+    {
+      "level": 2,
+      "title": "Flipping a Cell",
+      "text": "Flipping cell (r, c) flips itself and its orthogonal neighbors. Precompute the flip mask for every possible position."
+    },
+    {
+      "level": 3,
+      "title": "Shortest Path Search",
+      "text": "Use level-by-level exploration starting from the initial matrix bitmask to reach mask 0, tracking visited states."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def minFlips(self, mat: list[list[int]]) -> int:\n        m, n = len(mat), len(mat[0])\n        start = 0\n        for r in range(m):\n            for c in range(n):\n                if mat[r][c]:\n                    start |= 1 << (r * n + c)\n        if start == 0:\n            return 0\n        q = deque([(start, 0)])\n        seen = {start}\n        while q:\n            state, steps = q.popleft()\n            for r in range(m):\n                for c in range(n):\n                    nxt = state\n                    for dr, dc in [(0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)]:\n                        nr, nc = r + dr, c + dc\n                        if 0 <= nr < m and 0 <= nc < n:\n                            nxt ^= 1 << (nr * n + nc)\n                    if nxt == 0:\n                        return steps + 1\n                    if nxt not in seen:\n                        seen.add(nxt)\n                        q.append((nxt, steps + 1))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(2^(M * N) * M * N)",
+    "space": "O(2^(M * N))",
+    "variables": [
+      "M: row count",
+      "N: col count"
+    ],
+    "whyNaiveFails": "Trying all permutations of flips leads to combinatorial explosion without cycle detection.",
+    "spaceTimeTradeoff": "Bitmask encoding enables O(1) state transitions and compact visited tracking in 2^9 states.",
+    "interviewerExpectation": "Candidate notices the tiny grid dimensions (M, N <= 3) and applies bitmask BFS.",
+    "notes": "Total states are at most 2^9 = 512, making BFS extremely fast."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def minFlips(self, mat: list[list[int]]) -> int:\n        m, n = len(mat), len(mat[0])\n        start = 0\n        for r in range(m):\n            for c in range(n):\n                if mat[r][c]:\n                    start |= 1 << (r * n + c)\n        if start == 0:\n            return 0\n        q = deque([(start, 0)])\n        seen = {start}\n        while q:\n            state, steps = q.popleft()\n            for r in range(m):\n                for c in range(n):\n                    nxt = state\n                    for dr, dc in [(0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)]:\n                        nr, nc = r + dr, c + dc\n                        if 0 <= nr < m and 0 <= nc < n:\n                            nxt ^= 1 << (nr * n + nc)\n                    if nxt == 0:\n                        return steps + 1\n                    if nxt not in seen:\n                        seen.add(nxt)\n                        q.append((nxt, steps + 1))\n        return -1",
+      "approach": "breadth-first-search bitmask exploration",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n#include <unordered_set>\n\nclass Solution {\npublic:\n    int minFlips(std::vector<std::vector<int>>& mat) {\n        int m = mat.size(), n = mat[0].size();\n        int start = 0;\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (mat[r][c]) start |= (1 << (r * n + c));\n            }\n        }\n        if (start == 0) return 0;\n        std::queue<std::pair<int, int>> q;\n        q.push({start, 0});\n        std::vector<bool> seen(1 << (m * n), false);\n        seen[start] = true;\n        int dirs[5][2] = {{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}};\n        while (!q.empty()) {\n            auto [state, steps] = q.front();\n            q.pop();\n            for (int r = 0; r < m; ++r) {\n                for (int c = 0; c < n; ++c) {\n                    int nxt = state;\n                    for (auto& d : dirs) {\n                        int nr = r + d[0], nc = c + d[1];\n                        if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                            nxt ^= (1 << (nr * n + nc));\n                        }\n                    }\n                    if (nxt == 0) return steps + 1;\n                    if (!seen[nxt]) {\n                        seen[nxt] = true;\n                        q.push({nxt, steps + 1});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "breadth-first-search bitmask exploration",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minFlips(int[][] mat) {\n        int m = mat.length, n = mat[0].length;\n        int start = 0;\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                if (mat[r][c] == 1) start |= (1 << (r * n + c));\n            }\n        }\n        if (start == 0) return 0;\n        Queue<int[]> q = new LinkedList<>();\n        q.offer(new int[]{start, 0});\n        boolean[] seen = new boolean[1 << (m * n)];\n        seen[start] = true;\n        int[][] dirs = {{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}};\n        while (!q.isEmpty()) {\n            int[] cur = q.poll();\n            int state = cur[0], steps = cur[1];\n            for (int r = 0; r < m; r++) {\n                for (int c = 0; c < n; c++) {\n                    int nxt = state;\n                    for (int[] d : dirs) {\n                        int nr = r + d[0], nc = c + d[1];\n                        if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                            nxt ^= (1 << (nr * n + nc));\n                        }\n                    }\n                    if (nxt == 0) return steps + 1;\n                    if (!seen[nxt]) {\n                        seen[nxt] = true;\n                        q.offer(new int[]{nxt, steps + 1});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "approach": "breadth-first-search bitmask exploration",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minFlips = function(mat) {\n    const m = mat.length, n = mat[0].length;\n    let start = 0;\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            if (mat[r][c]) start |= (1 << (r * n + c));\n        }\n    }\n    if (start === 0) return 0;\n    const q = [[start, 0]];\n    const seen = new Uint8Array(1 << (m * n));\n    seen[start] = 1;\n    const dirs = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];\n    let head = 0;\n    while (head < q.length) {\n        const [state, steps] = q[head++];\n        for (let r = 0; r < m; r++) {\n            for (let c = 0; c < n; c++) {\n                let nxt = state;\n                for (const [dr, dc] of dirs) {\n                    const nr = r + dr, nc = c + dc;\n                    if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                        nxt ^= (1 << (nr * n + nc));\n                    }\n                }\n                if (nxt === 0) return steps + 1;\n                if (!seen[nxt]) {\n                    seen[nxt] = 1;\n                    q.push([nxt, steps + 1]);\n                }\n            }\n        }\n    }\n    return -1;\n};",
+      "approach": "breadth-first-search bitmask exploration",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

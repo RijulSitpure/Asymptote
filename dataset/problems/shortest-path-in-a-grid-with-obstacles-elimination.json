@@ -1,0 +1,80 @@
+{
+  "slug": "shortest-path-in-a-grid-with-obstacles-elimination",
+  "number": 1293,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Augment State with Remaining Eliminations",
+      "text": "A visited state is defined by row r, column c, and remaining obstacle eliminations k."
+    },
+    {
+      "level": 2,
+      "title": "Manhattan Shortcut Optimization",
+      "text": "If k >= (m - 1) + (n - 1), you can walk straight to the bottom right without impediment in Manhattan distance steps."
+    },
+    {
+      "level": 3,
+      "title": "Pruning Visited States",
+      "text": "Keep track of the maximum remaining eliminations seen for each cell (r, c). Only enqueue if strictly greater."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def shortestPath(self, grid: list[list[int]], k: int) -> int:\n        m, n = len(grid), len(grid[0])\n        if k >= m + n - 2:\n            return m + n - 2\n        q = deque([(0, 0, k, 0)])\n        seen = {(0, 0): k}\n        while q:\n            r, c, rem, steps = q.popleft()\n            if r == m - 1 and c == n - 1:\n                return steps\n            for dr, dc in [(1, 0), (-1, 0), (0, 1), (0, -1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    nrem = rem - grid[nr][nc]\n                    if nrem >= 0 and seen.get((nr, nc), -1) < nrem:\n                        seen[(nr, nc)] = nrem\n                        q.append((nr, nc, nrem, steps + 1))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N * K)",
+    "space": "O(M * N * K)",
+    "variables": [
+      "M: rows",
+      "N: cols",
+      "K: obstacle eliminations"
+    ],
+    "whyNaiveFails": "Standard 2D BFS without tracking obstacle elimination count fails to find detour paths.",
+    "spaceTimeTradeoff": "Tracking remaining eliminations per grid position guarantees finding the shortest path.",
+    "interviewerExpectation": "Candidate identifies 3D state (r, c, k) and applies BFS for shortest unweighted path.",
+    "notes": "Early exit when K >= M + N - 2 provides huge practical speedup."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def shortestPath(self, grid: list[list[int]], k: int) -> int:\n        m, n = len(grid), len(grid[0])\n        if k >= m + n - 2:\n            return m + n - 2\n        q = deque([(0, 0, k, 0)])\n        seen = {(0, 0): k}\n        while q:\n            r, c, rem, steps = q.popleft()\n            if r == m - 1 and c == n - 1:\n                return steps\n            for dr, dc in [(1, 0), (-1, 0), (0, 1), (0, -1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    nrem = rem - grid[nr][nc]\n                    if nrem >= 0 and seen.get((nr, nc), -1) < nrem:\n                        seen[(nr, nc)] = nrem\n                        q.append((nr, nc, nrem, steps + 1))\n        return -1",
+      "approach": "state BFS tracking remaining eliminations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n\nclass Solution {\npublic:\n    int shortestPath(std::vector<std::vector<int>>& grid, int k) {\n        int m = grid.size(), n = grid[0].size();\n        if (k >= m + n - 2) return m + n - 2;\n        std::vector<std::vector<int>> maxRem(m, std::vector<int>(n, -1));\n        std::queue<std::vector<int>> q;\n        q.push({0, 0, k, 0});\n        maxRem[0][0] = k;\n        int dirs[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};\n        while (!q.empty()) {\n            auto cur = q.front();\n            q.pop();\n            int r = cur[0], c = cur[1], rem = cur[2], steps = cur[3];\n            if (r == m - 1 && c == n - 1) return steps;\n            for (auto& d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int nrem = rem - grid[nr][nc];\n                    if (nrem >= 0 && maxRem[nr][nc] < nrem) {\n                        maxRem[nr][nc] = nrem;\n                        q.push({nr, nc, nrem, steps + 1});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "state BFS tracking remaining eliminations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int shortestPath(int[][] grid, int k) {\n        int m = grid.length, n = grid[0].length;\n        if (k >= m + n - 2) return m + n - 2;\n        int[][] maxRem = new int[m][n];\n        for (int[] row : maxRem) Arrays.fill(row, -1);\n        Queue<int[]> q = new LinkedList<>();\n        q.offer(new int[]{0, 0, k, 0});\n        maxRem[0][0] = k;\n        int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};\n        while (!q.isEmpty()) {\n            int[] cur = q.poll();\n            int r = cur[0], c = cur[1], rem = cur[2], steps = cur[3];\n            if (r == m - 1 && c == n - 1) return steps;\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int nrem = rem - grid[nr][nc];\n                    if (nrem >= 0 && maxRem[nr][nc] < nrem) {\n                        maxRem[nr][nc] = nrem;\n                        q.offer(new int[]{nr, nc, nrem, steps + 1});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "approach": "state BFS tracking remaining eliminations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var shortestPath = function(grid, k) {\n    const m = grid.length, n = grid[0].length;\n    if (k >= m + n - 2) return m + n - 2;\n    const maxRem = Array.from({ length: m }, () => new Int32Array(n).fill(-1));\n    const q = [[0, 0, k, 0]];\n    maxRem[0][0] = k;\n    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];\n    let head = 0;\n    while (head < q.length) {\n        const [r, c, rem, steps] = q[head++];\n        if (r === m - 1 && c === n - 1) return steps;\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                const nrem = rem - grid[nr][nc];\n                if (nrem >= 0 && maxRem[nr][nc] < nrem) {\n                    maxRem[nr][nc] = nrem;\n                    q.push([nr, nc, nrem, steps + 1]);\n                }\n            }\n        }\n    }\n    return -1;\n};",
+      "approach": "state BFS tracking remaining eliminations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

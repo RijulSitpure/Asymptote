@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-distance-to-type-a-word-using-two-fingers",
+  "number": 1320,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Keyboard Coordinate Mapping",
+      "text": "Map each character c to 2D coordinates: (r, col) = ((c - 65) // 6, (c - 65) % 6). Distance is Manhattan distance."
+    },
+    {
+      "level": 2,
+      "title": "Only Other Finger Matters",
+      "text": "At step i, one finger must be on word[i - 1]. Store dp[other_finger_char] as the min cost when the other finger is at that character."
+    },
+    {
+      "level": 3,
+      "title": "Transition Between Choices",
+      "text": "For letter word[i], move the current finger (same other finger) or move the other finger (current finger becomes other)."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def minimumDistance(self, word: str) -> int:\n        def dist(p1, p2):\n            if p1 == 26 or p2 == 26:\n                return 0\n            r1, c1 = divmod(p1, 6)\n            r2, c2 = divmod(p2, 6)\n            return abs(r1 - r2) + abs(c1 - c2)\n        dp = {26: 0}\n        for i, ch in enumerate(word):\n            cur = ord(ch) - ord(\"A\")\n            nxt = {}\n            for other, d in dp.items():\n                prev = 26 if i == 0 else ord(word[i - 1]) - ord(\"A\")\n                nxt[other] = min(nxt.get(other, float(\"inf\")), d + dist(prev, cur))\n                nxt[prev] = min(nxt.get(prev, float(\"inf\")), d + dist(other, cur))\n            dp = nxt\n        return min(dp.values())\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * Sigma)",
+    "space": "O(Sigma)",
+    "variables": [
+      "N: length of word",
+      "Sigma: alphabet size 26"
+    ],
+    "whyNaiveFails": "Branching on two finger assignments at every character takes 2^N operations.",
+    "spaceTimeTradeoff": "Since one finger is always at word[i-1], only 27 states (other finger position) need tracking.",
+    "interviewerExpectation": "Candidate optimizes state space by observing that one finger is anchored at the previous character.",
+    "notes": "Initial state 26 represents a finger not yet placed on any key (cost 0 for first move)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minimumDistance(self, word: str) -> int:\n        def dist(p1, p2):\n            if p1 == 26 or p2 == 26:\n                return 0\n            r1, c1 = divmod(p1, 6)\n            r2, c2 = divmod(p2, 6)\n            return abs(r1 - r2) + abs(c1 - c2)\n        dp = {26: 0}\n        for i, ch in enumerate(word):\n            cur = ord(ch) - ord(\"A\")\n            nxt = {}\n            for other, d in dp.items():\n                prev = 26 if i == 0 else ord(word[i - 1]) - ord(\"A\")\n                nxt[other] = min(nxt.get(other, float(\"inf\")), d + dist(prev, cur))\n                nxt[prev] = min(nxt.get(prev, float(\"inf\")), d + dist(other, cur))\n            dp = nxt\n        return min(dp.values())",
+      "approach": "state space dynamic programming tracking other finger position",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <string>\n#include <vector>\n#include <algorithm>\n#include <climits>\n#include <cmath>\n\nclass Solution {\npublic:\n    int dist(int p1, int p2) {\n        if (p1 == 26 || p2 == 26) return 0;\n        return std::abs(p1 / 6 - p2 / 6) + std::abs(p1 % 6 - p2 % 6);\n    }\n    int minimumDistance(std::string word) {\n        std::vector<int> dp(27, INT_MAX / 2);\n        dp[26] = 0;\n        for (size_t i = 0; i < word.size(); ++i) {\n            int cur = word[i] - 'A';\n            int prev = (i == 0) ? 26 : (word[i - 1] - 'A');\n            std::vector<int> nxt(27, INT_MAX / 2);\n            for (int other = 0; other < 27; ++other) {\n                if (dp[other] >= INT_MAX / 2) continue;\n                nxt[other] = std::min(nxt[other], dp[other] + dist(prev, cur));\n                nxt[prev] = std::min(nxt[prev], dp[other] + dist(other, cur));\n            }\n            dp = std::move(nxt);\n        }\n        int ans = INT_MAX;\n        for (int v : dp) ans = std::min(ans, v);\n        return ans;\n    }\n};",
+      "approach": "state space dynamic programming tracking other finger position",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    private int dist(int p1, int p2) {\n        if (p1 == 26 || p2 == 26) return 0;\n        return Math.abs(p1 / 6 - p2 / 6) + Math.abs(p1 % 6 - p2 % 6);\n    }\n    public int minimumDistance(String word) {\n        int[] dp = new int[27];\n        Arrays.fill(dp, Integer.MAX_VALUE / 2);\n        dp[26] = 0;\n        for (int i = 0; i < word.length(); i++) {\n            int cur = word.charAt(i) - 'A';\n            int prev = (i == 0) ? 26 : (word.charAt(i - 1) - 'A');\n            int[] nxt = new int[27];\n            Arrays.fill(nxt, Integer.MAX_VALUE / 2);\n            for (int other = 0; other < 27; other++) {\n                if (dp[other] >= Integer.MAX_VALUE / 2) continue;\n                nxt[other] = Math.min(nxt[other], dp[other] + dist(prev, cur));\n                nxt[prev] = Math.min(nxt[prev], dp[other] + dist(other, cur));\n            }\n            dp = nxt;\n        }\n        int ans = Integer.MAX_VALUE;\n        for (int v : dp) ans = Math.min(ans, v);\n        return ans;\n    }\n}",
+      "approach": "state space dynamic programming tracking other finger position",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minimumDistance = function(word) {\n    const dist = (p1, p2) => {\n        if (p1 === 26 || p2 === 26) return 0;\n        return Math.abs(Math.floor(p1 / 6) - Math.floor(p2 / 6)) + Math.abs((p1 % 6) - (p2 % 6));\n    };\n    let dp = new Int32Array(27).fill(1e9);\n    dp[26] = 0;\n    for (let i = 0; i < word.length; i++) {\n        const cur = word.charCodeAt(i) - 65;\n        const prev = (i === 0) ? 26 : (word.charCodeAt(i - 1) - 65);\n        const nxt = new Int32Array(27).fill(1e9);\n        for (let other = 0; other < 27; other++) {\n            if (dp[other] >= 1e9) continue;\n            const cost1 = dp[other] + dist(prev, cur);\n            if (cost1 < nxt[other]) nxt[other] = cost1;\n            const cost2 = dp[other] + dist(other, cur);\n            if (cost2 < nxt[prev]) nxt[prev] = cost2;\n        }\n        dp = nxt;\n    }\n    let ans = 1e9;\n    for (let i = 0; i < 27; i++) if (dp[i] < ans) ans = dp[i];\n    return ans;\n};",
+      "approach": "state space dynamic programming tracking other finger position",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
