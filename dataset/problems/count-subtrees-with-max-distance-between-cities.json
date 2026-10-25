@@ -1,0 +1,78 @@
+{
+  "slug": "count-subtrees-with-max-distance-between-cities",
+  "number": 1617,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Enumerate Subsets",
+      "text": "The total number of cities n is at most 15, allowing subset enumeration via bitmask."
+    },
+    {
+      "level": 2,
+      "title": "Verify Tree Connectivity",
+      "text": "A chosen subset of vertices forms a connected subtree if and only if induced edges equal vertices minus one."
+    },
+    {
+      "level": 3,
+      "title": "Compute Subtree Diameter",
+      "text": "For each valid connected subtree, find the maximum distance among its vertices using precomputed all-pairs distances."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nclass Solution:\n    def countSubgraphsForEachDiameter(self, n: int, edges: list[list[int]]) -> list[int]:\n        dist = [[float(\"inf\")] * n for _ in range(n)]\n        for i in range(n):\n            dist[i][i] = 0\n        edge_list = []\n        for u, v in edges:\n            u -= 1\n            v -= 1\n            dist[u][v] = 1\n            dist[v][u] = 1\n            edge_list.append((u, v))\n        for k in range(n):\n            for i in range(n):\n                for j in range(n):\n                    if dist[i][k] + dist[k][j] < dist[i][j]:\n                        dist[i][j] = dist[i][k] + dist[k][j]\n        ans = [0] * (n - 1)\n        for mask in range(1, 1 << n):\n            nodes = [i for i in range(n) if mask & (1 << i)]\n            if len(nodes) < 2:\n                continue\n            e_count = sum(1 for u, v in edge_list if (mask & (1 << u)) and (mask & (1 << v)))\n            if e_count != len(nodes) - 1:\n                continue\n            max_d = 0\n            for i in range(len(nodes)):\n                for j in range(i + 1, len(nodes)):\n                    max_d = max(max_d, dist[nodes[i]][nodes[j]])\n            if max_d > 0:\n                ans[max_d - 1] += 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(2^n * n^2)",
+    "space": "O(n^2)",
+    "variables": [
+      "n is number of cities (<= 15)"
+    ],
+    "whyNaiveFails": "Graph exploration without bitmask representation becomes difficult to enumerate subtrees uniquely.",
+    "spaceTimeTradeoff": "Precomputing all-pairs shortest paths via Floyd-Warshall takes O(n^3), followed by O(2^n * n^2) mask validation.",
+    "interviewerExpectation": "Candidate should recognize n <= 15 constraint and use edge count equality for subtree connectedness.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask subset enumeration with tree connectivity verification",
+      "code": "class Solution:\n    def countSubgraphsForEachDiameter(self, n: int, edges: list[list[int]]) -> list[int]:\n        dist = [[float(\"inf\")] * n for _ in range(n)]\n        for i in range(n):\n            dist[i][i] = 0\n        edge_list = []\n        for u, v in edges:\n            u -= 1\n            v -= 1\n            dist[u][v] = 1\n            dist[v][u] = 1\n            edge_list.append((u, v))\n        for k in range(n):\n            for i in range(n):\n                for j in range(n):\n                    if dist[i][k] + dist[k][j] < dist[i][j]:\n                        dist[i][j] = dist[i][k] + dist[k][j]\n        ans = [0] * (n - 1)\n        for mask in range(1, 1 << n):\n            nodes = [i for i in range(n) if mask & (1 << i)]\n            if len(nodes) < 2:\n                continue\n            e_count = sum(1 for u, v in edge_list if (mask & (1 << u)) and (mask & (1 << v)))\n            if e_count != len(nodes) - 1:\n                continue\n            max_d = 0\n            for i in range(len(nodes)):\n                for j in range(i + 1, len(nodes)):\n                    max_d = max(max_d, dist[nodes[i]][nodes[j]])\n            if max_d > 0:\n                ans[max_d - 1] += 1\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask subset enumeration with tree connectivity verification",
+      "code": "#include <vector>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> countSubgraphsForEachDiameter(int n, vector<vector<int>>& edges) {\n        vector<vector<int>> dist(n, vector<int>(n, 100));\n        for (int i = 0; i < n; ++i) dist[i][i] = 0;\n        for (const auto& e : edges) {\n            int u = e[0] - 1, v = e[1] - 1;\n            dist[u][v] = dist[v][u] = 1;\n        }\n        for (int k = 0; k < n; ++k) {\n            for (int i = 0; i < n; ++i) {\n                for (int j = 0; j < n; ++j) {\n                    dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]);\n                }\n            }\n        }\n        vector<int> ans(n - 1, 0);\n        for (int mask = 1; mask < (1 << n); ++mask) {\n            vector<int> nodes;\n            for (int i = 0; i < n; ++i) {\n                if (mask & (1 << i)) nodes.push_back(i);\n            }\n            if (nodes.size() < 2) continue;\n            int e_count = 0;\n            for (const auto& e : edges) {\n                int u = e[0] - 1, v = e[1] - 1;\n                if ((mask & (1 << u)) && (mask & (1 << v))) e_count++;\n            }\n            if (e_count != (int)nodes.size() - 1) continue;\n            int max_d = 0;\n            for (size_t i = 0; i < nodes.size(); ++i) {\n                for (size_t j = i + 1; j < nodes.size(); ++j) {\n                    max_d = max(max_d, dist[nodes[i]][nodes[j]]);\n                }\n            }\n            if (max_d > 0) ans[max_d - 1]++;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask subset enumeration with tree connectivity verification",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] countSubgraphsForEachDiameter(int n, int[][] edges) {\n        int[][] dist = new int[n][n];\n        for (int[] row : dist) Arrays.fill(row, 100);\n        for (int i = 0; i < n; ++i) dist[i][i] = 0;\n        for (int[] e : edges) {\n            int u = e[0] - 1, v = e[1] - 1;\n            dist[u][v] = dist[v][u] = 1;\n        }\n        for (int k = 0; k < n; ++k) {\n            for (int i = 0; i < n; ++i) {\n                for (int j = 0; j < n; ++j) {\n                    dist[i][j] = Math.min(dist[i][j], dist[i][k] + dist[k][j]);\n                }\n            }\n        }\n        int[] ans = new int[n - 1];\n        for (int mask = 1; mask < (1 << n); ++mask) {\n            List<Integer> nodes = new ArrayList<>();\n            for (int i = 0; i < n; ++i) {\n                if ((mask & (1 << i)) != 0) nodes.add(i);\n            }\n            if (nodes.size() < 2) continue;\n            int eCount = 0;\n            for (int[] e : edges) {\n                int u = e[0] - 1, v = e[1] - 1;\n                if ((mask & (1 << u)) != 0 && (mask & (1 << v)) != 0) eCount++;\n            }\n            if (eCount != nodes.size() - 1) continue;\n            int maxD = 0;\n            for (int i = 0; i < nodes.size(); ++i) {\n                for (int j = i + 1; j < nodes.size(); ++j) {\n                    maxD = Math.max(maxD, dist[nodes.get(i)][nodes.get(j)]);\n                }\n            }\n            if (maxD > 0) ans[maxD - 1]++;\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask subset enumeration with tree connectivity verification",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @return {number[]}\n */\nvar countSubgraphsForEachDiameter = function(n, edges) {\n    const dist = Array.from({ length: n }, () => Array(n).fill(100));\n    for (let i = 0; i < n; ++i) dist[i][i] = 0;\n    for (const [u, v] of edges) {\n        dist[u - 1][v - 1] = dist[v - 1][u - 1] = 1;\n    }\n    for (let k = 0; k < n; ++k) {\n        for (let i = 0; i < n; ++i) {\n            for (let j = 0; j < n; ++j) {\n                dist[i][j] = Math.min(dist[i][j], dist[i][k] + dist[k][j]);\n            }\n        }\n    }\n    const ans = Array(n - 1).fill(0);\n    for (let mask = 1; mask < (1 << n); ++mask) {\n        const nodes = [];\n        for (let i = 0; i < n; ++i) {\n            if (mask & (1 << i)) nodes.push(i);\n        }\n        if (nodes.length < 2) continue;\n        let eCount = 0;\n        for (const [u, v] of edges) {\n            if ((mask & (1 << (u - 1))) && (mask & (1 << (v - 1)))) eCount++;\n        }\n        if (eCount !== nodes.length - 1) continue;\n        let maxD = 0;\n        for (let i = 0; i < nodes.length; ++i) {\n            for (let j = i + 1; j < nodes.length; ++j) {\n                maxD = Math.max(maxD, dist[nodes[i]][nodes[j]]);\n            }\n        }\n        if (maxD > 0) ans[maxD - 1]++;\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

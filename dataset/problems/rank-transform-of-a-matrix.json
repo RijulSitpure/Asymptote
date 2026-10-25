@@ -1,0 +1,79 @@
+{
+  "slug": "rank-transform-of-a-matrix",
+  "number": 1632,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Group Equal Values",
+      "text": "Sort distinct cell values in ascending order and process all coordinates sharing the same value together."
+    },
+    {
+      "level": 2,
+      "title": "Connect Cells in Same Row or Column",
+      "text": "Use disjoint set union to group cells of identical value that share either a row or a column."
+    },
+    {
+      "level": 3,
+      "title": "Component Max Rank Update",
+      "text": "The rank of each connected component is one plus the maximum rank currently recorded in any of its rows or columns."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def matrixRankTransform(self, matrix: list[list[int]]) -> list[list[int]]:\n        m, n = len(matrix), len(matrix[0])\n        val_map = defaultdict(list)\n        for r in range(m):\n            for c in range(n):\n                val_map[matrix[r][c]].append((r, c))\n        rank = [[0] * n for _ in range(m)]\n        row_max = [0] * m\n        col_max = [0] * n\n        for val in sorted(val_map.keys()):\n            parent = {}\n            def find(x):\n                if parent[x] != x:\n                    parent[x] = find(parent[x])\n                return parent[x]\n            def union(x, y):\n                rx, ry = find(x), find(y)\n                if rx != ry:\n                    parent[rx] = ry\n            for r, c in val_map[val]:\n                if r not in parent:\n                    parent[r] = r\n                if c + m not in parent:\n                    parent[c + m] = c + m\n                union(r, c + m)\n            groups = defaultdict(list)\n            for r, c in val_map[val]:\n                groups[find(r)].append((r, c))\n            for g in groups.values():\n                mx = max(max(row_max[r], col_max[c]) for r, c in g) + 1\n                for r, c in g:\n                    rank[r][c] = mx\n                    row_max[r] = mx\n                    col_max[c] = mx\n        return rank\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(m * n log(m * n))",
+    "space": "O(m * n)",
+    "variables": [
+      "m is number of rows",
+      "n is number of columns"
+    ],
+    "whyNaiveFails": "Processing cells independently without grouping equal values causes contradictory rank assignments.",
+    "spaceTimeTradeoff": "Disjoint set union over rows and columns takes O(m + n) per unique value block.",
+    "interviewerExpectation": "Candidate should recognize that equal elements in the same row/col form equivalence classes via DSU.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Value grouping with DSU on row and column indices",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def matrixRankTransform(self, matrix: list[list[int]]) -> list[list[int]]:\n        m, n = len(matrix), len(matrix[0])\n        val_map = defaultdict(list)\n        for r in range(m):\n            for c in range(n):\n                val_map[matrix[r][c]].append((r, c))\n        rank = [[0] * n for _ in range(m)]\n        row_max = [0] * m\n        col_max = [0] * n\n        for val in sorted(val_map.keys()):\n            parent = {}\n            def find(x):\n                if parent[x] != x:\n                    parent[x] = find(parent[x])\n                return parent[x]\n            def union(x, y):\n                rx, ry = find(x), find(y)\n                if rx != ry:\n                    parent[rx] = ry\n            for r, c in val_map[val]:\n                if r not in parent:\n                    parent[r] = r\n                if c + m not in parent:\n                    parent[c + m] = c + m\n                union(r, c + m)\n            groups = defaultdict(list)\n            for r, c in val_map[val]:\n                groups[find(r)].append((r, c))\n            for g in groups.values():\n                mx = max(max(row_max[r], col_max[c]) for r, c in g) + 1\n                for r, c in g:\n                    rank[r][c] = mx\n                    row_max[r] = mx\n                    col_max[c] = mx\n        return rank"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Value grouping with DSU on row and column indices",
+      "code": "#include <vector>\n#include <map>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\n    unordered_map<int, int> parent;\n    int find(int x) {\n        if (parent[x] != x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    void unite(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) parent[rx] = ry;\n    }\npublic:\n    vector<vector<int>> matrixRankTransform(vector<vector<int>>& matrix) {\n        int m = matrix.size(), n = matrix[0].size();\n        map<int, vector<pair<int, int>>> val_map;\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                val_map[matrix[r][c]].push_back({r, c});\n            }\n        }\n        vector<vector<int>> rank(m, vector<int>(n, 0));\n        vector<int> row_max(m, 0), col_max(n, 0);\n        for (auto& [val, cells] : val_map) {\n            parent.clear();\n            for (auto& [r, c] : cells) {\n                if (parent.find(r) == parent.end()) parent[r] = r;\n                if (parent.find(c + m) == parent.end()) parent[c + m] = c + m;\n                unite(r, c + m);\n            }\n            unordered_map<int, vector<pair<int, int>>> groups;\n            for (auto& [r, c] : cells) {\n                groups[find(r)].push_back({r, c});\n            }\n            for (auto& [root, g] : groups) {\n                int mx = 0;\n                for (auto& [r, c] : g) {\n                    mx = max(mx, max(row_max[r], col_max[c]));\n                }\n                mx++;\n                for (auto& [r, c] : g) {\n                    rank[r][c] = mx;\n                    row_max[r] = mx;\n                    col_max[c] = mx;\n                }\n            }\n        }\n        return rank;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Value grouping with DSU on row and column indices",
+      "code": "import java.util.*;\n\nclass Solution {\n    private Map<Integer, Integer> parent = new HashMap<>();\n\n    private int find(int x) {\n        if (parent.get(x) != x) parent.put(x, find(parent.get(x)));\n        return parent.get(x);\n    }\n\n    private void union(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) parent.put(rx, ry);\n    }\n\n    public int[][] matrixRankTransform(int[][] matrix) {\n        int m = matrix.length, n = matrix[0].length;\n        TreeMap<Integer, List<int[]>> valMap = new TreeMap<>();\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                valMap.computeIfAbsent(matrix[r][c], k -> new ArrayList<>()).add(new int[]{r, c});\n            }\n        }\n        int[][] rank = new int[m][n];\n        int[] rowMax = new int[m], colMax = new int[n];\n        for (Map.Entry<Integer, List<int[]>> entry : valMap.entrySet()) {\n            List<int[]> cells = entry.getValue();\n            parent.clear();\n            for (int[] p : cells) {\n                int r = p[0], c = p[1];\n                parent.putIfAbsent(r, r);\n                parent.putIfAbsent(c + m, c + m);\n                union(r, c + m);\n            }\n            Map<Integer, List<int[]>> groups = new HashMap<>();\n            for (int[] p : cells) {\n                groups.computeIfAbsent(find(p[0]), k -> new ArrayList<>()).add(p);\n            }\n            for (List<int[]> g : groups.values()) {\n                int mx = 0;\n                for (int[] p : g) {\n                    mx = Math.max(mx, Math.max(rowMax[p[0]], colMax[p[1]]));\n                }\n                mx++;\n                for (int[] p : g) {\n                    rank[p[0]][p[1]] = mx;\n                    rowMax[p[0]] = mx;\n                    colMax[p[1]] = mx;\n                }\n            }\n        }\n        return rank;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Value grouping with DSU on row and column indices",
+      "code": "/**\n * @param {number[][]} matrix\n * @return {number[][]}\n */\nvar matrixRankTransform = function(matrix) {\n    const m = matrix.length, n = matrix[0].length;\n    const valMap = new Map();\n    for (let r = 0; r < m; ++r) {\n        for (let c = 0; c < n; ++c) {\n            const v = matrix[r][c];\n            if (!valMap.has(v)) valMap.set(v, []);\n            valMap.get(v).push([r, c]);\n        }\n    }\n    const sortedKeys = Array.from(valMap.keys()).sort((a, b) => a - b);\n    const rank = Array.from({ length: m }, () => Array(n).fill(0));\n    const rowMax = Array(m).fill(0), colMax = Array(n).fill(0);\n\n    for (const val of sortedKeys) {\n        const cells = valMap.get(val);\n        const parent = new Map();\n        function find(x) {\n            if (parent.get(x) !== x) parent.set(x, find(parent.get(x)));\n            return parent.get(x);\n        }\n        function union(x, y) {\n            const rx = find(x), ry = find(y);\n            if (rx !== ry) parent.set(rx, ry);\n        }\n        for (const [r, c] of cells) {\n            if (!parent.has(r)) parent.set(r, r);\n            if (!parent.has(c + m)) parent.set(c + m, c + m);\n            union(r, c + m);\n        }\n        const groups = new Map();\n        for (const [r, c] of cells) {\n            const root = find(r);\n            if (!groups.has(root)) groups.set(root, []);\n            groups.get(root).push([r, c]);\n        }\n        for (const g of groups.values()) {\n            let mx = 0;\n            for (const [r, c] of g) {\n                mx = Math.max(mx, Math.max(rowMax[r], colMax[c]));\n            }\n            mx++;\n            for (const [r, c] of g) {\n                rank[r][c] = mx;\n                rowMax[r] = mx;\n                colMax[c] = mx;\n            }\n        }\n    }\n    return rank;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

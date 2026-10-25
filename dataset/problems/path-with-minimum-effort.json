@@ -1,0 +1,79 @@
+{
+  "slug": "path-with-minimum-effort",
+  "number": 1631,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Define Path Effort",
+      "text": "The effort of a path is the maximum absolute elevation difference between consecutive cells along the path."
+    },
+    {
+      "level": 2,
+      "title": "Shortest Path Formulation",
+      "text": "Frame the problem as finding a path minimizing the maximum edge weight using Dijkstra or binary search."
+    },
+    {
+      "level": 3,
+      "title": "Relaxation Rule",
+      "text": "New effort to reach neighbor is maximum of current effort and absolute difference to neighbor."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def minimumEffortPath(self, heights: list[list[int]]) -> int:\n        m, n = len(heights), len(heights[0])\n        dist = [[float(\"inf\")] * n for _ in range(m)]\n        dist[0][0] = 0\n        pq = [(0, 0, 0)]\n        while pq:\n            d, r, c = heapq.heappop(pq)\n            if r == m - 1 and c == n - 1:\n                return d\n            if d > dist[r][c]:\n                continue\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    cost = max(d, abs(heights[r][c] - heights[nr][nc]))\n                    if cost < dist[nr][nc]:\n                        dist[nr][nc] = cost\n                        heapq.heappush(pq, (cost, nr, nc))\n        return dist[m - 1][n - 1]\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(m * n log(m * n))",
+    "space": "O(m * n)",
+    "variables": [
+      "m is number of rows",
+      "n is number of columns"
+    ],
+    "whyNaiveFails": "Simple breadth-first search cannot minimize maximum bottleneck weights without cost prioritization.",
+    "spaceTimeTradeoff": "Dijkstra priority queue guarantees finding minimum bottleneck path in O(V log V) time.",
+    "interviewerExpectation": "Candidate should recognize this as a minimax path problem solved via Dijkstra or binary search with BFS.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dijkstra priority queue for minimax edge effort",
+      "code": "import heapq\n\nclass Solution:\n    def minimumEffortPath(self, heights: list[list[int]]) -> int:\n        m, n = len(heights), len(heights[0])\n        dist = [[float(\"inf\")] * n for _ in range(m)]\n        dist[0][0] = 0\n        pq = [(0, 0, 0)]\n        while pq:\n            d, r, c = heapq.heappop(pq)\n            if r == m - 1 and c == n - 1:\n                return d\n            if d > dist[r][c]:\n                continue\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    cost = max(d, abs(heights[r][c] - heights[nr][nc]))\n                    if cost < dist[nr][nc]:\n                        dist[nr][nc] = cost\n                        heapq.heappush(pq, (cost, nr, nc))\n        return dist[m - 1][n - 1]"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dijkstra priority queue for minimax edge effort",
+      "code": "#include <vector>\n#include <queue>\n#include <cmath>\n#include <tuple>\nusing namespace std;\n\nclass Solution {\npublic:\n    int minimumEffortPath(vector<vector<int>>& heights) {\n        int m = heights.size(), n = heights[0].size();\n        vector<vector<int>> dist(m, vector<int>(n, 1e9));\n        dist[0][0] = 0;\n        priority_queue<tuple<int, int, int>, vector<tuple<int, int, int>>, greater<>> pq;\n        pq.push({0, 0, 0});\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!pq.empty()) {\n            auto [d, r, c] = pq.top(); pq.pop();\n            if (r == m - 1 && c == n - 1) return d;\n            if (d > dist[r][c]) continue;\n            for (auto& dir : dirs) {\n                int nr = r + dir[0], nc = c + dir[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int cost = max(d, abs(heights[r][c] - heights[nr][nc]));\n                    if (cost < dist[nr][nc]) {\n                        dist[nr][nc] = cost;\n                        pq.push({cost, nr, nc});\n                    }\n                }\n            }\n        }\n        return dist[m - 1][n - 1];\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dijkstra priority queue for minimax edge effort",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minimumEffortPath(int[][] heights) {\n        int m = heights.length, n = heights[0].length;\n        int[][] dist = new int[m][n];\n        for (int[] row : dist) Arrays.fill(row, (int)1e9);\n        dist[0][0] = 0;\n        PriorityQueue<int[]> pq = new PriorityQueue<>(Comparator.comparingInt(a -> a[0]));\n        pq.offer(new int[]{0, 0, 0});\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!pq.isEmpty()) {\n            int[] curr = pq.poll();\n            int d = curr[0], r = curr[1], c = curr[2];\n            if (r == m - 1 && c == n - 1) return d;\n            if (d > dist[r][c]) continue;\n            for (int[] dir : dirs) {\n                int nr = r + dir[0], nc = c + dir[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int cost = Math.max(d, Math.abs(heights[r][c] - heights[nr][nc]));\n                    if (cost < dist[nr][nc]) {\n                        dist[nr][nc] = cost;\n                        pq.offer(new int[]{cost, nr, nc});\n                    }\n                }\n            }\n        }\n        return dist[m - 1][n - 1];\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dijkstra priority queue for minimax edge effort",
+      "code": "/**\n * @param {number[][]} heights\n * @return {number}\n */\nvar minimumEffortPath = function(heights) {\n    const m = heights.length, n = heights[0].length;\n    const dist = Array.from({ length: m }, () => Array(n).fill(Infinity));\n    dist[0][0] = 0;\n    const pq = [[0, 0, 0]];\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    while (pq.length > 0) {\n        pq.sort((a, b) => a[0] - b[0]);\n        const [d, r, c] = pq.shift();\n        if (r === m - 1 && c === n - 1) return d;\n        if (d > dist[r][c]) continue;\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                const cost = Math.max(d, Math.abs(heights[r][c] - heights[nr][nc]));\n                if (cost < dist[nr][nc]) {\n                    dist[nr][nc] = cost;\n                    pq.push([cost, nr, nc]);\n                }\n            }\n        }\n    }\n    return dist[m - 1][n - 1];\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

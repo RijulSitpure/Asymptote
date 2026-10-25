@@ -1,0 +1,79 @@
+{
+  "slug": "strange-printer-ii",
+  "number": 1591,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Identify Bounding Boxes",
+      "text": "Each color must cover its entire bounding box from its minimum to maximum row and column."
+    },
+    {
+      "level": 2,
+      "title": "Form Dependency Edges",
+      "text": "If another color appears inside the bounding box of color A, that other color must be printed after color A."
+    },
+    {
+      "level": 3,
+      "title": "Cycle Detection via Topological Sort",
+      "text": "Build a directed graph where an edge from color A to color B means A must precede B. If the graph contains no cycles, a valid printing sequence exists."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def isPrintable(self, targetGrid: list[list[int]]) -> bool:\n        m, n = len(targetGrid), len(targetGrid[0])\n        colors = set()\n        box = {}\n        for r in range(m):\n            for c in range(n):\n                col = targetGrid[r][c]\n                colors.add(col)\n                if col not in box:\n                    box[col] = [r, r, c, c]\n                else:\n                    b = box[col]\n                    b[0] = min(b[0], r)\n                    b[1] = max(b[1], r)\n                    b[2] = min(b[2], c)\n                    b[3] = max(b[3], c)\n        adj = {c: set() for c in colors}\n        in_degree = {c: 0 for c in colors}\n        for col, (min_r, max_r, min_c, max_c) in box.items():\n            for r in range(min_r, max_r + 1):\n                for c in range(min_c, max_c + 1):\n                    other = targetGrid[r][c]\n                    if other != col and other not in adj[col]:\n                        adj[col].add(other)\n        for u in adj:\n            for v in adj[u]:\n                in_degree[v] += 1\n        q = deque([c for c in colors if in_degree[c] == 0])\n        count = 0\n        while q:\n            u = q.popleft()\n            count += 1\n            for v in adj[u]:\n                in_degree[v] -= 1\n                if in_degree[v] == 0:\n                    q.append(v)\n        return count == len(colors)\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(C * m * n + C^2)",
+    "space": "O(C^2)",
+    "variables": [
+      "C is the number of distinct colors (up to 60)",
+      "m and n are grid dimensions"
+    ],
+    "whyNaiveFails": "Trying all permutations of colors leads to 60 factorial possibilities, which is astronomically intractable.",
+    "spaceTimeTradeoff": "We spend O(C^2) space to build the color dependency graph, enabling linear-time cycle detection via Kahn topological sort.",
+    "interviewerExpectation": "Candidate should recognize that any cell inside color A bounding box displaying color B imposes a strict precedence A -> B.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Color bounding boxes with Kahn topological sort",
+      "code": "from collections import deque\n\nclass Solution:\n    def isPrintable(self, targetGrid: list[list[int]]) -> bool:\n        m, n = len(targetGrid), len(targetGrid[0])\n        colors = set()\n        box = {}\n        for r in range(m):\n            for c in range(n):\n                col = targetGrid[r][c]\n                colors.add(col)\n                if col not in box:\n                    box[col] = [r, r, c, c]\n                else:\n                    b = box[col]\n                    b[0] = min(b[0], r)\n                    b[1] = max(b[1], r)\n                    b[2] = min(b[2], c)\n                    b[3] = max(b[3], c)\n        adj = {c: set() for c in colors}\n        in_degree = {c: 0 for c in colors}\n        for col, (min_r, max_r, min_c, max_c) in box.items():\n            for r in range(min_r, max_r + 1):\n                for c in range(min_c, max_c + 1):\n                    other = targetGrid[r][c]\n                    if other != col and other not in adj[col]:\n                        adj[col].add(other)\n        for u in adj:\n            for v in adj[u]:\n                in_degree[v] += 1\n        q = deque([c for c in colors if in_degree[c] == 0])\n        count = 0\n        while q:\n            u = q.popleft()\n            count += 1\n            for v in adj[u]:\n                in_degree[v] -= 1\n                if in_degree[v] == 0:\n                    q.append(v)\n        return count == len(colors)"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Color bounding boxes with Kahn topological sort",
+      "code": "#include <vector>\n#include <unordered_set>\n#include <queue>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    bool isPrintable(vector<vector<int>>& targetGrid) {\n        int m = targetGrid.size(), n = targetGrid[0].size();\n        unordered_set<int> colors;\n        vector<int> min_r(61, 100), max_r(61, -1), min_c(61, 100), max_c(61, -1);\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                int col = targetGrid[r][c];\n                colors.insert(col);\n                min_r[col] = min(min_r[col], r);\n                max_r[col] = max(max_r[col], r);\n                min_c[col] = min(min_c[col], c);\n                max_c[col] = max(max_c[col], c);\n            }\n        }\n        vector<unordered_set<int>> adj(61);\n        vector<int> in_degree(61, 0);\n        for (int col : colors) {\n            for (int r = min_r[col]; r <= max_r[col]; ++r) {\n                for (int c = min_c[col]; c <= max_c[col]; ++c) {\n                    int other = targetGrid[r][c];\n                    if (other != col && adj[col].find(other) == adj[col].end()) {\n                        adj[col].insert(other);\n                    }\n                }\n            }\n        }\n        for (int col : colors) {\n            for (int v : adj[col]) {\n                in_degree[v]++;\n            }\n        }\n        queue<int> q;\n        for (int col : colors) {\n            if (in_degree[col] == 0) q.push(col);\n        }\n        int count = 0;\n        while (!q.empty()) {\n            int u = q.front(); q.pop();\n            count++;\n            for (int v : adj[u]) {\n                if (--in_degree[v] == 0) q.push(v);\n            }\n        }\n        return count == (int)colors.size();\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Color bounding boxes with Kahn topological sort",
+      "code": "import java.util.*;\n\nclass Solution {\n    public boolean isPrintable(int[][] targetGrid) {\n        int m = targetGrid.length, n = targetGrid[0].length;\n        Set<Integer> colors = new HashSet<>();\n        int[] minR = new int[61], maxR = new int[61], minC = new int[61], maxC = new int[61];\n        Arrays.fill(minR, 100); Arrays.fill(maxR, -1);\n        Arrays.fill(minC, 100); Arrays.fill(maxC, -1);\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                int col = targetGrid[r][c];\n                colors.add(col);\n                minR[col] = Math.min(minR[col], r);\n                maxR[col] = Math.max(maxR[col], r);\n                minC[col] = Math.min(minC[col], c);\n                maxC[col] = Math.max(maxC[col], c);\n            }\n        }\n        List<Set<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i <= 60; ++i) adj.add(new HashSet<>());\n        int[] inDegree = new int[61];\n        for (int col : colors) {\n            for (int r = minR[col]; r <= maxR[col]; ++r) {\n                for (int c = minC[col]; c <= maxC[col]; ++c) {\n                    int other = targetGrid[r][c];\n                    if (other != col && !adj.get(col).contains(other)) {\n                        adj.get(col).add(other);\n                    }\n                }\n            }\n        }\n        for (int col : colors) {\n            for (int v : adj.get(col)) {\n                inDegree[v]++;\n            }\n        }\n        Queue<Integer> q = new LinkedList<>();\n        for (int col : colors) {\n            if (inDegree[col] == 0) q.offer(col);\n        }\n        int count = 0;\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            count++;\n            for (int v : adj.get(u)) {\n                if (--inDegree[v] == 0) q.offer(v);\n            }\n        }\n        return count == colors.size();\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Color bounding boxes with Kahn topological sort",
+      "code": "/**\n * @param {number[][]} targetGrid\n * @return {boolean}\n */\nvar isPrintable = function(targetGrid) {\n    const m = targetGrid.length, n = targetGrid[0].length;\n    const colors = new Set();\n    const minR = Array(61).fill(100), maxR = Array(61).fill(-1);\n    const minC = Array(61).fill(100), maxC = Array(61).fill(-1);\n    for (let r = 0; r < m; ++r) {\n        for (let c = 0; c < n; ++c) {\n            const col = targetGrid[r][c];\n            colors.add(col);\n            minR[col] = Math.min(minR[col], r);\n            maxR[col] = Math.max(maxR[col], r);\n            minC[col] = Math.min(minC[col], c);\n            maxC[col] = Math.max(maxC[col], c);\n        }\n    }\n    const adj = Array.from({ length: 61 }, () => new Set());\n    const inDegree = Array(61).fill(0);\n    for (const col of colors) {\n        for (let r = minR[col]; r <= maxR[col]; ++r) {\n            for (let c = minC[col]; c <= maxC[col]; ++c) {\n                const other = targetGrid[r][c];\n                if (other !== col && !adj[col].has(other)) {\n                    adj[col].add(other);\n                }\n            }\n        }\n    }\n    for (const col of colors) {\n        for (const v of adj[col]) {\n            inDegree[v]++;\n        }\n    }\n    const q = [];\n    for (const col of colors) {\n        if (inDegree[col] === 0) q.push(col);\n    }\n    let count = 0;\n    while (q.length > 0) {\n        const u = q.shift();\n        count++;\n        for (const v of adj[u]) {\n            if (--inDegree[v] === 0) q.push(v);\n        }\n    }\n    return count === colors.size;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

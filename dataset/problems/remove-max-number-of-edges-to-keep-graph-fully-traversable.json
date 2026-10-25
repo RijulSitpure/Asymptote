@@ -1,0 +1,80 @@
+{
+  "slug": "remove-max-number-of-edges-to-keep-graph-fully-traversable",
+  "number": 1579,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prioritize Shared Type 3 Edges",
+      "text": "Type 3 edges can be traversed by both Alice and Bob. Greedily add Type 3 edges first to provide connectivity to both simultaneously."
+    },
+    {
+      "level": 2,
+      "title": "Individual Edge Processing",
+      "text": "Next, process Type 1 edges into Alices disjoint set union, and Type 2 edges into Bobs disjoint set union."
+    },
+    {
+      "level": 3,
+      "title": "Redundant Edge Accounting",
+      "text": "An edge is redundant if its endpoints are already in the same connected component. Return redundant count if both graphs become fully connected, else -1."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass DSU:\n    def __init__(self, n):\n        self.p = list(range(n + 1))\n        self.components = n\n    def find(self, i):\n        if self.p[i] == i:\n            return i\n        self.p[i] = self.find(self.p[i])\n        return self.p[i]\n    def union(self, i, j):\n        pi, pj = self.find(i), self.find(j)\n        if pi != pj:\n            self.p[pi] = pj\n            self.components -= 1\n            return True\n        return False\n\nclass Solution:\n    def maxNumEdgesToRemove(self, n: int, edges: list[list[int]]) -> int:\n        alice = DSU(n)\n        bob = DSU(n)\n        used = 0\n        for t, u, v in edges:\n            if t == 3:\n                a = alice.union(u, v)\n                b = bob.union(u, v)\n                if a or b:\n                    used += 1\n        for t, u, v in edges:\n            if t == 1:\n                if alice.union(u, v):\n                    used += 1\n            elif t == 2:\n                if bob.union(u, v):\n                    used += 1\n        if alice.components > 1 or bob.components > 1:\n            return -1\n        return len(edges) - used\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E * alpha(V))",
+    "space": "O(V)",
+    "variables": [
+      "V: number of nodes n",
+      "E: number of edges",
+      "alpha: inverse Ackermann"
+    ],
+    "whyNaiveFails": "Combinatorial subset testing of edges is exponential.",
+    "spaceTimeTradeoff": "Dual DSU with priority on type 3 edges runs in near-linear O(E * alpha(V)) time and O(V) space.",
+    "interviewerExpectation": "Candidate proves that prioritizing shared edges maximizes total edge removals while maintaining twin connectivity.",
+    "notes": "Nodes are 1-indexed."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class DSU:\n    def __init__(self, n):\n        self.p = list(range(n + 1))\n        self.components = n\n    def find(self, i):\n        if self.p[i] == i:\n            return i\n        self.p[i] = self.find(self.p[i])\n        return self.p[i]\n    def union(self, i, j):\n        pi, pj = self.find(i), self.find(j)\n        if pi != pj:\n            self.p[pi] = pj\n            self.components -= 1\n            return True\n        return False\n\nclass Solution:\n    def maxNumEdgesToRemove(self, n: int, edges: list[list[int]]) -> int:\n        alice = DSU(n)\n        bob = DSU(n)\n        used = 0\n        for t, u, v in edges:\n            if t == 3:\n                a = alice.union(u, v)\n                b = bob.union(u, v)\n                if a or b:\n                    used += 1\n        for t, u, v in edges:\n            if t == 1:\n                if alice.union(u, v):\n                    used += 1\n            elif t == 2:\n                if bob.union(u, v):\n                    used += 1\n        if alice.components > 1 or bob.components > 1:\n            return -1\n        return len(edges) - used",
+      "approach": "Dual DSU prioritizing shared Type 3 edges before Type 1 and Type 2 edges",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <numeric>\n\nstruct DSU {\n    std::vector<int> p;\n    int comp;\n    DSU(int n) : p(n + 1), comp(n) { std::iota(p.begin(), p.end(), 0); }\n    int find(int i) { return p[i] == i ? i : (p[i] = find(p[i])); }\n    bool unite(int i, int j) {\n        int pi = find(i), pj = find(j);\n        if (pi != pj) { p[pi] = pj; comp--; return true; }\n        return false;\n    }\n};\n\nclass Solution {\npublic:\n    int maxNumEdgesToRemove(int n, std::vector<std::vector<int>>& edges) {\n        DSU alice(n), bob(n);\n        int used = 0;\n        for (const auto& e : edges) {\n            if (e[0] == 3) {\n                bool a = alice.unite(e[1], e[2]);\n                bool b = bob.unite(e[1], e[2]);\n                if (a || b) used++;\n            }\n        }\n        for (const auto& e : edges) {\n            if (e[0] == 1) {\n                if (alice.unite(e[1], e[2])) used++;\n            } else if (e[0] == 2) {\n                if (bob.unite(e[1], e[2])) used++;\n            }\n        }\n        if (alice.comp > 1 || bob.comp > 1) return -1;\n        return edges.size() - used;\n    }\n};",
+      "approach": "Dual DSU prioritizing shared Type 3 edges before Type 1 and Type 2 edges",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class DSU {\n        int[] p;\n        int comp;\n        DSU(int n) {\n            p = new int[n + 1];\n            for (int i = 0; i <= n; i++) p[i] = i;\n            comp = n;\n        }\n        int find(int i) { return p[i] == i ? i : (p[i] = find(p[i])); }\n        boolean union(int i, int j) {\n            int pi = find(i), pj = find(j);\n            if (pi != pj) { p[pi] = pj; comp--; return true; }\n            return false;\n        }\n    }\n    public int maxNumEdgesToRemove(int n, int[][] edges) {\n        DSU alice = new DSU(n);\n        DSU bob = new DSU(n);\n        int used = 0;\n        for (int[] e : edges) {\n            if (e[0] == 3) {\n                boolean a = alice.union(e[1], e[2]);\n                boolean b = bob.union(e[1], e[2]);\n                if (a || b) used++;\n            }\n        }\n        for (int[] e : edges) {\n            if (e[0] == 1) {\n                if (alice.union(e[1], e[2])) used++;\n            } else if (e[0] == 2) {\n                if (bob.union(e[1], e[2])) used++;\n            }\n        }\n        if (alice.comp > 1 || bob.comp > 1) return -1;\n        return edges.length - used;\n    }\n}",
+      "approach": "Dual DSU prioritizing shared Type 3 edges before Type 1 and Type 2 edges",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxNumEdgesToRemove = function(n, edges) {\n    class DSU {\n        constructor(n) {\n            this.p = Array.from({ length: n + 1 }, (_, i) => i);\n            this.comp = n;\n        }\n        find(i) { return this.p[i] === i ? i : (this.p[i] = this.find(this.p[i])); }\n        union(i, j) {\n            const pi = this.find(i), pj = this.find(j);\n            if (pi !== pj) { this.p[pi] = pj; this.comp--; return true; }\n            return false;\n        }\n    }\n    const alice = new DSU(n);\n    const bob = new DSU(n);\n    let used = 0;\n    for (const [t, u, v] of edges) {\n        if (t === 3) {\n            const a = alice.union(u, v);\n            const b = bob.union(u, v);\n            if (a || b) used++;\n        }\n    }\n    for (const [t, u, v] of edges) {\n        if (t === 1) {\n            if (alice.union(u, v)) used++;\n        } else if (t === 2) {\n            if (bob.union(u, v)) used++;\n        }\n    }\n    if (alice.comp > 1 || bob.comp > 1) return -1;\n    return edges.length - used;\n};",
+      "approach": "Dual DSU prioritizing shared Type 3 edges before Type 1 and Type 2 edges",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "graph-connectivity-with-threshold",
+  "number": 1627,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Iterate Divisors Above Threshold",
+      "text": "Only divisors strictly greater than the threshold can form valid connections between cities."
+    },
+    {
+      "level": 2,
+      "title": "Union Multiples of Divisors",
+      "text": "For each divisor d > threshold, connect d with its multiples 2d, 3d, and so on up to n."
+    },
+    {
+      "level": 3,
+      "title": "Disjoint Set Connectivity Queries",
+      "text": "Use disjoint set union to query whether u and v belong to the same connected component."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nclass Solution:\n    def areConnected(self, n: int, threshold: int, queries: list[list[int]]) -> list[bool]:\n        parent = list(range(n + 1))\n\n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n\n        def union(x: int, y: int) -> None:\n            root_x, root_y = find(x), find(y)\n            if root_x != root_y:\n                parent[root_x] = root_y\n\n        if threshold == 0:\n            return [True] * len(queries)\n\n        for d in range(threshold + 1, n + 1):\n            for mult in range(2 * d, n + 1, d):\n                union(d, mult)\n\n        return [find(u) == find(v) for u, v in queries]\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(n log n + q * alpha(n))",
+    "space": "O(n)",
+    "variables": [
+      "n is number of cities",
+      "q is number of queries"
+    ],
+    "whyNaiveFails": "Computing gcd for all O(n^2) pairs takes O(n^2 log n), which is far too slow for n = 10000.",
+    "spaceTimeTradeoff": "Sieve-like multiple enumeration takes O(n log n) total unions, allowing near constant query time.",
+    "interviewerExpectation": "Candidate should use disjoint set union over multiples of each valid factor d.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sieve multiple connections with Disjoint Set Union",
+      "code": "class Solution:\n    def areConnected(self, n: int, threshold: int, queries: list[list[int]]) -> list[bool]:\n        parent = list(range(n + 1))\n\n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n\n        def union(x: int, y: int) -> None:\n            root_x, root_y = find(x), find(y)\n            if root_x != root_y:\n                parent[root_x] = root_y\n\n        if threshold == 0:\n            return [True] * len(queries)\n\n        for d in range(threshold + 1, n + 1):\n            for mult in range(2 * d, n + 1, d):\n                union(d, mult)\n\n        return [find(u) == find(v) for u, v in queries]"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sieve multiple connections with Disjoint Set Union",
+      "code": "#include <vector>\n#include <numeric>\nusing namespace std;\n\nclass Solution {\n    vector<int> parent;\n    int find(int x) {\n        if (parent[x] != x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    void unite(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) parent[rx] = ry;\n    }\npublic:\n    vector<bool> areConnected(int n, int threshold, vector<vector<int>>& queries) {\n        parent.resize(n + 1);\n        iota(parent.begin(), parent.end(), 0);\n        if (threshold == 0) {\n            return vector<bool>(queries.size(), true);\n        }\n        for (int d = threshold + 1; d <= n; ++d) {\n            for (int mult = 2 * d; mult <= n; mult += d) {\n                unite(d, mult);\n            }\n        }\n        vector<bool> ans(queries.size());\n        for (size_t i = 0; i < queries.size(); ++i) {\n            ans[i] = (find(queries[i][0]) == find(queries[i][1]));\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sieve multiple connections with Disjoint Set Union",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int[] parent;\n    private int find(int x) {\n        if (parent[x] != x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    private void union(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) parent[rx] = ry;\n    }\n\n    public List<Boolean> areConnected(int n, int threshold, int[][] queries) {\n        parent = new int[n + 1];\n        for (int i = 0; i <= n; ++i) parent[i] = i;\n        if (threshold == 0) {\n            List<Boolean> res = new ArrayList<>();\n            for (int i = 0; i < queries.length; ++i) res.add(true);\n            return res;\n        }\n        for (int d = threshold + 1; d <= n; ++d) {\n            for (int mult = 2 * d; mult <= n; mult += d) {\n                union(d, mult);\n            }\n        }\n        List<Boolean> ans = new ArrayList<>();\n        for (int[] q : queries) {\n            ans.add(find(q[0]) == find(q[1]));\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sieve multiple connections with Disjoint Set Union",
+      "code": "/**\n * @param {number} n\n * @param {number} threshold\n * @param {number[][]} queries\n * @return {boolean[]}\n */\nvar areConnected = function(n, threshold, queries) {\n    const parent = Array.from({ length: n + 1 }, (_, i) => i);\n    function find(x) {\n        if (parent[x] !== x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    function union(x, y) {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) parent[rx] = ry;\n    }\n    if (threshold === 0) {\n        return queries.map(() => true);\n    }\n    for (let d = threshold + 1; d <= n; ++d) {\n        for (let mult = 2 * d; mult <= n; mult += d) {\n            union(d, mult);\n        }\n    }\n    return queries.map(([u, v]) => find(u) === find(v));\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-cost-to-connect-two-groups-of-points",
+  "number": 1595,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Group 2 Connectivity Mask",
+      "text": "Represent the subset of points in group 2 that have been connected so far as an integer bitmask."
+    },
+    {
+      "level": 2,
+      "title": "Advance Point by Point",
+      "text": "Process group 1 points sequentially from index 0 to size1 minus 1."
+    },
+    {
+      "level": 3,
+      "title": "Connect Remaining Group 2 Nodes",
+      "text": "When all group 1 points are processed, connect any remaining disconnected group 2 points to their cheapest group 1 neighbor."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nfrom functools import lru_cache\n\nclass Solution:\n    def connectTwoGroups(self, cost: list[list[int]]) -> int:\n        size1, size2 = len(cost), len(cost[0])\n        min_cost2 = [min(cost[i][j] for i in range(size1)) for j in range(size2)]\n        @lru_cache(maxsize=None)\n        def dp(i: int, mask: int) -> int:\n            if i == size1:\n                res = 0\n                for j in range(size2):\n                    if not (mask & (1 << j)):\n                        res += min_cost2[j]\n                return res\n            ans = float(\"inf\")\n            for j in range(size2):\n                ans = min(ans, cost[i][j] + dp(i + 1, mask | (1 << j)))\n            return ans\n        return dp(0, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(size1 * 2^size2 * size2)",
+    "space": "O(size1 * 2^size2)",
+    "variables": [
+      "size1 is number of points in group 1 (<= 12)",
+      "size2 is number of points in group 2 (<= 12)"
+    ],
+    "whyNaiveFails": "Generating all possible bipartite subgraphs requires checking 2^(size1 * size2) combinations, which is far too large.",
+    "spaceTimeTradeoff": "Bitmask dynamic programming memoizes 12 * 4096 states, reducing exponential graph search to milliseconds.",
+    "interviewerExpectation": "Candidate should recognize that points in group 2 unvisited by group 1 can greedily take their minimum edge cost at the base case.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask dynamic programming with greedy base case",
+      "code": "from functools import lru_cache\n\nclass Solution:\n    def connectTwoGroups(self, cost: list[list[int]]) -> int:\n        size1, size2 = len(cost), len(cost[0])\n        min_cost2 = [min(cost[i][j] for i in range(size1)) for j in range(size2)]\n        @lru_cache(maxsize=None)\n        def dp(i: int, mask: int) -> int:\n            if i == size1:\n                res = 0\n                for j in range(size2):\n                    if not (mask & (1 << j)):\n                        res += min_cost2[j]\n                return res\n            ans = float(\"inf\")\n            for j in range(size2):\n                ans = min(ans, cost[i][j] + dp(i + 1, mask | (1 << j)))\n            return ans\n        return dp(0, 0)"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask dynamic programming with greedy base case",
+      "code": "#include <vector>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\n    int memo[13][1 << 12];\n    vector<int> min_cost2;\n    int s1, s2;\n\n    int solve(int i, int mask, const vector<vector<int>>& cost) {\n        if (i == s1) {\n            int res = 0;\n            for (int j = 0; j < s2; ++j) {\n                if (!(mask & (1 << j))) res += min_cost2[j];\n            }\n            return res;\n        }\n        if (memo[i][mask] != -1) return memo[i][mask];\n        int ans = 1e9;\n        for (int j = 0; j < s2; ++j) {\n            ans = min(ans, cost[i][j] + solve(i + 1, mask | (1 << j), cost));\n        }\n        return memo[i][mask] = ans;\n    }\n\npublic:\n    int connectTwoGroups(vector<vector<int>>& cost) {\n        s1 = cost.size();\n        s2 = cost[0].size();\n        min_cost2.assign(s2, 1e9);\n        for (int j = 0; j < s2; ++j) {\n            for (int i = 0; i < s1; ++i) {\n                min_cost2[j] = min(min_cost2[j], cost[i][j]);\n            }\n        }\n        for (int i = 0; i <= s1; ++i) {\n            for (int m = 0; m < (1 << s2); ++m) {\n                memo[i][m] = -1;\n            }\n        }\n        return solve(0, 0, cost);\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask dynamic programming with greedy base case",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int[][] memo;\n    private int[] minCost2;\n    private int s1, s2;\n\n    private int solve(int i, int mask, List<List<Integer>> cost) {\n        if (i == s1) {\n            int res = 0;\n            for (int j = 0; j < s2; ++j) {\n                if ((mask & (1 << j)) == 0) res += minCost2[j];\n            }\n            return res;\n        }\n        if (memo[i][mask] != -1) return memo[i][mask];\n        int ans = (int)1e9;\n        for (int j = 0; j < s2; ++j) {\n            ans = Math.min(ans, cost.get(i).get(j) + solve(i + 1, mask | (1 << j), cost));\n        }\n        return memo[i][mask] = ans;\n    }\n\n    public int connectTwoGroups(List<List<Integer>> cost) {\n        s1 = cost.size();\n        s2 = cost.get(0).size();\n        minCost2 = new int[s2];\n        Arrays.fill(minCost2, (int)1e9);\n        for (int j = 0; j < s2; ++j) {\n            for (int i = 0; i < s1; ++i) {\n                minCost2[j] = Math.min(minCost2[j], cost.get(i).get(j));\n            }\n        }\n        memo = new int[s1 + 1][1 << s2];\n        for (int[] row : memo) Arrays.fill(row, -1);\n        return solve(0, 0, cost);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask dynamic programming with greedy base case",
+      "code": "/**\n * @param {number[][]} cost\n * @return {number}\n */\nvar connectTwoGroups = function(cost) {\n    const s1 = cost.length, s2 = cost[0].length;\n    const minCost2 = Array(s2).fill(Infinity);\n    for (let j = 0; j < s2; ++j) {\n        for (let i = 0; i < s1; ++i) {\n            minCost2[j] = Math.min(minCost2[j], cost[i][j]);\n        }\n    }\n    const memo = Array.from({ length: s1 + 1 }, () => Array(1 << s2).fill(-1));\n    function solve(i, mask) {\n        if (i === s1) {\n            let res = 0;\n            for (let j = 0; j < s2; ++j) {\n                if (!(mask & (1 << j))) res += minCost2[j];\n            }\n            return res;\n        }\n        if (memo[i][mask] !== -1) return memo[i][mask];\n        let ans = Infinity;\n        for (let j = 0; j < s2; ++j) {\n            ans = Math.min(ans, cost[i][j] + solve(i + 1, mask | (1 << j)));\n        }\n        return memo[i][mask] = ans;\n    }\n    return solve(0, 0);\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

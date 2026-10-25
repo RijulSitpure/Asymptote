@@ -1,0 +1,79 @@
+{
+  "slug": "find-servers-that-handled-most-number-of-requests",
+  "number": 1606,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Track Server Release Times",
+      "text": "Maintain busy servers with their completion times to free them as requests arrive."
+    },
+    {
+      "level": 2,
+      "title": "Maintain Available Server IDs",
+      "text": "Maintain available server IDs in a structure allowing fast lookup for the next available ID >= i % k."
+    },
+    {
+      "level": 3,
+      "title": "Wrap Around Search",
+      "text": "If no server with ID >= i % k is available, wrap around to find the smallest available server ID."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport heapq\nimport bisect\n\nclass Solution:\n    def busiestServers(self, k: int, arrival: list[int], load: list[int]) -> list[int]:\n        busy = []  # (end_time, server_id)\n        avail = list(range(k))\n        count = [0] * k\n        for i, (t, l) in enumerate(zip(arrival, load)):\n            while busy and busy[0][0] <= t:\n                _, s = heapq.heappop(busy)\n                bisect.insort(avail, s)\n            if not avail:\n                continue\n            idx = bisect.bisect_left(avail, i % k)\n            if idx == len(avail):\n                idx = 0\n            server = avail.pop(idx)\n            count[server] += 1\n            heapq.heappush(busy, (t + l, server))\n        max_c = max(count)\n        return [i for i, c in enumerate(count) if c == max_c]\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(n log k)",
+    "space": "O(k)",
+    "variables": [
+      "n is number of requests",
+      "k is number of servers"
+    ],
+    "whyNaiveFails": "Scanning all k servers sequentially for each request results in O(n * k) time, which times out for n, k = 10^5.",
+    "spaceTimeTradeoff": "Min-heaps and ordered sets allow logarithmic time server assignment and release.",
+    "interviewerExpectation": "Candidate should handle the modulo wrap-around logic cleanly with logarithmic search.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Min-heap for busy servers and bisect on available list",
+      "code": "import heapq\nimport bisect\n\nclass Solution:\n    def busiestServers(self, k: int, arrival: list[int], load: list[int]) -> list[int]:\n        busy = []  # (end_time, server_id)\n        avail = list(range(k))\n        count = [0] * k\n        for i, (t, l) in enumerate(zip(arrival, load)):\n            while busy and busy[0][0] <= t:\n                _, s = heapq.heappop(busy)\n                bisect.insort(avail, s)\n            if not avail:\n                continue\n            idx = bisect.bisect_left(avail, i % k)\n            if idx == len(avail):\n                idx = 0\n            server = avail.pop(idx)\n            count[server] += 1\n            heapq.heappush(busy, (t + l, server))\n        max_c = max(count)\n        return [i for i, c in enumerate(count) if c == max_c]"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Min-heap for busy servers and std::set for available servers",
+      "code": "#include <vector>\n#include <queue>\n#include <set>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> busiestServers(int k, vector<int>& arrival, vector<int>& load) {\n        priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<>> busy;\n        set<int> avail;\n        for (int i = 0; i < k; ++i) avail.insert(i);\n        vector<int> count(k, 0);\n        int n = arrival.size();\n        for (int i = 0; i < n; ++i) {\n            long long t = arrival[i], l = load[i];\n            while (!busy.empty() && busy.top().first <= t) {\n                avail.insert(busy.top().second);\n                busy.pop();\n            }\n            if (avail.empty()) continue;\n            auto it = avail.lower_bound(i % k);\n            if (it == avail.end()) it = avail.begin();\n            int server = *it;\n            avail.erase(it);\n            count[server]++;\n            busy.push({t + l, server});\n        }\n        int max_c = *max_element(count.begin(), count.end());\n        vector<int> res;\n        for (int i = 0; i < k; ++i) {\n            if (count[i] == max_c) res.push_back(i);\n        }\n        return res;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "PriorityQueue for busy servers and TreeSet for available servers",
+      "code": "import java.util.*;\n\nclass Solution {\n    public List<Integer> busiestServers(int k, int[] arrival, int[] load) {\n        PriorityQueue<int[]> busy = new PriorityQueue<>(Comparator.comparingInt(a -> a[0]));\n        TreeSet<Integer> avail = new TreeSet<>();\n        for (int i = 0; i < k; ++i) avail.add(i);\n        int[] count = new int[k];\n        int n = arrival.length;\n        for (int i = 0; i < n; ++i) {\n            int t = arrival[i], l = load[i];\n            while (!busy.isEmpty() && busy.peek()[0] <= t) {\n                avail.add(busy.poll()[1]);\n            }\n            if (avail.isEmpty()) continue;\n            Integer server = avail.ceiling(i % k);\n            if (server == null) server = avail.first();\n            avail.remove(server);\n            count[server]++;\n            busy.offer(new int[]{t + l, server});\n        }\n        int maxC = 0;\n        for (int c : count) maxC = Math.max(maxC, c);\n        List<Integer> res = new ArrayList<>();\n        for (int i = 0; i < k; ++i) {\n            if (count[i] == maxC) res.add(i);\n        }\n        return res;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sorted array with binary search for available servers",
+      "code": "/**\n * @param {number} k\n * @param {number[]} arrival\n * @param {number[]} load\n * @return {number[]}\n */\nvar busiestServers = function(k, arrival, load) {\n    const busy = []; // min-heap simulation\n    const avail = Array.from({ length: k }, (_, i) => i);\n    const count = Array(k).fill(0);\n    const n = arrival.length;\n\n    for (let i = 0; i < n; ++i) {\n        const t = arrival[i], l = load[i];\n        while (busy.length > 0 && busy[0][0] <= t) {\n            busy.sort((a, b) => a[0] - b[0]);\n            if (busy[0][0] > t) break;\n            const [, s] = busy.shift();\n            // insert s in sorted order into avail\n            let lo = 0, hi = avail.length;\n            while (lo < hi) {\n                const mid = (lo + hi) >> 1;\n                if (avail[mid] < s) lo = mid + 1;\n                else hi = mid;\n            }\n            avail.splice(lo, 0, s);\n        }\n        if (avail.length === 0) continue;\n        const target = i % k;\n        let lo = 0, hi = avail.length;\n        while (lo < hi) {\n            const mid = (lo + hi) >> 1;\n            if (avail[mid] < target) lo = mid + 1;\n            else hi = mid;\n        }\n        if (lo === avail.length) lo = 0;\n        const server = avail.splice(lo, 1)[0];\n        count[server]++;\n        busy.push([t + l, server]);\n        busy.sort((a, b) => a[0] - b[0]);\n    }\n    const maxC = Math.max(...count);\n    const res = [];\n    for (let i = 0; i < k; ++i) {\n        if (count[i] === maxC) res.push(i);\n    }\n    return res;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
