@@ -1,0 +1,79 @@
+{
+  "slug": "process-tasks-using-servers",
+  "number": 1882,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Server Availability State Tracking",
+      "text": "Maintain ready servers and busy servers separately, advancing system time to release completed servers."
+    },
+    {
+      "level": 2,
+      "title": "Priority by Weight and Index",
+      "text": "Order available servers primarily by weight and secondarily by index; order busy servers by finish time."
+    },
+    {
+      "level": 3,
+      "title": "Time Advancement on Empty Pool",
+      "text": "If no servers are available at task arrival time, advance the clock directly to the earliest completion time."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def assignTasks(self, servers: list[int], tasks: list[int]) -> list[int]:\n        free = [(w, i) for i, w in enumerate(servers)]\n        heapq.heapify(free)\n        busy = []\n\n        ans = []\n        curr_time = 0\n\n        for i, task_dur in enumerate(tasks):\n            curr_time = max(curr_time, i)\n            if not free and busy[0][0] > curr_time:\n                curr_time = busy[0][0]\n\n            while busy and busy[0][0] <= curr_time:\n                _, w, s_idx = heapq.heappop(busy)\n                heapq.heappush(free, (w, s_idx))\n\n            w, s_idx = heapq.heappop(free)\n            ans.append(s_idx)\n            heapq.heappush(busy, (curr_time + task_dur, w, s_idx))\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((m + n) log n)",
+    "space": "O(n + m)",
+    "variables": [
+      "n is number of servers",
+      "m is number of tasks"
+    ],
+    "whyNaiveFails": "Scanning all servers for each task takes O(m * n) quadratic time.",
+    "spaceTimeTradeoff": "Dual priority queues process all events in O((m + n) log n) time.",
+    "interviewerExpectation": "Candidate handles clock fast-forwarding when all servers are currently occupied.",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dual priority queues for available and busy servers",
+      "code": "import heapq\n\nclass Solution:\n    def assignTasks(self, servers: list[int], tasks: list[int]) -> list[int]:\n        free = [(w, i) for i, w in enumerate(servers)]\n        heapq.heapify(free)\n        busy = []\n\n        ans = []\n        curr_time = 0\n\n        for i, task_dur in enumerate(tasks):\n            curr_time = max(curr_time, i)\n            if not free and busy[0][0] > curr_time:\n                curr_time = busy[0][0]\n\n            while busy and busy[0][0] <= curr_time:\n                _, w, s_idx = heapq.heappop(busy)\n                heapq.heappush(free, (w, s_idx))\n\n            w, s_idx = heapq.heappop(free)\n            ans.append(s_idx)\n            heapq.heappush(busy, (curr_time + task_dur, w, s_idx))\n\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dual priority queues for available and busy servers",
+      "code": "class Solution {\npublic:\n    vector<int> assignTasks(vector<int>& servers, vector<int>& tasks) {\n        int n = servers.size(), m = tasks.size();\n        using Server = pair<int, int>;\n        priority_queue<Server, vector<Server>, greater<Server>> free;\n        for (int i = 0; i < n; ++i) free.push({servers[i], i});\n\n        using BusyServer = tuple<long long, int, int>;\n        priority_queue<BusyServer, vector<BusyServer>, greater<BusyServer>> busy;\n\n        vector<int> ans;\n        ans.reserve(m);\n        long long currTime = 0;\n\n        for (int i = 0; i < m; ++i) {\n            currTime = max(currTime, (long long)i);\n            if (free.empty() && get<0>(busy.top()) > currTime) {\n                currTime = get<0>(busy.top());\n            }\n            while (!busy.empty() && get<0>(busy.top()) <= currTime) {\n                auto [freeTime, w, sIdx] = busy.top();\n                busy.pop();\n                free.push({w, sIdx});\n            }\n\n            auto [w, sIdx] = free.top();\n            free.pop();\n            ans.push_back(sIdx);\n            busy.push({currTime + tasks[i], w, sIdx});\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dual priority queues for available and busy servers",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] assignTasks(int[] servers, int[] tasks) {\n        int n = servers.length, m = tasks.length;\n        PriorityQueue<int[]> free = new PriorityQueue<>((a, b) -> {\n            if (a[0] != b[0]) return Integer.compare(a[0], b[0]);\n            return Integer.compare(a[1], b[1]);\n        });\n        for (int i = 0; i < n; ++i) free.offer(new int[]{servers[i], i});\n\n        PriorityQueue<long[]> busy = new PriorityQueue<>((a, b) -> {\n            if (a[0] != b[0]) return Long.compare(a[0], b[0]);\n            if (a[1] != b[1]) return Long.compare(a[1], b[1]);\n            return Long.compare(a[2], b[2]);\n        });\n\n        int[] ans = new int[m];\n        long currTime = 0;\n\n        for (int i = 0; i < m; ++i) {\n            currTime = Math.max(currTime, (long)i);\n            if (free.isEmpty() && busy.peek()[0] > currTime) {\n                currTime = busy.peek()[0];\n            }\n            while (!busy.isEmpty() && busy.peek()[0] <= currTime) {\n                long[] b = busy.poll();\n                free.offer(new int[]{(int)b[1], (int)b[2]});\n            }\n\n            int[] top = free.poll();\n            ans[i] = top[1];\n            busy.offer(new long[]{currTime + tasks[i], top[0], top[1]});\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dual priority queues for available and busy servers",
+      "code": "/**\n * @param {number[]} servers\n * @param {number[]} tasks\n * @return {number[]}\n */\nvar assignTasks = function(servers, tasks) {\n    const n = servers.length, m = tasks.length;\n\n    const freePq = [];\n    const pushFree = (item) => {\n        freePq.push(item);\n        let idx = freePq.length - 1;\n        while (idx > 0) {\n            const p = Math.floor((idx - 1) / 2);\n            if (freePq[p][0] > freePq[idx][0] || (freePq[p][0] === freePq[idx][0] && freePq[p][1] > freePq[idx][1])) {\n                [freePq[p], freePq[idx]] = [freePq[idx], freePq[p]];\n                idx = p;\n            } else break;\n        }\n    };\n    const popFree = () => {\n        if (freePq.length === 0) return null;\n        const top = freePq[0];\n        const last = freePq.pop();\n        if (freePq.length > 0) {\n            freePq[0] = last;\n            let idx = 0;\n            while (true) {\n                let left = 2 * idx + 1, right = 2 * idx + 2, best = idx;\n                if (left < freePq.length && (freePq[left][0] < freePq[best][0] || (freePq[left][0] === freePq[best][0] && freePq[left][1] < freePq[best][1]))) best = left;\n                if (right < freePq.length && (freePq[right][0] < freePq[best][0] || (freePq[right][0] === freePq[best][0] && freePq[right][1] < freePq[best][1]))) best = right;\n                if (best !== idx) {\n                    [freePq[idx], freePq[best]] = [freePq[best], freePq[idx]];\n                    idx = best;\n                } else break;\n            }\n        }\n        return top;\n    };\n\n    const busyPq = [];\n    const pushBusy = (item) => {\n        busyPq.push(item);\n        let idx = busyPq.length - 1;\n        while (idx > 0) {\n            const p = Math.floor((idx - 1) / 2);\n            if (busyPq[p][0] > busyPq[idx][0] || (busyPq[p][0] === busyPq[idx][0] && (busyPq[p][1] > busyPq[idx][1] || (busyPq[p][1] === busyPq[idx][1] && busyPq[p][2] > busyPq[idx][2])))) {\n                [busyPq[p], busyPq[idx]] = [busyPq[idx], busyPq[p]];\n                idx = p;\n            } else break;\n        }\n    };\n    const popBusy = () => {\n        if (busyPq.length === 0) return null;\n        const top = busyPq[0];\n        const last = busyPq.pop();\n        if (busyPq.length > 0) {\n            busyPq[0] = last;\n            let idx = 0;\n            while (true) {\n                let left = 2 * idx + 1, right = 2 * idx + 2, best = idx;\n                if (left < busyPq.length && (busyPq[left][0] < busyPq[best][0] || (busyPq[left][0] === busyPq[best][0] && (busyPq[left][1] < busyPq[best][1] || (busyPq[left][1] === busyPq[best][1] && busyPq[left][2] < busyPq[best][2]))))) best = left;\n                if (right < busyPq.length && (busyPq[right][0] < busyPq[best][0] || (busyPq[right][0] === busyPq[best][0] && (busyPq[right][1] < busyPq[best][1] || (busyPq[right][1] === busyPq[best][1] && busyPq[right][2] < busyPq[best][2]))))) best = right;\n                if (best !== idx) {\n                    [busyPq[idx], busyPq[best]] = [busyPq[best], busyPq[idx]];\n                    idx = best;\n                } else break;\n            }\n        }\n        return top;\n    };\n\n    for (let i = 0; i < n; ++i) pushFree([servers[i], i]);\n\n    const ans = [];\n    let currTime = 0;\n\n    for (let i = 0; i < m; ++i) {\n        currTime = Math.max(currTime, i);\n        if (freePq.length === 0 && busyPq[0][0] > currTime) {\n            currTime = busyPq[0][0];\n        }\n        while (busyPq.length > 0 && busyPq[0][0] <= currTime) {\n            const [t, w, sIdx] = popBusy();\n            pushFree([w, sIdx]);\n        }\n\n        const [w, sIdx] = popFree();\n        ans.push(sIdx);\n        pushBusy([currTime + tasks[i], w, sIdx]);\n    }\n\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-cost-to-change-the-final-value-of-expression",
+  "number": 1896,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-parentheses-parser"
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n is length of expression"
+    ],
+    "whyNaiveFails": "Trying all combinations of bit and operator flips leads to exponential branching.",
+    "spaceTimeTradeoff": "Stack-based single-pass parsing computes optimal inversion cost in linear time and space.",
+    "interviewerExpectation": "Candidate tracks (value, cost_to_flip) pairs and handles equal precedence of and / or operators correctly.",
+    "notes": ""
+  },
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bottom-Up State Tracking",
+      "text": "Represent each subexpression outcome as a pair containing its boolean value and the minimal cost needed to invert that boolean result."
+    },
+    {
+      "level": 2,
+      "title": "Operator Inversion Cost Transitions",
+      "text": "For an operation between two subexpressions, determine whether flipping the operator alone or inverting one or both operand values yields a flipped result at lower cost."
+    },
+    {
+      "level": 3,
+      "title": "Parentheses Evaluation Flow",
+      "text": "Reduce expressions sequentially as terms finish, collapsing closed parenthesized blocks immediately into their evaluated value-cost pairs."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nclass Solution:\n    def minOperationsToFlip(self, expression: str) -> int:\n        def evaluate(op: str, v1: int, c1: int, v2: int, c2: int):\n            if op == '&':\n                v = v1 & v2\n                if v1 == 1 and v2 == 1:\n                    cost = min(c1, c2)\n                elif v1 == 0 and v2 == 0:\n                    cost = 1 + min(c1, c2)\n                else:\n                    cost = 1\n                return v, cost\n            else:\n                v = v1 | v2\n                if v1 == 0 and v2 == 0:\n                    cost = min(c1, c2)\n                elif v1 == 1 and v2 == 1:\n                    cost = 1 + min(c1, c2)\n                else:\n                    cost = 1\n                return v, cost\n\n        val_stk = []\n        op_stk = []\n\n        def apply_op():\n            op = op_stk.pop()\n            v2, c2 = val_stk.pop()\n            v1, c1 = val_stk.pop()\n            val_stk.append(evaluate(op, v1, c1, v2, c2))\n\n        for ch in expression:\n            if ch in '01':\n                val_stk.append((int(ch), 1))\n                if op_stk and op_stk[-1] != '(':\n                    apply_op()\n            elif ch in '&|':\n                op_stk.append(ch)\n            elif ch == '(':\n                op_stk.append('(')\n            elif ch == ')':\n                op_stk.pop()\n                if op_stk and op_stk[-1] != '(':\n                    apply_op()\n\n        return val_stk[0][1]\n```"
+    }
+  ],
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Operand and operator stacks evaluating (value, flip_cost) pairs",
+      "code": "class Solution:\n    def minOperationsToFlip(self, expression: str) -> int:\n        def evaluate(op: str, v1: int, c1: int, v2: int, c2: int):\n            if op == '&':\n                v = v1 & v2\n                if v1 == 1 and v2 == 1:\n                    cost = min(c1, c2)\n                elif v1 == 0 and v2 == 0:\n                    cost = 1 + min(c1, c2)\n                else:\n                    cost = 1\n                return v, cost\n            else:\n                v = v1 | v2\n                if v1 == 0 and v2 == 0:\n                    cost = min(c1, c2)\n                elif v1 == 1 and v2 == 1:\n                    cost = 1 + min(c1, c2)\n                else:\n                    cost = 1\n                return v, cost\n\n        val_stk = []\n        op_stk = []\n\n        def apply_op():\n            op = op_stk.pop()\n            v2, c2 = val_stk.pop()\n            v1, c1 = val_stk.pop()\n            val_stk.append(evaluate(op, v1, c1, v2, c2))\n\n        for ch in expression:\n            if ch in '01':\n                val_stk.append((int(ch), 1))\n                if op_stk and op_stk[-1] != '(':\n                    apply_op()\n            elif ch in '&|':\n                op_stk.append(ch)\n            elif ch == '(':\n                op_stk.append('(')\n            elif ch == ')':\n                op_stk.pop()\n                if op_stk and op_stk[-1] != '(':\n                    apply_op()\n\n        return val_stk[0][1]"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Operand and operator stacks evaluating (value, flip_cost) pairs",
+      "code": "#include <string>\n#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\n    pair<int, int> evaluate(char op, int v1, int c1, int v2, int c2) {\n        if (op == '&') {\n            int v = v1 & v2;\n            int cost = 1;\n            if (v1 == 1 && v2 == 1) cost = min(c1, c2);\n            else if (v1 == 0 && v2 == 0) cost = 1 + min(c1, c2);\n            return {v, cost};\n        } else {\n            int v = v1 | v2;\n            int cost = 1;\n            if (v1 == 0 && v2 == 0) cost = min(c1, c2);\n            else if (v1 == 1 && v2 == 1) cost = 1 + min(c1, c2);\n            return {v, cost};\n        }\n    }\npublic:\n    int minOperationsToFlip(string expression) {\n        vector<pair<int, int>> valStk;\n        vector<char> opStk;\n\n        auto applyOp = [&]() {\n            char op = opStk.back(); opStk.pop_back();\n            auto [v2, c2] = valStk.back(); valStk.pop_back();\n            auto [v1, c1] = valStk.back(); valStk.pop_back();\n            valStk.push_back(evaluate(op, v1, c1, v2, c2));\n        };\n\n        for (char ch : expression) {\n            if (ch == '0' || ch == '1') {\n                valStk.push_back({ch - '0', 1});\n                if (!opStk.empty() && opStk.back() != '(') {\n                    applyOp();\n                }\n            } else if (ch == '&' || ch == '|') {\n                opStk.push_back(ch);\n            } else if (ch == '(') {\n                opStk.push_back('(');\n            } else if (ch == ')') {\n                opStk.pop_back();\n                if (!opStk.empty() && opStk.back() != '(') {\n                    applyOp();\n                }\n            }\n        }\n        return valStk[0].second;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Operand and operator stacks evaluating (value, flip_cost) pairs",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int[] evaluate(char op, int v1, int c1, int v2, int c2) {\n        if (op == '&') {\n            int v = v1 & v2;\n            int cost = 1;\n            if (v1 == 1 && v2 == 1) cost = Math.min(c1, c2);\n            else if (v1 == 0 && v2 == 0) cost = 1 + Math.min(c1, c2);\n            return new int[]{v, cost};\n        } else {\n            int v = v1 | v2;\n            int cost = 1;\n            if (v1 == 0 && v2 == 0) cost = Math.min(c1, c2);\n            else if (v1 == 1 && v2 == 1) cost = 1 + Math.min(c1, c2);\n            return new int[]{v, cost};\n        }\n    }\n\n    public int minOperationsToFlip(String expression) {\n        Deque<int[]> valStk = new ArrayDeque<>();\n        Deque<Character> opStk = new ArrayDeque<>();\n\n        for (int i = 0; i < expression.length(); ++i) {\n            char ch = expression.charAt(i);\n            if (ch == '0' || ch == '1') {\n                valStk.push(new int[]{ch - '0', 1});\n                if (!opStk.isEmpty() && opStk.peek() != '(') {\n                    char op = opStk.pop();\n                    int[] p2 = valStk.pop();\n                    int[] p1 = valStk.pop();\n                    valStk.push(evaluate(op, p1[0], p1[1], p2[0], p2[1]));\n                }\n            } else if (ch == '&' || ch == '|') {\n                opStk.push(ch);\n            } else if (ch == '(') {\n                opStk.push('(');\n            } else if (ch == ')') {\n                opStk.pop();\n                if (!opStk.isEmpty() && opStk.peek() != '(') {\n                    char op = opStk.pop();\n                    int[] p2 = valStk.pop();\n                    int[] p1 = valStk.pop();\n                    valStk.push(evaluate(op, p1[0], p1[1], p2[0], p2[1]));\n                }\n            }\n        }\n        return valStk.peek()[1];\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Operand and operator stacks evaluating (value, flip_cost) pairs",
+      "code": "/**\n * @param {string} expression\n * @return {number}\n */\nvar minOperationsToFlip = function(expression) {\n    function evaluate(op, v1, c1, v2, c2) {\n        if (op === '&') {\n            const v = v1 & v2;\n            let cost = 1;\n            if (v1 === 1 && v2 === 1) cost = Math.min(c1, c2);\n            else if (v1 === 0 && v2 === 0) cost = 1 + Math.min(c1, c2);\n            return [v, cost];\n        } else {\n            const v = v1 | v2;\n            let cost = 1;\n            if (v1 === 0 && v2 === 0) cost = Math.min(c1, c2);\n            else if (v1 === 1 && v2 === 1) cost = 1 + Math.min(c1, c2);\n            return [v, cost];\n        }\n    }\n\n    const valStk = [];\n    const opStk = [];\n\n    const applyOp = () => {\n        const op = opStk.pop();\n        const [v2, c2] = valStk.pop();\n        const [v1, c1] = valStk.pop();\n        valStk.push(evaluate(op, v1, c1, v2, c2));\n    };\n\n    for (let i = 0; i < expression.length; ++i) {\n        const ch = expression[i];\n        if (ch === '0' || ch === '1') {\n            valStk.push([Number(ch), 1]);\n            if (opStk.length > 0 && opStk[opStk.length - 1] !== '(') {\n                applyOp();\n            }\n        } else if (ch === '&' || ch === '|') {\n            opStk.push(ch);\n        } else if (ch === '(') {\n            opStk.push('(');\n        } else if (ch === ')') {\n            opStk.pop();\n            if (opStk.length > 0 && opStk[opStk.length - 1] !== '(') {\n                applyOp();\n            }\n        }\n    }\n    return valStk[0][1];\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

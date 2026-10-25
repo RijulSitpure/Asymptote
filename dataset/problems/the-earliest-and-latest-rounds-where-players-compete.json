@@ -1,0 +1,78 @@
+{
+  "slug": "the-earliest-and-latest-rounds-where-players-compete",
+  "number": 1900,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^4)",
+    "space": "O(n^3)",
+    "variables": [
+      "n is initial number of players"
+    ],
+    "whyNaiveFails": "Simulating all 2^(n/2) match outcomes for each round leads to combinatorial explosion.",
+    "spaceTimeTradeoff": "Memoizing states over (m, p1, p2) bounds distinct subproblems to O(n^3) with polynomial transitions.",
+    "interviewerExpectation": "Candidate handles the symmetry p1 > m - p2 + 1 and accounts for middle players correctly when m is odd.",
+    "notes": ""
+  },
+  "hints": [
+    {
+      "level": 1,
+      "title": "State Representation by Player Ranks",
+      "text": "The tournament structure preserves symmetry, allowing the game state to depend solely on current player count and ranks of both favorites."
+    },
+    {
+      "level": 2,
+      "title": "Meeting Base Case",
+      "text": "The favorites meet in the immediate round if and only if their ranks sum to the current player count plus one."
+    },
+    {
+      "level": 3,
+      "title": "Partitioning Survivors Across Round Matchups",
+      "text": "Iterate over all possible numbers of survivors from match pairings preceding and between the favorites to transition to the next tournament stage."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nfrom functools import lru_cache\n\nclass Solution:\n    def earliestAndLatest(self, n: int, firstPlayer: int, secondPlayer: int) -> list[int]:\n        @lru_cache(None)\n        def dp(m: int, p1: int, p2: int):\n            if p1 + p2 == m + 1:\n                return (1, 1)\n            if p1 > p2:\n                p1, p2 = p2, p1\n            if p1 > m - p2 + 1:\n                p1, p2 = m - p2 + 1, m - p1 + 1\n\n            min_r = float('inf')\n            max_r = float('-inf')\n\n            p2_mirror = m - p2 + 1\n            if p2 <= (m + 1) // 2:\n                c1 = p1 - 1\n                c2 = p2 - p1 - 1\n                for i in range(c1 + 1):\n                    for j in range(c2 + 1):\n                        next_p1 = i + 1\n                        next_p2 = i + 1 + j + 1\n                        mn, mx = dp((m + 1) // 2, next_p1, next_p2)\n                        min_r = min(min_r, 1 + mn)\n                        max_r = max(max_r, 1 + mx)\n            else:\n                mid_survivors = (p2 - p2_mirror) // 2\n                c1 = p1 - 1\n                c2 = p2_mirror - p1 - 1\n                for i in range(c1 + 1):\n                    for j in range(c2 + 1):\n                        next_p1 = i + 1\n                        next_p2 = i + 1 + j + 1 + mid_survivors\n                        mn, mx = dp((m + 1) // 2, next_p1, next_p2)\n                        min_r = min(min_r, 1 + mn)\n                        max_r = max(max_r, 1 + mx)\n\n            return (min_r, max_r)\n\n        res = dp(n, firstPlayer, secondPlayer)\n        return [res[0], res[1]]\n```"
+    }
+  ],
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "State memoization over player count and favorite ranks",
+      "code": "from functools import lru_cache\n\nclass Solution:\n    def earliestAndLatest(self, n: int, firstPlayer: int, secondPlayer: int) -> list[int]:\n        @lru_cache(None)\n        def dp(m: int, p1: int, p2: int):\n            if p1 + p2 == m + 1:\n                return (1, 1)\n            if p1 > p2:\n                p1, p2 = p2, p1\n            if p1 > m - p2 + 1:\n                p1, p2 = m - p2 + 1, m - p1 + 1\n\n            min_r = float('inf')\n            max_r = float('-inf')\n\n            p2_mirror = m - p2 + 1\n            if p2 <= (m + 1) // 2:\n                c1 = p1 - 1\n                c2 = p2 - p1 - 1\n                for i in range(c1 + 1):\n                    for j in range(c2 + 1):\n                        next_p1 = i + 1\n                        next_p2 = i + 1 + j + 1\n                        mn, mx = dp((m + 1) // 2, next_p1, next_p2)\n                        min_r = min(min_r, 1 + mn)\n                        max_r = max(max_r, 1 + mx)\n            else:\n                mid_survivors = (p2 - p2_mirror) // 2\n                c1 = p1 - 1\n                c2 = p2_mirror - p1 - 1\n                for i in range(c1 + 1):\n                    for j in range(c2 + 1):\n                        next_p1 = i + 1\n                        next_p2 = i + 1 + j + 1 + mid_survivors\n                        mn, mx = dp((m + 1) // 2, next_p1, next_p2)\n                        min_r = min(min_r, 1 + mn)\n                        max_r = max(max_r, 1 + mx)\n\n            return (min_r, max_r)\n\n        res = dp(n, firstPlayer, secondPlayer)\n        return [res[0], res[1]]"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "3D memoized recursion over (m, p1, p2)",
+      "code": "#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\n    int memoMin[30][30][30];\n    int memoMax[30][30][30];\n\n    pair<int, int> solve(int m, int p1, int p2) {\n        if (p1 + p2 == m + 1) return {1, 1};\n        if (p1 > p2) swap(p1, p2);\n        if (p1 > m - p2 + 1) {\n            int np1 = m - p2 + 1, np2 = m - p1 + 1;\n            p1 = np1; p2 = np2;\n        }\n        if (memoMin[m][p1][p2] != 0) return {memoMin[m][p1][p2], memoMax[m][p1][p2]};\n\n        int minR = 100, maxR = 0;\n        int p2Mirror = m - p2 + 1;\n        int nextM = (m + 1) / 2;\n\n        if (p2 <= (m + 1) / 2) {\n            int c1 = p1 - 1, c2 = p2 - p1 - 1;\n            for (int i = 0; i <= c1; ++i) {\n                for (int j = 0; j <= c2; ++j) {\n                    auto res = solve(nextM, i + 1, i + 1 + j + 1);\n                    minR = min(minR, 1 + res.first);\n                    maxR = max(maxR, 1 + res.second);\n                }\n            }\n        } else {\n            int midSurvivors = (p2 - p2Mirror) / 2;\n            int c1 = p1 - 1, c2 = p2Mirror - p1 - 1;\n            for (int i = 0; i <= c1; ++i) {\n                for (int j = 0; j <= c2; ++j) {\n                    auto res = solve(nextM, i + 1, i + 1 + j + 1 + midSurvivors);\n                    minR = min(minR, 1 + res.first);\n                    maxR = max(maxR, 1 + res.second);\n                }\n            }\n        }\n\n        memoMin[m][p1][p2] = minR;\n        memoMax[m][p1][p2] = maxR;\n        return {minR, maxR};\n    }\npublic:\n    vector<int> earliestAndLatest(int n, int firstPlayer, int secondPlayer) {\n        for (int i = 0; i < 30; ++i)\n            for (int j = 0; j < 30; ++j)\n                for (int k = 0; k < 30; ++k)\n                    memoMin[i][j][k] = memoMax[i][j][k] = 0;\n\n        auto ans = solve(n, firstPlayer, secondPlayer);\n        return {ans.first, ans.second};\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "3D memoized recursion over (m, p1, p2)",
+      "code": "class Solution {\n    private int[][][] memoMin = new int[30][30][30];\n    private int[][][] memoMax = new int[30][30][30];\n\n    private int[] solve(int m, int p1, int p2) {\n        if (p1 + p2 == m + 1) return new int[]{1, 1};\n        if (p1 > p2) {\n            int tmp = p1; p1 = p2; p2 = tmp;\n        }\n        if (p1 > m - p2 + 1) {\n            int np1 = m - p2 + 1, np2 = m - p1 + 1;\n            p1 = np1; p2 = np2;\n        }\n        if (memoMin[m][p1][p2] != 0) return new int[]{memoMin[m][p1][p2], memoMax[m][p1][p2]};\n\n        int minR = 100, maxR = 0;\n        int p2Mirror = m - p2 + 1;\n        int nextM = (m + 1) / 2;\n\n        if (p2 <= (m + 1) / 2) {\n            int c1 = p1 - 1, c2 = p2 - p1 - 1;\n            for (int i = 0; i <= c1; ++i) {\n                for (int j = 0; j <= c2; ++j) {\n                    int[] res = solve(nextM, i + 1, i + 1 + j + 1);\n                    minR = Math.min(minR, 1 + res[0]);\n                    maxR = Math.max(maxR, 1 + res[1]);\n                }\n            }\n        } else {\n            int midSurvivors = (p2 - p2Mirror) / 2;\n            int c1 = p1 - 1, c2 = p2Mirror - p1 - 1;\n            for (int i = 0; i <= c1; ++i) {\n                for (int j = 0; j <= c2; ++j) {\n                    int[] res = solve(nextM, i + 1, i + 1 + j + 1 + midSurvivors);\n                    minR = Math.min(minR, 1 + res[0]);\n                    maxR = Math.max(maxR, 1 + res[1]);\n                }\n            }\n        }\n\n        memoMin[m][p1][p2] = minR;\n        memoMax[m][p1][p2] = maxR;\n        return new int[]{minR, maxR};\n    }\n\n    public int[] earliestAndLatest(int n, int firstPlayer, int secondPlayer) {\n        return solve(n, firstPlayer, secondPlayer);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Memoized recursion over (m, p1, p2)",
+      "code": "/**\n * @param {number} n\n * @param {number} firstPlayer\n * @param {number} secondPlayer\n * @return {number[]}\n */\nvar earliestAndLatest = function(n, firstPlayer, secondPlayer) {\n    const memo = new Map();\n\n    function solve(m, p1, p2) {\n        if (p1 + p2 === m + 1) return [1, 1];\n        if (p1 > p2) [p1, p2] = [p2, p1];\n        if (p1 > m - p2 + 1) {\n            const np1 = m - p2 + 1, np2 = m - p1 + 1;\n            p1 = np1; p2 = np2;\n        }\n\n        const key = `${m},${p1},${p2}`;\n        if (memo.has(key)) return memo.get(key);\n\n        let minR = 100, maxR = 0;\n        const p2Mirror = m - p2 + 1;\n        const nextM = Math.floor((m + 1) / 2);\n\n        if (p2 <= Math.floor((m + 1) / 2)) {\n            const c1 = p1 - 1, c2 = p2 - p1 - 1;\n            for (let i = 0; i <= c1; ++i) {\n                for (let j = 0; j <= c2; ++j) {\n                    const [mn, mx] = solve(nextM, i + 1, i + 1 + j + 1);\n                    minR = Math.min(minR, 1 + mn);\n                    maxR = Math.max(maxR, 1 + mx);\n                }\n            }\n        } else {\n            const midSurvivors = Math.floor((p2 - p2Mirror) / 2);\n            const c1 = p1 - 1, c2 = p2Mirror - p1 - 1;\n            for (let i = 0; i <= c1; ++i) {\n                for (let j = 0; j <= c2; ++j) {\n                    const [mn, mx] = solve(nextM, i + 1, i + 1 + j + 1 + midSurvivors);\n                    minR = Math.min(minR, 1 + mn);\n                    maxR = Math.max(maxR, 1 + mx);\n                }\n            }\n        }\n\n        const ans = [minR, maxR];\n        memo.set(key, ans);\n        return ans;\n    }\n\n    return solve(n, firstPlayer, secondPlayer);\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
