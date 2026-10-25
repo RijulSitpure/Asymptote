@@ -1,0 +1,79 @@
+{
+  "slug": "dice-roll-simulation",
+  "number": 1223,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Track Dice Face and Consecutive Run Length",
+      "text": "State requires the roll step, the current face rolled, and how many consecutive times that face has appeared."
+    },
+    {
+      "level": 2,
+      "title": "Transition Between Different and Same Faces",
+      "text": "Rolling a different face resets its run length to 1; rolling the same face increments run length if below rollMax."
+    },
+    {
+      "level": 3,
+      "title": "Sum Valid Configurations Modulo 10^9 + 7",
+      "text": "Advance state round by round and sum all valid configurations across all six faces after n rolls."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def dieSimulator(self, n: int, rollMax: list[int]) -> int:\n        MOD = 10**9 + 7\n        # dp[face][consecutive_count]\n        dp = [[0] * 16 for _ in range(6)]\n        for f in range(6):\n            dp[f][1] = 1\n            \n        for _ in range(n - 1):\n            nxt = [[0] * 16 for _ in range(6)]\n            face_sums = [sum(dp[f]) % MOD for f in range(6)]\n            total_sum = sum(face_sums) % MOD\n            \n            for f in range(6):\n                # Different face\n                nxt[f][1] = (total_sum - face_sums[f]) % MOD\n                # Same face\n                for k in range(2, rollMax[f] + 1):\n                    nxt[f][k] = dp[f][k - 1] % MOD\n            dp = nxt\n            \n        return sum(sum(dp[f]) for f in range(6)) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * 6 * 15)",
+    "space": "O(6 * 15)",
+    "variables": [
+      "N: total number of rolls",
+      "15: maximum possible rollMax constraint"
+    ],
+    "whyNaiveFails": "Branching across six outcomes for n steps yields 6^N sequences.",
+    "spaceTimeTradeoff": "Tracking face and consecutive counts limits states per roll to 6 * 15.",
+    "interviewerExpectation": "Candidate should handle face transitions and bound memory to two roll layers modulo 10^9 + 7.",
+    "notes": "rollMax values are between 1 and 15."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def dieSimulator(self, n: int, rollMax: list[int]) -> int:\n        MOD = 10**9 + 7\n        # dp[face][consecutive_count]\n        dp = [[0] * 16 for _ in range(6)]\n        for f in range(6):\n            dp[f][1] = 1\n            \n        for _ in range(n - 1):\n            nxt = [[0] * 16 for _ in range(6)]\n            face_sums = [sum(dp[f]) % MOD for f in range(6)]\n            total_sum = sum(face_sums) % MOD\n            \n            for f in range(6):\n                # Different face\n                nxt[f][1] = (total_sum - face_sums[f]) % MOD\n                # Same face\n                for k in range(2, rollMax[f] + 1):\n                    nxt[f][k] = dp[f][k - 1] % MOD\n            dp = nxt\n            \n        return sum(sum(dp[f]) for f in range(6)) % MOD",
+      "approach": "dp-1d-fib-linear verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int dieSimulator(int n, std::vector<int>& rollMax) {\n        long long MOD = 1e9 + 7;\n        std::vector<std::vector<long long>> dp(6, std::vector<long long>(16, 0));\n        for (int f = 0; f < 6; ++f) dp[f][1] = 1;\n        \n        for (int step = 1; step < n; ++step) {\n            std::vector<std::vector<long long>> nxt(6, std::vector<long long>(16, 0));\n            std::vector<long long> faceSums(6, 0);\n            long long totalSum = 0;\n            for (int f = 0; f < 6; ++f) {\n                for (int k = 1; k <= 15; ++k) faceSums[f] = (faceSums[f] + dp[f][k]) % MOD;\n                totalSum = (totalSum + faceSums[f]) % MOD;\n            }\n            for (int f = 0; f < 6; ++f) {\n                nxt[f][1] = (totalSum - faceSums[f] + MOD) % MOD;\n                for (int k = 2; k <= rollMax[f]; ++k) {\n                    nxt[f][k] = dp[f][k - 1] % MOD;\n                }\n            }\n            dp = std::move(nxt);\n        }\n        long long ans = 0;\n        for (int f = 0; f < 6; ++f) {\n            for (int k = 1; k <= 15; ++k) ans = (ans + dp[f][k]) % MOD;\n        }\n        return ans;\n    }\n};",
+      "approach": "dp-1d-fib-linear verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int dieSimulator(int n, int[] rollMax) {\n        long MOD = 1_000_000_007L;\n        long[][] dp = new long[6][16];\n        for (int f = 0; f < 6; f++) dp[f][1] = 1;\n        \n        for (int step = 1; step < n; step++) {\n            long[][] nxt = new long[6][16];\n            long[] faceSums = new long[6];\n            long totalSum = 0;\n            for (int f = 0; f < 6; f++) {\n                for (int k = 1; k <= 15; k++) faceSums[f] = (faceSums[f] + dp[f][k]) % MOD;\n                totalSum = (totalSum + faceSums[f]) % MOD;\n            }\n            for (int f = 0; f < 6; f++) {\n                nxt[f][1] = (totalSum - faceSums[f] + MOD) % MOD;\n                for (int k = 2; k <= rollMax[f]; k++) {\n                    nxt[f][k] = dp[f][k - 1] % MOD;\n                }\n            }\n            dp = nxt;\n        }\n        long ans = 0;\n        for (int f = 0; f < 6; f++) {\n            for (int k = 1; k <= 15; k++) ans = (ans + dp[f][k]) % MOD;\n        }\n        return (int) ans;\n    }\n}",
+      "approach": "dp-1d-fib-linear verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var dieSimulator = function(n, rollMax) {\n    const MOD = 1000000007n;\n    let dp = Array.from({ length: 6 }, () => new Array(16).fill(0n));\n    for (let f = 0; f < 6; f++) dp[f][1] = 1n;\n    \n    for (let step = 1; step < n; step++) {\n        const nxt = Array.from({ length: 6 }, () => new Array(16).fill(0n));\n        const faceSums = new Array(6).fill(0n);\n        let totalSum = 0n;\n        for (let f = 0; f < 6; f++) {\n            for (let k = 1; k <= 15; k++) faceSums[f] = (faceSums[f] + dp[f][k]) % MOD;\n            totalSum = (totalSum + faceSums[f]) % MOD;\n        }\n        for (let f = 0; f < 6; f++) {\n            nxt[f][1] = (totalSum - faceSums[f] + MOD) % MOD;\n            for (let k = 2; k <= rollMax[f]; k++) {\n                nxt[f][k] = dp[f][k - 1] % MOD;\n            }\n        }\n        dp = nxt;\n    }\n    let ans = 0n;\n    for (let f = 0; f < 6; f++) {\n        for (let k = 1; k <= 15; k++) ans = (ans + dp[f][k]) % MOD;\n    }\n    return Number(ans);\n};",
+      "approach": "dp-1d-fib-linear verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

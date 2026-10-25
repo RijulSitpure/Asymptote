@@ -1,0 +1,79 @@
+{
+  "slug": "synonymous-sentences",
+  "number": 1258,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Group Synonyms into Connected Components",
+      "text": "Because synonymity is an equivalence relation, words connected through synonym pairs form connected components."
+    },
+    {
+      "level": 2,
+      "title": "Sort Equivalent Words Alphabetically",
+      "text": "For each distinct word group, sort all its members lexicographically so permutations generate in sorted order."
+    },
+    {
+      "level": 3,
+      "title": "Recursively Generate Sentence Combinations",
+      "text": "For each word in the source sentence, branch across all synonyms in its component to form complete sentences."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def generateSentences(self, synonyms: list[list[int]], text: str) -> list[str]:\n        parent = {}\n        def find(x):\n            if parent.setdefault(x, x) != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n            \n        def union(x, y):\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n                \n        for u, v in synonyms:\n            union(u, v)\n            \n        groups = defaultdict(set)\n        for w in parent:\n            groups[find(w)].add(w)\n            \n        words = text.split()\n        res = []\n        \n        def backtrack(idx, path):\n            if idx == len(words):\n                res.append(' '.join(path))\n                return\n            w = words[idx]\n            root = find(w)\n            candidates = sorted(groups[root]) if root in groups else [w]\n            for cand in candidates:\n                path.append(cand)\n                backtrack(idx + 1, path)\n                path.pop()\n                \n        backtrack(0, [])\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(S * W)",
+    "space": "O(S * W)",
+    "variables": [
+      "S: total number of synonymous sentences generated",
+      "W: number of words in text"
+    ],
+    "whyNaiveFails": "Replacing synonyms randomly without transitive grouping misses valid equivalence chains.",
+    "spaceTimeTradeoff": "Disjoint set union groups synonyms in near-linear time before generating ordered output.",
+    "interviewerExpectation": "Candidate should recognize transitive equivalence and sort words inside each component.",
+    "notes": "Final output list must be sorted lexicographically."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def generateSentences(self, synonyms: list[list[int]], text: str) -> list[str]:\n        parent = {}\n        def find(x):\n            if parent.setdefault(x, x) != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n            \n        def union(x, y):\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n                \n        for u, v in synonyms:\n            union(u, v)\n            \n        groups = defaultdict(set)\n        for w in parent:\n            groups[find(w)].add(w)\n            \n        words = text.split()\n        res = []\n        \n        def backtrack(idx, path):\n            if idx == len(words):\n                res.append(' '.join(path))\n                return\n            w = words[idx]\n            root = find(w)\n            candidates = sorted(groups[root]) if root in groups else [w]\n            for cand in candidates:\n                path.append(cand)\n                backtrack(idx + 1, path)\n                path.pop()\n                \n        backtrack(0, [])\n        return res",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    std::unordered_map<std::string, std::string> parent;\n    std::string find(const std::string& x) {\n        if (!parent.count(x)) parent[x] = x;\n        if (parent[x] != x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    void unite(const std::string& x, const std::string& y) {\n        std::string rx = find(x), ry = find(y);\n        if (rx != ry) parent[rx] = ry;\n    }\n    void backtrack(int idx, const std::vector<std::string>& words, std::vector<std::string>& path,\n                   std::unordered_map<std::string, std::vector<std::string>>& groups, std::vector<std::string>& res) {\n        if (idx == words.size()) {\n            std::string s = path[0];\n            for (int i = 1; i < path.size(); ++i) s += \" \" + path[i];\n            res.push_back(s);\n            return;\n        }\n        std::string w = words[idx];\n        std::string root = find(w);\n        std::vector<std::string> candidates = groups.count(root) ? groups[root] : std::vector<std::string>{w};\n        for (const auto& cand : candidates) {\n            path.push_back(cand);\n            backtrack(idx + 1, words, path, groups, res);\n            path.pop_back();\n        }\n    }\npublic:\n    std::vector<std::string> generateSentences(std::vector<std::vector<std::string>>& synonyms, std::string text) {\n        for (const auto& syn : synonyms) unite(syn[0], syn[1]);\n        \n        std::unordered_map<std::string, std::set<std::string>> groupSets;\n        for (const auto& [w, p] : parent) groupSets[find(w)].insert(w);\n        \n        std::unordered_map<std::string, std::vector<std::string>> groups;\n        for (const auto& [root, s] : groupSets) groups[root] = std::vector<std::string>(s.begin(), s.end());\n        \n        std::vector<std::string> words;\n        std::stringstream ss(text);\n        std::string item;\n        while (ss >> item) words.push_back(item);\n        \n        std::vector<std::string> res, path;\n        backtrack(0, words, path, groups, res);\n        return res;\n    }\n};",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    java.util.Map<String, String> parent = new java.util.HashMap<>();\n    String find(String x) {\n        parent.putIfAbsent(x, x);\n        if (!parent.get(x).equals(x)) parent.put(x, find(parent.get(x)));\n        return parent.get(x);\n    }\n    void union(String x, String y) {\n        String rx = find(x), ry = find(y);\n        if (!rx.equals(ry)) parent.put(rx, ry);\n    }\n    void backtrack(int idx, String[] words, java.util.List<String> path,\n                   java.util.Map<String, java.util.List<String>> groups, java.util.List<String> res) {\n        if (idx == words.length) {\n            res.add(String.join(\" \", path));\n            return;\n        }\n        String w = words[idx];\n        String root = find(w);\n        java.util.List<String> candidates = groups.getOrDefault(root, java.util.List.of(w));\n        for (String cand : candidates) {\n            path.add(cand);\n            backtrack(idx + 1, words, path, groups, res);\n            path.remove(path.size() - 1);\n        }\n    }\n    public java.util.List<String> generateSentences(java.util.List<java.util.List<String>> synonyms, String text) {\n        for (java.util.List<String> syn : synonyms) union(syn.get(0), syn.get(1));\n        \n        java.util.Map<String, java.util.TreeSet<String>> groupSets = new java.util.HashMap<>();\n        for (String w : parent.keySet()) {\n            groupSets.computeIfAbsent(find(w), k -> new java.util.TreeSet<>()).add(w);\n        }\n        \n        java.util.Map<String, java.util.List<String>> groups = new java.util.HashMap<>();\n        for (java.util.Map.Entry<String, java.util.TreeSet<String>> entry : groupSets.entrySet()) {\n            groups.put(entry.getKey(), new java.util.ArrayList<>(entry.getValue()));\n        }\n        \n        String[] words = text.split(\" \");\n        java.util.List<String> res = new java.util.ArrayList<>();\n        backtrack(0, words, new java.util.ArrayList<>(), groups, res);\n        return res;\n    }\n}",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var generateSentences = function(synonyms, text) {\n    const parent = new Map();\n    const find = (x) => {\n        if (!parent.has(x)) parent.set(x, x);\n        if (parent.get(x) !== x) parent.set(x, find(parent.get(x)));\n        return parent.get(x);\n    };\n    const union = (x, y) => {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) parent.set(rx, ry);\n    };\n    \n    for (const [u, v] of synonyms) union(u, v);\n    \n    const groups = new Map();\n    for (const w of parent.keys()) {\n        const root = find(w);\n        if (!groups.has(root)) groups.set(root, []);\n        groups.get(root).push(w);\n    }\n    for (const [root, list] of groups.entries()) {\n        list.sort();\n    }\n    \n    const words = text.split(' ');\n    const res = [];\n    const backtrack = (idx, path) => {\n        if (idx === words.length) {\n            res.push(path.join(' '));\n            return;\n        }\n        const w = words[idx];\n        const root = find(w);\n        const candidates = groups.has(root) ? groups.get(root) : [w];\n        for (const cand of candidates) {\n            path.push(cand);\n            backtrack(idx + 1, path);\n            path.pop();\n        }\n    };\n    backtrack(0, []);\n    return res;\n};",
+      "approach": "graph-union-find-dsu verified implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
