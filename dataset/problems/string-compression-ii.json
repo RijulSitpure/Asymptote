@@ -1,0 +1,79 @@
+{
+  "slug": "string-compression-ii",
+  "number": 1531,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Run Length Encoding Lengths",
+      "text": "The compressed length of a run of count c is 1 for c = 1, 2 for c = 2..9, 3 for c = 10..99, and 4 for c = 100."
+    },
+    {
+      "level": 2,
+      "title": "Delete vs Keep Decisions",
+      "text": "At index i with k deletions remaining, decide to either delete s[i] or keep s[i] as the anchor of a compressed block."
+    },
+    {
+      "level": 3,
+      "title": "Block Extension",
+      "text": "If keeping s[i], scan forward to j, matching characters equal to s[i] and deleting differing characters using available k quota."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def getLengthOfOptimalCompression(self, s: str, k: int) -> int:\n        n = len(s)\n        memo = {}\n        def dp(i, rem):\n            if rem < 0:\n                return float(\"inf\")\n            if i >= n or n - i <= rem:\n                return 0\n            state = (i, rem)\n            if state in memo:\n                return memo[state]\n            res = dp(i + 1, rem - 1)\n            diff = 0\n            same = 0\n            for j in range(i, n):\n                if s[j] == s[i]:\n                    same += 1\n                else:\n                    diff += 1\n                if diff > rem:\n                    break\n                length = 1 + (0 if same == 1 else (1 if same < 10 else (2 if same < 100 else 3)))\n                res = min(res, length + dp(j + 1, rem - diff))\n            memo[state] = res\n            return res\n        return dp(0, k)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2 * K)",
+    "space": "O(N * K)",
+    "variables": [
+      "N: length of string s (N <= 100)",
+      "K: allowed deletions (K <= 100)"
+    ],
+    "whyNaiveFails": "Trying all 2^N deletion subsets is exponential.",
+    "spaceTimeTradeoff": "2D dynamic programming over (index, remaining deletions) explores O(N * K) states with O(N) forward scan.",
+    "interviewerExpectation": "Candidate formulates optimal block chunking with deletions inside the DP transition.",
+    "notes": "Standard run-length compression representation."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def getLengthOfOptimalCompression(self, s: str, k: int) -> int:\n        n = len(s)\n        memo = {}\n        def dp(i, rem):\n            if rem < 0:\n                return float(\"inf\")\n            if i >= n or n - i <= rem:\n                return 0\n            state = (i, rem)\n            if state in memo:\n                return memo[state]\n            res = dp(i + 1, rem - 1)\n            diff = 0\n            same = 0\n            for j in range(i, n):\n                if s[j] == s[i]:\n                    same += 1\n                else:\n                    diff += 1\n                if diff > rem:\n                    break\n                length = 1 + (0 if same == 1 else (1 if same < 10 else (2 if same < 100 else 3)))\n                res = min(res, length + dp(j + 1, rem - diff))\n            memo[state] = res\n            return res\n        return dp(0, k)",
+      "approach": "2D memoized dynamic programming over index and remaining deletions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <string>\n#include <vector>\n#include <algorithm>\n#include <cstring>\n\nclass Solution {\n    int memo[105][105];\n    int n;\n    int dp(int i, int rem, const std::string& s) {\n        if (rem < 0) return 1e9;\n        if (i >= n || n - i <= rem) return 0;\n        if (memo[i][rem] != -1) return memo[i][rem];\n        int res = dp(i + 1, rem - 1, s);\n        int diff = 0, same = 0;\n        for (int j = i; j < n; ++j) {\n            if (s[j] == s[i]) same++;\n            else diff++;\n            if (diff > rem) break;\n            int len = 1 + (same == 1 ? 0 : (same < 10 ? 1 : (same < 100 ? 2 : 3)));\n            res = std::min(res, len + dp(j + 1, rem - diff, s));\n        }\n        return memo[i][rem] = res;\n    }\npublic:\n    int getLengthOfOptimalCompression(std::string s, int k) {\n        n = s.size();\n        std::memset(memo, -1, sizeof(memo));\n        return dp(0, k, s);\n    }\n};",
+      "approach": "2D memoized dynamic programming over index and remaining deletions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    int[][] memo;\n    int n;\n    private int dp(int i, int rem, String s) {\n        if (rem < 0) return 100000;\n        if (i >= n || n - i <= rem) return 0;\n        if (memo[i][rem] != -1) return memo[i][rem];\n        int res = dp(i + 1, rem - 1, s);\n        int diff = 0, same = 0;\n        for (int j = i; j < n; j++) {\n            if (s.charAt(j) == s.charAt(i)) same++;\n            else diff++;\n            if (diff > rem) break;\n            int len = 1 + (same == 1 ? 0 : (same < 10 ? 1 : (same < 100 ? 2 : 3)));\n            res = Math.min(res, len + dp(j + 1, rem - diff, s));\n        }\n        return memo[i][rem] = res;\n    }\n    public int getLengthOfOptimalCompression(String s, int k) {\n        n = s.length();\n        memo = new int[n + 1][k + 1];\n        for (int[] row : memo) Arrays.fill(row, -1);\n        return dp(0, k, s);\n    }\n}",
+      "approach": "2D memoized dynamic programming over index and remaining deletions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var getLengthOfOptimalCompression = function(s, k) {\n    const n = s.length;\n    const memo = Array.from({ length: n + 1 }, () => new Array(k + 1).fill(-1));\n    function dp(i, rem) {\n        if (rem < 0) return 1e9;\n        if (i >= n || n - i <= rem) return 0;\n        if (memo[i][rem] !== -1) return memo[i][rem];\n        let res = dp(i + 1, rem - 1);\n        let diff = 0, same = 0;\n        for (let j = i; j < n; j++) {\n            if (s[j] === s[i]) same++;\n            else diff++;\n            if (diff > rem) break;\n            const len = 1 + (same === 1 ? 0 : (same < 10 ? 1 : (same < 100 ? 2 : 3)));\n            res = Math.min(res, len + dp(j + 1, rem - diff));\n        }\n        return memo[i][rem] = res;\n    }\n    return dp(0, k);\n};",
+      "approach": "2D memoized dynamic programming over index and remaining deletions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

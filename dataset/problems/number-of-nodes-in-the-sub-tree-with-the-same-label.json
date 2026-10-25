@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-nodes-in-the-sub-tree-with-the-same-label",
+  "number": 1519,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bottom-Up Label Aggregation",
+      "text": "In a tree, the count of a label in a subtree is the sum of occurrences of that label across all its child subtrees plus one if the root itself matches."
+    },
+    {
+      "level": 2,
+      "title": "Postorder Frequency Merging",
+      "text": "Traverse the tree from leaves upward. Each node receives frequency arrays of size 26 from its children and sums them element-wise."
+    },
+    {
+      "level": 3,
+      "title": "Record Node Label Count",
+      "text": "After summing child frequencies, increment the count for the current nodes label, record it in the answer array, and return the aggregated frequency table."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def countSubTrees(self, n: int, edges: list[list[int]], labels: str) -> list[int]:\n        import sys\n        sys.setrecursionlimit(200000)\n        graph = [[] for _ in range(n)]\n        for u, v in edges:\n            graph[u].append(v)\n            graph[v].append(u)\n        ans = [0] * n\n        def dfs(u, parent):\n            counts = [0] * 26\n            u_label = ord(labels[u]) - ord(\"a\")\n            counts[u_label] = 1\n            for v in graph[u]:\n                if v != parent:\n                    child_counts = dfs(v, u)\n                    for i in range(26):\n                        counts[i] += child_counts[i]\n            ans[u] = counts[u_label]\n            return counts\n        dfs(0, -1)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(26 * N)",
+    "space": "O(26 * N)",
+    "variables": [
+      "N: number of nodes",
+      "26: alphabet size"
+    ],
+    "whyNaiveFails": "Running a separate traversal per node takes O(N^2) time, which times out for N = 100000.",
+    "spaceTimeTradeoff": "A single bottom-up postorder pass passing 26-element frequency arrays takes O(26 * N) time.",
+    "interviewerExpectation": "Candidate computes answers in postorder traversal returning child frequency distributions.",
+    "notes": "Graph is given as undirected edge list with tree root at node 0."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def countSubTrees(self, n: int, edges: list[list[int]], labels: str) -> list[int]:\n        import sys\n        sys.setrecursionlimit(200000)\n        graph = [[] for _ in range(n)]\n        for u, v in edges:\n            graph[u].append(v)\n            graph[v].append(u)\n        ans = [0] * n\n        def dfs(u, parent):\n            counts = [0] * 26\n            u_label = ord(labels[u]) - ord(\"a\")\n            counts[u_label] = 1\n            for v in graph[u]:\n                if v != parent:\n                    child_counts = dfs(v, u)\n                    for i in range(26):\n                        counts[i] += child_counts[i]\n            ans[u] = counts[u_label]\n            return counts\n        dfs(0, -1)\n        return ans",
+      "approach": "Bottom-up postorder tree traversal aggregating 26-alphabet frequency counts",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <string>\n\nclass Solution {\n    std::vector<int> ans;\n    std::vector<int> dfs(int u, int parent, const std::vector<std::vector<int>>& graph, const std::string& labels) {\n        std::vector<int> counts(26, 0);\n        int uLabel = labels[u] - 'a';\n        counts[uLabel] = 1;\n        for (int v : graph[u]) {\n            if (v != parent) {\n                auto childCounts = dfs(v, u, graph, labels);\n                for (int i = 0; i < 26; ++i) counts[i] += childCounts[i];\n            }\n        }\n        ans[u] = counts[uLabel];\n        return counts;\n    }\npublic:\n    std::vector<int> countSubTrees(int n, std::vector<std::vector<int>>& edges, std::string labels) {\n        std::vector<std::vector<int>> graph(n);\n        for (const auto& e : edges) {\n            graph[e[0]].push_back(e[1]);\n            graph[e[1]].push_back(e[0]);\n        }\n        ans.assign(n, 0);\n        dfs(0, -1, graph, labels);\n        return ans;\n    }\n};",
+      "approach": "Bottom-up postorder tree traversal aggregating 26-alphabet frequency counts",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    int[] ans;\n    private int[] dfs(int u, int parent, List<Integer>[] graph, String labels) {\n        int[] counts = new int[26];\n        int uLabel = labels.charAt(u) - 'a';\n        counts[uLabel] = 1;\n        for (int v : graph[u]) {\n            if (v != parent) {\n                int[] childCounts = dfs(v, u, graph, labels);\n                for (int i = 0; i < 26; i++) counts[i] += childCounts[i];\n            }\n        }\n        ans[u] = counts[uLabel];\n        return counts;\n    }\n    public int[] countSubTrees(int n, int[][] edges, String labels) {\n        List<Integer>[] graph = new ArrayList[n];\n        for (int i = 0; i < n; i++) graph[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            graph[e[0]].add(e[1]);\n            graph[e[1]].add(e[0]);\n        }\n        ans = new int[n];\n        dfs(0, -1, graph, labels);\n        return ans;\n    }\n}",
+      "approach": "Bottom-up postorder tree traversal aggregating 26-alphabet frequency counts",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var countSubTrees = function(n, edges, labels) {\n    const graph = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        graph[u].push(v);\n        graph[v].push(u);\n    }\n    const ans = new Array(n).fill(0);\n    function dfs(u, parent) {\n        const counts = new Array(26).fill(0);\n        const uLabel = labels.charCodeAt(u) - 97;\n        counts[uLabel] = 1;\n        for (const v of graph[u]) {\n            if (v !== parent) {\n                const childCounts = dfs(v, u);\n                for (let i = 0; i < 26; i++) counts[i] += childCounts[i];\n            }\n        }\n        ans[u] = counts[uLabel];\n        return counts;\n    }\n    dfs(0, -1);\n    return ans;\n};",
+      "approach": "Bottom-up postorder tree traversal aggregating 26-alphabet frequency counts",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

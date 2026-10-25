@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-possible-integer-after-at-most-k-adjacent-swaps-on-digits",
+  "number": 1505,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Greedy Leftmost Digits",
+      "text": "To minimize an integer, place the smallest possible digit as far left as possible."
+    },
+    {
+      "level": 2,
+      "title": "Digit Candidate Queue",
+      "text": "Maintain queues storing original indices for each digit 0 through 9."
+    },
+    {
+      "level": 3,
+      "title": "Binary Indexed Tree Shift Tracking",
+      "text": "When moving a digit to the current position, calculate its actual displacement by querying how many preceding digits were already shifted."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Fenwick:\n    def __init__(self, n):\n        self.n = n\n        self.tree = [0] * (n + 1)\n    def add(self, i, delta):\n        i += 1\n        while i <= self.n:\n            self.tree[i] += delta\n            i += i & (-i)\n    def query(self, i):\n        i += 1\n        s = 0\n        while i > 0:\n            s += self.tree[i]\n            i -= i & (-i)\n        return s\n\nclass Solution:\n    def minInteger(self, num: str, k: int) -> str:\n        from collections import deque\n        n = len(num)\n        pos = [deque() for _ in range(10)]\n        for i, ch in enumerate(num):\n            pos[int(ch)].append(i)\n        bit = Fenwick(n)\n        res = []\n        for _ in range(n):\n            for d in range(10):\n                if pos[d]:\n                    orig = pos[d][0]\n                    cost = orig - bit.query(orig)\n                    if cost <= k:\n                        k -= cost\n                        bit.add(orig, 1)\n                        pos[d].popleft()\n                        res.append(str(d))\n                        break\n        return \"\".join(res)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of digits in num",
+      "K: budget of swaps"
+    ],
+    "whyNaiveFails": "Simulating physical array shifts takes O(N^2) time, which times out for N = 30000.",
+    "spaceTimeTradeoff": "A Fenwick tree computes dynamic shifted index offsets in O(log N) per chosen digit.",
+    "interviewerExpectation": "Candidate formulates greedy digit selection coupled with a Fenwick tree to track prefix deletions efficiently.",
+    "notes": "Digits checked in ascending order 0 to 9."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Fenwick:\n    def __init__(self, n):\n        self.n = n\n        self.tree = [0] * (n + 1)\n    def add(self, i, delta):\n        i += 1\n        while i <= self.n:\n            self.tree[i] += delta\n            i += i & (-i)\n    def query(self, i):\n        i += 1\n        s = 0\n        while i > 0:\n            s += self.tree[i]\n            i -= i & (-i)\n        return s\n\nclass Solution:\n    def minInteger(self, num: str, k: int) -> str:\n        from collections import deque\n        n = len(num)\n        pos = [deque() for _ in range(10)]\n        for i, ch in enumerate(num):\n            pos[int(ch)].append(i)\n        bit = Fenwick(n)\n        res = []\n        for _ in range(n):\n            for d in range(10):\n                if pos[d]:\n                    orig = pos[d][0]\n                    cost = orig - bit.query(orig)\n                    if cost <= k:\n                        k -= cost\n                        bit.add(orig, 1)\n                        pos[d].popleft()\n                        res.append(str(d))\n                        break\n        return \"\".join(res)",
+      "approach": "Greedy digit scanning with Fenwick tree displacement offset tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <string>\n#include <vector>\n#include <queue>\n\nclass Fenwick {\n    int n;\n    std::vector<int> tree;\npublic:\n    Fenwick(int n) : n(n), tree(n + 1, 0) {}\n    void add(int i, int delta) {\n        for (++i; i <= n; i += i & -i) tree[i] += delta;\n    }\n    int query(int i) {\n        int s = 0;\n        for (++i; i > 0; i -= i & -i) s += tree[i];\n        return s;\n    }\n};\n\nclass Solution {\npublic:\n    std::string minInteger(std::string num, int k) {\n        int n = num.size();\n        std::vector<std::queue<int>> pos(10);\n        for (int i = 0; i < n; ++i) pos[num[i] - '0'].push(i);\n        Fenwick bit(n);\n        std::string res = \"\";\n        for (int i = 0; i < n; ++i) {\n            for (int d = 0; d < 10; ++d) {\n                if (!pos[d].empty()) {\n                    int orig = pos[d].front();\n                    int cost = orig - bit.query(orig);\n                    if (cost <= k) {\n                        k -= cost;\n                        bit.add(orig, 1);\n                        pos[d].pop();\n                        res += std::to_string(d);\n                        break;\n                    }\n                }\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "Greedy digit scanning with Fenwick tree displacement offset tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class Fenwick {\n        int n;\n        int[] tree;\n        Fenwick(int n) { this.n = n; tree = new int[n + 1]; }\n        void add(int i, int delta) {\n            for (++i; i <= n; i += i & -i) tree[i] += delta;\n        }\n        int query(int i) {\n            int s = 0;\n            for (++i; i > 0; i -= i & -i) s += tree[i];\n            return s;\n        }\n    }\n    public String minInteger(String num, int k) {\n        int n = num.length();\n        Queue<Integer>[] pos = new Queue[10];\n        for (int i = 0; i < 10; i++) pos[i] = new ArrayDeque<>();\n        for (int i = 0; i < n; i++) pos[num.charAt(i) - '0'].add(i);\n        Fenwick bit = new Fenwick(n);\n        StringBuilder res = new StringBuilder();\n        for (int i = 0; i < n; i++) {\n            for (int d = 0; d < 10; d++) {\n                if (!pos[d].isEmpty()) {\n                    int orig = pos[d].peek();\n                    int cost = orig - bit.query(orig);\n                    if (cost <= k) {\n                        k -= cost;\n                        bit.add(orig, 1);\n                        pos[d].poll();\n                        res.append(d);\n                        break;\n                    }\n                }\n            }\n        }\n        return res.toString();\n    }\n}",
+      "approach": "Greedy digit scanning with Fenwick tree displacement offset tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "class Fenwick {\n    constructor(n) {\n        this.n = n;\n        this.tree = new Array(n + 1).fill(0);\n    }\n    add(i, delta) {\n        for (++i; i <= this.n; i += i & -i) this.tree[i] += delta;\n    }\n    query(i) {\n        let s = 0;\n        for (++i; i > 0; i -= i & -i) s += this.tree[i];\n        return s;\n    }\n}\n\nvar minInteger = function(num, k) {\n    const n = num.length;\n    const pos = Array.from({ length: 10 }, () => []);\n    for (let i = 0; i < n; i++) pos[num.charCodeAt(i) - 48].push(i);\n    const bit = new Fenwick(n);\n    const res = [];\n    for (let i = 0; i < n; i++) {\n        for (let d = 0; d < 10; d++) {\n            if (pos[d].length > 0) {\n                const orig = pos[d][0];\n                const cost = orig - bit.query(orig);\n                if (cost <= k) {\n                    k -= cost;\n                    bit.add(orig, 1);\n                    pos[d].shift();\n                    res.push(d);\n                    break;\n                }\n            }\n        }\n    }\n    return res.join(\"\");\n};",
+      "approach": "Greedy digit scanning with Fenwick tree displacement offset tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

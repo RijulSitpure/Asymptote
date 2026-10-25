@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-number-of-non-overlapping-substrings",
+  "number": 1520,
+  "category": "Algorithms",
+  "patterns": [
+    "greedy-interval-scheduling"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Full Character Extent",
+      "text": "Any valid substring containing character c must contain all occurrences of character c."
+    },
+    {
+      "level": 2,
+      "title": "Interval Expansion",
+      "text": "Record first and last occurrences of each character. For each starting character, expand its interval until all characters within it are completely encompassed."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Interval Selection",
+      "text": "Sort all valid expanded intervals by their ending indices. Greedily pick non-overlapping intervals with earliest end."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def maxNumOfSubstrings(self, s: str) -> list[str]:\n        first = {}\n        last = {}\n        for i, ch in enumerate(s):\n            if ch not in first:\n                first[ch] = i\n            last[ch] = i\n        intervals = []\n        for ch in first:\n            l = first[ch]\n            r = last[ch]\n            valid = True\n            i = l\n            while i <= r:\n                c = s[i]\n                if first[c] < l:\n                    valid = False\n                    break\n                r = max(r, last[c])\n                i += 1\n            if valid:\n                intervals.append((r, l))\n        intervals.sort()\n        ans = []\n        prev_r = -1\n        for r, l in intervals:\n            if l > prev_r:\n                ans.append(s[l:r + 1])\n                prev_r = r\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(26 * N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of string s",
+      "26: unique characters count"
+    ],
+    "whyNaiveFails": "Checking arbitrary substring combinations is combinatorial.",
+    "spaceTimeTradeoff": "There are at most 26 valid minimal intervals, expanding each takes O(N), and greedy interval scheduling takes O(26 log 26).",
+    "interviewerExpectation": "Candidate formalizes valid substrings as self-contained intervals and applies earliest-deadline interval scheduling.",
+    "notes": "Maximizes number of substrings first, then minimizes total length."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maxNumOfSubstrings(self, s: str) -> list[str]:\n        first = {}\n        last = {}\n        for i, ch in enumerate(s):\n            if ch not in first:\n                first[ch] = i\n            last[ch] = i\n        intervals = []\n        for ch in first:\n            l = first[ch]\n            r = last[ch]\n            valid = True\n            i = l\n            while i <= r:\n                c = s[i]\n                if first[c] < l:\n                    valid = False\n                    break\n                r = max(r, last[c])\n                i += 1\n            if valid:\n                intervals.append((r, l))\n        intervals.sort()\n        ans = []\n        prev_r = -1\n        for r, l in intervals:\n            if l > prev_r:\n                ans.append(s[l:r + 1])\n                prev_r = r\n        return ans",
+      "approach": "Character interval expansion followed by greedy interval scheduling",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <string>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<std::string> maxNumOfSubstrings(std::string s) {\n        std::vector<int> first(26, -1), last(26, -1);\n        for (int i = 0; i < (int)s.size(); ++i) {\n            int c = s[i] - 'a';\n            if (first[c] == -1) first[c] = i;\n            last[c] = i;\n        }\n        std::vector<std::pair<int, int>> intervals;\n        for (int c = 0; c < 26; ++c) {\n            if (first[c] == -1) continue;\n            int l = first[c], r = last[c];\n            bool valid = true;\n            for (int i = l; i <= r; ++i) {\n                int ch = s[i] - 'a';\n                if (first[ch] < l) {\n                    valid = false;\n                    break;\n                }\n                r = std::max(r, last[ch]);\n            }\n            if (valid) intervals.push_back({r, l});\n        }\n        std::sort(intervals.begin(), intervals.end());\n        std::vector<std::string> ans;\n        int prevR = -1;\n        for (auto& [r, l] : intervals) {\n            if (l > prevR) {\n                ans.push_back(s.substr(l, r - l + 1));\n                prevR = r;\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "Character interval expansion followed by greedy interval scheduling",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public List<String> maxNumOfSubstrings(String s) {\n        int[] first = new int[26];\n        int[] last = new int[26];\n        Arrays.fill(first, -1);\n        for (int i = 0; i < s.length(); i++) {\n            int c = s.charAt(i) - 'a';\n            if (first[c] == -1) first[c] = i;\n            last[c] = i;\n        }\n        List<int[]> intervals = new ArrayList<>();\n        for (int c = 0; c < 26; c++) {\n            if (first[c] == -1) continue;\n            int l = first[c], r = last[c];\n            boolean valid = true;\n            for (int i = l; i <= r; i++) {\n                int ch = s.charAt(i) - 'a';\n                if (first[ch] < l) {\n                    valid = false;\n                    break;\n                }\n                r = Math.max(r, last[ch]);\n            }\n            if (valid) intervals.add(new int[]{r, l});\n        }\n        intervals.sort((a, b) -> Integer.compare(a[0], b[0]));\n        List<String> ans = new ArrayList<>();\n        int prevR = -1;\n        for (int[] inv : intervals) {\n            if (inv[1] > prevR) {\n                ans.add(s.substring(inv[1], inv[0] + 1));\n                prevR = inv[0];\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "Character interval expansion followed by greedy interval scheduling",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxNumOfSubstrings = function(s) {\n    const first = new Array(26).fill(-1);\n    const last = new Array(26).fill(-1);\n    for (let i = 0; i < s.length; i++) {\n        const c = s.charCodeAt(i) - 97;\n        if (first[c] === -1) first[c] = i;\n        last[c] = i;\n    }\n    const intervals = [];\n    for (let c = 0; c < 26; c++) {\n        if (first[c] === -1) continue;\n        let l = first[c], r = last[c];\n        let valid = true;\n        for (let i = l; i <= r; i++) {\n            const ch = s.charCodeAt(i) - 97;\n            if (first[ch] < l) {\n                valid = false;\n                break;\n            }\n            r = Math.max(r, last[ch]);\n        }\n        if (valid) intervals.push([r, l]);\n    }\n    intervals.sort((a, b) => a[0] - b[0]);\n    const ans = [];\n    let prevR = -1;\n    for (const [r, l] of intervals) {\n        if (l > prevR) {\n            ans.push(s.substring(l, r + 1));\n            prevR = r;\n        }\n    }\n    return ans;\n};",
+      "approach": "Character interval expansion followed by greedy interval scheduling",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

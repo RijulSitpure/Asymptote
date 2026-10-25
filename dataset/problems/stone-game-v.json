@@ -1,0 +1,78 @@
+{
+  "slug": "stone-game-v",
+  "number": 1563,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-interval"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Interval Partitioning",
+      "text": "For subarray stoneValue[i..j], Alice partitions it into two non-empty segments stoneValue[i..k] and stoneValue[k+1..j]."
+    },
+    {
+      "level": 2,
+      "title": "Bobs Elimination Rule",
+      "text": "Bob discards the segment with larger sum. If sums are equal, Alice chooses which segment to retain."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Sum Transitions",
+      "text": "Compute prefix sums to calculate segment sums in O(1). Transition dp(i, j) maximizes retained row sum plus child subproblem score."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nclass Solution:\n    def stoneGameV(self, stoneValue: list[int]) -> int:\n        n = len(stoneValue)\n        pref = [0] * (n + 1)\n        for i in range(n):\n            pref[i + 1] = pref[i] + stoneValue[i]\n        memo = {}\n        def dp(i, j):\n            if i == j:\n                return 0\n            state = (i, j)\n            if state in memo:\n                return memo[state]\n            ans = 0\n            for k in range(i, j):\n                left = pref[k + 1] - pref[i]\n                right = pref[j + 1] - pref[k + 1]\n                if left < right:\n                    ans = max(ans, left + dp(i, k))\n                elif right < left:\n                    ans = max(ans, right + dp(k + 1, j))\n                else:\n                    ans = max(ans, left + max(dp(i, k), dp(k + 1, j)))\n            memo[state] = ans\n            return ans\n        return dp(0, n - 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^3)",
+    "space": "O(N^2)",
+    "variables": [
+      "N: length of stoneValue (N <= 500)"
+    ],
+    "whyNaiveFails": "Evaluating game configurations recursively without memoization is exponential.",
+    "spaceTimeTradeoff": "Interval DP memoizes O(N^2) subsegments, with O(N) split checks per state.",
+    "interviewerExpectation": "Candidate formalizes interval DP with prefix sum range queries.",
+    "notes": "Can also be optimized to O(N^2) using range maximum queries."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def stoneGameV(self, stoneValue: list[int]) -> int:\n        n = len(stoneValue)\n        pref = [0] * (n + 1)\n        for i in range(n):\n            pref[i + 1] = pref[i] + stoneValue[i]\n        memo = {}\n        def dp(i, j):\n            if i == j:\n                return 0\n            state = (i, j)\n            if state in memo:\n                return memo[state]\n            ans = 0\n            for k in range(i, j):\n                left = pref[k + 1] - pref[i]\n                right = pref[j + 1] - pref[k + 1]\n                if left < right:\n                    ans = max(ans, left + dp(i, k))\n                elif right < left:\n                    ans = max(ans, right + dp(k + 1, j))\n                else:\n                    ans = max(ans, left + max(dp(i, k), dp(k + 1, j)))\n            memo[state] = ans\n            return ans\n        return dp(0, n - 1)",
+      "approach": "Interval dynamic programming comparing prefix sums and maximizing retained segment",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n#include <cstring>\n\nclass Solution {\n    int memo[505][505];\n    int pref[505];\n    int dp(int i, int j) {\n        if (i == j) return 0;\n        if (memo[i][j] != -1) return memo[i][j];\n        int ans = 0;\n        for (int k = i; k < j; ++k) {\n            int left = pref[k + 1] - pref[i];\n            int right = pref[j + 1] - pref[k + 1];\n            if (left < right) {\n                ans = std::max(ans, left + dp(i, k));\n            } else if (right < left) {\n                ans = std::max(ans, right + dp(k + 1, j));\n            } else {\n                ans = std::max(ans, left + std::max(dp(i, k), dp(k + 1, j)));\n            }\n        }\n        return memo[i][j] = ans;\n    }\npublic:\n    int stoneGameV(std::vector<int>& stoneValue) {\n        int n = stoneValue.size();\n        std::memset(memo, -1, sizeof(memo));\n        pref[0] = 0;\n        for (int i = 0; i < n; ++i) pref[i + 1] = pref[i] + stoneValue[i];\n        return dp(0, n - 1);\n    }\n};",
+      "approach": "Interval dynamic programming comparing prefix sums and maximizing retained segment",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    int[][] memo;\n    int[] pref;\n    private int dp(int i, int j) {\n        if (i == j) return 0;\n        if (memo[i][j] != -1) return memo[i][j];\n        int ans = 0;\n        for (int k = i; k < j; k++) {\n            int left = pref[k + 1] - pref[i];\n            int right = pref[j + 1] - pref[k + 1];\n            if (left < right) {\n                ans = Math.max(ans, left + dp(i, k));\n            } else if (right < left) {\n                ans = Math.max(ans, right + dp(k + 1, j));\n            } else {\n                ans = Math.max(ans, left + Math.max(dp(i, k), dp(k + 1, j)));\n            }\n        }\n        return memo[i][j] = ans;\n    }\n    public int stoneGameV(int[] stoneValue) {\n        int n = stoneValue.length;\n        memo = new int[n][n];\n        for (int[] row : memo) Arrays.fill(row, -1);\n        pref = new int[n + 1];\n        for (int i = 0; i < n; i++) pref[i + 1] = pref[i] + stoneValue[i];\n        return dp(0, n - 1);\n    }\n}",
+      "approach": "Interval dynamic programming comparing prefix sums and maximizing retained segment",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var stoneGameV = function(stoneValue) {\n    const n = stoneValue.length;\n    const memo = Array.from({ length: n }, () => new Int32Array(n).fill(-1));\n    const pref = new Int32Array(n + 1);\n    for (let i = 0; i < n; i++) pref[i + 1] = pref[i] + stoneValue[i];\n    function dp(i, j) {\n        if (i === j) return 0;\n        if (memo[i][j] !== -1) return memo[i][j];\n        let ans = 0;\n        for (let k = i; k < j; k++) {\n            const left = pref[k + 1] - pref[i];\n            const right = pref[j + 1] - pref[k + 1];\n            if (left < right) {\n                ans = Math.max(ans, left + dp(i, k));\n            } else if (right < left) {\n                ans = Math.max(ans, right + dp(k + 1, j));\n            } else {\n                ans = Math.max(ans, left + Math.max(dp(i, k), dp(k + 1, j)));\n            }\n        }\n        return memo[i][j] = ans;\n    }\n    return dp(0, n - 1);\n};",
+      "approach": "Interval dynamic programming comparing prefix sums and maximizing retained segment",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

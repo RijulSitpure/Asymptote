@@ -1,0 +1,79 @@
+{
+  "slug": "path-with-maximum-probability",
+  "number": 1514,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Multiplicative Path Probability",
+      "text": "The probability of a path is the product of its edge probabilities. We wish to maximize this product."
+    },
+    {
+      "level": 2,
+      "title": "Dijkstra Variation",
+      "text": "Adapt shortest path algorithms using a max-priority structure keyed on path probability instead of additive distance."
+    },
+    {
+      "level": 3,
+      "title": "Early Termination",
+      "text": "When the destination node is extracted from the priority structure, its recorded probability is maximal."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def maxProbability(self, n: int, edges: list[list[int]], succProb: list[float], start_node: int, end_node: int) -> float:\n        graph = [[] for _ in range(n)]\n        for (u, v), p in zip(edges, succProb):\n            graph[u].append((v, p))\n            graph[v].append((u, p))\n        prob = [0.0] * n\n        prob[start_node] = 1.0\n        pq = [(-1.0, start_node)]\n        while pq:\n            p_neg, u = heapq.heappop(pq)\n            cur_p = -p_neg\n            if u == end_node:\n                return cur_p\n            if cur_p < prob[u]:\n                continue\n            for v, weight in graph[u]:\n                if cur_p * weight > prob[v]:\n                    prob[v] = cur_p * weight\n                    heapq.heappush(pq, (-prob[v], v))\n        return 0.0\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((V + E) log V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes (n)",
+      "E: number of edges"
+    ],
+    "whyNaiveFails": "Unordered graph traversals fail to find optimal multiplicative paths on cyclic graphs.",
+    "spaceTimeTradeoff": "Max-priority queue explores paths in descending probability order in O((V + E) log V).",
+    "interviewerExpectation": "Candidate adapts Dijkstras algorithm by maximizing edge probability products.",
+    "notes": "Returns 0.0 if destination unreachable."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass Solution:\n    def maxProbability(self, n: int, edges: list[list[int]], succProb: list[float], start_node: int, end_node: int) -> float:\n        graph = [[] for _ in range(n)]\n        for (u, v), p in zip(edges, succProb):\n            graph[u].append((v, p))\n            graph[v].append((u, p))\n        prob = [0.0] * n\n        prob[start_node] = 1.0\n        pq = [(-1.0, start_node)]\n        while pq:\n            p_neg, u = heapq.heappop(pq)\n            cur_p = -p_neg\n            if u == end_node:\n                return cur_p\n            if cur_p < prob[u]:\n                continue\n            for v, weight in graph[u]:\n                if cur_p * weight > prob[v]:\n                    prob[v] = cur_p * weight\n                    heapq.heappush(pq, (-prob[v], v))\n        return 0.0",
+      "approach": "Dijkstra maximum probability path using max-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n#include <utility>\n\nclass Solution {\npublic:\n    double maxProbability(int n, std::vector<std::vector<int>>& edges, std::vector<double>& succProb, int start_node, int end_node) {\n        std::vector<std::vector<std::pair<int, double>>> graph(n);\n        for (size_t i = 0; i < edges.size(); ++i) {\n            int u = edges[i][0], v = edges[i][1];\n            double p = succProb[i];\n            graph[u].push_back({v, p});\n            graph[v].push_back({u, p});\n        }\n        std::vector<double> prob(n, 0.0);\n        prob[start_node] = 1.0;\n        std::priority_queue<std::pair<double, int>> pq;\n        pq.push({1.0, start_node});\n        while (!pq.empty()) {\n            auto [curP, u] = pq.top();\n            pq.pop();\n            if (u == end_node) return curP;\n            if (curP < prob[u]) continue;\n            for (auto& [v, weight] : graph[u]) {\n                if (curP * weight > prob[v]) {\n                    prob[v] = curP * weight;\n                    pq.push({prob[v], v});\n                }\n            }\n        }\n        return 0.0;\n    }\n};",
+      "approach": "Dijkstra maximum probability path using max-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class Node {\n        int to;\n        double p;\n        Node(int to, double p) { this.to = to; this.p = p; }\n    }\n    public double maxProbability(int n, int[][] edges, double[] succProb, int start_node, int end_node) {\n        List<Node>[] graph = new ArrayList[n];\n        for (int i = 0; i < n; i++) graph[i] = new ArrayList<>();\n        for (int i = 0; i < edges.length; i++) {\n            int u = edges[i][0], v = edges[i][1];\n            double p = succProb[i];\n            graph[u].add(new Node(v, p));\n            graph[v].add(new Node(u, p));\n        }\n        double[] prob = new double[n];\n        prob[start_node] = 1.0;\n        PriorityQueue<Node> pq = new PriorityQueue<>((a, b) -> Double.compare(b.p, a.p));\n        pq.add(new Node(start_node, 1.0));\n        while (!pq.isEmpty()) {\n            Node cur = pq.poll();\n            if (cur.to == end_node) return cur.p;\n            if (cur.p < prob[cur.to]) continue;\n            for (Node nxt : graph[cur.to]) {\n                if (cur.p * nxt.p > prob[nxt.to]) {\n                    prob[nxt.to] = cur.p * nxt.p;\n                    pq.add(new Node(nxt.to, prob[nxt.to]));\n                }\n            }\n        }\n        return 0.0;\n    }\n}",
+      "approach": "Dijkstra maximum probability path using max-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxProbability = function(n, edges, succProb, start_node, end_node) {\n    const graph = Array.from({ length: n }, () => []);\n    for (let i = 0; i < edges.length; i++) {\n        const [u, v] = edges[i];\n        const p = succProb[i];\n        graph[u].push([v, p]);\n        graph[v].push([u, p]);\n    }\n    const prob = new Array(n).fill(0.0);\n    prob[start_node] = 1.0;\n    const queue = [[1.0, start_node]];\n    while (queue.length > 0) {\n        queue.sort((a, b) => b[0] - a[0]);\n        const [curP, u] = queue.shift();\n        if (u === end_node) return curP;\n        if (curP < prob[u]) continue;\n        for (const [v, weight] of graph[u]) {\n            if (curP * weight > prob[v]) {\n                prob[v] = curP * weight;\n                queue.push([prob[v], v]);\n            }\n        }\n    }\n    return 0.0;\n};",
+      "approach": "Dijkstra maximum probability path using max-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
