@@ -1,0 +1,78 @@
+{
+  "slug": "maximize-score-after-n-operations",
+  "number": 1799,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bitmask State Representation",
+      "text": "Because 2n <= 14, represent the subset of selected elements as a bitmask of length 2n."
+    },
+    {
+      "level": 2,
+      "title": "Derive Operation Round",
+      "text": "The current operation round number equals (count of set bits in mask) / 2 + 1."
+    },
+    {
+      "level": 3,
+      "title": "Pair Unused Elements",
+      "text": "Try all pairs of unused indices (i, j); transition to new state with score increment round * gcd(nums[i], nums[j])."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport math\n\nclass Solution:\n    def maxScore(self, nums: list[int]) -> int:\n        n = len(nums)\n        memo = {}\n\n        def dp(mask: int) -> int:\n            if mask in memo:\n                return memo[mask]\n            k = bin(mask).count('1') // 2 + 1\n            if k > n // 2:\n                return 0\n\n            res = 0\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    for j in range(i + 1, n):\n                        if not (mask & (1 << j)):\n                            next_mask = mask | (1 << i) | (1 << j)\n                            gain = k * math.gcd(nums[i], nums[j])\n                            res = max(res, gain + dp(next_mask))\n            memo[mask] = res\n            return res\n\n        return dp(0)\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(2^(2n) * (2n)^2)",
+    "space": "O(2^(2n))",
+    "variables": [
+      "2n is length of nums (<= 14)"
+    ],
+    "whyNaiveFails": "Full permutations explore (2n)! / 2^n states.",
+    "spaceTimeTradeoff": "Bitmask dynamic programming memoizes 2^14 = 16,384 states, evaluating each in O((2n)^2) time.",
+    "interviewerExpectation": "Candidate uses bitmask DP with gcd precomputation over 2n elements.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask dynamic programming with GCD score compounding",
+      "code": "import math\n\nclass Solution:\n    def maxScore(self, nums: list[int]) -> int:\n        n = len(nums)\n        memo = {}\n\n        def dp(mask: int) -> int:\n            if mask in memo:\n                return memo[mask]\n            k = bin(mask).count('1') // 2 + 1\n            if k > n // 2:\n                return 0\n\n            res = 0\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    for j in range(i + 1, n):\n                        if not (mask & (1 << j)):\n                            next_mask = mask | (1 << i) | (1 << j)\n                            gain = k * math.gcd(nums[i], nums[j])\n                            res = max(res, gain + dp(next_mask))\n            memo[mask] = res\n            return res\n\n        return dp(0)"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask dynamic programming with GCD score compounding",
+      "code": "#include <vector>\n#include <numeric>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\n    int memo[1 << 14];\n\n    int solve(int mask, const vector<int>& nums, int n) {\n        if (memo[mask] != -1) return memo[mask];\n        int k = __builtin_popcount(mask) / 2 + 1;\n        if (k > n / 2) return 0;\n\n        int res = 0;\n        for (int i = 0; i < n; ++i) {\n            if (!(mask & (1 << i))) {\n                for (int j = i + 1; j < n; ++j) {\n                    if (!(mask & (1 << j))) {\n                        int next_mask = mask | (1 << i) | (1 << j);\n                        int gain = k * std::gcd(nums[i], nums[j]);\n                        res = max(res, gain + solve(next_mask, nums, n));\n                    }\n                }\n            }\n        }\n        return memo[mask] = res;\n    }\n\npublic:\n    int maxScore(vector<int>& nums) {\n        fill(memo, memo + (1 << 14), -1);\n        return solve(0, nums, nums.size());\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask dynamic programming with GCD score compounding",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    private int[] memo = new int[1 << 14];\n\n    private int gcd(int a, int b) {\n        return b == 0 ? a : gcd(b, a % b);\n    }\n\n    private int solve(int mask, int[] nums, int n) {\n        if (memo[mask] != -1) return memo[mask];\n        int k = Integer.bitCount(mask) / 2 + 1;\n        if (k > n / 2) return 0;\n\n        int res = 0;\n        for (int i = 0; i < n; ++i) {\n            if ((mask & (1 << i)) == 0) {\n                for (int j = i + 1; j < n; ++j) {\n                    if ((mask & (1 << j)) == 0) {\n                        int nextMask = mask | (1 << i) | (1 << j);\n                        int gain = k * gcd(nums[i], nums[j]);\n                        res = Math.max(res, gain + solve(nextMask, nums, n));\n                    }\n                }\n            }\n        }\n        return memo[mask] = res;\n    }\n\n    public int maxScore(int[] nums) {\n        Arrays.fill(memo, -1);\n        return solve(0, nums, nums.length);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bitmask dynamic programming with GCD score compounding",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar maxScore = function(nums) {\n    const n = nums.length;\n    const memo = Array(1 << n).fill(-1);\n\n    const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);\n\n    const popcount = (mask) => {\n        let count = 0;\n        while (mask > 0) {\n            count += mask & 1;\n            mask >>= 1;\n        }\n        return count;\n    };\n\n    function solve(mask) {\n        if (memo[mask] !== -1) return memo[mask];\n        const k = Math.floor(popcount(mask) / 2) + 1;\n        if (k > n / 2) return 0;\n\n        let res = 0;\n        for (let i = 0; i < n; ++i) {\n            if (!(mask & (1 << i))) {\n                for (let j = i + 1; j < n; ++j) {\n                    if (!(mask & (1 << j))) {\n                        const nextMask = mask | (1 << i) | (1 << j);\n                        const gain = k * gcd(nums[i], nums[j]);\n                        res = Math.max(res, gain + solve(nextMask));\n                    }\n                }\n            }\n        }\n        return memo[mask] = res;\n    }\n\n    return solve(0);\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

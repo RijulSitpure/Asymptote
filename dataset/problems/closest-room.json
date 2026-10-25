@@ -1,0 +1,79 @@
+{
+  "slug": "closest-room",
+  "number": 1847,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Offline Query Sorting by Size",
+      "text": "Sort queries and rooms in descending order of room size to incrementally activate rooms that meet minimum size constraints."
+    },
+    {
+      "level": 2,
+      "title": "Sorted Active ID Collection",
+      "text": "Store active room IDs in an ordered container to quickly find IDs nearest to the preferred room."
+    },
+    {
+      "level": 3,
+      "title": "Query Closest ID with Tie Breaking",
+      "text": "Use binary search in the ordered container to evaluate immediate floor and ceiling neighbors to preferred."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def closestRoom(self, rooms: list[list[int]], queries: list[list[int]]) -> list[int]:\n        rooms.sort(key=lambda x: -x[1])\n        indexed_queries = sorted([(q[1], q[0], i) for i, q in enumerate(queries)], reverse=True)\n\n        active = []\n        ans = [-1] * len(queries)\n        room_idx = 0\n        n = len(rooms)\n\n        for min_sz, pref, q_idx in indexed_queries:\n            while room_idx < n and rooms[room_idx][1] >= min_sz:\n                bisect.insort(active, rooms[room_idx][0])\n                room_idx += 1\n\n            if not active:\n                continue\n\n            idx = bisect.bisect_left(active, pref)\n            best_id = -1\n            min_dist = float('inf')\n\n            if idx < len(active):\n                min_dist = active[idx] - pref\n                best_id = active[idx]\n\n            if idx > 0:\n                dist_left = pref - active[idx - 1]\n                if dist_left <= min_dist:\n                    best_id = active[idx - 1]\n\n            ans[q_idx] = best_id\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((n + q) log n + q log q)",
+    "space": "O(n + q)",
+    "variables": [
+      "n is number of rooms",
+      "q is number of queries"
+    ],
+    "whyNaiveFails": "Scanning all rooms for each query takes O(n * q) operations, timing out for 10^5 elements.",
+    "spaceTimeTradeoff": "Offline descending size sorting with ordered set lookups resolves all queries in O((n + q) log n) time.",
+    "interviewerExpectation": "Candidate sorts queries offline and queries nearest active ID with binary search.",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query sorting with sorted list binary search",
+      "code": "import bisect\n\nclass Solution:\n    def closestRoom(self, rooms: list[list[int]], queries: list[list[int]]) -> list[int]:\n        rooms.sort(key=lambda x: -x[1])\n        indexed_queries = sorted([(q[1], q[0], i) for i, q in enumerate(queries)], reverse=True)\n\n        active = []\n        ans = [-1] * len(queries)\n        room_idx = 0\n        n = len(rooms)\n\n        for min_sz, pref, q_idx in indexed_queries:\n            while room_idx < n and rooms[room_idx][1] >= min_sz:\n                bisect.insort(active, rooms[room_idx][0])\n                room_idx += 1\n\n            if not active:\n                continue\n\n            idx = bisect.bisect_left(active, pref)\n            best_id = -1\n            min_dist = float('inf')\n\n            if idx < len(active):\n                min_dist = active[idx] - pref\n                best_id = active[idx]\n\n            if idx > 0:\n                dist_left = pref - active[idx - 1]\n                if dist_left <= min_dist:\n                    best_id = active[idx - 1]\n\n            ans[q_idx] = best_id\n\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query sorting with sorted set binary search",
+      "code": "class Solution {\npublic:\n    vector<int> closestRoom(vector<vector<int>>& rooms, vector<vector<int>>& queries) {\n        sort(rooms.begin(), rooms.end(), [](const auto& a, const auto& b) {\n            return a[1] > b[1];\n        });\n\n        int q = queries.size();\n        vector<vector<int>> iq(q);\n        for (int i = 0; i < q; ++i) {\n            iq[i] = {queries[i][1], queries[i][0], i};\n        }\n        sort(iq.begin(), iq.end(), [](const auto& a, const auto& b) {\n            return a[0] > b[0];\n        });\n\n        set<int> active;\n        vector<int> ans(q, -1);\n        int roomIdx = 0, n = rooms.size();\n\n        for (const auto& query : iq) {\n            int minSz = query[0], pref = query[1], qIdx = query[2];\n            while (roomIdx < n && rooms[roomIdx][1] >= minSz) {\n                active.insert(rooms[roomIdx][0]);\n                roomIdx++;\n            }\n            if (active.empty()) continue;\n\n            auto it = active.lower_bound(pref);\n            int bestId = -1, minDist = 1e9;\n            if (it != active.end()) {\n                minDist = *it - pref;\n                bestId = *it;\n            }\n            if (it != active.begin()) {\n                auto prevIt = prev(it);\n                int distLeft = pref - *prevIt;\n                if (distLeft <= minDist) {\n                    bestId = *prevIt;\n                }\n            }\n            ans[qIdx] = bestId;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query sorting with TreeSet binary search",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] closestRoom(int[][] rooms, int[][] queries) {\n        Arrays.sort(rooms, (a, b) -> Integer.compare(b[1], a[1]));\n        int q = queries.length;\n        int[][] iq = new int[q][3];\n        for (int i = 0; i < q; ++i) {\n            iq[i] = new int[]{queries[i][1], queries[i][0], i};\n        }\n        Arrays.sort(iq, (a, b) -> Integer.compare(b[0], a[0]));\n\n        TreeSet<Integer> active = new TreeSet<>();\n        int[] ans = new int[q];\n        Arrays.fill(ans, -1);\n        int roomIdx = 0, n = rooms.length;\n\n        for (int[] query : iq) {\n            int minSz = query[0], pref = query[1], qIdx = query[2];\n            while (roomIdx < n && rooms[roomIdx][1] >= minSz) {\n                active.add(rooms[roomIdx][0]);\n                roomIdx++;\n            }\n            if (active.isEmpty()) continue;\n\n            Integer floor = active.floor(pref);\n            Integer ceil = active.ceiling(pref);\n            int bestId = -1;\n            int minDist = Integer.MAX_VALUE;\n\n            if (ceil != null) {\n                minDist = ceil - pref;\n                bestId = ceil;\n            }\n            if (floor != null) {\n                int distLeft = pref - floor;\n                if (distLeft <= minDist) {\n                    bestId = floor;\n                }\n            }\n            ans[qIdx] = bestId;\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Offline query sorting with sorted list binary search",
+      "code": "/**\n * @param {number[][]} rooms\n * @param {number[][]} queries\n * @return {number[]}\n */\nvar closestRoom = function(rooms, queries) {\n    rooms.sort((a, b) => b[1] - a[1]);\n    const q = queries.length;\n    const iq = queries.map((query, i) => [query[1], query[0], i]);\n    iq.sort((a, b) => b[0] - a[0]);\n\n    const active = [];\n    const ans = Array(q).fill(-1);\n    let roomIdx = 0, n = rooms.length;\n\n    const insort = (val) => {\n        let low = 0, high = active.length;\n        while (low < high) {\n            const mid = Math.floor((low + high) / 2);\n            if (active[mid] < val) low = mid + 1;\n            else high = mid;\n        }\n        active.splice(low, 0, val);\n    };\n\n    const bisectLeft = (val) => {\n        let low = 0, high = active.length;\n        while (low < high) {\n            const mid = Math.floor((low + high) / 2);\n            if (active[mid] < val) low = mid + 1;\n            else high = mid;\n        }\n        return low;\n    };\n\n    for (const [minSz, pref, qIdx] of iq) {\n        while (roomIdx < n && rooms[roomIdx][1] >= minSz) {\n            insort(rooms[roomIdx][0]);\n            roomIdx++;\n        }\n        if (active.length === 0) continue;\n\n        const idx = bisectLeft(pref);\n        let bestId = -1, minDist = Infinity;\n        if (idx < active.length) {\n            minDist = active[idx] - pref;\n            bestId = active[idx];\n        }\n        if (idx > 0) {\n            const distLeft = pref - active[idx - 1];\n            if (distLeft <= minDist) {\n                bestId = active[idx - 1];\n            }\n        }\n        ans[qIdx] = bestId;\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

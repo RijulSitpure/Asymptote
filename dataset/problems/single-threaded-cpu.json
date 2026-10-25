@@ -1,0 +1,78 @@
+{
+  "slug": "single-threaded-cpu",
+  "number": 1834,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Simulation by Arrival and Execution Duration",
+      "text": "Sort tasks by arrival time while preserving original indices, and manage currently available tasks."
+    },
+    {
+      "level": 2,
+      "title": "Available Tasks by Shortest Duration",
+      "text": "Maintain ready tasks ordered primarily by processing time and secondarily by original index."
+    },
+    {
+      "level": 3,
+      "title": "Time Advancement Jump",
+      "text": "If no tasks are currently ready, advance the current clock directly to the next arrival time."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def getOrder(self, tasks: list[list[int]]) -> list[int]:\n        indexed = sorted([(t[0], t[1], i) for i, t in enumerate(tasks)])\n        pq = []\n        ans = []\n        curr_time = 0\n        idx = 0\n        n = len(tasks)\n\n        while idx < n or pq:\n            if not pq and curr_time < indexed[idx][0]:\n                curr_time = indexed[idx][0]\n\n            while idx < n and indexed[idx][0] <= curr_time:\n                heapq.heappush(pq, (indexed[idx][1], indexed[idx][2]))\n                idx += 1\n\n            duration, orig_idx = heapq.heappop(pq)\n            curr_time += duration\n            ans.append(orig_idx)\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n is number of tasks"
+    ],
+    "whyNaiveFails": "Scanning all remaining tasks to pick the shortest at each step takes O(n^2) quadratic time.",
+    "spaceTimeTradeoff": "Dual sorting and priority queue selection executes task scheduling in O(n log n) total time.",
+    "interviewerExpectation": "Candidate advances simulation time forward to next task arrival when processor is idle.",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Simulation with arrival sorting and min-heap scheduler",
+      "code": "import heapq\n\nclass Solution:\n    def getOrder(self, tasks: list[list[int]]) -> list[int]:\n        indexed = sorted([(t[0], t[1], i) for i, t in enumerate(tasks)])\n        pq = []\n        ans = []\n        curr_time = 0\n        idx = 0\n        n = len(tasks)\n\n        while idx < n or pq:\n            if not pq and curr_time < indexed[idx][0]:\n                curr_time = indexed[idx][0]\n\n            while idx < n and indexed[idx][0] <= curr_time:\n                heapq.heappush(pq, (indexed[idx][1], indexed[idx][2]))\n                idx += 1\n\n            duration, orig_idx = heapq.heappop(pq)\n            curr_time += duration\n            ans.append(orig_idx)\n\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Simulation with arrival sorting and min-heap scheduler",
+      "code": "class Solution {\npublic:\n    vector<int> getOrder(vector<vector<int>>& tasks) {\n        int n = tasks.size();\n        vector<vector<long long>> indexed(n);\n        for (int i = 0; i < n; ++i) {\n            indexed[i] = {(long long)tasks[i][0], (long long)tasks[i][1], (long long)i};\n        }\n        sort(indexed.begin(), indexed.end());\n\n        using P = pair<long long, int>;\n        priority_queue<P, vector<P>, greater<P>> pq;\n        vector<int> ans;\n        ans.reserve(n);\n        long long currTime = 0;\n        int idx = 0;\n\n        while (idx < n || !pq.empty()) {\n            if (pq.empty() && currTime < indexed[idx][0]) {\n                currTime = indexed[idx][0];\n            }\n            while (idx < n && indexed[idx][0] <= currTime) {\n                pq.push({indexed[idx][1], (int)indexed[idx][2]});\n                idx++;\n            }\n            auto [dur, origIdx] = pq.top();\n            pq.pop();\n            currTime += dur;\n            ans.push_back(origIdx);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Simulation with arrival sorting and min-heap scheduler",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] getOrder(int[][] tasks) {\n        int n = tasks.length;\n        long[][] indexed = new long[n][3];\n        for (int i = 0; i < n; ++i) {\n            indexed[i] = new long[]{tasks[i][0], tasks[i][1], i};\n        }\n        Arrays.sort(indexed, (a, b) -> Long.compare(a[0], b[0]));\n\n        PriorityQueue<long[]> pq = new PriorityQueue<>((a, b) -> {\n            if (a[0] != b[0]) return Long.compare(a[0], b[0]);\n            return Long.compare(a[1], b[1]);\n        });\n\n        int[] ans = new int[n];\n        int ansIdx = 0;\n        long currTime = 0;\n        int idx = 0;\n\n        while (idx < n || !pq.isEmpty()) {\n            if (pq.isEmpty() && currTime < indexed[idx][0]) {\n                currTime = indexed[idx][0];\n            }\n            while (idx < n && indexed[idx][0] <= currTime) {\n                pq.offer(new long[]{indexed[idx][1], indexed[idx][2]});\n                idx++;\n            }\n            long[] top = pq.poll();\n            currTime += top[0];\n            ans[ansIdx++] = (int)top[1];\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Simulation with arrival sorting and min-heap scheduler",
+      "code": "/**\n * @param {number[][]} tasks\n * @return {number[]}\n */\nvar getOrder = function(tasks) {\n    const n = tasks.length;\n    const indexed = tasks.map((t, i) => [t[0], t[1], i]);\n    indexed.sort((a, b) => a[0] - b[0]);\n\n    const pq = [];\n    const push = (item) => {\n        pq.push(item);\n        let idx = pq.length - 1;\n        while (idx > 0) {\n            const p = Math.floor((idx - 1) / 2);\n            if (pq[p][0] > pq[idx][0] || (pq[p][0] === pq[idx][0] && pq[p][1] > pq[idx][1])) {\n                [pq[p], pq[idx]] = [pq[idx], pq[p]];\n                idx = p;\n            } else break;\n        }\n    };\n\n    const pop = () => {\n        if (pq.length === 0) return null;\n        const top = pq[0];\n        const last = pq.pop();\n        if (pq.length > 0) {\n            pq[0] = last;\n            let idx = 0;\n            while (true) {\n                let left = 2 * idx + 1, right = 2 * idx + 2, best = idx;\n                if (left < pq.length && (pq[left][0] < pq[best][0] || (pq[left][0] === pq[best][0] && pq[left][1] < pq[best][1]))) best = left;\n                if (right < pq.length && (pq[right][0] < pq[best][0] || (pq[right][0] === pq[best][0] && pq[right][1] < pq[best][1]))) best = right;\n                if (best !== idx) {\n                    [pq[idx], pq[best]] = [pq[best], pq[idx]];\n                    idx = best;\n                } else break;\n            }\n        }\n        return top;\n    };\n\n    const ans = [];\n    let currTime = 0;\n    let idx = 0;\n\n    while (idx < n || pq.length > 0) {\n        if (pq.length === 0 && currTime < indexed[idx][0]) {\n            currTime = indexed[idx][0];\n        }\n        while (idx < n && indexed[idx][0] <= currTime) {\n            push([indexed[idx][1], indexed[idx][2]]);\n            idx++;\n        }\n        const [dur, origIdx] = pop();\n        currTime += dur;\n        ans.push(origIdx);\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

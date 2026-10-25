@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-building-height",
+  "number": 1840,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Include Boundary Restrictions",
+      "text": "Add boundary restriction [1, 0] and [n, n - 1] to clamp building heights within valid end coordinates."
+    },
+    {
+      "level": 2,
+      "title": "Two Way Restriction Relaxation",
+      "text": "Sort restrictions by building index and relax heights from left-to-right then right-to-left using difference limits."
+    },
+    {
+      "level": 3,
+      "title": "Peak Between Adjacent Restrictions",
+      "text": "Between two tight restrictions, the peak height is (h1 + h2 + (id2 - id1)) // 2."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nclass Solution:\n    def maxBuilding(self, n: int, restrictions: list[list[int]]) -> int:\n        r = restrictions + [[1, 0], [n, n - 1]]\n        r.sort()\n\n        dedup = []\n        for id_val, h in r:\n            if dedup and dedup[-1][0] == id_val:\n                dedup[-1][1] = min(dedup[-1][1], h)\n            else:\n                dedup.append([id_val, h])\n        r = dedup\n        m = len(r)\n\n        for i in range(1, m):\n            r[i][1] = min(r[i][1], r[i - 1][1] + (r[i][0] - r[i - 1][0]))\n\n        for i in range(m - 2, -1, -1):\n            r[i][1] = min(r[i][1], r[i + 1][1] + (r[i + 1][0] - r[i][0]))\n\n        ans = 0\n        for i in range(m - 1):\n            id1, h1 = r[i]\n            id2, h2 = r[i + 1]\n            peak = (h1 + h2 + (id2 - id1)) // 2\n            ans = max(ans, peak)\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m log m)",
+    "space": "O(m)",
+    "variables": [
+      "m is number of restrictions",
+      "n is number of buildings"
+    ],
+    "whyNaiveFails": "Building heights up to n = 10^9 cannot be simulated array by array.",
+    "spaceTimeTradeoff": "Sorting m restrictions and propagating slopes via two linear passes solves the problem in O(m log m) time.",
+    "interviewerExpectation": "Candidate performs forward and backward slope relaxation and computes triangular peaks correctly.",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bidirectional slope relaxation with triangular peak evaluation",
+      "code": "class Solution:\n    def maxBuilding(self, n: int, restrictions: list[list[int]]) -> int:\n        r = restrictions + [[1, 0], [n, n - 1]]\n        r.sort()\n\n        dedup = []\n        for id_val, h in r:\n            if dedup and dedup[-1][0] == id_val:\n                dedup[-1][1] = min(dedup[-1][1], h)\n            else:\n                dedup.append([id_val, h])\n        r = dedup\n        m = len(r)\n\n        for i in range(1, m):\n            r[i][1] = min(r[i][1], r[i - 1][1] + (r[i][0] - r[i - 1][0]))\n\n        for i in range(m - 2, -1, -1):\n            r[i][1] = min(r[i][1], r[i + 1][1] + (r[i + 1][0] - r[i][0]))\n\n        ans = 0\n        for i in range(m - 1):\n            id1, h1 = r[i]\n            id2, h2 = r[i + 1]\n            peak = (h1 + h2 + (id2 - id1)) // 2\n            ans = max(ans, peak)\n\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bidirectional slope relaxation with triangular peak evaluation",
+      "code": "class Solution {\npublic:\n    int maxBuilding(int n, vector<vector<int>>& restrictions) {\n        restrictions.push_back({1, 0});\n        restrictions.push_back({n, n - 1});\n        sort(restrictions.begin(), restrictions.end());\n\n        vector<vector<int>> r;\n        for (const auto& item : restrictions) {\n            if (!r.empty() && r.back()[0] == item[0]) {\n                r.back()[1] = min(r.back()[1], item[1]);\n            } else {\n                r.push_back(item);\n            }\n        }\n        int m = r.size();\n\n        for (int i = 1; i < m; ++i) {\n            r[i][1] = min(r[i][1], r[i - 1][1] + (r[i][0] - r[i - 1][0]));\n        }\n        for (int i = m - 2; i >= 0; --i) {\n            r[i][1] = min(r[i][1], r[i + 1][1] + (r[i + 1][0] - r[i][0]));\n        }\n\n        int ans = 0;\n        for (int i = 0; i < m - 1; ++i) {\n            int peak = (r[i][1] + r[i + 1][1] + (r[i + 1][0] - r[i][0])) / 2;\n            ans = max(ans, peak);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bidirectional slope relaxation with triangular peak evaluation",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxBuilding(int n, int[][] restrictions) {\n        List<int[]> list = new ArrayList<>();\n        list.add(new int[]{1, 0});\n        list.add(new int[]{n, n - 1});\n        for (int[] rest : restrictions) list.add(new int[]{rest[0], rest[1]});\n        list.sort((a, b) -> Integer.compare(a[0], b[0]));\n\n        List<int[]> r = new ArrayList<>();\n        for (int[] item : list) {\n            if (!r.isEmpty() && r.get(r.size() - 1)[0] == item[0]) {\n                r.get(r.size() - 1)[1] = Math.min(r.get(r.size() - 1)[1], item[1]);\n            } else {\n                r.add(item);\n            }\n        }\n        int m = r.size();\n\n        for (int i = 1; i < m; ++i) {\n            r.get(i)[1] = Math.min(r.get(i)[1], r.get(i - 1)[1] + (r.get(i)[0] - r.get(i - 1)[0]));\n        }\n        for (int i = m - 2; i >= 0; --i) {\n            r.get(i)[1] = Math.min(r.get(i)[1], r.get(i + 1)[1] + (r.get(i + 1)[0] - r.get(i)[0]));\n        }\n\n        int ans = 0;\n        for (int i = 0; i < m - 1; ++i) {\n            int peak = (r.get(i)[1] + r.get(i + 1)[1] + (r.get(i + 1)[0] - r.get(i)[0])) / 2;\n            ans = Math.max(ans, peak);\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Bidirectional slope relaxation with triangular peak evaluation",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} restrictions\n * @return {number}\n */\nvar maxBuilding = function(n, restrictions) {\n    const list = [...restrictions, [1, 0], [n, n - 1]];\n    list.sort((a, b) => a[0] - b[0]);\n\n    const r = [];\n    for (const [id, h] of list) {\n        if (r.length > 0 && r[r.length - 1][0] === id) {\n            r[r.length - 1][1] = Math.min(r[r.length - 1][1], h);\n        } else {\n            r.push([id, h]);\n        }\n    }\n    const m = r.length;\n\n    for (let i = 1; i < m; ++i) {\n        r[i][1] = Math.min(r[i][1], r[i - 1][1] + (r[i][0] - r[i - 1][0]));\n    }\n    for (let i = m - 2; i >= 0; --i) {\n        r[i][1] = Math.min(r[i][1], r[i + 1][1] + (r[i + 1][0] - r[i][0]));\n    }\n\n    let ans = 0;\n    for (let i = 0; i < m - 1; ++i) {\n        const peak = Math.floor((r[i][1] + r[i + 1][1] + (r[i + 1][0] - r[i][0])) / 2);\n        ans = Math.max(ans, peak);\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

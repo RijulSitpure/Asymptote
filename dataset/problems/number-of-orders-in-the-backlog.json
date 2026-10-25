@@ -1,0 +1,78 @@
+{
+  "slug": "number-of-orders-in-the-backlog",
+  "number": 1801,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Order Books by Best Price",
+      "text": "Track highest price for active buy orders and lowest price for active sell orders."
+    },
+    {
+      "level": 2,
+      "title": "Matching Execution Logic",
+      "text": "For a buy order, match against sell orders with price <= buy price. For a sell order, match against buy orders with price >= sell price."
+    },
+    {
+      "level": 3,
+      "title": "Backlog Summation",
+      "text": "Accumulate remaining order quantities across both heaps modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def getNumberOfBacklogOrders(self, orders: list[list[int]]) -> int:\n        MOD = 10**9 + 7\n        buy_pq = []   # max-heap (-price, amount)\n        sell_pq = []  # min-heap (price, amount)\n\n        for price, amount, order_type in orders:\n            if order_type == 0:  # buy\n                while amount > 0 and sell_pq and sell_pq[0][0] <= price:\n                    sell_price, sell_amt = sell_pq[0]\n                    matched = min(amount, sell_amt)\n                    amount -= matched\n                    if matched == sell_amt:\n                        heapq.heappop(sell_pq)\n                    else:\n                        sell_pq[0] = (sell_price, sell_amt - matched)\n                if amount > 0:\n                    heapq.heappush(buy_pq, (-price, amount))\n            else:  # sell\n                while amount > 0 and buy_pq and -buy_pq[0][0] >= price:\n                    buy_price_neg, buy_amt = buy_pq[0]\n                    matched = min(amount, buy_amt)\n                    amount -= matched\n                    if matched == buy_amt:\n                        heapq.heappop(buy_pq)\n                    else:\n                        buy_pq[0] = (buy_price_neg, buy_amt - matched)\n                if amount > 0:\n                    heapq.heappush(sell_pq, (price, amount))\n\n        total = sum(amt for _, amt in buy_pq) + sum(amt for _, amt in sell_pq)\n        return total % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n is number of orders"
+    ],
+    "whyNaiveFails": "Searching through backlog linearly to find matching order prices takes O(n^2) quadratic time.",
+    "spaceTimeTradeoff": "Dual heaps process order matches and updates in O(log n) time per transaction.",
+    "interviewerExpectation": "Candidate utilizes max-heap for buy orders and min-heap for sell orders with quantity deduction.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dual buy max-heap and sell min-heap order book simulation",
+      "code": "import heapq\n\nclass Solution:\n    def getNumberOfBacklogOrders(self, orders: list[list[int]]) -> int:\n        MOD = 10**9 + 7\n        buy_pq = []   # max-heap (-price, amount)\n        sell_pq = []  # min-heap (price, amount)\n\n        for price, amount, order_type in orders:\n            if order_type == 0:  # buy\n                while amount > 0 and sell_pq and sell_pq[0][0] <= price:\n                    sell_price, sell_amt = sell_pq[0]\n                    matched = min(amount, sell_amt)\n                    amount -= matched\n                    if matched == sell_amt:\n                        heapq.heappop(sell_pq)\n                    else:\n                        sell_pq[0] = (sell_price, sell_amt - matched)\n                if amount > 0:\n                    heapq.heappush(buy_pq, (-price, amount))\n            else:  # sell\n                while amount > 0 and buy_pq and -buy_pq[0][0] >= price:\n                    buy_price_neg, buy_amt = buy_pq[0]\n                    matched = min(amount, buy_amt)\n                    amount -= matched\n                    if matched == buy_amt:\n                        heapq.heappop(buy_pq)\n                    else:\n                        buy_pq[0] = (buy_price_neg, buy_amt - matched)\n                if amount > 0:\n                    heapq.heappush(sell_pq, (price, amount))\n\n        total = sum(amt for _, amt in buy_pq) + sum(amt for _, amt in sell_pq)\n        return total % MOD"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dual buy max-heap and sell min-heap order book simulation",
+      "code": "#include <vector>\n#include <queue>\nusing namespace std;\n\nclass Solution {\npublic:\n    int getNumberOfBacklogOrders(vector<vector<int>>& orders) {\n        const int MOD = 1e9 + 7;\n        using P = pair<int, int>;\n        priority_queue<P> buy_pq; // max-heap\n        priority_queue<P, vector<P>, greater<P>> sell_pq; // min-heap\n\n        for (const auto& ord : orders) {\n            int price = ord[0], amount = ord[1], type = ord[2];\n            if (type == 0) { // buy\n                while (amount > 0 && !sell_pq.empty() && sell_pq.top().first <= price) {\n                    auto [s_price, s_amt] = sell_pq.top();\n                    sell_pq.pop();\n                    int matched = min(amount, s_amt);\n                    amount -= matched;\n                    if (s_amt > matched) {\n                        sell_pq.push({s_price, s_amt - matched});\n                    }\n                }\n                if (amount > 0) buy_pq.push({price, amount});\n            } else { // sell\n                while (amount > 0 && !buy_pq.empty() && buy_pq.top().first >= price) {\n                    auto [b_price, b_amt] = buy_pq.top();\n                    buy_pq.pop();\n                    int matched = min(amount, b_amt);\n                    amount -= matched;\n                    if (b_amt > matched) {\n                        buy_pq.push({b_price, b_amt - matched});\n                    }\n                }\n                if (amount > 0) sell_pq.push({price, amount});\n            }\n        }\n\n        long long total = 0;\n        while (!buy_pq.empty()) {\n            total = (total + buy_pq.top().second) % MOD;\n            buy_pq.pop();\n        }\n        while (!sell_pq.empty()) {\n            total = (total + sell_pq.top().second) % MOD;\n            sell_pq.pop();\n        }\n        return total;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dual buy max-heap and sell min-heap order book simulation",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int getNumberOfBacklogOrders(int[][] orders) {\n        final int MOD = 1_000_000_007;\n        PriorityQueue<int[]> buyPq = new PriorityQueue<>((a, b) -> Integer.compare(b[0], a[0]));\n        PriorityQueue<int[]> sellPq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n\n        for (int[] ord : orders) {\n            int price = ord[0], amount = ord[1], type = ord[2];\n            if (type == 0) { // buy\n                while (amount > 0 && !sellPq.isEmpty() && sellPq.peek()[0] <= price) {\n                    int[] sell = sellPq.poll();\n                    int matched = Math.min(amount, sell[1]);\n                    amount -= matched;\n                    sell[1] -= matched;\n                    if (sell[1] > 0) {\n                        sellPq.offer(sell);\n                    }\n                }\n                if (amount > 0) buyPq.offer(new int[]{price, amount});\n            } else { // sell\n                while (amount > 0 && !buyPq.isEmpty() && buyPq.peek()[0] >= price) {\n                    int[] buy = buyPq.poll();\n                    int matched = Math.min(amount, buy[1]);\n                    amount -= matched;\n                    buy[1] -= matched;\n                    if (buy[1] > 0) {\n                        buyPq.offer(buy);\n                    }\n                }\n                if (amount > 0) sellPq.offer(new int[]{price, amount});\n            }\n        }\n\n        long total = 0;\n        for (int[] b : buyPq) total = (total + b[1]) % MOD;\n        for (int[] s : sellPq) total = (total + s[1]) % MOD;\n        return (int)total;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Dual buy max-heap and sell min-heap order book simulation",
+      "code": "/**\n * @param {number[][]} orders\n * @return {number}\n */\nvar getNumberOfBacklogOrders = function(orders) {\n    const MOD = 1000000007;\n    const buyPq = [];\n    const sellPq = [];\n\n    const pushMax = (arr, item) => {\n        arr.push(item);\n        let idx = arr.length - 1;\n        while (idx > 0) {\n            const p = Math.floor((idx - 1) / 2);\n            if (arr[p][0] < arr[idx][0]) {\n                [arr[p], arr[idx]] = [arr[idx], arr[p]];\n                idx = p;\n            } else break;\n        }\n    };\n\n    const popMax = (arr) => {\n        if (arr.length === 0) return null;\n        const top = arr[0];\n        const last = arr.pop();\n        if (arr.length > 0) {\n            arr[0] = last;\n            let idx = 0;\n            while (true) {\n                let left = 2 * idx + 1, right = 2 * idx + 2, largest = idx;\n                if (left < arr.length && arr[left][0] > arr[largest][0]) largest = left;\n                if (right < arr.length && arr[right][0] > arr[largest][0]) largest = right;\n                if (largest !== idx) {\n                    [arr[idx], arr[largest]] = [arr[largest], arr[idx]];\n                    idx = largest;\n                } else break;\n            }\n        }\n        return top;\n    };\n\n    const pushMin = (arr, item) => {\n        arr.push(item);\n        let idx = arr.length - 1;\n        while (idx > 0) {\n            const p = Math.floor((idx - 1) / 2);\n            if (arr[p][0] > arr[idx][0]) {\n                [arr[p], arr[idx]] = [arr[idx], arr[p]];\n                idx = p;\n            } else break;\n        }\n    };\n\n    const popMin = (arr) => {\n        if (arr.length === 0) return null;\n        const top = arr[0];\n        const last = arr.pop();\n        if (arr.length > 0) {\n            arr[0] = last;\n            let idx = 0;\n            while (true) {\n                let left = 2 * idx + 1, right = 2 * idx + 2, smallest = idx;\n                if (left < arr.length && arr[left][0] < arr[smallest][0]) smallest = left;\n                if (right < arr.length && arr[right][0] < arr[smallest][0]) smallest = right;\n                if (smallest !== idx) {\n                    [arr[idx], arr[smallest]] = [arr[smallest], arr[idx]];\n                    idx = smallest;\n                } else break;\n            }\n        }\n        return top;\n    };\n\n    for (let [price, amount, type] of orders) {\n        if (type === 0) {\n            while (amount > 0 && sellPq.length > 0 && sellPq[0][0] <= price) {\n                const matched = Math.min(amount, sellPq[0][1]);\n                amount -= matched;\n                sellPq[0][1] -= matched;\n                if (sellPq[0][1] === 0) popMin(sellPq);\n            }\n            if (amount > 0) pushMax(buyPq, [price, amount]);\n        } else {\n            while (amount > 0 && buyPq.length > 0 && buyPq[0][0] >= price) {\n                const matched = Math.min(amount, buyPq[0][1]);\n                amount -= matched;\n                buyPq[0][1] -= matched;\n                if (buyPq[0][1] === 0) popMax(buyPq);\n            }\n            if (amount > 0) pushMin(sellPq, [price, amount]);\n        }\n    }\n\n    let total = 0;\n    for (const b of buyPq) total = (total + b[1]) % MOD;\n    for (const s of sellPq) total = (total + s[1]) % MOD;\n    return total;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "count-pairs-with-xor-in-a-range",
+  "number": 1803,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Range Difference",
+      "text": "Express the range constraint as pairs with exclusive-or at most high minus pairs with exclusive-or at most low - 1."
+    },
+    {
+      "level": 2,
+      "title": "Binary Bit Tree Structure",
+      "text": "Insert binary representations of elements into a 0-1 bit tree, maintaining subtree size counts."
+    },
+    {
+      "level": 3,
+      "title": "Branch Counting",
+      "text": "When the bound bit is 1, elements following the matching bit path strictly yield smaller exclusive-or sums."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nclass TrieNode:\n    def __init__(self):\n        self.children = [None, None]\n        self.count = 0\n\nclass Solution:\n    def countPairs(self, nums: list[int], low: int, high: int) -> int:\n        def count_less_equal(k: int) -> int:\n            root = TrieNode()\n            total = 0\n            for num in nums:\n                node = root\n                ans = 0\n                for bit in range(15, -1, -1):\n                    if not node:\n                        break\n                    b = (num >> bit) & 1\n                    kb = (k >> bit) & 1\n                    if kb == 1:\n                        if node.children[b]:\n                            ans += node.children[b].count\n                        node = node.children[1 - b]\n                    else:\n                        node = node.children[b]\n                if node:\n                    ans += node.count\n                total += ans\n\n                curr = root\n                for bit in range(15, -1, -1):\n                    b = (num >> bit) & 1\n                    if not curr.children[b]:\n                        curr.children[b] = TrieNode()\n                    curr = curr.children[b]\n                    curr.count += 1\n            return total\n\n        return count_less_equal(high) - count_less_equal(low - 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * B)",
+    "space": "O(n * B)",
+    "variables": [
+      "n is length of nums",
+      "B is bit length (16 bits)"
+    ],
+    "whyNaiveFails": "Testing all pairs naively requires O(n^2) operations, which times out for n = 20000.",
+    "spaceTimeTradeoff": "A binary bit tree tracks element frequencies per branch, answering query counts in O(B) time per element.",
+    "interviewerExpectation": "Candidate breaks range into f(high) - f(low - 1) and navigates bit branches efficiently.",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Binary trie with prefix range queries",
+      "code": "class TrieNode:\n    def __init__(self):\n        self.children = [None, None]\n        self.count = 0\n\nclass Solution:\n    def countPairs(self, nums: list[int], low: int, high: int) -> int:\n        def count_less_equal(k: int) -> int:\n            root = TrieNode()\n            total = 0\n            for num in nums:\n                node = root\n                ans = 0\n                for bit in range(15, -1, -1):\n                    if not node:\n                        break\n                    b = (num >> bit) & 1\n                    kb = (k >> bit) & 1\n                    if kb == 1:\n                        if node.children[b]:\n                            ans += node.children[b].count\n                        node = node.children[1 - b]\n                    else:\n                        node = node.children[b]\n                if node:\n                    ans += node.count\n                total += ans\n\n                curr = root\n                for bit in range(15, -1, -1):\n                    b = (num >> bit) & 1\n                    if not curr.children[b]:\n                        curr.children[b] = TrieNode()\n                    curr = curr.children[b]\n                    curr.count += 1\n            return total\n\n        return count_less_equal(high) - count_less_equal(low - 1)"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Binary trie with prefix range queries",
+      "code": "struct TrieNode {\n    TrieNode* children[2] = {nullptr, nullptr};\n    int count = 0;\n};\n\nclass Solution {\n    int countLessEqual(const vector<int>& nums, int k) {\n        TrieNode* root = new TrieNode();\n        int total = 0;\n        for (int num : nums) {\n            TrieNode* node = root;\n            int ans = 0;\n            for (int bit = 15; bit >= 0; --bit) {\n                if (!node) break;\n                int b = (num >> bit) & 1;\n                int kb = (k >> bit) & 1;\n                if (kb == 1) {\n                    if (node->children[b]) ans += node->children[b]->count;\n                    node = node->children[1 - b];\n                } else {\n                    node = node->children[b];\n                }\n            }\n            if (node) ans += node->count;\n            total += ans;\n\n            TrieNode* curr = root;\n            for (int bit = 15; bit >= 0; --bit) {\n                int b = (num >> bit) & 1;\n                if (!curr->children[b]) curr->children[b] = new TrieNode();\n                curr = curr->children[b];\n                curr->count++;\n            }\n        }\n        return total;\n    }\npublic:\n    int countPairs(vector<int>& nums, int low, int high) {\n        return countLessEqual(nums, high) - countLessEqual(nums, low - 1);\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Binary trie with prefix range queries",
+      "code": "class Solution {\n    static class TrieNode {\n        TrieNode[] children = new TrieNode[2];\n        int count = 0;\n    }\n\n    private int countLessEqual(int[] nums, int k) {\n        TrieNode root = new TrieNode();\n        int total = 0;\n        for (int num : nums) {\n            TrieNode node = root;\n            int ans = 0;\n            for (int bit = 15; bit >= 0; --bit) {\n                if (node == null) break;\n                int b = (num >> bit) & 1;\n                int kb = (k >> bit) & 1;\n                if (kb == 1) {\n                    if (node.children[b] != null) ans += node.children[b].count;\n                    node = node.children[1 - b];\n                } else {\n                    node = node.children[b];\n                }\n            }\n            if (node != null) ans += node.count;\n            total += ans;\n\n            TrieNode curr = root;\n            for (int bit = 15; bit >= 0; --bit) {\n                int b = (num >> bit) & 1;\n                if (curr.children[b] == null) curr.children[b] = new TrieNode();\n                curr = curr.children[b];\n                curr.count++;\n            }\n        }\n        return total;\n    }\n\n    public int countPairs(int[] nums, int low, int high) {\n        return countLessEqual(nums, high) - countLessEqual(nums, low - 1);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Binary trie with prefix range queries",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} low\n * @param {number} high\n * @return {number}\n */\nvar countPairs = function(nums, low, high) {\n    function countLessEqual(k) {\n        const root = { children: [null, null], count: 0 };\n        let total = 0;\n        for (const num of nums) {\n            let node = root;\n            let ans = 0;\n            for (let bit = 15; bit >= 0; --bit) {\n                if (!node) break;\n                const b = (num >> bit) & 1;\n                const kb = (k >> bit) & 1;\n                if (kb === 1) {\n                    if (node.children[b]) ans += node.children[b].count;\n                    node = node.children[1 - b];\n                } else {\n                    node = node.children[b];\n                }\n            }\n            if (node) ans += node.count;\n            total += ans;\n\n            let curr = root;\n            for (let bit = 15; bit >= 0; --bit) {\n                const b = (num >> bit) & 1;\n                if (!curr.children[b]) {\n                    curr.children[b] = { children: [null, null], count: 0 };\n                }\n                curr = curr.children[b];\n                curr.count++;\n            }\n        }\n        return total;\n    }\n\n    return countLessEqual(high) - countLessEqual(low - 1);\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

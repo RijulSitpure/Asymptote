@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-average-pass-ratio",
+  "number": 1792,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Evaluate Marginal Ratio Gain",
+      "text": "Adding an extra passing student to class (p, t) increases its ratio by (p + 1) / (t + 1) - p / t."
+    },
+    {
+      "level": 2,
+      "title": "Priority by Marginal Improvement",
+      "text": "Maintain classes in an ordered structure keyed by the gain from adding one student."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Student Allocation",
+      "text": "For each extra student, extract class with highest marginal gain, increment its pass and total count, and reinsert."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def maxAverageRatio(self, classes: list[list[int]], extraStudents: int) -> float:\n        def gain(p: int, t: int) -> float:\n            return (p + 1) / (t + 1) - p / t\n\n        heap = [(-gain(p, t), p, t) for p, t in classes]\n        heapq.heapify(heap)\n\n        for _ in range(extraStudents):\n            _, p, t = heapq.heappop(heap)\n            p += 1\n            t += 1\n            heapq.heappush(heap, (-gain(p, t), p, t))\n\n        total_ratio = sum(p / t for _, p, t in heap)\n        return total_ratio / len(classes)\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O((n + extraStudents) log n)",
+    "space": "O(n)",
+    "variables": [
+      "n is number of classes",
+      "extraStudents is count of students to allocate"
+    ],
+    "whyNaiveFails": "Recalculating gains across all classes linearly takes O(extraStudents * n) time.",
+    "spaceTimeTradeoff": "Max-heap enables O(log n) student assignment and ratio update.",
+    "interviewerExpectation": "Candidate derives marginal gain function delta(p, t) = (p + 1)/(t + 1) - p/t.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Max-heap on marginal pass ratio improvement",
+      "code": "import heapq\n\nclass Solution:\n    def maxAverageRatio(self, classes: list[list[int]], extraStudents: int) -> float:\n        def gain(p: int, t: int) -> float:\n            return (p + 1) / (t + 1) - p / t\n\n        heap = [(-gain(p, t), p, t) for p, t in classes]\n        heapq.heapify(heap)\n\n        for _ in range(extraStudents):\n            _, p, t = heapq.heappop(heap)\n            p += 1\n            t += 1\n            heapq.heappush(heap, (-gain(p, t), p, t))\n\n        total_ratio = sum(p / t for _, p, t in heap)\n        return total_ratio / len(classes)"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Max-heap on marginal pass ratio improvement",
+      "code": "#include <vector>\n#include <queue>\n#include <tuple>\nusing namespace std;\n\nclass Solution {\n    double gain(int p, int t) {\n        return (double)(p + 1) / (t + 1) - (double)p / t;\n    }\n\npublic:\n    double maxAverageRatio(vector<vector<int>>& classes, int extraStudents) {\n        using T = tuple<double, int, int>;\n        priority_queue<T> pq;\n        for (const auto& c : classes) {\n            pq.push({gain(c[0], c[1]), c[0], c[1]});\n        }\n        while (extraStudents-- > 0) {\n            auto [_, p, t] = pq.top();\n            pq.pop();\n            p++; t++;\n            pq.push({gain(p, t), p, t});\n        }\n        double sum = 0;\n        int n = classes.size();\n        while (!pq.empty()) {\n            auto [_, p, t] = pq.top();\n            pq.pop();\n            sum += (double)p / t;\n        }\n        return sum / n;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Max-heap on marginal pass ratio improvement",
+      "code": "import java.util.*;\n\nclass Solution {\n    private double gain(int p, int t) {\n        return (double)(p + 1) / (t + 1) - (double)p / t;\n    }\n\n    public double maxAverageRatio(int[][] classes, int extraStudents) {\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Double.compare(gain(b[0], b[1]), gain(a[0], a[1])));\n        for (int[] c : classes) {\n            pq.offer(new int[]{c[0], c[1]});\n        }\n        while (extraStudents-- > 0) {\n            int[] top = pq.poll();\n            top[0]++;\n            top[1]++;\n            pq.offer(top);\n        }\n        double sum = 0;\n        for (int[] c : pq) {\n            sum += (double)c[0] / c[1];\n        }\n        return sum / classes.length;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Max-heap on marginal pass ratio improvement",
+      "code": "/**\n * @param {number[][]} classes\n * @param {number} extraStudents\n * @return {number}\n */\nvar maxAverageRatio = function(classes, extraStudents) {\n    const gain = (p, t) => (p + 1) / (t + 1) - p / t;\n    const pq = [];\n\n    const push = (item) => {\n        pq.push(item);\n        let idx = pq.length - 1;\n        while (idx > 0) {\n            const p = Math.floor((idx - 1) / 2);\n            if (pq[p][0] < pq[idx][0]) {\n                [pq[p], pq[idx]] = [pq[idx], pq[p]];\n                idx = p;\n            } else break;\n        }\n    };\n\n    const pop = () => {\n        if (pq.length === 0) return null;\n        const top = pq[0];\n        const last = pq.pop();\n        if (pq.length > 0) {\n            pq[0] = last;\n            let idx = 0;\n            while (true) {\n                let left = 2 * idx + 1, right = 2 * idx + 2, largest = idx;\n                if (left < pq.length && pq[left][0] > pq[largest][0]) largest = left;\n                if (right < pq.length && pq[right][0] > pq[largest][0]) largest = right;\n                if (largest !== idx) {\n                    [pq[idx], pq[largest]] = [pq[largest], pq[idx]];\n                    idx = largest;\n                } else break;\n            }\n        }\n        return top;\n    };\n\n    for (const [p, t] of classes) {\n        push([gain(p, t), p, t]);\n    }\n\n    while (extraStudents-- > 0) {\n        const [_, p, t] = pop();\n        const np = p + 1, nt = t + 1;\n        push([gain(np, nt), np, nt]);\n    }\n\n    let sum = 0;\n    for (const [_, p, t] of pq) {\n        sum += p / t;\n    }\n    return sum / classes.length;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

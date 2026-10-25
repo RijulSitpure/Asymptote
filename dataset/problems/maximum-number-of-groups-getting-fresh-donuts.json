@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-number-of-groups-getting-fresh-donuts",
+  "number": 1815,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Remainder Modulo Classification",
+      "text": "Only group sizes modulo batchSize matter for determining batch alignment and fresh donut distribution."
+    },
+    {
+      "level": 2,
+      "title": "Greedy Exact Complement Pairing",
+      "text": "Groups divisible by batchSize get fresh donuts first, and pairs of remainders that sum to batchSize can be greedily matched."
+    },
+    {
+      "level": 3,
+      "title": "State Search Over Remaining Counts",
+      "text": "The remaining remainder counts are small enough to memoize remaining frequency states with depth search."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nfrom collections import Counter\nfrom functools import lru_cache\n\nclass Solution:\n    def maxHappyGroups(self, batchSize: int, groups: list[int]) -> int:\n        counts = [0] * batchSize\n        for g in groups:\n            counts[g % batchSize] += 1\n\n        ans = counts[0]\n\n        for i in range(1, (batchSize // 2) + 1):\n            if i == batchSize - i:\n                pairs = counts[i] // 2\n                ans += pairs\n                counts[i] -= pairs * 2\n            else:\n                pairs = min(counts[i], counts[batchSize - i])\n                ans += pairs\n                counts[i] -= pairs\n                counts[batchSize - i] -= pairs\n\n        @lru_cache(None)\n        def dfs(rem: int, state: tuple) -> int:\n            res = 0\n            curr_state = list(state)\n            for i in range(1, batchSize):\n                if curr_state[i] > 0:\n                    curr_state[i] -= 1\n                    gained = 1 if rem == 0 else 0\n                    nxt_rem = (rem + i) % batchSize\n                    res = max(res, gained + dfs(nxt_rem, tuple(curr_state)))\n                    curr_state[i] += 1\n            return res\n\n        return ans + dfs(0, tuple(counts))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(B * (n / B)^B)",
+    "space": "O((n / B)^B)",
+    "variables": [
+      "B is batchSize (<= 9)",
+      "n is length of groups"
+    ],
+    "whyNaiveFails": "Permuting n groups yields n! possibilities which is infeasible.",
+    "spaceTimeTradeoff": "Greedy pairing reduces the state space of remaining counts to small dimensions solvable via memoization.",
+    "interviewerExpectation": "Candidate isolates remainders and pairs complements greedily before invoking memoized state transition.",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Greedy remainder pairing with memoized frequency state search",
+      "code": "from collections import Counter\nfrom functools import lru_cache\n\nclass Solution:\n    def maxHappyGroups(self, batchSize: int, groups: list[int]) -> int:\n        counts = [0] * batchSize\n        for g in groups:\n            counts[g % batchSize] += 1\n\n        ans = counts[0]\n\n        for i in range(1, (batchSize // 2) + 1):\n            if i == batchSize - i:\n                pairs = counts[i] // 2\n                ans += pairs\n                counts[i] -= pairs * 2\n            else:\n                pairs = min(counts[i], counts[batchSize - i])\n                ans += pairs\n                counts[i] -= pairs\n                counts[batchSize - i] -= pairs\n\n        @lru_cache(None)\n        def dfs(rem: int, state: tuple) -> int:\n            res = 0\n            curr_state = list(state)\n            for i in range(1, batchSize):\n                if curr_state[i] > 0:\n                    curr_state[i] -= 1\n                    gained = 1 if rem == 0 else 0\n                    nxt_rem = (rem + i) % batchSize\n                    res = max(res, gained + dfs(nxt_rem, tuple(curr_state)))\n                    curr_state[i] += 1\n            return res\n\n        return ans + dfs(0, tuple(counts))"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Greedy remainder pairing with memoized frequency state search",
+      "code": "class Solution {\n    map<pair<int, vector<int>>, int> memo;\n    int dfs(int rem, vector<int>& counts, int batchSize) {\n        auto key = make_pair(rem, counts);\n        if (memo.count(key)) return memo[key];\n        int res = 0;\n        for (int i = 1; i < batchSize; ++i) {\n            if (counts[i] > 0) {\n                counts[i]--;\n                int gained = (rem == 0) ? 1 : 0;\n                int nxtRem = (rem + i) % batchSize;\n                res = max(res, gained + dfs(nxtRem, counts, batchSize));\n                counts[i]++;\n            }\n        }\n        return memo[key] = res;\n    }\npublic:\n    int maxHappyGroups(int batchSize, vector<int>& groups) {\n        vector<int> counts(batchSize, 0);\n        for (int g : groups) counts[g % batchSize]++;\n        int ans = counts[0];\n        for (int i = 1; i <= batchSize / 2; ++i) {\n            if (i == batchSize - i) {\n                int pairs = counts[i] / 2;\n                ans += pairs;\n                counts[i] -= pairs * 2;\n            } else {\n                int pairs = min(counts[i], counts[batchSize - i]);\n                ans += pairs;\n                counts[i] -= pairs;\n                counts[batchSize - i] -= pairs;\n            }\n        }\n        return ans + dfs(0, counts, batchSize);\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Greedy remainder pairing with memoized frequency state search",
+      "code": "import java.util.*;\n\nclass Solution {\n    private Map<Long, Integer> memo = new HashMap<>();\n\n    private int dfs(int rem, int[] counts, int batchSize) {\n        long key = rem;\n        for (int i = 1; i < batchSize; ++i) {\n            key = key * 31 + counts[i];\n        }\n        if (memo.containsKey(key)) return memo.get(key);\n        int res = 0;\n        for (int i = 1; i < batchSize; ++i) {\n            if (counts[i] > 0) {\n                counts[i]--;\n                int gained = (rem == 0) ? 1 : 0;\n                int nxtRem = (rem + i) % batchSize;\n                res = Math.max(res, gained + dfs(nxtRem, counts, batchSize));\n                counts[i]++;\n            }\n        }\n        memo.put(key, res);\n        return res;\n    }\n\n    public int maxHappyGroups(int batchSize, int[] groups) {\n        int[] counts = new int[batchSize];\n        for (int g : groups) counts[g % batchSize]++;\n        int ans = counts[0];\n        for (int i = 1; i <= batchSize / 2; ++i) {\n            if (i == batchSize - i) {\n                int pairs = counts[i] / 2;\n                ans += pairs;\n                counts[i] -= pairs * 2;\n            } else {\n                int pairs = Math.min(counts[i], counts[batchSize - i]);\n                ans += pairs;\n                counts[i] -= pairs;\n                counts[batchSize - i] -= pairs;\n            }\n        }\n        return ans + dfs(0, counts, batchSize);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Greedy remainder pairing with memoized frequency state search",
+      "code": "/**\n * @param {number} batchSize\n * @param {number[]} groups\n * @return {number}\n */\nvar maxHappyGroups = function(batchSize, groups) {\n    const counts = Array(batchSize).fill(0);\n    for (const g of groups) counts[g % batchSize]++;\n\n    let ans = counts[0];\n    for (let i = 1; i <= Math.floor(batchSize / 2); ++i) {\n        if (i === batchSize - i) {\n            const pairs = Math.floor(counts[i] / 2);\n            ans += pairs;\n            counts[i] -= pairs * 2;\n        } else {\n            const pairs = Math.min(counts[i], counts[batchSize - i]);\n            ans += pairs;\n            counts[i] -= pairs;\n            counts[batchSize - i] -= pairs;\n        }\n    }\n\n    const memo = new Map();\n    function dfs(rem, arr) {\n        const key = rem + ':' + arr.join(',');\n        if (memo.has(key)) return memo.get(key);\n        let res = 0;\n        for (let i = 1; i < batchSize; ++i) {\n            if (arr[i] > 0) {\n                arr[i]--;\n                const gained = rem === 0 ? 1 : 0;\n                const nxtRem = (rem + i) % batchSize;\n                res = Math.max(res, gained + dfs(nxtRem, arr));\n                arr[i]++;\n            }\n        }\n        memo.set(key, res);\n        return res;\n    }\n\n    return ans + dfs(0, counts);\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

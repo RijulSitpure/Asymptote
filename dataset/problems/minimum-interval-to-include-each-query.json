@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-interval-to-include-each-query",
+  "number": 1851,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Ordered Query Processing",
+      "text": "Sort queries in ascending order along with intervals sorted by start point to process points monotonically."
+    },
+    {
+      "level": 2,
+      "title": "Active Intervals by Length",
+      "text": "Maintain active intervals containing the query point ordered by interval length (right - left + 1)."
+    },
+    {
+      "level": 3,
+      "title": "Pruning Expired Intervals",
+      "text": "Discard intervals from consideration whose end points are strictly smaller than the current query coordinate."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def minInterval(self, intervals: list[list[int]], queries: list[int]) -> list[int]:\n        intervals.sort()\n        sorted_queries = sorted([(q, i) for i, q in enumerate(queries)])\n\n        pq = []\n        ans = [-1] * len(queries)\n        idx = 0\n        n = len(intervals)\n\n        for q, orig_idx in sorted_queries:\n            while idx < n and intervals[idx][0] <= q:\n                l, r = intervals[idx]\n                heapq.heappush(pq, (r - l + 1, r))\n                idx += 1\n\n            while pq and pq[0][1] < q:\n                heapq.heappop(pq)\n\n            if pq:\n                ans[orig_idx] = pq[0][0]\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n + q log q)",
+    "space": "O(n + q)",
+    "variables": [
+      "n is number of intervals",
+      "q is number of queries"
+    ],
+    "whyNaiveFails": "Testing all n intervals for each of q queries takes O(n * q) time, which exceeds limits for 10^5 elements.",
+    "spaceTimeTradeoff": "Dual sorting and priority queue pruning evaluates active intervals in O((n + q) log n) time.",
+    "interviewerExpectation": "Candidate sorts queries and intervals, using a min-heap on interval length with lazy expiration.",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sorted query line sweep with min-heap for shortest active interval",
+      "code": "import heapq\n\nclass Solution:\n    def minInterval(self, intervals: list[list[int]], queries: list[int]) -> list[int]:\n        intervals.sort()\n        sorted_queries = sorted([(q, i) for i, q in enumerate(queries)])\n\n        pq = []\n        ans = [-1] * len(queries)\n        idx = 0\n        n = len(intervals)\n\n        for q, orig_idx in sorted_queries:\n            while idx < n and intervals[idx][0] <= q:\n                l, r = intervals[idx]\n                heapq.heappush(pq, (r - l + 1, r))\n                idx += 1\n\n            while pq and pq[0][1] < q:\n                heapq.heappop(pq)\n\n            if pq:\n                ans[orig_idx] = pq[0][0]\n\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sorted query line sweep with min-heap for shortest active interval",
+      "code": "class Solution {\npublic:\n    vector<int> minInterval(vector<vector<int>>& intervals, vector<int>& queries) {\n        sort(intervals.begin(), intervals.end());\n        int q = queries.size();\n        vector<pair<int, int>> sq(q);\n        for (int i = 0; i < q; ++i) sq[i] = {queries[i], i};\n        sort(sq.begin(), sq.end());\n\n        using P = pair<int, int>;\n        priority_queue<P, vector<P>, greater<P>> pq;\n        vector<int> ans(q, -1);\n        int idx = 0, n = intervals.size();\n\n        for (const auto& [queryVal, origIdx] : sq) {\n            while (idx < n && intervals[idx][0] <= queryVal) {\n                int l = intervals[idx][0], r = intervals[idx][1];\n                pq.push({r - l + 1, r});\n                idx++;\n            }\n            while (!pq.empty() && pq.top().second < queryVal) {\n                pq.pop();\n            }\n            if (!pq.empty()) {\n                ans[origIdx] = pq.top().first;\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sorted query line sweep with min-heap for shortest active interval",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] minInterval(int[][] intervals, int[] queries) {\n        Arrays.sort(intervals, (a, b) -> Integer.compare(a[0], b[0]));\n        int q = queries.length;\n        int[][] sq = new int[q][2];\n        for (int i = 0; i < q; ++i) sq[i] = new int[]{queries[i], i};\n        Arrays.sort(sq, (a, b) -> Integer.compare(a[0], b[0]));\n\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        int[] ans = new int[q];\n        Arrays.fill(ans, -1);\n        int idx = 0, n = intervals.length;\n\n        for (int[] query : sq) {\n            int queryVal = query[0], origIdx = query[1];\n            while (idx < n && intervals[idx][0] <= queryVal) {\n                int l = intervals[idx][0], r = intervals[idx][1];\n                pq.offer(new int[]{r - l + 1, r});\n                idx++;\n            }\n            while (!pq.isEmpty() && pq.peek()[1] < queryVal) {\n                pq.poll();\n            }\n            if (!pq.isEmpty()) {\n                ans[origIdx] = pq.peek()[0];\n            }\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sorted query line sweep with min-heap for shortest active interval",
+      "code": "/**\n * @param {number[][]} intervals\n * @param {number[]} queries\n * @return {number[]}\n */\nvar minInterval = function(intervals, queries) {\n    intervals.sort((a, b) => a[0] - b[0]);\n    const q = queries.length;\n    const sq = queries.map((val, i) => [val, i]);\n    sq.sort((a, b) => a[0] - b[0]);\n\n    const pq = [];\n    const push = (item) => {\n        pq.push(item);\n        let idx = pq.length - 1;\n        while (idx > 0) {\n            const p = Math.floor((idx - 1) / 2);\n            if (pq[p][0] > pq[idx][0]) {\n                [pq[p], pq[idx]] = [pq[idx], pq[p]];\n                idx = p;\n            } else break;\n        }\n    };\n\n    const pop = () => {\n        if (pq.length === 0) return null;\n        const top = pq[0];\n        const last = pq.pop();\n        if (pq.length > 0) {\n            pq[0] = last;\n            let idx = 0;\n            while (true) {\n                let left = 2 * idx + 1, right = 2 * idx + 2, smallest = idx;\n                if (left < pq.length && pq[left][0] < pq[smallest][0]) smallest = left;\n                if (right < pq.length && pq[right][0] < pq[smallest][0]) smallest = right;\n                if (smallest !== idx) {\n                    [pq[idx], pq[smallest]] = [pq[smallest], pq[idx]];\n                    idx = smallest;\n                } else break;\n            }\n        }\n        return top;\n    };\n\n    const ans = Array(q).fill(-1);\n    let idx = 0, n = intervals.length;\n\n    for (const [queryVal, origIdx] of sq) {\n        while (idx < n && intervals[idx][0] <= queryVal) {\n            const [l, r] = intervals[idx];\n            push([r - l + 1, r]);\n            idx++;\n        }\n        while (pq.length > 0 && pq[0][1] < queryVal) {\n            pop();\n        }\n        if (pq.length > 0) {\n            ans[origIdx] = pq[0][0];\n        }\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
