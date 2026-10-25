@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-number-of-events-that-can-be-attended",
+  "number": 1353,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements",
+    "greedy-general"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sort by Start Day",
+      "text": "Sort events by their start day. Process days sequentially from day 1 upwards."
+    },
+    {
+      "level": 2,
+      "title": "Add Active Events to Min-Heap",
+      "text": "On each day d, add the end days of all events starting on day d into a min-priority structure."
+    },
+    {
+      "level": 3,
+      "title": "Attend Event Ending Soonest",
+      "text": "Discard all events in the min-structure that ended before day d. Attend the event with the earliest deadline, incrementing count."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def maxEvents(self, events: list[list[int]]) -> int:\n        events.sort()\n        total_days = max(end for _, end in events)\n        min_heap = []\n        event_idx = 0\n        n = len(events)\n        attended = 0\n        for day in range(1, total_days + 1):\n            while event_idx < n and events[event_idx][0] == day:\n                heapq.heappush(min_heap, events[event_idx][1])\n                event_idx += 1\n            while min_heap and min_heap[0] < day:\n                heapq.heappop(min_heap)\n            if min_heap:\n                heapq.heappop(min_heap)\n                attended += 1\n            if event_idx >= n and not min_heap:\n                break\n        return attended\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * log(N) + D * log(N))",
+    "space": "O(N)",
+    "variables": [
+      "N: number of events",
+      "D: maximum event end day"
+    ],
+    "whyNaiveFails": "Greedy choice by start day alone or sorting by end day without tracking active day availability misses valid attendance days.",
+    "spaceTimeTradeoff": "Min-heap maintains available active events sorted by earliest end day for optimal greedy choice.",
+    "interviewerExpectation": "Candidate attends the event with earliest closing deadline among those currently open.",
+    "notes": "Earliest deadline first is mathematically optimal."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass Solution:\n    def maxEvents(self, events: list[list[int]]) -> int:\n        events.sort()\n        total_days = max(end for _, end in events)\n        min_heap = []\n        event_idx = 0\n        n = len(events)\n        attended = 0\n        for day in range(1, total_days + 1):\n            while event_idx < n and events[event_idx][0] == day:\n                heapq.heappush(min_heap, events[event_idx][1])\n                event_idx += 1\n            while min_heap and min_heap[0] < day:\n                heapq.heappop(min_heap)\n            if min_heap:\n                heapq.heappop(min_heap)\n                attended += 1\n            if event_idx >= n and not min_heap:\n                break\n        return attended",
+      "approach": "greedy earliest deadline first via min-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxEvents(std::vector<std::vector<int>>& events) {\n        std::sort(events.begin(), events.end());\n        int totalDays = 0;\n        for (const auto& e : events) totalDays = std::max(totalDays, e[1]);\n        std::priority_queue<int, std::vector<int>, std::greater<int>> minHeap;\n        int eventIdx = 0, n = events.size(), attended = 0;\n        for (int day = 1; day <= totalDays; ++day) {\n            while (eventIdx < n && events[eventIdx][0] == day) {\n                minHeap.push(events[eventIdx++][1]);\n            }\n            while (!minHeap.empty() && minHeap.top() < day) {\n                minHeap.pop();\n            }\n            if (!minHeap.empty()) {\n                minHeap.pop();\n                attended++;\n            }\n            if (eventIdx >= n && minHeap.empty()) break;\n        }\n        return attended;\n    }\n};",
+      "approach": "greedy earliest deadline first via min-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxEvents(int[][] events) {\n        Arrays.sort(events, (a, b) -> Integer.compare(a[0], b[0]));\n        int totalDays = 0;\n        for (int[] e : events) totalDays = Math.max(totalDays, e[1]);\n        PriorityQueue<Integer> minHeap = new PriorityQueue<>();\n        int eventIdx = 0, n = events.length, attended = 0;\n        for (int day = 1; day <= totalDays; day++) {\n            while (eventIdx < n && events[eventIdx][0] == day) {\n                minHeap.offer(events[eventIdx++][1]);\n            }\n            while (!minHeap.isEmpty() && minHeap.peek() < day) {\n                minHeap.poll();\n            }\n            if (!minHeap.isEmpty()) {\n                minHeap.poll();\n                attended++;\n            }\n            if (eventIdx >= n && minHeap.isEmpty()) break;\n        }\n        return attended;\n    }\n}",
+      "approach": "greedy earliest deadline first via min-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxEvents = function(events) {\n    events.sort((a, b) => a[0] - b[0]);\n    let totalDays = 0;\n    for (const e of events) if (e[1] > totalDays) totalDays = e[1];\n    const minHeap = [];\n    const push = (val) => {\n        minHeap.push(val);\n        let i = minHeap.length - 1;\n        while (i > 0) {\n            const p = (i - 1) >> 1;\n            if (minHeap[p] <= minHeap[i]) break;\n            [minHeap[p], minHeap[i]] = [minHeap[i], minHeap[p]];\n            i = p;\n        }\n    };\n    const pop = () => {\n        const top = minHeap[0];\n        const bottom = minHeap.pop();\n        if (minHeap.length > 0) {\n            minHeap[0] = bottom;\n            let i = 0;\n            while (true) {\n                let left = 2 * i + 1, right = 2 * i + 2, best = i;\n                if (left < minHeap.length && minHeap[left] < minHeap[best]) best = left;\n                if (right < minHeap.length && minHeap[right] < minHeap[best]) best = right;\n                if (best === i) break;\n                [minHeap[i], minHeap[best]] = [minHeap[best], minHeap[i]];\n                i = best;\n            }\n        }\n        return top;\n    };\n    let eventIdx = 0, n = events.length, attended = 0;\n    for (let day = 1; day <= totalDays; day++) {\n        while (eventIdx < n && events[eventIdx][0] === day) {\n            push(events[eventIdx++][1]);\n        }\n        while (minHeap.length > 0 && minHeap[0] < day) {\n            pop();\n        }\n        if (minHeap.length > 0) {\n            pop();\n            attended++;\n        }\n        if (eventIdx >= n && minHeap.length === 0) break;\n    }\n    return attended;\n};",
+      "approach": "greedy earliest deadline first via min-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "construct-target-array-with-multiple-sums",
+  "number": 1354,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements",
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Reverse Thinking",
+      "text": "Instead of starting from an array of 1s and building target, work backwards from target to all 1s."
+    },
+    {
+      "level": 2,
+      "title": "Largest Element Must Be Reduced",
+      "text": "The largest number in target was formed by summing the rest of the array. Let rest = total_sum - max_val."
+    },
+    {
+      "level": 3,
+      "title": "Modulo Speedup",
+      "text": "When max_val is much larger than rest, use modulo: prev = max_val % rest. If rest == 1, it always succeeds."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def isPossible(self, target: list[int]) -> bool:\n        total = sum(target)\n        max_heap = [-x for x in target]\n        heapq.heapify(max_heap)\n        while True:\n            largest = -heapq.heappop(max_heap)\n            rest = total - largest\n            if largest == 1 or rest == 1:\n                return True\n            if rest == 0 or largest <= rest or largest % rest == 0:\n                return False\n            prev = largest % rest\n            total = rest + prev\n            heapq.heappush(max_heap, -prev)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * log(max(target)))",
+    "space": "O(N)",
+    "variables": [
+      "N: length of target"
+    ],
+    "whyNaiveFails": "Subtracting rest repeatedly one by one causes time limit exceeded when target has large values like 10^9.",
+    "spaceTimeTradeoff": "Using Euclidean modulo reduction speeds up consecutive subtractions to logarithmic steps.",
+    "interviewerExpectation": "Candidate applies reverse simulation with modulo Euclidean division.",
+    "notes": "Edge case rest == 1 guarantees success because (largest % 1) reduces to 1 in one multi-step subtraction."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass Solution:\n    def isPossible(self, target: list[int]) -> bool:\n        total = sum(target)\n        max_heap = [-x for x in target]\n        heapq.heapify(max_heap)\n        while True:\n            largest = -heapq.heappop(max_heap)\n            rest = total - largest\n            if largest == 1 or rest == 1:\n                return True\n            if rest == 0 or largest <= rest or largest % rest == 0:\n                return False\n            prev = largest % rest\n            total = rest + prev\n            heapq.heappush(max_heap, -prev)",
+      "approach": "reverse Euclidean reduction with max-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n#include <numeric>\n\nclass Solution {\npublic:\n    bool isPossible(std::vector<int>& target) {\n        long long total = 0;\n        std::priority_queue<long long> maxHeap;\n        for (int x : target) {\n            total += x;\n            maxHeap.push(x);\n        }\n        while (true) {\n            long long largest = maxHeap.top();\n            maxHeap.pop();\n            long long rest = total - largest;\n            if (largest == 1 || rest == 1) return true;\n            if (rest == 0 || largest <= rest || largest % rest == 0) return false;\n            long long prev = largest % rest;\n            total = rest + prev;\n            maxHeap.push(prev);\n        }\n    }\n};",
+      "approach": "reverse Euclidean reduction with max-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public boolean isPossible(int[] target) {\n        long total = 0;\n        PriorityQueue<Long> maxHeap = new PriorityQueue<>(Collections.reverseOrder());\n        for (int x : target) {\n            total += x;\n            maxHeap.offer((long)x);\n        }\n        while (true) {\n            long largest = maxHeap.poll();\n            long rest = total - largest;\n            if (largest == 1 || rest == 1) return true;\n            if (rest == 0 || largest <= rest || largest % rest == 0) return false;\n            long prev = largest % rest;\n            total = rest + prev;\n            maxHeap.offer(prev);\n        }\n    }\n}",
+      "approach": "reverse Euclidean reduction with max-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var isPossible = function(target) {\n    let total = 0n;\n    const maxHeap = [];\n    const push = (val) => {\n        maxHeap.push(val);\n        let i = maxHeap.length - 1;\n        while (i > 0) {\n            const p = (i - 1) >> 1;\n            if (maxHeap[p] >= maxHeap[i]) break;\n            [maxHeap[p], maxHeap[i]] = [maxHeap[i], maxHeap[p]];\n            i = p;\n        }\n    };\n    const pop = () => {\n        const top = maxHeap[0];\n        const bottom = maxHeap.pop();\n        if (maxHeap.length > 0) {\n            maxHeap[0] = bottom;\n            let i = 0;\n            while (true) {\n                let left = 2 * i + 1, right = 2 * i + 2, best = i;\n                if (left < maxHeap.length && maxHeap[left] > maxHeap[best]) best = left;\n                if (right < maxHeap.length && maxHeap[right] > maxHeap[best]) best = right;\n                if (best === i) break;\n                [maxHeap[i], maxHeap[best]] = [maxHeap[best], maxHeap[i]];\n                i = best;\n            }\n        }\n        return top;\n    };\n    for (const x of target) {\n        total += BigInt(x);\n        push(BigInt(x));\n    }\n    while (true) {\n        const largest = pop();\n        const rest = total - largest;\n        if (largest === 1n || rest === 1n) return true;\n        if (rest === 0n || largest <= rest || largest % rest === 0n) return false;\n        const prev = largest % rest;\n        total = rest + prev;\n        push(prev);\n    }\n};",
+      "approach": "reverse Euclidean reduction with max-heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

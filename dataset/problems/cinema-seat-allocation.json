@@ -1,0 +1,80 @@
+{
+  "slug": "cinema-seat-allocation",
+  "number": 1386,
+  "category": "Algorithms",
+  "patterns": [
+    "bit-manipulation-tricks",
+    "hash-map-lookup",
+    "greedy-general"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Only Process Rows with Reserved Seats",
+      "text": "Rows with zero reserved seats can always seat 2 four-person families (seats 2-5 and 6-9)."
+    },
+    {
+      "level": 2,
+      "title": "Three Possible 4-Person Blocks",
+      "text": "In any row, a four-person group can fit only in: left (2-5), right (6-9), or middle (4-7)."
+    },
+    {
+      "level": 3,
+      "title": "Bitmask per Row",
+      "text": "Encode occupied columns using bit positions. For each reserved row, check if left and right fit, or middle fits."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def maxNumberOfFamilies(self, n: int, reservedSeats: list[list[int]]) -> int:\n        rows = defaultdict(int)\n        for r, c in reservedSeats:\n            if 2 <= c <= 9:\n                rows[r] |= (1 << (c - 2))\n        res = 2 * (n - len(rows))\n        for mask in rows.values():\n            left = not (mask & 0b00001111)\n            right = not (mask & 0b11110000)\n            mid = not (mask & 0b00111100)\n            if left and right:\n                res += 2\n            elif left or right or mid:\n                res += 1\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M)",
+    "space": "O(M)",
+    "variables": [
+      "M: number of reserved seats"
+    ],
+    "whyNaiveFails": "Creating an explicit array of size n x 10 causes memory limit exceeded for n up to 10^9.",
+    "spaceTimeTradeoff": "Only storing rows with reservations in a dictionary keeps memory proportional to M.",
+    "interviewerExpectation": "Candidate notices empty rows contribute 2 families automatically and checks bitmasks for affected rows.",
+    "notes": "Columns 1 and 10 do not affect 4-person family placement."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def maxNumberOfFamilies(self, n: int, reservedSeats: list[list[int]]) -> int:\n        rows = defaultdict(int)\n        for r, c in reservedSeats:\n            if 2 <= c <= 9:\n                rows[r] |= (1 << (c - 2))\n        res = 2 * (n - len(rows))\n        for mask in rows.values():\n            left = not (mask & 0b00001111)\n            right = not (mask & 0b11110000)\n            mid = not (mask & 0b00111100)\n            if left and right:\n                res += 2\n            elif left or right or mid:\n                res += 1\n        return res",
+      "approach": "row bitmask compression and sparse row processing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <unordered_map>\n\nclass Solution {\npublic:\n    int maxNumberOfFamilies(int n, std::vector<std::vector<int>>& reservedSeats) {\n        std::unordered_map<int, int> rows;\n        for (const auto& s : reservedSeats) {\n            int r = s[0], c = s[1];\n            if (c >= 2 && c <= 9) {\n                rows[r] |= (1 << (c - 2));\n            }\n        }\n        int res = 2 * (n - (int)rows.size());\n        for (const auto& [_, mask] : rows) {\n            bool left = !(mask & 0x0F);\n            bool right = !(mask & 0xF0);\n            bool mid = !(mask & 0x3C);\n            if (left && right) res += 2;\n            else if (left || right || mid) res += 1;\n        }\n        return res;\n    }\n};",
+      "approach": "row bitmask compression and sparse row processing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxNumberOfFamilies(int n, int[][] reservedSeats) {\n        Map<Integer, Integer> rows = new HashMap<>();\n        for (int[] s : reservedSeats) {\n            int r = s[0], c = s[1];\n            if (c >= 2 && c <= 9) {\n                rows.put(r, rows.getOrDefault(r, 0) | (1 << (c - 2)));\n            }\n        }\n        int res = 2 * (n - rows.size());\n        for (int mask : rows.values()) {\n            boolean left = (mask & 0x0F) == 0;\n            boolean right = (mask & 0xF0) == 0;\n            boolean mid = (mask & 0x3C) == 0;\n            if (left && right) res += 2;\n            else if (left || right || mid) res += 1;\n        }\n        return res;\n    }\n}",
+      "approach": "row bitmask compression and sparse row processing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxNumberOfFamilies = function(n, reservedSeats) {\n    const rows = new Map();\n    for (const [r, c] of reservedSeats) {\n        if (c >= 2 && c <= 9) {\n            rows.set(r, (rows.get(r) || 0) | (1 << (c - 2)));\n        }\n    }\n    let res = 2 * (n - rows.size);\n    for (const mask of rows.values()) {\n        const left = !(mask & 0x0F);\n        const right = !(mask & 0xF0);\n        const mid = !(mask & 0x3C);\n        if (left && right) res += 2;\n        else if (left || right || mid) res += 1;\n    }\n    return res;\n};",
+      "approach": "row bitmask compression and sparse row processing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

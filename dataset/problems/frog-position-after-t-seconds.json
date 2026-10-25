@@ -1,0 +1,79 @@
+{
+  "slug": "frog-position-after-t-seconds",
+  "number": 1377,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path",
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tree Probability Tracking",
+      "text": "The frog starts at vertex 1 with probability 1.0. At each step, it chooses unvisited neighbors with uniform probability."
+    },
+    {
+      "level": 2,
+      "title": "Leaves and Stopping Conditions",
+      "text": "If the frog reaches target before time t and has nowhere else to jump, it stays at target with probability remaining unchanged."
+    },
+    {
+      "level": 3,
+      "title": "Exact Time vs Trapped Target",
+      "text": "Target must either be reached exactly at time t, or reached earlier with no unvisited neighbors left."
+    },
+    {
+      "level": 4,
+      "title": "See the blueprint",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def frogPosition(self, n: int, edges: list[list[int]], t: int, target: int) -> float:\n        if n == 1:\n            return 1.0\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        visited = set([1])\n        prob = {1: 1.0}\n        q = [(1, 0)]\n        while q:\n            u, time_spent = q.pop(0)\n            unvisited = [v for v in adj[u] if v not in visited]\n            count = len(unvisited)\n            if u == target:\n                if time_spent == t or (time_spent < t and count == 0):\n                    return prob[u]\n                return 0.0\n            if time_spent < t and count > 0:\n                for v in unvisited:\n                    visited.add(v)\n                    prob[v] = prob[u] / count\n                    q.append((v, time_spent + 1))\n        return 0.0\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of vertices"
+    ],
+    "whyNaiveFails": "Simulating random walks with Monte Carlo sampling is imprecise and slow.",
+    "spaceTimeTradeoff": "Since the graph is an undirected tree, there is a unique simple path from vertex 1 to target.",
+    "interviewerExpectation": "Candidate calculates the product of branch choices along the path to target and validates boundary conditions.",
+    "notes": "Returns floating point probability."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def frogPosition(self, n: int, edges: list[list[int]], t: int, target: int) -> float:\n        if n == 1:\n            return 1.0\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        visited = set([1])\n        prob = {1: 1.0}\n        q = [(1, 0)]\n        while q:\n            u, time_spent = q.pop(0)\n            unvisited = [v for v in adj[u] if v not in visited]\n            count = len(unvisited)\n            if u == target:\n                if time_spent == t or (time_spent < t and count == 0):\n                    return prob[u]\n                return 0.0\n            if time_spent < t and count > 0:\n                for v in unvisited:\n                    visited.add(v)\n                    prob[v] = prob[u] / count\n                    q.append((v, time_spent + 1))\n        return 0.0",
+      "approach": "BFS probability propagation along tree edges",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n\nclass Solution {\npublic:\n    double frogPosition(int n, std::vector<std::vector<int>>& edges, int t, int target) {\n        if (n == 1) return 1.0;\n        std::vector<std::vector<int>> adj(n + 1);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        std::vector<double> prob(n + 1, 0.0);\n        std::vector<bool> visited(n + 1, false);\n        std::queue<std::pair<int, int>> q;\n        q.push({1, 0});\n        visited[1] = true;\n        prob[1] = 1.0;\n        while (!q.empty()) {\n            auto [u, timeSpent] = q.front();\n            q.pop();\n            int unvisitedCount = 0;\n            for (int v : adj[u]) {\n                if (!visited[v]) unvisitedCount++;\n            }\n            if (u == target) {\n                if (timeSpent == t || (timeSpent < t && unvisitedCount == 0)) return prob[u];\n                return 0.0;\n            }\n            if (timeSpent < t && unvisitedCount > 0) {\n                for (int v : adj[u]) {\n                    if (!visited[v]) {\n                        visited[v] = true;\n                        prob[v] = prob[u] / unvisitedCount;\n                        q.push({v, timeSpent + 1});\n                    }\n                }\n            }\n        }\n        return 0.0;\n    }\n};",
+      "approach": "BFS probability propagation along tree edges",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public double frogPosition(int n, int[][] edges, int t, int target) {\n        if (n == 1) return 1.0;\n        List<List<Integer>> adj = new ArrayList<>(n + 1);\n        for (int i = 0; i <= n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        double[] prob = new double[n + 1];\n        boolean[] visited = new boolean[n + 1];\n        Queue<int[]> q = new LinkedList<>();\n        q.offer(new int[]{1, 0});\n        visited[1] = true;\n        prob[1] = 1.0;\n        while (!q.isEmpty()) {\n            int[] cur = q.poll();\n            int u = cur[0], timeSpent = cur[1];\n            int unvisitedCount = 0;\n            for (int v : adj.get(u)) {\n                if (!visited[v]) unvisitedCount++;\n            }\n            if (u == target) {\n                if (timeSpent == t || (timeSpent < t && unvisitedCount == 0)) return prob[u];\n                return 0.0;\n            }\n            if (timeSpent < t && unvisitedCount > 0) {\n                for (int v : adj.get(u)) {\n                    if (!visited[v]) {\n                        visited[v] = true;\n                        prob[v] = prob[u] / unvisitedCount;\n                        q.offer(new int[]{v, timeSpent + 1});\n                    }\n                }\n            }\n        }\n        return 0.0;\n    }\n}",
+      "approach": "BFS probability propagation along tree edges",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    },
+    {
+      "lang": "javascript",
+      "code": "var frogPosition = function(n, edges, t, target) {\n    if (n === 1) return 1.0;\n    const adj = Array.from({ length: n + 1 }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const prob = new Array(n + 1).fill(0.0);\n    const visited = new Array(n + 1).fill(false);\n    const q = [[1, 0]];\n    visited[1] = true;\n    prob[1] = 1.0;\n    while (q.length > 0) {\n        const [u, timeSpent] = q.shift();\n        let unvisitedCount = 0;\n        for (const v of adj[u]) {\n            if (!visited[v]) unvisitedCount++;\n        }\n        if (u === target) {\n            if (timeSpent === t || (timeSpent < t && unvisitedCount === 0)) return prob[u];\n            return 0.0;\n        }\n        if (timeSpent < t && unvisitedCount > 0) {\n            for (const v of adj[u]) {\n                if (!visited[v]) {\n                    visited[v] = true;\n                    prob[v] = prob[u] / unvisitedCount;\n                    q.push([v, timeSpent + 1]);\n                }\n            }\n        }\n    }\n    return 0.0;\n};",
+      "approach": "BFS probability propagation along tree edges",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
