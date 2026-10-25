@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-number-of-events-that-can-be-attended-ii",
+  "number": 1751,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sort Events by End Time",
+      "text": "Sorting events by end time ensures that schedule choices depend only on preceding non-overlapping events."
+    },
+    {
+      "level": 2,
+      "title": "Binary Search Compatible Predecessor",
+      "text": "For event i starting at start_time, use binary search to locate the last event ending strictly before start_time."
+    },
+    {
+      "level": 3,
+      "title": "Two-Dimensional DP State",
+      "text": "Let dp[i][j] be maximum value from attending at most j events among first i events: dp[i][j] = max(dp[i-1][j], dp[prev][j-1] + value)."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def maxValue(self, events: list[list[int]], k: int) -> int:\n        events.sort(key=lambda x: x[1])\n        n = len(events)\n        ends = [e[1] for e in events]\n        dp = [[0] * (k + 1) for _ in range(n + 1)]\n\n        for i in range(1, n + 1):\n            start, end, val = events[i - 1]\n            p = bisect.bisect_left(ends, start)\n            for j in range(1, k + 1):\n                dp[i][j] = max(dp[i - 1][j], dp[p][j - 1] + val)\n\n        return dp[n][k]\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(n log n + n * k)",
+    "space": "O(n * k)",
+    "variables": [
+      "n is number of events",
+      "k is maximum events attended"
+    ],
+    "whyNaiveFails": "Testing all combinations of non-overlapping events explores exponential subsets.",
+    "spaceTimeTradeoff": "Sorting plus 2D DP with binary search evaluates optimal schedules in O(n log n + n * k) time.",
+    "interviewerExpectation": "Candidate sorts by end time and finds previous non-overlapping event using binary search.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "End-time sorted 2D dynamic programming with binary search predecessor lookup",
+      "code": "import bisect\n\nclass Solution:\n    def maxValue(self, events: list[list[int]], k: int) -> int:\n        events.sort(key=lambda x: x[1])\n        n = len(events)\n        ends = [e[1] for e in events]\n        dp = [[0] * (k + 1) for _ in range(n + 1)]\n\n        for i in range(1, n + 1):\n            start, end, val = events[i - 1]\n            p = bisect.bisect_left(ends, start)\n            for j in range(1, k + 1):\n                dp[i][j] = max(dp[i - 1][j], dp[p][j - 1] + val)\n\n        return dp[n][k]"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "End-time sorted 2D dynamic programming with binary search predecessor lookup",
+      "code": "#include <vector>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    int maxValue(vector<vector<int>>& events, int k) {\n        sort(events.begin(), events.end(), [](const vector<int>& a, const vector<int>& b) {\n            return a[1] < b[1];\n        });\n        int n = events.size();\n        vector<int> ends(n);\n        for (int i = 0; i < n; ++i) ends[i] = events[i][1];\n        vector<vector<int>> dp(n + 1, vector<int>(k + 1, 0));\n\n        for (int i = 1; i <= n; ++i) {\n            int start = events[i - 1][0];\n            int val = events[i - 1][2];\n            int p = lower_bound(ends.begin(), ends.end(), start) - ends.begin();\n            for (int j = 1; j <= k; ++j) {\n                dp[i][j] = max(dp[i - 1][j], dp[p][j - 1] + val);\n            }\n        }\n        return dp[n][k];\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "End-time sorted 2D dynamic programming with binary search predecessor lookup",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    public int maxValue(int[][] events, int k) {\n        Arrays.sort(events, (a, b) -> Integer.compare(a[1], b[1]));\n        int n = events.length;\n        int[] ends = new int[n];\n        for (int i = 0; i < n; ++i) ends[i] = events[i][1];\n        int[][] dp = new int[n + 1][k + 1];\n\n        for (int i = 1; i <= n; ++i) {\n            int start = events[i - 1][0];\n            int val = events[i - 1][2];\n            int low = 0, high = n - 1, p = 0;\n            while (low <= high) {\n                int mid = (low + high) / 2;\n                if (ends[mid] < start) {\n                    p = mid + 1;\n                    low = mid + 1;\n                } else {\n                    high = mid - 1;\n                }\n            }\n            for (int j = 1; j <= k; ++j) {\n                dp[i][j] = Math.max(dp[i - 1][j], dp[p][j - 1] + val);\n            }\n        }\n        return dp[n][k];\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "End-time sorted 2D dynamic programming with binary search predecessor lookup",
+      "code": "/**\n * @param {number[][]} events\n * @param {number} k\n * @return {number}\n */\nvar maxValue = function(events, k) {\n    events.sort((a, b) => a[1] - b[1]);\n    const n = events.length;\n    const ends = events.map(e => e[1]);\n    const dp = Array.from({ length: n + 1 }, () => Array(k + 1).fill(0));\n\n    for (let i = 1; i <= n; ++i) {\n        const start = events[i - 1][0];\n        const val = events[i - 1][2];\n        let low = 0, high = n - 1, p = 0;\n        while (low <= high) {\n            const mid = Math.floor((low + high) / 2);\n            if (ends[mid] < start) {\n                p = mid + 1;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        for (let j = 1; j <= k; ++j) {\n            dp[i][j] = Math.max(dp[i - 1][j], dp[p][j - 1] + val);\n        }\n    }\n    return dp[n][k];\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

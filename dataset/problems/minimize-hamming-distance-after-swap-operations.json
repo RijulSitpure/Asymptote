@@ -1,0 +1,79 @@
+{
+  "slug": "minimize-hamming-distance-after-swap-operations",
+  "number": 1722,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Connected Index Equivalence",
+      "text": "Allowed swaps form transitive equivalence classes: any two indices in the same connected component can be swapped."
+    },
+    {
+      "level": 2,
+      "title": "Disjoint Set Grouping",
+      "text": "Group indices using union-find, then compare multiset frequencies of source and target within each component."
+    },
+    {
+      "level": 3,
+      "title": "Count Multiset Intersection",
+      "text": "For each component, count matches via frequency counts; unmated elements contribute to the Hamming distance."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def minimumHammingDistance(self, source: list[int], target: list[int], allowedSwaps: list[list[int]]) -> int:\n        n = len(source)\n        parent = list(range(n))\n\n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n\n        def union(x: int, y: int) -> None:\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n\n        for u, v in allowedSwaps:\n            union(u, v)\n\n        components = defaultdict(list)\n        for i in range(n):\n            components[find(i)].append(i)\n\n        diff = 0\n        for comp in components.values():\n            freq = defaultdict(int)\n            for idx in comp:\n                freq[source[idx]] += 1\n            for idx in comp:\n                val = target[idx]\n                if freq[val] > 0:\n                    freq[val] -= 1\n                else:\n                    diff += 1\n        return diff\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(n + m * alpha(n))",
+    "space": "O(n)",
+    "variables": [
+      "n is length of source",
+      "m is number of allowed swaps"
+    ],
+    "whyNaiveFails": "Simulating sequences of swaps leads to factorial states.",
+    "spaceTimeTradeoff": "Union-find groups reachable positions so matching reduces to multiset intersection in linear time.",
+    "interviewerExpectation": "Candidate models swaps as an undirected graph and groups elements by connected components.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Union-find component grouping with multiset frequency intersection",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def minimumHammingDistance(self, source: list[int], target: list[int], allowedSwaps: list[list[int]]) -> int:\n        n = len(source)\n        parent = list(range(n))\n\n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n\n        def union(x: int, y: int) -> None:\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n\n        for u, v in allowedSwaps:\n            union(u, v)\n\n        components = defaultdict(list)\n        for i in range(n):\n            components[find(i)].append(i)\n\n        diff = 0\n        for comp in components.values():\n            freq = defaultdict(int)\n            for idx in comp:\n                freq[source[idx]] += 1\n            for idx in comp:\n                val = target[idx]\n                if freq[val] > 0:\n                    freq[val] -= 1\n                else:\n                    diff += 1\n        return diff"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Union-find component grouping with multiset frequency intersection",
+      "code": "#include <vector>\n#include <unordered_map>\nusing namespace std;\n\nclass Solution {\n    int find(int x, vector<int>& parent) {\n        if (parent[x] != x) parent[x] = find(parent[x], parent);\n        return parent[x];\n    }\n    void unite(int x, int y, vector<int>& parent) {\n        int rx = find(x, parent), ry = find(y, parent);\n        if (rx != ry) parent[rx] = ry;\n    }\n\npublic:\n    int minimumHammingDistance(vector<int>& source, vector<int>& target, vector<vector<int>>& allowedSwaps) {\n        int n = source.size();\n        vector<int> parent(n);\n        for (int i = 0; i < n; ++i) parent[i] = i;\n        for (const auto& e : allowedSwaps) {\n            unite(e[0], e[1], parent);\n        }\n        unordered_map<int, vector<int>> comps;\n        for (int i = 0; i < n; ++i) {\n            comps[find(i, parent)].push_back(i);\n        }\n        int diff = 0;\n        for (const auto& [root, indices] : comps) {\n            unordered_map<int, int> freq;\n            for (int idx : indices) freq[source[idx]]++;\n            for (int idx : indices) {\n                int val = target[idx];\n                if (freq[val] > 0) {\n                    freq[val]--;\n                } else {\n                    diff++;\n                }\n            }\n        }\n        return diff;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Union-find component grouping with multiset frequency intersection",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int find(int x, int[] parent) {\n        if (parent[x] != x) parent[x] = find(parent[x], parent);\n        return parent[x];\n    }\n\n    private void union(int x, int y, int[] parent) {\n        int rx = find(x, parent), ry = find(y, parent);\n        if (rx != ry) parent[rx] = ry;\n    }\n\n    public int minimumHammingDistance(int[] source, int[] target, int[][] allowedSwaps) {\n        int n = source.length;\n        int[] parent = new int[n];\n        for (int i = 0; i < n; ++i) parent[i] = i;\n        for (int[] e : allowedSwaps) {\n            union(e[0], e[1], parent);\n        }\n        Map<Integer, List<Integer>> comps = new HashMap<>();\n        for (int i = 0; i < n; ++i) {\n            int root = find(i, parent);\n            comps.computeIfAbsent(root, k -> new ArrayList<>()).add(i);\n        }\n        int diff = 0;\n        for (List<Integer> indices : comps.values()) {\n            Map<Integer, Integer> freq = new HashMap<>();\n            for (int idx : indices) {\n                freq.put(source[idx], freq.getOrDefault(source[idx], 0) + 1);\n            }\n            for (int idx : indices) {\n                int val = target[idx];\n                int count = freq.getOrDefault(val, 0);\n                if (count > 0) {\n                    freq.put(val, count - 1);\n                } else {\n                    diff++;\n                }\n            }\n        }\n        return diff;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Union-find component grouping with multiset frequency intersection",
+      "code": "/**\n * @param {number[]} source\n * @param {number[]} target\n * @param {number[][]} allowedSwaps\n * @return {number}\n */\nvar minimumHammingDistance = function(source, target, allowedSwaps) {\n    const n = source.length;\n    const parent = Array.from({ length: n }, (_, i) => i);\n\n    function find(x) {\n        if (parent[x] !== x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n\n    function union(x, y) {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) parent[rx] = ry;\n    }\n\n    for (const [u, v] of allowedSwaps) {\n        union(u, v);\n    }\n\n    const comps = new Map();\n    for (let i = 0; i < n; ++i) {\n        const root = find(i);\n        if (!comps.has(root)) comps.set(root, []);\n        comps.get(root).push(i);\n    }\n\n    let diff = 0;\n    for (const indices of comps.values()) {\n        const freq = new Map();\n        for (const idx of indices) {\n            freq.set(source[idx], (freq.get(source[idx]) || 0) + 1);\n        }\n        for (const idx of indices) {\n            const val = target[idx];\n            const cnt = freq.get(val) || 0;\n            if (cnt > 0) {\n                freq.set(val, cnt - 1);\n            } else {\n                diff++;\n            }\n        }\n    }\n    return diff;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

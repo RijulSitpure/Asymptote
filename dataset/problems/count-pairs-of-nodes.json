@@ -1,0 +1,80 @@
+{
+  "slug": "count-pairs-of-nodes",
+  "number": 1782,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Incident Edges Equation",
+      "text": "The number of edges incident to pair (u, v) equals degree[u] + degree[v] minus shared edges between u and v."
+    },
+    {
+      "level": 2,
+      "title": "Two Pointers on Sorted Degrees",
+      "text": "Sort a copy of node degrees. For each query q, use two pointers to count pairs where deg[u] + deg[v] > q."
+    },
+    {
+      "level": 3,
+      "title": "Adjust for Shared Edges",
+      "text": "Iterate through distinct edges (u, v). If deg[u] + deg[v] > q but deg[u] + deg[v] - shared <= q, decrement count."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def countPairs(self, n: int, edges: list[list[int]], queries: list[int]) -> list[int]:\n        deg = [0] * (n + 1)\n        shared = defaultdict(int)\n        for u, v in edges:\n            deg[u] += 1\n            deg[v] += 1\n            if u > v:\n                u, v = v, u\n            shared[(u, v)] += 1\n\n        sorted_deg = sorted(deg[1:])\n        ans = []\n\n        for q in queries:\n            count = 0\n            l, r = 0, n - 1\n            while l < r:\n                if sorted_deg[l] + sorted_deg[r] > q:\n                    count += (r - l)\n                    r -= 1\n                else:\n                    l += 1\n\n            for (u, v), edge_count in shared.items():\n                if deg[u] + deg[v] > q and deg[u] + deg[v] - edge_count <= q:\n                    count -= 1\n\n            ans.append(count)\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(q * (n + E) + E)",
+    "space": "O(n + E)",
+    "variables": [
+      "n is number of nodes",
+      "E is number of edges",
+      "q is number of queries"
+    ],
+    "whyNaiveFails": "Testing all O(n^2) pairs for every query takes O(q * n^2) which times out for n = 20,000.",
+    "spaceTimeTradeoff": "Sorted degree two-pointer sweep plus edge subtraction adjusts answers in O(q * (n + E)) time.",
+    "interviewerExpectation": "Candidate uses two-pointer counting on degree sums before correcting for shared edges.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sorted degree two-pointer sweep with shared edge correction",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def countPairs(self, n: int, edges: list[list[int]], queries: list[int]) -> list[int]:\n        deg = [0] * (n + 1)\n        shared = defaultdict(int)\n        for u, v in edges:\n            deg[u] += 1\n            deg[v] += 1\n            if u > v:\n                u, v = v, u\n            shared[(u, v)] += 1\n\n        sorted_deg = sorted(deg[1:])\n        ans = []\n\n        for q in queries:\n            count = 0\n            l, r = 0, n - 1\n            while l < r:\n                if sorted_deg[l] + sorted_deg[r] > q:\n                    count += (r - l)\n                    r -= 1\n                else:\n                    l += 1\n\n            for (u, v), edge_count in shared.items():\n                if deg[u] + deg[v] > q and deg[u] + deg[v] - edge_count <= q:\n                    count -= 1\n\n            ans.append(count)\n\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sorted degree two-pointer sweep with shared edge correction",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> countPairs(int n, vector<vector<int>>& edges, vector<int>& queries) {\n        vector<int> deg(n + 1, 0);\n        unordered_map<long long, int> shared;\n        for (const auto& e : edges) {\n            int u = e[0], v = e[1];\n            deg[u]++;\n            deg[v]++;\n            if (u > v) swap(u, v);\n            long long key = ((long long)u << 32) | v;\n            shared[key]++;\n        }\n\n        vector<int> sorted_deg(deg.begin() + 1, deg.end());\n        sort(sorted_deg.begin(), sorted_deg.end());\n\n        vector<int> ans;\n        ans.reserve(queries.size());\n\n        for (int q : queries) {\n            int count = 0;\n            int l = 0, r = n - 1;\n            while (l < r) {\n                if (sorted_deg[l] + sorted_deg[r] > q) {\n                    count += (r - l);\n                    r--;\n                } else {\n                    l++;\n                }\n            }\n\n            for (const auto& [key, edge_count] : shared) {\n                int u = key >> 32;\n                int v = key & 0xFFFFFFFFLL;\n                if (deg[u] + deg[v] > q && deg[u] + deg[v] - edge_count <= q) {\n                    count--;\n                }\n            }\n            ans.push_back(count);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sorted degree two-pointer sweep with shared edge correction",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] countPairs(int n, int[][] edges, int[] queries) {\n        int[] deg = new int[n + 1];\n        Map<Long, Integer> shared = new HashMap<>();\n        for (int[] e : edges) {\n            int u = e[0], v = e[1];\n            deg[u]++;\n            deg[v]++;\n            if (u > v) { int t = u; u = v; v = t; }\n            long key = (((long)u) << 32) | (v & 0xFFFFFFFFL);\n            shared.put(key, shared.getOrDefault(key, 0) + 1);\n        }\n\n        int[] sortedDeg = new int[n];\n        System.arraycopy(deg, 1, sortedDeg, 0, n);\n        Arrays.sort(sortedDeg);\n\n        int[] ans = new int[queries.length];\n        for (int qi = 0; qi < queries.length; ++qi) {\n            int q = queries[qi];\n            int count = 0;\n            int l = 0, r = n - 1;\n            while (l < r) {\n                if (sortedDeg[l] + sortedDeg[r] > q) {\n                    count += (r - l);\n                    r--;\n                } else {\n                    l++;\n                }\n            }\n\n            for (Map.Entry<Long, Integer> entry : shared.entrySet()) {\n                long key = entry.getKey();\n                int u = (int)(key >>> 32);\n                int v = (int)(key & 0xFFFFFFFFL);\n                int edgeCount = entry.getValue();\n                if (deg[u] + deg[v] > q && deg[u] + deg[v] - edgeCount <= q) {\n                    count--;\n                }\n            }\n            ans[qi] = count;\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Sorted degree two-pointer sweep with shared edge correction",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number[]} queries\n * @return {number[]}\n */\nvar countPairs = function(n, edges, queries) {\n    const deg = Array(n + 1).fill(0);\n    const shared = new Map();\n    for (const [u, v] of edges) {\n        deg[u]++;\n        deg[v]++;\n        const minNode = Math.min(u, v);\n        const maxNode = Math.max(u, v);\n        const key = `${minNode},${maxNode}`;\n        shared.set(key, (shared.get(key) || 0) + 1);\n    }\n\n    const sortedDeg = deg.slice(1).sort((a, b) => a - b);\n    const ans = [];\n\n    for (const q of queries) {\n        let count = 0;\n        let l = 0, r = n - 1;\n        while (l < r) {\n            if (sortedDeg[l] + sortedDeg[r] > q) {\n                count += (r - l);\n                r--;\n            } else {\n                l++;\n            }\n        }\n\n        for (const [key, edgeCount] of shared) {\n            const [u, v] = key.split(',').map(Number);\n            if (deg[u] + deg[v] > q && deg[u] + deg[v] - edgeCount <= q) {\n                count--;\n            }\n        }\n        ans.push(count);\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

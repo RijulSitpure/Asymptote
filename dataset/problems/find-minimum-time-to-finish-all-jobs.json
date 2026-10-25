@@ -1,0 +1,79 @@
+{
+  "slug": "find-minimum-time-to-finish-all-jobs",
+  "number": 1723,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sort Jobs Descending",
+      "text": "Assigning the largest jobs first allows early pruning when accumulated load exceeds the current best maximum."
+    },
+    {
+      "level": 2,
+      "title": "Worker Symmetry Breaking",
+      "text": "If a worker currently has zero assigned time, assign the job to that worker and skip subsequent empty workers."
+    },
+    {
+      "level": 3,
+      "title": "Prune Suboptimal Branches",
+      "text": "If assigning a job to a worker meets or exceeds the current minimum upper bound, prune the branch immediately."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nclass Solution:\n    def minimumTimeRequired(self, jobs: list[int], k: int) -> int:\n        jobs.sort(reverse=True)\n        workers = [0] * k\n        self.ans = sum(jobs)\n\n        def backtrack(idx: int) -> None:\n            if idx == len(jobs):\n                self.ans = min(self.ans, max(workers))\n                return\n            job = jobs[idx]\n            for i in range(k):\n                if workers[i] + job >= self.ans:\n                    continue\n                workers[i] += job\n                backtrack(idx + 1)\n                workers[i] -= job\n                if workers[i] == 0:\n                    break\n\n        backtrack(0)\n        return self.ans\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(k^n)",
+    "space": "O(k + n)",
+    "variables": [
+      "n is number of jobs (<= 12)",
+      "k is number of workers"
+    ],
+    "whyNaiveFails": "Assigning n jobs to k workers naively explores k^n states.",
+    "spaceTimeTradeoff": "Descending sort plus empty-worker symmetry reduction prunes vast portions of the state tree.",
+    "interviewerExpectation": "Candidate explains symmetry-breaking optimizations and branch-and-bound pruning.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Backtracking with descending job sort and symmetry breaking",
+      "code": "class Solution:\n    def minimumTimeRequired(self, jobs: list[int], k: int) -> int:\n        jobs.sort(reverse=True)\n        workers = [0] * k\n        self.ans = sum(jobs)\n\n        def backtrack(idx: int) -> None:\n            if idx == len(jobs):\n                self.ans = min(self.ans, max(workers))\n                return\n            job = jobs[idx]\n            for i in range(k):\n                if workers[i] + job >= self.ans:\n                    continue\n                workers[i] += job\n                backtrack(idx + 1)\n                workers[i] -= job\n                if workers[i] == 0:\n                    break\n\n        backtrack(0)\n        return self.ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Backtracking with descending job sort and symmetry breaking",
+      "code": "#include <vector>\n#include <numeric>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\n    int ans;\n\n    void backtrack(int idx, const vector<int>& jobs, vector<int>& workers, int k) {\n        if (idx == jobs.size()) {\n            int mx = 0;\n            for (int w : workers) mx = max(mx, w);\n            ans = min(ans, mx);\n            return;\n        }\n        int job = jobs[idx];\n        for (int i = 0; i < k; ++i) {\n            if (workers[i] + job >= ans) continue;\n            workers[i] += job;\n            backtrack(idx + 1, jobs, workers, k);\n            workers[i] -= job;\n            if (workers[i] == 0) break;\n        }\n    }\n\npublic:\n    int minimumTimeRequired(vector<int>& jobs, int k) {\n        sort(jobs.rbegin(), jobs.rend());\n        workers_init:\n        vector<int> workers(k, 0);\n        ans = accumulate(jobs.begin(), jobs.end(), 0);\n        backtrack(0, jobs, workers, k);\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Backtracking with descending job sort and symmetry breaking",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    private int ans;\n\n    private void backtrack(int idx, int[] jobs, int[] workers, int k) {\n        if (idx == jobs.length) {\n            int mx = 0;\n            for (int w : workers) mx = Math.max(mx, w);\n            ans = Math.min(ans, mx);\n            return;\n        }\n        int job = jobs[idx];\n        for (int i = 0; i < k; ++i) {\n            if (workers[i] + job >= ans) continue;\n            workers[i] += job;\n            backtrack(idx + 1, jobs, workers, k);\n            workers[i] -= job;\n            if (workers[i] == 0) break;\n        }\n    }\n\n    public int minimumTimeRequired(int[] jobs, int k) {\n        Arrays.sort(jobs);\n        for (int i = 0, j = jobs.length - 1; i < j; ++i, --j) {\n            int t = jobs[i]; jobs[i] = jobs[j]; jobs[j] = t;\n        }\n        int[] workers = new int[k];\n        ans = 0;\n        for (int j : jobs) ans += j;\n        backtrack(0, jobs, workers, k);\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Backtracking with descending job sort and symmetry breaking",
+      "code": "/**\n * @param {number[]} jobs\n * @param {number} k\n * @return {number}\n */\nvar minimumTimeRequired = function(jobs, k) {\n    jobs.sort((a, b) => b - a);\n    const workers = Array(k).fill(0);\n    let ans = jobs.reduce((a, b) => a + b, 0);\n\n    function backtrack(idx) {\n        if (idx === jobs.length) {\n            ans = Math.min(ans, Math.max(...workers));\n            return;\n        }\n        const job = jobs[idx];\n        for (let i = 0; i < k; ++i) {\n            if (workers[i] + job >= ans) continue;\n            workers[i] += job;\n            backtrack(idx + 1);\n            workers[i] -= job;\n            if (workers[i] === 0) break;\n        }\n    }\n\n    backtrack(0);\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}

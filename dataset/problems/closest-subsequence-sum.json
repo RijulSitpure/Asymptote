@@ -1,0 +1,78 @@
+{
+  "slug": "closest-subsequence-sum",
+  "number": 1755,
+  "category": "Algorithms",
+  "patterns": [
+    "two-pointers-opposite"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Meet in the Middle Partition",
+      "text": "Because n is up to 40, split nums into two halves of size up to 20 to avoid 2^40 brute force."
+    },
+    {
+      "level": 2,
+      "title": "Generate Half Subsequence Sums",
+      "text": "Generate all 2^(n/2) subset sums for left half and right half, then sort the right subset sums."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search for Complements",
+      "text": "For each sum in the left half, binary search in right sums to find values closest to goal minus left sum."
+    },
+    {
+      "level": 4,
+      "title": "Full Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def minAbsDifference(self, nums: list[int], goal: int) -> int:\n        n = len(nums)\n        mid = n // 2\n        left_nums = nums[:mid]\n        right_nums = nums[mid:]\n\n        def get_sums(arr: list[int]) -> list[int]:\n            sums = [0]\n            for x in arr:\n                sums += [s + x for s in sums]\n            return sums\n\n        left_sums = get_sums(left_nums)\n        right_sums = sorted(get_sums(right_nums))\n\n        ans = float('inf')\n        m = len(right_sums)\n        for s in left_sums:\n            target = goal - s\n            idx = bisect.bisect_left(right_sums, target)\n            if idx < m:\n                ans = min(ans, abs(s + right_sums[idx] - goal))\n            if idx > 0:\n                ans = min(ans, abs(s + right_sums[idx - 1] - goal))\n            if ans == 0:\n                return 0\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "time": "O(2^(n/2) * (n/2))",
+    "space": "O(2^(n/2))",
+    "variables": [
+      "n is length of nums (<= 40)"
+    ],
+    "whyNaiveFails": "Checking all 2^40 subsets takes trillions of operations.",
+    "spaceTimeTradeoff": "Meet-in-the-middle splits 2^40 into two 2^20 sets, solvable in seconds with binary search.",
+    "interviewerExpectation": "Candidate immediately identifies meet-in-the-middle technique for n around 40.",
+    "kind": "big-o",
+    "notes": "Optimal Big-O bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Meet-in-the-middle subset generation with binary search",
+      "code": "import bisect\n\nclass Solution:\n    def minAbsDifference(self, nums: list[int], goal: int) -> int:\n        n = len(nums)\n        mid = n // 2\n        left_nums = nums[:mid]\n        right_nums = nums[mid:]\n\n        def get_sums(arr: list[int]) -> list[int]:\n            sums = [0]\n            for x in arr:\n                sums += [s + x for s in sums]\n            return sums\n\n        left_sums = get_sums(left_nums)\n        right_sums = sorted(get_sums(right_nums))\n\n        ans = float('inf')\n        m = len(right_sums)\n        for s in left_sums:\n            target = goal - s\n            idx = bisect.bisect_left(right_sums, target)\n            if idx < m:\n                ans = min(ans, abs(s + right_sums[idx] - goal))\n            if idx > 0:\n                ans = min(ans, abs(s + right_sums[idx - 1] - goal))\n            if ans == 0:\n                return 0\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Meet-in-the-middle subset generation with binary search",
+      "code": "#include <vector>\n#include <algorithm>\n#include <cmath>\nusing namespace std;\n\nclass Solution {\n    void getSums(const vector<int>& arr, vector<int>& sums) {\n        sums.push_back(0);\n        for (int x : arr) {\n            int sz = sums.size();\n            for (int i = 0; i < sz; ++i) {\n                sums.push_back(sums[i] + x);\n            }\n        }\n    }\n\npublic:\n    int minAbsDifference(vector<int>& nums, int goal) {\n        int n = nums.size();\n        int mid = n / 2;\n        vector<int> left_nums(nums.begin(), nums.begin() + mid);\n        vector<int> right_nums(nums.begin() + mid, nums.end());\n\n        vector<int> left_sums, right_sums;\n        getSums(left_nums, left_sums);\n        getSums(right_nums, right_sums);\n        sort(right_sums.begin(), right_sums.end());\n\n        int ans = 2e9;\n        int m = right_sums.size();\n        for (int s : left_sums) {\n            int target = goal - s;\n            auto it = lower_bound(right_sums.begin(), right_sums.end(), target);\n            if (it != right_sums.end()) {\n                ans = min(ans, abs(s + *it - goal));\n            }\n            if (it != right_sums.begin()) {\n                ans = min(ans, abs(s + *prev(it) - goal));\n            }\n            if (ans == 0) return 0;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Meet-in-the-middle subset generation with binary search",
+      "code": "import java.util.*;\n\nclass Solution {\n    private List<Integer> getSums(int[] arr) {\n        List<Integer> sums = new ArrayList<>();\n        sums.add(0);\n        for (int x : arr) {\n            int sz = sums.size();\n            for (int i = 0; i < sz; ++i) {\n                sums.add(sums.get(i) + x);\n            }\n        }\n        return sums;\n    }\n\n    public int minAbsDifference(int[] nums, int goal) {\n        int n = nums.length;\n        int mid = n / 2;\n        int[] leftNums = Arrays.copyOfRange(nums, 0, mid);\n        int[] rightNums = Arrays.copyOfRange(nums, mid, n);\n\n        List<Integer> leftSums = getSums(leftNums);\n        List<Integer> rightSums = getSums(rightNums);\n        Collections.sort(rightSums);\n\n        int ans = Integer.MAX_VALUE;\n        int m = rightSums.size();\n        for (int s : leftSums) {\n            int target = goal - s;\n            int idx = Collections.binarySearch(rightSums, target);\n            if (idx >= 0) return 0;\n            idx = -(idx + 1);\n            if (idx < m) {\n                ans = Math.min(ans, Math.abs(s + rightSums.get(idx) - goal));\n            }\n            if (idx > 0) {\n                ans = Math.min(ans, Math.abs(s + rightSums.get(idx - 1) - goal));\n            }\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-25",
+      "approach": "Meet-in-the-middle subset generation with binary search",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} goal\n * @return {number}\n */\nvar minAbsDifference = function(nums, goal) {\n    const n = nums.length;\n    const mid = Math.floor(n / 2);\n    const leftNums = nums.slice(0, mid);\n    const rightNums = nums.slice(mid);\n\n    const getSums = (arr) => {\n        let sums = [0];\n        for (const x of arr) {\n            const next = [];\n            for (let i = 0; i < sums.length; ++i) {\n                next.push(sums[i] + x);\n            }\n            sums = sums.concat(next);\n        }\n        return sums;\n    };\n\n    const leftSums = getSums(leftNums);\n    const rightSums = getSums(rightNums).sort((a, b) => a - b);\n\n    let ans = Infinity;\n    const m = rightSums.length;\n    for (const s of leftSums) {\n        const target = goal - s;\n        let low = 0, high = m;\n        while (low < high) {\n            const midIdx = Math.floor((low + high) / 2);\n            if (rightSums[midIdx] < target) low = midIdx + 1;\n            else high = midIdx;\n        }\n        if (low < m) {\n            ans = Math.min(ans, Math.abs(s + rightSums[low] - goal));\n        }\n        if (low > 0) {\n            ans = Math.min(ans, Math.abs(s + rightSums[low - 1] - goal));\n        }\n        if (ans === 0) return 0;\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-25T00:00:00.000Z"
+}
