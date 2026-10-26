@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import {
   fetchPatterns,
   fetchProblems,
@@ -61,6 +62,9 @@ describe('React Dashboard Serverless Wiring & Bundle Verification', () => {
   // 2. Build Bundle Artifacts & Relative Paths
   it('2. Verifies build output in extension/dashboard/ has relative ./assets paths', () => {
     const dashboardHtmlPath = path.resolve(process.cwd(), 'extension', 'dashboard', 'index.html');
+    if (!fs.existsSync(dashboardHtmlPath)) {
+      execSync('npm run build', { stdio: 'pipe' });
+    }
     expect(fs.existsSync(dashboardHtmlPath)).toBe(true);
 
     const html = fs.readFileSync(dashboardHtmlPath, 'utf8');

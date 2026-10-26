@@ -234,12 +234,42 @@ async function main() {
     console.log(`[SKIP] pandas Runner: ${msg}`);
   }
 
-  const targetSlug = process.argv[2];
+  const isCiMode = process.argv.includes('--ci') || process.argv.includes('--smoke');
+  const targetSlug = process.argv.slice(2).find(arg => !arg.startsWith('--'));
   let testDirs = fs.existsSync(testsDir)
     ? fs.readdirSync(testsDir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name)
     : [];
   if (targetSlug) {
     testDirs = testDirs.filter(d => d === targetSlug);
+  } else if (isCiMode) {
+    // In CI mode, test all specialized domains (Database, Pandas, Shell, Concurrency, JavaScript)
+    // plus a curated representative sample of 15 Algorithms problems across patterns
+    const sampleSlugs = new Set();
+    for (const slug of testDirs) {
+      const probFile = path.join(datasetDir, 'problems', `${slug}.json`);
+      if (!fs.existsSync(probFile)) continue;
+      try {
+        const prob = JSON.parse(fs.readFileSync(probFile, 'utf8'));
+        if (prob.category !== 'Algorithms') {
+          sampleSlugs.add(slug);
+        }
+      } catch (_e) {
+        // ignore
+      }
+    }
+    const sampleAlgo = [
+      'two-sum', 'valid-parentheses', 'merge-two-sorted-lists', 'best-time-to-buy-and-sell-stock',
+      'valid-palindrome', 'invert-binary-tree', 'climbing-stairs', 'maximum-subarray',
+      'reverse-linked-list', 'coin-change', 'course-schedule', 'number-of-islands',
+      'longest-substring-without-repeating-characters', 'binary-search', 'kth-largest-element-in-an-array'
+    ];
+    for (const slug of sampleAlgo) {
+      if (testDirs.includes(slug)) {
+        sampleSlugs.add(slug);
+      }
+    }
+    testDirs = testDirs.filter(d => sampleSlugs.has(d));
+    console.log(`[CI Mode] Running representative multi-domain test suite (${testDirs.length} problem suites)...`);
   }
 
   console.log(`\nFound ${testDirs.length} problem test suite(s) in dataset/tests/`);
