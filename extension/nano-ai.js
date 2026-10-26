@@ -1,12 +1,12 @@
 // generated, do not edit - source: shared/nano-ai.js
+(function (global) {
 /**
  * Asymptote - On-Device AI Mentor Module (Gemini Nano Prompt API)
  * Universal module: works in browser, Node.js, and Chrome Extension content script / popup.
  * Provides on-device LLM explanations using Chrome's built-in Gemini Nano (window.ai.languageModel),
  * with deterministic Socratic fallback when Gemini Nano is not enabled.
  */
-
-export function renderMarkdownToHtml(markdown) {
+function renderMarkdownToHtml(markdown) {
     if (!markdown) return '';
     let html = String(markdown).trim();
 
@@ -69,7 +69,7 @@ export function renderMarkdownToHtml(markdown) {
    * Checks availability of Chrome's built-in Gemini Nano Prompt API (LanguageModel).
    * Returns: { available: 'available' | 'downloadable' | 'downloading' | 'unavailable', isNative: boolean, statusText: string }
    */
-export async function checkNanoAIAvailability() {
+async function checkNanoAIAvailability() {
     try {
       const lm = (typeof LanguageModel !== 'undefined')
         ? LanguageModel
@@ -153,7 +153,7 @@ export async function checkNanoAIAvailability() {
   /**
    * Build the structured prompt for the LLM based on user prompt / request.
    */
-export function buildNanoPrompt({ problem, pattern, code, lang, prompt: userPrompt = '', mode = 'intuition' }) {
+function buildNanoPrompt({ problem, pattern, code, lang, prompt: userPrompt = '', mode = 'intuition' }) {
     const title = problem?.title || 'Algorithmic Problem';
     const number = problem?.number || problem?.frontend_id || '';
     const patternTitle = pattern?.title || problem?.pattern_title || 'Algorithmic Pattern';
@@ -192,7 +192,7 @@ Format your response in concise, markdown bullet points. Do not include introduc
    * Used when Chrome's Gemini Nano is unavailable or disabled.
    * Synthesizes 4-level hints + complexity analysis into a coherent explanation.
    */
-export function synthesizeOfflineSocraticExplanation({ problem, pattern, code: _code, lang: _lang, prompt: userPrompt = '', mode = 'intuition' }) {
+function synthesizeOfflineSocraticExplanation({ problem, pattern, code: _code, lang: _lang, prompt: userPrompt = '', mode = 'intuition' }) {
     const patternTitle = pattern?.title || problem?.pattern_title || 'Algorithmic Pattern';
     const complexity = problem?.complexity || {};
     const hints = problem?.hints || [];
@@ -258,7 +258,7 @@ export function synthesizeOfflineSocraticExplanation({ problem, pattern, code: _
    * Attempts live on-device Gemini Nano streaming/generation if available;
    * seamlessly falls back to offline Socratic synthesis if unavailable.
    */
-export async function explainSolutionWithNano({
+async function explainSolutionWithNano({
     problem,
     pattern,
     code,
@@ -376,4 +376,4 @@ export async function explainSolutionWithNano({
     globalThis.NanoAIModule = api;
   }
 
-  export default api;
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);

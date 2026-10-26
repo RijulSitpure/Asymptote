@@ -1,11 +1,11 @@
 // generated, do not edit - source: shared/curriculum-roadmap.js
+(function (global) {
 /**
  * Asymptote - Curriculum & Problem Roadmap
  * Universal module: works in browser, Node.js, and Chrome Extension.
  * Defines the initial 13-topic algorithmic curriculum from Algomap.
  */
-
-export const COURSE_ROADMAP = [
+const COURSE_ROADMAP = [
     {
         "id": "arrays-strings",
         "stageNumber": 1,
@@ -943,7 +943,7 @@ export const COURSE_ROADMAP = [
    * @param {Array} roadmap The COURSE_ROADMAP array
    * @param {Array|Set} solvedProblems List of solved problem objects or slug/number strings
    */
-export function calculateCurriculumProgress(roadmap = COURSE_ROADMAP, solvedProblems = []) {
+function calculateCurriculumProgress(roadmap = COURSE_ROADMAP, solvedProblems = []) {
     const solvedSet = new Set();
 
     if (Array.isArray(solvedProblems)) {
@@ -1040,4 +1040,4 @@ export function calculateCurriculumProgress(roadmap = COURSE_ROADMAP, solvedProb
     globalThis.CurriculumRoadmapModule = api;
   }
 
-  export default api;
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);

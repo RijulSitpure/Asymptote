@@ -187,4 +187,104 @@ describe('Chrome Extension Wiring & Offline Contract', () => {
     expect(concProb.complexity.space).toBe('n/a');
     expect(concProb.complexity.notes).toContain('Ping-pong synchronization');
   });
+
+  // 6. Classic Script Compatibility (No export/import in content scripts or popup scripts)
+  it('6. Asserts zero ES module exports/imports in Manifest V3 classic content scripts and popup scripts', () => {
+    const manifestPath = path.resolve(process.cwd(), 'extension', 'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+
+    const contentScripts = (manifest.content_scripts || []).flatMap(cs => cs.js || []);
+    expect(contentScripts.length).toBeGreaterThan(0);
+
+    const popupHtmlPath = path.resolve(process.cwd(), 'extension', 'popup.html');
+    const popupHtml = fs.readFileSync(popupHtmlPath, 'utf8');
+    const popupScriptMatches = [...popupHtml.matchAll(/<script\s+src="([^"]+)"><\/script>/g)].map(m => m[1]);
+    expect(popupScriptMatches.length).toBeGreaterThan(0);
+
+    const classicScripts = Array.from(new Set([...contentScripts, ...popupScriptMatches]));
+
+    for (const scriptName of classicScripts) {
+      const scriptPath = path.resolve(process.cwd(), 'extension', scriptName);
+      expect(fs.existsSync(scriptPath)).toBe(true);
+
+      const content = fs.readFileSync(scriptPath, 'utf8');
+      const forbiddenExportMatch = content.match(/^\s*(export|import)\b/m);
+      expect(
+        forbiddenExportMatch,
+        `Forbidden ES module statement '${forbiddenExportMatch?.[0]}' found in classic script ${scriptName}. Chrome Manifest V3 classic scripts will fail with Uncaught SyntaxError!`
+      ).toBeNull();
+    }
+  });
+
+  // 7. Sequential Execution and Scope Isolation
+  it('7. Verifies that all content scripts execute in shared page context without identifier collisions', async () => {
+    const vm = await import('node:vm');
+    const manifestPath = path.resolve(process.cwd(), 'extension', 'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const contentScripts = manifest.content_scripts[0].js;
+
+    const mockEl = () => ({
+      setAttribute: () => {},
+      appendChild: () => {},
+      style: {},
+      addEventListener: () => {},
+      attachShadow: () => mockEl(),
+      getElementById: () => null,
+      querySelector: () => null,
+      querySelectorAll: () => []
+    });
+
+    const context = {
+      console,
+      setTimeout: () => {},
+      clearTimeout: () => {},
+      setInterval: () => {},
+      clearInterval: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      MutationObserver: class { observe() {} disconnect() {} },
+      location: { href: 'https://leetcode.com/problems/two-sum/', pathname: '/problems/two-sum/' },
+      document: {
+        readyState: 'complete',
+        head: { appendChild: () => {} },
+        body: { appendChild: () => {} },
+        getElementById: () => null,
+        createElement: () => mockEl(),
+        querySelector: () => null,
+        querySelectorAll: () => [],
+        addEventListener: () => {}
+      },
+      chrome: {
+        runtime: {
+          getURL: (p) => 'chrome-extension://dummy-id/' + p,
+          sendMessage: (_msg, cb) => cb && cb({ success: true }),
+          onMessage: { addListener: () => {} }
+        },
+        storage: {
+          local: {
+            get: (_k, cb) => cb && cb({}),
+            set: (_d, cb) => cb && cb()
+          }
+        }
+      }
+    };
+    context.window = context;
+    context.globalThis = context;
+    context.self = context;
+
+    vm.createContext(context);
+
+    for (const scriptName of contentScripts) {
+      const scriptPath = path.resolve(process.cwd(), 'extension', scriptName);
+      const code = fs.readFileSync(scriptPath, 'utf8');
+      expect(() => {
+        vm.runInContext(code, context);
+      }).not.toThrow();
+    }
+
+    expect(typeof context.LanguagesModule).toBe('object');
+    expect(typeof context.NanoAIModule).toBe('object');
+    expect(typeof context.NanoChatService).toBe('object');
+    expect(typeof context.CurriculumRoadmapModule).toBe('object');
+  });
 });

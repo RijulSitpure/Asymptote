@@ -39,6 +39,22 @@ if (fs.existsSync(legacyDatasetManifest)) {
   fs.unlinkSync(legacyDatasetManifest);
 }
 
+// Verify that classic content scripts contain NO ES module exports or imports
+const manifest = JSON.parse(fs.readFileSync(path.join(EXTENSION_DIR, 'manifest.json'), 'utf8'));
+const contentScripts = (manifest.content_scripts || []).flatMap(cs => cs.js || []);
+for (const scriptFile of contentScripts) {
+  const fullPath = path.join(EXTENSION_DIR, scriptFile);
+  if (fs.existsSync(fullPath)) {
+    const code = fs.readFileSync(fullPath, 'utf8');
+    const match = code.match(/^\s*(export|import)\b/m);
+    if (match) {
+      console.error(`FATAL: Content script ${scriptFile} contains an '${match[1]}' statement! Chrome Manifest V3 content scripts are executed as classic scripts and will throw Uncaught SyntaxError.`);
+      process.exit(1);
+    }
+  }
+}
+console.log('✓ Verified content scripts contain zero ES module exports/imports.');
+
 // 2. Ensure dist/ exists and remove stale zip
 fs.mkdirSync(DIST_DIR, { recursive: true });
 if (fs.existsSync(OUTPUT_ZIP)) {
