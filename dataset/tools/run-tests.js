@@ -677,9 +677,32 @@ async function main() {
     skippedRunners.forEach(s => console.log(`  - ${s.runner}: ${s.reason}`));
   }
 
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    try {
+      const summaryLines = [
+        '### Asymptote Problem Test Summary',
+        `- **Total executed**: ${totalExecuted}`,
+        `- **Passed**: ${totalPassed}`,
+        `- **Failed**: ${totalFailed}`,
+        ''
+      ];
+      if (failureDetails.length > 0) {
+        summaryLines.push('#### Failures');
+        failureDetails.forEach(f => summaryLines.push(`- **${f.slug}**: \`${f.detail}\``));
+      }
+      fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryLines.join('\n') + '\n');
+    } catch (_e) {
+      // Ignore summary write error
+    }
+  }
+
   if (totalFailed > 0) {
     console.error('\nFailures:');
-    failureDetails.forEach(f => console.error(`  - ${f.slug}: ${f.detail}`));
+    failureDetails.forEach(f => {
+      console.error(`  - ${f.slug}: ${f.detail}`);
+      const cleanDetail = String(f.detail || 'Test failed').replace(/\r?\n/g, '%0A');
+      console.log(`::error title=${f.slug}::${cleanDetail}`);
+    });
     process.exit(1);
   } else {
     console.log('\nAll executed problem tests passed.\n');
