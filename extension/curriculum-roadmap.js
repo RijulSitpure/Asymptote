@@ -5,8 +5,7 @@
  * Defines the initial 13-topic algorithmic curriculum from Algomap.
  */
 
-(function (global) {
-  const COURSE_ROADMAP = [
+export const COURSE_ROADMAP = [
     {
         "id": "arrays-strings",
         "stageNumber": 1,
@@ -944,7 +943,7 @@
    * @param {Array} roadmap The COURSE_ROADMAP array
    * @param {Array|Set} solvedProblems List of solved problem objects or slug/number strings
    */
-  function calculateCurriculumProgress(roadmap = COURSE_ROADMAP, solvedProblems = []) {
+export function calculateCurriculumProgress(roadmap = COURSE_ROADMAP, solvedProblems = []) {
     const solvedSet = new Set();
 
     if (Array.isArray(solvedProblems)) {
@@ -1037,10 +1036,8 @@
     calculateCurriculumProgress
   };
 
-  if (typeof global !== "undefined") {
-    global.CurriculumRoadmapModule = api;
+  if (typeof globalThis !== 'undefined') {
+    globalThis.CurriculumRoadmapModule = api;
   }
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = api;
-  }
-})(typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this);
+
+  export default api;
