@@ -81,6 +81,8 @@ describe('Pattern Atlas Boilerplate Templates & Uncurated Catalog Fallback UX', 
     const algoLangs = getSupportedLanguagesForPattern(algoPat).map(l => l.id);
     expect(algoLangs).toContain('python3');
     expect(algoLangs).toContain('cpp');
+    expect(algoLangs).toContain('java');
+    expect(algoLangs).toContain('javascript');
 
     const dbLangs = getSupportedLanguagesForPattern(dbPat).map(l => l.id);
     expect(dbLangs).toContain('mysql');
@@ -97,6 +99,7 @@ describe('Pattern Atlas Boilerplate Templates & Uncurated Catalog Fallback UX', 
     const concLangs = getSupportedLanguagesForPattern(concPat).map(l => l.id);
     expect(concLangs).toContain('cpp');
     expect(concLangs).toContain('java');
+    expect(concLangs).toContain('python3');
 
     const shellLangs = getSupportedLanguagesForPattern(shellPat).map(l => l.id);
     expect(shellLangs).toContain('bash');
@@ -117,7 +120,7 @@ describe('Pattern Atlas Boilerplate Templates & Uncurated Catalog Fallback UX', 
     expect(result.suggested_pattern.mental_triggers.length).toBeGreaterThan(0);
     expect(result.suggested_pattern.constraint_signals.length).toBeGreaterThan(0);
 
-    // Starter template in Python 3 and C++ must be non-empty
+    // Starter template in Python 3, C++, Java, and JavaScript must be non-empty
     const pyCode = getPatternCode(result.suggested_pattern, 'python3');
     expect(pyCode).toBeTruthy();
     expect(pyCode).not.toContain('No verified blueprint');
@@ -125,6 +128,14 @@ describe('Pattern Atlas Boilerplate Templates & Uncurated Catalog Fallback UX', 
     const cppCode = getPatternCode(result.suggested_pattern, 'cpp');
     expect(cppCode).toBeTruthy();
     expect(cppCode).not.toContain('No verified blueprint');
+
+    const javaCode = getPatternCode(result.suggested_pattern, 'java');
+    expect(javaCode).toBeTruthy();
+    expect(javaCode).not.toContain('No verified blueprint');
+
+    const jsCode = getPatternCode(result.suggested_pattern, 'javascript');
+    expect(jsCode).toBeTruthy();
+    expect(jsCode).not.toContain('No verified blueprint');
   });
 
   it('4. Confirms curated problems retain full 4-level hints and multi-language solutions', async () => {

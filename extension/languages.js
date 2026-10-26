@@ -138,11 +138,11 @@
   }
 
   const PATTERN_CATEGORY_LANGUAGES = {
-    Algorithms: ['python3', 'cpp'],
+    Algorithms: ['python3', 'cpp', 'java', 'javascript'],
     Database: ['mysql', 'postgresql', 'pythondata'],
     pandas: ['pythondata', 'python3'],
     Shell: ['bash'],
-    Concurrency: ['cpp', 'java'],
+    Concurrency: ['cpp', 'java', 'python3'],
     JavaScript: ['javascript', 'typescript']
   };
 
@@ -150,44 +150,58 @@
     if (!pattern) {
       return [
         getLanguageMeta('python3'),
-        getLanguageMeta('cpp')
+        getLanguageMeta('cpp'),
+        getLanguageMeta('java'),
+        getLanguageMeta('javascript')
       ];
     }
 
     const cat = pattern.category || pattern.domain || 'Algorithms';
     const langIds = [];
 
-    if (pattern.base_template_py) {
-      if (cat === 'pandas') {
-        langIds.push('pythondata');
-        langIds.push('python3');
-      } else if (cat === 'Database') {
-        // Will be added after SQL
-      } else {
+    if (cat === 'Concurrency') {
+      if (pattern.base_template_cpp) {
+        langIds.push('cpp');
+      }
+      if (pattern.base_template_java) {
+        langIds.push('java');
+      }
+      if (pattern.base_template_py) {
         langIds.push('python3');
       }
-    }
-    if (pattern.base_template_cpp) {
-      langIds.push('cpp');
-    }
-    if (pattern.base_template_sql) {
-      langIds.push('mysql');
-      langIds.push('postgresql');
-    }
-    if (pattern.base_template_py && cat === 'Database') {
-      langIds.push('pythondata');
-    }
-    if (pattern.base_template_js) {
-      langIds.push('javascript');
-    }
-    if (pattern.base_template_ts) {
-      langIds.push('typescript');
-    }
-    if (pattern.base_template_java) {
-      langIds.push('java');
-    }
-    if (pattern.base_template_sh) {
-      langIds.push('bash');
+    } else {
+      if (pattern.base_template_py) {
+        if (cat === 'pandas') {
+          langIds.push('pythondata');
+          langIds.push('python3');
+        } else if (cat === 'Database') {
+          // Will be added after SQL
+        } else {
+          langIds.push('python3');
+        }
+      }
+      if (pattern.base_template_cpp) {
+        langIds.push('cpp');
+      }
+      if (pattern.base_template_java) {
+        langIds.push('java');
+      }
+      if (pattern.base_template_js) {
+        langIds.push('javascript');
+      }
+      if (pattern.base_template_ts) {
+        langIds.push('typescript');
+      }
+      if (pattern.base_template_sql) {
+        langIds.push('mysql');
+        langIds.push('postgresql');
+      }
+      if (pattern.base_template_py && cat === 'Database') {
+        langIds.push('pythondata');
+      }
+      if (pattern.base_template_sh) {
+        langIds.push('bash');
+      }
     }
 
     if (langIds.length === 0) {

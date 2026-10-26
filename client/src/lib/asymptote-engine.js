@@ -2059,6 +2059,11 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       complexity: typeof p.complexity === 'string' ? p.complexity : 'Time: O(N) | Space: O(1)',
       base_template_py: p.base_template_py || '',
       base_template_cpp: p.base_template_cpp || '',
+      base_template_java: p.base_template_java || '',
+      base_template_js: p.base_template_js || '',
+      base_template_ts: p.base_template_ts || '',
+      base_template_sql: p.base_template_sql || '',
+      base_template_sh: p.base_template_sh || '',
       twists: Array.isArray(p.twists) ? p.twists : []
     };
   });
@@ -2091,6 +2096,11 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       complexity: typeof p.complexity === 'string' ? p.complexity : 'Time: O(N) | Space: O(1)',
       base_template_py: p.base_template_py || '',
       base_template_cpp: p.base_template_cpp || '',
+      base_template_java: p.base_template_java || '',
+      base_template_js: p.base_template_js || '',
+      base_template_ts: p.base_template_ts || '',
+      base_template_sql: p.base_template_sql || '',
+      base_template_sh: p.base_template_sh || '',
       twists: Array.isArray(p.twists) ? p.twists : []
     };
   }
