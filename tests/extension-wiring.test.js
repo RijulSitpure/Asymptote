@@ -31,6 +31,10 @@ describe('Chrome Extension Wiring & Offline Contract', () => {
     expect(manifest.background.service_worker).toBe('background.js');
     expect(manifest.background.type).toBe('module');
 
+    // Chrome Web Store enforce description <= 132 chars
+    expect(manifest.description).toBeDefined();
+    expect(manifest.description.length).toBeLessThanOrEqual(132);
+
     // No localhost in host_permissions
     const hostPerms = manifest.host_permissions || [];
     for (const perm of hostPerms) {

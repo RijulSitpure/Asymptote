@@ -55,6 +55,13 @@ for (const scriptFile of contentScripts) {
 }
 console.log('✓ Verified content scripts contain zero ES module exports/imports.');
 
+// Verify manifest description does not exceed Chrome Web Store limit of 132 characters
+if (manifest.description && manifest.description.length > 132) {
+  console.error(`FATAL: Manifest description length is ${manifest.description.length}, exceeding Chrome Web Store limit of 132 characters!`);
+  process.exit(1);
+}
+console.log(`✓ Verified manifest description length (${manifest.description?.length || 0}/132 chars).`);
+
 // 2. Ensure dist/ exists and remove stale zip
 fs.mkdirSync(DIST_DIR, { recursive: true });
 if (fs.existsSync(OUTPUT_ZIP)) {
