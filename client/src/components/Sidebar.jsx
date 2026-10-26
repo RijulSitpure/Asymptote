@@ -25,9 +25,11 @@ export function Sidebar({
     { id: 'solved', label: 'Solved', icon: CheckCircle2, badge: totalSolved > 0 ? `${totalSolved}` : null },
     { id: 'roadmap', label: 'Curriculum', icon: GraduationCap },
   ];
-
-  const username = stats?.username || 'Rijul-Sitpure';
-  const userInitial = username.charAt(0).toUpperCase();
+  const urlUser = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('user') : null;
+  const rawUsername = stats?.username || urlUser;
+  const isSynced = Boolean(rawUsername);
+  const username = rawUsername || 'Not Synced';
+  const userInitial = isSynced ? username.charAt(0).toUpperCase() : '?';
 
   return (
     <aside 
@@ -83,7 +85,7 @@ export function Sidebar({
         })}
       </nav>
 
-      {/* Bottom: avatar circle (slate, white initial), "Synced with LeetCode", and an 8px emerald dot */}
+      {/* Bottom: avatar circle (slate, white initial), "Synced with LeetCode" or "LeetCode Sync", and indicator dot */}
       <div className="p-4 border-t border-[#e2e8f0] bg-[#ffffff]">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-[#1e2033] text-[#ffffff] flex items-center justify-center font-bold text-xs shrink-0">
@@ -92,12 +94,15 @@ export function Sidebar({
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-[13px] font-medium text-[#334155] truncate">
-                Synced with LeetCode
+                {isSynced ? 'Synced with LeetCode' : 'LeetCode Sync'}
               </span>
-              <span className="w-2 h-2 rounded-full bg-[#10b981] shrink-0" title="Connected"></span>
+              <span 
+                className={`w-2 h-2 rounded-full shrink-0 ${isSynced ? 'bg-[#10b981]' : 'bg-[#94a3b8]'}`} 
+                title={isSynced ? 'Connected' : 'Not Connected'}
+              ></span>
             </div>
             <span className="text-[12px] text-[#64748b] truncate block">
-              {username}
+              {isSynced ? username : 'Click Sync to connect'}
             </span>
           </div>
         </div>
