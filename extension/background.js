@@ -9,7 +9,6 @@ import {
   loadDatasetFromFetch,
   createChromeStorageAdapter
 } from './asymptote-engine.js';
-import { silentlySyncDataset } from './dataset-sync.js';
 
 let engineInstance = null;
 let engineInitPromise = null;
