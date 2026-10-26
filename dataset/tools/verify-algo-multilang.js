@@ -408,7 +408,7 @@ def bst_from_sorted(arr):
     return root
 
 sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
-scope = {'TreeNode': TreeNode, 'Optional': None}
+scope = {'TreeNode': TreeNode, 'Optional': type('Optional', (), {'__class_getitem__': lambda cls, item: item}), 'List': list, 'Dict': dict}
 exec(sol_code, scope)
 BSTIterator = scope['BSTIterator']
 
@@ -1793,7 +1793,7 @@ def generate_cases(slug):
     return cases
 
 sol_code = """${pySol.code.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"""
-scope = {'ListNode': ListNode, 'TreeNode': TreeNode, 'Node': Node, 'Optional': None}
+scope = {'ListNode': ListNode, 'TreeNode': TreeNode, 'Node': Node, 'Optional': type('Optional', (), {'__class_getitem__': lambda cls, item: item}), 'List': list, 'Dict': dict, 'Set': set, 'Tuple': tuple}
 exec(sol_code, scope)
 solver = scope['Solution']()
 cases = generate_cases('${slug}')

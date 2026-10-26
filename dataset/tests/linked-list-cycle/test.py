@@ -31,7 +31,7 @@ def main():
     hint_code = extract_hint_code(prob)
     assert sol_code.strip() == hint_code.strip(), "Hint 4 code must match solution code"
 
-    scope = {'ListNode': ListNode, 'Optional': None}
+    scope = {'ListNode': ListNode, 'Optional': type('Optional', (), {'__class_getitem__': lambda cls, item: item})}
     exec(sol_code, scope)
     solver = scope['Solution']()
 

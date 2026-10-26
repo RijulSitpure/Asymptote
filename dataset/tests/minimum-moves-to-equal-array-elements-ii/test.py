@@ -17,7 +17,7 @@ def main():
     hint_code = extract_hint_code(prob)
     assert sol_code.strip() == hint_code.strip(), "Hint 4 code must match solution code"
 
-    scope = {'List': list, 'Optional': None}
+    scope = {'List': list, 'Optional': type('Optional', (), {'__class_getitem__': lambda cls, item: item})}
     exec(sol_code, scope)
     solver = scope['Solution']()
 
