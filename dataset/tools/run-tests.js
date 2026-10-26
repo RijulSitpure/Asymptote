@@ -113,6 +113,18 @@ process.on('exit', () => {
 
 function ensureMySQLAvailable() {
   if (process.env.MYSQL_HOST) {
+    let ready = false;
+    for (let i = 0; i < 30; i++) {
+      const ping = runSqlBatch('ci_service', 'SELECT 1;');
+      if (ping.status === 0) {
+        ready = true;
+        break;
+      }
+      spawnSync('sleep', ['1']);
+    }
+    if (!ready) {
+      console.warn(`[WARN] MySQL service at ${process.env.MYSQL_HOST}:${process.env.MYSQL_PORT || '3306'} did not respond to ping after 30s.`);
+    }
     return 'ci_service';
   }
   if (checkDockerRunning()) {

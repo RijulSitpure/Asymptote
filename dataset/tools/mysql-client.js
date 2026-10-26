@@ -22,20 +22,30 @@ async function main() {
   });
 
   try {
-    const [results] = await connection.query(sql);
+    const [results, fields] = await connection.query(sql);
     let selectResult = null;
+    let resultFields = fields;
     if (Array.isArray(results)) {
-      for (const res of results) {
+      for (let i = 0; i < results.length; i++) {
+        const res = results[i];
         if (Array.isArray(res)) {
           selectResult = res;
+          if (Array.isArray(fields) && fields[i]) {
+            resultFields = fields[i];
+          }
         }
       }
     }
-    if (selectResult && selectResult.length > 0) {
-      const headers = Object.keys(selectResult[0]);
-      console.log(headers.join('\t'));
-      for (const row of selectResult) {
-        console.log(headers.map(h => row[h] === null ? 'NULL' : String(row[h])).join('\t'));
+    if (selectResult) {
+      if (selectResult.length > 0) {
+        const headers = Object.keys(selectResult[0]);
+        console.log(headers.join('\t'));
+        for (const row of selectResult) {
+          console.log(headers.map(h => row[h] === null ? 'NULL' : String(row[h])).join('\t'));
+        }
+      } else if (resultFields && Array.isArray(resultFields) && resultFields.length > 0) {
+        const headers = resultFields.map(f => f.name || f);
+        console.log(headers.join('\t'));
       }
     }
   } finally {
