@@ -19,8 +19,8 @@ async function getEngine() {
   if (!engineInitPromise) {
     engineInitPromise = (async () => {
       const baseUrl = chrome.runtime.getURL('data');
-      const dataset = await loadDatasetFromFetch(baseUrl);
       const storage = createChromeStorageAdapter();
+      const dataset = await loadDatasetFromFetch(baseUrl, storage);
       engineInstance = createAsymptoteEngine({ dataset, storage });
       return engineInstance;
     })();
@@ -114,6 +114,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
         }
 
+        case 'sync_remote_dataset':
+        case 'refresh_dataset': {
+          const result = await engine.checkAndSyncRemoteDataset({ force: Boolean(request.force) });
+          sendResponse({ success: true, result });
+          break;
+        }
+
         default:
           sendResponse({ success: false, error: `Unknown action: ${request.action}` });
           break;
@@ -147,23 +154,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 // ==============================================================================
 const ALARM_SILENT_DATASET_SYNC = 'asymptote_silent_dataset_sync';
 
-async function performSilentDatasetSync() {
+async function performSilentDatasetSync(force = false) {
   try {
     const engine = await getEngine();
-    const manifestUrl = chrome.runtime.getURL('data/manifest.json');
-    const localManifestRes = await fetch(manifestUrl).catch(() => null);
-    if (!localManifestRes || !localManifestRes.ok) return;
-    const localManifest = await localManifestRes.json();
-    const storage = createChromeStorageAdapter();
-
-    const result = await silentlySyncDataset({
-      storage,
-      localManifest,
-      engine
-    });
-
+    const result = await engine.checkAndSyncRemoteDataset({ force });
     if (result && result.updated) {
-      console.debug('[Background] Dataset silently updated to version', result.version, 'with', result.newProblemsCount, 'curated problems.');
+      console.debug('[Background] Dataset silently updated to version', result.version);
     }
   } catch (err) {
     // Fails completely silently without any user disruption or popup errors
@@ -171,12 +167,12 @@ async function performSilentDatasetSync() {
   }
 }
 
-// Set up periodic background alarm (checks every 6 hours)
+// Set up periodic background alarm (checks every 12 hours)
 if (typeof chrome !== 'undefined' && chrome.alarms) {
   chrome.alarms.get(ALARM_SILENT_DATASET_SYNC, (alarm) => {
     if (!alarm) {
       chrome.alarms.create(ALARM_SILENT_DATASET_SYNC, {
-        periodInMinutes: 360 // every 6 hours
+        periodInMinutes: 720 // every 12 hours
       });
     }
   });
@@ -201,4 +197,5 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
     });
   }
 }
+
 

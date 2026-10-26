@@ -1955,7 +1955,54 @@ export function createChromeStorageAdapter() {
   };
 }
 
-export async function loadDatasetFromFetch(baseUrl = '/data') {
+export const REMOTE_DATASET_BASE_URL = 'https://raw.githubusercontent.com/RijulSitpure/Asymptote/main/dist-dataset';
+export const STORAGE_KEY_OTA_DATASET_V2 = 'asymptote_ota_dataset_v2';
+
+/**
+ * Calculates SHA-256 hash across Browser, Web Worker, and Node.js environments.
+ */
+export async function computeSha256(text) {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.subtle) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  try {
+    const crypto = await import('node:crypto');
+    return crypto.createHash('sha256').update(text).digest('hex');
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Two-tier dataset loader:
+ * 1. Immediately loads cached verified OTA dataset from storage if available.
+ * 2. Otherwise loads bundled dataset files from localBaseUrl.
+ */
+export async function loadDatasetFromFetch(baseUrl = '/data', storage = null) {
+  // 1. Check storage for verified OTA dataset cache
+  if (storage && typeof storage.get === 'function') {
+    try {
+      const cached = await storage.get(STORAGE_KEY_OTA_DATASET_V2);
+      if (cached && cached.manifest && cached.shards) {
+        return {
+          manifest: cached.manifest,
+          index: cached.index,
+          catalog: cached.catalog || [],
+          shards: cached.shards,
+          ...cached.shards,
+          isOta: true
+        };
+      }
+    } catch {
+      // Gracefully continue to bundled fetch on storage failure
+    }
+  }
+
+  // 2. Load bundled files from baseUrl
   const cleanBase = baseUrl.replace(/\/+$/, '');
   const [manifestRes, indexRes, catalogRes] = await Promise.all([
     fetch(`${cleanBase}/manifest.json`),
@@ -2118,9 +2165,48 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
     };
   }
 
+  let activeManifest = dataset.manifest || null;
+  let activeIndex = dataset.index || null;
+  let activeCatalog = dataset.catalog || null;
+
   // Hot-apply OTA updates in memory
   function applyOtaDataset(otaData) {
     if (!otaData) return;
+    if (otaData.manifest) {
+      activeManifest = otaData.manifest;
+    }
+    if (otaData.index) {
+      activeIndex = otaData.index;
+    }
+    if (otaData.catalog) {
+      activeCatalog = otaData.catalog;
+    }
+    if (otaData.shards && typeof otaData.shards === 'object') {
+      for (const d of domains) {
+        const shard = otaData.shards[d];
+        if (shard && Array.isArray(shard.patterns)) {
+          for (const p of shard.patterns) {
+            if (p && p.id) {
+              const norm = normalizePattern(p);
+              patternsById.set(p.id, norm);
+              const pIdx = normalizedPatterns.findIndex(x => x.id === p.id);
+              if (pIdx !== -1) normalizedPatterns[pIdx] = norm;
+              else normalizedPatterns.push(norm);
+            }
+          }
+        }
+        if (shard && Array.isArray(shard.problems)) {
+          for (const prob of shard.problems) {
+            if (prob && prob.slug) {
+              curatedProblemsBySlug.set(prob.slug, prob);
+              const cIdx = rawCuratedProblems.findIndex(x => x.slug === prob.slug);
+              if (cIdx !== -1) rawCuratedProblems[cIdx] = prob;
+              else rawCuratedProblems.push(prob);
+            }
+          }
+        }
+      }
+    }
     if (Array.isArray(otaData.patterns)) {
       for (const pat of otaData.patterns) {
         if (pat && pat.id) {
@@ -2152,8 +2238,14 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
   // Async load OTA dataset on engine creation if present in storage
   if (store && typeof store.get === 'function') {
-    store.get('asymptote_ota_dataset').then(otaData => {
-      if (otaData) applyOtaDataset(otaData);
+    store.get(STORAGE_KEY_OTA_DATASET_V2).then(otaV2 => {
+      if (otaV2) {
+        applyOtaDataset(otaV2);
+      } else {
+        store.get('asymptote_ota_dataset').then(legacy => {
+          if (legacy) applyOtaDataset(legacy);
+        }).catch(() => {});
+      }
     }).catch(() => {});
   }
 
@@ -2169,6 +2261,144 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
   return {
     applyOtaDataset(otaData) {
       applyOtaDataset(otaData);
+    },
+
+    getActiveManifest() {
+      return activeManifest;
+    },
+
+    getActiveDatasetVersion() {
+      return activeManifest?.datasetVersion || '1.0.0';
+    },
+
+    async checkAndSyncRemoteDataset({
+      remoteBaseUrl = REMOTE_DATASET_BASE_URL,
+      force = false,
+      timeoutMs = 5000
+    } = {}) {
+      try {
+        const cleanBase = String(remoteBaseUrl).replace(/\/+$/, '');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        let manifestRes;
+        try {
+          manifestRes = await fetch(`${cleanBase}/manifest.json`, {
+            signal: controller.signal,
+            cache: 'no-cache'
+          });
+        } catch {
+          clearTimeout(timeoutId);
+          return { updated: false, reason: 'network_offline' };
+        }
+        clearTimeout(timeoutId);
+
+        if (!manifestRes.ok) {
+          return { updated: false, reason: `http_${manifestRes.status}` };
+        }
+
+        const remoteManifest = await manifestRes.json();
+        if (!remoteManifest || !remoteManifest.checksums) {
+          return { updated: false, reason: 'invalid_remote_manifest' };
+        }
+
+        const localChecksums = activeManifest?.checksums || {};
+        const remoteChecksums = remoteManifest.checksums || {};
+
+        const changedFiles = [];
+        for (const [file, remoteHash] of Object.entries(remoteChecksums)) {
+          if (localChecksums[file] !== remoteHash || force) {
+            changedFiles.push(file);
+          }
+        }
+
+        if (changedFiles.length === 0 && remoteManifest.datasetVersion === activeManifest?.datasetVersion && !force) {
+          return { updated: false, reason: 'up_to_date' };
+        }
+
+        const updatedShards = { ...(dataset.shards || {}) };
+        let updatedIndex = activeIndex;
+        let updatedCatalog = activeCatalog;
+        const downloadedProblems = [];
+        const downloadedPatterns = [];
+
+        for (const file of changedFiles) {
+          const shardCtrl = new AbortController();
+          const shardTimeout = setTimeout(() => shardCtrl.abort(), timeoutMs);
+          let res;
+          try {
+            res = await fetch(`${cleanBase}/${file}`, {
+              signal: shardCtrl.signal,
+              cache: 'no-cache'
+            });
+          } catch {
+            clearTimeout(shardTimeout);
+            return { updated: false, reason: `fetch_failed_${file}` };
+          }
+          clearTimeout(shardTimeout);
+
+          if (!res.ok) continue;
+          const text = await res.text();
+
+          const expectedHash = remoteChecksums[file];
+          if (expectedHash) {
+            const actualHash = await computeSha256(text);
+            if (actualHash && actualHash !== expectedHash) {
+              continue;
+            }
+          }
+
+          let parsed;
+          try {
+            parsed = JSON.parse(text);
+          } catch {
+            continue;
+          }
+
+          if (file === 'index.json') {
+            updatedIndex = parsed;
+          } else if (file === 'catalog.json') {
+            updatedCatalog = parsed;
+          } else {
+            const domainKey = file.replace('.json', '');
+            updatedShards[domainKey] = parsed;
+            if (Array.isArray(parsed.problems)) {
+              downloadedProblems.push(...parsed.problems);
+            }
+            if (Array.isArray(parsed.patterns)) {
+              downloadedPatterns.push(...parsed.patterns);
+            }
+          }
+        }
+
+        const otaDataset = {
+          manifest: remoteManifest,
+          index: updatedIndex,
+          catalog: updatedCatalog,
+          shards: updatedShards,
+          problems: downloadedProblems,
+          patterns: downloadedPatterns,
+          updatedAt: new Date().toISOString()
+        };
+
+        if (store) {
+          await store.set(STORAGE_KEY_OTA_DATASET_V2, otaDataset);
+        }
+
+        activeManifest = remoteManifest;
+        activeIndex = updatedIndex;
+        activeCatalog = updatedCatalog;
+        applyOtaDataset(otaDataset);
+
+        return {
+          updated: true,
+          version: remoteManifest.datasetVersion,
+          changedFiles,
+          newProblemsCount: downloadedProblems.length
+        };
+      } catch (err) {
+        return { updated: false, reason: 'sync_error', error: err.message };
+      }
     },
 
     getPatterns() {
@@ -2540,6 +2770,7 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
         user_rating: userState.user_rating !== undefined ? userState.user_rating : 0,
         review_needed: userState.review_needed ? 1 : 0,
         solutions: cp.solutions || [],
+        hints: rawHints,
         complexity
       };
 

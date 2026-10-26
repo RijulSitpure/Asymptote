@@ -172,10 +172,21 @@ function build() {
   // Read package.json for version
   const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
 
+  // Deterministic content hash computed from sorted SHA-256 checksums
+  const sortedChecksumEntries = Object.keys(checksums).sort().map(k => `${k}:${checksums[k]}`).join('\n');
+  const contentHash = sha256(sortedChecksumEntries);
+
+  let generatedAt = new Date().toISOString();
+  if (process.env.SOURCE_DATE_EPOCH) {
+    generatedAt = new Date(parseInt(process.env.SOURCE_DATE_EPOCH, 10) * 1000).toISOString();
+  }
+
   // Write manifest
   const manifestData = {
     version: pkg.version || '2.0.0',
     datasetVersion,
+    contentHash,
+    generatedAt,
     totalPatterns: Object.values(domainPatterns).reduce((acc, p) => acc + p.length, 0),
     totalProblems: Object.values(domainProblems).reduce((acc, p) => acc + p.length, 0),
     totalCatalogProblems,
@@ -183,7 +194,22 @@ function build() {
   };
   const manifestMinified = JSON.stringify(manifestData, null, 2);
   fs.writeFileSync(path.join(outDir, 'manifest.json'), manifestMinified + '\n');
-  console.log(`✓ Generated manifest.json (v${datasetVersion}) with SHA-256 checksums\n`);
+  console.log(`✓ Generated manifest.json (v${datasetVersion}, hash: ${contentHash.slice(0, 12)}...) with SHA-256 checksums\n`);
+
+  // Mirror artifacts to dist-dataset/ when compiling default extension/data
+  if (outDir === path.resolve(rootDir, 'extension', 'data')) {
+    const distDatasetDir = path.resolve(rootDir, 'dist-dataset');
+    if (!fs.existsSync(distDatasetDir)) {
+      fs.mkdirSync(distDatasetDir, { recursive: true });
+    }
+    for (const f of fs.readdirSync(outDir)) {
+      if (f.endsWith('.json')) {
+        fs.copyFileSync(path.join(outDir, f), path.join(distDatasetDir, f));
+      }
+    }
+    console.log(`✓ Mirrored build artifacts to dist-dataset/ for OTA publishing\n`);
+  }
+
   console.log('Build completed successfully.');
 }
 

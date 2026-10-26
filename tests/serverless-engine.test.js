@@ -5,7 +5,10 @@ import {
   loadDatasetFromFs,
   createMemoryStorage,
   formatHintsForDisplay,
-  getProblemSolutionCode
+  getProblemSolutionCode,
+  loadDatasetFromFetch,
+  computeSha256,
+  STORAGE_KEY_OTA_DATASET_V2
 } from '../shared/asymptote-engine.js';
 import '../shared/languages.js';
 
@@ -540,4 +543,134 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(updatedStats.solvedCount).toBe(1);
     expect(updatedStats.difficultyBreakdown.Easy).toBe(1);
   });
+
+  // 13. Silent Over-The-Air (OTA) Remote Dataset Updates & Offline Fallback
+  it('13. Syncs remote dataset updates silently and falls back cleanly when offline', async () => {
+    const memoryStore = createMemoryStorage();
+    const testEngine = createAsymptoteEngine({
+      dataset,
+      storage: memoryStore
+    });
+
+    const initialVersion = testEngine.getActiveDatasetVersion();
+    expect(initialVersion).toBeTruthy();
+
+    // 1. Prepare simulated updated remote shard and manifest
+    const updatedProblem = {
+      slug: 'two-sum',
+      number: 1,
+      category: 'Algorithms',
+      difficulty: 'Easy',
+      patterns: ['two-pointers-basic'],
+      review: { status: 'tested' },
+      hints: [
+        {
+          level: 1,
+          title: 'Updated OTA Hint 1',
+          text: 'This is an updated OTA progressive hint received silently from GitHub.'
+        }
+      ],
+      solutions: [
+        {
+          lang: 'python3',
+          code: '# Updated OTA Solution\nclass Solution:\n    def twoSum(self, nums, target):\n        return [0, 1]'
+        }
+      ]
+    };
+
+    const updatedAlgorithmsShard = {
+      domain: 'algorithms',
+      patterns: dataset.shards?.algorithms?.patterns || [],
+      problems: [
+        updatedProblem,
+        ...(dataset.shards?.algorithms?.problems || []).filter(p => p.slug !== 'two-sum')
+      ]
+    };
+
+    const updatedAlgorithmsText = JSON.stringify(updatedAlgorithmsShard);
+    const updatedAlgorithmsHash = await computeSha256(updatedAlgorithmsText);
+
+    const remoteManifest = {
+      version: '2.0.0',
+      datasetVersion: '1.0.4',
+      checksums: {
+        ...(testEngine.getActiveManifest()?.checksums || {}),
+        'algorithms.json': updatedAlgorithmsHash
+      }
+    };
+
+    // 2. Mock fetch for remote endpoint
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url) => {
+      const urlStr = String(url);
+      if (urlStr.endsWith('manifest.json')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => remoteManifest,
+          text: async () => JSON.stringify(remoteManifest)
+        };
+      }
+      if (urlStr.endsWith('algorithms.json')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => updatedAlgorithmsShard,
+          text: async () => updatedAlgorithmsText
+        };
+      }
+      return {
+        ok: false,
+        status: 404,
+        json: async () => ({}),
+        text: async () => ''
+      };
+    };
+
+    try {
+      // 3. Trigger remote OTA dataset sync
+      const syncResult = await testEngine.checkAndSyncRemoteDataset({
+        remoteBaseUrl: 'https://raw.githubusercontent.com/RijulSitpure/Asymptote/main/dist-dataset'
+      });
+
+      expect(syncResult.updated).toBe(true);
+      expect(syncResult.version).toBe('1.0.4');
+      expect(syncResult.changedFiles).toContain('algorithms.json');
+      expect(testEngine.getActiveDatasetVersion()).toBe('1.0.4');
+
+      // 4. Verify in-memory problem and hints were updated instantly
+      const updatedHints = await testEngine.getProblemHints('two-sum');
+      expect(updatedHints.problem.hints[0].title).toBe('Updated OTA Hint 1');
+      expect(updatedHints.problem.hints[0].text).toContain('silent');
+
+      // 5. Verify cached dataset was persisted to storage
+      const cachedStorage = await memoryStore.get(STORAGE_KEY_OTA_DATASET_V2);
+      expect(cachedStorage).toBeTruthy();
+      expect(cachedStorage.manifest.datasetVersion).toBe('1.0.4');
+      expect(cachedStorage.shards.algorithms.problems.some(p => p.slug === 'two-sum' && p.hints[0].title === 'Updated OTA Hint 1')).toBe(true);
+
+      // 6. Test two-tier loader: loads from storage without fetching bundled files
+      const loadedFromStorage = await loadDatasetFromFetch('/dummy-path', memoryStore);
+      expect(loadedFromStorage.isOta).toBe(true);
+      expect(loadedFromStorage.manifest.datasetVersion).toBe('1.0.4');
+
+      // 7. Test offline fallback: network throws, checkAndSyncRemoteDataset fails silently
+      globalThis.fetch = async () => {
+        throw new Error('TypeError: Failed to fetch (Network offline)');
+      };
+
+      const offlineResult = await testEngine.checkAndSyncRemoteDataset({
+        remoteBaseUrl: 'https://raw.githubusercontent.com/RijulSitpure/Asymptote/main/dist-dataset'
+      });
+
+      expect(offlineResult.updated).toBe(false);
+      expect(offlineResult.reason).toBe('network_offline');
+      // Engine continues serving cleanly without crash
+      const activeHintsOffline = await testEngine.getProblemHints('two-sum');
+      expect(activeHintsOffline.problem.slug).toBe('two-sum');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
+
