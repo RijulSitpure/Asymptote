@@ -106,33 +106,25 @@ async function checkLeetCodeLogin() {
   };
 
   try {
-    if (typeof chrome !== 'undefined' && chrome.cookies) {
-      chrome.cookies.get({ url: 'https://leetcode.com', name: 'LEETCODE_SESSION' }, (cookie) => {
-        if (!cookie || !cookie.value) {
-          if (chrome.tabs) {
-            chrome.tabs.query({ url: '*://*.leetcode.com/*' }, (tabs) => {
-              if (!tabs || tabs.length === 0) {
-                setLoggedOut();
-              } else {
-                chrome.tabs.sendMessage(tabs[0].id, { action: 'check_user_status' }, (resp) => {
-                  if (resp && resp.isSignedIn) {
-                    setLoggedIn(resp.username);
-                  } else {
-                    setLoggedOut();
-                  }
-                });
-              }
-            });
-          } else {
-            setLoggedOut();
-          }
+    if (typeof chrome !== 'undefined' && chrome.tabs) {
+      chrome.tabs.query({ url: '*://*.leetcode.com/*' }, (tabs) => {
+        if (!tabs || tabs.length === 0) {
+          setLoggedOut();
         } else {
-          setLoggedIn();
+          chrome.tabs.sendMessage(tabs[0].id, { action: 'check_user_status' }, (resp) => {
+            if (resp && resp.isSignedIn) {
+              setLoggedIn(resp.username);
+            } else {
+              setLoggedOut();
+            }
+          });
         }
       });
+    } else {
+      setLoggedOut();
     }
   } catch (_e) {
-    // In preview context, fallback to server status
+    // In preview context, fallback to logged out
   }
 }
 

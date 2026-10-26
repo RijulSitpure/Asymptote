@@ -1,15 +1,18 @@
-# ⚡ Asymptote
+<div align="center">
+  <img src="extension/icons/icon-128.png" width="96" height="96" alt="Asymptote Logo" />
+  <h1>Asymptote</h1>
+  <p><strong>Algorithmic Pattern Intelligence & Socratic Mentor for LeetCode</strong></p>
+  <p><em>The Free, 100% Serverless & Local-First Alternative to LeetCode Premium's Paywalled ($35/mo) "Leet AI"</em></p>
 
-> **Algorithmic Pattern Intelligence & In-Page Socratic Mentor for LeetCode**  
-> *The Free, 100% Serverless & Local-First Alternative to LeetCode Premium's Paywalled ($35/mo) "Leet AI"*
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Manifest V3](https://img.shields.io/badge/Chrome_Extension-Manifest_V3-brightgreen.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Serverless](https://img.shields.io/badge/Architecture-100%25_Serverless-purple.svg)](#-serverless--local-first-architecture)
-[![Privacy](https://img.shields.io/badge/Privacy-100%25_Local_Storage-indigo.svg)](#-privacy--local-first-guarantee)
-[![Curated Problems](https://img.shields.io/badge/Curated_Problems-1%2C570%2B-orange.svg)](#-curated-pattern-atlas)
-[![Algorithmic Patterns](https://img.shields.io/badge/Patterns-99_Archetypes-emerald.svg)](#-curated-pattern-atlas)
-[![AI Engine](https://img.shields.io/badge/On--Device_AI-Gemini_Nano-red.svg)](#-on-device-gemini-nano-ai)
+  <p>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
+    <a href="https://github.com/RijulSitpure/Asymptote/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/Tests-117%2F117%20Passed-brightgreen.svg" alt="Tests" /></a>
+    <a href="https://github.com/RijulSitpure/Asymptote/actions/workflows/dataset.yml"><img src="https://img.shields.io/badge/Dataset-Verified%20(99%20Patterns)-emerald.svg" alt="Dataset Verified" /></a>
+    <a href="https://developer.chrome.com/docs/extensions/mv3/intro/"><img src="https://img.shields.io/badge/Chrome_Extension-Manifest_V3-brightgreen.svg" alt="Chrome MV3" /></a>
+    <a href="#-on-device-gemini-nano-ai"><img src="https://img.shields.io/badge/On--Device_AI-Gemini_Nano-red.svg" alt="Gemini Nano AI" /></a>
+    <a href="PRIVACY.md"><img src="https://img.shields.io/badge/Privacy-100%25_Local_Storage-indigo.svg" alt="Privacy Policy" /></a>
+  </p>
+</div>
 
 ---
 
@@ -18,14 +21,14 @@
 | Feature | ⚡ **Asymptote** | 💸 **LeetCode Premium Leet AI** | 🤖 **ChatGPT / Claude** |
 | :--- | :--- | :--- | :--- |
 | **Pricing** | **100% Free & Open-Source (MIT)** | **$35 / month** ($299 / year) | $20 / month subscription |
-| **Pedagogical Philosophy** | **Strict 4-Tier Socratic Ladder** (Intuition $\to$ Invariant $\to$ Skeleton $\to$ Code) | Hallucinates full solutions easily | Immediately dumps working code, ruining learning retention |
+| **Pedagogical Philosophy** | **Strict 4-Tier Socratic Ladder** (Intuition $\to$ Invariant $\to$ Skeleton $\to$ Code) | Hallucinates full solutions easily | Immediately dumps full code, destroying learning retention |
 | **Complexity Budgeting** | **Constraint-Derived Big-O Target** + concrete online judge ops/sec calculation ($N=10^5 \implies 10^{10} \gg 10^8$ ops $\implies$ TLE) | Vague high-level suggestions | Superficial Big-O remarks without constraint budget analysis |
 | **In-Page Experience** | **Shadow DOM drawer & floating overlay inside `leetcode.com`** with zero layout shift | Paywalled integrated sidebar | Separate browser tab, manual copy-pasting |
-| **Pattern Taxonomy** | **99 Fine-Grained Archetypes** (Monotonic Stack, Layered Graph DP, Interval DP, Bitmask BFS, Digit DP, etc.) | Broad standard tags (e.g. just "Dynamic Programming") | Ad-hoc unstandardized explanations |
-| **Multi-Language Support** | **Python, C++, Java, JavaScript, Go, Rust** across blueprints and hints | Limited to standard solution languages | Generates arbitrary code syntax |
+| **Pattern Taxonomy** | **99 Fine-Grained Archetypes** across 6 domains (Algorithms, SQL Database, Pandas, JavaScript, Concurrency, Shell) | Broad standard tags (e.g. just "Dynamic Programming") | Ad-hoc unstandardized explanations |
+| **Multi-Language Blueprints** | **Python, C++, Java, JavaScript, Go, Rust** across blueprints and hints | Limited to standard solution languages | Generates arbitrary unverified syntax |
 | **AI Privacy & Offline** | **100% On-Device Gemini Nano AI** (`window.ai`), zero telemetry, works offline | Stored on remote corporate servers | Cloud-hosted; queries logged for model training |
-| **Backend Requirement** | **Zero Servers Needed** (100% Serverless, runs directly in browser) | Cloud-dependent proprietary infrastructure | Remote API servers |
-| **Automatic Dataset Updates** | **Silent Over-The-Air (OTA) Updates** via GitHub Raw shards with SHA-256 checks | Closed proprietary releases | Static training cutoffs |
+| **Server Requirements** | **Zero Servers Needed** (100% Serverless, runs directly in browser) | Cloud-dependent proprietary infrastructure | Remote API servers |
+| **Silent Updates** | **Silent Over-The-Air (OTA) Updates** via GitHub Raw shards with SHA-256 checks | Closed proprietary releases | Static training cutoffs |
 
 ---
 
@@ -58,7 +61,7 @@ Asymptote integrates Chrome's built-in **Gemini Nano** (`window.ai` Prompt API) 
 * **100% Local & Private**: Prompts and code never leave your browser. Zero telemetry, zero cloud tracking.
 * **Zero Latency**: Instant responses without waiting on remote API rate limits.
 * **Strict Socratic Guardrails**: Built-in system prompts enforce hint guidance and prevent solution code leakage unless explicitly requested.
-* **Deterministic Fallback**: If Gemini Nano is not enabled in your browser, Asymptote seamlessly falls back to its curated 1,570-problem hint database.
+* **Deterministic Fallback**: If Gemini Nano is not enabled in your browser, Asymptote seamlessly falls back to its curated hint database.
 
 ### 4. 🧭 Curated Pattern Atlas (99 Archetypes across 6 Domains)
 * **Algorithms (50 Patterns, 1,538 Problems)**: Two Pointers, Sliding Window, Monotonic Stack, Interval Scheduling, Topological Sort, Dijkstra, Floyd-Warshall, 0/1 BFS, Tree Rerooting DP, Digit DP, Bitmask DP, Binary Lifting (LCA), and more.
@@ -67,10 +70,11 @@ Asymptote integrates Chrome's built-in **Gemini Nano** (`window.ai` Prompt API) 
 * **JavaScript (8 Patterns, 6 Problems)**: Debounce/Throttle, Memoization, Event Emitter, Promise Pools, Curry Pipelines.
 * **Concurrency (7 Patterns, 3 Problems)**: Mutex Locks, Condition Variables, Semaphore Barriers, Read-Write Locks.
 * **Shell (5 Patterns, 3 Problems)**: Stream Processing, Awk/Sed Field Extraction, Pipeline Filtering.
+* **4,086 Full Catalog Problems Indexed**: Instant metadata, suggested patterns, and multi-language support for the entire LeetCode library.
 
 ### 5. 🔄 Silent Over-The-Air (OTA) Updates
-* The companion Chrome extension background service worker checks for dataset updates every 6 hours via GitHub Raw shards.
-* Cryptographic **SHA-256 checksum verification** guarantees that only valid, untampered data shards are saved to local Chrome storage.
+* The companion Chrome extension background service worker checks for dataset updates every 12 hours via GitHub Raw shards (`dist-dataset/`).
+* Cryptographic **SHA-256 checksum verification** guarantees that only valid, untampered data shards are saved to local Chrome storage (`asymptote_ota_dataset_v2`).
 * Zero manual updates, zero user interruption, zero browser reloads required.
 
 ### 6. 📊 Curriculum Roadmap & Spaced Repetition Review
@@ -81,88 +85,78 @@ Asymptote integrates Chrome's built-in **Gemini Nano** (`window.ai` Prompt API) 
 
 ---
 
-## 🛠️ Installation & Setup
+## 📦 Installation & Setup
 
-### Option 1: Chrome Extension (Recommended)
+### Path 1: Chrome Web Store (Recommended)
 
-1. **Download or Clone the Repository**:
-   ```bash
-   git clone https://github.com/RijulSitpure/Asymptote.git
-   cd Asymptote
-   ```
-2. **Build the Extension Bundle**:
-   ```bash
-   npm install
-   npm run build
-   ```
-3. **Load into Chrome / Brave / Arc / Edge**:
-   - Navigate to `chrome://extensions/` in your browser.
-   - Toggle **Developer mode** (top-right switch).
-   - Click **Load unpacked** (top-left button).
-   - Select the `extension/` folder inside the Asymptote repository.
-4. **Practice on LeetCode**:
-   - Open any LeetCode problem (e.g., [#787 Cheapest Flights Within K Stops](https://leetcode.com/problems/cheapest-flights-within-k-stops/) or [#1 Two Sum](https://leetcode.com/problems/two-sum/)).
-   - Click the floating **⚡ Asymptote** pill or use the browser action popup to open the mentor drawer!
+[![Available in the Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Available_Soon-blue?logo=googlechrome&logoColor=white)](https://github.com/RijulSitpure/Asymptote/releases)
+
+*(Chrome Web Store submission in progress — install via Path 2 in 30 seconds!)*
 
 ---
 
-### Option 2: Standalone Web Dashboard
+### Path 2: 1-Click GitHub Release Install (No Terminal Required)
 
-The web dashboard runs locally without needing any backend server:
+1. Download the latest **`asymptote-extension.zip`** from [GitHub Releases](https://github.com/RijulSitpure/Asymptote/releases).
+2. Unzip the downloaded file to a local folder.
+3. Open Google Chrome, Brave, Arc, or Microsoft Edge and navigate to:  
+   `chrome://extensions/`
+4. Enable **Developer mode** (switch in the top-right corner).
+5. Click **Load unpacked** (button in the top-left corner) and select the unzipped directory.
+6. Visit any problem on LeetCode (e.g., [#787 Cheapest Flights](https://leetcode.com/problems/cheapest-flights-within-k-stops/) or [#1 Two Sum](https://leetcode.com/problems/two-sum/)).
+7. Click the floating **⚡ Asymptote** pill in the bottom-right corner to open your in-page Socratic coach!
+
+---
+
+### Path 3: Developer Setup
 
 ```bash
-# Start local Vite development server
+# 1. Clone repository
+git clone https://github.com/RijulSitpure/Asymptote.git
+cd Asymptote
+
+# 2. Install dependencies
+npm ci
+
+# 3. Verify dataset and run all 117 unit tests
+npm run check-shared
+npm test
+
+# 4. Build extension bundle and release zip
+npm run package:extension
+
+# 5. Start standalone web dashboard
 npm run dev
 ```
 
-Open your browser to:  
-👉 **`http://localhost:5173`** (or access the dashboard directly inside the extension at `chrome-extension://<id>/dashboard/index.html`).
-
 ---
 
-## 📁 Repository Structure
+## 🔬 Architecture & Dataset Integrity
+
+Asymptote enforces an automated multi-language sandboxed verification pipeline to guarantee dataset correctness before any release:
 
 ```
 Asymptote/
-├── extension/                   # Manifest V3 Chrome Extension
-│   ├── manifest.json            # Extension configuration & permissions
-│   ├── content.js               # Shadow DOM drawer & floating overlay
-│   ├── background.js            # 6-hour alarm & silent OTA background sync
-│   ├── popup.html / popup.js    # Browser action popup
-│   ├── solution-chat.js         # In-page Socratic mentor & Gemini Nano chat
-│   ├── data/                    # Pre-compiled dataset shards for offline & OTA
-│   │   ├── manifest.json        # Shard versioning & SHA-256 checksums
-│   │   ├── algorithms.json      # 50 patterns, 1,538 problems
-│   │   ├── database.json        # 19 SQL patterns
-│   │   ├── pandas.json          # 10 Pandas patterns
-│   │   ├── javascript.json      # 8 JS patterns
-│   │   ├── concurrency.json     # 7 Concurrency patterns
-│   │   ├── shell.json           # 5 Shell patterns
-│   │   ├── index.json           # Fast slug and number indexing
-│   │   └── catalog.json         # 4,086 LeetCode problems catalog
-│   └── dashboard/               # Compiled standalone dashboard inside extension
-├── client/                      # Standalone React + Vite Dashboard
-│   ├── src/
-│   │   ├── components/          # StatsDashboard, CourseRoadmap, PatternAtlas, etc.
-│   │   ├── lib/                 # Engine client, curriculum, languages, nano AI
-│   │   └── App.jsx              # Main tabbed shell
-│   └── index.html
-├── dataset/                     # Source dataset blueprints & build tools
+├── extension/                   # Manifest V3 Chrome Extension (Shadow DOM isolated)
+├── client/                      # Standalone React + Vite Web Dashboard
+├── dataset/
 │   ├── domain/                  # Source pattern definitions & problem sets
-│   └── tools/build.js           # Compiler for sharding, indexing, and hashing
-├── shared/                      # Synchronized core logic across extension & client
+│   ├── tests/                   # Python, SQL, C++, Java test suites per problem
+│   └── tools/
+│       ├── validate.js          # Schema, pattern reference, and Big-O validator
+│       ├── run-tests.js         # Sandboxed multi-language test execution engine
+│       └── build.js             # Shards compiler, SHA-256 generator, and manifest builder
+├── dist-dataset/                # Compiled static dataset for GitHub Raw OTA updates
+├── shared/                      # Synchronized core engine logic (shared across client & extension)
 │   ├── asymptote-engine.js      # Serverless algorithmic intelligence engine
-│   ├── dataset-sync.js          # Silent OTA synchronization & hash verification
-│   ├── nano-ai.js               # Gemini Nano window.ai abstraction
-│   ├── nano-chat-service.js     # Socratic prompt engineering & chat service
-│   ├── curriculum-roadmap.js    # 13-stage learning roadmap
-│   └── languages.js             # 6-language blueprint & syntax resolver
-├── scripts/
-│   ├── sync-shared.js           # Single-source-of-truth syncer for shared/
-│   ├── verify-dataset-build.js  # Cryptographic & schema distribution validator
-│   └── package-extension.js     # Automated zip packager for Chrome Web Store
-└── tests/                       # 15 Vitest suites (116 automated unit tests)
+│   ├── dataset-sync.js          # Silent background OTA updater
+│   └── nano-chat-service.js     # On-device Gemini Nano Socratic tutor
+└── tests/                       # 15 Vitest suites (117 automated unit tests)
 ```
+
+- **Referential Integrity**: `node dataset/tools/validate.js` ensures every problem points to valid patterns, has complete progressive hints, and matches strict Big-O constraints.
+- **Hint Spoiler Guard**: Automated unit tests assert that locked hint titles never leak algorithmic invariants or names.
+- **Sandboxed Test Runner**: `node dataset/tools/run-tests.js` tests reference implementations across Python, C++, Java, and MySQL.
 
 ---
 
@@ -173,28 +167,7 @@ Asymptote/
 * **Local Storage**: All solved history, notes, confidence ratings, and review flags are stored strictly on your device via `chrome.storage.local` and browser `localStorage`.
 * **Zero Cloud Dependence**: Works completely offline once installed.
 
----
-
-## 🧪 Testing & Verification
-
-Asymptote enforces rigorous automated testing across dataset integrity, engine correctness, and UI wiring:
-
-```bash
-# Verify shared modules sync
-npm run check-shared
-
-# Rebuild and cryptographically verify all dataset shards
-npm run build:dataset && npm run verify:dataset
-
-# Run all 15 Vitest test suites (116 tests)
-npm test
-
-# Run ESLint validation
-npm run lint
-
-# Build extension package for Chrome Web Store
-npm run package:extension
-```
+Read our complete [Privacy Policy](PRIVACY.md).
 
 ---
 
@@ -214,4 +187,3 @@ We welcome community contributions to expand problem coverage, add new patterns,
 ## 📜 License
 
 Released under the [MIT License](LICENSE).
-

@@ -52,7 +52,12 @@ console.log(`✓ Created: ${path.relative(ROOT_DIR, OUTPUT_ZIP)} (${sizeKb} KB)`
 
 // 4. Verify zip contents
 const listOutput = execSync(`unzip -l "${OUTPUT_ZIP}"`, { encoding: 'utf8' });
+if (!listOutput.split('\n').some(line => line.trim().endsWith(' manifest.json'))) {
+  console.error('FATAL: manifest.json is missing from the root of the zip archive!');
+  process.exit(1);
+}
 console.log('\n--- Zip Archive Contents (Top 15 files) ---');
 const lines = listOutput.trim().split('\n');
 console.log(lines.slice(0, 18).join('\n'));
-console.log('...\n✓ Extension packaging completed successfully.');
+console.log('...\n✓ Verified manifest.json is at zip root.');
+console.log('✓ Extension packaging completed successfully.');
