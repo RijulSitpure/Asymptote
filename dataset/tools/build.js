@@ -141,7 +141,11 @@ function build() {
     } catch {}
   }
 
-  const existingManifest = path.join(outDir, 'manifest.json');
+  const existingManifest = fs.existsSync(path.join(outDir, 'dataset-metadata.json'))
+    ? path.join(outDir, 'dataset-metadata.json')
+    : (fs.existsSync(path.join(outDir, 'dataset-manifest.json'))
+        ? path.join(outDir, 'dataset-manifest.json')
+        : path.join(outDir, 'manifest.json'));
   if (!datasetVersion && fs.existsSync(existingManifest)) {
     try {
       const mData = JSON.parse(fs.readFileSync(existingManifest, 'utf8'));
@@ -181,7 +185,7 @@ function build() {
     generatedAt = new Date(parseInt(process.env.SOURCE_DATE_EPOCH, 10) * 1000).toISOString();
   }
 
-  // Write manifest
+  // Write manifest as dataset-metadata.json to prevent Chrome Web Store duplicate manifest conflict
   const manifestData = {
     version: pkg.version || '2.0.0',
     datasetVersion,
@@ -193,8 +197,17 @@ function build() {
     checksums
   };
   const manifestMinified = JSON.stringify(manifestData, null, 2);
-  fs.writeFileSync(path.join(outDir, 'manifest.json'), manifestMinified + '\n');
-  console.log(`✓ Generated manifest.json (v${datasetVersion}, hash: ${contentHash.slice(0, 12)}...) with SHA-256 checksums\n`);
+  fs.writeFileSync(path.join(outDir, 'dataset-metadata.json'), manifestMinified + '\n');
+
+  // Remove legacy data/manifest.json and dataset-manifest.json if present in extension/data
+  if (outDir === path.resolve(rootDir, 'extension', 'data')) {
+    const legacyDataManifest = path.join(outDir, 'manifest.json');
+    if (fs.existsSync(legacyDataManifest)) fs.unlinkSync(legacyDataManifest);
+    const legacyDatasetManifest = path.join(outDir, 'dataset-manifest.json');
+    if (fs.existsSync(legacyDatasetManifest)) fs.unlinkSync(legacyDatasetManifest);
+  }
+
+  console.log(`✓ Generated dataset-metadata.json (v${datasetVersion}, hash: ${contentHash.slice(0, 12)}...) with SHA-256 checksums\n`);
 
   // Mirror artifacts to dist-dataset/ when compiling default extension/data
   if (outDir === path.resolve(rootDir, 'extension', 'data')) {
@@ -207,6 +220,9 @@ function build() {
         fs.copyFileSync(path.join(outDir, f), path.join(distDatasetDir, f));
       }
     }
+    // Also provide backward-compatible manifest.json and dataset-manifest.json in dist-dataset/
+    fs.copyFileSync(path.join(outDir, 'dataset-metadata.json'), path.join(distDatasetDir, 'manifest.json'));
+    fs.copyFileSync(path.join(outDir, 'dataset-metadata.json'), path.join(distDatasetDir, 'dataset-manifest.json'));
     console.log(`✓ Mirrored build artifacts to dist-dataset/ for OTA publishing\n`);
   }
 

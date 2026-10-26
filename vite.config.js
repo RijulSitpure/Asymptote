@@ -18,7 +18,11 @@ function asymptoteExtensionDashboardPlugin() {
           const relativePath = url.replace(/^\/+data\/?/, '');
           const filePath = relativePath 
             ? path.resolve(__dirname, 'extension', 'data', relativePath)
-            : path.resolve(__dirname, 'extension', 'data', 'manifest.json');
+            : (fs.existsSync(path.resolve(__dirname, 'extension', 'data', 'dataset-metadata.json'))
+                ? path.resolve(__dirname, 'extension', 'data', 'dataset-metadata.json')
+                : (fs.existsSync(path.resolve(__dirname, 'extension', 'data', 'dataset-manifest.json'))
+                    ? path.resolve(__dirname, 'extension', 'data', 'dataset-manifest.json')
+                    : path.resolve(__dirname, 'extension', 'data', 'manifest.json')));
           if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
             res.setHeader('Content-Type', 'application/json');
             return fs.createReadStream(filePath).pipe(res);

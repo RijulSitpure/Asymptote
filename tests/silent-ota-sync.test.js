@@ -129,7 +129,7 @@ describe('Silent Over-The-Air (OTA) Dataset Synchronizer', () => {
 
     // Mock fetch for manifest and shard
     globalThis.fetch = vi.fn().mockImplementation((url) => {
-      if (url.endsWith('manifest.json')) {
+      if (url.endsWith('dataset-metadata.json') || url.endsWith('manifest.json')) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -208,7 +208,7 @@ describe('Silent Over-The-Air (OTA) Dataset Synchronizer', () => {
     };
 
     globalThis.fetch = vi.fn().mockImplementation((url) => {
-      if (url.endsWith('manifest.json')) {
+      if (url.endsWith('dataset-metadata.json') || url.endsWith('manifest.json')) {
         return Promise.resolve({ ok: true, json: async () => remoteManifest });
       }
       return Promise.resolve({ ok: true, text: async () => tamperedPayload });

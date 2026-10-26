@@ -18,7 +18,7 @@ const criticalFiles = [
   path.join(EXTENSION_DIR, 'background.js'),
   path.join(EXTENSION_DIR, 'content.js'),
   path.join(EXTENSION_DIR, 'popup.html'),
-  path.join(EXTENSION_DIR, 'data', 'manifest.json'),
+  path.join(EXTENSION_DIR, 'data', 'dataset-metadata.json'),
   path.join(EXTENSION_DIR, 'dashboard', 'index.html')
 ];
 
@@ -27,6 +27,16 @@ for (const f of criticalFiles) {
     console.error(`Error: Missing required build artifact: ${path.relative(ROOT_DIR, f)}`);
     process.exit(1);
   }
+}
+
+// Ensure no duplicate manifest.json exists in extension/ to prevent Chrome Web Store rejection
+const legacyDataManifest = path.join(EXTENSION_DIR, 'data', 'manifest.json');
+if (fs.existsSync(legacyDataManifest)) {
+  fs.unlinkSync(legacyDataManifest);
+}
+const legacyDatasetManifest = path.join(EXTENSION_DIR, 'data', 'dataset-manifest.json');
+if (fs.existsSync(legacyDatasetManifest)) {
+  fs.unlinkSync(legacyDatasetManifest);
 }
 
 // 2. Ensure dist/ exists and remove stale zip
@@ -50,14 +60,18 @@ const stats = fs.statSync(OUTPUT_ZIP);
 const sizeKb = (stats.size / 1024).toFixed(1);
 console.log(`✓ Created: ${path.relative(ROOT_DIR, OUTPUT_ZIP)} (${sizeKb} KB)`);
 
-// 4. Verify zip contents
+// 4. Verify zip contents and enforce exactly ONE manifest.json for Chrome Web Store
 const listOutput = execSync(`unzip -l "${OUTPUT_ZIP}"`, { encoding: 'utf8' });
-if (!listOutput.split('\n').some(line => line.trim().endsWith(' manifest.json'))) {
-  console.error('FATAL: manifest.json is missing from the root of the zip archive!');
+const manifestMatches = listOutput.split('\n')
+  .map(l => l.trim().split(/\s+/).pop())
+  .filter(name => name && (name === 'manifest.json' || name.endsWith('/manifest.json')));
+
+if (manifestMatches.length !== 1 || manifestMatches[0] !== 'manifest.json') {
+  console.error(`FATAL: Chrome Web Store requires exactly one manifest.json at zip root! Found ${manifestMatches.length}:`, manifestMatches);
   process.exit(1);
 }
 console.log('\n--- Zip Archive Contents (Top 15 files) ---');
 const lines = listOutput.trim().split('\n');
 console.log(lines.slice(0, 18).join('\n'));
-console.log('...\n✓ Verified manifest.json is at zip root.');
+console.log('...\n✓ Verified exactly 1 manifest.json is at zip root (Chrome Web Store compliant).');
 console.log('✓ Extension packaging completed successfully.');

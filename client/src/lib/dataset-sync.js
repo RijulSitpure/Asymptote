@@ -42,13 +42,17 @@ export async function checkForDatasetUpdates({ localManifest, remoteBaseUrl = DE
   if (!localManifest) return { hasUpdate: false, reason: 'missing_local_manifest' };
 
   const cleanBase = String(remoteBaseUrl).replace(/\/+$/, '');
-  const manifestUrl = `${cleanBase}/manifest.json`;
-
   let remoteManifest;
   try {
-    const res = await fetch(manifestUrl, { cache: 'no-cache' });
-    if (!res.ok) {
-      return { hasUpdate: false, reason: `http_${res.status}` };
+    let res = await fetch(`${cleanBase}/dataset-metadata.json`, { cache: 'no-cache' }).catch(() => null);
+    if (!res || !res.ok) {
+      res = await fetch(`${cleanBase}/dataset-manifest.json`, { cache: 'no-cache' }).catch(() => null);
+    }
+    if (!res || !res.ok) {
+      res = await fetch(`${cleanBase}/manifest.json`, { cache: 'no-cache' }).catch(() => null);
+    }
+    if (!res || !res.ok) {
+      return { hasUpdate: false, reason: res ? `http_${res.status}` : 'network_offline' };
     }
     remoteManifest = await res.json();
   } catch (err) {

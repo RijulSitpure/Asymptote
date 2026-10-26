@@ -25,10 +25,15 @@ function verifyBuild() {
   const errors = [];
   const warnings = [];
 
-  // 1. Verify existence of manifest.json
-  const manifestPath = path.join(dataDir, 'manifest.json');
+  // 1. Verify existence of dataset manifest
+  const manifestFile = fs.existsSync(path.join(dataDir, 'dataset-metadata.json'))
+    ? 'dataset-metadata.json'
+    : (fs.existsSync(path.join(dataDir, 'dataset-manifest.json'))
+        ? 'dataset-manifest.json'
+        : 'manifest.json');
+  const manifestPath = path.join(dataDir, manifestFile);
   if (!fs.existsSync(manifestPath)) {
-    console.error(`FATAL: manifest.json missing in ${dataDir}`);
+    console.error(`FATAL: dataset-metadata.json missing in ${dataDir}`);
     process.exit(1);
   }
 

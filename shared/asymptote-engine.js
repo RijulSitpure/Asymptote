@@ -2082,8 +2082,14 @@ export async function loadDatasetFromFetch(baseUrl = '/data', storage = null) {
   // 2. Load bundled files from baseUrl
   const cleanBase = baseUrl.replace(/\/+$/, '');
   try {
-    const [manifestRes, indexRes, catalogRes] = await Promise.all([
-      fetch(`${cleanBase}/manifest.json`),
+    let manifestRes = await fetch(`${cleanBase}/dataset-metadata.json`).catch(() => null);
+    if (!manifestRes || !manifestRes.ok) {
+      manifestRes = await fetch(`${cleanBase}/dataset-manifest.json`).catch(() => null);
+    }
+    if (!manifestRes || !manifestRes.ok) {
+      manifestRes = await fetch(`${cleanBase}/manifest.json`).catch(() => null);
+    }
+    const [indexRes, catalogRes] = await Promise.all([
       fetch(`${cleanBase}/index.json`),
       fetch(`${cleanBase}/catalog.json`).catch(() => null)
     ]);
@@ -2115,10 +2121,14 @@ export async function loadDatasetFromFetch(baseUrl = '/data', storage = null) {
     // 3. Fallback: Try fetching from REMOTE_DATASET_BASE_URL if available
     try {
       const remoteBase = REMOTE_DATASET_BASE_URL.replace(/\/+$/, '');
-      const [remoteManifestRes, remoteIndexRes] = await Promise.all([
-        fetch(`${remoteBase}/manifest.json`, { cache: 'no-cache' }),
-        fetch(`${remoteBase}/index.json`, { cache: 'no-cache' })
-      ]);
+      let remoteManifestRes = await fetch(`${remoteBase}/dataset-metadata.json`, { cache: 'no-cache' }).catch(() => null);
+      if (!remoteManifestRes || !remoteManifestRes.ok) {
+        remoteManifestRes = await fetch(`${remoteBase}/dataset-manifest.json`, { cache: 'no-cache' }).catch(() => null);
+      }
+      if (!remoteManifestRes || !remoteManifestRes.ok) {
+        remoteManifestRes = await fetch(`${remoteBase}/manifest.json`, { cache: 'no-cache' }).catch(() => null);
+      }
+      const remoteIndexRes = await fetch(`${remoteBase}/index.json`, { cache: 'no-cache' }).catch(() => null);
       if (remoteManifestRes && remoteManifestRes.ok && remoteIndexRes && remoteIndexRes.ok) {
         const manifest = await remoteManifestRes.json();
         const index = await remoteIndexRes.json();
@@ -2166,7 +2176,14 @@ export async function loadDatasetFromFs(dataDir = null) {
   const path = await import('node:path');
   const resolvedDir = dataDir || path.resolve(process.cwd(), 'extension', 'data');
 
-  const manifest = JSON.parse(fs.readFileSync(path.join(resolvedDir, 'manifest.json'), 'utf8'));
+  let manifestPath = path.join(resolvedDir, 'dataset-metadata.json');
+  if (!fs.existsSync(manifestPath)) {
+    manifestPath = path.join(resolvedDir, 'dataset-manifest.json');
+  }
+  if (!fs.existsSync(manifestPath)) {
+    manifestPath = path.join(resolvedDir, 'manifest.json');
+  }
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   const index = JSON.parse(fs.readFileSync(path.join(resolvedDir, 'index.json'), 'utf8'));
 
   const catalogFile = path.join(resolvedDir, 'catalog.json');
@@ -2410,10 +2427,22 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
         let manifestRes;
         try {
-          manifestRes = await fetch(`${cleanBase}/manifest.json`, {
+          manifestRes = await fetch(`${cleanBase}/dataset-metadata.json`, {
             signal: controller.signal,
             cache: 'no-cache'
           });
+          if (!manifestRes.ok) {
+            manifestRes = await fetch(`${cleanBase}/dataset-manifest.json`, {
+              signal: controller.signal,
+              cache: 'no-cache'
+            });
+          }
+          if (!manifestRes.ok) {
+            manifestRes = await fetch(`${cleanBase}/manifest.json`, {
+              signal: controller.signal,
+              cache: 'no-cache'
+            });
+          }
         } catch {
           clearTimeout(timeoutId);
           return { updated: false, reason: 'network_offline' };

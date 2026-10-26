@@ -83,14 +83,22 @@ describe('React Dashboard Serverless Wiring & Bundle Verification', () => {
     expect(fs.existsSync(path.resolve(process.cwd(), 'extension', 'dashboard', 'asymptote-icon-small.svg'))).toBe(true);
 
     // Extension data manifest
-    const extManifestPath = path.resolve(process.cwd(), 'extension', 'data', 'manifest.json');
+    const extManifestPath = fs.existsSync(path.resolve(process.cwd(), 'extension', 'data', 'dataset-metadata.json'))
+      ? path.resolve(process.cwd(), 'extension', 'data', 'dataset-metadata.json')
+      : (fs.existsSync(path.resolve(process.cwd(), 'extension', 'data', 'dataset-manifest.json'))
+          ? path.resolve(process.cwd(), 'extension', 'data', 'dataset-manifest.json')
+          : path.resolve(process.cwd(), 'extension', 'data', 'manifest.json'));
     expect(fs.existsSync(extManifestPath)).toBe(true);
     const manifest = JSON.parse(fs.readFileSync(extManifestPath, 'utf8'));
     expect(manifest.version).toBe('2.0.0');
     expect(manifest.checksums).toBeDefined();
 
     // Client dist dataset
-    const distManifestPath = path.resolve(process.cwd(), 'client', 'dist', 'data', 'manifest.json');
+    const distManifestPath = fs.existsSync(path.resolve(process.cwd(), 'client', 'dist', 'data', 'dataset-metadata.json'))
+      ? path.resolve(process.cwd(), 'client', 'dist', 'data', 'dataset-metadata.json')
+      : (fs.existsSync(path.resolve(process.cwd(), 'client', 'dist', 'data', 'dataset-manifest.json'))
+          ? path.resolve(process.cwd(), 'client', 'dist', 'data', 'dataset-manifest.json')
+          : path.resolve(process.cwd(), 'client', 'dist', 'data', 'manifest.json'));
     expect(fs.existsSync(distManifestPath)).toBe(true);
   });
 

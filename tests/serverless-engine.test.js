@@ -603,7 +603,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async (url) => {
       const urlStr = String(url);
-      if (urlStr.endsWith('manifest.json')) {
+      if (urlStr.endsWith('dataset-metadata.json') || urlStr.endsWith('manifest.json')) {
         return {
           ok: true,
           status: 200,
