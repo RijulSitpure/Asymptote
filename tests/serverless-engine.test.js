@@ -488,4 +488,56 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(stats.solvedCount).toBe(3);
     expect(stats.totalSolved).toBe(3);
   });
+
+  // 12. Slug Alias Deduplication & Exact Solved Count Integrity
+  it('12. Prevents double-counting when user storage contains historical LeetCode slug aliases (e.g. #596 classes-with-at-least-5-students)', async () => {
+    const memoryStore = createMemoryStorage({
+      asymptote_user_problems: {
+        'classes-with-at-least-5-students': {
+          is_solved: 1,
+          number: 596,
+          difficulty: 'Easy',
+          title: 'Classes With at Least 5 Students'
+        }
+      }
+    });
+
+    const testEngine = createAsymptoteEngine({
+      dataset,
+      storage: memoryStore
+    });
+
+    const solved = await testEngine.getProblems({ is_solved: 1 });
+    // Must be exactly 1 problem, not duplicated into 2
+    expect(solved.length).toBe(1);
+    expect(solved[0].number).toBe(596);
+    expect(solved[0].slug).toBe('classes-more-than-5-students');
+    expect(solved[0].difficulty).toBe('Easy');
+    expect(solved[0].verified).toBe(1);
+
+    const stats = await testEngine.getStats();
+    expect(stats.solvedCount).toBe(1);
+    expect(stats.difficultyBreakdown.Easy).toBe(1);
+
+    // Also test syncBatch with alias slug
+    await testEngine.syncBatch({
+      username: 'TestUser',
+      problems: [
+        {
+          frontend_id: '596',
+          title_slug: 'classes-with-at-least-5-students',
+          difficulty: 'Easy',
+          title: 'Classes With at Least 5 Students'
+        }
+      ]
+    });
+
+    const updatedSolved = await testEngine.getProblems({ is_solved: 1 });
+    expect(updatedSolved.length).toBe(1);
+    expect(updatedSolved[0].slug).toBe('classes-more-than-5-students');
+
+    const updatedStats = await testEngine.getStats();
+    expect(updatedStats.solvedCount).toBe(1);
+    expect(updatedStats.difficultyBreakdown.Easy).toBe(1);
+  });
 });

@@ -1719,10 +1719,23 @@ export function sortCategoriesByPedagogy(categories = []) {
   });
 }
 
+export const KNOWN_SLUG_ALIASES = {
+  'classes-with-at-least-5-students': 'classes-more-than-5-students'
+};
+
 export function resolveProblemSlug(query, index = null, catalog = null) {
   if (query === null || query === undefined) return null;
   const q = String(query).trim();
   if (!q) return null;
+
+  // 0. Known slug alias check (e.g. historical LeetCode renamed slugs)
+  if (KNOWN_SLUG_ALIASES[q]) {
+    return KNOWN_SLUG_ALIASES[q];
+  }
+  const cleanCandidate = q.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (KNOWN_SLUG_ALIASES[cleanCandidate]) {
+    return KNOWN_SLUG_ALIASES[cleanCandidate];
+  }
 
   // 1. Direct number check (e.g. "1" or 1)
   if (/^\d+$/.test(q)) {
@@ -2178,11 +2191,6 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       for (const [key, state] of Object.entries(rawUserProblems)) {
         if (!state || typeof state !== 'object') continue;
 
-        const resolvedSlug = resolveProblemSlug(key, dataset.index, rawCatalog)
-          || (state.slug ? resolveProblemSlug(state.slug, dataset.index, rawCatalog) : null)
-          || (state.titleSlug ? resolveProblemSlug(state.titleSlug, dataset.index, rawCatalog) : null)
-          || key;
-
         let numVal = null;
         if (/^\d+$/.test(key)) {
           numVal = parseInt(key, 10);
@@ -2194,6 +2202,12 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
           numVal = parseInt(String(state.frontend_id), 10);
         }
 
+        const resolvedSlug = resolveProblemSlug(key, dataset.index, rawCatalog)
+          || (state.slug ? resolveProblemSlug(state.slug, dataset.index, rawCatalog) : null)
+          || (state.titleSlug ? resolveProblemSlug(state.titleSlug, dataset.index, rawCatalog) : null)
+          || (numVal !== null ? resolveProblemSlug(numVal, dataset.index, rawCatalog) : null)
+          || key;
+
         if (numVal === null) {
           const cat = catalogBySlug.get(resolvedSlug);
           if (cat?.n) numVal = cat.n;
@@ -2201,9 +2215,14 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
         userStateBySlug.set(resolvedSlug, state);
         userStateBySlug.set(key, state);
+        if (state.slug) userStateBySlug.set(state.slug, state);
         if (numVal !== null) {
           userStateByNumber.set(numVal, state);
           userStateByNumber.set(String(numVal), state);
+          const canonicalByNum = resolveProblemSlug(numVal, dataset.index, rawCatalog);
+          if (canonicalByNum) {
+            userStateBySlug.set(canonicalByNum, state);
+          }
         }
       }
 
@@ -2274,25 +2293,6 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       for (const [key, userState] of Object.entries(rawUserProblems)) {
         if (!key || !userState || typeof userState !== 'object') continue;
 
-        const resolvedSlug = resolveProblemSlug(key, dataset.index, rawCatalog)
-          || (userState.slug ? resolveProblemSlug(userState.slug, dataset.index, rawCatalog) : null)
-          || (userState.titleSlug ? resolveProblemSlug(userState.titleSlug, dataset.index, rawCatalog) : null)
-          || key;
-
-        // Skip if already handled in curated problems or handled earlier
-        if (
-          curatedProblemsBySlug.has(resolvedSlug) ||
-          curatedProblemsBySlug.has(key) ||
-          handledSlugs.has(resolvedSlug) ||
-          handledSlugs.has(key) ||
-          handledNumbers.has(key)
-        ) {
-          continue;
-        }
-
-        handledSlugs.add(resolvedSlug);
-        handledSlugs.add(key);
-
         let parsedNum = null;
         if (/^\d+$/.test(key)) {
           parsedNum = parseInt(key, 10);
@@ -2304,13 +2304,39 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
           parsedNum = parseInt(String(userState.frontend_id), 10);
         }
 
+        const resolvedSlug = resolveProblemSlug(key, dataset.index, rawCatalog)
+          || (userState.slug ? resolveProblemSlug(userState.slug, dataset.index, rawCatalog) : null)
+          || (userState.titleSlug ? resolveProblemSlug(userState.titleSlug, dataset.index, rawCatalog) : null)
+          || (parsedNum !== null ? resolveProblemSlug(parsedNum, dataset.index, rawCatalog) : null)
+          || key;
+
         const catalogEntry = catalogBySlug.get(resolvedSlug)
           || (parsedNum !== null ? catalogByNumber.get(parsedNum) : null);
 
         const number = parsedNum || catalogEntry?.n || null;
-        if (number) {
+
+        // Skip if already handled in curated problems or handled earlier
+        if (
+          curatedProblemsBySlug.has(resolvedSlug) ||
+          curatedProblemsBySlug.has(key) ||
+          handledSlugs.has(resolvedSlug) ||
+          handledSlugs.has(key) ||
+          handledNumbers.has(key) ||
+          (number !== null && (handledNumbers.has(number) || handledNumbers.has(String(number)))) ||
+          (parsedNum !== null && (handledNumbers.has(parsedNum) || handledNumbers.has(String(parsedNum))))
+        ) {
+          continue;
+        }
+
+        handledSlugs.add(resolvedSlug);
+        handledSlugs.add(key);
+        if (number !== null) {
           handledNumbers.add(number);
           handledNumbers.add(String(number));
+        }
+        if (parsedNum !== null) {
+          handledNumbers.add(parsedNum);
+          handledNumbers.add(String(parsedNum));
         }
 
         const category = userState.category || catalogEntry?.c || 'Algorithms';
@@ -2654,10 +2680,27 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
         if (!p) continue;
         const rawSlug = p.title_slug || p.titleSlug || p.slug;
         const numberCandidate = p.frontend_id || p.questionFrontendId || p.questionId || p.number || p.id;
-        const slug = rawSlug 
+        let slug = rawSlug 
           ? resolveProblemSlug(rawSlug, dataset.index, rawCatalog) 
           : (numberCandidate ? resolveProblemSlug(numberCandidate, dataset.index, rawCatalog) : null);
+
+        if (numberCandidate && (!slug || !curatedProblemsBySlug.has(slug))) {
+          const num = parseInt(String(numberCandidate), 10);
+          if (!isNaN(num)) {
+            const curatedItem = rawCuratedProblems.find(cp => cp.number === num);
+            const catalogItem = catalogByNumber.get(num);
+            if (curatedItem?.slug) {
+              slug = curatedItem.slug;
+            } else if (catalogItem?.s && (!slug || slug === rawSlug)) {
+              slug = catalogItem.s;
+            }
+          }
+        }
         if (!slug) continue;
+
+        if (rawSlug && slug !== rawSlug && userProblems[rawSlug]) {
+          delete userProblems[rawSlug];
+        }
 
         const prev = userProblems[slug];
         const wasSolved = prev && prev.is_solved;
@@ -2835,10 +2878,28 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       for (const [key, data] of Object.entries(incomingProblems)) {
         if (!key || !data || typeof data !== 'object') continue;
 
-        const canonicalSlug = resolveProblemSlug(key, dataset.index, rawCatalog)
+        let canonicalSlug = resolveProblemSlug(key, dataset.index, rawCatalog)
           || (data.slug ? resolveProblemSlug(data.slug, dataset.index, rawCatalog) : null)
           || (data.titleSlug ? resolveProblemSlug(data.titleSlug, dataset.index, rawCatalog) : null)
           || key;
+
+        const numCand = data.number || data.frontend_id || data.id || (/^\d+$/.test(key) ? key : null);
+        if (numCand && (!canonicalSlug || !curatedProblemsBySlug.has(canonicalSlug))) {
+          const num = parseInt(String(numCand), 10);
+          if (!isNaN(num)) {
+            const curatedItem = rawCuratedProblems.find(cp => cp.number === num);
+            const catalogItem = catalogByNumber.get(num);
+            if (curatedItem?.slug) {
+              canonicalSlug = curatedItem.slug;
+            } else if (catalogItem?.s && canonicalSlug === key) {
+              canonicalSlug = catalogItem.s;
+            }
+          }
+        }
+
+        if (canonicalSlug !== key && mergedProblems[key]) {
+          delete mergedProblems[key];
+        }
 
         const curated = curatedProblemsBySlug.get(canonicalSlug);
         const cat = catalogBySlug.get(canonicalSlug);
@@ -2897,6 +2958,7 @@ if (typeof globalThis !== 'undefined') {
     formatHintsForDisplay,
     getProblemSolutionCode,
     resolveProblemSlug,
+    KNOWN_SLUG_ALIASES,
     GENERIC_HINT_TITLES,
     CATEGORY_PEDAGOGICAL_ORDER,
     PATTERN_PEDAGOGICAL_ORDER,
