@@ -33,6 +33,12 @@
 - **Pills / Chips:** 9999px (full capsule)
 
 ## Spacing & Layout
-- Desktop content max width: 1040px with 32px horizontal padding.
-- Companion extension panel width: 400px.
-- Clean hierarchy with consistent vertical gaps (16px / 24px / 32px).
+- **Desktop Content Max Width:** 1040px with 32px horizontal padding.
+- **Companion Extension In-Page Drawer:** 460px right slide-out panel with Shadow DOM style isolation.
+- **Companion Extension Popup:** 420px width by 600px height quick-access viewport.
+- **Clean Hierarchy:** Consistent vertical rhythms (16px / 24px / 32px).
+
+## Code & Language Architecture
+- **Multi-Language Selector:** Python, C++, Java, JavaScript, Go, and Rust tabbed chips across Pattern Atlas blueprints and Socratic hints.
+- **Code Highlighting:** Clean syntax presentation matching the neutral drafting slate palette without dark editor clashes.
+- **Big-O Badges:** Consistent badges indicating Time Complexity (e.g., `O(N log K)`) and Space Complexity (e.g., `O(K)`) alongside operations budget benchmarks (~10⁸ ops/sec).

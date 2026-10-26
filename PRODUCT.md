@@ -4,58 +4,58 @@
 
 ## Platform
 
-web
+Chrome Extension (Manifest V3) + Standalone Web Dashboard (React + Vite) + Zero-Backend Static Delivery.
 
 ## Users
 
-Software engineers, computer science students, and competitive programmers actively preparing for technical coding interviews who struggle to identify and map algorithmic patterns (e.g. Graph + DP, Bitmask BFS, Monotonic Stack, Interval DP) when facing unfamiliar problems.
+Software engineers, computer science students, and competitive programmers actively preparing for technical coding interviews who struggle to identify, categorize, and retain algorithmic patterns (e.g. Graph + DP, Monotonic Stack, Interval DP, Bitmask DP, Topological Sort) when facing unfamiliar problems.
 
 ## Product Purpose
 
-Asymptote exists to transform repetitive, unstructured problem grinding into systematic algorithmic pattern mastery. Success means a coder can look at any problem statement and its constraints, accurately deduce the optimal Big-O target and algorithmic archetype, and solve it through progressive Socratic clues without spoiling the solution code.
+Asymptote transforms repetitive, unstructured problem grinding into systematic algorithmic pattern mastery. Success means an engineer can examine any problem statement and its constraints, accurately deduce the optimal Big-O target and algorithmic archetype, and solve it through progressive Socratic hints without spoiling the solution code.
 
 ## Positioning
 
-A free, 100% local-first, privacy-respecting alternative to LeetCode Premium ($35/mo) and generic LLM chatbots. Unlike ChatGPT or Leet AI which immediately hallucinate full code solutions and spoil learning retention, Asymptote enforces a strict Socratic hint ladder (Intuition → State → Invariant → Skeleton) and derives optimal Big-O bounds directly from online judge operational CPU limits (~10⁸ ops/sec).
+A free, 100% serverless, local-first, privacy-respecting alternative to LeetCode Premium ($35/mo) and generic LLM chatbots. Unlike ChatGPT or Leet AI which immediately hallucinate full code solutions and spoil learning retention, Asymptote:
+1. Enforces a strict 4-tier Socratic hint ladder (Intuition → Invariant → Skeleton → Implementation).
+2. Derives optimal Big-O bounds directly from online judge operational CPU limits (~10⁸ ops/sec).
+3. Embeds on-device Gemini Nano AI (`window.ai`) for real-time private conversational tutoring.
+4. Requires zero backend servers or databases—running completely client-side in the browser.
 
 ## Operating Context
 
 - **Workflow:** Daily LeetCode practice sessions, mock technical interviews, and pre-interview pattern review.
-- **Environments:** 
-  1. Standalone web dashboard running locally at `http://localhost:3001` (React + Tailwind + Vite).
-  2. Companion Chrome Extension (Manifest V3) running on `leetcode.com/problems/*` with Shadow DOM style isolation.
-- **Data Boundary:** 100% local SQLite database (`server/data/tracker.db`), zero external cloud database, zero telemetry, zero mandatory user accounts.
+- **Environments:**
+  1. **Companion Chrome Extension (Manifest V3):** Injecting directly into `leetcode.com/problems/*` with Shadow DOM style isolation, floating control pill, and slide-out mentor drawer.
+  2. **Extension Popup & Full-Page Dashboard:** Accessible directly from browser action toolbar with full navigation (`chrome-extension://.../dashboard/index.html`).
+  3. **Standalone Static Web App:** Deployable to any static host (GitHub Pages, Vercel, Netlify) or local dev server.
+- **Data Boundary:** 100% local-first storage (`chrome.storage.local` and browser `localStorage`). Zero telemetry, zero external cloud database, zero tracking cookies, zero mandatory user accounts.
 
 ## Capabilities and Constraints
 
 - **Capabilities:**
-  - 37+ Curated Algorithmic Pattern Archetypes with Python and C++ blueprints.
-  - Constraint-derived Target Big-O Complexity analyzer with online judge CPU operations budget explanation.
-  - 4-Tier Socratic Progressive Hint Ladder (spoilers unlocked sequentially).
-  - Diagnostic Inference Wizard (4-question deduction of matching patterns from problem constraints).
-  - Dynamic on-the-fly ingestion for any LeetCode problem by number or slug.
-  - In-page Chrome Extension drawer with `[ Hints ] | [ Solution ] | [ Complexity ]` tabs and 1-click solved history sync.
+  - **1,570+ Curated Problems & 99 Algorithmic Patterns:** Structured across 5 master tiers (Foundations, Core DSA, Advanced Dynamic Programming, Graph Theory, and Specialized Topics).
+  - **Multi-Language Blueprints:** Python, C++, Java, JavaScript, Go, and Rust support across blueprints and implementation hints.
+  - **Constraint-Derived Target Big-O Analyzer:** Automatic deduction of time/space complexity budgets derived from constraints against the 10⁸ ops/sec CPU threshold.
+  - **4-Tier Socratic Progressive Hint Ladder:** Spoilers unlocked sequentially with clear warnings.
+  - **On-Device Gemini Nano AI:** Optional local Socratic chat powered by Chrome's native `window.ai` Prompt API—private, instant, and offline-capable.
+  - **Diagnostic Inference Wizard:** 4-question interactive deduction tool to identify matching patterns from problem characteristics.
+  - **Silent Over-The-Air (OTA) Dataset Updates:** Chrome background alarm checks GitHub Raw repository shards every 6 hours for catalog updates, caching datasets with zero user intervention.
+  - **Comprehensive Solved Tracker & Review Queue:** Spaced repetition tracking, difficulty breakdowns, and 1-click sync directly from LeetCode public submissions.
 - **Constraints:**
-  - Strict privacy: No remote telemetry or cloud dependency for core functionality.
-  - Coder-first: Code solutions must remain the final tier of progressive hints, never the first.
-  - Lightweight and fast: Minimal dependencies, fast local launch.
+  - **Strict Privacy:** Zero remote telemetry, zero analytics tracking, zero third-party cloud dependencies for core functionality.
+  - **Coder-First Learning:** Solution code is strictly the final tier of progressive disclosure, never the entry point.
+  - **Zero Server Overhead:** Zero persistent Node.js/Python server required. 100% client-side serverless engine.
 
 ## Brand Commitments
 
 - **Name:** Asymptote
-- **Tone & Aesthetic:** Minimalist, mature, and engineering-focused (inspired by Sarvam AI's light aesthetic, clean geometric typography, subtle 3D tactile elevation, and generous whitespace).
-- **Anti-patterns to avoid:** No generic glowing "AI" cliches, rainbow gradients, or cartoonish chatbot mascots.
-
-## Evidence on Hand
-
-- 191 solved problems synced from active user (`Rijul-Sitpure`) stored in local SQLite database (`server/data/tracker.db`).
-- 37 curated pattern blueprints with complexity targets, recognition triggers, and interview mutation twists (`server/src/db/patternsSeed.js`).
-- Working native Node.js HTTP API server on port 3001 (`server/src/index.js`).
-- Working Manifest V3 Chrome Extension with Shadow DOM integration (`extension/content.js`).
+- **Tone & Aesthetic:** Minimalist, engineering-focused, and distraction-free (clean geometric typography, subtle 3D tactile elevation, drafting grid motif, generous whitespace).
+- **Anti-patterns to Avoid:** No generic rainbow "AI" gradients, no cartoon mascots, no cognitive clutter.
 
 ## Product Principles
 
-1. **Intuition Before Implementation:** Never give away code when an algorithmic invariant or state definition can teach the mental model.
+1. **Intuition Before Implementation:** Never give away code when an algorithmic invariant or state definition can teach the underlying mental model.
 2. **Constraint-Led Engineering:** Complexity isn't an afterthought; problem bounds determine the algorithm before writing a single line.
-3. **Local Ownership & Frictionless Privacy:** User notes, solved history, and ratings belong solely to the user on their local machine.
-4. **Distilled Clarity:** Prefer airy, uncluttered interfaces with high information signal over dense walls of text.
+3. **Local Ownership & Absolute Privacy:** User notes, solved history, and mastery metrics belong solely to the user on their local machine.
+4. **Distilled Clarity:** Airy, uncluttered interfaces with high information signal over dense walls of text.
