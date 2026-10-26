@@ -4,9 +4,9 @@
  * ==============================================================================
  * 
  * Secure backend processor for user feedback, bug reports, and pattern requests.
- * Runs inside Google Apps Script bound to Rijul Sitpure's private Google Sheet.
+ * Runs inside Google Apps Script bound to your private Google Sheet.
  * 
- * STEP-BY-STEP SETUP INSTRUCTIONS FOR RIJUL:
+ * STEP-BY-STEP SETUP INSTRUCTIONS:
  * ------------------------------------------------------------------------------
  * 1. Create a new private Google Sheet:
  *    - Visit https://sheets.new in your browser.
