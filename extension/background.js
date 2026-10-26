@@ -17,11 +17,16 @@ async function getEngine() {
   if (engineInstance) return engineInstance;
   if (!engineInitPromise) {
     engineInitPromise = (async () => {
-      const baseUrl = chrome.runtime.getURL('data');
-      const storage = createChromeStorageAdapter();
-      const dataset = await loadDatasetFromFetch(baseUrl, storage);
-      engineInstance = createAsymptoteEngine({ dataset, storage });
-      return engineInstance;
+      try {
+        const baseUrl = chrome.runtime.getURL('data');
+        const storage = createChromeStorageAdapter();
+        const dataset = await loadDatasetFromFetch(baseUrl, storage);
+        engineInstance = createAsymptoteEngine({ dataset, storage });
+        return engineInstance;
+      } catch (err) {
+        engineInitPromise = null;
+        throw err;
+      }
     })();
   }
   return engineInitPromise;
@@ -29,6 +34,15 @@ async function getEngine() {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (!request || !request.action) return false;
+
+  // Direct operations that do not require waiting for the dataset engine:
+  if (request.action === 'open_dashboard') {
+    const query = request.query || '';
+    const url = chrome.runtime.getURL('dashboard/index.html' + query);
+    chrome.tabs.create({ url });
+    sendResponse({ success: true, url });
+    return false;
+  }
 
   (async () => {
     try {

@@ -24,38 +24,43 @@ export async function getClientEngine() {
   if (engineInstance) return engineInstance;
   if (!engineInitPromise) {
     engineInitPromise = (async () => {
-      let dataUrl = '/data';
-      if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
-        dataUrl = chrome.runtime.getURL('data');
-      }
+      try {
+        let dataUrl = '/data';
+        if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+          dataUrl = chrome.runtime.getURL('data');
+        }
 
-      const storage = (typeof chrome !== 'undefined' && chrome.storage?.local)
-        ? createChromeStorageAdapter()
-        : createLocalStorageAdapter();
+        const storage = (typeof chrome !== 'undefined' && chrome.storage?.local)
+          ? createChromeStorageAdapter()
+          : createLocalStorageAdapter();
 
-      const dataset = await loadDatasetFromFetch(dataUrl);
-      engineInstance = createAsymptoteEngine({ dataset, storage });
+        const dataset = await loadDatasetFromFetch(dataUrl, storage);
+        engineInstance = createAsymptoteEngine({ dataset, storage });
 
-      // Silent background dataset update check:
-      // Completely transparent to user, zero prompts, zero alerts.
-      if (typeof window !== 'undefined') {
-        setTimeout(async () => {
-          try {
-            const syncRes = await silentlySyncDataset({
-              storage,
-              localManifest: dataset.manifest,
-              engine: engineInstance
-            });
-            if (syncRes && syncRes.updated) {
-              window.dispatchEvent(new CustomEvent('asymptote:dataset_updated', { detail: syncRes }));
+        // Silent background dataset update check:
+        // Completely transparent to user, zero prompts, zero alerts.
+        if (typeof window !== 'undefined') {
+          setTimeout(async () => {
+            try {
+              const syncRes = await silentlySyncDataset({
+                storage,
+                localManifest: dataset.manifest,
+                engine: engineInstance
+              });
+              if (syncRes && syncRes.updated) {
+                window.dispatchEvent(new CustomEvent('asymptote:dataset_updated', { detail: syncRes }));
+              }
+            } catch {
+              // Fail completely silently
             }
-          } catch {
-            // Fail completely silently
-          }
-        }, 1500);
-      }
+          }, 1500);
+        }
 
-      return engineInstance;
+        return engineInstance;
+      } catch (err) {
+        engineInitPromise = null;
+        throw err;
+      }
     })();
   }
   return engineInitPromise;

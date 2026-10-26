@@ -672,5 +672,29 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  // 14. Resilient loader fallback
+  it('14. Resilient loader falls back to embedded dataset when local and remote fetch fail without throwing', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      throw new Error('TypeError: Failed to fetch (No local data or network)');
+    };
+
+    try {
+      const fallbackDataset = await loadDatasetFromFetch('/nonexistent-data-dir', null);
+      expect(fallbackDataset).toBeTruthy();
+      expect(fallbackDataset.isFallback).toBe(true);
+      expect(fallbackDataset.manifest.datasetVersion).toBe('embedded-fallback');
+      expect(fallbackDataset.shards.algorithms.problems.length).toBeGreaterThan(0);
+
+      const fallbackEngine = createAsymptoteEngine({ dataset: fallbackDataset });
+      const hints = await fallbackEngine.getProblemHints('two-sum');
+      expect(hints.problem).not.toBeNull();
+      expect(hints.problem.slug).toBe('two-sum');
+      expect(hints.hints.length).toBe(4);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
