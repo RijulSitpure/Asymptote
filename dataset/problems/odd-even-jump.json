@@ -1,0 +1,78 @@
+{
+  "slug": "odd-even-jump",
+  "number": 975,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-monotonic-next-greater"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Alternating Parity Jump Success Propagation",
+      "text": "From each starting index, alternating odd jumps (to smallest >= value) and even jumps (to largest <= value) determine if the end index can be reached."
+    },
+    {
+      "level": 2,
+      "title": "Monotonic Order Index Jump Resolution",
+      "text": "Sort indices by value to find odd jump targets using next greater index. Sort indices by value descending to find even jump targets."
+    },
+    {
+      "level": 3,
+      "title": "Dynamic State Propagation Blueprint",
+      "text": "Compute odd_next and even_next arrays using sorted index container scans. Work backwards from n - 1: odd[i] = even[odd_next[i]] and even[i] = odd[even_next[i]]. Return sum of odd[i]."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def oddEvenJumps(self, arr: list[int]) -> int:\n        n = len(arr)\n        def get_next(indices):\n            res = [None] * n\n            st = []\n            for i in indices:\n                while st and st[-1] < i:\n                    res[st.pop()] = i\n                st.append(i)\n            return res\n\n        sorted_idx = sorted(range(n), key=lambda i: (arr[i], i))\n        odd_next = get_next(sorted_idx)\n        sorted_idx_desc = sorted(range(n), key=lambda i: (-arr[i], i))\n        even_next = get_next(sorted_idx_desc)\n\n        odd = [False] * n\n        even = [False] * n\n        odd[-1] = True\n        even[-1] = True\n\n        for i in range(n - 2, -1, -1):\n            if odd_next[i] is not None:\n                odd[i] = even[odd_next[i]]\n            if even_next[i] is not None:\n                even[i] = odd[even_next[i]]\n\n        return sum(odd)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of array arr"
+    ],
+    "notes": "Sorting indices by values dominates runtime at O(N log N); monotonic index resolution runs in O(N).",
+    "whyNaiveFails": "Scanning forward for each jump takes O(N) leading to O(N^2) overall time.",
+    "spaceTimeTradeoff": "Sorted index passes compute next jump targets for all nodes simultaneously.",
+    "interviewerExpectation": "Transforming value comparisons into index-monotonic ordering via sorting."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def oddEvenJumps(self, arr: list[int]) -> int:\n        n = len(arr)\n        def get_next(indices):\n            res = [None] * n\n            st = []\n            for i in indices:\n                while st and st[-1] < i:\n                    res[st.pop()] = i\n                st.append(i)\n            return res\n\n        sorted_idx = sorted(range(n), key=lambda i: (arr[i], i))\n        odd_next = get_next(sorted_idx)\n        sorted_idx_desc = sorted(range(n), key=lambda i: (-arr[i], i))\n        even_next = get_next(sorted_idx_desc)\n\n        odd = [False] * n\n        even = [False] * n\n        odd[-1] = True\n        even[-1] = True\n\n        for i in range(n - 2, -1, -1):\n            if odd_next[i] is not None:\n                odd[i] = even[odd_next[i]]\n            if even_next[i] is not None:\n                even[i] = odd[even_next[i]]\n\n        return sum(odd)",
+      "approach": "Index Sorting with Monotonic Next Greater Jump DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    vector<int> getNext(const vector<int>& indices, int n) {\n        vector<int> res(n, -1);\n        vector<int> st;\n        for (int i : indices) {\n            while (!st.empty() && st.back() < i) {\n                res[st.back()] = i;\n                st.pop_back();\n            }\n            st.push_back(i);\n        }\n        return res;\n    }\npublic:\n    int oddEvenJumps(vector<int>& arr) {\n        int n = arr.size();\n        vector<int> idx(n);\n        iota(idx.begin(), idx.end(), 0);\n\n        sort(idx.begin(), idx.end(), [&](int i, int j) {\n            if (arr[i] != arr[j]) return arr[i] < arr[j];\n            return i < j;\n        });\n        vector<int> odd_next = getNext(idx, n);\n\n        sort(idx.begin(), idx.end(), [&](int i, int j) {\n            if (arr[i] != arr[j]) return arr[i] > arr[j];\n            return i < j;\n        });\n        vector<int> even_next = getNext(idx, n);\n\n        vector<bool> odd(n, false), even(n, false);\n        odd[n - 1] = true;\n        even[n - 1] = true;\n\n        int ans = 1;\n        for (int i = n - 2; i >= 0; --i) {\n            if (odd_next[i] != -1) odd[i] = even[odd_next[i]];\n            if (even_next[i] != -1) even[i] = odd[even_next[i]];\n            if (odd[i]) ans++;\n        }\n        return ans;\n    }\n};",
+      "approach": "C++ Monotonic Index Sorting Jump DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int[] getNext(Integer[] indices, int n) {\n        int[] res = new int[n];\n        Arrays.fill(res, -1);\n        Deque<Integer> st = new ArrayDeque<>();\n        for (int i : indices) {\n            while (!st.isEmpty() && st.peek() < i) {\n                res[st.pop()] = i;\n            }\n            st.push(i);\n        }\n        return res;\n    }\n\n    public int oddEvenJumps(int[] arr) {\n        int n = arr.length;\n        Integer[] idx = new Integer[n];\n        for (int i = 0; i < n; i++) idx[i] = i;\n\n        Arrays.sort(idx, (i, j) -> arr[i] != arr[j] ? Integer.compare(arr[i], arr[j]) : Integer.compare(i, j));\n        int[] oddNext = getNext(idx, n);\n\n        Arrays.sort(idx, (i, j) -> arr[i] != arr[j] ? Integer.compare(arr[j], arr[i]) : Integer.compare(i, j));\n        int[] evenNext = getNext(idx, n);\n\n        boolean[] odd = new boolean[n];\n        boolean[] even = new boolean[n];\n        odd[n - 1] = true;\n        even[n - 1] = true;\n\n        int ans = 1;\n        for (int i = n - 2; i >= 0; i--) {\n            if (oddNext[i] != -1) odd[i] = even[oddNext[i]];\n            if (evenNext[i] != -1) even[i] = odd[evenNext[i]];\n            if (odd[i]) ans++;\n        }\n        return ans;\n    }\n}",
+      "approach": "Java Monotonic Index Array Resolution with DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} arr\n * @return {number}\n */\nvar oddEvenJumps = function(arr) {\n    const n = arr.length;\n    function getNext(indices) {\n        const res = new Int32Array(n).fill(-1);\n        const st = [];\n        for (const i of indices) {\n            while (st.length > 0 && st[st.length - 1] < i) {\n                res[st.pop()] = i;\n            }\n            st.push(i);\n        }\n        return res;\n    }\n\n    const idx = Array.from({ length: n }, (_, i) => i);\n    idx.sort((i, j) => arr[i] !== arr[j] ? arr[i] - arr[j] : i - j);\n    const oddNext = getNext(idx);\n\n    idx.sort((i, j) => arr[i] !== arr[j] ? arr[j] - arr[i] : i - j);\n    const evenNext = getNext(idx);\n\n    const odd = new Uint8Array(n);\n    const even = new Uint8Array(n);\n    odd[n - 1] = 1;\n    even[n - 1] = 1;\n\n    let ans = 1;\n    for (let i = n - 2; i >= 0; i--) {\n        if (oddNext[i] !== -1) odd[i] = even[oddNext[i]];\n        if (evenNext[i] !== -1) even[i] = odd[evenNext[i]];\n        if (odd[i]) ans++;\n    }\n    return ans;\n};",
+      "approach": "JavaScript Monotonic Next Jump Array Propagation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

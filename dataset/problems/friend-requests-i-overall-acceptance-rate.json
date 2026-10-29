@@ -1,0 +1,72 @@
+{
+  "slug": "friend-requests-i-overall-acceptance-rate",
+  "number": 597,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Distinct Request Acceptance Ratio",
+      "text": "Count unique sender-receiver acceptance pairs and divide by the count of unique sender-receiver request pairs."
+    },
+    {
+      "level": 2,
+      "title": "Safe Division and Zero Handling",
+      "text": "Retrieve distinct counts from both tables. Use ifnull or coalesce to return 0.00 if the total number of distinct friend requests is zero."
+    },
+    {
+      "level": 3,
+      "title": "Acceptance Rate Blueprint",
+      "text": "Select round(ifnull(count(distinct requester_id, accepter_id) / nullif(count(distinct sender_id, send_to_id), 0), 0.0), 2) as accept_rate from RequestAccepted, FriendRequest."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT \n    ROUND(\n        IFNULL(\n            (SELECT COUNT(DISTINCT requester_id, accepter_id) FROM RequestAccepted) /\n            NULLIF((SELECT COUNT(DISTINCT sender_id, send_to_id) FROM FriendRequest), 0),\n            0.0\n        ),\n        2\n    ) AS accept_rate;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(R + A)",
+    "space": "O(R + A)",
+    "variables": [
+      "R: records in FriendRequest",
+      "A: records in RequestAccepted"
+    ],
+    "notes": "Distinct pair hashing executes in linear time across both input tables.",
+    "whyNaiveFails": "Cross joining raw tables without distinct subqueries produces Cartesian row multiplication.",
+    "spaceTimeTradeoff": "Independent scalar subqueries isolate distinct pair counts with minimal memory footprint.",
+    "interviewerExpectation": "Using NULLIF to guard against division by zero and returning 0.00 on empty tables."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT \n    ROUND(\n        IFNULL(\n            (SELECT COUNT(DISTINCT requester_id, accepter_id) FROM RequestAccepted) /\n            NULLIF((SELECT COUNT(DISTINCT sender_id, send_to_id) FROM FriendRequest), 0),\n            0.0\n        ),\n        2\n    ) AS accept_rate;",
+      "approach": "Scalar Distinct Subquery Safe Division",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT \n    ROUND(\n        COALESCE(\n            (SELECT COUNT(DISTINCT (requester_id, accepter_id)) FROM RequestAccepted)::numeric /\n            NULLIF((SELECT COUNT(DISTINCT (sender_id, send_to_id)) FROM FriendRequest), 0)::numeric,\n            0.0\n        ),\n        2\n    )::double precision AS accept_rate;",
+      "approach": "PostgreSQL Coalesce Numeric Division",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef acceptance_rate(friend_request: pd.DataFrame, request_accepted: pd.DataFrame) -> pd.DataFrame:\n    req_count = len(friend_request[['sender_id', 'send_to_id']].drop_duplicates())\n    acc_count = len(request_accepted[['requester_id', 'accepter_id']].drop_duplicates())\n    rate = round(acc_count / req_count, 2) if req_count > 0 else 0.0\n    return pd.DataFrame({'accept_rate': [rate]})",
+      "approach": "Pandas Distinct Pair Count Division",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "slug": "guess-the-word",
+  "number": 843,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Information Theoretic Candidate Pruning",
+      "text": "When a guessed word receives match count M from the master referee, any true target word must share exactly M matching character positions with that guess."
+    },
+    {
+      "level": 2,
+      "title": "Minimax Word Selection Strategy",
+      "text": "Pick a word that minimizes the maximum possible remaining candidate set size across all potential referee response outcomes (0 through 6)."
+    },
+    {
+      "level": 3,
+      "title": "Guess Loop Blueprint",
+      "text": "While candidates remain: evaluate each candidate word to compute worst-case remaining bucket size, pick the best candidate, call master.guess, and filter candidate list keeping only words with identical match count."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Master:\n    def guess(self, word: str) -> int:\n        pass\n\nclass Solution:\n    def findSecretWord(self, words: list[str], master: 'Master') -> None:\n        def matches(w1, w2):\n            return sum(c1 == c2 for c1, c2 in zip(w1, w2))\n\n        candidates = list(words)\n        for _ in range(30):\n            # Minimax heuristic\n            best_word = None\n            min_max_bucket = float('inf')\n            for w in candidates:\n                buckets = [0] * 7\n                for other in candidates:\n                    if w != other:\n                        buckets[matches(w, other)] += 1\n                max_b = max(buckets)\n                if max_b < min_max_bucket:\n                    min_max_bucket = max_b\n                    best_word = w\n            m = master.guess(best_word)\n            if m == 6:\n                return\n            candidates = [w for w in candidates if matches(w, best_word) == m]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(G * N^2 * L)",
+    "space": "O(N)",
+    "variables": [
+      "G: maximum guess count (10 or 30)",
+      "N: candidate words count",
+      "L: word length (6)"
+    ],
+    "notes": "Minimax pairwise word comparison takes O(N^2 * L) per iteration; candidates shrink exponentially.",
+    "whyNaiveFails": "Random guessing without candidate pruning has less than 1% probability of finding secret word in 10 attempts.",
+    "spaceTimeTradeoff": "Filtering candidate list shrinks search space drastically after each referee feedback.",
+    "interviewerExpectation": "Understanding minimax entropy optimization to eliminate maximum wrong words per guess."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Master:\n    def guess(self, word: str) -> int:\n        pass\n\nclass Solution:\n    def findSecretWord(self, words: list[str], master: 'Master') -> None:\n        def matches(w1, w2):\n            return sum(c1 == c2 for c1, c2 in zip(w1, w2))\n\n        candidates = list(words)\n        for _ in range(30):\n            # Minimax heuristic\n            best_word = None\n            min_max_bucket = float('inf')\n            for w in candidates:\n                buckets = [0] * 7\n                for other in candidates:\n                    if w != other:\n                        buckets[matches(w, other)] += 1\n                max_b = max(buckets)\n                if max_b < min_max_bucket:\n                    min_max_bucket = max_b\n                    best_word = w\n            m = master.guess(best_word)\n            if m == 6:\n                return\n            candidates = [w for w in candidates if matches(w, best_word) == m]",
+      "approach": "Minimax Candidate Pruning Heuristic",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "/**\n * // This is the Master's API interface.\n * // You should not implement it, or speculate about its implementation\n * class Master {\n *   public:\n *     int guess(string word);\n * };\n */\nclass Solution {\n    int getMatches(const string& a, const string& b) {\n        int m = 0;\n        for (int i = 0; i < 6; ++i) if (a[i] == b[i]) m++;\n        return m;\n    }\npublic:\n    void findSecretWord(vector<string>& words, Master& master) {\n        vector<string> candidates = words;\n        for (int t = 0; t < 30 && !candidates.empty(); ++t) {\n            string best_word = candidates[0];\n            int min_max_bucket = 1e9;\n            for (const string& w : candidates) {\n                vector<int> counts(7, 0);\n                for (const string& other : candidates) {\n                    if (w != other) counts[getMatches(w, other)]++;\n                }\n                int max_b = *max_element(counts.begin(), counts.end());\n                if (max_b < min_max_bucket) {\n                    min_max_bucket = max_b;\n                    best_word = w;\n                }\n            }\n            int m = master.guess(best_word);\n            if (m == 6) return;\n            vector<string> next_candidates;\n            for (const string& w : candidates) {\n                if (getMatches(w, best_word) == m) next_candidates.push_back(w);\n            }\n            candidates = std::move(next_candidates);\n        }\n    }\n};",
+      "approach": "C++ Minimax Candidate Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "/**\n * // This is the Master's API interface.\n * // You should not implement it, or speculate about its implementation\n * interface Master {\n *     public int guess(String word);\n * }\n */\nclass Solution {\n    private int getMatches(String a, String b) {\n        int m = 0;\n        for (int i = 0; i < 6; i++) {\n            if (a.charAt(i) == b.charAt(i)) m++;\n        }\n        return m;\n    }\n\n    public void findSecretWord(String[] words, Master master) {\n        List<String> candidates = new ArrayList<>(Arrays.asList(words));\n        for (int t = 0; t < 30 && !candidates.isEmpty(); t++) {\n            String bestWord = candidates.get(0);\n            int minMaxBucket = Integer.MAX_VALUE;\n            for (String w : candidates) {\n                int[] counts = new int[7];\n                for (String other : candidates) {\n                    if (!w.equals(other)) counts[getMatches(w, other)]++;\n                }\n                int maxB = 0;\n                for (int c : counts) maxB = Math.max(maxB, c);\n                if (maxB < minMaxBucket) {\n                    minMaxBucket = maxB;\n                    bestWord = w;\n                }\n            }\n            int m = master.guess(bestWord);\n            if (m == 6) return;\n            List<String> nextCandidates = new ArrayList<>();\n            for (String w : candidates) {\n                if (getMatches(w, bestWord) == m) nextCandidates.add(w);\n            }\n            candidates = nextCandidates;\n        }\n    }\n}",
+      "approach": "Java Minimax Referee Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * // This is the Master's API interface.\n * // You should not implement it, or speculate about its implementation\n * function Master() {\n *     @param {string} word\n *     @return {integer}\n *     this.guess = function(word) {\n *         ...\n *     };\n * };\n */\n/**\n * @param {string[]} words\n * @param {Master} master\n * @return {void}\n */\nvar findSecretWord = function(words, master) {\n    function matches(w1, w2) {\n        let count = 0;\n        for (let i = 0; i < 6; i++) if (w1[i] === w2[i]) count++;\n        return count;\n    }\n\n    let candidates = words.slice();\n    for (let t = 0; t < 30 && candidates.length > 0; t++) {\n        let bestWord = candidates[0];\n        let minMaxBucket = Infinity;\n        for (const w of candidates) {\n            const buckets = new Int32Array(7);\n            for (const other of candidates) {\n                if (w !== other) buckets[matches(w, other)]++;\n            }\n            const maxB = Math.max(...buckets);\n            if (maxB < minMaxBucket) {\n                minMaxBucket = maxB;\n                bestWord = w;\n            }\n        }\n        const m = master.guess(bestWord);\n        if (m === 6) return;\n        candidates = candidates.filter(w => matches(w, bestWord) === m);\n    }\n};",
+      "approach": "JavaScript Minimax Candidate Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

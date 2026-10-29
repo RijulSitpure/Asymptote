@@ -1,0 +1,1 @@
+WITH Cumulative AS (SELECT num, SUM(frequency) OVER(ORDER BY num ASC) AS cum_asc, SUM(frequency) OVER(ORDER BY num DESC) AS cum_desc, SUM(frequency) OVER() AS total_freq FROM Numbers) SELECT ROUND(AVG(num), 1) AS median FROM Cumulative WHERE cum_asc >= total_freq / 2.0 AND cum_desc >= total_freq / 2.0;

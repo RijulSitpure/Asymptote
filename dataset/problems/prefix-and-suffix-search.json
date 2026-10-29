@@ -1,0 +1,81 @@
+{
+  "slug": "prefix-and-suffix-search",
+  "number": 745,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Composite Key Concatenation",
+      "text": "Combine every suffix of a word with its prefix separated by a delimiter to evaluate joint boundary queries with a single prefix lookup."
+    },
+    {
+      "level": 2,
+      "title": "Wrapped Suffix-Word Insertion",
+      "text": "For each word at index i and each suffix of length L, insert suffix + \"{\" + word into the tree. Store index i at each visited node."
+    },
+    {
+      "level": 3,
+      "title": "WordFilter Query Blueprint",
+      "text": "In f(pref, suff): search for query suff + \"{\" + pref in the tree. If found, return the maximum index stored at that terminal node; otherwise return -1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.weight = 0\n\nclass WordFilter:\n    def __init__(self, words: list[str]):\n        self.root = TrieNode()\n        for weight, word in enumerate(words):\n            word_len = len(word)\n            for i in range(word_len + 1):\n                wrapped = word[i:] + '{' + word\n                curr = self.root\n                curr.weight = weight\n                for ch in wrapped:\n                    if ch not in curr.children:\n                        curr.children[ch] = TrieNode()\n                    curr = curr.children[ch]\n                    curr.weight = weight\n\n    def f(self, pref: str, suff: str) -> int:\n        curr = self.root\n        target = suff + '{' + pref\n        for ch in target:\n            if ch not in curr.children:\n                return -1\n            curr = curr.children[ch]\n        return curr.weight\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * L^2) build, O(P + S) query",
+    "space": "O(N * L^2)",
+    "variables": [
+      "N: number of words",
+      "L: maximum word length",
+      "P: prefix length",
+      "S: suffix length"
+    ],
+    "notes": "Every word inserts L suffixes of length up to 2L; queries traverse P + S characters in O(P + S) time.",
+    "whyNaiveFails": "Scanning all words on every query takes O(N * L) resulting in query timeout.",
+    "spaceTimeTradeoff": "Trading quadratic length tree insertions for fast O(P + S) query time.",
+    "interviewerExpectation": "Use of suffix + delimiter + word concatenation to collapse 2D query into 1D prefix."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.weight = 0\n\nclass WordFilter:\n    def __init__(self, words: list[str]):\n        self.root = TrieNode()\n        for weight, word in enumerate(words):\n            word_len = len(word)\n            for i in range(word_len + 1):\n                wrapped = word[i:] + '{' + word\n                curr = self.root\n                curr.weight = weight\n                for ch in wrapped:\n                    if ch not in curr.children:\n                        curr.children[ch] = TrieNode()\n                    curr = curr.children[ch]\n                    curr.weight = weight\n\n    def f(self, pref: str, suff: str) -> int:\n        curr = self.root\n        target = suff + '{' + pref\n        for ch in target:\n            if ch not in curr.children:\n                return -1\n            curr = curr.children[ch]\n        return curr.weight",
+      "approach": "Wrapped Suffix-Prefix Spliced Trie",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class WordFilter {\n    struct Node {\n        Node* children[27] = {};\n        int weight = 0;\n    };\n    Node* root;\npublic:\n    WordFilter(vector<string>& words) {\n        root = new Node();\n        for (int weight = 0; weight < words.size(); ++weight) {\n            string w = words[weight];\n            int n = w.size();\n            for (int i = 0; i <= n; ++i) {\n                string wrapped = w.substr(i) + \"{\" + w;\n                Node* curr = root;\n                curr->weight = weight;\n                for (char ch : wrapped) {\n                    int idx = ch - 'a';\n                    if (ch == '{') idx = 26;\n                    if (!curr->children[idx]) curr->children[idx] = new Node();\n                    curr = curr->children[idx];\n                    curr->weight = weight;\n                }\n            }\n        }\n    }\n    \n    int f(string pref, string suff) {\n        Node* curr = root;\n        string target = suff + \"{\" + pref;\n        for (char ch : target) {\n            int idx = ch - 'a';\n            if (ch == '{') idx = 26;\n            if (!curr->children[idx]) return -1;\n            curr = curr->children[idx];\n        }\n        return curr->weight;\n    }\n};",
+      "approach": "C++ 27-Way Array Wrapped Suffix Trie",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class WordFilter {\n    static class Node {\n        Node[] children = new Node[27];\n        int weight = 0;\n    }\n    private Node root;\n\n    public WordFilter(String[] words) {\n        root = new Node();\n        for (int weight = 0; weight < words.length; weight++) {\n            String w = words[weight];\n            int n = w.length();\n            for (int i = 0; i <= n; i++) {\n                String wrapped = w.substring(i) + \"{\" + w;\n                Node curr = root;\n                curr.weight = weight;\n                for (int j = 0; j < wrapped.length(); j++) {\n                    char ch = wrapped.charAt(j);\n                    int idx = ch == '{' ? 26 : ch - 'a';\n                    if (curr.children[idx] == null) curr.children[idx] = new Node();\n                    curr = curr.children[idx];\n                    curr.weight = weight;\n                }\n            }\n        }\n    }\n    \n    public int f(String pref, String suff) {\n        Node curr = root;\n        String target = suff + \"{\" + pref;\n        for (int i = 0; i < target.length(); i++) {\n            char ch = target.charAt(i);\n            int idx = ch == '{' ? 26 : ch - 'a';\n            if (curr.children[idx] == null) return -1;\n            curr = curr.children[idx];\n        }\n        return curr.weight;\n    }\n}",
+      "approach": "Java Wrapped Suffix-Prefix Array Trie",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class TrieNode {\n    constructor() {\n        this.children = new Map();\n        this.weight = 0;\n    }\n}\n\n/**\n * @param {string[]} words\n */\nvar WordFilter = function(words) {\n    this.root = new TrieNode();\n    for (let weight = 0; weight < words.length; weight++) {\n        const word = words[weight];\n        const n = word.length;\n        for (let i = 0; i <= n; i++) {\n            const wrapped = word.slice(i) + '{' + word;\n            let curr = this.root;\n            curr.weight = weight;\n            for (const ch of wrapped) {\n                if (!curr.children.has(ch)) {\n                    curr.children.set(ch, new TrieNode());\n                }\n                curr = curr.children.get(ch);\n                curr.weight = weight;\n            }\n        }\n    }\n};\n\n/** \n * @param {string} pref \n * @param {string} suff\n * @return {number}\n */\nWordFilter.prototype.f = function(pref, suff) {\n    let curr = this.root;\n    const target = suff + '{' + pref;\n    for (const ch of target) {\n        if (!curr.children.has(ch)) return -1;\n        curr = curr.children.get(ch);\n    }\n    return curr.weight;\n};",
+      "approach": "JavaScript Suffix Delimiter Trie",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

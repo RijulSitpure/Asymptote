@@ -401,12 +401,12 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
 
   // 10. Full LeetCode Problem Catalog Index Resolution
   it('10. Resolves uncurated problem metadata, category, supported languages, and suggested pattern from catalog.json', async () => {
-    // Problem #559 (Maximum Depth of N-ary Tree) - uncurated, in catalog
-    const uncurated = await engine.getProblemHints(559);
+    // Problem #1379 (Find a Corresponding Node of a Binary Tree in a Clone of That Tree) - uncurated, in catalog
+    const uncurated = await engine.getProblemHints(1379);
     expect(uncurated.problem).not.toBeNull();
-    expect(uncurated.problem.number).toBe(559);
-    expect(uncurated.problem.slug).toBe('maximum-depth-of-n-ary-tree');
-    expect(uncurated.problem.title).toBe('Maximum Depth of N-ary Tree');
+    expect(uncurated.problem.number).toBe(1379);
+    expect(uncurated.problem.slug).toBe('find-a-corresponding-node-of-a-binary-tree-in-a-clone-of-that-tree');
+    expect(uncurated.problem.title).toBe('Find a Corresponding Node of a Binary Tree in a Clone of That Tree');
     expect(uncurated.problem.difficulty).toBe('Easy');
     expect(uncurated.problem.category).toBe('Algorithms');
     expect(uncurated.problem.verified).toBe(0);

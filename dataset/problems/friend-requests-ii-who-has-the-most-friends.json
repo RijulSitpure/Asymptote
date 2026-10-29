@@ -1,0 +1,71 @@
+{
+  "slug": "friend-requests-ii-who-has-the-most-friends",
+  "number": 602,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bidirectional Friendship Union",
+      "text": "Friendship is symmetric. Each accepted request contributes one friend to both the requester and the accepter."
+    },
+    {
+      "level": 2,
+      "title": "Union All Participant Stacking",
+      "text": "Combine requester_id and accepter_id into a single unified column of participant IDs by vertically stacking accepted records. Then group by participant and count occurrences."
+    },
+    {
+      "level": 3,
+      "title": "Most Friends Blueprint",
+      "text": "With Friends as (select requester_id as id from RequestAccepted union all select accepter_id as id from RequestAccepted) select id, count(*) as num from Friends group by id order by num desc limit 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH AllFriends AS (\n    SELECT requester_id AS id FROM RequestAccepted\n    UNION ALL\n    SELECT accepter_id AS id FROM RequestAccepted\n)\nSELECT id, COUNT(*) AS num\nFROM AllFriends\nGROUP BY id\nORDER BY num DESC\nLIMIT 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of accepted requests"
+    ],
+    "notes": "Union all and grouping by participant executes in linear-logarithmic sorting time.",
+    "whyNaiveFails": "Counting only requester or accepter separately misses reciprocal friendships.",
+    "spaceTimeTradeoff": "UNION ALL preserves duplicates without dedup overhead before grouping.",
+    "interviewerExpectation": "Use of UNION ALL rather than UNION to properly tally both endpoints of a friendship."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH AllFriends AS (\n    SELECT requester_id AS id FROM RequestAccepted\n    UNION ALL\n    SELECT accepter_id AS id FROM RequestAccepted\n)\nSELECT id, COUNT(*) AS num\nFROM AllFriends\nGROUP BY id\nORDER BY num DESC\nLIMIT 1;",
+      "approach": "Bidirectional UNION ALL Group Count",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH AllFriends AS (\n    SELECT requester_id AS id FROM RequestAccepted\n    UNION ALL\n    SELECT accepter_id AS id FROM RequestAccepted\n)\nSELECT id, COUNT(*) AS num\nFROM AllFriends\nGROUP BY id\nORDER BY num DESC\nLIMIT 1;",
+      "approach": "PostgreSQL UNION ALL Group Count",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef most_friends(request_accepted: pd.DataFrame) -> pd.DataFrame:\n    all_ids = pd.concat([request_accepted['requester_id'], request_accepted['accepter_id']])\n    counts = all_ids.value_counts().reset_index()\n    counts.columns = ['id', 'num']\n    return counts.head(1)",
+      "approach": "Pandas Concat and Value Counts Head",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

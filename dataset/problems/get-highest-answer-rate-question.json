@@ -1,0 +1,71 @@
+{
+  "slug": "get-highest-answer-rate-question",
+  "number": 578,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Ratio Aggregation of Logged Events",
+      "text": "Group logs by question identifier and calculate the proportion of answered occurrences over total shown impressions."
+    },
+    {
+      "level": 2,
+      "title": "Summing Flagged Actions in Group By",
+      "text": "Count answer events by evaluating sum(action = \"answer\") and divide by sum(action = \"show\"). Order the resulting answer rate in descending order."
+    },
+    {
+      "level": 3,
+      "title": "Top Answer Rate Blueprint",
+      "text": "Select question_id as survey_log from SurveyLog group by question_id order by (sum(action = \"answer\") / sum(action = \"show\")) desc, question_id asc limit 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT question_id AS survey_log\nFROM SurveyLog\nGROUP BY question_id\nORDER BY (SUM(action = 'answer') / SUM(action = 'show')) DESC, question_id ASC\nLIMIT 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of records in SurveyLog"
+    ],
+    "notes": "Group by aggregation and sorting by answer rate runs in linear-logarithmic time.",
+    "whyNaiveFails": "Joining separate show and answer tables introduces row multiplication overhead.",
+    "spaceTimeTradeoff": "Conditional aggregation sums action events in a single group scan.",
+    "interviewerExpectation": "Use of conditional sums (SUM(action = \"answer\")) and tie-breaking by question_id ASC."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT question_id AS survey_log\nFROM SurveyLog\nGROUP BY question_id\nORDER BY (SUM(action = 'answer') / SUM(action = 'show')) DESC, question_id ASC\nLIMIT 1;",
+      "approach": "Conditional Grouped Ratio Sorting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT question_id AS survey_log\nFROM SurveyLog\nGROUP BY question_id\nORDER BY (COUNT(*) FILTER (WHERE action = 'answer')::float / COUNT(*) FILTER (WHERE action = 'show')::float) DESC, question_id ASC\nLIMIT 1;",
+      "approach": "PostgreSQL Filter Clause Ratio Sorting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef highest_answer_rate_question(survey_log: pd.DataFrame) -> pd.DataFrame:\n    grouped = survey_log.groupby('question_id').agg(\n        answers=('action', lambda s: (s == 'answer').sum()),\n        shows=('action', lambda s: (s == 'show').sum())\n    ).reset_index()\n    grouped['rate'] = grouped['answers'] / grouped['shows']\n    sorted_df = grouped.sort_values(by=['rate', 'question_id'], ascending=[False, True])\n    return pd.DataFrame({'survey_log': [sorted_df.iloc[0]['question_id']]})",
+      "approach": "Pandas Groupby Conditional Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

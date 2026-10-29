@@ -1,0 +1,71 @@
+{
+  "slug": "find-median-given-frequency-of-numbers",
+  "number": 571,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bidirectional Cumulative Weight Balancing",
+      "text": "The median in a weighted frequency distribution is any number whose cumulative frequency from both the left and right exceeds half the total frequency."
+    },
+    {
+      "level": 2,
+      "title": "Dual Running Sum Window Comparison",
+      "text": "Compute ascending cumulative frequency and descending cumulative frequency over numbers ordered by value. Check that both running sums are greater than or equal to sum(frequency) / 2.0."
+    },
+    {
+      "level": 3,
+      "title": "Median Frequency Blueprint",
+      "text": "With CTE as (select num, sum(frequency) over(order by num asc) as cum_asc, sum(frequency) over(order by num desc) as cum_desc, sum(frequency) over() as total from Numbers) select round(avg(num), 1) as median from CTE where cum_asc >= total / 2.0 and cum_desc >= total / 2.0."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Cumulative AS (\n    SELECT \n        num,\n        SUM(frequency) OVER(ORDER BY num ASC) AS cum_asc,\n        SUM(frequency) OVER(ORDER BY num DESC) AS cum_desc,\n        SUM(frequency) OVER() AS total_freq\n    FROM Numbers\n)\nSELECT ROUND(AVG(num), 1) AS median\nFROM Cumulative\nWHERE cum_asc >= total_freq / 2.0 \n  AND cum_desc >= total_freq / 2.0;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of distinct number rows"
+    ],
+    "notes": "Window prefix and suffix sums evaluate in sorted linear-logarithmic time.",
+    "whyNaiveFails": "Expanding frequency counts into individual uncompressed rows wastes massive memory.",
+    "spaceTimeTradeoff": "Dual cumulative window sums avoid table unnesting.",
+    "interviewerExpectation": "Using ascending and descending cumulative weights to identify median boundaries."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Cumulative AS (\n    SELECT \n        num,\n        SUM(frequency) OVER(ORDER BY num ASC) AS cum_asc,\n        SUM(frequency) OVER(ORDER BY num DESC) AS cum_desc,\n        SUM(frequency) OVER() AS total_freq\n    FROM Numbers\n)\nSELECT ROUND(AVG(num), 1) AS median\nFROM Cumulative\nWHERE cum_asc >= total_freq / 2.0 \n  AND cum_desc >= total_freq / 2.0;",
+      "approach": "Bidirectional Cumulative Window Sums",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Cumulative AS (\n    SELECT \n        num,\n        SUM(frequency) OVER(ORDER BY num ASC) AS cum_asc,\n        SUM(frequency) OVER(ORDER BY num DESC) AS cum_desc,\n        SUM(frequency) OVER() AS total_freq\n    FROM Numbers\n)\nSELECT ROUND(AVG(num)::numeric, 1)::double precision AS median\nFROM Cumulative\nWHERE cum_asc >= total_freq / 2.0 \n  AND cum_desc >= total_freq / 2.0;",
+      "approach": "PostgreSQL Cumulative Window Median",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef median_frequency(numbers: pd.DataFrame) -> pd.DataFrame:\n    df = numbers.sort_values(by='num')\n    total = df['frequency'].sum()\n    df['cum_asc'] = df['frequency'].cumsum()\n    df['cum_desc'] = df['frequency'].iloc[::-1].cumsum().iloc[::-1]\n    medians = df[(df['cum_asc'] >= total / 2.0) & (df['cum_desc'] >= total / 2.0)]\n    med_val = round(medians['num'].mean(), 1)\n    return pd.DataFrame({'median': [med_val]})",
+      "approach": "Pandas Cumulative Sum Median Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

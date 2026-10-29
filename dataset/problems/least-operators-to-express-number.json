@@ -1,0 +1,79 @@
+{
+  "slug": "least-operators-to-express-number",
+  "number": 964,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Base-X Digit Representation Expansion",
+      "text": "Represent target in base x. Each digit d at position k can either be formed by adding d powers of x, or by overshooting with d + 1 and subtracting remainder."
+    },
+    {
+      "level": 2,
+      "title": "Two-Choice Carry DP Transitions",
+      "text": "At power level k: cost to write x^k is k operators (or 2 when k = 0). For each digit d, evaluate transition without carry (d * cost) versus with carry ((x - d) * cost) passing carry 1 to next power."
+    },
+    {
+      "level": 3,
+      "title": "Recursive Digit Decomposition Blueprint",
+      "text": "Define dp(target, k): if target == 0 return 0. If target == 1 return cost(k). Compute remainder r = target % x, quotient q = target // x. Return min(r * cost(k) + dp(q, k+1), (x - r) * cost(k) + dp(q + 1, k+1))."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport functools\n\nclass Solution:\n    def leastOpsExpressTarget(self, x: int, target: int) -> int:\n        @functools.lru_cache(None)\n        def dp(t):\n            if t < x:\n                return min(2 * t - 1, 2 * (x - t))\n            k = 0\n            p = 1\n            while p * x <= t:\n                p *= x\n                k += 1\n            if t == p:\n                return k - 1\n            ans = dp(t - p) + k\n            if p * x - t < t:\n                ans = min(ans, dp(p * x - t) + k + 1)\n            return ans\n\n        return dp(target)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log_X Target)",
+    "space": "O(log_X Target)",
+    "variables": [
+      "Target: integer value",
+      "X: base number"
+    ],
+    "notes": "Logarithmic number of power levels with at most two subproblems per level (floor and ceiling).",
+    "whyNaiveFails": "Breadth-first search exploring arithmetic trees explodes combinatorially.",
+    "spaceTimeTradeoff": "Memoized recursion bounds unique evaluated subproblem states to O(log_x Target).",
+    "interviewerExpectation": "Formulating choice between additive floor and subtractive ceiling at each base-x power."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import functools\n\nclass Solution:\n    def leastOpsExpressTarget(self, x: int, target: int) -> int:\n        @functools.lru_cache(None)\n        def dp(t):\n            if t < x:\n                return min(2 * t - 1, 2 * (x - t))\n            k = 0\n            p = 1\n            while p * x <= t:\n                p *= x\n                k += 1\n            if t == p:\n                return k - 1\n            ans = dp(t - p) + k\n            if p * x - t < t:\n                ans = min(ans, dp(p * x - t) + k + 1)\n            return ans\n\n        return dp(target)",
+      "approach": "Memoized Target Overshoot/Undershoot Recursion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    unordered_map<int, int> memo;\n    int x_val;\n\n    int dp(int t) {\n        if (t < x_val) return min(2 * t - 1, 2 * (x_val - t));\n        if (memo.count(t)) return memo[t];\n\n        int k = 0;\n        long long p = 1;\n        while (p * x_val <= t) {\n            p *= x_val;\n            k++;\n        }\n        if (t == p) return memo[t] = k - 1;\n\n        int ans = dp(t - p) + k;\n        if (p * x_val - t < t) {\n            ans = min(ans, dp(p * x_val - t) + k + 1);\n        }\n        return memo[t] = ans;\n    }\npublic:\n    int leastOpsExpressTarget(int x, int target) {\n        x_val = x;\n        memo.clear();\n        return dp(target);\n    }\n};",
+      "approach": "C++ Memoized Power Branching",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    private Map<Integer, Integer> memo;\n    private int xVal;\n\n    private int dp(int t) {\n        if (t < xVal) return Math.min(2 * t - 1, 2 * (xVal - t));\n        if (memo.containsKey(t)) return memo.get(t);\n\n        int k = 0;\n        long p = 1;\n        while (p * xVal <= t) {\n            p *= xVal;\n            k++;\n        }\n        if (t == p) {\n            memo.put(t, k - 1);\n            return k - 1;\n        }\n\n        int ans = dp(t - (int) p) + k;\n        if (p * xVal - t < t) {\n            ans = Math.min(ans, dp((int) (p * xVal - t)) + k + 1);\n        }\n        memo.put(t, ans);\n        return ans;\n    }\n\n    public int leastOpsExpressTarget(int x, int target) {\n        xVal = x;\n        memo = new HashMap<>();\n        return dp(target);\n    }\n}",
+      "approach": "Java Top-Down Memoized Target Reduction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} x\n * @param {number} target\n * @return {number}\n */\nvar leastOpsExpressTarget = function(x, target) {\n    const memo = new Map();\n\n    function dp(t) {\n        if (t < x) return Math.min(2 * t - 1, 2 * (x - t));\n        if (memo.has(t)) return memo.get(t);\n\n        let k = 0;\n        let p = 1;\n        while (p * x <= t) {\n            p *= x;\n            k++;\n        }\n        if (t === p) {\n            memo.set(t, k - 1);\n            return k - 1;\n        }\n\n        let ans = dp(t - p) + k;\n        if (p * x - t < t) {\n            ans = Math.min(ans, dp(p * x - t) + k + 1);\n        }\n        memo.set(t, ans);\n        return ans;\n    }\n\n    return dp(target);\n};",
+      "approach": "JavaScript Memoized Power Decomposition",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "online-election",
+  "number": 911,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Running Leader Chronological Precomputation",
+      "text": "Precompute the leading candidate at every vote timestamp in one forward pass so subsequent point queries reduce to efficient interval lookup."
+    },
+    {
+      "level": 2,
+      "title": "Vote Counting with Recency Tie-Breaking",
+      "text": "Iterate through votes, maintain candidate vote totals. When a candidate reaches or exceeds the current maximum count, update the leading candidate."
+    },
+    {
+      "level": 3,
+      "title": "TopVotedCandidate Query Blueprint",
+      "text": "In init: record (time, leader) for every index. In q(t): use binary search on times array to find greatest timestamp <= t, then return corresponding leader."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\n\nclass TopVotedCandidate:\n    def __init__(self, persons: list[int], times: list[int]):\n        self.times = times\n        self.leaders = []\n        count = {}\n        leader = -1\n        max_votes = 0\n        for p in persons:\n            count[p] = count.get(p, 0) + 1\n            if count[p] >= max_votes:\n                max_votes = count[p]\n                leader = p\n            self.leaders.append(leader)\n\n    def q(self, t: int) -> int:\n        idx = bisect.bisect_right(self.times, t) - 1\n        return self.leaders[idx]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) init, O(log N) per query",
+    "space": "O(N)",
+    "variables": [
+      "N: number of cast votes"
+    ],
+    "notes": "Linear scan precomputes leader history in O(N); binary search resolves timestamp queries in O(log N).",
+    "whyNaiveFails": "Re-counting vote arrays up to time t on every query takes O(N) per query, timing out.",
+    "spaceTimeTradeoff": "Storing leaders list of length N allows instantaneous retrieval via binary search.",
+    "interviewerExpectation": "Precomputing chronological leader transitions and handling tie-breaking favoring most recent vote."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass TopVotedCandidate:\n    def __init__(self, persons: list[int], times: list[int]):\n        self.times = times\n        self.leaders = []\n        count = {}\n        leader = -1\n        max_votes = 0\n        for p in persons:\n            count[p] = count.get(p, 0) + 1\n            if count[p] >= max_votes:\n                max_votes = count[p]\n                leader = p\n            self.leaders.append(leader)\n\n    def q(self, t: int) -> int:\n        idx = bisect.bisect_right(self.times, t) - 1\n        return self.leaders[idx]",
+      "approach": "Precomputed Chronological Leader with Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class TopVotedCandidate {\n    vector<int> times;\n    vector<int> leaders;\npublic:\n    TopVotedCandidate(vector<int>& persons, vector<int>& times) : times(times) {\n        unordered_map<int, int> count;\n        int leader = -1, max_votes = 0;\n        for (int p : persons) {\n            if (++count[p] >= max_votes) {\n                max_votes = count[p];\n                leader = p;\n            }\n            leaders.push_back(leader);\n        }\n    }\n    \n    int q(int t) {\n        auto it = upper_bound(times.begin(), times.end(), t) - 1;\n        int idx = distance(times.begin(), it);\n        return leaders[idx];\n    }\n};",
+      "approach": "C++ Precomputed Leaders with std::upper_bound",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass TopVotedCandidate {\n    private int[] times;\n    private int[] leaders;\n\n    public TopVotedCandidate(int[] persons, int[] times) {\n        this.times = times;\n        this.leaders = new int[persons.length];\n        Map<Integer, Integer> count = new HashMap<>();\n        int leader = -1, maxVotes = 0;\n        for (int i = 0; i < persons.length; i++) {\n            int p = persons[i];\n            int c = count.getOrDefault(p, 0) + 1;\n            count.put(p, c);\n            if (c >= maxVotes) {\n                maxVotes = c;\n                leader = p;\n            }\n            leaders[i] = leader;\n        }\n    }\n    \n    public int q(int t) {\n        int idx = Arrays.binarySearch(times, t);\n        if (idx < 0) idx = -idx - 2;\n        return leaders[idx];\n    }\n}",
+      "approach": "Java Binary Search Leader Lookup",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} persons\n * @param {number[]} times\n */\nvar TopVotedCandidate = function(persons, times) {\n    this.times = times;\n    this.leaders = [];\n    const count = new Map();\n    let leader = -1, maxVotes = 0;\n    for (const p of persons) {\n        const c = (count.get(p) || 0) + 1;\n        count.set(p, c);\n        if (c >= maxVotes) {\n            maxVotes = c;\n            leader = p;\n        }\n        this.leaders.push(leader);\n    }\n};\n\n/** \n * @param {number} t\n * @return {number}\n */\nTopVotedCandidate.prototype.q = function(t) {\n    let low = 0, high = this.times.length - 1;\n    let idx = 0;\n    while (low <= high) {\n        const mid = (low + high) >> 1;\n        if (this.times[mid] <= t) {\n            idx = mid;\n            low = mid + 1;\n        } else {\n            high = mid - 1;\n        }\n    }\n    return this.leaders[idx];\n};",
+      "approach": "JavaScript Binary Search Election Leader Query",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+WITH Filtered AS (SELECT id, month, salary, MAX(month) OVER(PARTITION BY id) AS max_month FROM Employee) SELECT id, month, SUM(salary) OVER(PARTITION BY id ORDER BY month RANGE BETWEEN 2 PRECEDING AND CURRENT ROW) AS Salary FROM Filtered WHERE month < max_month ORDER BY id ASC, month DESC;

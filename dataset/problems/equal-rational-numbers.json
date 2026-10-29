@@ -1,0 +1,78 @@
+{
+  "slug": "equal-rational-numbers",
+  "number": 972,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Exact Rational Fraction Normalization",
+      "text": "Every rational number with finite and repeating decimal parts converts uniquely into an irreducible fraction numerator / denominator."
+    },
+    {
+      "level": 2,
+      "title": "Repeating Decimal Geometric Series Summation",
+      "text": "Decompose string into integer part I, non-repeating fractional part N, and repeating part R. R with length L repeating infinitely equals int(R) / (10^len(N) * (10^L - 1))."
+    },
+    {
+      "level": 3,
+      "title": "Fraction Conversion Blueprint",
+      "text": "Parse I, N, R using regex or string splitting. Form Fractions: int_part + non_rep_part + rep_part. Compare fraction(s) == fraction(t)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom fractions import Fraction\n\nclass Solution:\n    def isRationalEqual(self, s: str, t: str) -> bool:\n        def to_fraction(text):\n            if '(' not in text:\n                return Fraction(text)\n            dot = text.find('.')\n            paren = text.find('(')\n            int_part = text[:dot]\n            non_rep = text[dot + 1:paren]\n            rep = text[paren + 1:-1]\n            ans = Fraction(int(int_part))\n            if non_rep:\n                ans += Fraction(int(non_rep), 10 ** len(non_rep))\n            if rep:\n                ans += Fraction(int(rep), 10 ** len(non_rep) * (10 ** len(rep) - 1))\n            return ans\n\n        return to_fraction(s) == to_fraction(t)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1)",
+    "space": "O(1)",
+    "variables": [
+      "Fixed string lengths <= 30"
+    ],
+    "notes": "Fraction conversion and GCD reduction execute in constant time operations.",
+    "whyNaiveFails": "Floating point conversion suffers from precision loss on repeating decimals like 0.(9) == 1.",
+    "spaceTimeTradeoff": "Exact integer rational arithmetic avoids all binary floating-point roundoff errors.",
+    "interviewerExpectation": "Correct formula for infinite geometric series repeating decimals: R / (10^N * (10^L - 1))."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from fractions import Fraction\n\nclass Solution:\n    def isRationalEqual(self, s: str, t: str) -> bool:\n        def to_fraction(text):\n            if '(' not in text:\n                return Fraction(text)\n            dot = text.find('.')\n            paren = text.find('(')\n            int_part = text[:dot]\n            non_rep = text[dot + 1:paren]\n            rep = text[paren + 1:-1]\n            ans = Fraction(int(int_part))\n            if non_rep:\n                ans += Fraction(int(non_rep), 10 ** len(non_rep))\n            if rep:\n                ans += Fraction(int(rep), 10 ** len(non_rep) * (10 ** len(rep) - 1))\n            return ans\n\n        return to_fraction(s) == to_fraction(t)",
+      "approach": "Exact Rational Fraction Arithmetic",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    long long gcd(long long a, long long b) {\n        return b == 0 ? a : gcd(b, a % b);\n    }\n    struct Frac {\n        long long num, den;\n        Frac(long long n = 0, long long d = 1) : num(n), den(d) {\n            long long g = gcd(abs(num), abs(den));\n            num /= g; den /= g;\n            if (den < 0) { num = -num; den = -den; }\n        }\n        Frac operator+(const Frac& o) const {\n            return Frac(num * o.den + o.num * den, den * o.den);\n        }\n        bool operator==(const Frac& o) const {\n            return num == o.num && den == o.den;\n        }\n    };\n\n    Frac parse(const string& s) {\n        size_t dot = s.find('.');\n        if (dot == string::npos) return Frac(stoll(s), 1);\n        long long int_part = stoll(s.substr(0, dot));\n        Frac res(int_part, 1);\n        size_t paren = s.find('(');\n        if (paren == string::npos) {\n            string non_rep = s.substr(dot + 1);\n            if (!non_rep.empty()) {\n                long long p10 = 1;\n                for (size_t i = 0; i < non_rep.size(); ++i) p10 *= 10;\n                res = res + Frac(stoll(non_rep), p10);\n            }\n            return res;\n        }\n        string non_rep = s.substr(dot + 1, paren - dot - 1);\n        string rep = s.substr(paren + 1, s.size() - paren - 2);\n        long long p10_non = 1;\n        for (size_t i = 0; i < non_rep.size(); ++i) p10_non *= 10;\n        if (!non_rep.empty()) {\n            res = res + Frac(stoll(non_rep), p10_non);\n        }\n        long long p10_rep = 1;\n        for (size_t i = 0; i < rep.size(); ++i) p10_rep *= 10;\n        long long den_rep = p10_non * (p10_rep - 1);\n        res = res + Frac(stoll(rep), den_rep);\n        return res;\n    }\npublic:\n    bool isRationalEqual(string s, string t) {\n        return parse(s) == parse(t);\n    }\n};",
+      "approach": "C++ Custom Fraction Struct with GCD Reduction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.math.BigInteger;\n\nclass Solution {\n    static class Frac {\n        BigInteger num, den;\n        Frac(BigInteger n, BigInteger d) {\n            BigInteger g = n.gcd(d);\n            this.num = n.divide(g);\n            this.den = d.divide(g);\n        }\n        Frac add(Frac o) {\n            BigInteger n = num.multiply(o.den).add(o.num.multiply(den));\n            BigInteger d = den.multiply(o.den);\n            return new Frac(n, d);\n        }\n        boolean equals(Frac o) {\n            return num.equals(o.num) && den.equals(o.den);\n        }\n    }\n\n    private Frac parse(String s) {\n        int dot = s.indexOf('.');\n        if (dot == -1) return new Frac(new BigInteger(s), BigInteger.ONE);\n        BigInteger intPart = new BigInteger(s.substring(0, dot));\n        Frac res = new Frac(intPart, BigInteger.ONE);\n        int paren = s.indexOf('(');\n        if (paren == -1) {\n            String nonRep = s.substring(dot + 1);\n            if (!nonRep.isEmpty()) {\n                BigInteger p10 = BigInteger.TEN.pow(nonRep.length());\n                res = res.add(new Frac(new BigInteger(nonRep), p10));\n            }\n            return res;\n        }\n        String nonRep = s.substring(dot + 1, paren);\n        String rep = s.substring(paren + 1, s.length() - 1);\n        BigInteger p10Non = BigInteger.TEN.pow(nonRep.length());\n        if (!nonRep.isEmpty()) {\n            res = res.add(new Frac(new BigInteger(nonRep), p10Non));\n        }\n        BigInteger p10Rep = BigInteger.TEN.pow(rep.length());\n        BigInteger denRep = p10Non.multiply(p10Rep.subtract(BigInteger.ONE));\n        res = res.add(new Frac(new BigInteger(rep), denRep));\n        return res;\n    }\n\n    public boolean isRationalEqual(String s, String t) {\n        return parse(s).equals(parse(t));\n    }\n}",
+      "approach": "Java BigInteger Exact Fraction Arithmetic",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} s\n * @param {string} t\n * @return {boolean}\n */\nvar isRationalEqual = function(s, t) {\n    function gcd(a, b) {\n        return b === 0n ? a : gcd(b, a % b);\n    }\n\n    function parse(text) {\n        const dot = text.indexOf('.');\n        if (dot === -1) return { num: BigInt(text), den: 1n };\n        let num = BigInt(text.slice(0, dot));\n        let den = 1n;\n\n        function add(n2, d2) {\n            const nextNum = num * d2 + n2 * den;\n            const nextDen = den * d2;\n            const g = gcd(nextNum < 0n ? -nextNum : nextNum, nextDen);\n            num = nextNum / g;\n            den = nextDen / g;\n        }\n\n        const paren = text.indexOf('(');\n        if (paren === -1) {\n            const nonRep = text.slice(dot + 1);\n            if (nonRep.length > 0) {\n                const d = 10n ** BigInt(nonRep.length);\n                add(BigInt(nonRep), d);\n            }\n            return { num, den };\n        }\n        const nonRep = text.slice(dot + 1, paren);\n        const rep = text.slice(paren + 1, -1);\n        const pNon = 10n ** BigInt(nonRep.length);\n        if (nonRep.length > 0) {\n            add(BigInt(nonRep), pNon);\n        }\n        const pRep = 10n ** BigInt(rep.length);\n        const dRep = pNon * (pRep - 1n);\n        add(BigInt(rep), dRep);\n        return { num, den };\n    }\n\n    const f1 = parse(s);\n    const f2 = parse(t);\n    return f1.num === f2.num && f1.den === f2.den;\n};",
+      "approach": "JavaScript BigInt Exact Fraction Comparison",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

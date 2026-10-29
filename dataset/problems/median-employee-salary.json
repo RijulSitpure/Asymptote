@@ -1,0 +1,71 @@
+{
+  "slug": "median-employee-salary",
+  "number": 569,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Partitioned Row Rank Positioning",
+      "text": "Assign sequential rankings to employees within each company ordered by salary, comparing each rank against half of the company headcount."
+    },
+    {
+      "level": 2,
+      "title": "Window Headcount and Position Range Filter",
+      "text": "Compute row_number and total company count via window functions. A record qualifies as median when its rank lies between count / 2.0 and count / 2.0 + 1."
+    },
+    {
+      "level": 3,
+      "title": "Median Salary Blueprint",
+      "text": "With CTE t as (select id, company, salary, row_number() over(partition by company order by salary, id) as rn, count(*) over(partition by company) as cnt from Employee) select id, company, salary from t where rn between cnt / 2.0 and cnt / 2.0 + 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Ranked AS (\n    SELECT \n        id,\n        company,\n        salary,\n        ROW_NUMBER() OVER(PARTITION BY company ORDER BY salary, id) AS rn,\n        COUNT(*) OVER(PARTITION BY company) AS total_count\n    FROM Employee\n)\nSELECT id, company, salary\nFROM Ranked\nWHERE rn BETWEEN total_count / 2.0 AND total_count / 2.0 + 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of records in Employee table"
+    ],
+    "notes": "Window ranking and partitioning sorts rows per company in linear-logarithmic time.",
+    "whyNaiveFails": "Self joins comparing greater and lesser salary counts scale quadratically on large tables.",
+    "spaceTimeTradeoff": "Window ranking CTE computes median boundaries in a single query pass.",
+    "interviewerExpectation": "Handling both odd and even headcounts using continuous division boundary conditions."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Ranked AS (\n    SELECT \n        id,\n        company,\n        salary,\n        ROW_NUMBER() OVER(PARTITION BY company ORDER BY salary, id) AS rn,\n        COUNT(*) OVER(PARTITION BY company) AS total_count\n    FROM Employee\n)\nSELECT id, company, salary\nFROM Ranked\nWHERE rn BETWEEN total_count / 2.0 AND total_count / 2.0 + 1;",
+      "approach": "Window Ranking Headcount Interval Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Ranked AS (\n    SELECT \n        id,\n        company,\n        salary,\n        ROW_NUMBER() OVER(PARTITION BY company ORDER BY salary, id) AS rn,\n        COUNT(*) OVER(PARTITION BY company) AS total_count\n    FROM Employee\n)\nSELECT id, company, salary\nFROM Ranked\nWHERE rn BETWEEN total_count / 2.0 AND total_count / 2.0 + 1;",
+      "approach": "PostgreSQL Window Rank Headcount Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef median_employee_salary(employee: pd.DataFrame) -> pd.DataFrame:\n    df = employee.sort_values(by=['company', 'salary', 'id'])\n    df['rn'] = df.groupby('company').cumcount() + 1\n    df['cnt'] = df.groupby('company')['id'].transform('count')\n    median_df = df[(df['rn'] >= df['cnt'] / 2.0) & (df['rn'] <= df['cnt'] / 2.0 + 1)]\n    return median_df[['id', 'company', 'salary']]",
+      "approach": "Pandas Cumcount and Group Transform Median Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "range-module",
+  "number": 715,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Disjoint Half-Open Interval Tracking",
+      "text": "Maintain non-overlapping sorted intervals [left, right) representing tracked ranges to allow ordered boundary resolution."
+    },
+    {
+      "level": 2,
+      "title": "Binary Search Overlap Interval Splicing",
+      "text": "Use binary search to locate all intervals overlapping with target [left, right). For addition, combine overlapping intervals into one union. For removal, trim overlapping ends."
+    },
+    {
+      "level": 3,
+      "title": "RangeModule Operations Blueprint",
+      "text": "In addRange(left, right): merge min(overlapping lefts) and max(overlapping rights) and replace. In queryRange(left, right): check if a single interval completely encloses [left, right). In removeRange: replace overlapping intervals with non-overlapping trimmed fragments."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\n\nclass RangeModule:\n    def __init__(self):\n        self.intervals = []\n\n    def addRange(self, left: int, right: int) -> None:\n        new_intervals = []\n        inserted = False\n        for l, r in self.intervals:\n            if r < left:\n                new_intervals.append((l, r))\n            elif l > right:\n                if not inserted:\n                    new_intervals.append((left, right))\n                    inserted = True\n                new_intervals.append((l, r))\n            else:\n                left = min(left, l)\n                right = max(right, r)\n        if not inserted:\n            new_intervals.append((left, right))\n        self.intervals = new_intervals\n\n    def queryRange(self, left: int, right: int) -> bool:\n        idx = bisect.bisect_right(self.intervals, (left, float('inf'))) - 1\n        if idx >= 0 and self.intervals[idx][0] <= left and self.intervals[idx][1] >= right:\n            return True\n        return False\n\n    def removeRange(self, left: int, right: int) -> None:\n        new_intervals = []\n        for l, r in self.intervals:\n            if r <= left or l >= right:\n                new_intervals.append((l, r))\n            else:\n                if l < left:\n                    new_intervals.append((l, left))\n                if r > right:\n                    new_intervals.append((right, r))\n        self.intervals = new_intervals\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) for add/remove, O(log N) for query",
+    "space": "O(N)",
+    "variables": [
+      "N: number of disjoint intervals stored"
+    ],
+    "notes": "Linear interval rebuild for add/remove maintains strictly sorted disjoint segments allowing binary search query in O(log N).",
+    "whyNaiveFails": "Tracking individual integers up to 10^9 exhausts memory and time limits.",
+    "spaceTimeTradeoff": "Merged interval storage stores O(N) endpoints rather than point representations.",
+    "interviewerExpectation": "Handling half-open boundaries and partial interval splitting correctly on remove."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass RangeModule:\n    def __init__(self):\n        self.intervals = []\n\n    def addRange(self, left: int, right: int) -> None:\n        new_intervals = []\n        inserted = False\n        for l, r in self.intervals:\n            if r < left:\n                new_intervals.append((l, r))\n            elif l > right:\n                if not inserted:\n                    new_intervals.append((left, right))\n                    inserted = True\n                new_intervals.append((l, r))\n            else:\n                left = min(left, l)\n                right = max(right, r)\n        if not inserted:\n            new_intervals.append((left, right))\n        self.intervals = new_intervals\n\n    def queryRange(self, left: int, right: int) -> bool:\n        idx = bisect.bisect_right(self.intervals, (left, float('inf'))) - 1\n        if idx >= 0 and self.intervals[idx][0] <= left and self.intervals[idx][1] >= right:\n            return True\n        return False\n\n    def removeRange(self, left: int, right: int) -> None:\n        new_intervals = []\n        for l, r in self.intervals:\n            if r <= left or l >= right:\n                new_intervals.append((l, r))\n            else:\n                if l < left:\n                    new_intervals.append((l, left))\n                if r > right:\n                    new_intervals.append((right, r))\n        self.intervals = new_intervals",
+      "approach": "Disjoint Sorted Interval List Merging and Trimming",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class RangeModule {\n    map<int, int> intervals; // left -> right\npublic:\n    RangeModule() {}\n\n    void addRange(int left, int right) {\n        auto it = intervals.upper_bound(left);\n        if (it != intervals.begin()) {\n            auto prev = std::prev(it);\n            if (prev->second >= left) {\n                left = prev->first;\n                right = max(right, prev->second);\n                intervals.erase(prev);\n            }\n        }\n        while (it != intervals.end() && it->first <= right) {\n            right = max(right, it->second);\n            it = intervals.erase(it);\n        }\n        intervals[left] = right;\n    }\n\n    bool queryRange(int left, int right) {\n        auto it = intervals.upper_bound(left);\n        if (it == intervals.begin()) return false;\n        auto prev = std::prev(it);\n        return prev->second >= right;\n    }\n\n    void removeRange(int left, int right) {\n        auto it = intervals.upper_bound(left);\n        if (it != intervals.begin()) {\n            auto prev = std::prev(it);\n            if (prev->second > left) {\n                if (prev->second > right) {\n                    intervals[right] = prev->second;\n                }\n                prev->second = left;\n            }\n        }\n        while (it != intervals.end() && it->first < right) {\n            if (it->second > right) {\n                intervals[right] = it->second;\n            }\n            it = intervals.erase(it);\n        }\n    }\n};",
+      "approach": "C++ std::map Interval Splicing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass RangeModule {\n    private TreeMap<Integer, Integer> map;\n\n    public RangeModule() {\n        map = new TreeMap<>();\n    }\n    \n    public void addRange(int left, int right) {\n        Integer start = map.floorKey(left);\n        if (start != null && map.get(start) >= left) {\n            left = start;\n            right = Math.max(right, map.get(start));\n        }\n        Map<Integer, Integer> sub = map.subMap(left, true, right, true);\n        Set<Integer> toRemove = new HashSet<>(sub.keySet());\n        for (int k : toRemove) {\n            right = Math.max(right, map.get(k));\n            map.remove(k);\n        }\n        map.put(left, right);\n    }\n    \n    public boolean queryRange(int left, int right) {\n        Integer start = map.floorKey(left);\n        if (start == null) return false;\n        return map.get(start) >= right;\n    }\n    \n    public void removeRange(int left, int right) {\n        Integer start = map.floorKey(left);\n        if (start != null && map.get(start) > left) {\n            int prevEnd = map.get(start);\n            map.put(start, left);\n            if (prevEnd > right) {\n                map.put(right, prevEnd);\n            }\n        }\n        Map<Integer, Integer> sub = map.subMap(left, true, right, false);\n        Set<Integer> toRemove = new HashSet<>(sub.keySet());\n        for (int k : toRemove) {\n            int end = map.get(k);\n            map.remove(k);\n            if (end > right) {\n                map.put(right, end);\n            }\n        }\n    }\n}",
+      "approach": "Java TreeMap Disjoint Interval Registry",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var RangeModule = function() {\n    this.intervals = [];\n};\n\n/** \n * @param {number} left \n * @param {number} right\n * @return {void}\n */\nRangeModule.prototype.addRange = function(left, right) {\n    const next = [];\n    let inserted = false;\n    for (const [l, r] of this.intervals) {\n        if (r < left) {\n            next.push([l, r]);\n        } else if (l > right) {\n            if (!inserted) {\n                next.push([left, right]);\n                inserted = true;\n            }\n            next.push([l, r]);\n        } else {\n            left = Math.min(left, l);\n            right = Math.max(right, r);\n        }\n    }\n    if (!inserted) next.push([left, right]);\n    this.intervals = next;\n};\n\n/** \n * @param {number} left \n * @param {number} right\n * @return {boolean}\n */\nRangeModule.prototype.queryRange = function(left, right) {\n    let low = 0, high = this.intervals.length - 1;\n    let idx = -1;\n    while (low <= high) {\n        const mid = (low + high) >> 1;\n        if (this.intervals[mid][0] <= left) {\n            idx = mid;\n            low = mid + 1;\n        } else {\n            high = mid - 1;\n        }\n    }\n    return idx !== -1 && this.intervals[idx][1] >= right;\n};\n\n/** \n * @param {number} left \n * @param {number} right\n * @return {void}\n */\nRangeModule.prototype.removeRange = function(left, right) {\n    const next = [];\n    for (const [l, r] of this.intervals) {\n        if (r <= left || l >= right) {\n            next.push([l, r]);\n        } else {\n            if (l < left) next.push([l, left]);\n            if (r > right) next.push([right, r]);\n        }\n    }\n    this.intervals = next;\n};",
+      "approach": "JavaScript Disjoint Segment Rebuilder",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

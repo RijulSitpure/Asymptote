@@ -1,0 +1,78 @@
+{
+  "slug": "time-based-key-value-store",
+  "number": 981,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Chronologically Appended Timestamp Search",
+      "text": "Since set timestamps are strictly increasing, store (timestamp, value) pairs in an array per key to enable ordered point lookup."
+    },
+    {
+      "level": 2,
+      "title": "Binary Search for Greatest Preceding Timestamp",
+      "text": "For a given key and query timestamp, binary search the key array for the largest recorded timestamp less than or equal to the query."
+    },
+    {
+      "level": 3,
+      "title": "TimeMap Operations Blueprint",
+      "text": "In set(key, value, timestamp): map[key].append((timestamp, value)). In get(key, timestamp): retrieve array. If empty or array[0].time > timestamp return empty string. Else use bisect_right - 1 and return value."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\nimport collections\n\nclass TimeMap:\n    def __init__(self):\n        self.store = collections.defaultdict(list)\n\n    def set(self, key: str, value: str, timestamp: int) -> None:\n        self.store[key].append((timestamp, value))\n\n    def get(self, key: str, timestamp: int) -> str:\n        if key not in self.store:\n            return \"\"\n        arr = self.store[key]\n        idx = bisect.bisect_right(arr, (timestamp, chr(127))) - 1\n        if idx >= 0:\n            return arr[idx][1]\n        return \"\"\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1) set, O(log N) get",
+    "space": "O(N)",
+    "variables": [
+      "N: total set operations"
+    ],
+    "notes": "Appends to end of chronological list take O(1); binary search retrieves query values in O(log N).",
+    "whyNaiveFails": "Scanning historical entries linearly takes O(N) per query, timing out.",
+    "spaceTimeTradeoff": "Chronologically appended list takes linear space while enabling fast logarithmic lookup.",
+    "interviewerExpectation": "Exploiting strictly increasing timestamps to avoid sorting overhead on set."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\nimport collections\n\nclass TimeMap:\n    def __init__(self):\n        self.store = collections.defaultdict(list)\n\n    def set(self, key: str, value: str, timestamp: int) -> None:\n        self.store[key].append((timestamp, value))\n\n    def get(self, key: str, timestamp: int) -> str:\n        if key not in self.store:\n            return \"\"\n        arr = self.store[key]\n        idx = bisect.bisect_right(arr, (timestamp, chr(127))) - 1\n        if idx >= 0:\n            return arr[idx][1]\n        return \"\"",
+      "approach": "Chronological List Append with Binary Search Lookup",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class TimeMap {\n    unordered_map<string, vector<pair<int, string>>> store;\npublic:\n    TimeMap() {}\n    \n    void set(string key, string value, int timestamp) {\n        store[key].push_back({timestamp, value});\n    }\n    \n    string get(string key, int timestamp) {\n        if (!store.count(key)) return \"\";\n        const auto& arr = store[key];\n        int low = 0, high = arr.size() - 1;\n        int idx = -1;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (arr[mid].first <= timestamp) {\n                idx = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        return idx == -1 ? \"\" : arr[idx].second;\n    }\n};",
+      "approach": "C++ Binary Search over Monotonic Timestamp Pairs",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass TimeMap {\n    static class Entry {\n        int timestamp;\n        String val;\n        Entry(int t, String v) { timestamp = t; val = v; }\n    }\n    private Map<String, List<Entry>> store;\n\n    public TimeMap() {\n        store = new HashMap<>();\n    }\n    \n    public void set(String key, String value, int timestamp) {\n        store.computeIfAbsent(key, k -> new ArrayList<>()).add(new Entry(timestamp, value));\n    }\n    \n    public String get(String key, int timestamp) {\n        if (!store.containsKey(key)) return \"\";\n        List<Entry> list = store.get(key);\n        int low = 0, high = list.size() - 1;\n        int idx = -1;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (list.get(mid).timestamp <= timestamp) {\n                idx = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        return idx == -1 ? \"\" : list.get(idx).val;\n    }\n}",
+      "approach": "Java Binary Search Timestamp Registry",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var TimeMap = function() {\n    this.store = new Map();\n};\n\n/** \n * @param {string} key \n * @param {string} value \n * @param {number} timestamp\n * @return {void}\n */\nTimeMap.prototype.set = function(key, value, timestamp) {\n    if (!this.store.has(key)) this.store.set(key, []);\n    this.store.get(key).push([timestamp, value]);\n};\n\n/** \n * @param {string} key \n * @param {number} timestamp\n * @return {string}\n */\nTimeMap.prototype.get = function(key, timestamp) {\n    if (!this.store.has(key)) return '';\n    const arr = this.store.get(key);\n    let low = 0, high = arr.length - 1;\n    let idx = -1;\n    while (low <= high) {\n        const mid = (low + high) >> 1;\n        if (arr[mid][0] <= timestamp) {\n            idx = mid;\n            low = mid + 1;\n        } else {\n            high = mid - 1;\n        }\n    }\n    return idx === -1 ? '' : arr[idx][1];\n};",
+      "approach": "JavaScript Binary Search on Ordered Timestamp Pairs",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

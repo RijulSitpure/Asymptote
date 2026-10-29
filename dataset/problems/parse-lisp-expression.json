@@ -1,0 +1,78 @@
+{
+  "slug": "parse-lisp-expression",
+  "number": 736,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-parentheses-parser"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Hierarchical Lexical Scope Resolution",
+      "text": "Parenthesized expressions define nested scopes where let-bindings overshadow outer variable definitions during expression evaluation."
+    },
+    {
+      "level": 2,
+      "title": "Tokenization and Operator Branching",
+      "text": "Split the inner expression by top-level whitespace respecting nested parentheses. Determine if operator is let, add, or mult."
+    },
+    {
+      "level": 3,
+      "title": "Recursive Expression Evaluator Blueprint",
+      "text": "Maintain an environment dict mapping variable names to value sequences. On let: bind variables sequentially, then evaluate trailing expression. On add: eval(e1) + eval(e2). On mult: eval(e1) * eval(e2)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def evaluate(self, expression: str) -> int:\n        scope = [{}]\n\n        def get_val(token):\n            for sc in reversed(scope):\n                if token in sc:\n                    return sc[token]\n            return int(token)\n\n        def parse_tokens(s):\n            tokens = []\n            curr = []\n            bal = 0\n            for ch in s:\n                if ch == '(':\n                    bal += 1\n                elif ch == ')':\n                    bal -= 1\n                if ch == ' ' and bal == 0:\n                    tokens.append(''.join(curr))\n                    curr = []\n                else:\n                    curr.append(ch)\n            if curr:\n                tokens.append(''.join(curr))\n            return tokens\n\n        def eval_expr(expr):\n            if not expr.startswith('('):\n                return get_val(expr)\n            inner = expr[1:-1]\n            tokens = parse_tokens(inner)\n            op = tokens[0]\n            if op == 'add':\n                return eval_expr(tokens[1]) + eval_expr(tokens[2])\n            elif op == 'mult':\n                return eval_expr(tokens[1]) * eval_expr(tokens[2])\n            else:\n                scope.append({})\n                for i in range(1, len(tokens) - 1, 2):\n                    var = tokens[i]\n                    val = eval_expr(tokens[i + 1])\n                    scope[-1][var] = val\n                res = eval_expr(tokens[-1])\n                scope.pop()\n                return res\n\n        return eval_expr(expression)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of expression string"
+    ],
+    "notes": "Substring token slicing at each nested scope produces quadratic worst-case time with linear scope depth.",
+    "whyNaiveFails": "Standard left-to-right evaluation confuses variable scopes across sub-expressions.",
+    "spaceTimeTradeoff": "Scoped dictionary frames accurately isolate temporary variable shadowed states.",
+    "interviewerExpectation": "Correct token splitting respecting nested parentheses and lexical shadowing."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def evaluate(self, expression: str) -> int:\n        scope = [{}]\n\n        def get_val(token):\n            for sc in reversed(scope):\n                if token in sc:\n                    return sc[token]\n            return int(token)\n\n        def parse_tokens(s):\n            tokens = []\n            curr = []\n            bal = 0\n            for ch in s:\n                if ch == '(':\n                    bal += 1\n                elif ch == ')':\n                    bal -= 1\n                if ch == ' ' and bal == 0:\n                    tokens.append(''.join(curr))\n                    curr = []\n                else:\n                    curr.append(ch)\n            if curr:\n                tokens.append(''.join(curr))\n            return tokens\n\n        def eval_expr(expr):\n            if not expr.startswith('('):\n                return get_val(expr)\n            inner = expr[1:-1]\n            tokens = parse_tokens(inner)\n            op = tokens[0]\n            if op == 'add':\n                return eval_expr(tokens[1]) + eval_expr(tokens[2])\n            elif op == 'mult':\n                return eval_expr(tokens[1]) * eval_expr(tokens[2])\n            else:\n                scope.append({})\n                for i in range(1, len(tokens) - 1, 2):\n                    var = tokens[i]\n                    val = eval_expr(tokens[i + 1])\n                    scope[-1][var] = val\n                res = eval_expr(tokens[-1])\n                scope.pop()\n                return res\n\n        return eval_expr(expression)",
+      "approach": "Recursive Descent Parser with Scoped Symbol Table",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    vector<unordered_map<string, int>> scope;\n\n    int getVal(const string& token) {\n        for (int i = scope.size() - 1; i >= 0; --i) {\n            if (scope[i].count(token)) return scope[i][token];\n        }\n        return stoi(token);\n    }\n\n    vector<string> parseTokens(const string& s) {\n        vector<string> tokens;\n        string curr = \"\";\n        int bal = 0;\n        for (char ch : s) {\n            if (ch == '(') bal++;\n            else if (ch == ')') bal--;\n            if (ch == ' ' && bal == 0) {\n                tokens.push_back(curr);\n                curr = \"\";\n            } else {\n                curr += ch;\n            }\n        }\n        if (!curr.empty()) tokens.push_back(curr);\n        return tokens;\n    }\n\n    int evalExpr(const string& expr) {\n        if (expr[0] != '(') return getVal(expr);\n        string inner = expr.substr(1, expr.size() - 2);\n        vector<string> tokens = parseTokens(inner);\n        string op = tokens[0];\n        if (op == \"add\") {\n            return evalExpr(tokens[1]) + evalExpr(tokens[2]);\n        } else if (op == \"mult\") {\n            return evalExpr(tokens[1]) * evalExpr(tokens[2]);\n        } else {\n            scope.push_back({});\n            for (size_t i = 1; i + 1 < tokens.size(); i += 2) {\n                int val = evalExpr(tokens[i + 1]);\n                scope.back()[tokens[i]] = val;\n            }\n            int res = evalExpr(tokens.back());\n            scope.pop_back();\n            return res;\n        }\n    }\npublic:\n    int evaluate(string expression) {\n        scope.clear();\n        scope.push_back({});\n        return evalExpr(expression);\n    }\n};",
+      "approach": "C++ Scoped Symbol Frame Parsing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    private List<Map<String, Integer>> scope;\n\n    private int getVal(String token) {\n        for (int i = scope.size() - 1; i >= 0; i--) {\n            if (scope.get(i).containsKey(token)) {\n                return scope.get(i).get(token);\n            }\n        }\n        return Integer.parseInt(token);\n    }\n\n    private List<String> parseTokens(String s) {\n        List<String> tokens = new ArrayList<>();\n        StringBuilder curr = new StringBuilder();\n        int bal = 0;\n        for (char ch : s.toCharArray()) {\n            if (ch == '(') bal++;\n            else if (ch == ')') bal--;\n            if (ch == ' ' && bal == 0) {\n                tokens.add(curr.toString());\n                curr.setLength(0);\n            } else {\n                curr.append(ch);\n            }\n        }\n        if (curr.length() > 0) tokens.add(curr.toString());\n        return tokens;\n    }\n\n    private int evalExpr(String expr) {\n        if (!expr.startsWith(\"(\")) return getVal(expr);\n        String inner = expr.substring(1, expr.length() - 1);\n        List<String> tokens = parseTokens(inner);\n        String op = tokens.get(0);\n        if (op.equals(\"add\")) {\n            return evalExpr(tokens.get(1)) + evalExpr(tokens.get(2));\n        } else if (op.equals(\"mult\")) {\n            return evalExpr(tokens.get(1)) * evalExpr(tokens.get(2));\n        } else {\n            scope.add(new HashMap<>());\n            for (int i = 1; i + 1 < tokens.size(); i += 2) {\n                int val = evalExpr(tokens.get(i + 1));\n                scope.get(scope.size() - 1).put(tokens.get(i), val);\n            }\n            int res = evalExpr(tokens.get(tokens.size() - 1));\n            scope.remove(scope.size() - 1);\n            return res;\n        }\n    }\n\n    public int evaluate(String expression) {\n        scope = new ArrayList<>();\n        scope.add(new HashMap<>());\n        return evalExpr(expression);\n    }\n}",
+      "approach": "Java Recursive Descent Expression Parser",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} expression\n * @return {number}\n */\nvar evaluate = function(expression) {\n    const scope = [new Map()];\n\n    function getVal(token) {\n        for (let i = scope.length - 1; i >= 0; i--) {\n            if (scope[i].has(token)) return scope[i].get(token);\n        }\n        return parseInt(token, 10);\n    }\n\n    function parseTokens(s) {\n        const tokens = [];\n        let curr = '';\n        let bal = 0;\n        for (const ch of s) {\n            if (ch === '(') bal++;\n            else if (ch === ')') bal--;\n            if (ch === ' ' && bal === 0) {\n                tokens.push(curr);\n                curr = '';\n            } else {\n                curr += ch;\n            }\n        }\n        if (curr.length > 0) tokens.push(curr);\n        return tokens;\n    }\n\n    function evalExpr(expr) {\n        if (!expr.startsWith('(')) return getVal(expr);\n        const inner = expr.slice(1, -1);\n        const tokens = parseTokens(inner);\n        const op = tokens[0];\n        if (op === 'add') {\n            return evalExpr(tokens[1]) + evalExpr(tokens[2]);\n        } else if (op === 'mult') {\n            return evalExpr(tokens[1]) * evalExpr(tokens[2]);\n        } else {\n            scope.push(new Map());\n            for (let i = 1; i + 1 < tokens.length; i += 2) {\n                const val = evalExpr(tokens[i + 1]);\n                scope[scope.length - 1].set(tokens[i], val);\n            }\n            const res = evalExpr(tokens[tokens.length - 1]);\n            scope.pop();\n            return res;\n        }\n    }\n\n    return evalExpr(expression);\n};",
+      "approach": "JavaScript Nested Scope Evaluation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

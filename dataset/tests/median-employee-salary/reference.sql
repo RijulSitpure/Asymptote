@@ -1,0 +1,1 @@
+WITH Ranked AS (SELECT id, company, salary, ROW_NUMBER() OVER(PARTITION BY company ORDER BY salary, id) AS rn, COUNT(*) OVER(PARTITION BY company) AS total_count FROM Employee) SELECT id, company, salary FROM Ranked WHERE rn BETWEEN total_count / 2.0 AND total_count / 2.0 + 1;
