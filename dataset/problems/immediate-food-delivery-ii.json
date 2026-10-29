@@ -1,0 +1,71 @@
+{
+  "slug": "immediate-food-delivery-ii",
+  "number": 1174,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Customer First Order Immediate Percentage",
+      "text": "Identify each customer first chronological order and calculate the percentage of those first orders that were immediate."
+    },
+    {
+      "level": 2,
+      "title": "Earliest Order Subquery Tuple Membership",
+      "text": "Filter delivery records matching customer minimum order dates, then compute the immediate delivery ratio."
+    },
+    {
+      "level": 3,
+      "title": "First Order Immediate Query Blueprint",
+      "text": "select round(100.0 * sum(case when order_date = customer_pref_delivery_date then 1 else 0 end) / count(*), 2) as immediate_percentage from Delivery where (customer_id, order_date) in (select customer_id, min(order_date) from Delivery group by customer_id)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT ROUND(100.0 * SUM(CASE WHEN order_date = customer_pref_delivery_date THEN 1 ELSE 0 END) / COUNT(*), 2) AS immediate_percentage\nFROM Delivery\nWHERE (customer_id, order_date) IN (\n    SELECT customer_id, MIN(order_date)\n    FROM Delivery\n    GROUP BY customer_id\n);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(D log D)",
+    "space": "O(D)",
+    "variables": [
+      "D: number of delivery orders"
+    ],
+    "notes": "Finding customer first order dates followed by tuple filtering and conditional sum executes in linear-logarithmic time.",
+    "whyNaiveFails": "Evaluating across all orders rather than exclusively customer initial transactions produces invalid cohorts.",
+    "spaceTimeTradeoff": "Composite tuple IN subquery isolates earliest orders in a clean, indexable manner.",
+    "interviewerExpectation": "Isolating first order per customer using MIN(order_date) subquery or ROW_NUMBER()."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT ROUND(100.0 * SUM(CASE WHEN order_date = customer_pref_delivery_date THEN 1 ELSE 0 END) / COUNT(*), 2) AS immediate_percentage\nFROM Delivery\nWHERE (customer_id, order_date) IN (\n    SELECT customer_id, MIN(order_date)\n    FROM Delivery\n    GROUP BY customer_id\n);",
+      "approach": "Earliest Order Tuple Subquery Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT ROUND(100.0 * SUM(CASE WHEN order_date = customer_pref_delivery_date THEN 1 ELSE 0 END)::numeric / COUNT(*), 2) AS immediate_percentage\nFROM Delivery\nWHERE (customer_id, order_date) IN (\n    SELECT customer_id, MIN(order_date)\n    FROM Delivery\n    GROUP BY customer_id\n);",
+      "approach": "PostgreSQL Earliest Order Subquery with Numeric Percentage",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef immediate_food_delivery(delivery: pd.DataFrame) -> pd.DataFrame:\n    idx = delivery.groupby('customer_id')['order_date'].idxmin()\n    first_orders = delivery.loc[idx]\n    immediate = (first_orders['order_date'] == first_orders['customer_pref_delivery_date']).sum()\n    pct = round(100.0 * immediate / len(first_orders), 2)\n    return pd.DataFrame({'immediate_percentage': [pct]})",
+      "approach": "Pandas Groupby Idxmin for First Orders and Mean Ratio",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

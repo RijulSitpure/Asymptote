@@ -1,0 +1,72 @@
+{
+  "slug": "sales-analysis-ii",
+  "number": 1083,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Buyer Brand Adoption Filtering",
+      "text": "Identify customers who purchased an S8 model while having never purchased an iPhone model."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Sum Group Constraints",
+      "text": "Join sales to products, group by buyer identifier, and enforce positive presence for S8 and zero presence for iPhone."
+    },
+    {
+      "level": 3,
+      "title": "Brand Analysis Query Blueprint",
+      "text": "select s.buyer_id from Sales s join Product p on s.product_id = p.product_id group by s.buyer_id having sum(case when p.product_name = \"S8\" then 1 else 0 end) > 0 and sum(case when p.product_name = \"iPhone\" then 1 else 0 end) = 0."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT s.buyer_id\nFROM Sales s\nJOIN Product p ON s.product_id = p.product_id\nGROUP BY s.buyer_id\nHAVING SUM(CASE WHEN p.product_name = 'S8' THEN 1 ELSE 0 END) > 0\n   AND SUM(CASE WHEN p.product_name = 'iPhone' THEN 1 ELSE 0 END) = 0;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S + P)",
+    "space": "O(S)",
+    "variables": [
+      "S: number of sales transactions",
+      "P: number of product catalog entries"
+    ],
+    "notes": "Equi-join on product identifier followed by single-pass hash aggregation runs in linear time.",
+    "whyNaiveFails": "Simple where clause filters out rows rather than checking buyer purchase history in aggregate.",
+    "spaceTimeTradeoff": "Grouped conditional sum avoids two separate distinct subqueries and anti-joins.",
+    "interviewerExpectation": "Use of conditional aggregation in HAVING clause or EXCEPT / NOT IN pattern."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT s.buyer_id\nFROM Sales s\nJOIN Product p ON s.product_id = p.product_id\nGROUP BY s.buyer_id\nHAVING SUM(CASE WHEN p.product_name = 'S8' THEN 1 ELSE 0 END) > 0\n   AND SUM(CASE WHEN p.product_name = 'iPhone' THEN 1 ELSE 0 END) = 0;",
+      "approach": "Grouped Conditional Aggregation on Product Names",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT s.buyer_id\nFROM Sales s\nJOIN Product p ON s.product_id = p.product_id\nGROUP BY s.buyer_id\nHAVING SUM(CASE WHEN p.product_name = 'S8' THEN 1 ELSE 0 END) > 0\n   AND SUM(CASE WHEN p.product_name = 'iPhone' THEN 1 ELSE 0 END) = 0;",
+      "approach": "PostgreSQL Conditional Aggregation Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef sales_analysis(product: pd.DataFrame, sales: pd.DataFrame) -> pd.DataFrame:\n    df = sales.merge(product, on='product_id')\n    grouped = df.groupby('buyer_id')['product_name'].agg(set).reset_index()\n    res = grouped[grouped['product_name'].apply(lambda x: 'S8' in x and 'iPhone' not in x)]\n    return res[['buyer_id']]",
+      "approach": "Pandas Groupby Set Membership Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

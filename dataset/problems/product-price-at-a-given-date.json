@@ -1,0 +1,71 @@
+{
+  "slug": "product-price-at-a-given-date",
+  "number": 1164,
+  "category": "Database",
+  "patterns": [
+    "date-time"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "As-Of Date Pricing Resolution",
+      "text": "Determine the price of each product as of 2019-08-16, falling back to a default baseline price of ten if no price update preceded that date."
+    },
+    {
+      "level": 2,
+      "title": "Distinct Product Union with Latest Subquery",
+      "text": "Left join all distinct products against the most recent price record on or before the target date, replacing nulls with ten."
+    },
+    {
+      "level": 3,
+      "title": "Price As-Of Query Blueprint",
+      "text": "select p.product_id, coalesce(t.new_price, 10) as price from (select distinct product_id from Products) p left join (select product_id, new_price from Products where (product_id, change_date) in (select product_id, max(change_date) from Products where change_date <= \"2019-08-16\" group by product_id)) t on p.product_id = t.product_id."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT p.product_id, COALESCE(t.new_price, 10) AS price\nFROM (\n    SELECT DISTINCT product_id\n    FROM Products\n) p\nLEFT JOIN (\n    SELECT product_id, new_price\n    FROM Products\n    WHERE (product_id, change_date) IN (\n        SELECT product_id, MAX(change_date)\n        FROM Products\n        WHERE change_date <= '2019-08-16'\n        GROUP BY product_id\n    )\n) t ON p.product_id = t.product_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(P log P)",
+    "space": "O(P)",
+    "variables": [
+      "P: number of price modification records"
+    ],
+    "notes": "Finding max change dates per product followed by left join executes in linear-logarithmic time.",
+    "whyNaiveFails": "Simple inner join drops products whose initial price changes took place after the cutoff date.",
+    "spaceTimeTradeoff": "Distinct product universe left joined against latest price subquery cleanly establishes baseline fallback.",
+    "interviewerExpectation": "Preserving all distinct products with default price 10 using LEFT JOIN and COALESCE."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT p.product_id, COALESCE(t.new_price, 10) AS price\nFROM (\n    SELECT DISTINCT product_id\n    FROM Products\n) p\nLEFT JOIN (\n    SELECT product_id, new_price\n    FROM Products\n    WHERE (product_id, change_date) IN (\n        SELECT product_id, MAX(change_date)\n        FROM Products\n        WHERE change_date <= '2019-08-16'\n        GROUP BY product_id\n    )\n) t ON p.product_id = t.product_id;",
+      "approach": "Distinct Product Left Join with Latest Price Subquery",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT p.product_id, COALESCE(t.new_price, 10) AS price\nFROM (\n    SELECT DISTINCT product_id\n    FROM Products\n) p\nLEFT JOIN (\n    SELECT product_id, new_price\n    FROM Products\n    WHERE (product_id, change_date) IN (\n        SELECT product_id, MAX(change_date)\n        FROM Products\n        WHERE change_date <= '2019-08-16'\n        GROUP BY product_id\n    )\n) t ON p.product_id = t.product_id;",
+      "approach": "PostgreSQL Coalesce Latest Price Tuple Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef price_at_given_date(products: pd.DataFrame) -> pd.DataFrame:\n    all_prods = pd.DataFrame({'product_id': products['product_id'].unique()})\n    valid = products[products['change_date'] <= '2019-08-16']\n    idx = valid.groupby('product_id')['change_date'].idxmax()\n    latest = valid.loc[idx, ['product_id', 'new_price']].rename(columns={'new_price': 'price'})\n    res = all_prods.merge(latest, on='product_id', how='left')\n    res['price'] = res['price'].fillna(10).astype(int)\n    return res",
+      "approach": "Pandas Sub-Date Idxmax and Outer Merge with Default Fill",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

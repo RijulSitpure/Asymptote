@@ -1,0 +1,71 @@
+{
+  "slug": "project-employees-ii",
+  "number": 1076,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Maximum Project Headcount Identification",
+      "text": "Determine the maximum number of assigned employees across any project, then return all project identifiers achieving that count."
+    },
+    {
+      "level": 2,
+      "title": "Group Count with Subquery Ceiling",
+      "text": "Group project records by project identifier and filter the groups using a having clause equal to the global maximum count."
+    },
+    {
+      "level": 3,
+      "title": "Project Headcount Query Blueprint",
+      "text": "select project_id from Project group by project_id having count(employee_id) = (select count(employee_id) from Project group by project_id order by count(employee_id) desc limit 1)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT project_id\nFROM Project\nGROUP BY project_id\nHAVING COUNT(employee_id) = (\n    SELECT COUNT(employee_id)\n    FROM Project\n    GROUP BY project_id\n    ORDER BY COUNT(employee_id) DESC\n    LIMIT 1\n);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(P log P)",
+    "space": "O(P)",
+    "variables": [
+      "P: number of project assignments"
+    ],
+    "notes": "Grouping assignments and finding the maximum via scalar subquery executes in linear-logarithmic time.",
+    "whyNaiveFails": "Hardcoding a single project identifier ignores possible ties across top projects.",
+    "spaceTimeTradeoff": "Having filter against maximum subquery cleanly handles ties without row-number windowing.",
+    "interviewerExpectation": "Handling ties properly when multiple projects share the maximum headcount."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT project_id\nFROM Project\nGROUP BY project_id\nHAVING COUNT(employee_id) = (\n    SELECT COUNT(employee_id)\n    FROM Project\n    GROUP BY project_id\n    ORDER BY COUNT(employee_id) DESC\n    LIMIT 1\n);",
+      "approach": "Group Count Filtered by Global Maximum Subquery",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT project_id\nFROM Project\nGROUP BY project_id\nHAVING COUNT(employee_id) = (\n    SELECT COUNT(employee_id)\n    FROM Project\n    GROUP BY project_id\n    ORDER BY COUNT(employee_id) DESC\n    LIMIT 1\n);",
+      "approach": "PostgreSQL Having Maximum Scalar Subquery",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef project_employees_ii(project: pd.DataFrame, employee: pd.DataFrame) -> pd.DataFrame:\n    counts = project.groupby('project_id')['employee_id'].count().reset_index()\n    max_count = counts['employee_id'].max()\n    return counts[counts['employee_id'] == max_count][['project_id']]",
+      "approach": "Pandas Groupby Count and Max Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

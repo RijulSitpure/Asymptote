@@ -1,0 +1,16 @@
+import json
+cases = [
+    {
+        "Sales": [
+            {"sale_id": 1, "product_id": 100, "year": 2008, "quantity": 10, "price": 5000},
+            {"sale_id": 2, "product_id": 100, "year": 2009, "quantity": 12, "price": 5000},
+            {"sale_id": 7, "product_id": 200, "year": 2011, "quantity": 15, "price": 9000}
+        ],
+        "Product": [
+            {"product_id": 100, "product_name": "Nokia"},
+            {"product_id": 200, "product_name": "Apple"},
+            {"product_id": 300, "product_name": "Samsung"}
+        ]
+    }
+]
+print(json.dumps(cases))

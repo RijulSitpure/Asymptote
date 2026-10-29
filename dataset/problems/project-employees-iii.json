@@ -1,0 +1,71 @@
+{
+  "slug": "project-employees-iii",
+  "number": 1077,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Project-Specific Seniority Ranking",
+      "text": "Identify the employee or employees possessing the highest tenure in years within each individual project."
+    },
+    {
+      "level": 2,
+      "title": "Dense Rank Window Partition",
+      "text": "Assign a dense ranking partitioned by project identifier and ordered descending by experience years, filtering for rank one."
+    },
+    {
+      "level": 3,
+      "title": "Project Experience Query Blueprint",
+      "text": "with Ranked as (select p.project_id, p.employee_id, dense_rank() over (partition by p.project_id order by e.experience_years desc) as rnk from Project p join Employee e on p.employee_id = e.employee_id) select project_id, employee_id from Ranked where rnk = 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Ranked AS (\n    SELECT p.project_id, p.employee_id,\n           DENSE_RANK() OVER (PARTITION BY p.project_id ORDER BY e.experience_years DESC) AS rnk\n    FROM Project p\n    JOIN Employee e ON p.employee_id = e.employee_id\n)\nSELECT project_id, employee_id\nFROM Ranked\nWHERE rnk = 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(P log P)",
+    "space": "O(P)",
+    "variables": [
+      "P: total number of project assignments"
+    ],
+    "notes": "Joining tables followed by window partitioning and ranking executes in linear-logarithmic time.",
+    "whyNaiveFails": "Correlated max subqueries on unindexed tables perform repeated full table scans.",
+    "spaceTimeTradeoff": "Window ranking computes group maximums in a single scan without subquery re-execution.",
+    "interviewerExpectation": "Use of DENSE_RANK() or RANK() window functions partitioned by project."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Ranked AS (\n    SELECT p.project_id, p.employee_id,\n           DENSE_RANK() OVER (PARTITION BY p.project_id ORDER BY e.experience_years DESC) AS rnk\n    FROM Project p\n    JOIN Employee e ON p.employee_id = e.employee_id\n)\nSELECT project_id, employee_id\nFROM Ranked\nWHERE rnk = 1;",
+      "approach": "Window Dense Rank Partitioned by Project",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Ranked AS (\n    SELECT p.project_id, p.employee_id,\n           DENSE_RANK() OVER (PARTITION BY p.project_id ORDER BY e.experience_years DESC) AS rnk\n    FROM Project p\n    JOIN Employee e ON p.employee_id = e.employee_id\n)\nSELECT project_id, employee_id\nFROM Ranked\nWHERE rnk = 1;",
+      "approach": "PostgreSQL Partitioned Window Dense Rank",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef project_employees_iii(project: pd.DataFrame, employee: pd.DataFrame) -> pd.DataFrame:\n    df = project.merge(employee, on='employee_id')\n    max_exp = df.groupby('project_id')['experience_years'].transform('max')\n    res = df[df['experience_years'] == max_exp]\n    return res[['project_id', 'employee_id']]",
+      "approach": "Pandas Merge and Groupby Transform Max Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

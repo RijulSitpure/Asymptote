@@ -1,0 +1,73 @@
+{
+  "slug": "user-activity-for-the-past-30-days-ii",
+  "number": 1142,
+  "category": "Database",
+  "patterns": [
+    "date-time"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Average Sessions Per Active User",
+      "text": "Determine the average number of unique sessions per active user over the thirty days ending 2019-07-27, defaulting to zero if empty."
+    },
+    {
+      "level": 2,
+      "title": "Distinct Counting with Null-Safe Ratio",
+      "text": "Count distinct session identifiers divided by distinct user identifiers within the date window, applying round and coalesce."
+    },
+    {
+      "level": 3,
+      "title": "Average Sessions Query Blueprint",
+      "text": "select ifnull(round(count(distinct session_id) / count(distinct user_id), 2), 0.00) as average_sessions_per_user from Activity where activity_date between \"2019-06-28\" and \"2019-07-27\"."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT IFNULL(ROUND(COUNT(DISTINCT session_id) / COUNT(DISTINCT user_id), 2), 0.00) AS average_sessions_per_user\nFROM Activity\nWHERE activity_date BETWEEN '2019-06-28' AND '2019-07-27';\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(A)",
+    "space": "O(U + S)",
+    "variables": [
+      "A: number of activity records",
+      "U: unique users",
+      "S: unique sessions"
+    ],
+    "notes": "Single scan with hash sets for distinct users and sessions executes in linear time.",
+    "whyNaiveFails": "Failing to handle empty tables causes division-by-zero or unexpected null values.",
+    "spaceTimeTradeoff": "Global aggregation performs distinct counting without grouping by individual user.",
+    "interviewerExpectation": "Use of IFNULL / COALESCE to handle empty activity sets and division by zero."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT IFNULL(ROUND(COUNT(DISTINCT session_id) / COUNT(DISTINCT user_id), 2), 0.00) AS average_sessions_per_user\nFROM Activity\nWHERE activity_date BETWEEN '2019-06-28' AND '2019-07-27';",
+      "approach": "Single-Pass Distinct Session and User Ratio",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT COALESCE(ROUND(COUNT(DISTINCT session_id)::numeric / NULLIF(COUNT(DISTINCT user_id), 0), 2), 0.00) AS average_sessions_per_user\nFROM Activity\nWHERE activity_date BETWEEN '2019-06-28' AND '2019-07-27';",
+      "approach": "PostgreSQL Null-Safe Distinct Ratio with Numeric Round",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef user_activity(activity: pd.DataFrame) -> pd.DataFrame:\n    filtered = activity[(activity['activity_date'] >= '2019-06-28') & (activity['activity_date'] <= '2019-07-27')]\n    users = filtered['user_id'].nunique()\n    sessions = filtered['session_id'].nunique()\n    avg = round(sessions / users, 2) if users > 0 else 0.0\n    return pd.DataFrame({'average_sessions_per_user': [avg]})",
+      "approach": "Pandas Distinct Ratio with Zero Guard",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

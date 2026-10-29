@@ -1,0 +1,71 @@
+{
+  "slug": "students-report-by-geography",
+  "number": 618,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Geographical Continent Pivot Table",
+      "text": "Pivot alphabetical student names from rows into three columns (America, Asia, Europe) aligned by index rank."
+    },
+    {
+      "level": 2,
+      "title": "Row Number Partitioning and Conditional Aggregation",
+      "text": "Assign row_number ordered by student name within each continent. Then group by row number and use conditional max statements."
+    },
+    {
+      "level": 3,
+      "title": "Pivot Blueprint",
+      "text": "With Ranked as (select name, continent, row_number() over(partition by continent order by name) as rn from Student) select max(case when continent = \"America\" then name end) as America, max(case when continent = \"Asia\" then name end) as Asia, max(case when continent = \"Europe\" then name end) as Europe from Ranked group by rn."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Ranked AS (\n    SELECT \n        name,\n        continent,\n        ROW_NUMBER() OVER(PARTITION BY continent ORDER BY name) AS rn\n    FROM Student\n)\nSELECT \n    MAX(CASE WHEN continent = 'America' THEN name END) AS America,\n    MAX(CASE WHEN continent = 'Asia' THEN name END) AS Asia,\n    MAX(CASE WHEN continent = 'Europe' THEN name END) AS Europe\nFROM Ranked\nGROUP BY rn;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of student rows"
+    ],
+    "notes": "Window ranking and conditional grouping pivot names in linear-logarithmic time.",
+    "whyNaiveFails": "Full outer joining separate continent subqueries creates verbose and fragile join chains.",
+    "spaceTimeTradeoff": "Partitioned row ranking groups disparate categories in a single pivot pass.",
+    "interviewerExpectation": "Use of ROW_NUMBER() OVER(PARTITION BY continent) and MAX(CASE WHEN) pivot pattern."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Ranked AS (\n    SELECT \n        name,\n        continent,\n        ROW_NUMBER() OVER(PARTITION BY continent ORDER BY name) AS rn\n    FROM Student\n)\nSELECT \n    MAX(CASE WHEN continent = 'America' THEN name END) AS America,\n    MAX(CASE WHEN continent = 'Asia' THEN name END) AS Asia,\n    MAX(CASE WHEN continent = 'Europe' THEN name END) AS Europe\nFROM Ranked\nGROUP BY rn;",
+      "approach": "Window Row Ranking and Conditional Max Pivot",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Ranked AS (\n    SELECT \n        name,\n        continent,\n        ROW_NUMBER() OVER(PARTITION BY continent ORDER BY name) AS rn\n    FROM Student\n)\nSELECT \n    MAX(CASE WHEN continent = 'America' THEN name END) AS \"America\",\n    MAX(CASE WHEN continent = 'Asia' THEN name END) AS \"Asia\",\n    MAX(CASE WHEN continent = 'Europe' THEN name END) AS \"Europe\"\nFROM Ranked\nGROUP BY rn;",
+      "approach": "PostgreSQL Partitioned Row Pivot",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef geography_report(student: pd.DataFrame) -> pd.DataFrame:\n    df = student.sort_values(by=['continent', 'name'])\n    df['rn'] = df.groupby('continent').cumcount()\n    pivoted = df.pivot(index='rn', columns='continent', values='name')\n    for col in ['America', 'Asia', 'Europe']:\n        if col not in pivoted.columns:\n            pivoted[col] = None\n    res = pivoted[['America', 'Asia', 'Europe']]\n    return res.reset_index(drop=True)",
+      "approach": "Pandas Cumcount Index Pivot Table",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

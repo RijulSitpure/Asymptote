@@ -1,0 +1,71 @@
+{
+  "slug": "average-salary-departments-vs-company",
+  "number": 615,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monthly Department vs Company Mean Benchmark",
+      "text": "Compare average department compensation against overall company average compensation for each pay month."
+    },
+    {
+      "level": 2,
+      "title": "Dual Window and Department Mean Comparison",
+      "text": "Format pay_date to year-month strings. Compute monthly department average and overall monthly company average, then label department as higher, lower, or same."
+    },
+    {
+      "level": 3,
+      "title": "Comparison Blueprint",
+      "text": "With Dept as (select date_format(pay_date, \"%Y-%m\") as pay_month, department_id, avg(amount) as dept_avg from Salary s join Employee e on s.employee_id = e.employee_id group by pay_month, department_id), Comp as (select date_format(pay_date, \"%Y-%m\") as pay_month, avg(amount) as comp_avg from Salary group by pay_month) select d.pay_month, d.department_id, case when d.dept_avg > c.comp_avg then \"higher\" when d.dept_avg < c.comp_avg then \"lower\" else \"same\" end as comparison from Dept d join Comp c on d.pay_month = c.pay_month order by d.pay_month desc, d.department_id asc."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH DeptAvg AS (\n    SELECT \n        DATE_FORMAT(s.pay_date, '%Y-%m') AS pay_month,\n        e.department_id,\n        AVG(s.amount) AS dept_avg\n    FROM Salary s\n    JOIN Employee e ON s.employee_id = e.employee_id\n    GROUP BY pay_month, e.department_id\n),\nCompAvg AS (\n    SELECT \n        DATE_FORMAT(pay_date, '%Y-%m') AS pay_month,\n        AVG(amount) AS comp_avg\n    FROM Salary\n    GROUP BY pay_month\n)\nSELECT \n    d.pay_month,\n    d.department_id,\n    CASE \n        WHEN d.dept_avg > c.comp_avg THEN 'higher'\n        WHEN d.dept_avg < c.comp_avg THEN 'lower'\n        ELSE 'same'\n    END AS comparison\nFROM DeptAvg d\nJOIN CompAvg c ON d.pay_month = c.pay_month\nORDER BY d.pay_month DESC, d.department_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of salary records"
+    ],
+    "notes": "Grouped monthly averages and join execution scale in linear-logarithmic time.",
+    "whyNaiveFails": "Row-by-row correlated subqueries compute whole-table averages repeatedly for each department.",
+    "spaceTimeTradeoff": "Pre-aggregating monthly company averages avoids redundant scans.",
+    "interviewerExpectation": "Use of DATE_FORMAT for monthly normalization and CASE expression comparisons."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH DeptAvg AS (\n    SELECT \n        DATE_FORMAT(s.pay_date, '%Y-%m') AS pay_month,\n        e.department_id,\n        AVG(s.amount) AS dept_avg\n    FROM Salary s\n    JOIN Employee e ON s.employee_id = e.employee_id\n    GROUP BY pay_month, e.department_id\n),\nCompAvg AS (\n    SELECT \n        DATE_FORMAT(pay_date, '%Y-%m') AS pay_month,\n        AVG(amount) AS comp_avg\n    FROM Salary\n    GROUP BY pay_month\n)\nSELECT \n    d.pay_month,\n    d.department_id,\n    CASE \n        WHEN d.dept_avg > c.comp_avg THEN 'higher'\n        WHEN d.dept_avg < c.comp_avg THEN 'lower'\n        ELSE 'same'\n    END AS comparison\nFROM DeptAvg d\nJOIN CompAvg c ON d.pay_month = c.pay_month\nORDER BY d.pay_month DESC, d.department_id ASC;",
+      "approach": "Precomputed Department and Company Monthly Average Comparison",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH DeptAvg AS (\n    SELECT \n        TO_CHAR(s.pay_date, 'YYYY-MM') AS pay_month,\n        e.department_id,\n        AVG(s.amount) AS dept_avg\n    FROM Salary s\n    JOIN Employee e ON s.employee_id = e.employee_id\n    GROUP BY pay_month, e.department_id\n),\nCompAvg AS (\n    SELECT \n        TO_CHAR(pay_date, 'YYYY-MM') AS pay_month,\n        AVG(amount) AS comp_avg\n    FROM Salary\n    GROUP BY pay_month\n)\nSELECT \n    d.pay_month,\n    d.department_id,\n    CASE \n        WHEN d.dept_avg > c.comp_avg THEN 'higher'\n        WHEN d.dept_avg < c.comp_avg THEN 'lower'\n        ELSE 'same'\n    END AS comparison\nFROM DeptAvg d\nJOIN CompAvg c ON d.pay_month = c.pay_month\nORDER BY d.pay_month DESC, d.department_id ASC;",
+      "approach": "PostgreSQL TO_CHAR Monthly Benchmark Comparison",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef average_salary_departments_vs_company(salary: pd.DataFrame, employee: pd.DataFrame) -> pd.DataFrame:\n    df = salary.merge(employee, on='employee_id')\n    df['pay_month'] = pd.to_datetime(df['pay_date']).dt.strftime('%Y-%m')\n    \n    comp_avg = df.groupby('pay_month')['amount'].mean().to_dict()\n    dept_avg = df.groupby(['pay_month', 'department_id'])['amount'].mean().reset_index()\n    \n    dept_avg['comp_avg'] = dept_avg['pay_month'].map(comp_avg)\n    dept_avg['comparison'] = 'same'\n    dept_avg.loc[dept_avg['amount'] > dept_avg['comp_avg'], 'comparison'] = 'higher'\n    dept_avg.loc[dept_avg['amount'] < dept_avg['comp_avg'], 'comparison'] = 'lower'\n    \n    res = dept_avg[['pay_month', 'department_id', 'comparison']]\n    return res.sort_values(by=['pay_month', 'department_id'], ascending=[False, True])",
+      "approach": "Pandas Monthly Mean Mapping and Vectorized Labeling",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

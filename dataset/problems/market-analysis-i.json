@@ -1,0 +1,72 @@
+{
+  "slug": "market-analysis-i",
+  "number": 1158,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "User Annual Purchase Volume Aggregation",
+      "text": "Report each user join date and total orders placed as a buyer throughout calendar year 2019, including zero counts."
+    },
+    {
+      "level": 2,
+      "title": "Left Join with Filter Predicate in Join Condition",
+      "text": "Left join users to orders matching buyer identifier and 2019 order dates, grouping by user identifier to count orders."
+    },
+    {
+      "level": 3,
+      "title": "Market Analysis Query Blueprint",
+      "text": "select u.user_id as buyer_id, u.join_date, count(o.order_id) as orders_in_2019 from Users u left join Orders o on u.user_id = o.buyer_id and o.order_date between \"2019-01-01\" and \"2019-12-31\" group by u.user_id, u.join_date."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT u.user_id AS buyer_id, u.join_date,\n       COUNT(o.order_id) AS orders_in_2019\nFROM Users u\nLEFT JOIN Orders o ON u.user_id = o.buyer_id AND o.order_date BETWEEN '2019-01-01' AND '2019-12-31'\nGROUP BY u.user_id, u.join_date;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(U + O)",
+    "space": "O(U)",
+    "variables": [
+      "U: number of registered users",
+      "O: number of orders placed"
+    ],
+    "notes": "Left join followed by grouping on user identifier runs in linear time relative to table sizes.",
+    "whyNaiveFails": "Filtering orders in a where clause turns the left join into an inner join, discarding users with zero purchases.",
+    "spaceTimeTradeoff": "Condition placed inside ON clause preserves all users while filtering order rows.",
+    "interviewerExpectation": "Placing the date condition in the ON clause of the LEFT JOIN to retain users with 0 orders."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT u.user_id AS buyer_id, u.join_date,\n       COUNT(o.order_id) AS orders_in_2019\nFROM Users u\nLEFT JOIN Orders o ON u.user_id = o.buyer_id AND o.order_date BETWEEN '2019-01-01' AND '2019-12-31'\nGROUP BY u.user_id, u.join_date;",
+      "approach": "Left Join with Date Filter in Join Condition",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT u.user_id AS buyer_id, u.join_date,\n       COUNT(o.order_id) AS orders_in_2019\nFROM Users u\nLEFT JOIN Orders o ON u.user_id = o.buyer_id AND o.order_date BETWEEN '2019-01-01' AND '2019-12-31'\nGROUP BY u.user_id, u.join_date;",
+      "approach": "PostgreSQL Left Join Date Predicate Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef market_analysis(users: pd.DataFrame, orders: pd.DataFrame, items: pd.DataFrame) -> pd.DataFrame:\n    orders_2019 = orders[(orders['order_date'] >= '2019-01-01') & (orders['order_date'] <= '2019-12-31')]\n    counts = orders_2019.groupby('buyer_id')['order_id'].count().reset_index()\n    counts = counts.rename(columns={'order_id': 'orders_in_2019'})\n    merged = users.merge(counts, left_on='user_id', right_on='buyer_id', how='left')\n    merged['orders_in_2019'] = merged['orders_in_2019'].fillna(0).astype(int)\n    merged = merged.rename(columns={'user_id': 'buyer_id'})\n    return merged[['buyer_id', 'join_date', 'orders_in_2019']]",
+      "approach": "Pandas Left Merge with Zero Fill",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
