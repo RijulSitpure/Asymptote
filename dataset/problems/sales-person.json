@@ -1,0 +1,74 @@
+{
+  "slug": "sales-person",
+  "number": 607,
+  "category": "Database",
+  "patterns": [
+    "anti-join"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Excluding Representative Ties",
+      "text": "Sales representatives who booked orders linked to a specified vendor must be excluded entirely from the final roster."
+    },
+    {
+      "level": 2,
+      "title": "Anti-Join Subquery Formulation",
+      "text": "Join Orders with Company to find all sales_id linked to the company named Red. Then filter SalesPerson with sales_id not in that list."
+    },
+    {
+      "level": 3,
+      "title": "Not In Subquery Blueprint",
+      "text": "Select name from SalesPerson where sales_id not in (select o.sales_id from Orders o join Company c on o.com_id = c.com_id where c.name = 'Red')."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT name\nFROM SalesPerson\nWHERE sales_id NOT IN (\n    SELECT o.sales_id\n    FROM Orders o\n    JOIN Company c ON o.com_id = c.com_id\n    WHERE c.name = 'RED'\n);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S + O + C)",
+    "space": "O(R)",
+    "variables": [
+      "S: salespersons",
+      "O: orders",
+      "C: companies",
+      "R: red order sellers"
+    ],
+    "notes": "Subquery anti-join filtering sales identifiers.",
+    "whyNaiveFails": "Filtering orders with company name != RED erroneously retains salespersons who also took RED orders on different dates.",
+    "spaceTimeTradeoff": "Subquery collects distinct seller identifiers who dealt with RED and eliminates them via anti-join.",
+    "interviewerExpectation": "Understanding that someone can have orders with RED and other companies simultaneously."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT name\nFROM SalesPerson\nWHERE sales_id NOT IN (\n    SELECT o.sales_id\n    FROM Orders o\n    JOIN Company c ON o.com_id = c.com_id\n    WHERE c.name = 'RED'\n);",
+      "approach": "Subquery Anti-Join Exclusion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT name\nFROM SalesPerson\nWHERE sales_id NOT IN (\n    SELECT o.sales_id\n    FROM Orders o\n    JOIN Company c ON o.com_id = c.com_id\n    WHERE c.name = 'RED'\n);",
+      "approach": "PostgreSQL Not In Subquery",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef sales_person(sales_person: pd.DataFrame, company: pd.DataFrame, orders: pd.DataFrame) -> pd.DataFrame:\n    red_companies = company[company['name'] == 'RED']['com_id']\n    red_sales_ids = orders[orders['com_id'].isin(red_companies)]['sales_id'].unique()\n    result = sales_person[~sales_person['sales_id'].isin(red_sales_ids)]\n    return result[['name']]",
+      "approach": "Pandas Boolean Inverse Set Membership",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

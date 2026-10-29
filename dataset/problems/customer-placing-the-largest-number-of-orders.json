@@ -1,0 +1,72 @@
+{
+  "slug": "customer-placing-the-largest-number-of-orders",
+  "number": 586,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Identifying Top Order Frequency",
+      "text": "Multiple orders originate from repeating accounts. How can transactions be partitioned to find the buyer with the peak volume?"
+    },
+    {
+      "level": 2,
+      "title": "Order Count Descending Limit",
+      "text": "Group the records by customer identifier. Order the resulting groups by count descending and limit the output to one row."
+    },
+    {
+      "level": 3,
+      "title": "Grouped Ordering Blueprint",
+      "text": "Select customer_number from Orders group by customer_number order by count(*) desc limit 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT customer_number\nFROM Orders\nGROUP BY customer_number\nORDER BY COUNT(*) DESC\nLIMIT 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(O log K)",
+    "space": "O(K)",
+    "variables": [
+      "O: total orders",
+      "K: distinct customers"
+    ],
+    "notes": "Group by customer with heap-based top-1 limit.",
+    "whyNaiveFails": "Correlated subqueries counting per row waste CPU with redundant scans.",
+    "spaceTimeTradeoff": "Grouping with limit 1 avoids sorting entire customer sets when index exists on customer_number.",
+    "interviewerExpectation": "Correct aggregate ordering using count(*) desc limit 1."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT customer_number\nFROM Orders\nGROUP BY customer_number\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "approach": "Grouped Order Count Descending Limit 1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT customer_number\nFROM Orders\nGROUP BY customer_number\nORDER BY COUNT(*) DESC\nLIMIT 1;",
+      "approach": "PostgreSQL Aggregation Limit 1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef largest_orders(orders: pd.DataFrame) -> pd.DataFrame:\n    if orders.empty:\n        return pd.DataFrame(columns=['customer_number'])\n    counts = orders.groupby('customer_number').size().reset_index(name='count')\n    top = counts.sort_values(by='count', ascending=False).iloc[:1]\n    return top[['customer_number']]",
+      "approach": "Pandas GroupBy Size and Top 1 Slice",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

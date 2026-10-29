@@ -1,0 +1,1 @@
+CREATE TABLE Orders (order_number int, customer_number int);

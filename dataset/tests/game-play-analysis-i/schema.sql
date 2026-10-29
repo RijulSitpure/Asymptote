@@ -1,0 +1,1 @@
+CREATE TABLE Activity (player_id int, device_id int, event_date varchar(50), games_played int);

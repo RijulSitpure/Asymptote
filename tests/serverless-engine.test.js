@@ -401,13 +401,13 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
 
   // 10. Full LeetCode Problem Catalog Index Resolution
   it('10. Resolves uncurated problem metadata, category, supported languages, and suggested pattern from catalog.json', async () => {
-    // Problem #6 (Zigzag Conversion) - uncurated, in catalog
-    const uncurated = await engine.getProblemHints(6);
+    // Problem #157 (Read N Characters Given Read4) - uncurated, in catalog
+    const uncurated = await engine.getProblemHints(157);
     expect(uncurated.problem).not.toBeNull();
-    expect(uncurated.problem.number).toBe(6);
-    expect(uncurated.problem.slug).toBe('zigzag-conversion');
-    expect(uncurated.problem.title).toBe('Zigzag Conversion');
-    expect(uncurated.problem.difficulty).toBe('Medium');
+    expect(uncurated.problem.number).toBe(157);
+    expect(uncurated.problem.slug).toBe('read-n-characters-given-read4');
+    expect(uncurated.problem.title).toBe('Read N Characters Given Read4');
+    expect(uncurated.problem.difficulty).toBe('Easy');
     expect(uncurated.problem.category).toBe('Algorithms');
     expect(uncurated.problem.verified).toBe(0);
     expect(uncurated.problem.verification_tier).toBe('unverified');

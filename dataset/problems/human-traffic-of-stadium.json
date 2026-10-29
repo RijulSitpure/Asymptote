@@ -1,0 +1,71 @@
+{
+  "slug": "human-traffic-of-stadium",
+  "number": 601,
+  "category": "Database",
+  "patterns": [
+    "window-offset"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Consecutive Day Threshold Island Detection",
+      "text": "Peak attendance records must span three or more contiguous calendar identifiers where headcount reaches or exceeds one hundred."
+    },
+    {
+      "level": 2,
+      "title": "Contiguity Grouping via Row Number Offset",
+      "text": "Filter entries with people >= 100. Subtract row_number() over (order by id) from id to assign contiguous sequences to an identical grouping key."
+    },
+    {
+      "level": 3,
+      "title": "Common Table Expression Island Blueprint",
+      "text": "Construct a CTE with id - row_number() over (order by id) as grp. Join with a subquery filtering for group sizes >= 3, and order by id."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH HighTraffic AS (\n    SELECT id, visit_date, people,\n           id - ROW_NUMBER() OVER (ORDER BY id) AS grp\n    FROM Stadium\n    WHERE people >= 100\n),\nGroupCounts AS (\n    SELECT grp, COUNT(*) AS cnt\n    FROM HighTraffic\n    GROUP BY grp\n    HAVING cnt >= 3\n)\nSELECT h.id, h.visit_date, h.people\nFROM HighTraffic h\nJOIN GroupCounts g ON h.grp = g.grp\nORDER BY h.id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S log S)",
+    "space": "O(S)",
+    "variables": [
+      "S: rows in Stadium table"
+    ],
+    "notes": "Window function row number assignment followed by group size filtering.",
+    "whyNaiveFails": "Three-way self-joins take cubic O(S^3) time without indexes and miss islands longer than 3 days without duplicate handling.",
+    "spaceTimeTradeoff": "Gaps-and-islands window grouping isolates contiguous runs in a single sorting pass.",
+    "interviewerExpectation": "Proficiency with gaps-and-islands logic using ROW_NUMBER() difference technique."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH HighTraffic AS (\n    SELECT id, visit_date, people,\n           id - ROW_NUMBER() OVER (ORDER BY id) AS grp\n    FROM Stadium\n    WHERE people >= 100\n),\nGroupCounts AS (\n    SELECT grp, COUNT(*) AS cnt\n    FROM HighTraffic\n    GROUP BY grp\n    HAVING cnt >= 3\n)\nSELECT h.id, h.visit_date, h.people\nFROM HighTraffic h\nJOIN GroupCounts g ON h.grp = g.grp\nORDER BY h.id;",
+      "approach": "Window Gaps-and-Islands CTE",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH HighTraffic AS (\n    SELECT id, visit_date, people,\n           id - ROW_NUMBER() OVER (ORDER BY id) AS grp\n    FROM Stadium\n    WHERE people >= 100\n),\nGroupCounts AS (\n    SELECT grp, COUNT(*) AS cnt\n    FROM HighTraffic\n    GROUP BY grp\n    HAVING cnt >= 3\n)\nSELECT h.id, h.visit_date, h.people\nFROM HighTraffic h\nJOIN GroupCounts g ON h.grp = g.grp\nORDER BY h.id;",
+      "approach": "PostgreSQL Contiguity Window CTE",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef human_traffic(stadium: pd.DataFrame) -> pd.DataFrame:\n    filtered = stadium[stadium['people'] >= 100].copy()\n    if filtered.empty:\n        return pd.DataFrame(columns=['id', 'visit_date', 'people'])\n    filtered['grp'] = filtered['id'] - range(len(filtered))\n    counts = filtered.groupby('grp')['id'].transform('count')\n    valid = filtered[counts >= 3]\n    return valid[['id', 'visit_date', 'people']].sort_values(by='id')",
+      "approach": "Pandas Range Difference Gaps-and-Islands",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

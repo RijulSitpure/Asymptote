@@ -1,0 +1,1 @@
+CREATE TABLE World (name varchar(50), continent varchar(50), area int, population int, gdp bigint);

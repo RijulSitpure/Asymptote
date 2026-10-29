@@ -1,0 +1,1 @@
+CREATE TABLE Stadium (id int, visit_date varchar(50), people int);

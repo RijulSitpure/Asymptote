@@ -1,0 +1,1 @@
+CREATE TABLE Customer (id int, name varchar(50), referee_id int);

@@ -1,0 +1,65 @@
+{
+  "slug": "promise-time-limit",
+  "number": 2637,
+  "category": "JavaScript",
+  "patterns": [
+    "promises-async",
+    "timing-control"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Racing Asynchronous Operations",
+      "text": "When an asynchronous task may run indefinitely, an independent deadline timer can intervene and terminate the operation early."
+    },
+    {
+      "level": 2,
+      "title": "Promise Race Composition",
+      "text": "Create a race between the asynchronous invocation fn(...args) and a rejecting timer scheduled for t milliseconds. Whichever settles first dictates the outcome."
+    },
+    {
+      "level": 3,
+      "title": "Rejection Timer Blueprint",
+      "text": "Return an async function (...args) returning Promise.race([ fn(...args), new Promise((_, reject) => setTimeout(() => reject(\"Time Limit Exceeded\"), t)) ])."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```javascript\n/**\n * @param {Function} fn\n * @param {number} t\n * @return {Function}\n */\nvar timeLimit = function(fn, t) {\n    return async function(...args) {\n        return Promise.race([\n            fn(...args),\n            new Promise((_, reject) => {\n                setTimeout(() => {\n                    reject(\"Time Limit Exceeded\");\n                }, t);\n            })\n        ]);\n    };\n};\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1) wrapper scheduling + O(T) underlying task",
+    "space": "O(1)",
+    "variables": [
+      "t: timeout cutoff in milliseconds"
+    ],
+    "notes": "Timer and task are evaluated concurrently via Promise.race.",
+    "whyNaiveFails": "Waiting indefinitely on unconstrained promises leaks microtasks and hangs dependent workflows.",
+    "spaceTimeTradeoff": "Constant space timeout promise guarantees deterministic upper bound on resolution time.",
+    "interviewerExpectation": "Rejecting with the exact string \"Time Limit Exceeded\" and forwarding resolve value when under deadline."
+  },
+  "solutions": [
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {Function} fn\n * @param {number} t\n * @return {Function}\n */\nvar timeLimit = function(fn, t) {\n    return async function(...args) {\n        return Promise.race([\n            fn(...args),\n            new Promise((_, reject) => {\n                setTimeout(() => {\n                    reject(\"Time Limit Exceeded\");\n                }, t);\n            })\n        ]);\n    };\n};",
+      "approach": "Promise.race with Timeout Rejection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "typescript",
+      "code": "type Fn = (...params: any[]) => Promise<any>;\n\nfunction timeLimit(fn: Fn, t: number): Fn {\n    return async function(...args) {\n        return Promise.race([\n            fn(...args),\n            new Promise((_, reject) => {\n                setTimeout(() => {\n                    reject(\"Time Limit Exceeded\");\n                }, t);\n            })\n        ]);\n    };\n}",
+      "approach": "TypeScript Generic Promise Time Limit",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

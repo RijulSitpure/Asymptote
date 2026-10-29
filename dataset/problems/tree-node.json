@@ -1,0 +1,71 @@
+{
+  "slug": "tree-node",
+  "number": 608,
+  "category": "Database",
+  "patterns": [
+    "conditional-pivot"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Hierarchical Node Role Classification",
+      "text": "Nodes in a tree hierarchy are distinguished by their structural positioning: root has no parent, inner has both parent and children, and leaf has a parent but no children."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Branching on Parent Roles",
+      "text": "Inspect p_id for null to detect root. Then test whether the node identifier appears as a parent elsewhere in the tree using in with a non-null subquery."
+    },
+    {
+      "level": 3,
+      "title": "Case Expression Blueprint",
+      "text": "Select id, case when p_id is null then 'Root' when id in (select p_id from Tree where p_id is not null) then 'Inner' else 'Leaf' end as type from Tree."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT id,\n       CASE\n           WHEN p_id IS NULL THEN 'Root'\n           WHEN id IN (SELECT p_id FROM Tree WHERE p_id IS NOT NULL)\n               THEN 'Inner'\n           ELSE 'Leaf'\n       END AS type\nFROM Tree;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in Tree"
+    ],
+    "notes": "Case expression evaluating parent presence and subquery membership.",
+    "whyNaiveFails": "Omitting WHERE p_id IS NOT NULL in the subquery causes IN (NULL, ...) to evaluate to UNKNOWN, misclassifying leaves.",
+    "spaceTimeTradeoff": "Deduplicating parent IDs in memory evaluates node roles in linear time.",
+    "interviewerExpectation": "Filtering nulls from the subquery to ensure NOT IN / IN evaluates deterministically."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT id,\n       CASE\n           WHEN p_id IS NULL THEN 'Root'\n           WHEN id IN (SELECT p_id FROM Tree WHERE p_id IS NOT NULL)\n               THEN 'Inner'\n           ELSE 'Leaf'\n       END AS type\nFROM Tree;",
+      "approach": "Case Statement with Parent Subquery",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT id,\n       CASE\n           WHEN p_id IS NULL THEN 'Root'\n           WHEN id IN (SELECT p_id FROM Tree WHERE p_id IS NOT NULL)\n               THEN 'Inner'\n           ELSE 'Leaf'\n       END AS type\nFROM Tree;",
+      "approach": "PostgreSQL Conditional Node Classification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef tree_node(tree: pd.DataFrame) -> pd.DataFrame:\n    parents = set(tree['p_id'].dropna().unique())\n    def classify(row):\n        if pd.isna(row['p_id']):\n            return 'Root'\n        elif row['id'] in parents:\n            return 'Inner'\n        else:\n            return 'Leaf'\n    tree['type'] = tree.apply(classify, axis=1)\n    return tree[['id', 'type']]",
+      "approach": "Pandas Apply Row Classification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

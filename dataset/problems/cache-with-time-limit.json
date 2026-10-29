@@ -1,0 +1,65 @@
+{
+  "slug": "cache-with-time-limit",
+  "number": 2622,
+  "category": "JavaScript",
+  "patterns": [
+    "timing-control",
+    "classes-and-chaining"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Expiring Key Storage",
+      "text": "Values stored in a temporary store must expire automatically once their configured duration lapses. How can each entry track both its payload and cancellation timer?"
+    },
+    {
+      "level": 2,
+      "title": "Timer Cancellation on Overwrite",
+      "text": "When setting an existing unexpired key, clear its previous timer handle to prevent premature deletion, record the new value, and register a fresh expiration callback."
+    },
+    {
+      "level": 3,
+      "title": "Internal Map and Active Count",
+      "text": "Maintain an internal Map storing value and timer identifier. When timer triggers, delete key from map. set returns true if key exists prior to overwrite, false otherwise. count returns map.size."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```javascript\nclass TimeLimitedCache {\n    constructor() {\n        this.cache = new Map();\n    }\n\n    set(key, value, duration) {\n        const exists = this.cache.has(key);\n        if (exists) {\n            clearTimeout(this.cache.get(key).timer);\n        }\n        const timer = setTimeout(() => {\n            this.cache.delete(key);\n        }, duration);\n        this.cache.set(key, { value, timer });\n        return exists;\n    }\n\n    get(key) {\n        return this.cache.has(key) ? this.cache.get(key).value : -1;\n    }\n\n    count() {\n        return this.cache.size;\n    }\n}\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1) for set, get, and count",
+    "space": "O(N) where N is number of active unexpired keys",
+    "variables": [
+      "N: count of concurrent active unexpired entries"
+    ],
+    "notes": "Map lookups and timer registrations take constant time.",
+    "whyNaiveFails": "Periodic polling loops consume high CPU and introduce latency between duration completion and cleanup.",
+    "spaceTimeTradeoff": "Storing timer references inside the map enables O(1) cancel on overwrite and O(1) active count.",
+    "interviewerExpectation": "Clearing pending timeouts when keys are overwritten to prevent memory leaks and zombie deletes."
+  },
+  "solutions": [
+    {
+      "lang": "javascript",
+      "code": "class TimeLimitedCache {\n    constructor() {\n        this.cache = new Map();\n    }\n\n    set(key, value, duration) {\n        const exists = this.cache.has(key);\n        if (exists) {\n            clearTimeout(this.cache.get(key).timer);\n        }\n        const timer = setTimeout(() => {\n            this.cache.delete(key);\n        }, duration);\n        this.cache.set(key, { value, timer });\n        return exists;\n    }\n\n    get(key) {\n        return this.cache.has(key) ? this.cache.get(key).value : -1;\n    }\n\n    count() {\n        return this.cache.size;\n    }\n}",
+      "approach": "Map with Timeout Cancellation Handles",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "typescript",
+      "code": "interface CacheEntry {\n    value: number;\n    timer: ReturnType<typeof setTimeout>;\n}\n\nclass TimeLimitedCache {\n    private cache: Map<number, CacheEntry>;\n\n    constructor() {\n        this.cache = new Map<number, CacheEntry>();\n    }\n\n    set(key: number, value: number, duration: number): boolean {\n        const exists = this.cache.has(key);\n        if (exists) {\n            clearTimeout(this.cache.get(key)!.timer);\n        }\n        const timer = setTimeout(() => {\n            this.cache.delete(key);\n        }, duration);\n        this.cache.set(key, { value, timer });\n        return exists;\n    }\n\n    get(key: number): number {\n        return this.cache.has(key) ? this.cache.get(key)!.value : -1;\n    }\n\n    count(): number {\n        return this.cache.size;\n    }\n}",
+      "approach": "Typed Map Cache with Active Timers",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}
