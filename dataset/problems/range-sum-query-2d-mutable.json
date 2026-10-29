@@ -1,0 +1,79 @@
+{
+  "slug": "range-sum-query-2d-mutable",
+  "number": 308,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two-Dimensional Prefix Range Aggregation",
+      "text": "Dynamic cell updates combined with rectangle sum queries necessitate an index structure capable of logarithmic point updates and prefix sums across two dimensions."
+    },
+    {
+      "level": 2,
+      "title": "Binary Indexed Tree Over Matrix Coordinates",
+      "text": "Maintain a 2D tree using lowbit isolation across both row and column axes. Point updates propagate deltas through ancestors; region queries combine four corner prefix evaluations."
+    },
+    {
+      "level": 3,
+      "title": "Coordinate Arithmetic Blueprint",
+      "text": "In update(r, c, val), compute delta = val - current[r][c]. Add delta along 2D bit lines by incrementing indices by index & -index. In sumRegion, apply inclusion-exclusion: query(r2, c2) - query(r1-1, c2) - query(r2, c1-1) + query(r1-1, c1-1)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass NumMatrix:\n    def __init__(self, matrix: list[list[int]]):\n        self.m = len(matrix)\n        self.n = len(matrix[0]) if self.m > 0 else 0\n        self.vals = [[0] * self.n for _ in range(self.m)]\n        self.tree = [[0] * (self.n + 1) for _ in range(self.m + 1)]\n        for r in range(self.m):\n            for c in range(self.n):\n                self.update(r, c, matrix[r][c])\n\n    def update(self, row: int, col: int, val: int) -> None:\n        delta = val - self.vals[row][col]\n        self.vals[row][col] = val\n        r = row + 1\n        while r <= self.m:\n            c = col + 1\n            while c <= self.n:\n                self.tree[r][c] += delta\n                c += c & (-c)\n            r += r & (-r)\n\n    def _query(self, row: int, col: int) -> int:\n        total = 0\n        r = row + 1\n        while r > 0:\n            c = col + 1\n            while c > 0:\n                total += self.tree[r][c]\n                c -= c & (-c)\n            r -= r & (-r)\n        return total\n\n    def sumRegion(self, row1: int, col1: int, row2: int, col2: int) -> int:\n        return (\n            self._query(row2, col2)\n            - self._query(row1 - 1, col2)\n            - self._query(row2, col1 - 1)\n            + self._query(row1 - 1, col1 - 1)\n        )\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log M * log N)",
+    "space": "O(M * N)",
+    "variables": [
+      "M: rows in matrix",
+      "N: columns in matrix"
+    ],
+    "notes": "Both point updates and rectangle queries execute in logarithmic time in both dimensions.",
+    "whyNaiveFails": "Recomputing 2D prefix tables on every point update takes O(M * N) per write, causing timeouts on large operation sequences.",
+    "spaceTimeTradeoff": "Dual-axis Binary Indexed Tree delivers balanced O(log M * log N) reads and writes.",
+    "interviewerExpectation": "Correct 1-based bit manipulation and 2D inclusion-exclusion corner subtraction."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class NumMatrix:\n    def __init__(self, matrix: list[list[int]]):\n        self.m = len(matrix)\n        self.n = len(matrix[0]) if self.m > 0 else 0\n        self.vals = [[0] * self.n for _ in range(self.m)]\n        self.tree = [[0] * (self.n + 1) for _ in range(self.m + 1)]\n        for r in range(self.m):\n            for c in range(self.n):\n                self.update(r, c, matrix[r][c])\n\n    def update(self, row: int, col: int, val: int) -> None:\n        delta = val - self.vals[row][col]\n        self.vals[row][col] = val\n        r = row + 1\n        while r <= self.m:\n            c = col + 1\n            while c <= self.n:\n                self.tree[r][c] += delta\n                c += c & (-c)\n            r += r & (-r)\n\n    def _query(self, row: int, col: int) -> int:\n        total = 0\n        r = row + 1\n        while r > 0:\n            c = col + 1\n            while c > 0:\n                total += self.tree[r][c]\n                c -= c & (-c)\n            r -= r & (-r)\n        return total\n\n    def sumRegion(self, row1: int, col1: int, row2: int, col2: int) -> int:\n        return (\n            self._query(row2, col2)\n            - self._query(row1 - 1, col2)\n            - self._query(row2, col1 - 1)\n            + self._query(row1 - 1, col1 - 1)\n        )",
+      "approach": "2D Binary Indexed Tree with Inclusion-Exclusion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class NumMatrix {\nprivate:\n    int m, n;\n    vector<vector<int>> vals;\n    vector<vector<int>> tree;\n\n    int query(int row, int col) {\n        int total = 0;\n        for (int r = row + 1; r > 0; r -= r & -r) {\n            for (int c = col + 1; c > 0; c -= c & -c) {\n                total += tree[r][c];\n            }\n        }\n        return total;\n    }\npublic:\n    NumMatrix(vector<vector<int>>& matrix) {\n        m = matrix.size();\n        n = m > 0 ? matrix[0].size() : 0;\n        vals.assign(m, vector<int>(n, 0));\n        tree.assign(m + 1, vector<int>(n + 1, 0));\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                update(r, c, matrix[r][c]);\n            }\n        }\n    }\n\n    void update(int row, int col, int val) {\n        int delta = val - vals[row][col];\n        vals[row][col] = val;\n        for (int r = row + 1; r <= m; r += r & -r) {\n            for (int c = col + 1; c <= n; c += c & -c) {\n                tree[r][c] += delta;\n            }\n        }\n    }\n\n    int sumRegion(int row1, int col1, int row2, int col2) {\n        return query(row2, col2) - query(row1 - 1, col2) - query(row2, col1 - 1) + query(row1 - 1, col1 - 1);\n    }\n};",
+      "approach": "C++ 2D Fenwick Tree Point Update",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class NumMatrix {\n    private int m, n;\n    private int[][] vals;\n    private int[][] tree;\n\n    public NumMatrix(int[][] matrix) {\n        m = matrix.length;\n        n = m > 0 ? matrix[0].length : 0;\n        vals = new int[m][n];\n        tree = new int[m + 1][n + 1];\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                update(r, c, matrix[r][c]);\n            }\n        }\n    }\n\n    public void update(int row, int col, int val) {\n        int delta = val - vals[row][col];\n        vals[row][col] = val;\n        for (int r = row + 1; r <= m; r += r & -r) {\n            for (int c = col + 1; c <= n; c += c & -c) {\n                tree[r][c] += delta;\n            }\n        }\n    }\n\n    private int query(int row, int col) {\n        int total = 0;\n        for (int r = row + 1; r > 0; r -= r & -r) {\n            for (int c = col + 1; c > 0; c -= c & -c) {\n                total += tree[r][c];\n            }\n        }\n        return total;\n    }\n\n    public int sumRegion(int row1, int col1, int row2, int col2) {\n        return query(row2, col2) - query(row1 - 1, col2) - query(row2, col1 - 1) + query(row1 - 1, col1 - 1);\n    }\n}",
+      "approach": "Java 2D Binary Indexed Tree Matrix Aggregator",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} matrix\n */\nvar NumMatrix = function(matrix) {\n    this.m = matrix.length;\n    this.n = this.m > 0 ? matrix[0].length : 0;\n    this.vals = Array.from({ length: this.m }, () => new Array(this.n).fill(0));\n    this.tree = Array.from({ length: this.m + 1 }, () => new Array(this.n + 1).fill(0));\n    for (let r = 0; r < this.m; r++) {\n        for (let c = 0; c < this.n; c++) {\n            this.update(r, c, matrix[r][c]);\n        }\n    }\n};\n\n/** \n * @param {number} row \n * @param {number} col \n * @param {number} val\n * @return {void}\n */\nNumMatrix.prototype.update = function(row, col, val) {\n    const delta = val - this.vals[row][col];\n    this.vals[row][col] = val;\n    for (let r = row + 1; r <= this.m; r += r & -r) {\n        for (let c = col + 1; c <= this.n; c += c & -c) {\n            this.tree[r][c] += delta;\n        }\n    }\n};\n\nNumMatrix.prototype._query = function(row, col) {\n    let total = 0;\n    for (let r = row + 1; r > 0; r -= r & -r) {\n        for (let c = col + 1; c > 0; c -= c & -c) {\n            total += this.tree[r][c];\n        }\n    }\n    return total;\n};\n\n/** \n * @param {number} row1 \n * @param {number} col1 \n * @param {number} row2 \n * @param {number} col2\n * @return {number}\n */\nNumMatrix.prototype.sumRegion = function(row1, col1, row2, col2) {\n    return (\n        this._query(row2, col2) -\n        this._query(row1 - 1, col2) -\n        this._query(row2, col1 - 1) +\n        this._query(row1 - 1, col1 - 1)\n    );\n};",
+      "approach": "JavaScript 2D Tree with Dynamic Prefix Point Updates",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "design-snake-game",
+  "number": 353,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Ordered Body Coordinate Queue",
+      "text": "The moving snake advances its leading head cell while conditionally retracting its trailing tail position upon non-food steps."
+    },
+    {
+      "level": 2,
+      "title": "Tail Eviction and Collision Verification",
+      "text": "When stepping forward, pop the tail first before testing boundary limits or self-intersection, because moving into the cell vacated by the tail is valid."
+    },
+    {
+      "level": 3,
+      "title": "Movement State Blueprint",
+      "text": "Store body in a double-ended buffer and body cells in a hash set. Calculate new head coordinates. Check board bounds. Pop tail and remove from set. If new head in set, return -1. If food matches new head, consume food, re-add tail, increment score. Push new head and return score."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass SnakeGame:\n    def __init__(self, width: int, height: int, food: list[list[int]]):\n        self.width = width\n        self.height = height\n        self.food = deque(food)\n        self.body = deque([(0, 0)])\n        self.body_set = {(0, 0)}\n        self.score = 0\n        self.directions = {'U': (-1, 0), 'D': (1, 0), 'L': (0, -1), 'R': (0, 1)}\n\n    def move(self, direction: str) -> int:\n        dr, dc = self.directions[direction]\n        head_r, head_c = self.body[0]\n        nr, nc = head_r + dr, head_c + dc\n\n        if nr < 0 or nr >= self.height or nc < 0 or nc >= self.width:\n            return -1\n\n        tail = self.body.pop()\n        self.body_set.remove(tail)\n\n        if (nr, nc) in self.body_set:\n            return -1\n\n        if self.food and self.food[0] == [nr, nc]:\n            self.food.popleft()\n            self.body.append(tail)\n            self.body_set.add(tail)\n            self.score += 1\n\n        self.body.appendleft((nr, nc))\n        self.body_set.add((nr, nc))\n        return self.score\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1)",
+    "space": "O(W * H + F)",
+    "variables": [
+      "W, H: board dimensions",
+      "F: total food coordinates"
+    ],
+    "notes": "Each move executes in constant time using deque push/pop and set membership checks.",
+    "whyNaiveFails": "Scanning the full snake body array on every step to detect collisions takes O(L) time where L is snake length.",
+    "spaceTimeTradeoff": "Dual representations (deque for sequence, hash set for coordinates) guarantees O(1) step operations.",
+    "interviewerExpectation": "Correctly handling the case where the new head occupies the exact cell just vacated by the tail."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass SnakeGame:\n    def __init__(self, width: int, height: int, food: list[list[int]]):\n        self.width = width\n        self.height = height\n        self.food = deque(food)\n        self.body = deque([(0, 0)])\n        self.body_set = {(0, 0)}\n        self.score = 0\n        self.directions = {'U': (-1, 0), 'D': (1, 0), 'L': (0, -1), 'R': (0, 1)}\n\n    def move(self, direction: str) -> int:\n        dr, dc = self.directions[direction]\n        head_r, head_c = self.body[0]\n        nr, nc = head_r + dr, head_c + dc\n\n        if nr < 0 or nr >= self.height or nc < 0 or nc >= self.width:\n            return -1\n\n        tail = self.body.pop()\n        self.body_set.remove(tail)\n\n        if (nr, nc) in self.body_set:\n            return -1\n\n        if self.food and self.food[0] == [nr, nc]:\n            self.food.popleft()\n            self.body.append(tail)\n            self.body_set.add(tail)\n            self.score += 1\n\n        self.body.appendleft((nr, nc))\n        self.body_set.add((nr, nc))\n        return self.score",
+      "approach": "Deque and Coordinate Set State Machine",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class SnakeGame {\nprivate:\n    int width, height;\n    vector<vector<int>> food;\n    int foodIndex = 0;\n    deque<pair<int, int>> body;\n    set<pair<int, int>> bodySet;\npublic:\n    SnakeGame(int width, int height, vector<vector<int>>& food) : width(width), height(height), food(food) {\n        body.push_back({0, 0});\n        bodySet.insert({0, 0});\n    }\n\n    int move(string direction) {\n        int dr = 0, dc = 0;\n        if (direction == \"U\") dr = -1;\n        else if (direction == \"D\") dr = 1;\n        else if (direction == \"L\") dc = -1;\n        else if (direction == \"R\") dc = 1;\n\n        int nr = body.front().first + dr;\n        int nc = body.front().second + dc;\n\n        if (nr < 0 || nr >= height || nc < 0 || nc >= width) return -1;\n\n        auto tail = body.back();\n        body.pop_back();\n        bodySet.erase(tail);\n\n        if (bodySet.count({nr, nc})) return -1;\n\n        if (foodIndex < food.size() && food[foodIndex][0] == nr && food[foodIndex][1] == nc) {\n            foodIndex++;\n            body.push_back(tail);\n            bodySet.insert(tail);\n        }\n\n        body.push_front({nr, nc});\n        bodySet.insert({nr, nc});\n        return body.size() - 1;\n    }\n};",
+      "approach": "C++ Deque and Coordinate Set Body Tracker",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass SnakeGame {\n    private int width, height;\n    private int[][] food;\n    private int foodIndex = 0;\n    private Deque<Integer> body = new ArrayDeque<>();\n    private Set<Integer> bodySet = new HashSet<>();\n\n    public SnakeGame(int width, int height, int[][] food) {\n        this.width = width;\n        this.height = height;\n        this.food = food;\n        body.offerFirst(0);\n        bodySet.add(0);\n    }\n\n    public int move(String direction) {\n        int head = body.peekFirst();\n        int r = head / width;\n        int c = head % width;\n\n        if (direction.equals(\"U\")) r--;\n        else if (direction.equals(\"D\")) r++;\n        else if (direction.equals(\"L\")) c--;\n        else if (direction.equals(\"R\")) c++;\n\n        if (r < 0 || r >= height || c < 0 || c >= width) return -1;\n\n        int newHead = r * width + c;\n        int tail = body.pollLast();\n        bodySet.remove(tail);\n\n        if (bodySet.contains(newHead)) return -1;\n\n        if (foodIndex < food.length && food[foodIndex][0] == r && food[foodIndex][1] == c) {\n            foodIndex++;\n            body.offerLast(tail);\n            bodySet.add(tail);\n        }\n\n        body.offerFirst(newHead);\n        bodySet.add(newHead);\n        return body.size() - 1;\n    }\n}",
+      "approach": "Java 1D Encoded Hash Coordinate Snake Tracker",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} width\n * @param {number} height\n * @param {number[][]} food\n */\nvar SnakeGame = function(width, height, food) {\n    this.width = width;\n    this.height = height;\n    this.food = food;\n    this.foodIndex = 0;\n    this.body = [[0, 0]];\n    this.bodySet = new Set(['0,0']);\n};\n\n/** \n * @param {string} direction\n * @return {number}\n */\nSnakeGame.prototype.move = function(direction) {\n    const dirMap = { U: [-1, 0], D: [1, 0], L: [0, -1], R: [0, 1] };\n    const [dr, dc] = dirMap[direction];\n    const [headR, headC] = this.body[0];\n    const nr = headR + dr;\n    const nc = headC + dc;\n\n    if (nr < 0 || nr >= this.height || nc < 0 || nc >= this.width) return -1;\n\n    const tail = this.body.pop();\n    this.bodySet.delete(`${tail[0]},${tail[1]}`);\n\n    const key = `${nr},${nc}`;\n    if (this.bodySet.has(key)) return -1;\n\n    if (this.foodIndex < this.food.length && this.food[this.foodIndex][0] === nr && this.food[this.foodIndex][1] === nc) {\n        this.foodIndex++;\n        this.body.push(tail);\n        this.bodySet.add(`${tail[0]},${tail[1]}`);\n    }\n\n    this.body.unshift([nr, nc]);\n    this.bodySet.add(key);\n    return this.body.length - 1;\n};",
+      "approach": "JavaScript Set and Coordinate Array Queue",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

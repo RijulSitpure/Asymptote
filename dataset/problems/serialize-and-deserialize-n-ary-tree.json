@@ -1,0 +1,78 @@
+{
+  "slug": "serialize-and-deserialize-n-ary-tree",
+  "number": 428,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bfs-level-order"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Hierarchical Structure Linearization",
+      "text": "N-ary tree nodes possess an arbitrary number of branches. Recording each node value alongside its immediate child count creates an unambiguous linear encoding."
+    },
+    {
+      "level": 2,
+      "title": "Value-Length Pair Sequence Representation",
+      "text": "Serialize each node as its value followed by the integer count of its children. Deserialization pops the value, pops the child count, and recursively reconstructs the children."
+    },
+    {
+      "level": 3,
+      "title": "Token Stream Blueprint",
+      "text": "In serialize: depth-first search appending str(node.val) and str(len(node.children)), then recurse for each child. In deserialize: split string into tokens; pop val, pop count, create Node(val), loop count times appending recursive child results."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Codec:\n    def serialize(self, root: 'Node') -> str:\n        if not root:\n            return \"\"\n        tokens = []\n        def dfs(node):\n            tokens.append(str(node.val))\n            tokens.append(str(len(node.children)))\n            for child in node.children:\n                dfs(child)\n        dfs(root)\n        return \" \".join(tokens)\n\n    def deserialize(self, data: str) -> 'Node':\n        if not data:\n            return None\n        from collections import deque\n        tokens = deque(data.split())\n        def dfs():\n            val = int(tokens.popleft())\n            count = int(tokens.popleft())\n            node = Node(val, [])\n            for _ in range(count):\n                node.children.append(dfs())\n            return node\n        return dfs()\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total nodes in N-ary tree"
+    ],
+    "notes": "Visits each node once in linear encoding and decoding passes.",
+    "whyNaiveFails": "Omitting explicit child degree counts causes ambiguity when intermediate nodes have differing fanouts.",
+    "spaceTimeTradeoff": "Token pair encoding [val, childCount] uses exact 2N integers without trailing null padding.",
+    "interviewerExpectation": "Clean recursive reconstruction using token streams or queues."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Codec:\n    def serialize(self, root: 'Node') -> str:\n        if not root:\n            return \"\"\n        tokens = []\n        def dfs(node):\n            tokens.append(str(node.val))\n            tokens.append(str(len(node.children)))\n            for child in node.children:\n                dfs(child)\n        dfs(root)\n        return \" \".join(tokens)\n\n    def deserialize(self, data: str) -> 'Node':\n        if not data:\n            return None\n        from collections import deque\n        tokens = deque(data.split())\n        def dfs():\n            val = int(tokens.popleft())\n            count = int(tokens.popleft())\n            node = Node(val, [])\n            for _ in range(count):\n                node.children.append(dfs())\n            return node\n        return dfs()",
+      "approach": "Token Pair Pre-Order Encoding and Recursive Stream Decoding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Codec {\nprivate:\n    void serializeDfs(Node* root, stringstream& ss) {\n        if (!root) return;\n        ss << root->val << \" \" << root->children.size() << \" \";\n        for (Node* child : root->children) {\n            serializeDfs(child, ss);\n        }\n    }\n\n    Node* deserializeDfs(stringstream& ss) {\n        int val, count;\n        if (!(ss >> val >> count)) return nullptr;\n        Node* node = new Node(val);\n        for (int i = 0; i < count; ++i) {\n            node->children.push_back(deserializeDfs(ss));\n        }\n        return node;\n    }\npublic:\n    string serialize(Node* root) {\n        stringstream ss;\n        serializeDfs(root, ss);\n        return ss.str();\n    }\n\n    Node* deserialize(string data) {\n        if (data.empty()) return nullptr;\n        stringstream ss(data);\n        return deserializeDfs(ss);\n    }\n};",
+      "approach": "C++ StringStream Child Count Encoding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Codec {\n    private void serializeDfs(Node root, StringBuilder sb) {\n        if (root == null) return;\n        sb.append(root.val).append(\" \").append(root.children.size()).append(\" \");\n        for (Node child : root.children) {\n            serializeDfs(child, sb);\n        }\n    }\n\n    private Node deserializeDfs(Queue<String> queue) {\n        int val = Integer.parseInt(queue.poll());\n        int count = Integer.parseInt(queue.poll());\n        Node node = new Node(val, new ArrayList<>());\n        for (int i = 0; i < count; i++) {\n            node.children.add(deserializeDfs(queue));\n        }\n        return node;\n    }\n\n    public String serialize(Node root) {\n        if (root == null) return \"\";\n        StringBuilder sb = new StringBuilder();\n        serializeDfs(root, sb);\n        return sb.toString().trim();\n    }\n\n    public Node deserialize(String data) {\n        if (data.isEmpty()) return null;\n        Queue<String> queue = new LinkedList<>(Arrays.asList(data.split(\" \")));\n        return deserializeDfs(queue);\n    }\n}",
+      "approach": "Java Queue Preorder Degree Serialization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class Codec {\n    constructor() {}\n\n    /**\n     * @param {_Node|null} root\n     * @return {string}\n     */\n    serialize(root) {\n        if (!root) return \"\";\n        const tokens = [];\n        function dfs(node) {\n            tokens.push(node.val, node.children.length);\n            for (const child of node.children) {\n                dfs(child);\n            }\n        }\n        dfs(root);\n        return tokens.join(\" \");\n    }\n\n    /**\n     * @param {string} data\n     * @return {_Node|null}\n     */\n    deserialize(data) {\n        if (!data) return null;\n        const tokens = data.split(\" \");\n        let idx = 0;\n        function dfs() {\n            const val = parseInt(tokens[idx++], 10);\n            const count = parseInt(tokens[idx++], 10);\n            const node = new _Node(val, []);\n            for (let i = 0; i < count; i++) {\n                node.children.push(dfs());\n            }\n            return node;\n        }\n        return dfs();\n    }\n}",
+      "approach": "JavaScript Degree Token Sequence Linearization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

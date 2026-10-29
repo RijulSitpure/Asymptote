@@ -1,0 +1,78 @@
+{
+  "slug": "insert-delete-getrandom-o1-duplicates-allowed",
+  "number": 381,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Multi-Set Random Sampling Structure",
+      "text": "Supporting duplicate elements while guaranteeing equal probability random picks in constant time requires contiguous array indexing paired with inverted index groupings."
+    },
+    {
+      "level": 2,
+      "title": "Swap with Back for Constant Removal",
+      "text": "Store values in a contiguous array. Maintain a map from each value to the set of its indices in the array. To delete, swap the target value index with the last element of the array."
+    },
+    {
+      "level": 3,
+      "title": "Index Set Reassignment Blueprint",
+      "text": "On remove(val): pop an index from indices[val]. Let last_val = vals[-1]. If remove_idx does not equal last_idx, overwrite vals[remove_idx] = last_val, update indices[last_val] by removing last_idx and adding remove_idx. Pop vals."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport random\nfrom collections import defaultdict\n\nclass RandomizedCollection:\n    def __init__(self):\n        self.vals = []\n        self.indices = defaultdict(set)\n\n    def insert(self, val: int) -> bool:\n        not_present = len(self.indices[val]) == 0\n        self.indices[val].add(len(self.vals))\n        self.vals.append(val)\n        return not_present\n\n    def remove(self, val: int) -> bool:\n        if not self.indices[val]:\n            return False\n        remove_idx = self.indices[val].pop()\n        last_val = self.vals[-1]\n        last_idx = len(self.vals) - 1\n\n        if remove_idx != last_idx:\n            self.vals[remove_idx] = last_val\n            self.indices[last_val].remove(last_idx)\n            self.indices[last_val].add(remove_idx)\n\n        self.vals.pop()\n        return True\n\n    def getRandom(self) -> int:\n        return random.choice(self.vals)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1)",
+    "space": "O(N)",
+    "variables": [
+      "N: total elements in collection"
+    ],
+    "notes": "All operations execute in O(1) amortized time.",
+    "whyNaiveFails": "Array deletion without swapping takes O(N) due to element shifting; hash sets without arrays cannot pick random items in uniform O(1).",
+    "spaceTimeTradeoff": "Index sets maintain exact array positions to enable constant-time swaps.",
+    "interviewerExpectation": "Careful handling of edge cases where the removed item is already at the last position of the array."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import random\nfrom collections import defaultdict\n\nclass RandomizedCollection:\n    def __init__(self):\n        self.vals = []\n        self.indices = defaultdict(set)\n\n    def insert(self, val: int) -> bool:\n        not_present = len(self.indices[val]) == 0\n        self.indices[val].add(len(self.vals))\n        self.vals.append(val)\n        return not_present\n\n    def remove(self, val: int) -> bool:\n        if not self.indices[val]:\n            return False\n        remove_idx = self.indices[val].pop()\n        last_val = self.vals[-1]\n        last_idx = len(self.vals) - 1\n\n        if remove_idx != last_idx:\n            self.vals[remove_idx] = last_val\n            self.indices[last_val].remove(last_idx)\n            self.indices[last_val].add(remove_idx)\n\n        self.vals.pop()\n        return True\n\n    def getRandom(self) -> int:\n        return random.choice(self.vals)",
+      "approach": "Dynamic Array with Index Set Multi-Map",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class RandomizedCollection {\nprivate:\n    vector<int> vals;\n    unordered_map<int, unordered_set<int>> indices;\npublic:\n    RandomizedCollection() {}\n\n    bool insert(int val) {\n        bool notPresent = indices[val].empty();\n        indices[val].insert(vals.size());\n        vals.push_back(val);\n        return notPresent;\n    }\n\n    bool remove(int val) {\n        if (indices[val].empty()) return false;\n        int removeIdx = *indices[val].begin();\n        indices[val].erase(removeIdx);\n\n        int lastIdx = vals.size() - 1;\n        int lastVal = vals.back();\n\n        if (removeIdx != lastIdx) {\n            vals[removeIdx] = lastVal;\n            indices[lastVal].erase(lastIdx);\n            indices[lastVal].insert(removeIdx);\n        }\n        vals.pop_back();\n        return true;\n    }\n\n    int getRandom() {\n        return vals[rand() % vals.size()];\n    }\n};",
+      "approach": "C++ Vector with Unordered Map of Index Sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass RandomizedCollection {\n    private List<Integer> vals = new ArrayList<>();\n    private Map<Integer, Set<Integer>> indices = new HashMap<>();\n    private Random rand = new Random();\n\n    public RandomizedCollection() {}\n\n    public boolean insert(int val) {\n        boolean notPresent = !indices.containsKey(val) || indices.get(val).isEmpty();\n        indices.computeIfAbsent(val, k -> new LinkedHashSet<>()).add(vals.size());\n        vals.add(val);\n        return notPresent;\n    }\n\n    public boolean remove(int val) {\n        if (!indices.containsKey(val) || indices.get(val).isEmpty()) return false;\n        int removeIdx = indices.get(val).iterator().next();\n        indices.get(val).remove(removeIdx);\n\n        int lastIdx = vals.size() - 1;\n        int lastVal = vals.get(lastIdx);\n\n        if (removeIdx != lastIdx) {\n            vals.set(removeIdx, lastVal);\n            indices.get(lastVal).remove(lastIdx);\n            indices.get(lastVal).add(removeIdx);\n        }\n        vals.remove(lastIdx);\n        return true;\n    }\n\n    public int getRandom() {\n        return vals.get(rand.nextInt(vals.size()));\n    }\n}",
+      "approach": "Java ArrayList with LinkedHashSet of Indices",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var RandomizedCollection = function() {\n    this.vals = [];\n    this.indices = new Map();\n};\n\n/** \n * @param {number} val\n * @return {boolean}\n */\nRandomizedCollection.prototype.insert = function(val) {\n    const notPresent = !this.indices.has(val) || this.indices.get(val).size === 0;\n    if (!this.indices.has(val)) this.indices.set(val, new Set());\n    this.indices.get(val).add(this.vals.length);\n    this.vals.push(val);\n    return notPresent;\n};\n\n/** \n * @param {number} val\n * @return {boolean}\n */\nRandomizedCollection.prototype.remove = function(val) {\n    if (!this.indices.has(val) || this.indices.get(val).size === 0) return false;\n    const set = this.indices.get(val);\n    const removeIdx = set.values().next().value;\n    set.delete(removeIdx);\n\n    const lastIdx = this.vals.length - 1;\n    const lastVal = this.vals[lastIdx];\n\n    if (removeIdx !== lastIdx) {\n        this.vals[removeIdx] = lastVal;\n        const lastSet = this.indices.get(lastVal);\n        lastSet.delete(lastIdx);\n        lastSet.add(removeIdx);\n    }\n    this.vals.pop();\n    return true;\n};\n\n/**\n * @return {number}\n */\nRandomizedCollection.prototype.getRandom = function() {\n    const idx = Math.floor(Math.random() * this.vals.length);\n    return this.vals[idx];\n};",
+      "approach": "JavaScript Array Swapping with Index Map of Sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

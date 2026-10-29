@@ -1,0 +1,78 @@
+{
+  "slug": "random-point-in-non-overlapping-rectangles",
+  "number": 497,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Weighted Discrete Area Selection",
+      "text": "To ensure each integer point across non-overlapping rectangles has an equal probability of selection, rectangles must be chosen with probability proportional to the number of points they contain."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Sum Array of Point Counts",
+      "text": "Compute the number of integer points inside each rectangle as width times height. Build a prefix sum array and use binary search to pick a rectangle."
+    },
+    {
+      "level": 3,
+      "title": "Two-Stage Sampling Blueprint",
+      "text": "Precompute prefix sums of point counts for each rectangle. In pick(): sample a random target between 1 and total points. Use bisect_left on prefix sums to locate the rectangle. Pick random x and y uniformly within that rectangle."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\nimport random\n\nclass Solution:\n    def __init__(self, rects: list[list[int]]):\n        self.rects = rects\n        self.prefix = []\n        total = 0\n        for x1, y1, x2, y2 in rects:\n            points = (x2 - x1 + 1) * (y2 - y1 + 1)\n            total += points\n            self.prefix.append(total)\n        self.total = total\n\n    def pick(self) -> list[int]:\n        target = random.randint(1, self.total)\n        idx = bisect.bisect_left(self.prefix, target)\n        x1, y1, x2, y2 = self.rects[idx]\n        return [random.randint(x1, x2), random.randint(y1, y2)]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of rectangles"
+    ],
+    "notes": "Initial construction builds prefix array in O(N); each pick runs in O(log N) binary search time.",
+    "whyNaiveFails": "Picking rectangles uniformly creates bias toward points in smaller rectangles.",
+    "spaceTimeTradeoff": "Prefix sum array enables logarithmic binary search rectangle selection.",
+    "interviewerExpectation": "Correct point count formula including both endpoints: (x2 - x1 + 1) * (y2 - y1 + 1)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\nimport random\n\nclass Solution:\n    def __init__(self, rects: list[list[int]]):\n        self.rects = rects\n        self.prefix = []\n        total = 0\n        for x1, y1, x2, y2 in rects:\n            points = (x2 - x1 + 1) * (y2 - y1 + 1)\n            total += points\n            self.prefix.append(total)\n        self.total = total\n\n    def pick(self) -> list[int]:\n        target = random.randint(1, self.total)\n        idx = bisect.bisect_left(self.prefix, target)\n        x1, y1, x2, y2 = self.rects[idx]\n        return [random.randint(x1, x2), random.randint(y1, y2)]",
+      "approach": "Prefix Sum of Integer Points with Binary Search Selection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\nprivate:\n    vector<vector<int>> rects;\n    vector<int> prefix;\n    int total = 0;\npublic:\n    Solution(vector<vector<int>>& rects) : rects(rects) {\n        for (const auto& r : rects) {\n            int pts = (r[2] - r[0] + 1) * (r[3] - r[1] + 1);\n            total += pts;\n            prefix.push_back(total);\n        }\n    }\n\n    vector<int> pick() {\n        int target = rand() % total + 1;\n        int idx = lower_bound(prefix.begin(), prefix.end(), target) - prefix.begin();\n        const auto& r = rects[idx];\n        int x = r[0] + rand() % (r[2] - r[0] + 1);\n        int y = r[1] + rand() % (r[3] - r[1] + 1);\n        return {x, y};\n    }\n};",
+      "approach": "C++ Prefix Sums with std::lower_bound Point Picker",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int[][] rects;\n    private int[] prefix;\n    private int total = 0;\n    private Random rand = new Random();\n\n    public Solution(int[][] rects) {\n        this.rects = rects;\n        this.prefix = new int[rects.length];\n        for (int i = 0; i < rects.length; i++) {\n            int pts = (rects[i][2] - rects[i][0] + 1) * (rects[i][3] - rects[i][1] + 1);\n            total += pts;\n            prefix[i] = total;\n        }\n    }\n\n    public int[] pick() {\n        int target = rand.nextInt(total) + 1;\n        int l = 0, r = prefix.length - 1;\n        while (l < r) {\n            int mid = (l + r) >>> 1;\n            if (prefix[mid] >= target) r = mid;\n            else l = mid + 1;\n        }\n        int[] rect = rects[l];\n        int x = rect[0] + rand.nextInt(rect[2] - rect[0] + 1);\n        int y = rect[1] + rand.nextInt(rect[3] - rect[1] + 1);\n        return new int[]{x, y};\n    }\n}",
+      "approach": "Java Binary Search Weighted Point Sampler",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} rects\n */\nvar Solution = function(rects) {\n    this.rects = rects;\n    this.prefix = [];\n    let total = 0;\n    for (const [x1, y1, x2, y2] of rects) {\n        const pts = (x2 - x1 + 1) * (y2 - y1 + 1);\n        total += pts;\n        this.prefix.push(total);\n    }\n    this.total = total;\n};\n\n/**\n * @return {number[]}\n */\nSolution.prototype.pick = function() {\n    const target = Math.floor(Math.random() * this.total) + 1;\n    let l = 0, r = this.prefix.length - 1;\n    while (l < r) {\n        const mid = (l + r) >> 1;\n        if (this.prefix[mid] >= target) r = mid;\n        else l = mid + 1;\n    }\n    const [x1, y1, x2, y2] = this.rects[l];\n    const x = x1 + Math.floor(Math.random() * (x2 - x1 + 1));\n    const y = y1 + Math.floor(Math.random() * (y2 - y1 + 1));\n    return [x, y];\n};",
+      "approach": "JavaScript Binary Search Weighted Rectangle Picker",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

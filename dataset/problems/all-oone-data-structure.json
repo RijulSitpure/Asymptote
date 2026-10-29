@@ -1,0 +1,78 @@
+{
+  "slug": "all-oone-data-structure",
+  "number": 432,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Strict Constant-Time Extrema Frequency Tracking",
+      "text": "Maintaining key increment and decrement operations alongside instant retrieval of minimum and maximum frequency strings requires grouping keys by frequency buckets."
+    },
+    {
+      "level": 2,
+      "title": "Doubly-Linked Bucket List with Key Dictionary",
+      "text": "Maintain an ordered doubly linked chain of bucket nodes where each node stores a distinct frequency value and a set of keys. Map each key to its corresponding bucket node."
+    },
+    {
+      "level": 3,
+      "title": "Bucket Migration Blueprint",
+      "text": "On inc(key): if key exists, move from bucket c to bucket c + 1; create bucket c + 1 if needed. Remove key from bucket c, deleting empty bucket. On dec(key): move from c to c - 1. Max key is any key in tail.prev; min key is any key in head.next."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Node:\n    def __init__(self, count=0):\n        self.count = count\n        self.keys = set()\n        self.prev = None\n        self.next = None\n\nclass AllOne:\n    def __init__(self):\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n        self.key_to_node = {}\n\n    def _insert_after(self, prev_node, new_node):\n        new_node.prev = prev_node\n        new_node.next = prev_node.next\n        prev_node.next.prev = new_node\n        prev_node.next = new_node\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def inc(self, key: str) -> None:\n        if key in self.key_to_node:\n            cur = self.key_to_node[key]\n            nxt = cur.next\n            cur.keys.remove(key)\n            if nxt == self.tail or nxt.count != cur.count + 1:\n                new_node = Node(cur.count + 1)\n                self._insert_after(cur, new_node)\n                nxt = new_node\n            nxt.keys.add(key)\n            self.key_to_node[key] = nxt\n            if not cur.keys:\n                self._remove(cur)\n        else:\n            first = self.head.next\n            if first == self.tail or first.count != 1:\n                new_node = Node(1)\n                self._insert_after(self.head, new_node)\n                first = new_node\n            first.keys.add(key)\n            self.key_to_node[key] = first\n\n    def dec(self, key: str) -> None:\n        if key not in self.key_to_node:\n            return\n        cur = self.key_to_node[key]\n        cur.keys.remove(key)\n        if cur.count == 1:\n            del self.key_to_node[key]\n        else:\n            prv = cur.prev\n            if prv == self.head or prv.count != cur.count - 1:\n                new_node = Node(cur.count - 1)\n                self._insert_after(prv, new_node)\n                prv = new_node\n            prv.keys.add(key)\n            self.key_to_node[key] = prv\n        if not cur.keys:\n            self._remove(cur)\n\n    def getMaxKey(self) -> str:\n        if self.tail.prev == self.head:\n            return \"\"\n        return next(iter(self.tail.prev.keys))\n\n    def getMinKey(self) -> str:\n        if self.head.next == self.tail:\n            return \"\"\n        return next(iter(self.head.next.keys))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1)",
+    "space": "O(N)",
+    "variables": [
+      "N: total unique string keys"
+    ],
+    "notes": "Every operation (inc, dec, getMaxKey, getMinKey) executes in O(1) worst-case time.",
+    "whyNaiveFails": "Tree maps or heaps incur O(log N) updates upon every increment or decrement.",
+    "spaceTimeTradeoff": "Doubly-linked bucket chain guarantees O(1) adjacency updates without sorting.",
+    "interviewerExpectation": "Seamless cleanup of empty bucket nodes to keep head.next and tail.prev always valid."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Node:\n    def __init__(self, count=0):\n        self.count = count\n        self.keys = set()\n        self.prev = None\n        self.next = None\n\nclass AllOne:\n    def __init__(self):\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n        self.key_to_node = {}\n\n    def _insert_after(self, prev_node, new_node):\n        new_node.prev = prev_node\n        new_node.next = prev_node.next\n        prev_node.next.prev = new_node\n        prev_node.next = new_node\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def inc(self, key: str) -> None:\n        if key in self.key_to_node:\n            cur = self.key_to_node[key]\n            nxt = cur.next\n            cur.keys.remove(key)\n            if nxt == self.tail or nxt.count != cur.count + 1:\n                new_node = Node(cur.count + 1)\n                self._insert_after(cur, new_node)\n                nxt = new_node\n            nxt.keys.add(key)\n            self.key_to_node[key] = nxt\n            if not cur.keys:\n                self._remove(cur)\n        else:\n            first = self.head.next\n            if first == self.tail or first.count != 1:\n                new_node = Node(1)\n                self._insert_after(self.head, new_node)\n                first = new_node\n            first.keys.add(key)\n            self.key_to_node[key] = first\n\n    def dec(self, key: str) -> None:\n        if key not in self.key_to_node:\n            return\n        cur = self.key_to_node[key]\n        cur.keys.remove(key)\n        if cur.count == 1:\n            del self.key_to_node[key]\n        else:\n            prv = cur.prev\n            if prv == self.head or prv.count != cur.count - 1:\n                new_node = Node(cur.count - 1)\n                self._insert_after(prv, new_node)\n                prv = new_node\n            prv.keys.add(key)\n            self.key_to_node[key] = prv\n        if not cur.keys:\n            self._remove(cur)\n\n    def getMaxKey(self) -> str:\n        if self.tail.prev == self.head:\n            return \"\"\n        return next(iter(self.tail.prev.keys))\n\n    def getMinKey(self) -> str:\n        if self.head.next == self.tail:\n            return \"\"\n        return next(iter(self.head.next.keys))",
+      "approach": "Doubly-Linked Bucket List with Key Dictionary Mapping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class AllOne {\nprivate:\n    struct Bucket {\n        int count;\n        unordered_set<string> keys;\n    };\n    list<Bucket> buckets;\n    unordered_map<string, list<Bucket>::iterator> keyToBucket;\npublic:\n    AllOne() {}\n\n    void inc(string key) {\n        if (!keyToBucket.count(key)) {\n            if (buckets.empty() || buckets.front().count > 1) {\n                buckets.push_front({1, {key}});\n            } else {\n                buckets.front().keys.insert(key);\n            }\n            keyToBucket[key] = buckets.begin();\n        } else {\n            auto cur = keyToBucket[key];\n            auto nxt = std::next(cur);\n            if (nxt == buckets.end() || nxt->count > cur->count + 1) {\n                nxt = buckets.insert(nxt, {cur->count + 1, {}});\n            }\n            nxt->keys.insert(key);\n            keyToBucket[key] = nxt;\n            cur->keys.erase(key);\n            if (cur->keys.empty()) buckets.erase(cur);\n        }\n    }\n\n    void dec(string key) {\n        if (!keyToBucket.count(key)) return;\n        auto cur = keyToBucket[key];\n        cur->keys.erase(key);\n        if (cur->count == 1) {\n            keyToBucket.erase(key);\n        } else {\n            auto prv = (cur == buckets.begin()) ? buckets.end() : std::prev(cur);\n            if (cur == buckets.begin() || prv->count < cur->count - 1) {\n                prv = buckets.insert(cur, {cur->count - 1, {}});\n            }\n            prv->keys.insert(key);\n            keyToBucket[key] = prv;\n        }\n        if (cur->keys.empty()) buckets.erase(cur);\n    }\n\n    string getMaxKey() {\n        return buckets.empty() ? \"\" : *buckets.back().keys.begin();\n    }\n\n    string getMinKey() {\n        return buckets.empty() ? \"\" : *buckets.front().keys.begin();\n    }\n};",
+      "approach": "C++ std::list Bucket Splice with Hash Map Iterator Lookups",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class AllOne {\n    private static class Node {\n        int count;\n        Set<String> keys = new HashSet<>();\n        Node prev, next;\n        Node(int count) { this.count = count; }\n    }\n\n    private Node head = new Node(0);\n    private Node tail = new Node(0);\n    private Map<String, Node> keyToNode = new HashMap<>();\n\n    public AllOne() {\n        head.next = tail;\n        tail.prev = head;\n    }\n\n    private void insertAfter(Node prev, Node cur) {\n        cur.prev = prev;\n        cur.next = prev.next;\n        prev.next.prev = cur;\n        prev.next = cur;\n    }\n\n    private void remove(Node node) {\n        node.prev.next = node.next;\n        node.next.prev = node.prev;\n    }\n\n    public void inc(String key) {\n        if (keyToNode.containsKey(key)) {\n            Node cur = keyToNode.get(key);\n            Node nxt = cur.next;\n            cur.keys.remove(key);\n            if (nxt == tail || nxt.count != cur.count + 1) {\n                Node newNode = new Node(cur.count + 1);\n                insertAfter(cur, newNode);\n                nxt = newNode;\n            }\n            nxt.keys.add(key);\n            keyToNode.put(key, nxt);\n            if (cur.keys.isEmpty()) remove(cur);\n        } else {\n            Node first = head.next;\n            if (first == tail || first.count != 1) {\n                Node newNode = new Node(1);\n                insertAfter(head, newNode);\n                first = newNode;\n            }\n            first.keys.add(key);\n            keyToNode.put(key, first);\n        }\n    }\n\n    public void dec(String key) {\n        if (!keyToNode.containsKey(key)) return;\n        Node cur = keyToNode.get(key);\n        cur.keys.remove(key);\n        if (cur.count == 1) {\n            keyToNode.remove(key);\n        } else {\n            Node prv = cur.prev;\n            if (prv == head || prv.count != cur.count - 1) {\n                Node newNode = new Node(cur.count - 1);\n                insertAfter(prv, newNode);\n                prv = newNode;\n            }\n            prv.keys.add(key);\n            keyToNode.put(key, prv);\n        }\n        if (cur.keys.isEmpty()) remove(cur);\n    }\n\n    public String getMaxKey() {\n        return tail.prev == head ? \"\" : tail.prev.keys.iterator().next();\n    }\n\n    public String getMinKey() {\n        return head.next == tail ? \"\" : head.next.keys.iterator().next();\n    }\n}",
+      "approach": "Java Doubly-Linked Frequency Buckets with Key Map",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class Node {\n    constructor(count = 0) {\n        this.count = count;\n        this.keys = new Set();\n        this.prev = null;\n        this.next = null;\n    }\n}\n\nvar AllOne = function() {\n    this.head = new Node();\n    this.tail = new Node();\n    this.head.next = this.tail;\n    this.tail.prev = this.head;\n    this.map = new Map();\n};\n\nAllOne.prototype._insertAfter = function(prevNode, newNode) {\n    newNode.prev = prevNode;\n    newNode.next = prevNode.next;\n    prevNode.next.prev = newNode;\n    prevNode.next = newNode;\n};\n\nAllOne.prototype._remove = function(node) {\n    node.prev.next = node.next;\n    node.next.prev = node.prev;\n};\n\nAllOne.prototype.inc = function(key) {\n    if (this.map.has(key)) {\n        const cur = this.map.get(key);\n        let nxt = cur.next;\n        cur.keys.delete(key);\n        if (nxt === this.tail || nxt.count !== cur.count + 1) {\n            const newNode = new Node(cur.count + 1);\n            this._insertAfter(cur, newNode);\n            nxt = newNode;\n        }\n        nxt.keys.add(key);\n        this.map.set(key, nxt);\n        if (cur.keys.size === 0) this._remove(cur);\n    } else {\n        let first = this.head.next;\n        if (first === this.tail || first.count !== 1) {\n            const newNode = new Node(1);\n            this._insertAfter(this.head, newNode);\n            first = newNode;\n        }\n        first.keys.add(key);\n        this.map.set(key, first);\n    }\n};\n\nAllOne.prototype.dec = function(key) {\n    if (!this.map.has(key)) return;\n    const cur = this.map.get(key);\n    cur.keys.delete(key);\n    if (cur.count === 1) {\n        this.map.delete(key);\n    } else {\n        let prv = cur.prev;\n        if (prv === this.head || prv.count !== cur.count - 1) {\n            const newNode = new Node(cur.count - 1);\n            this._insertAfter(prv, newNode);\n            prv = newNode;\n        }\n        prv.keys.add(key);\n        this.map.set(key, prv);\n    }\n    if (cur.keys.size === 0) this._remove(cur);\n};\n\nAllOne.prototype.getMaxKey = function() {\n    if (this.tail.prev === this.head) return \"\";\n    return this.tail.prev.keys.values().next().value;\n};\n\nAllOne.prototype.getMinKey = function() {\n    if (this.head.next === this.tail) return \"\";\n    return this.head.next.keys.values().next().value;\n};",
+      "approach": "JavaScript Doubly Linked Bucket Set System",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

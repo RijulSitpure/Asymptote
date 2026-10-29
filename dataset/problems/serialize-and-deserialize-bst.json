@@ -1,0 +1,78 @@
+{
+  "slug": "serialize-and-deserialize-bst",
+  "number": 449,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bst-properties"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Ordered Binary Search Property Rebuilding",
+      "text": "The search ordering constraint implies that a preorder sequence alone determines tree structure without requiring null markers."
+    },
+    {
+      "level": 2,
+      "title": "Recursive Range Partitioning",
+      "text": "Serialize using preorder traversal. During deserialization, reconstruct nodes recursively by enforcing lower and upper numeric boundaries for each subtree."
+    },
+    {
+      "level": 3,
+      "title": "Bounded Reconstruction Blueprint",
+      "text": "In serialize: append node.val in preorder. In deserialize: parse tokens into queue of integers. Define build(min_val, max_val): peek queue; if empty or value out of bounds return None; pop value, instantiate node, set left = build(min, val) and right = build(val, max)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Codec:\n    def serialize(self, root: Optional[TreeNode]) -> str:\n        vals = []\n        def preorder(node):\n            if node:\n                vals.append(str(node.val))\n                preorder(node.left)\n                preorder(node.right)\n        preorder(root)\n        return \" \".join(vals)\n\n    def deserialize(self, data: str) -> Optional[TreeNode]:\n        if not data:\n            return None\n        from collections import deque\n        vals = deque(int(x) for x in data.split())\n        def build(min_val, max_val):\n            if not vals or not (min_val < vals[0] < max_val):\n                return None\n            val = vals.popleft()\n            node = TreeNode(val)\n            node.left = build(min_val, val)\n            node.right = build(val, max_val)\n            return node\n        return build(float('-inf'), float('inf'))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in tree"
+    ],
+    "notes": "Preorder traversal and bounded parsing each process every node in linear time.",
+    "whyNaiveFails": "General tree serializers store null sentinels, which waste unnecessary bandwidth on BST structures.",
+    "spaceTimeTradeoff": "BST range constraints eliminate sentinel storage completely.",
+    "interviewerExpectation": "O(N) reconstruction using min/max bounds rather than searching for split indices in O(N^2)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Codec:\n    def serialize(self, root: Optional[TreeNode]) -> str:\n        vals = []\n        def preorder(node):\n            if node:\n                vals.append(str(node.val))\n                preorder(node.left)\n                preorder(node.right)\n        preorder(root)\n        return \" \".join(vals)\n\n    def deserialize(self, data: str) -> Optional[TreeNode]:\n        if not data:\n            return None\n        from collections import deque\n        vals = deque(int(x) for x in data.split())\n        def build(min_val, max_val):\n            if not vals or not (min_val < vals[0] < max_val):\n                return None\n            val = vals.popleft()\n            node = TreeNode(val)\n            node.left = build(min_val, val)\n            node.right = build(val, max_val)\n            return node\n        return build(float('-inf'), float('inf'))",
+      "approach": "Preorder Stream Serialization with Range-Bounded Reconstruction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Codec {\nprivate:\n    void serializePreorder(TreeNode* root, stringstream& ss) {\n        if (!root) return;\n        ss << root->val << \" \";\n        serializePreorder(root->left, ss);\n        serializePreorder(root->right, ss);\n    }\n\n    TreeNode* build(queue<int>& q, int minVal, int maxVal) {\n        if (q.empty() || q.front() <= minVal || q.front() >= maxVal) return nullptr;\n        int val = q.front();\n        q.pop();\n        TreeNode* node = new TreeNode(val);\n        node->left = build(q, minVal, val);\n        node->right = build(q, val, maxVal);\n        return node;\n    }\npublic:\n    string serialize(TreeNode* root) {\n        stringstream ss;\n        serializePreorder(root, ss);\n        return ss.str();\n    }\n\n    TreeNode* deserialize(string data) {\n        if (data.empty()) return nullptr;\n        stringstream ss(data);\n        queue<int> q;\n        int val;\n        while (ss >> val) q.push(val);\n        return build(q, INT_MIN, INT_MAX);\n    }\n};",
+      "approach": "C++ Bounded Range BST Serialization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Codec {\n    private void preorder(TreeNode root, StringBuilder sb) {\n        if (root == null) return;\n        sb.append(root.val).append(\" \");\n        preorder(root.left, sb);\n        preorder(root.right, sb);\n    }\n\n    private TreeNode build(Queue<Integer> q, int minVal, int maxVal) {\n        if (q.isEmpty() || q.peek() <= minVal || q.peek() >= maxVal) return null;\n        int val = q.poll();\n        TreeNode node = new TreeNode(val);\n        node.left = build(q, minVal, val);\n        node.right = build(q, val, maxVal);\n        return node;\n    }\n\n    public String serialize(TreeNode root) {\n        if (root == null) return \"\";\n        StringBuilder sb = new StringBuilder();\n        preorder(root, sb);\n        return sb.toString().trim();\n    }\n\n    public TreeNode deserialize(String data) {\n        if (data.isEmpty()) return null;\n        Queue<Integer> q = new LinkedList<>();\n        for (String s : data.split(\" \")) {\n            q.offer(Integer.parseInt(s));\n        }\n        return build(q, Integer.MIN_VALUE, Integer.MAX_VALUE);\n    }\n}",
+      "approach": "Java Bounded Preorder BST Codec",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var serialize = function(root) {\n    const vals = [];\n    function preorder(node) {\n        if (!node) return;\n        vals.push(node.val);\n        preorder(node.left);\n        preorder(node.right);\n    }\n    preorder(root);\n    return vals.join(\" \");\n};\n\nvar deserialize = function(data) {\n    if (!data) return null;\n    const vals = data.split(\" \").map(Number);\n    let idx = 0;\n    function build(minVal, maxVal) {\n        if (idx >= vals.length || vals[idx] <= minVal || vals[idx] >= maxVal) {\n            return null;\n        }\n        const val = vals[idx++];\n        const node = new TreeNode(val);\n        node.left = build(minVal, val);\n        node.right = build(val, maxVal);\n        return node;\n    }\n    return build(-Infinity, Infinity);\n};",
+      "approach": "JavaScript Range-Bounded Preorder Decoder",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

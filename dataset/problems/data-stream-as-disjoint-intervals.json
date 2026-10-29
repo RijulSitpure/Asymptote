@@ -1,0 +1,78 @@
+{
+  "slug": "data-stream-as-disjoint-intervals",
+  "number": 352,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Continuous Range Coalescing",
+      "text": "Adding incoming numbers into an ordered collection of non-overlapping spans requires checking whether adjacent spans can be merged together."
+    },
+    {
+      "level": 2,
+      "title": "Ordered Interval Insertion Points",
+      "text": "Locate where the new value falls relative to existing disjoint intervals. Determine whether it extends the left neighbor, connects to the right neighbor, bridges both, or forms a new unit range."
+    },
+    {
+      "level": 3,
+      "title": "Four-Way Merge Blueprint",
+      "text": "Locate insertion index using bisect. If already covered by left interval, return early. Check left_merge (left.end + 1 == val) and right_merge (right.start - 1 == val). Merge both by expanding left and removing right, or extend either, or insert [val, val]."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\n\nclass SummaryRanges:\n    def __init__(self):\n        self.intervals = []\n\n    def addNum(self, value: int) -> None:\n        idx = bisect.bisect_right(self.intervals, [value, float('inf')])\n        if idx > 0 and self.intervals[idx - 1][1] >= value:\n            return\n\n        left_merge = idx > 0 and self.intervals[idx - 1][1] + 1 == value\n        right_merge = idx < len(self.intervals) and self.intervals[idx][0] - 1 == value\n\n        if left_merge and right_merge:\n            self.intervals[idx - 1][1] = self.intervals[idx][1]\n            self.intervals.pop(idx)\n        elif left_merge:\n            self.intervals[idx - 1][1] = value\n        elif right_merge:\n            self.intervals[idx][0] = value\n        else:\n            self.intervals.insert(idx, [value, value])\n\n    def getIntervals(self) -> list[list[int]]:\n        return self.intervals\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of active disjoint intervals"
+    ],
+    "notes": "Bisection lookup takes O(log N) while array shifting takes O(N) worst-case.",
+    "whyNaiveFails": "Rebuilding and sorting all discrete integers from scratch takes O(K log K) per query.",
+    "spaceTimeTradeoff": "Storing only boundary pairs minimizes memory footprint while supporting fast consecutive coalescing.",
+    "interviewerExpectation": "Accurate boundary detection and bridging when a single point bridges two neighboring intervals."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass SummaryRanges:\n    def __init__(self):\n        self.intervals = []\n\n    def addNum(self, value: int) -> None:\n        idx = bisect.bisect_right(self.intervals, [value, float('inf')])\n        if idx > 0 and self.intervals[idx - 1][1] >= value:\n            return\n\n        left_merge = idx > 0 and self.intervals[idx - 1][1] + 1 == value\n        right_merge = idx < len(self.intervals) and self.intervals[idx][0] - 1 == value\n\n        if left_merge and right_merge:\n            self.intervals[idx - 1][1] = self.intervals[idx][1]\n            self.intervals.pop(idx)\n        elif left_merge:\n            self.intervals[idx - 1][1] = value\n        elif right_merge:\n            self.intervals[idx][0] = value\n        else:\n            self.intervals.insert(idx, [value, value])\n\n    def getIntervals(self) -> list[list[int]]:\n        return self.intervals",
+      "approach": "Binary Search Insertion with Four-Way Interval Coalescing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class SummaryRanges {\nprivate:\n    map<int, int> intervals; // start -> end\npublic:\n    SummaryRanges() {}\n\n    void addNum(int value) {\n        auto it = intervals.upper_bound(value);\n        int l = value, r = value;\n        if (it != intervals.begin()) {\n            auto prev = std::prev(it);\n            if (prev->second >= value) return;\n            if (prev->second + 1 == value) {\n                l = prev->first;\n                intervals.erase(prev);\n            }\n        }\n        if (it != intervals.end() && it->first - 1 == value) {\n            r = it->second;\n            intervals.erase(it);\n        }\n        intervals[l] = r;\n    }\n\n    vector<vector<int>> getIntervals() {\n        vector<vector<int>> res;\n        for (const auto& [start, end] : intervals) {\n            res.push_back({start, end});\n        }\n        return res;\n    }\n};",
+      "approach": "C++ Ordered Map Disjoint Intervals",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass SummaryRanges {\n    private TreeMap<Integer, Integer> intervals;\n\n    public SummaryRanges() {\n        intervals = new TreeMap<>();\n    }\n\n    public void addNum(int value) {\n        if (intervals.containsKey(value)) return;\n        Integer low = intervals.lowerKey(value);\n        Integer high = intervals.higherKey(value);\n\n        if (low != null && intervals.get(low) >= value) {\n            return;\n        }\n\n        boolean leftMerge = low != null && intervals.get(low) + 1 == value;\n        boolean rightMerge = high != null && high - 1 == value;\n\n        if (leftMerge && rightMerge) {\n            intervals.put(low, intervals.get(high));\n            intervals.remove(high);\n        } else if (leftMerge) {\n            intervals.put(low, value);\n        } else if (rightMerge) {\n            intervals.put(value, intervals.get(high));\n            intervals.remove(high);\n        } else {\n            intervals.put(value, value);\n        }\n    }\n\n    public int[][] getIntervals() {\n        int[][] res = new int[intervals.size()][2];\n        int i = 0;\n        for (Map.Entry<Integer, Integer> entry : intervals.entrySet()) {\n            res[i++] = new int[]{entry.getKey(), entry.getValue()};\n        }\n        return res;\n    }\n}",
+      "approach": "Java TreeMap Interval Merging",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var SummaryRanges = function() {\n    this.intervals = [];\n};\n\n/** \n * @param {number} value\n * @return {void}\n */\nSummaryRanges.prototype.addNum = function(value) {\n    let l = 0, r = this.intervals.length;\n    while (l < r) {\n        const mid = (l + r) >> 1;\n        if (this.intervals[mid][0] <= value) l = mid + 1;\n        else r = mid;\n    }\n    const idx = l;\n    if (idx > 0 && this.intervals[idx - 1][1] >= value) {\n        return;\n    }\n\n    const leftMerge = idx > 0 && this.intervals[idx - 1][1] + 1 === value;\n    const rightMerge = idx < this.intervals.length && this.intervals[idx][0] - 1 === value;\n\n    if (leftMerge && rightMerge) {\n        this.intervals[idx - 1][1] = this.intervals[idx][1];\n        this.intervals.splice(idx, 1);\n    } else if (leftMerge) {\n        this.intervals[idx - 1][1] = value;\n    } else if (rightMerge) {\n        this.intervals[idx][0] = value;\n    } else {\n        this.intervals.splice(idx, 0, [value, value]);\n    }\n};\n\n/**\n * @return {number[][]}\n */\nSummaryRanges.prototype.getIntervals = function() {\n    return this.intervals;\n};",
+      "approach": "JavaScript Binary Search Range Merging",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

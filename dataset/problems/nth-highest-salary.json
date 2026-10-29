@@ -1,0 +1,71 @@
+{
+  "slug": "nth-highest-salary",
+  "number": 177,
+  "category": "Database",
+  "patterns": [
+    "nth-highest-limit-offset"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Parameterized Rank Offset Extraction",
+      "text": "Extracting the n-th distinct pay grade requires skipping preceding top values and handling tables with insufficient distinct records."
+    },
+    {
+      "level": 2,
+      "title": "Zero-Based Offset Calculation",
+      "text": "The n-th largest distinct value corresponds to a zero-based offset of n minus one. Sorting unique amounts in descending order isolates the candidate."
+    },
+    {
+      "level": 3,
+      "title": "Function Definition Blueprint",
+      "text": "In MySQL, declare n = n - 1. Return scalar query: select distinct salary from Employee order by salary desc limit 1 offset n."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nCREATE FUNCTION getNthHighestSalary(N INT) RETURNS INT\nBEGIN\nSET N = N - 1;\n  RETURN (\n      SELECT DISTINCT salary\n      FROM Employee\n      ORDER BY salary DESC\n      LIMIT 1 OFFSET N\n  );\nEND\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(1)",
+    "variables": [
+      "N: number of records in Employee table"
+    ],
+    "notes": "Distinct sort with single row offset fetch.",
+    "whyNaiveFails": "Dense rank window queries without scalar encapsulation return empty result sets rather than null when n exceeds available distinct salaries.",
+    "spaceTimeTradeoff": "Scalar subquery wrapping limit offset returns null automatically when no matching row exists.",
+    "interviewerExpectation": "Correct zero-based index adjustment (N = N - 1) and distinct deduplication before ordering."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "CREATE FUNCTION getNthHighestSalary(N INT) RETURNS INT\nBEGIN\nSET N = N - 1;\n  RETURN (\n      SELECT DISTINCT salary\n      FROM Employee\n      ORDER BY salary DESC\n      LIMIT 1 OFFSET N\n  );\nEND",
+      "approach": "Scalar Subquery with Variable Offset",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "CREATE OR REPLACE FUNCTION getNthHighestSalary(N INT) RETURNS INT AS $$\nBEGIN\n  RETURN (\n    SELECT DISTINCT salary\n    FROM Employee\n    ORDER BY salary DESC\n    LIMIT 1 OFFSET N - 1\n  );\nEND;\n$$ LANGUAGE plpgsql;",
+      "approach": "PostgreSQL Stored Function with Plpgsql Offset",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef nth_highest_salary(employee: pd.DataFrame, N: int) -> pd.DataFrame:\n    unique_salaries = employee['salary'].drop_duplicates().sort_values(ascending=False)\n    col_name = f'getNthHighestSalary({N})'\n    if len(unique_salaries) < N or N <= 0:\n        return pd.DataFrame({col_name: [None]})\n    return pd.DataFrame({col_name: [unique_salaries.iloc[N - 1]]})",
+      "approach": "Pandas Drop Duplicates and Offset Slice",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "encode-n-ary-tree-to-binary-tree",
+  "number": 431,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "First-Child Next-Sibling Isomorphism",
+      "text": "Any general multi-way branching tree maps bijectively into a standard binary tree by linking the primary child to the left branch and subsequent siblings along the right branch."
+    },
+    {
+      "level": 2,
+      "title": "Binary Pointer Direction Semantics",
+      "text": "A node left pointer references its first child. That child right pointer references its next sibling. Chains of right pointers encode sibling collections."
+    },
+    {
+      "level": 3,
+      "title": "Recursive Encoding and Decoding Blueprint",
+      "text": "Encode(root): b_root = TreeNode(root.val). If children exist, b_root.left = encode(children[0]). Iterate remaining children, chaining along right pointers. Decode(b_node): root = Node(b_node.val, []). Walk curr = b_node.left along right pointers, appending decode(curr) to children."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Codec:\n    def encode(self, root: 'Optional[Node]') -> Optional[TreeNode]:\n        if not root:\n            return None\n        b_root = TreeNode(root.val)\n        if not root.children:\n            return b_root\n        b_root.left = self.encode(root.children[0])\n        curr = b_root.left\n        for child in root.children[1:]:\n            curr.right = self.encode(child)\n            curr = curr.right\n        return b_root\n\n    def decode(self, data: Optional[TreeNode]) -> 'Optional[Node]':\n        if not data:\n            return None\n        root = Node(data.val, [])\n        curr = data.left\n        while curr:\n            root.children.append(self.decode(curr))\n            curr = curr.right\n        return root\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(H)",
+    "variables": [
+      "N: total nodes in tree",
+      "H: tree height"
+    ],
+    "notes": "Visits each node once during transformation with recursion stack bounded by tree height.",
+    "whyNaiveFails": "Storing children as arbitrary subtrees without standard conventions loses sibling order relationships.",
+    "spaceTimeTradeoff": "Left-child right-sibling encoding utilizes existing TreeNode pointer slots without auxiliary arrays.",
+    "interviewerExpectation": "Familiarity with the classic Knuth transform for representing multi-way trees as binary trees."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Codec:\n    def encode(self, root: 'Optional[Node]') -> Optional[TreeNode]:\n        if not root:\n            return None\n        b_root = TreeNode(root.val)\n        if not root.children:\n            return b_root\n        b_root.left = self.encode(root.children[0])\n        curr = b_root.left\n        for child in root.children[1:]:\n            curr.right = self.encode(child)\n            curr = curr.right\n        return b_root\n\n    def decode(self, data: Optional[TreeNode]) -> 'Optional[Node]':\n        if not data:\n            return None\n        root = Node(data.val, [])\n        curr = data.left\n        while curr:\n            root.children.append(self.decode(curr))\n            curr = curr.right\n        return root",
+      "approach": "Left-Child Right-Sibling Knuth Transformation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Codec {\npublic:\n    TreeNode* encode(Node* root) {\n        if (!root) return nullptr;\n        TreeNode* bRoot = new TreeNode(root->val);\n        if (root->children.empty()) return bRoot;\n        bRoot->left = encode(root->children[0]);\n        TreeNode* curr = bRoot->left;\n        for (int i = 1; i < root->children.size(); ++i) {\n            curr->right = encode(root->children[i]);\n            curr = curr->right;\n        }\n        return bRoot;\n    }\n\n    Node* decode(TreeNode* root) {\n        if (!root) return nullptr;\n        Node* node = new Node(root->val);\n        TreeNode* curr = root->left;\n        while (curr) {\n            node->children.push_back(decode(curr));\n            curr = curr->right;\n        }\n        return node;\n    }\n};",
+      "approach": "C++ Left-Child Right-Sibling Encoding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Codec {\n    public TreeNode encode(Node root) {\n        if (root == null) return null;\n        TreeNode bRoot = new TreeNode(root.val);\n        if (root.children == null || root.children.isEmpty()) return bRoot;\n        bRoot.left = encode(root.children.get(0));\n        TreeNode curr = bRoot.left;\n        for (int i = 1; i < root.children.size(); i++) {\n            curr.right = encode(root.children.get(i));\n            curr = curr.right;\n        }\n        return bRoot;\n    }\n\n    public Node decode(TreeNode root) {\n        if (root == null) return null;\n        Node node = new Node(root.val, new ArrayList<>());\n        TreeNode curr = root.left;\n        while (curr != null) {\n            node.children.add(decode(curr));\n            curr = curr.right;\n        }\n        return node;\n    }\n}",
+      "approach": "Java Binary Tree Sibling Pointer Encoding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class Codec {\n    /**\n     * @param {_Node|null} root\n     * @return {TreeNode|null}\n     */\n    encode(root) {\n        if (!root) return null;\n        const bRoot = new TreeNode(root.val);\n        if (!root.children || root.children.length === 0) return bRoot;\n        bRoot.left = this.encode(root.children[0]);\n        let curr = bRoot.left;\n        for (let i = 1; i < root.children.length; i++) {\n            curr.right = this.encode(root.children[i]);\n            curr = curr.right;\n        }\n        return bRoot;\n    }\n\n    /**\n     * @param {TreeNode|null} root\n     * @return {_Node|null}\n     */\n    decode(root) {\n        if (!root) return null;\n        const node = new _Node(root.val, []);\n        let curr = root.left;\n        while (curr) {\n            node.children.push(this.decode(curr));\n            curr = curr.right;\n        }\n        return node;\n    }\n}",
+      "approach": "JavaScript Sibling-Right Child-Left Binary Mapper",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

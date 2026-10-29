@@ -1,0 +1,78 @@
+{
+  "slug": "mini-parser",
+  "number": 385,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-parentheses-parser"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Grammar Syntax Tree Tokenization",
+      "text": "Nested bracket notation defines an explicit parenthetical tree structure where inner lists are nested inside outer enclosing structures."
+    },
+    {
+      "level": 2,
+      "title": "Frame Stack for Nested Contexts",
+      "text": "Push a new container upon opening brackets. Parse numeric tokens sequentially and attach them to the active top frame. On closing brackets, pop the child and nest it into its parent."
+    },
+    {
+      "level": 3,
+      "title": "Stack Parser Blueprint",
+      "text": "If string does not start with [, return single integer. Otherwise iterate characters: on [ push NestedInteger; on digits accumulate num with sign; on comma or ] attach completed number; on ] pop container and append to top if stack depth > 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def deserialize(self, s: str) -> NestedInteger:\n        if not s.startswith('['):\n            return NestedInteger(int(s))\n        stack = []\n        num = None\n        sign = 1\n        for ch in s:\n            if ch == '[':\n                stack.append(NestedInteger())\n            elif ch == '-':\n                sign = -1\n            elif ch.isdigit():\n                num = (num or 0) * 10 + int(ch)\n            elif ch in ',]':\n                if num is not None:\n                    stack[-1].add(NestedInteger(sign * num))\n                    num = None\n                    sign = 1\n                if ch == ']' and len(stack) > 1:\n                    popped = stack.pop()\n                    stack[-1].add(popped)\n        return stack[0]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of serialized string"
+    ],
+    "notes": "Processes each character exactly once using stack depth bounded by nesting level.",
+    "whyNaiveFails": "Simple string splitting breaks due to commas appearing inside deeper nested sub-lists.",
+    "spaceTimeTradeoff": "Explicit frame stack maintains parent-child hierarchical ownership cleanly.",
+    "interviewerExpectation": "Correct handling of signed negative numbers and single integer strings without brackets."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def deserialize(self, s: str) -> NestedInteger:\n        if not s.startswith('['):\n            return NestedInteger(int(s))\n        stack = []\n        num = None\n        sign = 1\n        for ch in s:\n            if ch == '[':\n                stack.append(NestedInteger())\n            elif ch == '-':\n                sign = -1\n            elif ch.isdigit():\n                num = (num or 0) * 10 + int(ch)\n            elif ch in ',]':\n                if num is not None:\n                    stack[-1].add(NestedInteger(sign * num))\n                    num = None\n                    sign = 1\n                if ch == ']' and len(stack) > 1:\n                    popped = stack.pop()\n                    stack[-1].add(popped)\n        return stack[0]",
+      "approach": "Stack-Based Recursive Tree Parser",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    NestedInteger deserialize(string s) {\n        if (s.empty()) return NestedInteger();\n        if (s[0] != '[') return NestedInteger(stoi(s));\n\n        stack<NestedInteger> st;\n        int num = 0;\n        int sign = 1;\n        bool hasNum = false;\n\n        for (int i = 0; i < s.length(); ++i) {\n            char ch = s[i];\n            if (ch == '[') {\n                st.push(NestedInteger());\n            } else if (ch == '-') {\n                sign = -1;\n            } else if (isdigit(ch)) {\n                num = num * 10 + (ch - '0');\n                hasNum = true;\n            } else if (ch == ',' || ch == ']') {\n                if (hasNum) {\n                    st.top().add(NestedInteger(sign * num));\n                    num = 0;\n                    sign = 1;\n                    hasNum = false;\n                }\n                if (ch == ']' && st.size() > 1) {\n                    NestedInteger top = st.top();\n                    st.pop();\n                    st.top().add(top);\n                }\n            }\n        }\n        return st.top();\n    }\n};",
+      "approach": "C++ Stack-Based Character Parser",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public NestedInteger deserialize(String s) {\n        if (!s.startsWith(\"[\")) {\n            return new NestedInteger(Integer.parseInt(s));\n        }\n        Deque<NestedInteger> stack = new ArrayDeque<>();\n        int num = 0;\n        int sign = 1;\n        boolean hasNum = false;\n\n        for (int i = 0; i < s.length(); i++) {\n            char ch = s.charAt(i);\n            if (ch == '[') {\n                stack.push(new NestedInteger());\n            } else if (ch == '-') {\n                sign = -1;\n            } else if (Character.isDigit(ch)) {\n                num = num * 10 + (ch - '0');\n                hasNum = true;\n            } else if (ch == ',' || ch == ']') {\n                if (hasNum) {\n                    stack.peek().add(new NestedInteger(sign * num));\n                    num = 0;\n                    sign = 1;\n                    hasNum = false;\n                }\n                if (ch == ']' && stack.size() > 1) {\n                    NestedInteger popped = stack.pop();\n                    stack.peek().add(popped);\n                }\n            }\n        }\n        return stack.peek();\n    }\n}",
+      "approach": "Java Stack Frame Deserializer",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} s\n * @return {NestedInteger}\n */\nvar deserialize = function(s) {\n    if (!s.startsWith('[')) {\n        return new NestedInteger(parseInt(s, 10));\n    }\n    const stack = [];\n    let num = null;\n    let sign = 1;\n\n    for (let i = 0; i < s.length; i++) {\n        const ch = s[i];\n        if (ch === '[') {\n            stack.push(new NestedInteger());\n        } else if (ch === '-') {\n            sign = -1;\n        } else if (ch >= '0' && ch <= '9') {\n            num = (num || 0) * 10 + parseInt(ch, 10);\n        } else if (ch === ',' || ch === ']') {\n            if (num !== null) {\n                stack[stack.length - 1].add(new NestedInteger(sign * num));\n                num = null;\n                sign = 1;\n            }\n            if (ch === ']' && stack.length > 1) {\n                const popped = stack.pop();\n                stack[stack.length - 1].add(popped);\n            }\n        }\n    }\n    return stack[0];\n};",
+      "approach": "JavaScript Stack Parser Tokenizer",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}
