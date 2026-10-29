@@ -1,0 +1,78 @@
+{
+  "slug": "map-sum-pairs",
+  "number": 677,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Aggregate Value Tallying",
+      "text": "Associate keys with numeric scores so that prefix queries compute the cumulative sum of all keys possessing the inquiry prefix."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Score Differential Propagation",
+      "text": "Store existing key values in a map. When inserting a key, calculate the delta (new value minus old value) and add delta to each node along the prefix path."
+    },
+    {
+      "level": 3,
+      "title": "MapSum Blueprint",
+      "text": "In init: root has score = 0 and children. map stores key -> val. In insert(key, val): delta = val - map.get(key, 0), map[key] = val, traverse key adding delta to node.score. In sum(prefix): traverse to prefix node, return node.score or 0 if prefix not found."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.score = 0\n\nclass MapSum:\n    def __init__(self):\n        self.root = TrieNode()\n        self.map = {}\n\n    def insert(self, key: str, val: int) -> None:\n        delta = val - self.map.get(key, 0)\n        self.map[key] = val\n        curr = self.root\n        for ch in key:\n            if ch not in curr.children:\n                curr.children[ch] = TrieNode()\n            curr = curr.children[ch]\n            curr.score += delta\n\n    def sum(self, prefix: str) -> int:\n        curr = self.root\n        for ch in prefix:\n            if ch not in curr.children:\n                return 0\n            curr = curr.children[ch]\n        return curr.score\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(K)",
+    "space": "O(Total Characters in Keys)",
+    "variables": [
+      "K: length of inserted key or query prefix"
+    ],
+    "notes": "Both insert and sum queries execute in linear time relative to string length.",
+    "whyNaiveFails": "Re-traversing and summing all descendants on every query takes O(N * L) time.",
+    "spaceTimeTradeoff": "Maintains running score sum in each trie node for O(K) instant retrieval.",
+    "interviewerExpectation": "Correct handling of key overrides using delta subtraction."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.score = 0\n\nclass MapSum:\n    def __init__(self):\n        self.root = TrieNode()\n        self.map = {}\n\n    def insert(self, key: str, val: int) -> None:\n        delta = val - self.map.get(key, 0)\n        self.map[key] = val\n        curr = self.root\n        for ch in key:\n            if ch not in curr.children:\n                curr.children[ch] = TrieNode()\n            curr = curr.children[ch]\n            curr.score += delta\n\n    def sum(self, prefix: str) -> int:\n        curr = self.root\n        for ch in prefix:\n            if ch not in curr.children:\n                return 0\n            curr = curr.children[ch]\n        return curr.score",
+      "approach": "Delta Score Propagation on Trie Nodes",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class MapSum {\n    struct TrieNode {\n        unordered_map<char, TrieNode*> children;\n        int score = 0;\n    };\n    TrieNode* root;\n    unordered_map<string, int> map;\npublic:\n    MapSum() {\n        root = new TrieNode();\n    }\n    \n    void insert(string key, int val) {\n        int delta = val - map[key];\n        map[key] = val;\n        TrieNode* curr = root;\n        for (char ch : key) {\n            if (!curr->children.count(ch)) curr->children[ch] = new TrieNode();\n            curr = curr->children[ch];\n            curr->score += delta;\n        }\n    }\n    \n    int sum(string prefix) {\n        TrieNode* curr = root;\n        for (char ch : prefix) {\n            if (!curr->children.count(ch)) return 0;\n            curr = curr->children[ch];\n        }\n        return curr->score;\n    }\n};",
+      "approach": "C++ Prefix Tree with Cumulative Subtree Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class MapSum {\n    class TrieNode {\n        Map<Character, TrieNode> children = new HashMap<>();\n        int score = 0;\n    }\n    private TrieNode root;\n    private Map<String, Integer> map;\n\n    public MapSum() {\n        root = new TrieNode();\n        map = new HashMap<>();\n    }\n    \n    public void insert(String key, int val) {\n        int delta = val - map.getOrDefault(key, 0);\n        map.put(key, val);\n        TrieNode curr = root;\n        for (char ch : key.toCharArray()) {\n            curr.children.putIfAbsent(ch, new TrieNode());\n            curr = curr.children.get(ch);\n            curr.score += delta;\n        }\n    }\n    \n    public int sum(String prefix) {\n        TrieNode curr = root;\n        for (char ch : prefix.toCharArray()) {\n            if (!curr.children.containsKey(ch)) return 0;\n            curr = curr.children.get(ch);\n        }\n        return curr.score;\n    }\n}",
+      "approach": "Java Trie Delta Node Accumulator",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class TrieNode {\n    constructor() {\n        this.children = new Map();\n        this.score = 0;\n    }\n}\n\nvar MapSum = function() {\n    this.root = new TrieNode();\n    this.map = new Map();\n};\n\n/** \n * @param {string} key \n * @param {number} val\n * @return {void}\n */\nMapSum.prototype.insert = function(key, val) {\n    const delta = val - (this.map.get(key) || 0);\n    this.map.set(key, val);\n    let curr = this.root;\n    for (const ch of key) {\n        if (!curr.children.has(ch)) {\n            curr.children.set(ch, new TrieNode());\n        }\n        curr = curr.children.get(ch);\n        curr.score += delta;\n    }\n};\n\n/** \n * @param {string} prefix\n * @return {number}\n */\nMapSum.prototype.sum = function(prefix) {\n    let curr = this.root;\n    for (const ch of prefix) {\n        if (!curr.children.has(ch)) return 0;\n        curr = curr.children.get(ch);\n    }\n    return curr.score;\n};",
+      "approach": "JavaScript Trie Prefix Sum Provider",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

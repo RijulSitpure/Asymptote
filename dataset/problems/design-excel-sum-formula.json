@@ -1,0 +1,79 @@
+{
+  "slug": "design-excel-sum-formula",
+  "number": 631,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Spreadsheet Dependency Representation",
+      "text": "Cells contain either fixed values or composite formula ranges that resolve dynamically upon query."
+    },
+    {
+      "level": 2,
+      "title": "Formula String Range Expansion",
+      "text": "Parse strings like A1 or A1:B2 to expand into cell coordinate occurrences, storing coefficient frequencies for each cell."
+    },
+    {
+      "level": 3,
+      "title": "Excel Grid Blueprint",
+      "text": "Store grid[r][c] with val and formula map. get(r, c): if no formula, return val; else compute sum of count * get(nr, nc) recursively. set(r, c, v): clear formula and set val = v. sum(r, c, numbers): parse ranges into formula dict, return get(r, c)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Excel:\n    def __init__(self, height: int, width: str):\n        self.H = height\n        self.W = ord(width) - ord('A') + 1\n        self.grid = {} # (r, c) -> (val, formula_dict)\n\n    def set(self, row: int, column: str, val: int) -> None:\n        col = ord(column) - ord('A')\n        self.grid[(row, col)] = (val, None)\n\n    def get(self, row: int, column: str) -> int:\n        col = ord(column) - ord('A') if isinstance(column, str) else column\n        return self._eval(row, col)\n\n    def _eval(self, r: int, c: int) -> int:\n        if (r, c) not in self.grid:\n            return 0\n        val, formula = self.grid[(r, c)]\n        if not formula:\n            return val\n        total = 0\n        for (nr, nc), count in formula.items():\n            total += count * self._eval(nr, nc)\n        return total\n\n    def sum(self, row: int, column: str, numbers: list[str]) -> int:\n        col = ord(column) - ord('A')\n        formula = {}\n        for s in numbers:\n            if ':' in s:\n                start, end = s.split(':')\n                r1, c1 = int(start[1:]), ord(start[0]) - ord('A')\n                r2, c2 = int(end[1:]), ord(end[0]) - ord('A')\n                for r in range(r1, r2 + 1):\n                    for c in range(c1, c2 + 1):\n                        formula[(r, c)] = formula.get((r, c), 0) + 1\n            else:\n                r, c = int(s[1:]), ord(s[0]) - ord('A')\n                formula[(r, c)] = formula.get((r, c), 0) + 1\n        self.grid[(row, col)] = (0, formula)\n        return self._eval(row, col)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(Cells in Formula)",
+    "space": "O(H * W)",
+    "variables": [
+      "H: height of sheet",
+      "W: width of sheet"
+    ],
+    "notes": "Dynamic recursive evaluation traverses dependent cells on demand.",
+    "whyNaiveFails": "Eager recomputation without cycle tracking or dependency updates leads to stale values upon deep updates.",
+    "spaceTimeTradeoff": "Formula frequency map stores cell dependencies compactly.",
+    "interviewerExpectation": "Parsing rectangular ranges like A1:B3 and handling dynamic recalculations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Excel:\n    def __init__(self, height: int, width: str):\n        self.H = height\n        self.W = ord(width) - ord('A') + 1\n        self.grid = {} # (r, c) -> (val, formula_dict)\n\n    def set(self, row: int, column: str, val: int) -> None:\n        col = ord(column) - ord('A')\n        self.grid[(row, col)] = (val, None)\n\n    def get(self, row: int, column: str) -> int:\n        col = ord(column) - ord('A') if isinstance(column, str) else column\n        return self._eval(row, col)\n\n    def _eval(self, r: int, c: int) -> int:\n        if (r, c) not in self.grid:\n            return 0\n        val, formula = self.grid[(r, c)]\n        if not formula:\n            return val\n        total = 0\n        for (nr, nc), count in formula.items():\n            total += count * self._eval(nr, nc)\n        return total\n\n    def sum(self, row: int, column: str, numbers: list[str]) -> int:\n        col = ord(column) - ord('A')\n        formula = {}\n        for s in numbers:\n            if ':' in s:\n                start, end = s.split(':')\n                r1, c1 = int(start[1:]), ord(start[0]) - ord('A')\n                r2, c2 = int(end[1:]), ord(end[0]) - ord('A')\n                for r in range(r1, r2 + 1):\n                    for c in range(c1, c2 + 1):\n                        formula[(r, c)] = formula.get((r, c), 0) + 1\n            else:\n                r, c = int(s[1:]), ord(s[0]) - ord('A')\n                formula[(r, c)] = formula.get((r, c), 0) + 1\n        self.grid[(row, col)] = (0, formula)\n        return self._eval(row, col)",
+      "approach": "Formula Dependency Map Evaluation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Excel {\n    struct Cell {\n        int val = 0;\n        map<pair<int, int>, int> formula;\n    };\n    int H, W;\n    map<pair<int, int>, Cell> grid;\n\n    int eval(int r, int c) {\n        if (!grid.count({r, c})) return 0;\n        auto& cell = grid[{r, c}];\n        if (cell.formula.empty()) return cell.val;\n        int total = 0;\n        for (auto& p : cell.formula) {\n            total += p.second * eval(p.first.first, p.first.second);\n        }\n        return total;\n    }\npublic:\n    Excel(int height, char width) : H(height), W(width - 'A' + 1) {}\n    \n    void set(int row, char column, int val) {\n        grid[{row, column - 'A'}] = {val, {}};\n    }\n    \n    int get(int row, char column) {\n        return eval(row, column - 'A');\n    }\n    \n    int sum(int row, char column, vector<string> numbers) {\n        map<pair<int, int>, int> form;\n        for (const string& s : numbers) {\n            auto colon = s.find(':');\n            if (colon != string::npos) {\n                int r1 = stoi(s.substr(1, colon - 1)), c1 = s[0] - 'A';\n                int r2 = stoi(s.substr(colon + 2)), c2 = s[colon + 1] - 'A';\n                for (int r = r1; r <= r2; ++r) {\n                    for (int c = c1; c <= c2; ++c) form[{r, c}]++;\n                }\n            } else {\n                form[{stoi(s.substr(1)), s[0] - 'A'}]++;\n            }\n        }\n        grid[{row, column - 'A'}] = {0, form};\n        return eval(row, column - 'A');\n    }\n};",
+      "approach": "C++ Spreadsheet Evaluation Grid",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Excel {\n    class Cell {\n        int val = 0;\n        Map<String, Integer> formula = new HashMap<>();\n    }\n    private Cell[][] grid;\n\n    public Excel(int height, char width) {\n        grid = new Cell[height + 1][width - 'A' + 1];\n        for (int i = 0; i <= height; i++) {\n            for (int j = 0; j <= width - 'A'; j++) {\n                grid[i][j] = new Cell();\n            }\n        }\n    }\n    \n    public void set(int row, char column, int val) {\n        int c = column - 'A';\n        grid[row][c].val = val;\n        grid[row][c].formula.clear();\n    }\n    \n    public int get(int row, char column) {\n        return eval(row, column - 'A');\n    }\n    \n    private int eval(int r, int c) {\n        Cell cell = grid[r][c];\n        if (cell.formula.isEmpty()) return cell.val;\n        int total = 0;\n        for (Map.Entry<String, Integer> e : cell.formula.entrySet()) {\n            String[] parts = e.getKey().split(\",\");\n            int nr = Integer.parseInt(parts[0]);\n            int nc = Integer.parseInt(parts[1]);\n            total += e.getValue() * eval(nr, nc);\n        }\n        return total;\n    }\n    \n    public int sum(int row, char column, String[] numbers) {\n        int col = column - 'A';\n        Cell cell = grid[row][col];\n        cell.formula.clear();\n        for (String s : numbers) {\n            int colon = s.indexOf(':');\n            if (colon != -1) {\n                int r1 = Integer.parseInt(s.substring(1, colon));\n                int c1 = s.charAt(0) - 'A';\n                int r2 = Integer.parseInt(s.substring(colon + 2));\n                int c2 = s.charAt(colon + 1) - 'A';\n                for (int r = r1; r <= r2; r++) {\n                    for (int c = c1; c <= c2; c++) {\n                        String key = r + \",\" + c;\n                        cell.formula.put(key, cell.formula.getOrDefault(key, 0) + 1);\n                    }\n                }\n            } else {\n                int r = Integer.parseInt(s.substring(1));\n                int c = s.charAt(0) - 'A';\n                String key = r + \",\" + c;\n                cell.formula.put(key, cell.formula.getOrDefault(key, 0) + 1);\n            }\n        }\n        return eval(row, col);\n    }\n}",
+      "approach": "Java Dynamic Spreadsheet Evaluator",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} height\n * @param {character} width\n */\nvar Excel = function(height, width) {\n    this.H = height;\n    this.W = width.charCodeAt(0) - 65 + 1;\n    this.grid = new Map();\n};\n\n/** \n * @param {number} row \n * @param {character} column \n * @param {number} val\n * @return {void}\n */\nExcel.prototype.set = function(row, column, val) {\n    const col = column.charCodeAt(0) - 65;\n    this.grid.set(`${row},${col}`, { val, formula: null });\n};\n\n/** \n * @param {number} row \n * @param {character} column\n * @return {number}\n */\nExcel.prototype.get = function(row, column) {\n    const col = column.charCodeAt(0) - 65;\n    return this._eval(row, col);\n};\n\nExcel.prototype._eval = function(r, c) {\n    const key = `${r},${c}`;\n    if (!this.grid.has(key)) return 0;\n    const { val, formula } = this.grid.get(key);\n    if (!formula) return val;\n    let total = 0;\n    for (const [depKey, count] of formula.entries()) {\n        const [nr, nc] = depKey.split(',').map(Number);\n        total += count * this._eval(nr, nc);\n    }\n    return total;\n};\n\n/** \n * @param {number} row \n * @param {character} column \n * @param {string[]} numbers\n * @return {number}\n */\nExcel.prototype.sum = function(row, column, numbers) {\n    const col = column.charCodeAt(0) - 65;\n    const formula = new Map();\n    for (const s of numbers) {\n        if (s.includes(':')) {\n            const [start, end] = s.split(':');\n            const r1 = parseInt(start.slice(1)), c1 = start.charCodeAt(0) - 65;\n            const r2 = parseInt(end.slice(1)), c2 = end.charCodeAt(0) - 65;\n            for (let r = r1; r <= r2; r++) {\n                for (let c = c1; c <= c2; c++) {\n                    const k = `${r},${c}`;\n                    formula.set(k, (formula.get(k) || 0) + 1);\n                }\n            }\n        } else {\n            const r = parseInt(s.slice(1)), c = s.charCodeAt(0) - 65;\n            const k = `${r},${c}`;\n            formula.set(k, (formula.get(k) || 0) + 1);\n        }\n    }\n    this.grid.set(`${row},${col}`, { val: 0, formula });\n    return this._eval(row, col);\n};",
+      "approach": "JavaScript Spreadsheet Formula Resolver",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

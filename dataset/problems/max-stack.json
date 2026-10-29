@@ -1,0 +1,78 @@
+{
+  "slug": "max-stack",
+  "number": 716,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dual Chronological and Extreme Ordering Coordination",
+      "text": "Coordinate a sequential chain recording insertion order with an ordered ranking structure tracking maximum values with efficient node deletion."
+    },
+    {
+      "level": 2,
+      "title": "Two-Way Node References with Soft Deletion",
+      "text": "Each node in the doubly linked chain contains an identifier. Keep a max-heap of (val, id, node). Mark popped nodes as deleted in both structures."
+    },
+    {
+      "level": 3,
+      "title": "MaxStack Blueprint",
+      "text": "In push(x): append node to tail of doubly linked list, push (-x, -id, node) to heap. In pop(): remove tail node, record deleted id, return node.val. In popMax(): pop heap until top node not deleted, unlink node from doubly linked chain, record deleted id, return val."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass Node:\n    def __init__(self, val, nid):\n        self.val = val\n        self.id = nid\n        self.prev = None\n        self.next = None\n\nclass MaxStack:\n    def __init__(self):\n        self.head = Node(0, 0)\n        self.tail = Node(0, 0)\n        self.head.next = self.tail\n        self.tail.prev = self.head\n        self.heap = []\n        self.deleted = set()\n        self.id_counter = 0\n\n    def push(self, x: int) -> None:\n        self.id_counter += 1\n        node = Node(x, self.id_counter)\n        pred = self.tail.prev\n        pred.next = node\n        node.prev = pred\n        node.next = self.tail\n        self.tail.prev = node\n        heapq.heappush(self.heap, (-x, -self.id_counter, node))\n\n    def _clean_tail(self):\n        while self.tail.prev != self.head and self.tail.prev.id in self.deleted:\n            node = self.tail.prev\n            node.prev.next = self.tail\n            self.tail.prev = node.prev\n\n    def pop(self) -> int:\n        self._clean_tail()\n        node = self.tail.prev\n        node.prev.next = self.tail\n        self.tail.prev = node.prev\n        self.deleted.add(node.id)\n        return node.val\n\n    def top(self) -> int:\n        self._clean_tail()\n        return self.tail.prev.val\n\n    def _clean_heap(self):\n        while self.heap and -self.heap[0][1] in self.deleted:\n            heapq.heappop(self.heap)\n\n    def peekMax(self) -> int:\n        self._clean_heap()\n        return -self.heap[0][0]\n\n    def popMax(self) -> int:\n        self._clean_heap()\n        neg_val, neg_id, node = heapq.heappop(self.heap)\n        nid = -neg_id\n        self.deleted.add(nid)\n        node.prev.next = node.next\n        node.next.prev = node.prev\n        return -neg_val\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log N) push/popMax, O(1) top/peekMax amortized",
+    "space": "O(N)",
+    "variables": [
+      "N: total number of operations"
+    ],
+    "notes": "Doubly linked list allows O(1) node deletion; heap allows O(log N) maximum element retrieval.",
+    "whyNaiveFails": "A single stack requires O(N) auxiliary stack transfers to extract the maximum element.",
+    "spaceTimeTradeoff": "Dual data structures and deletion tombstone set maintain synchronized state.",
+    "interviewerExpectation": "Use of doubly linked list plus balanced BST or heap with lazy tombstone deletion."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass Node:\n    def __init__(self, val, nid):\n        self.val = val\n        self.id = nid\n        self.prev = None\n        self.next = None\n\nclass MaxStack:\n    def __init__(self):\n        self.head = Node(0, 0)\n        self.tail = Node(0, 0)\n        self.head.next = self.tail\n        self.tail.prev = self.head\n        self.heap = []\n        self.deleted = set()\n        self.id_counter = 0\n\n    def push(self, x: int) -> None:\n        self.id_counter += 1\n        node = Node(x, self.id_counter)\n        pred = self.tail.prev\n        pred.next = node\n        node.prev = pred\n        node.next = self.tail\n        self.tail.prev = node\n        heapq.heappush(self.heap, (-x, -self.id_counter, node))\n\n    def _clean_tail(self):\n        while self.tail.prev != self.head and self.tail.prev.id in self.deleted:\n            node = self.tail.prev\n            node.prev.next = self.tail\n            self.tail.prev = node.prev\n\n    def pop(self) -> int:\n        self._clean_tail()\n        node = self.tail.prev\n        node.prev.next = self.tail\n        self.tail.prev = node.prev\n        self.deleted.add(node.id)\n        return node.val\n\n    def top(self) -> int:\n        self._clean_tail()\n        return self.tail.prev.val\n\n    def _clean_heap(self):\n        while self.heap and -self.heap[0][1] in self.deleted:\n            heapq.heappop(self.heap)\n\n    def peekMax(self) -> int:\n        self._clean_heap()\n        return -self.heap[0][0]\n\n    def popMax(self) -> int:\n        self._clean_heap()\n        neg_val, neg_id, node = heapq.heappop(self.heap)\n        nid = -neg_id\n        self.deleted.add(nid)\n        node.prev.next = node.next\n        node.next.prev = node.prev\n        return -neg_val",
+      "approach": "Doubly Linked List and Lazy Heap Tombstones",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class MaxStack {\n    list<int> dll;\n    map<int, vector<list<int>::iterator>> map;\npublic:\n    MaxStack() {}\n    \n    void push(int x) {\n        dll.push_front(x);\n        map[x].push_back(dll.begin());\n    }\n    \n    int pop() {\n        int x = dll.front();\n        dll.pop_front();\n        map[x].pop_back();\n        if (map[x].empty()) map.erase(x);\n        return x;\n    }\n    \n    int top() {\n        return dll.front();\n    }\n    \n    int peekMax() {\n        return map.rbegin()->first;\n    }\n    \n    int popMax() {\n        int maxVal = map.rbegin()->first;\n        auto it = map[maxVal].back();\n        map[maxVal].pop_back();\n        if (map[maxVal].empty()) map.erase(maxVal);\n        dll.erase(it);\n        return maxVal;\n    }\n};",
+      "approach": "C++ std::list and std::map Iterators",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class MaxStack {\n    class Node {\n        int val, id;\n        Node prev, next;\n        Node(int v, int i) { val = v; id = i; }\n    }\n    private Node head, tail;\n    private PriorityQueue<Node> heap;\n    private Set<Integer> deleted;\n    private int idCounter = 0;\n\n    public MaxStack() {\n        head = new Node(0, 0);\n        tail = new Node(0, 0);\n        head.next = tail;\n        tail.prev = head;\n        heap = new PriorityQueue<>((a, b) -> a.val != b.val ? b.val - a.val : b.id - a.id);\n        deleted = new HashSet<>();\n    }\n    \n    public void push(int x) {\n        idCounter++;\n        Node node = new Node(x, idCounter);\n        Node pred = tail.prev;\n        pred.next = node;\n        node.prev = pred;\n        node.next = tail;\n        tail.prev = node;\n        heap.offer(node);\n    }\n    \n    private void cleanTail() {\n        while (tail.prev != head && deleted.contains(tail.prev.id)) {\n            Node node = tail.prev;\n            node.prev.next = tail;\n            tail.prev = node.prev;\n        }\n    }\n    \n    public int pop() {\n        cleanTail();\n        Node node = tail.prev;\n        node.prev.next = tail;\n        tail.prev = node.prev;\n        deleted.add(node.id);\n        return node.val;\n    }\n    \n    public int top() {\n        cleanTail();\n        return tail.prev.val;\n    }\n    \n    private void cleanHeap() {\n        while (!heap.isEmpty() && deleted.contains(heap.peek().id)) {\n            heap.poll();\n        }\n    }\n    \n    public int peekMax() {\n        cleanHeap();\n        return heap.peek().val;\n    }\n    \n    public int popMax() {\n        cleanHeap();\n        Node node = heap.poll();\n        deleted.add(node.id);\n        node.prev.next = node.next;\n        node.next.prev = node.prev;\n        return node.val;\n    }\n}",
+      "approach": "Java Doubly Linked List with PriorityQueue Tombstones",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class Node {\n    constructor(val, id) {\n        this.val = val;\n        this.id = id;\n        this.prev = null;\n        this.next = null;\n    }\n}\n\nvar MaxStack = function() {\n    this.head = new Node(0, 0);\n    this.tail = new Node(0, 0);\n    this.head.next = this.tail;\n    this.tail.prev = this.head;\n    this.stack = []; // [Node]\n};\n\n/** \n * @param {number} x\n * @return {void}\n */\nMaxStack.prototype.push = function(x) {\n    const node = new Node(x, this.stack.length);\n    const pred = this.tail.prev;\n    pred.next = node;\n    node.prev = pred;\n    node.next = this.tail;\n    this.tail.prev = node;\n    this.stack.push(node);\n};\n\n/** \n * @return {number}\n */\nMaxStack.prototype.pop = function() {\n    const node = this.tail.prev;\n    node.prev.next = this.tail;\n    this.tail.prev = node.prev;\n    const idx = this.stack.indexOf(node);\n    if (idx !== -1) this.stack.splice(idx, 1);\n    return node.val;\n};\n\n/** \n * @return {number}\n */\nMaxStack.prototype.top = function() {\n    return this.tail.prev.val;\n};\n\n/** \n * @return {number}\n */\nMaxStack.prototype.peekMax = function() {\n    let maxVal = -Infinity;\n    let curr = this.head.next;\n    while (curr !== this.tail) {\n        if (curr.val > maxVal) maxVal = curr.val;\n        curr = curr.next;\n    }\n    return maxVal;\n};\n\n/** \n * @return {number}\n */\nMaxStack.prototype.popMax = function() {\n    let maxVal = -Infinity;\n    let maxNode = null;\n    let curr = this.tail.prev;\n    while (curr !== this.head) {\n        if (curr.val > maxVal) {\n            maxVal = curr.val;\n            maxNode = curr;\n        }\n        curr = curr.prev;\n    }\n    maxNode.prev.next = maxNode.next;\n    maxNode.next.prev = maxNode.prev;\n    const idx = this.stack.indexOf(maxNode);\n    if (idx !== -1) this.stack.splice(idx, 1);\n    return maxVal;\n};",
+      "approach": "JavaScript Doubly Linked List Max Tracker",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

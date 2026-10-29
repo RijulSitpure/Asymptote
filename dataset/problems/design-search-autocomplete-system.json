@@ -1,0 +1,79 @@
+{
+  "slug": "design-search-autocomplete-system",
+  "number": 642,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Tree Autocomplete Ranking",
+      "text": "Store historical sentences and their frequency counts in a hierarchical prefix tree to stream top recommendations as characters are typed."
+    },
+    {
+      "level": 2,
+      "title": "Trie Node Sentence Frequency Map",
+      "text": "At each node along the typed path, maintain a mapping of sentences and their counts. Sort candidate matches by descending frequency and ascending lexicographical order."
+    },
+    {
+      "level": 3,
+      "title": "Autocomplete Blueprint",
+      "text": "When input char is \"#\": insert or increment current sentence count in tree, reset search buffer, return []. Otherwise append char, navigate down trie node, sort sentences by (-count, sentence), and return top 3."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.counts = {}\n\nclass AutocompleteSystem:\n    def __init__(self, sentences: list[str], times: list[int]):\n        self.root = TrieNode()\n        self.curr_sentence = \"\"\n        for s, t in zip(sentences, times):\n            self._add(s, t)\n\n    def _add(self, sentence: str, count: int) -> None:\n        curr = self.root\n        for ch in sentence:\n            if ch not in curr.children:\n                curr.children[ch] = TrieNode()\n            curr = curr.children[ch]\n            curr.counts[sentence] = curr.counts.get(sentence, 0) + count\n\n    def input(self, c: str) -> list[str]:\n        if c == '#':\n            self._add(self.curr_sentence, 1)\n            self.curr_sentence = \"\"\n            return []\n        self.curr_sentence += c\n        curr = self.root\n        for ch in self.curr_sentence:\n            if ch not in curr.children:\n                return []\n            curr = curr.children[ch]\n        sorted_sentences = sorted(curr.counts.items(), key=lambda x: (-x[1], x[0]))\n        return [s for s, count in sorted_sentences[:3]]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(L + M log M)",
+    "space": "O(Total Characters in Sentences)",
+    "variables": [
+      "L: length of current typed prefix",
+      "M: matching candidate sentences"
+    ],
+    "notes": "Trie descent takes O(L); sorting matching candidates takes O(M log M) where M is bound by dictionary size.",
+    "whyNaiveFails": "Scanning all historical sentences on every character keystroke degrades user input responsiveness.",
+    "spaceTimeTradeoff": "Trie nodes cache sentence frequencies along prefixes for rapid subtree querying.",
+    "interviewerExpectation": "Correct tie-breaking by lexicographical order and handling the termination character \"#\"."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.counts = {}\n\nclass AutocompleteSystem:\n    def __init__(self, sentences: list[str], times: list[int]):\n        self.root = TrieNode()\n        self.curr_sentence = \"\"\n        for s, t in zip(sentences, times):\n            self._add(s, t)\n\n    def _add(self, sentence: str, count: int) -> None:\n        curr = self.root\n        for ch in sentence:\n            if ch not in curr.children:\n                curr.children[ch] = TrieNode()\n            curr = curr.children[ch]\n            curr.counts[sentence] = curr.counts.get(sentence, 0) + count\n\n    def input(self, c: str) -> list[str]:\n        if c == '#':\n            self._add(self.curr_sentence, 1)\n            self.curr_sentence = \"\"\n            return []\n        self.curr_sentence += c\n        curr = self.root\n        for ch in self.curr_sentence:\n            if ch not in curr.children:\n                return []\n            curr = curr.children[ch]\n        sorted_sentences = sorted(curr.counts.items(), key=lambda x: (-x[1], x[0]))\n        return [s for s, count in sorted_sentences[:3]]",
+      "approach": "Prefix Trie with Frequency Cache",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class AutocompleteSystem {\n    struct TrieNode {\n        unordered_map<char, TrieNode*> children;\n        unordered_map<string, int> counts;\n    };\n    TrieNode* root;\n    string currSentence = \"\";\n\n    void add(const string& s, int count) {\n        TrieNode* curr = root;\n        for (char ch : s) {\n            if (!curr->children.count(ch)) curr->children[ch] = new TrieNode();\n            curr = curr->children[ch];\n            curr->counts[s] += count;\n        }\n    }\npublic:\n    AutocompleteSystem(vector<string>& sentences, vector<int>& times) {\n        root = new TrieNode();\n        for (int i = 0; i < sentences.size(); ++i) {\n            add(sentences[i], times[i]);\n        }\n    }\n    \n    vector<string> input(char c) {\n        if (c == '#') {\n            add(currSentence, 1);\n            currSentence = \"\";\n            return {};\n        }\n        currSentence += c;\n        TrieNode* curr = root;\n        for (char ch : currSentence) {\n            if (!curr->children.count(ch)) return {};\n            curr = curr->children[ch];\n        }\n        vector<pair<string, int>> candidates(curr->counts.begin(), curr->counts.end());\n        auto cmp = [](const pair<string, int>& a, const pair<string, int>& b) {\n            if (a.second != b.second) return a.second > b.second;\n            return a.first < b.first;\n        };\n        sort(candidates.begin(), candidates.end(), cmp);\n        vector<string> res;\n        for (int i = 0; i < min(3, (int)candidates.size()); ++i) {\n            res.push_back(candidates[i].first);\n        }\n        return res;\n    }\n};",
+      "approach": "C++ Trie Prefix Cache and Custom Comparator",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class AutocompleteSystem {\n    class TrieNode {\n        Map<Character, TrieNode> children = new HashMap<>();\n        Map<String, Integer> counts = new HashMap<>();\n    }\n    private TrieNode root;\n    private StringBuilder currSentence = new StringBuilder();\n\n    private void add(String s, int count) {\n        TrieNode curr = root;\n        for (char ch : s.toCharArray()) {\n            curr.children.putIfAbsent(ch, new TrieNode());\n            curr = curr.children.get(ch);\n            curr.counts.put(s, curr.counts.getOrDefault(s, 0) + count);\n        }\n    }\n\n    public AutocompleteSystem(String[] sentences, int[] times) {\n        root = new TrieNode();\n        for (int i = 0; i < sentences.length; i++) {\n            add(sentences[i], times[i]);\n        }\n    }\n    \n    public List<String> input(char c) {\n        if (c == '#') {\n            add(currSentence.toString(), 1);\n            currSentence.setLength(0);\n            return new ArrayList<>();\n        }\n        currSentence.append(c);\n        TrieNode curr = root;\n        for (char ch : currSentence.toString().toCharArray()) {\n            if (!curr.children.containsKey(ch)) return new ArrayList<>();\n            curr = curr.children.get(ch);\n        }\n        List<Map.Entry<String, Integer>> list = new ArrayList<>(curr.counts.entrySet());\n        list.sort((a, b) -> {\n            if (!a.getValue().equals(b.getValue())) {\n                return b.getValue() - a.getValue();\n            }\n            return a.getKey().compareTo(b.getKey());\n        });\n        List<String> res = new ArrayList<>();\n        for (int i = 0; i < Math.min(3, list.size()); i++) {\n            res.add(list.get(i).getKey());\n        }\n        return res;\n    }\n}",
+      "approach": "Java Trie with Frequency Map Ranking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class TrieNode {\n    constructor() {\n        this.children = new Map();\n        this.counts = new Map();\n    }\n}\n\n/**\n * @param {string[]} sentences\n * @param {number[]} times\n */\nvar AutocompleteSystem = function(sentences, times) {\n    this.root = new TrieNode();\n    this.currSentence = \"\";\n    for (let i = 0; i < sentences.length; i++) {\n        this._add(sentences[i], times[i]);\n    }\n};\n\nAutocompleteSystem.prototype._add = function(sentence, count) {\n    let curr = this.root;\n    for (const ch of sentence) {\n        if (!curr.children.has(ch)) {\n            curr.children.set(ch, new TrieNode());\n        }\n        curr = curr.children.get(ch);\n        curr.counts.set(sentence, (curr.counts.get(sentence) || 0) + count);\n    }\n};\n\n/** \n * @param {character} c\n * @return {string[]}\n */\nAutocompleteSystem.prototype.input = function(c) {\n    if (c === '#') {\n        this._add(this.currSentence, 1);\n        this.currSentence = \"\";\n        return [];\n    }\n    this.currSentence += c;\n    let curr = this.root;\n    for (const ch of this.currSentence) {\n        if (!curr.children.has(ch)) return [];\n        curr = curr.children.get(ch);\n    }\n    const entries = Array.from(curr.counts.entries());\n    entries.sort((a, b) => {\n        if (a[1] !== b[1]) return b[1] - a[1];\n        return a[0].localeCompare(b[0]);\n    });\n    return entries.slice(0, 3).map(e => e[0]);\n};",
+      "approach": "JavaScript Trie Frequency Ranking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

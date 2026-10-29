@@ -1,0 +1,78 @@
+{
+  "slug": "design-log-storage-system",
+  "number": 635,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Granular Timestamp Prefix Matching",
+      "text": "Filter timestamps by truncation up to the designated granularity level without parsing dates into complex formats."
+    },
+    {
+      "level": 2,
+      "title": "Index Slicing by Granularity",
+      "text": "Granularity defines string slice endpoints: Year is 4, Month is 7, Day is 10, Hour is 13, Minute is 16, Second is 19. Compare slices lexicographically."
+    },
+    {
+      "level": 3,
+      "title": "LogSystem Blueprint",
+      "text": "In init: logs = []. In put(id, timestamp): append (id, timestamp). In retrieve(start, end, granularity): idx = indexMap[granularity], s = start[:idx], e = end[:idx], return [id for id, ts in logs if s <= ts[:idx] <= e]."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass LogSystem:\n    def __init__(self):\n        self.logs = []\n        self.gran = {\n            \"Year\": 4,\n            \"Month\": 7,\n            \"Day\": 10,\n            \"Hour\": 13,\n            \"Minute\": 16,\n            \"Second\": 19\n        }\n\n    def put(self, id: int, timestamp: str) -> None:\n        self.logs.append((id, timestamp))\n\n    def retrieve(self, start: str, end: str, granularity: str) -> list[int]:\n        idx = self.gran[granularity]\n        s = start[:idx]\n        e = end[:idx]\n        return [log_id for log_id, ts in self.logs if s <= ts[:idx] <= e]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of logs inserted"
+    ],
+    "notes": "Insertion is O(1); retrieval filters N logs using string slice comparisons.",
+    "whyNaiveFails": "Parsing full date objects on each operation incurs unnecessary conversion overhead.",
+    "spaceTimeTradeoff": "Stores logs linearly with constant-size granularity dictionary.",
+    "interviewerExpectation": "Use of standard ISO timestamp fixed-width prefixes for lexicographic filtering."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class LogSystem:\n    def __init__(self):\n        self.logs = []\n        self.gran = {\n            \"Year\": 4,\n            \"Month\": 7,\n            \"Day\": 10,\n            \"Hour\": 13,\n            \"Minute\": 16,\n            \"Second\": 19\n        }\n\n    def put(self, id: int, timestamp: str) -> None:\n        self.logs.append((id, timestamp))\n\n    def retrieve(self, start: str, end: str, granularity: str) -> list[int]:\n        idx = self.gran[granularity]\n        s = start[:idx]\n        e = end[:idx]\n        return [log_id for log_id, ts in self.logs if s <= ts[:idx] <= e]",
+      "approach": "Fixed-Width Substring Granularity Comparison",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class LogSystem {\n    vector<pair<int, string>> logs;\n    unordered_map<string, int> gran = {\n        {\"Year\", 4}, {\"Month\", 7}, {\"Day\", 10},\n        {\"Hour\", 13}, {\"Minute\", 16}, {\"Second\", 19}\n    };\npublic:\n    LogSystem() {}\n    \n    void put(int id, string timestamp) {\n        logs.push_back({id, timestamp});\n    }\n    \n    vector<int> retrieve(string start, string end, string granularity) {\n        int len = gran[granularity];\n        string s = start.substr(0, len);\n        string e = end.substr(0, len);\n        vector<int> res;\n        for (auto& log : logs) {\n            string sub = log.second.substr(0, len);\n            if (sub >= s && sub <= e) {\n                res.push_back(log.first);\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "C++ Substring Filter for Granular Logs",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class LogSystem {\n    private List<Pair<Integer, String>> logs = new ArrayList<>();\n    private Map<String, Integer> gran = new HashMap<>();\n\n    public LogSystem() {\n        gran.put(\"Year\", 4);\n        gran.put(\"Month\", 7);\n        gran.put(\"Day\", 10);\n        gran.put(\"Hour\", 13);\n        gran.put(\"Minute\", 16);\n        gran.put(\"Second\", 19);\n    }\n    \n    public void put(int id, String timestamp) {\n        logs.add(new Pair<>(id, timestamp));\n    }\n    \n    public List<Integer> retrieve(String start, String end, String granularity) {\n        int len = gran.get(granularity);\n        String s = start.substring(0, len);\n        String e = end.substring(0, len);\n        List<Integer> res = new ArrayList<>();\n        for (Pair<Integer, String> log : logs) {\n            String sub = log.getValue().substring(0, len);\n            if (sub.compareTo(s) >= 0 && sub.compareTo(e) <= 0) {\n                res.add(log.getKey());\n            }\n        }\n        return res;\n    }\n    \n    static class Pair<K, V> {\n        private K key; private V value;\n        public Pair(K key, V value) { this.key = key; this.value = value; }\n        public K getKey() { return key; }\n        public V getValue() { return value; }\n    }\n}",
+      "approach": "Java String Substring Lexicographic Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var LogSystem = function() {\n    this.logs = [];\n    this.gran = {\n        \"Year\": 4,\n        \"Month\": 7,\n        \"Day\": 10,\n        \"Hour\": 13,\n        \"Minute\": 16,\n        \"Second\": 19\n    };\n};\n\n/** \n * @param {number} id \n * @param {string} timestamp\n * @return {void}\n */\nLogSystem.prototype.put = function(id, timestamp) {\n    this.logs.push({ id, timestamp });\n};\n\n/** \n * @param {string} start \n * @param {string} end \n * @param {string} granularity\n * @return {number[]}\n */\nLogSystem.prototype.retrieve = function(start, end, granularity) {\n    const len = this.gran[granularity];\n    const s = start.slice(0, len);\n    const e = end.slice(0, len);\n    return this.logs\n        .filter(log => {\n            const sub = log.timestamp.slice(0, len);\n            return sub >= s && sub <= e;\n        })\n        .map(log => log.id);\n};",
+      "approach": "JavaScript Substring Log Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

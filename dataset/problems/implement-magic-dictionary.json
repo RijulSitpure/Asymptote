@@ -1,0 +1,78 @@
+{
+  "slug": "implement-magic-dictionary",
+  "number": 676,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Single Character Edit Distance Search",
+      "text": "Determine whether an inquiry string can match an existing dictionary word by modifying exactly one character."
+    },
+    {
+      "level": 2,
+      "title": "Trie DFS with Error Budget",
+      "text": "Traverse the prefix tree recursively tracking remaining allowable character substitutions (initially one)."
+    },
+    {
+      "level": 3,
+      "title": "Magic Dictionary Blueprint",
+      "text": "In search(word): helper dfs(node, idx, edits): if edits < 0: return False. If idx == len(word): return node.is_word and edits == 0. For ch, child in node.children: if dfs(child, idx+1, edits - (0 if ch == word[idx] else 1)) return True. Return False."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.is_word = False\n\nclass MagicDictionary:\n    def __init__(self):\n        self.root = TrieNode()\n\n    def buildDict(self, dictionary: list[str]) -> None:\n        for word in dictionary:\n            curr = self.root\n            for ch in word:\n                if ch not in curr.children:\n                    curr.children[ch] = TrieNode()\n                curr = curr.children[ch]\n            curr.is_word = True\n\n    def search(self, searchWord: str) -> bool:\n        def dfs(node, idx, edits):\n            if edits < 0:\n                return False\n            if idx == len(searchWord):\n                return node.is_word and edits == 0\n            for ch, child in node.children.items():\n                new_edits = edits if ch == searchWord[idx] else edits - 1\n                if dfs(child, idx + 1, new_edits):\n                    return True\n            return False\n        return dfs(self.root, 0, 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(L * 26)",
+    "space": "O(Total Characters in Dictionary)",
+    "variables": [
+      "L: length of searchWord"
+    ],
+    "notes": "Branching occurs at only one character mismatch level, keeping search bounded by 26 * L operations.",
+    "whyNaiveFails": "Generating all 25 * L variations and looking them up takes extra hash table space and overhead.",
+    "spaceTimeTradeoff": "Trie structure consolidates common prefixes.",
+    "interviewerExpectation": "Ensuring that exactly one character is modified (edits must equal zero at completion, not untouched)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.is_word = False\n\nclass MagicDictionary:\n    def __init__(self):\n        self.root = TrieNode()\n\n    def buildDict(self, dictionary: list[str]) -> None:\n        for word in dictionary:\n            curr = self.root\n            for ch in word:\n                if ch not in curr.children:\n                    curr.children[ch] = TrieNode()\n                curr = curr.children[ch]\n            curr.is_word = True\n\n    def search(self, searchWord: str) -> bool:\n        def dfs(node, idx, edits):\n            if edits < 0:\n                return False\n            if idx == len(searchWord):\n                return node.is_word and edits == 0\n            for ch, child in node.children.items():\n                new_edits = edits if ch == searchWord[idx] else edits - 1\n                if dfs(child, idx + 1, new_edits):\n                    return True\n            return False\n        return dfs(self.root, 0, 1)",
+      "approach": "Trie DFS with Error Budget Tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class MagicDictionary {\n    struct TrieNode {\n        unordered_map<char, TrieNode*> children;\n        bool isWord = false;\n    };\n    TrieNode* root;\n\n    bool dfs(TrieNode* node, const string& word, int idx, int edits) {\n        if (edits < 0) return false;\n        if (idx == word.size()) return node->isWord && edits == 0;\n        for (auto& p : node->children) {\n            int newEdits = (p.first == word[idx]) ? edits : edits - 1;\n            if (dfs(p.second, word, idx + 1, newEdits)) return true;\n        }\n        return false;\n    }\npublic:\n    MagicDictionary() {\n        root = new TrieNode();\n    }\n    \n    void buildDict(vector<string> dictionary) {\n        for (const string& word : dictionary) {\n            TrieNode* curr = root;\n            for (char ch : word) {\n                if (!curr->children.count(ch)) curr->children[ch] = new TrieNode();\n                curr = curr->children[ch];\n            }\n            curr->isWord = true;\n        }\n    }\n    \n    bool search(string searchWord) {\n        return dfs(root, searchWord, 0, 1);\n    }\n};",
+      "approach": "C++ Trie Branching with 1-Edit Distance",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class MagicDictionary {\n    class TrieNode {\n        Map<Character, TrieNode> children = new HashMap<>();\n        boolean isWord = false;\n    }\n    private TrieNode root;\n\n    public MagicDictionary() {\n        root = new TrieNode();\n    }\n    \n    public void buildDict(String[] dictionary) {\n        for (String word : dictionary) {\n            TrieNode curr = root;\n            for (char ch : word.toCharArray()) {\n                curr.children.putIfAbsent(ch, new TrieNode());\n                curr = curr.children.get(ch);\n            }\n            curr.isWord = true;\n        }\n    }\n    \n    public boolean search(String searchWord) {\n        return dfs(root, searchWord, 0, 1);\n    }\n\n    private boolean dfs(TrieNode node, String word, int idx, int edits) {\n        if (edits < 0) return false;\n        if (idx == word.length()) return node.isWord && edits == 0;\n        for (Map.Entry<Character, TrieNode> e : node.children.entrySet()) {\n            int newEdits = (e.getKey() == word.charAt(idx)) ? edits : edits - 1;\n            if (dfs(e.getValue(), word, idx + 1, newEdits)) return true;\n        }\n        return false;\n    }\n}",
+      "approach": "Java Trie DFS with Substitution Budget",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class TrieNode {\n    constructor() {\n        this.children = new Map();\n        this.isWord = false;\n    }\n}\n\nvar MagicDictionary = function() {\n    this.root = new TrieNode();\n};\n\n/** \n * @param {string[]} dictionary\n * @return {void}\n */\nMagicDictionary.prototype.buildDict = function(dictionary) {\n    for (const word of dictionary) {\n        let curr = this.root;\n        for (const ch of word) {\n            if (!curr.children.has(ch)) {\n                curr.children.set(ch, new TrieNode());\n            }\n            curr = curr.children.get(ch);\n        }\n        curr.isWord = true;\n    }\n};\n\n/** \n * @param {string} searchWord\n * @return {boolean}\n */\nMagicDictionary.prototype.search = function(searchWord) {\n    function dfs(node, idx, edits) {\n        if (edits < 0) return false;\n        if (idx === searchWord.length) return node.isWord && edits === 0;\n        for (const [ch, child] of node.children.entries()) {\n            const newEdits = ch === searchWord[idx] ? edits : edits - 1;\n            if (dfs(child, idx + 1, newEdits)) return true;\n        }\n        return false;\n    }\n    return dfs(this.root, 0, 1);\n};",
+      "approach": "JavaScript Trie Search with Edit Check",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

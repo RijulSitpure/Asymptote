@@ -1,0 +1,79 @@
+{
+  "slug": "design-in-memory-file-system",
+  "number": 588,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Tree Directory Hierarchy",
+      "text": "Represent nested directories and files using an n-ary tree where directories contain children maps and files store accumulated text content."
+    },
+    {
+      "level": 2,
+      "title": "Path Tokenization and Traversal",
+      "text": "Split path strings by slash delimiters. Traverse down child nodes, creating missing directories as needed for mkdir or addContentToFile."
+    },
+    {
+      "level": 3,
+      "title": "File System Operations Blueprint",
+      "text": "Each node has is_file flag, content string, and children dict. ls(path) navigates to node: if is_file return [name], else return sorted(children.keys())."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass FSNode:\n    def __init__(self):\n        self.is_file = False\n        self.content = \"\"\n        self.children = {}\n\nclass FileSystem:\n    def __init__(self):\n        self.root = FSNode()\n\n    def _traverse(self, path: str) -> FSNode:\n        curr = self.root\n        parts = [p for p in path.split('/') if p]\n        for part in parts:\n            if part not in curr.children:\n                curr.children[part] = FSNode()\n            curr = curr.children[part]\n        return curr\n\n    def ls(self, path: str) -> list[str]:\n        curr = self.root\n        parts = [p for p in path.split('/') if p]\n        for part in parts:\n            curr = curr.children[part]\n        if curr.is_file:\n            return [parts[-1]]\n        return sorted(curr.children.keys())\n\n    def mkdir(self, path: str) -> None:\n        self._traverse(path)\n\n    def addContentToFile(self, filePath: str, content: str) -> None:\n        node = self._traverse(filePath)\n        node.is_file = True\n        node.content += content\n\n    def readContentFromFile(self, filePath: str) -> str:\n        node = self._traverse(filePath)\n        return node.content\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(L + K log K)",
+    "space": "O(Total Content + Nodes)",
+    "variables": [
+      "L: path length in components",
+      "K: number of entries in directory"
+    ],
+    "notes": "Path traversal takes O(L); directory listing sorts K children in O(K log K) time.",
+    "whyNaiveFails": "Flat dictionary storage cannot efficiently support hierarchical directory listings or nested mkdir.",
+    "spaceTimeTradeoff": "Trie nodes allocate space proportional to unique folder and file paths.",
+    "interviewerExpectation": "Clean separation between directory nodes and file nodes with string content concatenation."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class FSNode:\n    def __init__(self):\n        self.is_file = False\n        self.content = \"\"\n        self.children = {}\n\nclass FileSystem:\n    def __init__(self):\n        self.root = FSNode()\n\n    def _traverse(self, path: str) -> FSNode:\n        curr = self.root\n        parts = [p for p in path.split('/') if p]\n        for part in parts:\n            if part not in curr.children:\n                curr.children[part] = FSNode()\n            curr = curr.children[part]\n        return curr\n\n    def ls(self, path: str) -> list[str]:\n        curr = self.root\n        parts = [p for p in path.split('/') if p]\n        for part in parts:\n            curr = curr.children[part]\n        if curr.is_file:\n            return [parts[-1]]\n        return sorted(curr.children.keys())\n\n    def mkdir(self, path: str) -> None:\n        self._traverse(path)\n\n    def addContentToFile(self, filePath: str, content: str) -> None:\n        node = self._traverse(filePath)\n        node.is_file = True\n        node.content += content\n\n    def readContentFromFile(self, filePath: str) -> str:\n        node = self._traverse(filePath)\n        return node.content",
+      "approach": "Trie-Based File System Tree",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "struct FSNode {\n    bool isFile = false;\n    string content = \"\";\n    map<string, FSNode*> children;\n};\n\nclass FileSystem {\n    FSNode* root;\n    vector<string> splitPath(const string& path) {\n        vector<string> parts;\n        stringstream ss(path);\n        string part;\n        while (getline(ss, part, '/')) {\n            if (!part.empty()) parts.push_back(part);\n        }\n        return parts;\n    }\npublic:\n    FileSystem() {\n        root = new FSNode();\n    }\n    \n    vector<string> ls(string path) {\n        FSNode* curr = root;\n        vector<string> parts = splitPath(path);\n        for (const string& p : parts) {\n            curr = curr->children[p];\n        }\n        if (curr->isFile) return {parts.back()};\n        vector<string> res;\n        for (auto& pair : curr->children) res.push_back(pair.first);\n        return res;\n    }\n    \n    void mkdir(string path) {\n        FSNode* curr = root;\n        for (const string& p : splitPath(path)) {\n            if (!curr->children.count(p)) curr->children[p] = new FSNode();\n            curr = curr->children[p];\n        }\n    }\n    \n    void addContentToFile(string filePath, string content) {\n        FSNode* curr = root;\n        for (const string& p : splitPath(filePath)) {\n            if (!curr->children.count(p)) curr->children[p] = new FSNode();\n            curr = curr->children[p];\n        }\n        curr->isFile = true;\n        curr->content += content;\n    }\n    \n    string readContentFromFile(string filePath) {\n        FSNode* curr = root;\n        for (const string& p : splitPath(filePath)) {\n            curr = curr->children[p];\n        }\n        return curr->content;\n    }\n};",
+      "approach": "C++ Map Trie Tree Hierarchy",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class FileSystem {\n    class FSNode {\n        boolean isFile = false;\n        StringBuilder content = new StringBuilder();\n        Map<String, FSNode> children = new TreeMap<>();\n    }\n    \n    private FSNode root;\n\n    public FileSystem() {\n        root = new FSNode();\n    }\n    \n    private String[] split(String path) {\n        if (path.equals(\"/\")) return new String[0];\n        return path.substring(1).split(\"/\");\n    }\n    \n    public List<String> ls(String path) {\n        FSNode curr = root;\n        String[] parts = split(path);\n        for (String p : parts) {\n            curr = curr.children.get(p);\n        }\n        if (curr.isFile) {\n            return Collections.singletonList(parts[parts.length - 1]);\n        }\n        return new ArrayList<>(curr.children.keySet());\n    }\n    \n    public void mkdir(String path) {\n        FSNode curr = root;\n        for (String p : split(path)) {\n            curr.children.putIfAbsent(p, new FSNode());\n            curr = curr.children.get(p);\n        }\n    }\n    \n    public void addContentToFile(String filePath, String content) {\n        FSNode curr = root;\n        for (String p : split(filePath)) {\n            curr.children.putIfAbsent(p, new FSNode());\n            curr = curr.children.get(p);\n        }\n        curr.isFile = true;\n        curr.content.append(content);\n    }\n    \n    public String readContentFromFile(String filePath) {\n        FSNode curr = root;\n        for (String p : split(filePath)) {\n            curr = curr.children.get(p);\n        }\n        return curr.content.toString();\n    }\n}",
+      "approach": "Java TreeMap Trie Tree Directory Model",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class FSNode {\n    constructor() {\n        this.isFile = false;\n        this.content = \"\";\n        this.children = new Map();\n    }\n}\n\nvar FileSystem = function() {\n    this.root = new FSNode();\n};\n\nFileSystem.prototype._traverse = function(path) {\n    let curr = this.root;\n    const parts = path.split('/').filter(Boolean);\n    for (const part of parts) {\n        if (!curr.children.has(part)) {\n            curr.children.set(part, new FSNode());\n        }\n        curr = curr.children.get(part);\n    }\n    return curr;\n};\n\nFileSystem.prototype.ls = function(path) {\n    let curr = this.root;\n    const parts = path.split('/').filter(Boolean);\n    for (const part of parts) {\n        curr = curr.children.get(part);\n    }\n    if (curr.isFile) return [parts[parts.length - 1]];\n    return Array.from(curr.children.keys()).sort();\n};\n\nFileSystem.prototype.mkdir = function(path) {\n    this._traverse(path);\n};\n\nFileSystem.prototype.addContentToFile = function(filePath, content) {\n    const node = this._traverse(filePath);\n    node.isFile = true;\n    node.content += content;\n};\n\nFileSystem.prototype.readContentFromFile = function(filePath) {\n    const node = this._traverse(filePath);\n    return node.content;\n};",
+      "approach": "JavaScript Map File System Hierarchy",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}
