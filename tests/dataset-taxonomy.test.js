@@ -271,7 +271,7 @@ describe('Dataset Taxonomy and Content Verification Tests', () => {
   });
 
   it('asserts problem files tested review status and verified solutions', () => {
-    expect(allProblems.length).toBe(1685);
+    expect(allProblems.length).toBe(1715);
     for (const { file, data } of allProblems) {
       expect(data.review?.status, `${file} review.status must be "tested"`).toBe('tested');
       expect(Array.isArray(data.solutions), `${file} must have solutions array`).toBe(true);
@@ -295,7 +295,7 @@ describe('Dataset Taxonomy and Content Verification Tests', () => {
   });
 
   it('asserts 3-part structured complexity analysis on all curated problems', () => {
-    expect(allProblems.length).toBe(1685);
+    expect(allProblems.length).toBe(1715);
     for (const { file, data } of allProblems) {
       expect(data.complexity, `${file} must have complexity`).toBeDefined();
       expect(typeof data.complexity.whyNaiveFails, `${file} whyNaiveFails must be string`).toBe('string');
@@ -325,7 +325,7 @@ describe('Dataset Taxonomy and Content Verification Tests', () => {
     }
 
     const dbProblems = allProblems.filter(({ data }) => data.category === 'Database');
-    expect(dbProblems.length).toBe(24);
+    expect(dbProblems.length).toBe(30);
     for (const { file, data } of dbProblems) {
       const langs = (data.solutions || []).map(s => s.lang);
       expect(langs, `${file} must support mysql, postgresql, pythondata`).toEqual(
@@ -349,7 +349,7 @@ describe('Dataset Taxonomy and Content Verification Tests', () => {
     }
 
     const jsProblems = allProblems.filter(({ data }) => data.category === 'JavaScript');
-    expect(jsProblems.length).toBe(43);
+    expect(jsProblems.length).toBe(67);
     for (const { file, data } of jsProblems) {
       const langs = (data.solutions || []).map(s => s.lang);
       expect(langs, `${file} must support javascript, typescript`).toEqual(

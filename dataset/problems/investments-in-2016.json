@@ -1,0 +1,71 @@
+{
+  "slug": "investments-in-2016",
+  "number": 585,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dual Criterion Portfolio Aggregation",
+      "text": "Tally total portfolio holdings for policyholders whose previous baseline values collide with peers while their spatial coordinates remain unique."
+    },
+    {
+      "level": 2,
+      "title": "Group Count Subquery Invariants",
+      "text": "Identify duplicate previous year values and singular geographical locations using group-by count criteria, filtering matching policyholders."
+    },
+    {
+      "level": 3,
+      "title": "Investment Sum Blueprint",
+      "text": "Select round(sum(tiv_2016), 2) as tiv_2016 where tiv_2015 is in duplicate values subquery and (lat, lon) is in unique coordinate pairs subquery."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT ROUND(SUM(tiv_2016), 2) AS tiv_2016\nFROM Insurance\nWHERE tiv_2015 IN (\n    SELECT tiv_2015\n    FROM Insurance\n    GROUP BY tiv_2015\n    HAVING COUNT(*) > 1\n)\nAND (lat, lon) IN (\n    SELECT lat, lon\n    FROM Insurance\n    GROUP BY lat, lon\n    HAVING COUNT(*) = 1\n);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of records in Insurance table"
+    ],
+    "notes": "Grouped subqueries and composite tuple checks evaluate in linear-logarithmic time.",
+    "whyNaiveFails": "Correlated subqueries or self-joins with Cartesian products scale quadratically on large tables.",
+    "spaceTimeTradeoff": "Grouped aggregation isolates matching keys directly without join explosion.",
+    "interviewerExpectation": "Use of subqueries with HAVING COUNT(*) conditions and composite tuple filtering."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT ROUND(SUM(tiv_2016), 2) AS tiv_2016\nFROM Insurance\nWHERE tiv_2015 IN (\n    SELECT tiv_2015\n    FROM Insurance\n    GROUP BY tiv_2015\n    HAVING COUNT(*) > 1\n)\nAND (lat, lon) IN (\n    SELECT lat, lon\n    FROM Insurance\n    GROUP BY lat, lon\n    HAVING COUNT(*) = 1\n);",
+      "approach": "Subquery Tuple Membership Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT ROUND(SUM(tiv_2016)::numeric, 2) AS tiv_2016\nFROM Insurance\nWHERE tiv_2015 IN (\n    SELECT tiv_2015\n    FROM Insurance\n    GROUP BY tiv_2015\n    HAVING COUNT(*) > 1\n)\nAND (lat, lon) IN (\n    SELECT lat, lon\n    FROM Insurance\n    GROUP BY lat, lon\n    HAVING COUNT(*) = 1\n);",
+      "approach": "PostgreSQL Numeric Rounded Sum with Tuple Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_investments(insurance: pd.DataFrame) -> pd.DataFrame:\n    dup_2015 = insurance[insurance.duplicated(subset=['tiv_2015'], keep=False)]\n    unique_loc = insurance.drop_duplicates(subset=['lat', 'lon'], keep=False)\n    filtered = insurance[insurance['pid'].isin(dup_2015['pid']) & insurance['pid'].isin(unique_loc['pid'])]\n    total = round(filtered['tiv_2016'].sum(), 2)\n    return pd.DataFrame({'tiv_2016': [total]})",
+      "approach": "Pandas Boolean Mask Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

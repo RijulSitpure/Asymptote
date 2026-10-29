@@ -1,0 +1,65 @@
+{
+  "slug": "convert-json-string-to-object",
+  "number": 2759,
+  "category": "JavaScript",
+  "patterns": [
+    "json-object-traversal"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Grammar Parser and Tokenization",
+      "text": "Parsing a serialized data string into objects and arrays requires recognizing delimiters like brackets, braces, and quotes."
+    },
+    {
+      "level": 2,
+      "title": "Recursive Descent Character Scanner",
+      "text": "Maintain a character pointer index. Based on the leading character, branch into parsing an object, an array, a quoted string, a boolean, null, or a number."
+    },
+    {
+      "level": 3,
+      "title": "Parser Blueprint",
+      "text": "Let idx = 0. parseValue(): skip whitespace. If char is { parseObject; if [ parseArray; if \" parseString; if t/f parseBool; if n parseNull; else parseNumber."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```javascript\n/**\n * @param {string} str\n * @return {any}\n */\nvar parse = function(str) {\n    let i = 0;\n    function skip() {\n        while (i < str.length && /\\s/.test(str[i])) i++;\n    }\n    function parseValue() {\n        skip();\n        const ch = str[i];\n        if (ch === '{') return parseObject();\n        if (ch === '[') return parseArray();\n        if (ch === '\"') return parseString();\n        if (ch === 't' || ch === 'f') return parseBool();\n        if (ch === 'n') return parseNull();\n        return parseNumber();\n    }\n    function parseObject() {\n        const obj = {};\n        i++; skip();\n        if (str[i] === '}') { i++; return obj; }\n        while (i < str.length) {\n            skip();\n            const key = parseString();\n            skip();\n            i++;\n            const val = parseValue();\n            obj[key] = val;\n            skip();\n            if (str[i] === ',') { i++; }\n            else if (str[i] === '}') { i++; break; }\n        }\n        return obj;\n    }\n    function parseArray() {\n        const arr = [];\n        i++; skip();\n        if (str[i] === ']') { i++; return arr; }\n        while (i < str.length) {\n            arr.push(parseValue());\n            skip();\n            if (str[i] === ',') { i++; }\n            else if (str[i] === ']') { i++; break; }\n        }\n        return arr;\n    }\n    function parseString() {\n        i++;\n        let s = '';\n        while (i < str.length && str[i] !== '\"') {\n            if (str[i] === '\\\\') { i++; }\n            s += str[i++];\n        }\n        i++;\n        return s;\n    }\n    function parseBool() {\n        if (str.startsWith('true', i)) { i += 4; return true; }\n        i += 5; return false;\n    }\n    function parseNull() {\n        i += 4; return null;\n    }\n    function parseNumber() {\n        let s = '';\n        while (i < str.length && /[-+eE.0-9]/.test(str[i])) s += str[i++];\n        return Number(s);\n    }\n    return parseValue();\n};\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(D)",
+    "variables": [
+      "N: string length",
+      "D: nesting depth"
+    ],
+    "notes": "Single pass recursive descent parser processes each character once.",
+    "whyNaiveFails": "Regular expressions cannot parse arbitrarily deep nested structures without grammar support.",
+    "spaceTimeTradeoff": "In-place character pointer avoids large token arrays.",
+    "interviewerExpectation": "Writing clean modular helper functions for each JSON syntactic production."
+  },
+  "solutions": [
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} str\n * @return {any}\n */\nvar parse = function(str) {\n    let i = 0;\n    function skip() {\n        while (i < str.length && /\\s/.test(str[i])) i++;\n    }\n    function parseValue() {\n        skip();\n        const ch = str[i];\n        if (ch === '{') return parseObject();\n        if (ch === '[') return parseArray();\n        if (ch === '\"') return parseString();\n        if (ch === 't' || ch === 'f') return parseBool();\n        if (ch === 'n') return parseNull();\n        return parseNumber();\n    }\n    function parseObject() {\n        const obj = {};\n        i++; skip();\n        if (str[i] === '}') { i++; return obj; }\n        while (i < str.length) {\n            skip();\n            const key = parseString();\n            skip();\n            i++;\n            const val = parseValue();\n            obj[key] = val;\n            skip();\n            if (str[i] === ',') { i++; }\n            else if (str[i] === '}') { i++; break; }\n        }\n        return obj;\n    }\n    function parseArray() {\n        const arr = [];\n        i++; skip();\n        if (str[i] === ']') { i++; return arr; }\n        while (i < str.length) {\n            arr.push(parseValue());\n            skip();\n            if (str[i] === ',') { i++; }\n            else if (str[i] === ']') { i++; break; }\n        }\n        return arr;\n    }\n    function parseString() {\n        i++;\n        let s = '';\n        while (i < str.length && str[i] !== '\"') {\n            if (str[i] === '\\\\') { i++; }\n            s += str[i++];\n        }\n        i++;\n        return s;\n    }\n    function parseBool() {\n        if (str.startsWith('true', i)) { i += 4; return true; }\n        i += 5; return false;\n    }\n    function parseNull() {\n        i += 4; return null;\n    }\n    function parseNumber() {\n        let s = '';\n        while (i < str.length && /[-+eE.0-9]/.test(str[i])) s += str[i++];\n        return Number(s);\n    }\n    return parseValue();\n};",
+      "approach": "Recursive Descent Character Stream Parser",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "typescript",
+      "code": "function parse(str: string): any {\n    let i = 0;\n    function skip() {\n        while (i < str.length && /\\s/.test(str[i])) i++;\n    }\n    function parseValue(): any {\n        skip();\n        const ch = str[i];\n        if (ch === '{') return parseObject();\n        if (ch === '[') return parseArray();\n        if (ch === '\"') return parseString();\n        if (ch === 't' || ch === 'f') return parseBool();\n        if (ch === 'n') return parseNull();\n        return parseNumber();\n    }\n    function parseObject(): Record<string, any> {\n        const obj: Record<string, any> = {};\n        i++; skip();\n        if (str[i] === '}') { i++; return obj; }\n        while (i < str.length) {\n            skip();\n            const key = parseString();\n            skip();\n            i++;\n            const val = parseValue();\n            obj[key] = val;\n            skip();\n            if (str[i] === ',') { i++; }\n            else if (str[i] === '}') { i++; break; }\n        }\n        return obj;\n    }\n    function parseArray(): any[] {\n        const arr: any[] = [];\n        i++; skip();\n        if (str[i] === ']') { i++; return arr; }\n        while (i < str.length) {\n            arr.push(parseValue());\n            skip();\n            if (str[i] === ',') { i++; }\n            else if (str[i] === ']') { i++; break; }\n        }\n        return arr;\n    }\n    function parseString(): string {\n        i++;\n        let s = '';\n        while (i < str.length && str[i] !== '\"') {\n            if (str[i] === '\\\\') { i++; }\n            s += str[i++];\n        }\n        i++;\n        return s;\n    }\n    function parseBool(): boolean {\n        if (str.startsWith('true', i)) { i += 4; return true; }\n        i += 5; return false;\n    }\n    function parseNull(): null {\n        i += 4; return null;\n    }\n    function parseNumber(): number {\n        let s = '';\n        while (i < str.length && /[-+eE.0-9]/.test(str[i])) s += str[i++];\n        return Number(s);\n    }\n    return parseValue();\n}",
+      "approach": "TypeScript Recursive Descent Parser",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

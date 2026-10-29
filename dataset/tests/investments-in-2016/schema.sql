@@ -1,0 +1,1 @@
+CREATE TABLE Insurance (pid int, tiv_2015 float, tiv_2016 float, lat float, lon float);

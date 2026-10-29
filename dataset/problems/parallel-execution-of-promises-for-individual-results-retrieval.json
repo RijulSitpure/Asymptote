@@ -1,0 +1,64 @@
+{
+  "slug": "parallel-execution-of-promises-for-individual-results-retrieval",
+  "number": 2795,
+  "category": "JavaScript",
+  "patterns": [
+    "promises-async"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Concurrent Resolution Collection",
+      "text": "Coordinate multiple pending asynchronous operations concurrently and gather individual success or failure outcomes without premature aborts."
+    },
+    {
+      "level": 2,
+      "title": "Index Preserving Completion Counter",
+      "text": "Store each fulfilled or rejected outcome directly at the original index and resolve the overarching promise once all tasks complete."
+    },
+    {
+      "level": 3,
+      "title": "AllSettled Blueprint",
+      "text": "Iterate over functions, execute each fn(), and inside then and catch write { status, value/reason } to results[i], checking if completed count equals n."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```javascript\n/**\n * @param {Array<Function>} functions\n * @return {Promise<Array>}\n */\nvar promiseAllSettled = function(functions) {\n    return new Promise((resolve) => {\n        if (functions.length === 0) {\n            resolve([]);\n            return;\n        }\n        const results = new Array(functions.length);\n        let settledCount = 0;\n        functions.forEach((fn, idx) => {\n            fn()\n                .then((value) => {\n                    results[idx] = { status: 'fulfilled', value };\n                })\n                .catch((reason) => {\n                    results[idx] = { status: 'rejected', reason };\n                })\n                .finally(() => {\n                    settledCount++;\n                    if (settledCount === functions.length) {\n                        resolve(results);\n                    }\n                });\n        });\n    });\n};\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of asynchronous functions"
+    ],
+    "notes": "Executes all tasks in parallel; resolution triggers after slowest task completes.",
+    "whyNaiveFails": "Promise.all rejects immediately upon the first failure, dropping all other concurrently running results.",
+    "spaceTimeTradeoff": "Allocates an output array of length N to store individual statuses.",
+    "interviewerExpectation": "Accurate preservation of input index order regardless of resolution timing."
+  },
+  "solutions": [
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {Array<Function>} functions\n * @return {Promise<Array>}\n */\nvar promiseAllSettled = function(functions) {\n    return new Promise((resolve) => {\n        if (functions.length === 0) {\n            resolve([]);\n            return;\n        }\n        const results = new Array(functions.length);\n        let settledCount = 0;\n        functions.forEach((fn, idx) => {\n            fn()\n                .then((value) => {\n                    results[idx] = { status: 'fulfilled', value };\n                })\n                .catch((reason) => {\n                    results[idx] = { status: 'rejected', reason };\n                })\n                .finally(() => {\n                    settledCount++;\n                    if (settledCount === functions.length) {\n                        resolve(results);\n                    }\n                });\n        });\n    });\n};",
+      "approach": "Manual Settled Promise Counter Tracker",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "typescript",
+      "code": "type SettledResult = { status: 'fulfilled'; value: any } | { status: 'rejected'; reason: any };\n\nfunction promiseAllSettled(functions: Function[]): Promise<SettledResult[]> {\n    return new Promise((resolve) => {\n        if (functions.length === 0) {\n            resolve([]);\n            return;\n        }\n        const results: SettledResult[] = new Array(functions.length);\n        let settledCount = 0;\n        functions.forEach((fn, idx) => {\n            fn()\n                .then((value: any) => {\n                    results[idx] = { status: 'fulfilled', value };\n                })\n                .catch((reason: any) => {\n                    results[idx] = { status: 'rejected', reason };\n                })\n                .finally(() => {\n                    settledCount++;\n                    if (settledCount === functions.length) {\n                        resolve(results);\n                    }\n                });\n        });\n    });\n}",
+      "approach": "TypeScript Concurrent AllSettled Dispatcher",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

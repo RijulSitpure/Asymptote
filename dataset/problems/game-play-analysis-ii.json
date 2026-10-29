@@ -1,0 +1,71 @@
+{
+  "slug": "game-play-analysis-ii",
+  "number": 512,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Earliest Activity Identification",
+      "text": "Filter log rows to retain solely the hardware identifier linked to each participant initial participation record."
+    },
+    {
+      "level": 2,
+      "title": "Grouped Minimum Timestamp Pairing",
+      "text": "Isolate each participant first event date using grouped aggregation, then filter the source records matching both user and timestamp."
+    },
+    {
+      "level": 3,
+      "title": "Subquery Filtering Blueprint",
+      "text": "Select player_id and device_id where tuple (player_id, event_date) matches the subquery of minimum event_date grouped by player_id."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT player_id, device_id\nFROM Activity\nWHERE (player_id, event_date) IN (\n    SELECT player_id, MIN(event_date)\n    FROM Activity\n    GROUP BY player_id\n);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of records in Activity table"
+    ],
+    "notes": "Aggregation and tuple filter execute in linear-logarithmic scan time.",
+    "whyNaiveFails": "Grouping by player_id and selecting device_id directly returns arbitrary non-deterministic device values in SQL standards.",
+    "spaceTimeTradeoff": "Subquery materialization isolates earliest login dates per account.",
+    "interviewerExpectation": "Use of subquery tuple filtering or window ranking functions."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT player_id, device_id\nFROM Activity\nWHERE (player_id, event_date) IN (\n    SELECT player_id, MIN(event_date)\n    FROM Activity\n    GROUP BY player_id\n);",
+      "approach": "Tuple Subquery Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT DISTINCT ON (player_id) player_id, device_id\nFROM Activity\nORDER BY player_id, event_date ASC;",
+      "approach": "PostgreSQL Distinct On Clause",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef game_analysis(activity: pd.DataFrame) -> pd.DataFrame:\n    sorted_df = activity.sort_values(by='event_date')\n    first_logins = sorted_df.drop_duplicates(subset=['player_id'], keep='first')\n    return first_logins[['player_id', 'device_id']]",
+      "approach": "Pandas Sort and Drop Duplicates First",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

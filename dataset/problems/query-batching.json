@@ -1,0 +1,64 @@
+{
+  "slug": "query-batching",
+  "number": 2756,
+  "category": "JavaScript",
+  "patterns": [
+    "object-array-utilities"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Asynchronous Query Coalescing",
+      "text": "Consolidating incoming individual queries into batched requests within a time threshold reduces outbound network requests."
+    },
+    {
+      "level": 2,
+      "title": "Batch Buffer and Flush Timing",
+      "text": "Queue incoming query keys and their promise resolver callbacks. If no timer is pending, schedule a flush in t milliseconds. When flushed, execute the multi-query function and dispatch results to individual callers."
+    },
+    {
+      "level": 3,
+      "title": "Query Batcher Blueprint",
+      "text": "Class QueryBatcher(queryMultiple, t). In getValue(key): queue key with resolve callback. If not pending, wait cooldown t, then call queryMultiple(keys) and resolve matching keys."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```javascript\nclass QueryBatcher {\n    /**\n     * @param {Function} queryMultiple\n     * @param {number} t\n     */\n    constructor(queryMultiple, t) {\n        this.queryMultiple = queryMultiple;\n        this.t = t;\n        this.queue = [];\n        this.timer = null;\n    }\n    \n    /**\n     * @param {string} key\n     * @return {Promise<string>}\n     */\n    async getValue(key) {\n        return new Promise(resolve => {\n            this.queue.push({ key, resolve });\n            this._schedule();\n        });\n    }\n\n    _schedule() {\n        if (this.timer) return;\n        this.timer = setTimeout(async () => {\n            this.timer = null;\n            const current = this.queue;\n            this.queue = [];\n            const keys = current.map(item => item.key);\n            const results = await this.queryMultiple(keys);\n            current.forEach((item, idx) => {\n                item.resolve(results[idx]);\n            });\n        }, this.t);\n    }\n}\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(K)",
+    "space": "O(K)",
+    "variables": [
+      "K: number of queued query keys in batch"
+    ],
+    "notes": "Dispatches results in linear time proportional to batch size.",
+    "whyNaiveFails": "Sending each query separately overwhelms backend endpoints with individual round-trips.",
+    "spaceTimeTradeoff": "Batch queue temporarily holds pending keys for duration t.",
+    "interviewerExpectation": "Correct association of batched array output with individual caller promise resolutions."
+  },
+  "solutions": [
+    {
+      "lang": "javascript",
+      "code": "class QueryBatcher {\n    /**\n     * @param {Function} queryMultiple\n     * @param {number} t\n     */\n    constructor(queryMultiple, t) {\n        this.queryMultiple = queryMultiple;\n        this.t = t;\n        this.queue = [];\n        this.timer = null;\n    }\n    \n    /**\n     * @param {string} key\n     * @return {Promise<string>}\n     */\n    async getValue(key) {\n        return new Promise(resolve => {\n            this.queue.push({ key, resolve });\n            this._schedule();\n        });\n    }\n\n    _schedule() {\n        if (this.timer) return;\n        this.timer = setTimeout(async () => {\n            this.timer = null;\n            const current = this.queue;\n            this.queue = [];\n            const keys = current.map(item => item.key);\n            const results = await this.queryMultiple(keys);\n            current.forEach((item, idx) => {\n                item.resolve(results[idx]);\n            });\n        }, this.t);\n    }\n}",
+      "approach": "Timed Batch Queue with Multi-Query Promise Distribution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "typescript",
+      "code": "class QueryBatcher {\n    private queryMultiple: (keys: string[]) => Promise<string[]>;\n    private t: number;\n    private queue: { key: string; resolve: (val: string) => void }[] = [];\n    private timer: any = null;\n\n    constructor(queryMultiple: (keys: string[]) => Promise<string[]>, t: number) {\n        this.queryMultiple = queryMultiple;\n        this.t = t;\n    }\n    \n    async getValue(key: string): Promise<string> {\n        return new Promise<string>(resolve => {\n            this.queue.push({ key, resolve });\n            this._schedule();\n        });\n    }\n\n    private _schedule(): void {\n        if (this.timer) return;\n        this.timer = setTimeout(async () => {\n            this.timer = null;\n            const current = this.queue;\n            this.queue = [];\n            const keys = current.map(item => item.key);\n            const results = await this.queryMultiple(keys);\n            current.forEach((item, idx) => {\n                item.resolve(results[idx]);\n            });\n        }, this.t);\n    }\n}",
+      "approach": "TypeScript Query Batching Dispatcher",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

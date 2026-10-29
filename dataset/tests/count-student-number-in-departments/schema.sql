@@ -1,0 +1,1 @@
+CREATE TABLE Student (student_id int, student_name varchar(255), gender varchar(255), dept_id int); CREATE TABLE Department (dept_id int, dept_name varchar(255));

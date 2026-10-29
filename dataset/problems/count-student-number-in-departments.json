@@ -1,0 +1,71 @@
+{
+  "slug": "count-student-number-in-departments",
+  "number": 580,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Preserving Outer Group Aggregation",
+      "text": "Tally enrolled members across faculties, ensuring units without any registered members remain represented with zero."
+    },
+    {
+      "level": 2,
+      "title": "Left Outer Join and Null Count",
+      "text": "Left join departments to students and count student identifiers rather than wildcard rows so that unmatched departments produce zero."
+    },
+    {
+      "level": 3,
+      "title": "Department Count Blueprint",
+      "text": "Left join Department d with Student s on d.dept_id = s.dept_id, group by d.dept_id and d.dept_name, order by student_number descending, dept_name ascending."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT\n    d.dept_name,\n    COUNT(s.student_id) AS student_number\nFROM Department d\nLEFT JOIN Student s ON d.dept_id = s.dept_id\nGROUP BY d.dept_id, d.dept_name\nORDER BY student_number DESC, d.dept_name ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total number of department and student records"
+    ],
+    "notes": "Left outer join and composite ordering evaluate in linear-logarithmic time.",
+    "whyNaiveFails": "Inner join excludes departments having zero enrolled students.",
+    "spaceTimeTradeoff": "Outer join maintains complete coverage of all defined departments.",
+    "interviewerExpectation": "Use of LEFT JOIN and COUNT(column) instead of COUNT(*) to preserve zero for nulls."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT\n    d.dept_name,\n    COUNT(s.student_id) AS student_number\nFROM Department d\nLEFT JOIN Student s ON d.dept_id = s.dept_id\nGROUP BY d.dept_id, d.dept_name\nORDER BY student_number DESC, d.dept_name ASC;",
+      "approach": "Left Join Null-Safe Column Count",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT\n    d.dept_name,\n    COUNT(s.student_id) AS student_number\nFROM Department d\nLEFT JOIN Student s ON d.dept_id = s.dept_id\nGROUP BY d.dept_id, d.dept_name\nORDER BY student_number DESC, d.dept_name ASC;",
+      "approach": "PostgreSQL Outer Join Count Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef count_students(student: pd.DataFrame, department: pd.DataFrame) -> pd.DataFrame:\n    merged = department.merge(student, on='dept_id', how='left')\n    grouped = merged.groupby('dept_name')['student_id'].count().reset_index(name='student_number')\n    return grouped.sort_values(by=['student_number', 'dept_name'], ascending=[False, True])",
+      "approach": "Pandas Left Merge and Column Count Sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

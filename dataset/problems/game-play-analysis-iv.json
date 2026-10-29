@@ -1,0 +1,71 @@
+{
+  "slug": "game-play-analysis-iv",
+  "number": 550,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Retention Ratio Calculation",
+      "text": "Determine the proportion of total unique participants who logged back into the platform exactly one day following their initial session."
+    },
+    {
+      "level": 2,
+      "title": "First Date Self Join",
+      "text": "Find each user initial timestamp using a CTE or subquery, then inner join with the main table matching date plus one day."
+    },
+    {
+      "level": 3,
+      "title": "Retention Blueprint",
+      "text": "Join first login table with activity on player_id and event_date equals first_date + 1 day. Return round(count(distinct a.player_id) / total, 2)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH FirstLogin AS (\n    SELECT player_id, MIN(event_date) AS first_date\n    FROM Activity\n    GROUP BY player_id\n)\nSELECT\n    ROUND(\n        COUNT(DISTINCT a.player_id) / (SELECT COUNT(DISTINCT player_id) FROM Activity),\n        2\n    ) AS fraction\nFROM FirstLogin f\nJOIN Activity a\n  ON f.player_id = a.player_id\n AND a.event_date = DATE_ADD(f.first_date, INTERVAL 1 DAY);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of records in Activity table"
+    ],
+    "notes": "Subquery aggregation and self-join execute in linear-logarithmic time.",
+    "whyNaiveFails": "Checking consecutive days without verifying that the base date was the initial login overcounts later consecutive sessions.",
+    "spaceTimeTradeoff": "Materializing earliest login isolates baseline cohorts accurately.",
+    "interviewerExpectation": "Use of CTE or subquery with DATE_ADD and correct rounding to two decimals."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH FirstLogin AS (\n    SELECT player_id, MIN(event_date) AS first_date\n    FROM Activity\n    GROUP BY player_id\n)\nSELECT\n    ROUND(\n        COUNT(DISTINCT a.player_id) / (SELECT COUNT(DISTINCT player_id) FROM Activity),\n        2\n    ) AS fraction\nFROM FirstLogin f\nJOIN Activity a\n  ON f.player_id = a.player_id\n AND a.event_date = DATE_ADD(f.first_date, INTERVAL 1 DAY);",
+      "approach": "Common Table Expression and Date Offset Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH FirstLogin AS (\n    SELECT player_id, MIN(event_date) AS first_date\n    FROM Activity\n    GROUP BY player_id\n)\nSELECT\n    ROUND(\n        COUNT(DISTINCT a.player_id)::numeric / NULLIF((SELECT COUNT(DISTINCT player_id) FROM Activity), 0),\n        2\n    ) AS fraction\nFROM FirstLogin f\nJOIN Activity a\n  ON f.player_id = a.player_id\n AND a.event_date = f.first_date + INTERVAL '1 day';",
+      "approach": "PostgreSQL Numeric Cast Date Addition CTE",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef gameplay_analysis(activity: pd.DataFrame) -> pd.DataFrame:\n    first_logins = activity.groupby('player_id')['event_date'].min().reset_index()\n    first_logins['next_date'] = first_logins['event_date'] + pd.Timedelta(days=1)\n    merged = pd.merge(first_logins, activity, left_on=['player_id', 'next_date'], right_on=['player_id', 'event_date'])\n    total_players = activity['player_id'].nunique()\n    retained_players = merged['player_id'].nunique()\n    fraction = round(retained_players / total_players, 2) if total_players > 0 else 0.0\n    return pd.DataFrame({'fraction': [fraction]})",
+      "approach": "Pandas Next-Day Merge Cohort Analysis",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

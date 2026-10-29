@@ -1,0 +1,1 @@
+CREATE TABLE Candidate (id int, name varchar(255)); CREATE TABLE Vote (id int, candidateId int);

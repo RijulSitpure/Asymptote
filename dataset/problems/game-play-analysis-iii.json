@@ -1,0 +1,71 @@
+{
+  "slug": "game-play-analysis-iii",
+  "number": 534,
+  "category": "Database",
+  "patterns": [
+    "running-total"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Cumulative Partition Aggregation",
+      "text": "Compute a running sum of session metrics partitioned by user identity across chronological timestamps."
+    },
+    {
+      "level": 2,
+      "title": "Window Function Ordering",
+      "text": "Apply an aggregate summation window partition by player ordered by date to accumulate values monotonically."
+    },
+    {
+      "level": 3,
+      "title": "Running Total Blueprint",
+      "text": "Select player_id, event_date, and sum(games_played) over (partition by player_id order by event_date) as games_played_so_far."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT\n    player_id,\n    event_date,\n    SUM(games_played) OVER (\n        PARTITION BY player_id\n        ORDER BY event_date\n    ) AS games_played_so_far\nFROM Activity;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of records in Activity table"
+    ],
+    "notes": "Window sort and prefix sum calculation evaluate in linear-logarithmic time.",
+    "whyNaiveFails": "Self-join quadratic accumulation scales poorly on large log volumes.",
+    "spaceTimeTradeoff": "Window frames compute running sums in a single pass without Cartesian products.",
+    "interviewerExpectation": "Use of standard SQL window functions with PARTITION BY and ORDER BY clauses."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT\n    player_id,\n    event_date,\n    SUM(games_played) OVER (\n        PARTITION BY player_id\n        ORDER BY event_date\n    ) AS games_played_so_far\nFROM Activity;",
+      "approach": "Window Aggregate Running Total",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT\n    player_id,\n    event_date,\n    SUM(games_played) OVER (\n        PARTITION BY player_id\n        ORDER BY event_date\n    ) AS games_played_so_far\nFROM Activity;",
+      "approach": "PostgreSQL Cumulative Sum Window",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef gameplay_analysis(activity: pd.DataFrame) -> pd.DataFrame:\n    activity = activity.sort_values(by=['player_id', 'event_date'])\n    activity['games_played_so_far'] = activity.groupby('player_id')['games_played'].cumsum()\n    return activity[['player_id', 'event_date', 'games_played_so_far']]",
+      "approach": "Pandas Cumulative Sum Groupby",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}
