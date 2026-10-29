@@ -1,0 +1,72 @@
+{
+  "slug": "user-purchase-platform",
+  "number": 1127,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Platform Classification Matrix",
+      "text": "A user active on both mobile and desktop on the same date belongs to the both platform category."
+    },
+    {
+      "level": 2,
+      "title": "Cartesian Date-Platform Grid Union",
+      "text": "Generate all combinations of spend_date with desktop, mobile, and both, then left join user daily platform classifications."
+    },
+    {
+      "level": 3,
+      "title": "Purchase Platform Blueprint",
+      "text": "Determine per-user daily platform (mobile, desktop, both). Generate date-platform grid from distinct dates and platforms. Left join and aggregate total amount and user count."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH UserDaily AS (\n    SELECT spend_date, user_id,\n           CASE \n               WHEN COUNT(DISTINCT platform) = 2 THEN 'both'\n               ELSE MAX(platform)\n           END AS platform,\n           SUM(amount) AS total_amount\n    FROM Spending\n    GROUP BY spend_date, user_id\n),\nDates AS (\n    SELECT DISTINCT spend_date FROM Spending\n),\nPlatforms AS (\n    SELECT 'desktop' AS platform UNION ALL\n    SELECT 'mobile' UNION ALL\n    SELECT 'both'\n),\nGrid AS (\n    SELECT d.spend_date, p.platform\n    FROM Dates d\n    CROSS JOIN Platforms p\n)\nSELECT g.spend_date, g.platform,\n       IFNULL(SUM(u.total_amount), 0) AS total_amount,\n       COUNT(u.user_id) AS total_users\nFROM Grid g\nLEFT JOIN UserDaily u\n  ON g.spend_date = u.spend_date\n AND g.platform = u.platform\nGROUP BY g.spend_date, g.platform;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S log S)",
+    "space": "O(D * 3)",
+    "variables": [
+      "S: number of spending records",
+      "D: distinct spend dates"
+    ],
+    "notes": "User daily grouping followed by cross join grid left aggregation runs in linear-logarithmic time.",
+    "whyNaiveFails": "Omitting missing platforms on dates with 0 activity drops mandatory zero-filled rows from the final report.",
+    "spaceTimeTradeoff": "Cross join grid guarantees all three platform categories are emitted for every active calendar date.",
+    "interviewerExpectation": "Use of CROSS JOIN date-platform grid and COUNT(DISTINCT platform) = 2 conditional classification."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH UserDaily AS (\n    SELECT spend_date, user_id,\n           CASE \n               WHEN COUNT(DISTINCT platform) = 2 THEN 'both'\n               ELSE MAX(platform)\n           END AS platform,\n           SUM(amount) AS total_amount\n    FROM Spending\n    GROUP BY spend_date, user_id\n),\nDates AS (\n    SELECT DISTINCT spend_date FROM Spending\n),\nPlatforms AS (\n    SELECT 'desktop' AS platform UNION ALL\n    SELECT 'mobile' UNION ALL\n    SELECT 'both'\n),\nGrid AS (\n    SELECT d.spend_date, p.platform\n    FROM Dates d\n    CROSS JOIN Platforms p\n)\nSELECT g.spend_date, g.platform,\n       IFNULL(SUM(u.total_amount), 0) AS total_amount,\n       COUNT(u.user_id) AS total_users\nFROM Grid g\nLEFT JOIN UserDaily u\n  ON g.spend_date = u.spend_date\n AND g.platform = u.platform\nGROUP BY g.spend_date, g.platform;",
+      "approach": "Cross Join Grid with User Daily Platform Classification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH UserDaily AS (\n    SELECT spend_date, user_id,\n           CASE \n               WHEN COUNT(DISTINCT platform) = 2 THEN 'both'\n               ELSE MAX(platform)\n           END AS platform,\n           SUM(amount) AS total_amount\n    FROM Spending\n    GROUP BY spend_date, user_id\n),\nDates AS (\n    SELECT DISTINCT spend_date FROM Spending\n),\nPlatforms AS (\n    SELECT 'desktop' AS platform UNION ALL\n    SELECT 'mobile' UNION ALL\n    SELECT 'both'\n),\nGrid AS (\n    SELECT d.spend_date, p.platform\n    FROM Dates d\n    CROSS JOIN Platforms p\n)\nSELECT g.spend_date, g.platform,\n       COALESCE(SUM(u.total_amount), 0) AS total_amount,\n       COUNT(u.user_id) AS total_users\nFROM Grid g\nLEFT JOIN UserDaily u\n  ON g.spend_date = u.spend_date\n AND g.platform = u.platform\nGROUP BY g.spend_date, g.platform;",
+      "approach": "PostgreSQL Cross Join Grid with Coalesce Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef user_purchase_platform(spending: pd.DataFrame) -> pd.DataFrame:\n    grouped = spending.groupby(['spend_date', 'user_id']).agg(\n        platforms=('platform', set),\n        amount=('amount', 'sum')\n    ).reset_index()\n    def get_plat(p_set):\n        return 'both' if len(p_set) == 2 else list(p_set)[0]\n    grouped['platform'] = grouped['platforms'].apply(get_plat)\n    agg_user = grouped.groupby(['spend_date', 'platform']).agg(\n        total_amount=('amount', 'sum'),\n        total_users=('user_id', 'count')\n    ).reset_index()\n\n    dates = spending['spend_date'].unique()\n    grid = []\n    for d in dates:\n        for p in ['desktop', 'mobile', 'both']:\n            grid.append({'spend_date': d, 'platform': p})\n    grid_df = pd.DataFrame(grid)\n    res = grid_df.merge(agg_user, on=['spend_date', 'platform'], how='left')\n    res['total_amount'] = res['total_amount'].fillna(0).astype(int)\n    res['total_users'] = res['total_users'].fillna(0).astype(int)\n    return res",
+      "approach": "Pandas Cross Product Grid with Aggregated Left Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

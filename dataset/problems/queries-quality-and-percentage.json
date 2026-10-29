@@ -1,0 +1,72 @@
+{
+  "slug": "queries-quality-and-percentage",
+  "number": 1211,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Search Query Rating and Quality Metrics",
+      "text": "Quality is the average ratio of rating divided by position. Poor query percentage is the share of ratings strictly below three."
+    },
+    {
+      "level": 2,
+      "title": "Grouped Mean Calculation with Null Filter",
+      "text": "Filter out null query names. Group by query name and compute the mean rating-to-position ratio and percentage with rating < 3."
+    },
+    {
+      "level": 3,
+      "title": "Queries Quality Query Blueprint",
+      "text": "select query_name, round(avg(rating / position), 2) as quality, round(avg(case when rating < 3 then 1 else 0 end) * 100, 2) as poor_query_percentage from Queries where query_name is not null group by query_name."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT query_name,\n       ROUND(AVG(rating / position), 2) AS quality,\n       ROUND(AVG(CASE WHEN rating < 3 THEN 1 ELSE 0 END) * 100, 2) AS poor_query_percentage\nFROM Queries\nWHERE query_name IS NOT NULL\nGROUP BY query_name;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(Q)",
+    "space": "O(N)",
+    "variables": [
+      "Q: number of queries",
+      "N: distinct query names"
+    ],
+    "notes": "Single group-by pass evaluating arithmetic ratios runs in linear time.",
+    "whyNaiveFails": "Failing to filter null query names can violate result table constraints.",
+    "spaceTimeTradeoff": "Direct average on boolean case expression avoids separate filtered counting queries.",
+    "interviewerExpectation": "Use of ROUND(AVG(...), 2) and conditional CASE expression for percentage calculation."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT query_name,\n       ROUND(AVG(rating / position), 2) AS quality,\n       ROUND(AVG(CASE WHEN rating < 3 THEN 1 ELSE 0 END) * 100, 2) AS poor_query_percentage\nFROM Queries\nWHERE query_name IS NOT NULL\nGROUP BY query_name;",
+      "approach": "Grouped Quality Ratio and Conditional Percentage Rounding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT query_name,\n       ROUND(AVG(rating::numeric / position), 2) AS quality,\n       ROUND(AVG(CASE WHEN rating < 3 THEN 100.0 ELSE 0.0 END), 2) AS poor_query_percentage\nFROM Queries\nWHERE query_name IS NOT NULL\nGROUP BY query_name;",
+      "approach": "PostgreSQL Numeric Cast Quality and Rate Average",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef queries_quality_and_percentage(queries: pd.DataFrame) -> pd.DataFrame:\n    valid = queries[queries['query_name'].notnull()].copy()\n    valid['ratio'] = valid['rating'] / valid['position'] + 1e-12\n    valid['poor'] = (valid['rating'] < 3).astype(int) * 100.0\n    res = valid.groupby('query_name').agg(\n        quality=('ratio', lambda x: round(x.mean(), 2)),\n        poor_query_percentage=('poor', lambda x: round(x.mean(), 2))\n    ).reset_index()\n    return res",
+      "approach": "Pandas Ratio Transformation and Mean Rounding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

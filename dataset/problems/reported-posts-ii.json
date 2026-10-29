@@ -1,0 +1,73 @@
+{
+  "slug": "reported-posts-ii",
+  "number": 1132,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Daily Spam Removal Rate Average",
+      "text": "Calculate the percentage of spam-reported posts that were removed on each day, then take the average of these daily rates."
+    },
+    {
+      "level": 2,
+      "title": "Daily Ratio CTE with Distinct Counting",
+      "text": "Group actions with extra equal to spam by action date, computing count of distinct removed posts divided by reported posts."
+    },
+    {
+      "level": 3,
+      "title": "Reported Posts Removal Blueprint",
+      "text": "with DailySpam as (select a.action_date, count(distinct r.post_id) / count(distinct a.post_id) as removal_rate from Actions a left join Removals r on a.post_id = r.post_id where a.extra = \"spam\" group by a.action_date) select round(avg(removal_rate) * 100, 2) as average_daily_percent from DailySpam."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH DailySpam AS (\n    SELECT a.action_date,\n           COUNT(DISTINCT r.post_id) / COUNT(DISTINCT a.post_id) AS removal_rate\n    FROM Actions a\n    LEFT JOIN Removals r ON a.post_id = r.post_id\n    WHERE a.extra = 'spam'\n    GROUP BY a.action_date\n)\nSELECT ROUND(AVG(removal_rate) * 100, 2) AS average_daily_percent\nFROM DailySpam;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(A + R)",
+    "space": "O(D)",
+    "variables": [
+      "A: number of action records",
+      "R: number of removal logs",
+      "D: distinct action dates"
+    ],
+    "notes": "Grouped distinct counts per day followed by average percentage rounding executes in linear time.",
+    "whyNaiveFails": "Averaging across all individual posts directly yields global removal percentage rather than the average of daily rates.",
+    "spaceTimeTradeoff": "Daily aggregation CTE reduces rows down to one record per date before outer average calculation.",
+    "interviewerExpectation": "Computing daily percentage first in a CTE before taking the overall average."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH DailySpam AS (\n    SELECT a.action_date,\n           COUNT(DISTINCT r.post_id) / COUNT(DISTINCT a.post_id) AS removal_rate\n    FROM Actions a\n    LEFT JOIN Removals r ON a.post_id = r.post_id\n    WHERE a.extra = 'spam'\n    GROUP BY a.action_date\n)\nSELECT ROUND(AVG(removal_rate) * 100, 2) AS average_daily_percent\nFROM DailySpam;",
+      "approach": "Daily Removal Ratio CTE with Outer Mean Rounding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH DailySpam AS (\n    SELECT a.action_date,\n           COUNT(DISTINCT r.post_id)::numeric / COUNT(DISTINCT a.post_id) AS removal_rate\n    FROM Actions a\n    LEFT JOIN Removals r ON a.post_id = r.post_id\n    WHERE a.extra = 'spam'\n    GROUP BY a.action_date\n)\nSELECT ROUND(AVG(removal_rate) * 100, 2) AS average_daily_percent\nFROM DailySpam;",
+      "approach": "PostgreSQL Numeric Cast Daily Ratio Average",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef reported_posts(actions: pd.DataFrame, removals: pd.DataFrame) -> pd.DataFrame:\n    spam = actions[actions['extra'] == 'spam']\n    merged = spam.merge(removals, on='post_id', how='left')\n    daily = merged.groupby('action_date').agg(\n        reported=('post_id', 'nunique'),\n        removed=('remove_date', lambda x: x.dropna().nunique())\n    ).reset_index()\n    daily['rate'] = daily['removed'] / daily['reported']\n    ans = round(daily['rate'].mean() * 100, 2)\n    return pd.DataFrame({'average_daily_percent': [ans]})",
+      "approach": "Pandas Daily Ratio Aggregation with Mean Calculation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

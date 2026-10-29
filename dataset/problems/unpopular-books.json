@@ -1,0 +1,72 @@
+{
+  "slug": "unpopular-books",
+  "number": 1098,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Annual Sales and Publication Window Filter",
+      "text": "Filter books available at least one month before 2019-06-23, then identify those with fewer than ten copies sold in the past year."
+    },
+    {
+      "level": 2,
+      "title": "Left Join with Date-Bounded Quantity Sum",
+      "text": "Left join books with orders dispatched between 2018-06-23 and 2019-06-23, grouping to test if total quantity is under ten."
+    },
+    {
+      "level": 3,
+      "title": "Unpopular Books Blueprint",
+      "text": "select b.book_id, b.name from Books b left join Orders o on b.book_id = o.book_id and o.dispatch_date between \"2018-06-23\" and \"2019-06-23\" where b.available_from <= \"2019-05-23\" group by b.book_id, b.name having coalesce(sum(o.quantity), 0) < 10."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT b.book_id, b.name\nFROM Books b\nLEFT JOIN Orders o\n  ON b.book_id = o.book_id\n AND o.dispatch_date BETWEEN '2018-06-23' AND '2019-06-23'\nWHERE b.available_from <= '2019-05-23'\nGROUP BY b.book_id, b.name\nHAVING IFNULL(SUM(o.quantity), 0) < 10;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(B + O)",
+    "space": "O(B)",
+    "variables": [
+      "B: number of book titles",
+      "O: number of orders placed"
+    ],
+    "notes": "Filtering on availability followed by hash-based left join aggregation runs in linear time.",
+    "whyNaiveFails": "Inner join ignores books with zero sales over the target year, misidentifying them as popular.",
+    "spaceTimeTradeoff": "Condition in ON clause maintains books with zero sales without full outer table scans.",
+    "interviewerExpectation": "Correctly handling zero-sales books via LEFT JOIN and COALESCE / IFNULL."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT b.book_id, b.name\nFROM Books b\nLEFT JOIN Orders o\n  ON b.book_id = o.book_id\n AND o.dispatch_date BETWEEN '2018-06-23' AND '2019-06-23'\nWHERE b.available_from <= '2019-05-23'\nGROUP BY b.book_id, b.name\nHAVING IFNULL(SUM(o.quantity), 0) < 10;",
+      "approach": "Left Join with Date-Restricted Quantity Threshold",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT b.book_id, b.name\nFROM Books b\nLEFT JOIN Orders o\n  ON b.book_id = o.book_id\n AND o.dispatch_date BETWEEN '2018-06-23' AND '2019-06-23'\nWHERE b.available_from <= '2019-05-23'\nGROUP BY b.book_id, b.name\nHAVING COALESCE(SUM(o.quantity), 0) < 10;",
+      "approach": "PostgreSQL Coalesce Having Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef unpopular_books(books: pd.DataFrame, orders: pd.DataFrame) -> pd.DataFrame:\n    valid_books = books[books['available_from'] <= '2019-05-23']\n    annual_orders = orders[(orders['dispatch_date'] >= '2018-06-23') & (orders['dispatch_date'] <= '2019-06-23')]\n    sales = annual_orders.groupby('book_id')['quantity'].sum().reset_index()\n    merged = valid_books.merge(sales, on='book_id', how='left')\n    merged['quantity'] = merged['quantity'].fillna(0)\n    res = merged[merged['quantity'] < 10]\n    return res[['book_id', 'name']]",
+      "approach": "Pandas Left Merge with Zero Quantity Fill",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

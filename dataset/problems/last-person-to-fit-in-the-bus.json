@@ -1,0 +1,71 @@
+{
+  "slug": "last-person-to-fit-in-the-bus",
+  "number": 1204,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Running Weight Ceiling Identification",
+      "text": "Calculate the running cumulative weight of passengers boarding by turn, finding the final passenger whose running total does not exceed 1000."
+    },
+    {
+      "level": 2,
+      "title": "Window Running Sum with Limit",
+      "text": "Compute sum of weight over turn in ascending order. Filter records where running weight <= 1000, sort descending by running weight, and limit to one."
+    },
+    {
+      "level": 3,
+      "title": "Last Person Query Blueprint",
+      "text": "with CumulativeQueue as (select person_name, sum(weight) over (order by turn asc) as total_weight from Queue) select person_name from CumulativeQueue where total_weight <= 1000 order by total_weight desc limit 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH CumulativeQueue AS (\n    SELECT person_name,\n           SUM(weight) OVER (ORDER BY turn ASC) AS total_weight\n    FROM Queue\n)\nSELECT person_name\nFROM CumulativeQueue\nWHERE total_weight <= 1000\nORDER BY total_weight DESC\nLIMIT 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(Q log Q)",
+    "space": "O(Q)",
+    "variables": [
+      "Q: number of passengers in queue"
+    ],
+    "notes": "Window running total ordered by turn and limit-one filtering runs in linear-logarithmic time.",
+    "whyNaiveFails": "Self-joins comparing cumulative turns create quadratic comparisons across long queues.",
+    "spaceTimeTradeoff": "Window running sum evaluates prefix totals in a single pass over sorted turns.",
+    "interviewerExpectation": "Use of SUM(weight) OVER(ORDER BY turn ASC) filtered by <= 1000 and LIMIT 1."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH CumulativeQueue AS (\n    SELECT person_name,\n           SUM(weight) OVER (ORDER BY turn ASC) AS total_weight\n    FROM Queue\n)\nSELECT person_name\nFROM CumulativeQueue\nWHERE total_weight <= 1000\nORDER BY total_weight DESC\nLIMIT 1;",
+      "approach": "Window Running Sum with Ceiling Filter and Limit One",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH CumulativeQueue AS (\n    SELECT person_name,\n           SUM(weight) OVER (ORDER BY turn ASC) AS total_weight\n    FROM Queue\n)\nSELECT person_name\nFROM CumulativeQueue\nWHERE total_weight <= 1000\nORDER BY total_weight DESC\nLIMIT 1;",
+      "approach": "PostgreSQL Running Total with Descending Limit One",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef last_passenger(queue: pd.DataFrame) -> pd.DataFrame:\n    queue = queue.sort_values(by='turn')\n    queue['total_weight'] = queue['weight'].cumsum()\n    valid = queue[queue['total_weight'] <= 1000]\n    last = valid.iloc[[-1]]\n    return last[['person_name']]",
+      "approach": "Pandas Cumsum Filter and Tail Selection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

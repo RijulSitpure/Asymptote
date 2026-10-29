@@ -1,0 +1,71 @@
+{
+  "slug": "highest-grade-for-each-student",
+  "number": 1112,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Partitioned Grade Ranking with Course Tie-Breaker",
+      "text": "Identify the top grade for each student, selecting the smaller course identifier in case of grade ties."
+    },
+    {
+      "level": 2,
+      "title": "Row Number Window Ordering",
+      "text": "Assign row numbers partitioned by student identifier, ordered descending by grade and ascending by course identifier."
+    },
+    {
+      "level": 3,
+      "title": "Highest Grade Query Blueprint",
+      "text": "with Ranked as (select student_id, course_id, grade, row_number() over (partition by student_id order by grade desc, course_id asc) as rn from Enrollments) select student_id, course_id, grade from Ranked where rn = 1 order by student_id asc."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Ranked AS (\n    SELECT student_id, course_id, grade,\n           ROW_NUMBER() OVER (\n               PARTITION BY student_id\n               ORDER BY grade DESC, course_id ASC\n           ) AS rn\n    FROM Enrollments\n)\nSELECT student_id, course_id, grade\nFROM Ranked\nWHERE rn = 1\nORDER BY student_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(E log E)",
+    "space": "O(E)",
+    "variables": [
+      "E: number of enrollment records"
+    ],
+    "notes": "Window sorting partitioned by student executes in linear-logarithmic time.",
+    "whyNaiveFails": "Group by with max grade fails to isolate the corresponding course identifier deterministically in standard SQL.",
+    "spaceTimeTradeoff": "Window ranking computes ranks in a single pass without re-joining the base table on composite keys.",
+    "interviewerExpectation": "Use of ROW_NUMBER() with secondary ordering by course_id to resolve ties."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Ranked AS (\n    SELECT student_id, course_id, grade,\n           ROW_NUMBER() OVER (\n               PARTITION BY student_id\n               ORDER BY grade DESC, course_id ASC\n           ) AS rn\n    FROM Enrollments\n)\nSELECT student_id, course_id, grade\nFROM Ranked\nWHERE rn = 1\nORDER BY student_id ASC;",
+      "approach": "Window Row Number with Deterministic Tie Breaking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Ranked AS (\n    SELECT student_id, course_id, grade,\n           ROW_NUMBER() OVER (\n               PARTITION BY student_id\n               ORDER BY grade DESC, course_id ASC\n           ) AS rn\n    FROM Enrollments\n)\nSELECT student_id, course_id, grade\nFROM Ranked\nWHERE rn = 1\nORDER BY student_id ASC;",
+      "approach": "PostgreSQL Partitioned Window Row Number",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef highest_grade(enrollments: pd.DataFrame) -> pd.DataFrame:\n    sorted_df = enrollments.sort_values(by=['student_id', 'grade', 'course_id'], ascending=[True, False, True])\n    res = sorted_df.drop_duplicates(subset=['student_id'], keep='first')\n    return res.sort_values(by='student_id')",
+      "approach": "Pandas Multi-Column Sort and Deduplicated Keep First",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

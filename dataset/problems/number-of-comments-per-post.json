@@ -1,0 +1,72 @@
+{
+  "slug": "number-of-comments-per-post",
+  "number": 1241,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Post Identifier Isolation and Comment Count",
+      "text": "Posts are submissions where parent_id is null. Comments correspond to distinct submissions referencing that post as parent."
+    },
+    {
+      "level": 2,
+      "title": "Distinct Post Universe with Left Join",
+      "text": "Extract distinct sub_id where parent_id is null. Left join with submissions on sub_id equals parent_id, counting distinct comment identifiers."
+    },
+    {
+      "level": 3,
+      "title": "Comments Count Blueprint",
+      "text": "select p.sub_id as post_id, count(distinct c.sub_id) as number_of_comments from (select distinct sub_id from Submissions where parent_id is null) p left join Submissions c on p.sub_id = c.parent_id group by p.sub_id order by post_id asc."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT p.sub_id AS post_id,\n       COUNT(DISTINCT c.sub_id) AS number_of_comments\nFROM (\n    SELECT DISTINCT sub_id\n    FROM Submissions\n    WHERE parent_id IS NULL\n) p\nLEFT JOIN Submissions c\n  ON p.sub_id = c.parent_id\nGROUP BY p.sub_id\nORDER BY post_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S log S)",
+    "space": "O(P)",
+    "variables": [
+      "S: number of submissions",
+      "P: distinct root posts"
+    ],
+    "notes": "Filtering on null parents followed by left join on parent_id and distinct count runs in linear-logarithmic time.",
+    "whyNaiveFails": "Omitting distinct keyword overcounts repeated submissions with identical comment identifiers.",
+    "spaceTimeTradeoff": "Pre-filtering root posts preserves post rows that received zero comments.",
+    "interviewerExpectation": "Use of LEFT JOIN to retain 0-comment posts and COUNT(DISTINCT c.sub_id)."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT p.sub_id AS post_id,\n       COUNT(DISTINCT c.sub_id) AS number_of_comments\nFROM (\n    SELECT DISTINCT sub_id\n    FROM Submissions\n    WHERE parent_id IS NULL\n) p\nLEFT JOIN Submissions c\n  ON p.sub_id = c.parent_id\nGROUP BY p.sub_id\nORDER BY post_id ASC;",
+      "approach": "Distinct Root Posts Left Join with Comment Deduplication",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT p.sub_id AS post_id,\n       COUNT(DISTINCT c.sub_id) AS number_of_comments\nFROM (\n    SELECT DISTINCT sub_id\n    FROM Submissions\n    WHERE parent_id IS NULL\n) p\nLEFT JOIN Submissions c\n  ON p.sub_id = c.parent_id\nGROUP BY p.sub_id\nORDER BY post_id ASC;",
+      "approach": "PostgreSQL Root Post Left Join Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef count_comments(submissions: pd.DataFrame) -> pd.DataFrame:\n    posts = submissions[submissions['parent_id'].isnull()][['sub_id']].drop_duplicates().rename(columns={'sub_id': 'post_id'})\n    comments = submissions[submissions['parent_id'].notnull()][['sub_id', 'parent_id']].drop_duplicates()\n    comment_counts = comments.groupby('parent_id')['sub_id'].count().reset_index().rename(columns={'parent_id': 'post_id', 'sub_id': 'number_of_comments'})\n    res = posts.merge(comment_counts, on='post_id', how='left')\n    res['number_of_comments'] = res['number_of_comments'].fillna(0).astype(int)\n    return res.sort_values(by='post_id')",
+      "approach": "Pandas Submissions Split and Deduplicated Left Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

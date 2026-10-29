@@ -1,0 +1,79 @@
+{
+  "slug": "dinner-plate-stacks",
+  "number": 1172,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dynamic Stack Pool with Gaps",
+      "text": "Removing items from interior indices leaves empty slots that must be preferentially refilled by subsequent insertion calls."
+    },
+    {
+      "level": 2,
+      "title": "Priority Queue for Leftmost Available Stack",
+      "text": "Maintain a min-heap of stack indices that currently have available capacity, and prune empty trailing stacks on pop."
+    },
+    {
+      "level": 3,
+      "title": "Dinner Plates Blueprint",
+      "text": "Push pops index from heap. If index exceeds current stacks, append new stack. Pop removes from rightmost non-empty stack."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass DinnerPlates:\n    def __init__(self, capacity: int):\n        self.c = capacity\n        self.stacks = []\n        self.available = []\n\n    def push(self, val: int) -> None:\n        while self.available and self.available[0] < len(self.stacks) and len(self.stacks[self.available[0]]) == self.c:\n            heapq.heappop(self.available)\n        if not self.available:\n            heapq.heappush(self.available, len(self.stacks))\n            self.stacks.append([])\n        idx = self.available[0]\n        self.stacks[idx].append(val)\n        if len(self.stacks[idx]) == self.c:\n            heapq.heappop(self.available)\n\n    def pop(self) -> int:\n        while self.stacks and not self.stacks[-1]:\n            self.stacks.pop()\n        if not self.stacks:\n            return -1\n        return self.popAtStack(len(self.stacks) - 1)\n\n    def popAtStack(self, index: int) -> int:\n        if index >= len(self.stacks) or not self.stacks[index]:\n            return -1\n        if len(self.stacks[index]) == self.c:\n            heapq.heappush(self.available, index)\n        return self.stacks[index].pop()\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log S) push, O(log S) popAtStack, amortized O(1) pop",
+    "space": "O(N)",
+    "variables": [
+      "S: number of active stacks",
+      "N: total elements pushed"
+    ],
+    "notes": "Min-heap maintains the lowest available stack index in logarithmic time.",
+    "whyNaiveFails": "Linear scanning to find the leftmost non-full stack degrades push performance to O(S).",
+    "spaceTimeTradeoff": "Heap retains indices of partially filled stacks for instant O(1) peek and O(log S) update.",
+    "interviewerExpectation": "Use of min-heap for available stack indices and lazy cleanup of empty trailing stacks."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass DinnerPlates:\n    def __init__(self, capacity: int):\n        self.c = capacity\n        self.stacks = []\n        self.available = []\n\n    def push(self, val: int) -> None:\n        while self.available and self.available[0] < len(self.stacks) and len(self.stacks[self.available[0]]) == self.c:\n            heapq.heappop(self.available)\n        if not self.available:\n            heapq.heappush(self.available, len(self.stacks))\n            self.stacks.append([])\n        idx = self.available[0]\n        self.stacks[idx].append(val)\n        if len(self.stacks[idx]) == self.c:\n            heapq.heappop(self.available)\n\n    def pop(self) -> int:\n        while self.stacks and not self.stacks[-1]:\n            self.stacks.pop()\n        if not self.stacks:\n            return -1\n        return self.popAtStack(len(self.stacks) - 1)\n\n    def popAtStack(self, index: int) -> int:\n        if index >= len(self.stacks) or not self.stacks[index]:\n            return -1\n        if len(self.stacks[index]) == self.c:\n            heapq.heappush(self.available, index)\n        return self.stacks[index].pop()",
+      "approach": "Min-Heap for Available Stacks with Lazy Suffix Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class DinnerPlates {\n    int cap;\n    vector<vector<int>> stacks;\n    set<int> available;\npublic:\n    DinnerPlates(int capacity) : cap(capacity) {}\n\n    void push(int val) {\n        if (available.empty()) {\n            available.insert(stacks.size());\n            stacks.push_back({});\n        }\n        int idx = *available.begin();\n        stacks[idx].push_back(val);\n        if (stacks[idx].size() == cap) {\n            available.erase(idx);\n        }\n    }\n\n    int pop() {\n        while (!stacks.empty() && stacks.back().empty()) {\n            available.erase(stacks.size() - 1);\n            stacks.pop_back();\n        }\n        if (stacks.empty()) return -1;\n        return popAtStack(stacks.size() - 1);\n    }\n\n    int popAtStack(int index) {\n        if (index >= stacks.size() || stacks[index].empty()) return -1;\n        int val = stacks[index].back();\n        stacks[index].pop_back();\n        available.insert(index);\n        return val;\n    }\n};",
+      "approach": "C++ Set for Active Gap Tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class DinnerPlates {\n    private final int cap;\n    private final List<List<Integer>> stacks = new ArrayList<>();\n    private final TreeSet<Integer> available = new TreeSet<>();\n\n    public DinnerPlates(int capacity) {\n        this.cap = capacity;\n    }\n\n    public void push(int val) {\n        if (available.isEmpty()) {\n            available.add(stacks.size());\n            stacks.add(new ArrayList<>());\n        }\n        int idx = available.first();\n        stacks.get(idx).add(val);\n        if (stacks.get(idx).size() == cap) {\n            available.remove(idx);\n        }\n    }\n\n    public int pop() {\n        while (!stacks.isEmpty() && stacks.get(stacks.size() - 1).isEmpty()) {\n            available.remove(stacks.size() - 1);\n            stacks.remove(stacks.size() - 1);\n        }\n        if (stacks.isEmpty()) return -1;\n        return popAtStack(stacks.size() - 1);\n    }\n\n    public int popAtStack(int index) {\n        if (index >= stacks.size() || stacks.get(index).isEmpty()) return -1;\n        List<Integer> s = stacks.get(index);\n        int val = s.remove(s.size() - 1);\n        available.add(index);\n        return val;\n    }\n}",
+      "approach": "Java TreeSet of Incomplete Stack Indices",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class DinnerPlates {\n    constructor(capacity) {\n        this.c = capacity;\n        this.stacks = [];\n        this.available = [];\n    }\n    push(val) {\n        while (this.available.length > 0 && this.available[0] < this.stacks.length && this.stacks[this.available[0]].length === this.c) {\n            this.available.shift();\n        }\n        if (this.available.length === 0) {\n            this.available.push(this.stacks.length);\n            this.stacks.push([]);\n        }\n        const idx = this.available[0];\n        this.stacks[idx].push(val);\n        if (this.stacks[idx].length === this.c) {\n            this.available.shift();\n        }\n    }\n    pop() {\n        while (this.stacks.length > 0 && this.stacks[this.stacks.length - 1].length === 0) {\n            this.stacks.pop();\n        }\n        if (this.stacks.length === 0) return -1;\n        return this.popAtStack(this.stacks.length - 1);\n    }\n    popAtStack(index) {\n        if (index >= this.stacks.length || this.stacks[index].length === 0) return -1;\n        const val = this.stacks[index].pop();\n        let pos = 0;\n        while (pos < this.available.length && this.available[pos] < index) pos++;\n        if (this.available[pos] !== index) {\n            this.available.splice(pos, 0, index);\n        }\n        return val;\n    }\n}",
+      "approach": "JavaScript Sorted Available Stack Array",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

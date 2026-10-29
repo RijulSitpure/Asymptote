@@ -1,0 +1,80 @@
+{
+  "slug": "stream-of-characters",
+  "number": 1032,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Suffix Stream Recognition",
+      "text": "A match occurs whenever a sequence of recent characters forms a dictionary word ending at the current query."
+    },
+    {
+      "level": 2,
+      "title": "Reverse Trie Matching",
+      "text": "Insert all words reversed into a prefix tree. Upon receiving each query letter, traverse the tree backwards through stream history."
+    },
+    {
+      "level": 3,
+      "title": "Stream History Blueprint",
+      "text": "Store query stream in a ring buffer or list. For each query, walk nodes from root backwards; if a terminal word node is met, return true."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass StreamChecker:\n    def __init__(self, words: list[str]):\n        self.trie = {}\n        self.stream = []\n        self.max_len = 0\n        for w in words:\n            self.max_len = max(self.max_len, len(w))\n            node = self.trie\n            for ch in reversed(w):\n                node = node.setdefault(ch, {})\n            node[\"$\"] = True\n\n    def query(self, letter: str) -> bool:\n        self.stream.append(letter)\n        if len(self.stream) > self.max_len:\n            self.stream.pop(0)\n        node = self.trie\n        for ch in reversed(self.stream):\n            if \"$\" in node:\n                return True\n            if ch not in node:\n                return False\n            node = node[ch]\n        return \"$\" in node\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(W * L) init, O(M) query",
+    "space": "O(W * L)",
+    "variables": [
+      "W: number of words",
+      "L: average word length",
+      "M: maximum word length"
+    ],
+    "notes": "Reverse prefix tree bounds each query walk by the depth of the longest dictionary word.",
+    "whyNaiveFails": "Forward trie matching requires maintaining multiple active pointers that branch exponentially with duplicate prefixes.",
+    "spaceTimeTradeoff": "Storing words reversed transforms arbitrary suffix search into deterministic root-to-leaf prefix descent.",
+    "interviewerExpectation": "Reverse prefix tree design and stream history truncation to max word length."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class StreamChecker:\n    def __init__(self, words: list[str]):\n        self.trie = {}\n        self.stream = []\n        self.max_len = 0\n        for w in words:\n            self.max_len = max(self.max_len, len(w))\n            node = self.trie\n            for ch in reversed(w):\n                node = node.setdefault(ch, {})\n            node[\"$\"] = True\n\n    def query(self, letter: str) -> bool:\n        self.stream.append(letter)\n        if len(self.stream) > self.max_len:\n            self.stream.pop(0)\n        node = self.trie\n        for ch in reversed(self.stream):\n            if \"$\" in node:\n                return True\n            if ch not in node:\n                return False\n            node = node[ch]\n        return \"$\" in node",
+      "approach": "Reverse Prefix Tree with Bounded History",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class StreamChecker {\n    struct TrieNode {\n        bool is_word = false;\n        unordered_map<char, TrieNode*> next;\n    };\n    TrieNode* root;\n    deque<char> stream;\n    int max_len = 0;\npublic:\n    StreamChecker(vector<string>& words) {\n        root = new TrieNode();\n        for (const string& w : words) {\n            max_len = max(max_len, (int)w.size());\n            TrieNode* curr = root;\n            for (int i = (int)w.size() - 1; i >= 0; --i) {\n                if (!curr->next.count(w[i])) curr->next[w[i]] = new TrieNode();\n                curr = curr->next[w[i]];\n            }\n            curr->is_word = true;\n        }\n    }\n    bool query(char letter) {\n        stream.push_front(letter);\n        if ((int)stream.size() > max_len) stream.pop_back();\n        TrieNode* curr = root;\n        for (char ch : stream) {\n            if (curr->is_word) return true;\n            if (!curr->next.count(ch)) return false;\n            curr = curr->next[ch];\n        }\n        return curr->is_word;\n    }\n};",
+      "approach": "C++ Reversed Trie Node Structure",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class StreamChecker {\n    static class TrieNode {\n        boolean isWord = false;\n        TrieNode[] children = new TrieNode[26];\n    }\n    private final TrieNode root = new TrieNode();\n    private final StringBuilder stream = new StringBuilder();\n    private int maxLen = 0;\n\n    public StreamChecker(String[] words) {\n        for (String w : words) {\n            maxLen = Math.max(maxLen, w.length());\n            TrieNode node = root;\n            for (int i = w.length() - 1; i >= 0; i--) {\n                int idx = w.charAt(i) - 'a';\n                if (node.children[idx] == null) node.children[idx] = new TrieNode();\n                node = node.children[idx];\n            }\n            node.isWord = true;\n        }\n    }\n\n    public boolean query(char letter) {\n        stream.append(letter);\n        if (stream.length() > maxLen) stream.deleteCharAt(0);\n        TrieNode node = root;\n        for (int i = stream.length() - 1; i >= 0; i--) {\n            int idx = stream.charAt(i) - 'a';\n            if (node.children[idx] == null) return false;\n            node = node.children[idx];\n            if (node.isWord) return true;\n        }\n        return false;\n    }\n}",
+      "approach": "Java Array-Based Reversed Trie",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class StreamChecker {\n    constructor(words) {\n        this.trie = {};\n        this.stream = [];\n        this.maxLen = 0;\n        for (const w of words) {\n            this.maxLen = Math.max(this.maxLen, w.length);\n            let node = this.trie;\n            for (let i = w.length - 1; i >= 0; i--) {\n                const ch = w[i];\n                if (!node[ch]) node[ch] = {};\n                node = node[ch];\n            }\n            node['$'] = true;\n        }\n    }\n    query(letter) {\n        this.stream.unshift(letter);\n        if (this.stream.length > this.maxLen) this.stream.pop();\n        let node = this.trie;\n        for (const ch of this.stream) {\n            if (node['$']) return true;\n            if (!node[ch]) return false;\n            node = node[ch];\n        }\n        return Boolean(node['$']);\n    }\n}",
+      "approach": "JavaScript Object Trie Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

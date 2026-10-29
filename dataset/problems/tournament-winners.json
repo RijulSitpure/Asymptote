@@ -1,0 +1,72 @@
+{
+  "slug": "tournament-winners",
+  "number": 1194,
+  "category": "Database",
+  "patterns": [
+    "string-handling"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Player Score Accumulation across Matches",
+      "text": "A player earns points whether participating as the first player or second player in a match."
+    },
+    {
+      "level": 2,
+      "title": "Score Union Stack with Group Ranking",
+      "text": "Vertically stack first and second player match scores using union all. Rank players within each group ordered by points descending and player identifier ascending."
+    },
+    {
+      "level": 3,
+      "title": "Tournament Winner Blueprint",
+      "text": "with TotalScores as (select player_id, sum(score) as score from (select first_player as player_id, first_score as score from Matches union all select second_player as player_id, second_score as score from Matches) s group by player_id), Ranked as (select p.group_id, p.player_id, row_number() over (partition by p.group_id order by coalesce(t.score, 0) desc, p.player_id asc) as rn from Players p left join TotalScores t on p.player_id = t.player_id) select group_id, player_id from Ranked where rn = 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH TotalScores AS (\n    SELECT player_id, SUM(score) AS score\n    FROM (\n        SELECT first_player AS player_id, first_score AS score FROM Matches\n        UNION ALL\n        SELECT second_player AS player_id, second_score AS score FROM Matches\n    ) s\n    GROUP BY player_id\n),\nRanked AS (\n    SELECT p.group_id, p.player_id,\n           ROW_NUMBER() OVER (\n               PARTITION BY p.group_id\n               ORDER BY COALESCE(t.score, 0) DESC, p.player_id ASC\n           ) AS rn\n    FROM Players p\n    LEFT JOIN TotalScores t ON p.player_id = t.player_id\n)\nSELECT group_id, player_id\nFROM Ranked\nWHERE rn = 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(M + P log P)",
+    "space": "O(M + P)",
+    "variables": [
+      "M: number of matches played",
+      "P: number of registered players"
+    ],
+    "notes": "Stacking match scores and computing partitioned row ranking executes in linear-logarithmic time.",
+    "whyNaiveFails": "Evaluating only first player scores misses points earned by the same athlete when competing as guest.",
+    "spaceTimeTradeoff": "Union all unrolls dual match roles into a unified scoring stream prior to window ranking.",
+    "interviewerExpectation": "Use of UNION ALL to combine host and guest roles, and ROW_NUMBER() with player_id tie breaker."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH TotalScores AS (\n    SELECT player_id, SUM(score) AS score\n    FROM (\n        SELECT first_player AS player_id, first_score AS score FROM Matches\n        UNION ALL\n        SELECT second_player AS player_id, second_score AS score FROM Matches\n    ) s\n    GROUP BY player_id\n),\nRanked AS (\n    SELECT p.group_id, p.player_id,\n           ROW_NUMBER() OVER (\n               PARTITION BY p.group_id\n               ORDER BY COALESCE(t.score, 0) DESC, p.player_id ASC\n           ) AS rn\n    FROM Players p\n    LEFT JOIN TotalScores t ON p.player_id = t.player_id\n)\nSELECT group_id, player_id\nFROM Ranked\nWHERE rn = 1;",
+      "approach": "Union All Score Stacking with Partitioned Row Number",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH TotalScores AS (\n    SELECT player_id, SUM(score) AS score\n    FROM (\n        SELECT first_player AS player_id, first_score AS score FROM Matches\n        UNION ALL\n        SELECT second_player AS player_id, second_score AS score FROM Matches\n    ) s\n    GROUP BY player_id\n),\nRanked AS (\n    SELECT p.group_id, p.player_id,\n           ROW_NUMBER() OVER (\n               PARTITION BY p.group_id\n               ORDER BY COALESCE(t.score, 0) DESC, p.player_id ASC\n           ) AS rn\n    FROM Players p\n    LEFT JOIN TotalScores t ON p.player_id = t.player_id\n)\nSELECT group_id, player_id\nFROM Ranked\nWHERE rn = 1;",
+      "approach": "PostgreSQL Score Union All Window Ranking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef tournament_winners(players: pd.DataFrame, matches: pd.DataFrame) -> pd.DataFrame:\n    m1 = matches[['first_player', 'first_score']].rename(columns={'first_player': 'player_id', 'first_score': 'score'})\n    m2 = matches[['second_player', 'second_score']].rename(columns={'second_player': 'player_id', 'second_score': 'score'})\n    scores = pd.concat([m1, m2]).groupby('player_id')['score'].sum().reset_index()\n    merged = players.merge(scores, on='player_id', how='left')\n    merged['score'] = merged['score'].fillna(0)\n    sorted_df = merged.sort_values(by=['group_id', 'score', 'player_id'], ascending=[True, False, True])\n    res = sorted_df.drop_duplicates(subset=['group_id'], keep='first')\n    return res[['group_id', 'player_id']]",
+      "approach": "Pandas Concat Scores and Group Partition Sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "slug": "new-users-daily-count",
+  "number": 1107,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Initial Login Date Grouping",
+      "text": "Identify each user first login date, then count how many users had their initial login on each date in the ninety-day window."
+    },
+    {
+      "level": 2,
+      "title": "Earliest Date Subquery with Range Filter",
+      "text": "Group activity by user for login actions to find minimum dates. Filter dates within ninety days up to 2019-06-30 and count users."
+    },
+    {
+      "level": 3,
+      "title": "Daily New Users Blueprint",
+      "text": "select login_date, count(user_id) as user_count from (select user_id, min(activity_date) as login_date from Traffic where activity = \"login\" group by user_id) t where login_date between \"2019-04-01\" and \"2019-06-30\" group by login_date."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT login_date, COUNT(user_id) AS user_count\nFROM (\n    SELECT user_id, MIN(activity_date) AS login_date\n    FROM Traffic\n    WHERE activity = 'login'\n    GROUP BY user_id\n) t\nWHERE login_date BETWEEN '2019-04-01' AND '2019-06-30'\nGROUP BY login_date;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(T log T)",
+    "space": "O(U)",
+    "variables": [
+      "T: number of traffic log entries",
+      "U: number of distinct users"
+    ],
+    "notes": "Filtering on login activity, aggregating minimum date per user, and grouping by date runs in linear-logarithmic time.",
+    "whyNaiveFails": "Counting raw login events on each day counts returning users instead of strictly first-time new users.",
+    "spaceTimeTradeoff": "Nested subquery reduces raw events down to one record per distinct user before window aggregation.",
+    "interviewerExpectation": "Use of MIN(activity_date) per user and DATEDIFF or BETWEEN for the 90-day window."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT login_date, COUNT(user_id) AS user_count\nFROM (\n    SELECT user_id, MIN(activity_date) AS login_date\n    FROM Traffic\n    WHERE activity = 'login'\n    GROUP BY user_id\n) t\nWHERE login_date BETWEEN '2019-04-01' AND '2019-06-30'\nGROUP BY login_date;",
+      "approach": "Subquery Earliest Login with Date Window Count",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT login_date, COUNT(user_id) AS user_count\nFROM (\n    SELECT user_id, MIN(activity_date) AS login_date\n    FROM Traffic\n    WHERE activity = 'login'\n    GROUP BY user_id\n) t\nWHERE login_date BETWEEN '2019-04-01' AND '2019-06-30'\nGROUP BY login_date;",
+      "approach": "PostgreSQL Subquery Date Window Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef new_users_daily_count(traffic: pd.DataFrame) -> pd.DataFrame:\n    logins = traffic[traffic['activity'] == 'login']\n    first_logins = logins.groupby('user_id')['activity_date'].min().reset_index()\n    first_logins.rename(columns={'activity_date': 'login_date'}, inplace=True)\n    valid = first_logins[(first_logins['login_date'] >= '2019-04-01') & (first_logins['login_date'] <= '2019-06-30')]\n    res = valid.groupby('login_date')['user_id'].count().reset_index()\n    return res.rename(columns={'user_id': 'user_count'})",
+      "approach": "Pandas Groupby Minimum Login and Window Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

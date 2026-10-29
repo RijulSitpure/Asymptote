@@ -1,0 +1,73 @@
+{
+  "slug": "monthly-transactions-i",
+  "number": 1193,
+  "category": "Database",
+  "patterns": [
+    "date-time"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monthly Country Aggregation Metrics",
+      "text": "Group transactions by calendar month and country, reporting total counts, approved counts, total amounts, and approved amounts."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Sum over State Column",
+      "text": "Format trans_date to year-month. Use conditional sum to calculate approved transaction count and approved total amount."
+    },
+    {
+      "level": 3,
+      "title": "Monthly Transactions Query Blueprint",
+      "text": "select date_format(trans_date, \"%Y-%m\") as month, country, count(id) as trans_count, sum(case when state = \"approved\" then 1 else 0 end) as approved_count, sum(amount) as trans_total_amount, sum(case when state = \"approved\" then amount else 0 end) as approved_total_amount from Transactions group by month, country."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT DATE_FORMAT(trans_date, '%Y-%m') AS month,\n       country,\n       COUNT(id) AS trans_count,\n       SUM(CASE WHEN state = 'approved' THEN 1 ELSE 0 END) AS approved_count,\n       SUM(amount) AS trans_total_amount,\n       SUM(CASE WHEN state = 'approved' THEN amount ELSE 0 END) AS approved_total_amount\nFROM Transactions\nGROUP BY month, country;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(T)",
+    "space": "O(M * C)",
+    "variables": [
+      "T: number of transactions",
+      "M: distinct months",
+      "C: distinct countries"
+    ],
+    "notes": "Single group-by pass evaluating conditional sums runs in linear time.",
+    "whyNaiveFails": "Separate queries for total and approved metrics require multi-table outer joins and repeated scans.",
+    "spaceTimeTradeoff": "Conditional case expressions aggregate multiple metrics in a single grouped traversal.",
+    "interviewerExpectation": "Use of DATE_FORMAT for year-month string and conditional SUM(CASE WHEN state = approved)."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT DATE_FORMAT(trans_date, '%Y-%m') AS month,\n       country,\n       COUNT(id) AS trans_count,\n       SUM(CASE WHEN state = 'approved' THEN 1 ELSE 0 END) AS approved_count,\n       SUM(amount) AS trans_total_amount,\n       SUM(CASE WHEN state = 'approved' THEN amount ELSE 0 END) AS approved_total_amount\nFROM Transactions\nGROUP BY month, country;",
+      "approach": "Single-Pass Grouped Conditional Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT TO_CHAR(trans_date, 'YYYY-MM') AS month,\n       country,\n       COUNT(id) AS trans_count,\n       SUM(CASE WHEN state = 'approved' THEN 1 ELSE 0 END) AS approved_count,\n       SUM(amount) AS trans_total_amount,\n       SUM(CASE WHEN state = 'approved' THEN amount ELSE 0 END) AS approved_total_amount\nFROM Transactions\nGROUP BY TO_CHAR(trans_date, 'YYYY-MM'), country;",
+      "approach": "PostgreSQL To_Char Date Format and Conditional Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef monthly_transactions(transactions: pd.DataFrame) -> pd.DataFrame:\n    transactions['month'] = transactions['trans_date'].astype(str).str.slice(0, 7)\n    transactions['approved_cnt'] = (transactions['state'] == 'approved').astype(int)\n    transactions['approved_amt'] = transactions.apply(lambda r: r['amount'] if r['state'] == 'approved' else 0, axis=1)\n    res = transactions.groupby(['month', 'country'], dropna=False).agg(\n        trans_count=('id', 'count'),\n        approved_count=('approved_cnt', 'sum'),\n        trans_total_amount=('amount', 'sum'),\n        approved_total_amount=('approved_amt', 'sum')\n    ).reset_index()\n    return res",
+      "approach": "Pandas String Slice and Grouped Multi-Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

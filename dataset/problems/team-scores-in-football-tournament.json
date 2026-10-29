@@ -1,0 +1,72 @@
+{
+  "slug": "team-scores-in-football-tournament",
+  "number": 1212,
+  "category": "Database",
+  "patterns": [
+    "string-handling"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Match Outcome Point System",
+      "text": "A team earns 3 points for a win, 1 point for a tie, and 0 for a loss, whether playing at home or away."
+    },
+    {
+      "level": 2,
+      "title": "Team Points Union and Left Join",
+      "text": "Generate point events for host and guest teams separately. Left join teams to points to preserve teams with 0 points."
+    },
+    {
+      "level": 3,
+      "title": "Team Scores Blueprint",
+      "text": "with MatchPoints as (select host_team as team_id, case when host_goals > guest_goals then 3 when host_goals = guest_goals then 1 else 0 end as points from Matches union all select guest_team as team_id, case when guest_goals > host_goals then 3 when guest_goals = host_goals then 1 else 0 end as points from Matches) select t.team_id, t.team_name, coalesce(sum(m.points), 0) as num_points from Teams t left join MatchPoints m on t.team_id = m.team_id group by t.team_id, t.team_name order by num_points desc, t.team_id asc."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH MatchPoints AS (\n    SELECT host_team AS team_id,\n           CASE \n               WHEN host_goals > guest_goals THEN 3\n               WHEN host_goals = guest_goals THEN 1\n               ELSE 0\n           END AS points\n    FROM Matches\n    UNION ALL\n    SELECT guest_team AS team_id,\n           CASE \n               WHEN guest_goals > host_goals THEN 3\n               WHEN guest_goals = host_goals THEN 1\n               ELSE 0\n           END AS points\n    FROM Matches\n)\nSELECT t.team_id, t.team_name,\n       COALESCE(SUM(m.points), 0) AS num_points\nFROM Teams t\nLEFT JOIN MatchPoints m ON t.team_id = m.team_id\nGROUP BY t.team_id, t.team_name\nORDER BY num_points DESC, t.team_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(M + T log T)",
+    "space": "O(M + T)",
+    "variables": [
+      "M: number of matches played",
+      "T: number of tournament teams"
+    ],
+    "notes": "Stacking host/guest points and sorting grouped teams runs in linear-logarithmic time.",
+    "whyNaiveFails": "Inner joining drops teams that never played a match or scored zero points.",
+    "spaceTimeTradeoff": "Union all normalizes home and away perspectives into an indexable point stream.",
+    "interviewerExpectation": "Use of UNION ALL, LEFT JOIN to preserve 0-point teams, and ORDER BY num_points DESC, team_id ASC."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH MatchPoints AS (\n    SELECT host_team AS team_id,\n           CASE \n               WHEN host_goals > guest_goals THEN 3\n               WHEN host_goals = guest_goals THEN 1\n               ELSE 0\n           END AS points\n    FROM Matches\n    UNION ALL\n    SELECT guest_team AS team_id,\n           CASE \n               WHEN guest_goals > host_goals THEN 3\n               WHEN guest_goals = host_goals THEN 1\n               ELSE 0\n           END AS points\n    FROM Matches\n)\nSELECT t.team_id, t.team_name,\n       COALESCE(SUM(m.points), 0) AS num_points\nFROM Teams t\nLEFT JOIN MatchPoints m ON t.team_id = m.team_id\nGROUP BY t.team_id, t.team_name\nORDER BY num_points DESC, t.team_id ASC;",
+      "approach": "Union All Points Projection with Teams Left Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH MatchPoints AS (\n    SELECT host_team AS team_id,\n           CASE \n               WHEN host_goals > guest_goals THEN 3\n               WHEN host_goals = guest_goals THEN 1\n               ELSE 0\n           END AS points\n    FROM Matches\n    UNION ALL\n    SELECT guest_team AS team_id,\n           CASE \n               WHEN guest_goals > host_goals THEN 3\n               WHEN guest_goals = host_goals THEN 1\n               ELSE 0\n           END AS points\n    FROM Matches\n)\nSELECT t.team_id, t.team_name,\n       COALESCE(SUM(m.points), 0) AS num_points\nFROM Teams t\nLEFT JOIN MatchPoints m ON t.team_id = m.team_id\nGROUP BY t.team_id, t.team_name\nORDER BY num_points DESC, t.team_id ASC;",
+      "approach": "PostgreSQL Match Points Union Left Join Sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef team_scores(teams: pd.DataFrame, matches: pd.DataFrame) -> pd.DataFrame:\n    p1 = []\n    p2 = []\n    for _, row in matches.iterrows():\n        if row['host_goals'] > row['guest_goals']:\n            p1.append({'team_id': row['host_team'], 'points': 3})\n            p2.append({'team_id': row['guest_team'], 'points': 0})\n        elif row['host_goals'] == row['guest_goals']:\n            p1.append({'team_id': row['host_team'], 'points': 1})\n            p2.append({'team_id': row['guest_team'], 'points': 1})\n        else:\n            p1.append({'team_id': row['host_team'], 'points': 0})\n            p2.append({'team_id': row['guest_team'], 'points': 3})\n    all_points = pd.DataFrame(p1 + p2)\n    scores = all_points.groupby('team_id')['points'].sum().reset_index() if not all_points.empty else pd.DataFrame(columns=['team_id', 'points'])\n    merged = teams.merge(scores, on='team_id', how='left')\n    merged['num_points'] = merged['points'].fillna(0).astype(int)\n    return merged.sort_values(by=['num_points', 'team_id'], ascending=[False, True])[['team_id', 'team_name', 'num_points']]",
+      "approach": "Pandas Row Point Evaluation and Outer Merge Sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

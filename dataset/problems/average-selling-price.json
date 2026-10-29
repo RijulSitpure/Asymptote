@@ -1,0 +1,73 @@
+{
+  "slug": "average-selling-price",
+  "number": 1251,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Time-Interval Weighted Unit Pricing",
+      "text": "Join sales to the corresponding price active during the purchase date interval, dividing total revenue by total units."
+    },
+    {
+      "level": 2,
+      "title": "Between Date Equi-Join with Fallback",
+      "text": "Left join prices with units sold where purchase date falls between start and end dates. Coalesce results to zero if no units were sold."
+    },
+    {
+      "level": 3,
+      "title": "Average Selling Price Blueprint",
+      "text": "select p.product_id, ifnull(round(sum(p.price * u.units) / sum(u.units), 2), 0) as average_price from Prices p left join UnitsSold u on p.product_id = u.product_id and u.purchase_date between p.start_date and p.end_date group by p.product_id."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT p.product_id,\n       IFNULL(ROUND(SUM(p.price * u.units) / SUM(u.units), 2), 0) AS average_price\nFROM Prices p\nLEFT JOIN UnitsSold u\n  ON p.product_id = u.product_id\n AND u.purchase_date BETWEEN p.start_date AND p.end_date\nGROUP BY p.product_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(P + U)",
+    "space": "O(N)",
+    "variables": [
+      "P: number of price intervals",
+      "U: number of sales transactions",
+      "N: distinct products"
+    ],
+    "notes": "Interval join and grouped weighted sum executes linearly relative to input table sizes.",
+    "whyNaiveFails": "Inner joining drops products that have defined price intervals but recorded zero sales.",
+    "spaceTimeTradeoff": "Interval predicate within join condition filters transactions without quadratic row scans.",
+    "interviewerExpectation": "Use of IFNULL / COALESCE to handle products with zero units sold and ROUND(..., 2)."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT p.product_id,\n       IFNULL(ROUND(SUM(p.price * u.units) / SUM(u.units), 2), 0) AS average_price\nFROM Prices p\nLEFT JOIN UnitsSold u\n  ON p.product_id = u.product_id\n AND u.purchase_date BETWEEN p.start_date AND p.end_date\nGROUP BY p.product_id;",
+      "approach": "Between Date Interval Left Join with Weighted Mean",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT p.product_id,\n       COALESCE(ROUND(SUM(p.price * u.units)::numeric / NULLIF(SUM(u.units), 0), 2), 0) AS average_price\nFROM Prices p\nLEFT JOIN UnitsSold u\n  ON p.product_id = u.product_id\n AND u.purchase_date BETWEEN p.start_date AND p.end_date\nGROUP BY p.product_id;",
+      "approach": "PostgreSQL Numeric Cast with Null-Safe Ratio",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef average_selling_price(prices: pd.DataFrame, units_sold: pd.DataFrame) -> pd.DataFrame:\n    merged = prices.merge(units_sold, on='product_id', how='left')\n    valid = merged[(merged['purchase_date'].isnull()) | \n                   ((merged['purchase_date'] >= merged['start_date']) & (merged['purchase_date'] <= merged['end_date']))]\n    valid['revenue'] = valid['price'] * valid['units']\n    grouped = valid.groupby('product_id').agg(\n        total_rev=('revenue', 'sum'),\n        total_units=('units', 'sum')\n    ).reset_index()\n    grouped['average_price'] = (grouped['total_rev'] / grouped['total_units']).fillna(0).round(2)\n    return grouped[['product_id', 'average_price']]",
+      "approach": "Pandas Merge and Interval Mask with Zero Fill",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

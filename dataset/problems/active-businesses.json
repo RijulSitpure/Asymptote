@@ -1,0 +1,71 @@
+{
+  "slug": "active-businesses",
+  "number": 1126,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Event Threshold Comparison",
+      "text": "A business is active if it records more than one event type whose frequency exceeds the overall average for that event."
+    },
+    {
+      "level": 2,
+      "title": "Event Average CTE with Having Count",
+      "text": "Compute the average occurrences per event type across all businesses. Join back and group by business identifier with having count > 1."
+    },
+    {
+      "level": 3,
+      "title": "Active Businesses Blueprint",
+      "text": "with AvgEvents as (select event_type, avg(occurences) as avg_occ from Events group by event_type) select e.business_id from Events e join AvgEvents a on e.event_type = a.event_type where e.occurences > a.avg_occ group by e.business_id having count(e.event_type) > 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH AvgEvents AS (\n    SELECT event_type, AVG(occurences) AS avg_occ\n    FROM Events\n    GROUP BY event_type\n)\nSELECT e.business_id\nFROM Events e\nJOIN AvgEvents a ON e.event_type = a.event_type\nWHERE e.occurences > a.avg_occ\nGROUP BY e.business_id\nHAVING COUNT(e.event_type) > 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(E log E)",
+    "space": "O(E)",
+    "variables": [
+      "E: number of event records"
+    ],
+    "notes": "Grouped average per event type followed by hash equi-join runs in linear-logarithmic time.",
+    "whyNaiveFails": "Correlated scalar subqueries scanning the entire events table per row result in quadratic complexity.",
+    "spaceTimeTradeoff": "Precomputing event type averages in a CTE enables direct inner join comparison.",
+    "interviewerExpectation": "Use of CTE or window AVG(occurences) OVER(PARTITION BY event_type) with HAVING COUNT > 1."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH AvgEvents AS (\n    SELECT event_type, AVG(occurences) AS avg_occ\n    FROM Events\n    GROUP BY event_type\n)\nSELECT e.business_id\nFROM Events e\nJOIN AvgEvents a ON e.event_type = a.event_type\nWHERE e.occurences > a.avg_occ\nGROUP BY e.business_id\nHAVING COUNT(e.event_type) > 1;",
+      "approach": "Event Mean CTE Join with Grouped Frequency Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH AvgEvents AS (\n    SELECT event_type, AVG(occurences) AS avg_occ\n    FROM Events\n    GROUP BY event_type\n)\nSELECT e.business_id\nFROM Events e\nJOIN AvgEvents a ON e.event_type = a.event_type\nWHERE e.occurences > a.avg_occ\nGROUP BY e.business_id\nHAVING COUNT(e.event_type) > 1;",
+      "approach": "PostgreSQL Event Average Join and Having Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef active_businesses(events: pd.DataFrame) -> pd.DataFrame:\n    avg_occ = events.groupby('event_type')['occurences'].transform('mean')\n    above_avg = events[events['occurences'] > avg_occ]\n    counts = above_avg.groupby('business_id')['event_type'].count().reset_index()\n    res = counts[counts['event_type'] > 1]\n    return res[['business_id']]",
+      "approach": "Pandas Transform Mean and Filter with Count",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

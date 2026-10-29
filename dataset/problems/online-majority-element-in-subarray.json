@@ -1,0 +1,78 @@
+{
+  "slug": "online-majority-element-in-subarray",
+  "number": 1157,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Candidate Identification and Exact Verification",
+      "text": "A majority candidate must occur frequently enough across random samples or segment tree subranges."
+    },
+    {
+      "level": 2,
+      "title": "Boyer-Moore Segment Tree with Frequency Verification",
+      "text": "Build a segment tree maintaining Boyer-Moore majority candidates. Verify candidates by binary searching indices in a hash map."
+    },
+    {
+      "level": 3,
+      "title": "Segment Tree Query Blueprint",
+      "text": "Query segment tree for range candidate. Count exact occurrences in [left, right] using bisect_right minus bisect_left on candidate index list."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\nfrom collections import defaultdict\n\nclass MajorityChecker:\n    def __init__(self, arr: list[int]):\n        self.n = len(arr)\n        self.pos = defaultdict(list)\n        for i, val in enumerate(arr):\n            self.pos[val].append(i)\n        self.tree = [(0, 0)] * (4 * self.n)\n        self._build(arr, 1, 0, self.n - 1)\n\n    def _merge(self, a, b):\n        v1, c1 = a\n        v2, c2 = b\n        if v1 == v2:\n            return (v1, c1 + c2)\n        elif c1 >= c2:\n            return (v1, c1 - c2)\n        else:\n            return (v2, c2 - c1)\n\n    def _build(self, arr, node, l, r):\n        if l == r:\n            self.tree[node] = (arr[l], 1)\n            return\n        mid = (l + r) // 2\n        self._build(arr, 2 * node, l, mid)\n        self._build(arr, 2 * node + 1, mid + 1, r)\n        self.tree[node] = self._merge(self.tree[2 * node], self.tree[2 * node + 1])\n\n    def _query_tree(self, node, l, r, ql, qr):\n        if ql <= l and r <= qr:\n            return self.tree[node]\n        mid = (l + r) // 2\n        if qr <= mid:\n            return self._query_tree(2 * node, l, mid, ql, qr)\n        if ql > mid:\n            return self._query_tree(2 * node + 1, mid + 1, r, ql, qr)\n        left_res = self._query_tree(2 * node, l, mid, ql, qr)\n        right_res = self._query_tree(2 * node + 1, mid + 1, r, ql, qr)\n        return self._merge(left_res, right_res)\n\n    def query(self, left: int, right: int, threshold: int) -> int:\n        cand, _ = self._query_tree(1, 0, self.n - 1, left, right)\n        indices = self.pos[cand]\n        cnt = bisect.bisect_right(indices, right) - bisect.bisect_left(indices, left)\n        return cand if cnt >= threshold else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) init, O(log N) query",
+    "space": "O(N)",
+    "variables": [
+      "N: size of input array"
+    ],
+    "notes": "Segment tree query takes logarithmic time and binary search on occurrence list takes logarithmic time.",
+    "whyNaiveFails": "Linear scanning and hash map counting takes O(N) per query, which exceeds the time limit across thousands of queries.",
+    "spaceTimeTradeoff": "Segment tree pairs Boyer-Moore voting with inverted index lists for constant candidate verification.",
+    "interviewerExpectation": "Segment tree with Boyer-Moore merge logic or randomized sampling with binary search verification."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\nfrom collections import defaultdict\n\nclass MajorityChecker:\n    def __init__(self, arr: list[int]):\n        self.n = len(arr)\n        self.pos = defaultdict(list)\n        for i, val in enumerate(arr):\n            self.pos[val].append(i)\n        self.tree = [(0, 0)] * (4 * self.n)\n        self._build(arr, 1, 0, self.n - 1)\n\n    def _merge(self, a, b):\n        v1, c1 = a\n        v2, c2 = b\n        if v1 == v2:\n            return (v1, c1 + c2)\n        elif c1 >= c2:\n            return (v1, c1 - c2)\n        else:\n            return (v2, c2 - c1)\n\n    def _build(self, arr, node, l, r):\n        if l == r:\n            self.tree[node] = (arr[l], 1)\n            return\n        mid = (l + r) // 2\n        self._build(arr, 2 * node, l, mid)\n        self._build(arr, 2 * node + 1, mid + 1, r)\n        self.tree[node] = self._merge(self.tree[2 * node], self.tree[2 * node + 1])\n\n    def _query_tree(self, node, l, r, ql, qr):\n        if ql <= l and r <= qr:\n            return self.tree[node]\n        mid = (l + r) // 2\n        if qr <= mid:\n            return self._query_tree(2 * node, l, mid, ql, qr)\n        if ql > mid:\n            return self._query_tree(2 * node + 1, mid + 1, r, ql, qr)\n        left_res = self._query_tree(2 * node, l, mid, ql, qr)\n        right_res = self._query_tree(2 * node + 1, mid + 1, r, ql, qr)\n        return self._merge(left_res, right_res)\n\n    def query(self, left: int, right: int, threshold: int) -> int:\n        cand, _ = self._query_tree(1, 0, self.n - 1, left, right)\n        indices = self.pos[cand]\n        cnt = bisect.bisect_right(indices, right) - bisect.bisect_left(indices, left)\n        return cand if cnt >= threshold else -1",
+      "approach": "Segment Tree Boyer-Moore with Index Bisect Verification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class MajorityChecker {\n    int n;\n    unordered_map<int, vector<int>> pos;\n    vector<pair<int, int>> tree;\n\n    pair<int, int> merge(pair<int, int> a, pair<int, int> b) {\n        if (a.first == b.first) return {a.first, a.second + b.second};\n        if (a.second >= b.second) return {a.first, a.second - b.second};\n        return {b.first, b.second - a.second};\n    }\n    void build(const vector<int>& arr, int node, int l, int r) {\n        if (l == r) { tree[node] = {arr[l], 1}; return; }\n        int mid = (l + r) / 2;\n        build(arr, 2 * node, l, mid);\n        build(arr, 2 * node + 1, mid + 1, r);\n        tree[node] = merge(tree[2 * node], tree[2 * node + 1]);\n    }\n    pair<int, int> queryTree(int node, int l, int r, int ql, int qr) {\n        if (ql <= l && r <= qr) return tree[node];\n        int mid = (l + r) / 2;\n        if (qr <= mid) return queryTree(2 * node, l, mid, ql, qr);\n        if (ql > mid) return queryTree(2 * node + 1, mid + 1, r, ql, qr);\n        return merge(queryTree(2 * node, l, mid, ql, qr), queryTree(2 * node + 1, mid + 1, r, ql, qr));\n    }\npublic:\n    MajorityChecker(vector<int>& arr) : n(arr.size()), tree(4 * arr.size()) {\n        for (int i = 0; i < n; ++i) pos[arr[i]].push_back(i);\n        build(arr, 1, 0, n - 1);\n    }\n    int query(int left, int right, int threshold) {\n        auto [cand, _] = queryTree(1, 0, n - 1, left, right);\n        auto it = pos.find(cand);\n        if (it == pos.end()) return -1;\n        const auto& vec = it->second;\n        int count = upper_bound(vec.begin(), vec.end(), right) - lower_bound(vec.begin(), vec.end(), left);\n        return count >= threshold ? cand : -1;\n    }\n};",
+      "approach": "C++ Segment Tree Boyer-Moore Voting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class MajorityChecker {\n    private final int n;\n    private final Map<Integer, List<Integer>> pos = new HashMap<>();\n    private final int[][] tree;\n\n    private int[] merge(int[] a, int[] b) {\n        if (a[0] == b[0]) return new int[]{a[0], a[1] + b[1]};\n        if (a[1] >= b[1]) return new int[]{a[0], a[1] - b[1]};\n        return new int[]{b[0], b[1] - a[1]};\n    }\n\n    private void build(int[] arr, int node, int l, int r) {\n        if (l == r) { tree[node] = new int[]{arr[l], 1}; return; }\n        int mid = (l + r) / 2;\n        build(arr, 2 * node, l, mid);\n        build(arr, 2 * node + 1, mid + 1, r);\n        tree[node] = merge(tree[2 * node], tree[2 * node + 1]);\n    }\n\n    private int[] queryTree(int node, int l, int r, int ql, int qr) {\n        if (ql <= l && r <= qr) return tree[node];\n        int mid = (l + r) / 2;\n        if (qr <= mid) return queryTree(2 * node, l, mid, ql, qr);\n        if (ql > mid) return queryTree(2 * node + 1, mid + 1, r, ql, qr);\n        return merge(queryTree(2 * node, l, mid, ql, qr), queryTree(2 * node + 1, mid + 1, r, ql, qr));\n    }\n\n    public MajorityChecker(int[] arr) {\n        n = arr.length;\n        tree = new int[4 * n][2];\n        for (int i = 0; i < n; i++) {\n            pos.computeIfAbsent(arr[i], k -> new ArrayList<>()).add(i);\n        }\n        build(arr, 1, 0, n - 1);\n    }\n\n    public int query(int left, int right, int threshold) {\n        int[] cand = queryTree(1, 0, n - 1, left, right);\n        List<Integer> list = pos.get(cand[0]);\n        if (list == null) return -1;\n        int lIdx = Collections.binarySearch(list, left);\n        if (lIdx < 0) lIdx = -lIdx - 1;\n        int rIdx = Collections.binarySearch(list, right);\n        if (rIdx < 0) rIdx = -rIdx - 1;\n        else rIdx += 1;\n        return (rIdx - lIdx >= threshold) ? cand[0] : -1;\n    }\n}",
+      "approach": "Java Segment Tree Voting with Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class MajorityChecker {\n    constructor(arr) {\n        this.n = arr.length;\n        this.pos = new Map();\n        for (let i = 0; i < this.n; i++) {\n            if (!this.pos.has(arr[i])) this.pos.set(arr[i], []);\n            this.pos.get(arr[i]).push(i);\n        }\n        this.tree = Array.from({ length: 4 * this.n }, () => [0, 0]);\n        this.build(arr, 1, 0, this.n - 1);\n    }\n    merge(a, b) {\n        if (a[0] === b[0]) return [a[0], a[1] + b[1]];\n        if (a[1] >= b[1]) return [a[0], a[1] - b[1]];\n        return [b[0], b[1] - a[1]];\n    }\n    build(arr, node, l, r) {\n        if (l === r) { this.tree[node] = [arr[l], 1]; return; }\n        const mid = Math.floor((l + r) / 2);\n        this.build(arr, 2 * node, l, mid);\n        this.build(arr, 2 * node + 1, mid + 1, r);\n        this.tree[node] = this.merge(this.tree[2 * node], this.tree[2 * node + 1]);\n    }\n    queryTree(node, l, r, ql, qr) {\n        if (ql <= l && r <= qr) return this.tree[node];\n        const mid = Math.floor((l + r) / 2);\n        if (qr <= mid) return this.queryTree(2 * node, l, mid, ql, qr);\n        if (ql > mid) return this.queryTree(2 * node + 1, mid + 1, r, ql, qr);\n        return this.merge(this.queryTree(2 * node, l, mid, ql, qr), this.queryTree(2 * node + 1, mid + 1, r, ql, qr));\n    }\n    query(left, right, threshold) {\n        const [cand] = this.queryTree(1, 0, this.n - 1, left, right);\n        const list = this.pos.get(cand);\n        if (!list) return -1;\n        let l = 0, r = list.length;\n        while (l < r) {\n            const m = Math.floor((l + r) / 2);\n            if (list[m] < left) l = m + 1;\n            else r = m;\n        }\n        const start = l;\n        l = 0; r = list.length;\n        while (l < r) {\n            const m = Math.floor((l + r) / 2);\n            if (list[m] <= right) l = m + 1;\n            else r = m;\n        }\n        return (l - start >= threshold) ? cand : -1;\n    }\n}",
+      "approach": "JavaScript Segment Tree with Binary Search Verification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

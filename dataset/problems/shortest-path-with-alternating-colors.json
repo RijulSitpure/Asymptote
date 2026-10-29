@@ -1,0 +1,79 @@
+{
+  "slug": "shortest-path-with-alternating-colors",
+  "number": 1129,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bicolored Path Exploration",
+      "text": "The shortest distance to any node depends on whether the arrival edge was red or blue."
+    },
+    {
+      "level": 2,
+      "title": "Augmented State Breadth Search",
+      "text": "Form a queue tracking (node, last_color) pairs. Alternating edges must switch colors on each traversal step."
+    },
+    {
+      "level": 3,
+      "title": "Queue State Blueprint",
+      "text": "Seed queue with (0, 0) for red and (0, 1) for blue with distance 0. Advance across opposing color edges, tracking visited state per color."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def shortestAlternatingPaths(self, n: int, redEdges: list[list[int]], blueEdges: list[list[int]]) -> list[int]:\n        red_adj = [[] for _ in range(n)]\n        blue_adj = [[] for _ in range(n)]\n        for u, v in redEdges:\n            red_adj[u].append(v)\n        for u, v in blueEdges:\n            blue_adj[u].append(v)\n\n        res = [-1] * n\n        q = deque([(0, 0, 0), (0, 1, 0)])\n        visited = {(0, 0), (0, 1)}\n\n        while q:\n            u, color, d = q.popleft()\n            if res[u] == -1:\n                res[u] = d\n            nxt_adj = blue_adj if color == 0 else red_adj\n            nxt_color = 1 if color == 0 else 0\n            for v in nxt_adj[u]:\n                if (v, nxt_color) not in visited:\n                    visited.add((v, nxt_color))\n                    q.append((v, nxt_color, d + 1))\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes (n)",
+      "E: total number of red and blue edges"
+    ],
+    "notes": "Each vertex is visited at most twice (once via red incoming edge, once via blue incoming edge).",
+    "whyNaiveFails": "Tracking visited nodes without incoming edge color prevents revisiting a node with the alternate color necessary to proceed.",
+    "spaceTimeTradeoff": "Doubling the state space to (node, color) guarantees acyclic progression without exponential path exploration.",
+    "interviewerExpectation": "Breadth-first search with composite state (node, last_color)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def shortestAlternatingPaths(self, n: int, redEdges: list[list[int]], blueEdges: list[list[int]]) -> list[int]:\n        red_adj = [[] for _ in range(n)]\n        blue_adj = [[] for _ in range(n)]\n        for u, v in redEdges:\n            red_adj[u].append(v)\n        for u, v in blueEdges:\n            blue_adj[u].append(v)\n\n        res = [-1] * n\n        q = deque([(0, 0, 0), (0, 1, 0)])\n        visited = {(0, 0), (0, 1)}\n\n        while q:\n            u, color, d = q.popleft()\n            if res[u] == -1:\n                res[u] = d\n            nxt_adj = blue_adj if color == 0 else red_adj\n            nxt_color = 1 if color == 0 else 0\n            for v in nxt_adj[u]:\n                if (v, nxt_color) not in visited:\n                    visited.add((v, nxt_color))\n                    q.append((v, nxt_color, d + 1))\n        return res",
+      "approach": "Augmented State BFS on Bicolored Graph",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> shortestAlternatingPaths(int n, vector<vector<int>>& redEdges, vector<vector<int>>& blueEdges) {\n        vector<vector<int>> red_adj(n), blue_adj(n);\n        for (auto& e : redEdges) red_adj[e[0]].push_back(e[1]);\n        for (auto& e : blueEdges) blue_adj[e[0]].push_back(e[1]);\n\n        vector<int> res(n, -1);\n        vector<vector<bool>> visited(n, vector<bool>(2, false));\n        queue<tuple<int, int, int>> q;\n        q.push({0, 0, 0}); visited[0][0] = true;\n        q.push({0, 1, 0}); visited[0][1] = true;\n\n        while (!q.empty()) {\n            auto [u, color, d] = q.front(); q.pop();\n            if (res[u] == -1) res[u] = d;\n            int next_color = 1 - color;\n            auto& adj = (color == 0) ? blue_adj : red_adj;\n            for (int v : adj[u]) {\n                if (!visited[v][next_color]) {\n                    visited[v][next_color] = true;\n                    q.push({v, next_color, d + 1});\n                }\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "C++ Queue BFS with Color-Indexed Visited Table",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[] shortestAlternatingPaths(int n, int[][] redEdges, int[][] blueEdges) {\n        List<Integer>[] redAdj = new ArrayList[n];\n        List<Integer>[] blueAdj = new ArrayList[n];\n        for (int i = 0; i < n; i++) {\n            redAdj[i] = new ArrayList<>();\n            blueAdj[i] = new ArrayList<>();\n        }\n        for (int[] e : redEdges) redAdj[e[0]].add(e[1]);\n        for (int[] e : blueEdges) blueAdj[e[0]].add(e[1]);\n\n        int[] res = new int[n];\n        Arrays.fill(res, -1);\n        boolean[][] visited = new boolean[n][2];\n        Queue<int[]> q = new LinkedList<>();\n        q.offer(new int[]{0, 0, 0}); visited[0][0] = true;\n        q.offer(new int[]{0, 1, 0}); visited[0][1] = true;\n\n        while (!q.isEmpty()) {\n            int[] curr = q.poll();\n            int u = curr[0], color = curr[1], d = curr[2];\n            if (res[u] == -1) res[u] = d;\n            int nextColor = 1 - color;\n            List<Integer> adj = (color == 0) ? blueAdj[u] : redAdj[u];\n            for (int v : adj) {\n                if (!visited[v][nextColor]) {\n                    visited[v][nextColor] = true;\n                    q.offer(new int[]{v, nextColor, d + 1});\n                }\n            }\n        }\n        return res;\n    }\n}",
+      "approach": "Java Adjacency Lists with 2D Visited Array BFS",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var shortestAlternatingPaths = function(n, redEdges, blueEdges) {\n    const redAdj = Array.from({ length: n }, () => []);\n    const blueAdj = Array.from({ length: n }, () => []);\n    for (const [u, v] of redEdges) redAdj[u].push(v);\n    for (const [u, v] of blueEdges) blueAdj[u].push(v);\n\n    const res = Array(n).fill(-1);\n    const visited = Array.from({ length: n }, () => [false, false]);\n    const q = [[0, 0, 0], [0, 1, 0]];\n    visited[0][0] = true;\n    visited[0][1] = true;\n\n    while (q.length > 0) {\n        const [u, color, d] = q.shift();\n        if (res[u] === -1) res[u] = d;\n        const nextColor = 1 - color;\n        const adj = (color === 0) ? blueAdj[u] : redAdj[u];\n        for (const v of adj) {\n            if (!visited[v][nextColor]) {\n                visited[v][nextColor] = true;\n                q.push([v, nextColor, d + 1]);\n            }\n        }\n    }\n    return res;\n};",
+      "approach": "JavaScript BFS Alternating Color Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

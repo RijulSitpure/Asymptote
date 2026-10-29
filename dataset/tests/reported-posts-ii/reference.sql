@@ -1,0 +1,1 @@
+WITH DailySpam AS (SELECT a.action_date, COUNT(DISTINCT r.post_id) / COUNT(DISTINCT a.post_id) AS removal_rate FROM Actions a LEFT JOIN Removals r ON a.post_id = r.post_id WHERE a.extra = 'spam' GROUP BY a.action_date) SELECT ROUND(AVG(removal_rate) * 100, 2) AS average_daily_percent FROM DailySpam;

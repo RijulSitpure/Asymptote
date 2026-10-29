@@ -1,0 +1,80 @@
+{
+  "slug": "snapshot-array",
+  "number": 1146,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Versioned Value History",
+      "text": "Rather than cloning the entire array per snapshot, record each value update alongside its active snapshot identifier."
+    },
+    {
+      "level": 2,
+      "title": "Per-Index Sorted Revision Logs",
+      "text": "Keep a list of (snap_id, val) entries for each index. The value at snapshot S is the most recent revision with snap_id <= S."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search Lookup Blueprint",
+      "text": "Append (current_snap_id, val) to index history upon set. For get(index, snap_id), binary search the index history for the largest snap_id <= target."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\n\nclass SnapshotArray:\n    def __init__(self, length: int):\n        self.snaps = [[(0, 0)] for _ in range(length)]\n        self.snap_id = 0\n\n    def set(self, index: int, val: int) -> None:\n        history = self.snaps[index]\n        if history[-1][0] == self.snap_id:\n            history[-1] = (self.snap_id, val)\n        else:\n            history.append((self.snap_id, val))\n\n    def snap(self) -> int:\n        self.snap_id += 1\n        return self.snap_id - 1\n\n    def get(self, index: int, snap_id: int) -> int:\n        history = self.snaps[index]\n        idx = bisect.bisect_right(history, (snap_id, float(\"inf\"))) - 1\n        return history[idx][1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1) init, set, snap; O(log S) get",
+    "space": "O(N + U)",
+    "variables": [
+      "N: length of array",
+      "U: total number of set operations",
+      "S: snapshots recorded for an index"
+    ],
+    "notes": "Binary search over revision history returns the latest version in logarithmic time.",
+    "whyNaiveFails": "Deep-copying the entire array on every snap takes O(N * S) time and memory, triggering time and memory limits.",
+    "spaceTimeTradeoff": "Appending changes per index incurs sparse memory proportional only to mutations.",
+    "interviewerExpectation": "Avoid array cloning; use binary search over per-index versioned histories."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass SnapshotArray:\n    def __init__(self, length: int):\n        self.snaps = [[(0, 0)] for _ in range(length)]\n        self.snap_id = 0\n\n    def set(self, index: int, val: int) -> None:\n        history = self.snaps[index]\n        if history[-1][0] == self.snap_id:\n            history[-1] = (self.snap_id, val)\n        else:\n            history.append((self.snap_id, val))\n\n    def snap(self) -> int:\n        self.snap_id += 1\n        return self.snap_id - 1\n\n    def get(self, index: int, snap_id: int) -> int:\n        history = self.snaps[index]\n        idx = bisect.bisect_right(history, (snap_id, float(\"inf\"))) - 1\n        return history[idx][1]",
+      "approach": "Per-Index Versioned History with Bisect Lookup",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class SnapshotArray {\n    vector<vector<pair<int, int>>> history;\n    int snap_id = 0;\npublic:\n    SnapshotArray(int length) : history(length) {\n        for (int i = 0; i < length; ++i) {\n            history[i].push_back({0, 0});\n        }\n    }\n    void set(int index, int val) {\n        if (history[index].back().first == snap_id) {\n            history[index].back().second = val;\n        } else {\n            history[index].push_back({snap_id, val});\n        }\n    }\n    int snap() {\n        return snap_id++;\n    }\n    int get(int index, int snap_id) {\n        auto& h = history[index];\n        auto it = upper_bound(h.begin(), h.end(), make_pair(snap_id, INT_MAX));\n        --it;\n        return it->second;\n    }\n};",
+      "approach": "C++ Upper Bound Search on Vector Pairs",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class SnapshotArray {\n    private final TreeMap<Integer, Integer>[] history;\n    private int snapId = 0;\n\n    public SnapshotArray(int length) {\n        history = new TreeMap[length];\n        for (int i = 0; i < length; i++) {\n            history[i] = new TreeMap<>();\n            history[i].put(0, 0);\n        }\n    }\n\n    public void set(int index, int val) {\n        history[index].put(snapId, val);\n    }\n\n    public int snap() {\n        return snapId++;\n    }\n\n    public int get(int index, int snap_id) {\n        return history[index].floorEntry(snap_id).getValue();\n    }\n}",
+      "approach": "Java TreeMap FloorEntry Lookup",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class SnapshotArray {\n    constructor(length) {\n        this.history = Array.from({ length }, () => [[0, 0]]);\n        this.snapId = 0;\n    }\n    set(index, val) {\n        const h = this.history[index];\n        if (h[h.length - 1][0] === this.snapId) {\n            h[h.length - 1][1] = val;\n        } else {\n            h.push([this.snapId, val]);\n        }\n    }\n    snap() {\n        return this.snapId++;\n    }\n    get(index, snap_id) {\n        const h = this.history[index];\n        let l = 0, r = h.length - 1, ans = 0;\n        while (l <= r) {\n            const m = Math.floor((l + r) / 2);\n            if (h[m][0] <= snap_id) {\n                ans = h[m][1];\n                l = m + 1;\n            } else {\n                r = m - 1;\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "JavaScript Binary Search on Versioned Array",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

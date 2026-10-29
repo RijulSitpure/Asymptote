@@ -72,6 +72,19 @@ public:
 bool isBadVersion(int version);
 int guess(int num);
 bool knows(int a, int b);
+class MountainArray {
+public:
+    int get(int index);
+    int length();
+};
+class HtmlParser {
+public:
+    vector<string> getUrls(string url);
+};
+class CustomFunction {
+public:
+    int f(int x, int y);
+};
 `;
     codeToTest = preamble + codeToTest;
     const cppRes = spawnSync('g++', ['-std=c++17', '-fsyntax-only', '-x', 'c++', '-'], {

@@ -1,0 +1,71 @@
+{
+  "slug": "game-play-analysis-v",
+  "number": 1097,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Player Installation and Day One Retention",
+      "text": "Determine the earliest installation date for each player, then check if they logged activity exactly one day later."
+    },
+    {
+      "level": 2,
+      "title": "Install Date Aggregation with Next-Day Outer Join",
+      "text": "Group activity by player to find min event date. Left join with activity matching player identifier and event date plus one day."
+    },
+    {
+      "level": 3,
+      "title": "Retention Calculation Blueprint",
+      "text": "with Installs as (select player_id, min(event_date) as install_dt from Activity group by player_id) select i.install_dt, count(i.player_id) as installs, round(count(a.player_id) / count(i.player_id), 2) as Day1_retention from Installs i left join Activity a on i.player_id = a.player_id and a.event_date = date_add(i.install_dt, interval 1 day) group by i.install_dt."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Installs AS (\n    SELECT player_id, MIN(event_date) AS install_dt\n    FROM Activity\n    GROUP BY player_id\n)\nSELECT i.install_dt,\n       COUNT(i.player_id) AS installs,\n       ROUND(COUNT(a.player_id) / COUNT(i.player_id), 2) AS Day1_retention\nFROM Installs i\nLEFT JOIN Activity a\n  ON i.player_id = a.player_id\n AND a.event_date = DATE_ADD(i.install_dt, INTERVAL 1 DAY)\nGROUP BY i.install_dt;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(A log A)",
+    "space": "O(A)",
+    "variables": [
+      "A: number of activity logs"
+    ],
+    "notes": "Grouped min aggregation followed by next-day equi-join runs in linear-logarithmic time.",
+    "whyNaiveFails": "Correlated scalar queries checking day-one logins per player incur quadratic scans across activity records.",
+    "spaceTimeTradeoff": "Common table expression precomputes installation cohorts, enabling single-pass join filtering.",
+    "interviewerExpectation": "Use of DATE_ADD for exact single-day offset and LEFT JOIN to preserve zero retention cohorts."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Installs AS (\n    SELECT player_id, MIN(event_date) AS install_dt\n    FROM Activity\n    GROUP BY player_id\n)\nSELECT i.install_dt,\n       COUNT(i.player_id) AS installs,\n       ROUND(COUNT(a.player_id) / COUNT(i.player_id), 2) AS Day1_retention\nFROM Installs i\nLEFT JOIN Activity a\n  ON i.player_id = a.player_id\n AND a.event_date = DATE_ADD(i.install_dt, INTERVAL 1 DAY)\nGROUP BY i.install_dt;",
+      "approach": "Installation CTE with Next-Day Left Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Installs AS (\n    SELECT player_id, MIN(event_date) AS install_dt\n    FROM Activity\n    GROUP BY player_id\n)\nSELECT i.install_dt,\n       COUNT(i.player_id) AS installs,\n       ROUND(COUNT(a.player_id)::numeric / COUNT(i.player_id), 2) AS \"Day1_retention\"\nFROM Installs i\nLEFT JOIN Activity a\n  ON i.player_id = a.player_id\n AND a.event_date = i.install_dt + INTERVAL '1 day'\nGROUP BY i.install_dt;",
+      "approach": "PostgreSQL Interval Offset with Numeric Cast",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef gameplay_analysis(activity: pd.DataFrame) -> pd.DataFrame:\n    installs = activity.groupby('player_id')['event_date'].min().reset_index()\n    installs.rename(columns={'event_date': 'install_dt'}, inplace=True)\n    activity['next_day'] = activity['event_date'] - pd.Timedelta(days=1)\n    merged = installs.merge(activity, left_on=['player_id', 'install_dt'], right_on=['player_id', 'next_day'], how='left')\n    res = merged.groupby('install_dt').agg(\n        installs=('player_id', 'nunique'),\n        retained=('event_date', 'count')\n    ).reset_index()\n    res['Day1_retention'] = (res['retained'] / res['installs']).round(2)\n    return res[['install_dt', 'installs', 'Day1_retention']]",
+      "approach": "Pandas Groupby Minimum and Offset Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

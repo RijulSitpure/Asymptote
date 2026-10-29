@@ -1,0 +1,72 @@
+{
+  "slug": "monthly-transactions-ii",
+  "number": 1205,
+  "category": "Database",
+  "patterns": [
+    "date-time"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Approved Transactions and Chargebacks Union",
+      "text": "Unify approved transaction events and chargeback events into a single timeline keyed by event month and transaction country."
+    },
+    {
+      "level": 2,
+      "title": "Dual Event Tagging with Conditional Sums",
+      "text": "Select approved transactions and join chargebacks to transactions to retrieve their country. Tag event types, then group by month and country."
+    },
+    {
+      "level": 3,
+      "title": "Monthly Chargebacks Blueprint",
+      "text": "Union approved events with chargeback events. Group by month and country, aggregating approved count/amount and chargeback count/amount."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Unified AS (\n    SELECT \n        DATE_FORMAT(trans_date, '%Y-%m') AS month,\n        country,\n        amount,\n        'approved' AS type\n    FROM Transactions\n    WHERE state = 'approved'\n    UNION ALL\n    SELECT \n        DATE_FORMAT(c.trans_date, '%Y-%m') AS month,\n        t.country,\n        t.amount,\n        'chargeback' AS type\n    FROM Chargebacks c\n    JOIN Transactions t ON c.trans_id = t.id\n)\nSELECT \n    month,\n    country,\n    SUM(CASE WHEN type = 'approved' THEN 1 ELSE 0 END) AS approved_count,\n    SUM(CASE WHEN type = 'approved' THEN amount ELSE 0 END) AS approved_amount,\n    SUM(CASE WHEN type = 'chargeback' THEN 1 ELSE 0 END) AS chargeback_count,\n    SUM(CASE WHEN type = 'chargeback' THEN amount ELSE 0 END) AS chargeback_amount\nFROM Unified\nGROUP BY month, country;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(T + C)",
+    "space": "O(T + C)",
+    "variables": [
+      "T: number of transactions",
+      "C: number of chargeback entries"
+    ],
+    "notes": "Union of tagged approved and chargeback records followed by two-key grouping runs in linear time.",
+    "whyNaiveFails": "Separate outer joins on date strings easily produce Cartesian duplicate rows when multiple transactions share a date.",
+    "spaceTimeTradeoff": "Union all normalizes distinct event streams into a single homogeneous pipeline before aggregation.",
+    "interviewerExpectation": "Use of UNION ALL to normalize approved and chargeback streams and conditional SUM aggregations."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Unified AS (\n    SELECT \n        DATE_FORMAT(trans_date, '%Y-%m') AS month,\n        country,\n        amount,\n        'approved' AS type\n    FROM Transactions\n    WHERE state = 'approved'\n    UNION ALL\n    SELECT \n        DATE_FORMAT(c.trans_date, '%Y-%m') AS month,\n        t.country,\n        t.amount,\n        'chargeback' AS type\n    FROM Chargebacks c\n    JOIN Transactions t ON c.trans_id = t.id\n)\nSELECT \n    month,\n    country,\n    SUM(CASE WHEN type = 'approved' THEN 1 ELSE 0 END) AS approved_count,\n    SUM(CASE WHEN type = 'approved' THEN amount ELSE 0 END) AS approved_amount,\n    SUM(CASE WHEN type = 'chargeback' THEN 1 ELSE 0 END) AS chargeback_count,\n    SUM(CASE WHEN type = 'chargeback' THEN amount ELSE 0 END) AS chargeback_amount\nFROM Unified\nGROUP BY month, country;",
+      "approach": "Union All Event Stream with Grouped Conditional Aggregates",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Unified AS (\n    SELECT \n        TO_CHAR(trans_date, 'YYYY-MM') AS month,\n        country,\n        amount,\n        'approved' AS type\n    FROM Transactions\n    WHERE state = 'approved'\n    UNION ALL\n    SELECT \n        TO_CHAR(c.trans_date, 'YYYY-MM') AS month,\n        t.country,\n        t.amount,\n        'chargeback' AS type\n    FROM Chargebacks c\n    JOIN Transactions t ON c.trans_id = t.id\n)\nSELECT \n    month,\n    country,\n    SUM(CASE WHEN type = 'approved' THEN 1 ELSE 0 END) AS approved_count,\n    SUM(CASE WHEN type = 'approved' THEN amount ELSE 0 END) AS approved_amount,\n    SUM(CASE WHEN type = 'chargeback' THEN 1 ELSE 0 END) AS chargeback_count,\n    SUM(CASE WHEN type = 'chargeback' THEN amount ELSE 0 END) AS chargeback_amount\nFROM Unified\nGROUP BY month, country;",
+      "approach": "PostgreSQL Unified Stream To_Char Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef monthly_transactions(transactions: pd.DataFrame, chargebacks: pd.DataFrame) -> pd.DataFrame:\n    app = transactions[transactions['state'] == 'approved'].copy()\n    app['month'] = app['trans_date'].astype(str).str.slice(0, 7)\n    app['type'] = 'approved'\n    app_stream = app[['month', 'country', 'amount', 'type']]\n\n    cb = chargebacks.merge(transactions, left_on='trans_id', right_on='id')\n    cb['month'] = cb['trans_date_x'].astype(str).str.slice(0, 7)\n    cb['type'] = 'chargeback'\n    cb_stream = cb[['month', 'country', 'amount', 'type']]\n\n    unified = pd.concat([app_stream, cb_stream])\n    res = unified.groupby(['month', 'country']).agg(\n        approved_count=('type', lambda x: (x == 'approved').sum()),\n        approved_amount=('amount', lambda x: x[unified.loc[x.index, 'type'] == 'approved'].sum()),\n        chargeback_count=('type', lambda x: (x == 'chargeback').sum()),\n        chargeback_amount=('amount', lambda x: x[unified.loc[x.index, 'type'] == 'chargeback'].sum())\n    ).reset_index()\n    return res",
+      "approach": "Pandas Concat Event Streams with Conditional Reductions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "slug": "report-contiguous-dates",
+  "number": 1225,
+  "category": "Database",
+  "patterns": [
+    "date-time"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Consecutive Day Island Grouping",
+      "text": "Group consecutive calendar days of identical system states within 2019 into intervals of start and end dates."
+    },
+    {
+      "level": 2,
+      "title": "Gaps and Islands Row Number Difference",
+      "text": "Union failed and succeeded events for 2019. Subtract a contiguous row number from the event date to form invariant island keys."
+    },
+    {
+      "level": 3,
+      "title": "Contiguous Dates Blueprint",
+      "text": "with AllEvents as (select fail_date as dt, \"failed\" as state from Failed where fail_date between \"2019-01-01\" and \"2019-12-31\" union all select success_date as dt, \"succeeded\" as state from Succeeded where success_date between \"2019-01-01\" and \"2019-12-31\"), Ranked as (select state, dt, date_sub(dt, interval row_number() over (partition by state order by dt) day) as grp from AllEvents) select state as period_state, min(dt) as start_date, max(dt) as end_date from Ranked group by state, grp order by start_date asc."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH AllEvents AS (\n    SELECT fail_date AS dt, 'failed' AS state\n    FROM Failed\n    WHERE fail_date BETWEEN '2019-01-01' AND '2019-12-31'\n    UNION ALL\n    SELECT success_date AS dt, 'succeeded' AS state\n    FROM Succeeded\n    WHERE success_date BETWEEN '2019-01-01' AND '2019-12-31'\n),\nRanked AS (\n    SELECT state, dt,\n           DATE_SUB(dt, INTERVAL ROW_NUMBER() OVER (PARTITION BY state ORDER BY dt) DAY) AS grp\n    FROM AllEvents\n)\nSELECT state AS period_state,\n       MIN(dt) AS start_date,\n       MAX(dt) AS end_date\nFROM Ranked\nGROUP BY state, grp\nORDER BY start_date ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of calendar event days in 2019"
+    ],
+    "notes": "Gaps and islands partition sorting by state and date executes in linear-logarithmic time.",
+    "whyNaiveFails": "Checking adjacent dates with recursive self-joins creates high combinatorial scanning overhead.",
+    "spaceTimeTradeoff": "The date minus row-number difference forms an invariant cluster key in a single window pass.",
+    "interviewerExpectation": "Classic gaps-and-islands pattern using DATE_SUB(dt, INTERVAL ROW_NUMBER() DAY)."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH AllEvents AS (\n    SELECT fail_date AS dt, 'failed' AS state\n    FROM Failed\n    WHERE fail_date BETWEEN '2019-01-01' AND '2019-12-31'\n    UNION ALL\n    SELECT success_date AS dt, 'succeeded' AS state\n    FROM Succeeded\n    WHERE success_date BETWEEN '2019-01-01' AND '2019-12-31'\n),\nRanked AS (\n    SELECT state, dt,\n           DATE_SUB(dt, INTERVAL ROW_NUMBER() OVER (PARTITION BY state ORDER BY dt) DAY) AS grp\n    FROM AllEvents\n)\nSELECT state AS period_state,\n       MIN(dt) AS start_date,\n       MAX(dt) AS end_date\nFROM Ranked\nGROUP BY state, grp\nORDER BY start_date ASC;",
+      "approach": "Gaps and Islands Date Minus Row Number Clustering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH AllEvents AS (\n    SELECT fail_date AS dt, 'failed' AS state\n    FROM Failed\n    WHERE fail_date BETWEEN '2019-01-01' AND '2019-12-31'\n    UNION ALL\n    SELECT success_date AS dt, 'succeeded' AS state\n    FROM Succeeded\n    WHERE success_date BETWEEN '2019-01-01' AND '2019-12-31'\n),\nRanked AS (\n    SELECT state, dt,\n           dt - (ROW_NUMBER() OVER (PARTITION BY state ORDER BY dt)) * INTERVAL '1 day' AS grp\n    FROM AllEvents\n)\nSELECT state AS period_state,\n       MIN(dt) AS start_date,\n       MAX(dt) AS end_date\nFROM Ranked\nGROUP BY state, grp\nORDER BY start_date ASC;",
+      "approach": "PostgreSQL Date Difference Island Grouping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef report_contiguous_dates(failed: pd.DataFrame, succeeded: pd.DataFrame) -> pd.DataFrame:\n    f = failed[(failed['fail_date'] >= '2019-01-01') & (failed['fail_date'] <= '2019-12-31')].rename(columns={'fail_date': 'date'})\n    f['state'] = 'failed'\n    s = succeeded[(succeeded['success_date'] >= '2019-01-01') & (succeeded['success_date'] <= '2019-12-31')].rename(columns={'success_date': 'date'})\n    s['state'] = 'succeeded'\n    df = pd.concat([f, s]).sort_values(by='date').reset_index(drop=True)\n    df['date'] = pd.to_datetime(df['date'])\n    df['grp'] = (df['state'] != df['state'].shift(1)).cumsum()\n    res = df.groupby(['grp', 'state']).agg(\n        start_date=('date', 'min'),\n        end_date=('date', 'max')\n    ).reset_index()\n    res['start_date'] = res['start_date'].dt.strftime('%Y-%m-%d')\n    res['end_date'] = res['end_date'].dt.strftime('%Y-%m-%d')\n    res.rename(columns={'state': 'period_state'}, inplace=True)\n    return res.sort_values(by='start_date')[['period_state', 'start_date', 'end_date']]",
+      "approach": "Pandas Consecutive State Shift Cumsum Grouping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

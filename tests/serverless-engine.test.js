@@ -401,12 +401,12 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
 
   // 10. Full LeetCode Problem Catalog Index Resolution
   it('10. Resolves uncurated problem metadata, category, supported languages, and suggested pattern from catalog.json', async () => {
-    // Problem #1379 (Find a Corresponding Node of a Binary Tree in a Clone of That Tree) - uncurated, in catalog
-    const uncurated = await engine.getProblemHints(1379);
+    // Problem #3502 (Minimum Cost to Reach Every Position) - uncurated, in catalog
+    const uncurated = await engine.getProblemHints(3502);
     expect(uncurated.problem).not.toBeNull();
-    expect(uncurated.problem.number).toBe(1379);
-    expect(uncurated.problem.slug).toBe('find-a-corresponding-node-of-a-binary-tree-in-a-clone-of-that-tree');
-    expect(uncurated.problem.title).toBe('Find a Corresponding Node of a Binary Tree in a Clone of That Tree');
+    expect(uncurated.problem.number).toBe(3502);
+    expect(uncurated.problem.slug).toBe('minimum-cost-to-reach-every-position');
+    expect(uncurated.problem.title).toBe('Minimum Cost to Reach Every Position');
     expect(uncurated.problem.difficulty).toBe('Easy');
     expect(uncurated.problem.category).toBe('Algorithms');
     expect(uncurated.problem.verified).toBe(0);
@@ -416,12 +416,12 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(uncurated.supported_languages.length).toBeGreaterThanOrEqual(4);
     expect(uncurated.supported_languages.some(l => l.id === 'python3')).toBe(true);
 
-    // Problem #2850 (Minimum Moves to Spread Stones Over Grid) - uncurated, in catalog with mapped pattern backtracking-grid-dfs
-    const uncuratedProb = await engine.getProblemHints('minimum-moves-to-spread-stones-over-grid');
+    // Problem #3500 (Minimum Cost to Divide Array Into Subarrays) - uncurated, in catalog with mapped pattern prefix-sum-hashmap
+    const uncuratedProb = await engine.getProblemHints('minimum-cost-to-divide-array-into-subarrays');
     expect(uncuratedProb.problem).not.toBeNull();
-    expect(uncuratedProb.problem.number).toBe(2850);
+    expect(uncuratedProb.problem.number).toBe(3500);
     expect(uncuratedProb.suggested_pattern).not.toBeNull();
-    expect(uncuratedProb.suggested_pattern.id).toBe('backtracking-grid-dfs');
+    expect(uncuratedProb.suggested_pattern.id).toBe('prefix-sum-hashmap');
     expect(uncuratedProb.problem.verified).toBe(0);
 
     // Syncing an uncurated catalog problem inherits its true category and number

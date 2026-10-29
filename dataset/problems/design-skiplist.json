@@ -1,0 +1,78 @@
+{
+  "slug": "design-skiplist",
+  "number": 1206,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Probabilistic Multilevel Linking",
+      "text": "A skiplist maintains multiple ordered forward lists where higher levels skip over elements to accelerate traversal."
+    },
+    {
+      "level": 2,
+      "title": "Coin Toss Height Promotion",
+      "text": "Promote newly inserted nodes to higher levels with 50 percent probability, linking new levels into the predecessor update array."
+    },
+    {
+      "level": 3,
+      "title": "Skiplist Traversal Blueprint",
+      "text": "Drop through levels from top to bottom moving right while next value < target. Record predecessor pointers at each level for insertion."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport random\n\nclass Node:\n    def __init__(self, val=-1, level=1):\n        self.val = val\n        self.forward = [None] * level\n\nclass Skiplist:\n    def __init__(self):\n        self.head = Node(-1, 16)\n        self.level = 1\n\n    def search(self, target: int) -> bool:\n        curr = self.head\n        for i in range(self.level - 1, -1, -1):\n            while curr.forward[i] and curr.forward[i].val < target:\n                curr = curr.forward[i]\n        curr = curr.forward[0]\n        return curr is not None and curr.val == target\n\n    def add(self, num: int) -> None:\n        update = [None] * 16\n        curr = self.head\n        for i in range(self.level - 1, -1, -1):\n            while curr.forward[i] and curr.forward[i].val < num:\n                curr = curr.forward[i]\n            update[i] = curr\n\n        lvl = 1\n        while random.random() < 0.5 and lvl < 16:\n            lvl += 1\n        if lvl > self.level:\n            for i in range(self.level, lvl):\n                update[i] = self.head\n            self.level = lvl\n\n        new_node = Node(num, lvl)\n        for i in range(lvl):\n            new_node.forward[i] = update[i].forward[i]\n            update[i].forward[i] = new_node\n\n    def erase(self, num: int) -> bool:\n        update = [None] * 16\n        curr = self.head\n        for i in range(self.level - 1, -1, -1):\n            while curr.forward[i] and curr.forward[i].val < num:\n                curr = curr.forward[i]\n            update[i] = curr\n        curr = curr.forward[0]\n        if not curr or curr.val != num:\n            return False\n        for i in range(self.level):\n            if update[i].forward[i] != curr:\n                break\n            update[i].forward[i] = curr.forward[i]\n        while self.level > 1 and not self.head.forward[self.level - 1]:\n            self.level -= 1\n        return True\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log N) average search, add, erase",
+    "space": "O(N)",
+    "variables": [
+      "N: number of elements in the skiplist"
+    ],
+    "notes": "Probabilistic doubling yields geometric level heights with logarithmic average height.",
+    "whyNaiveFails": "Single linked lists require O(N) sequential traversal; balanced trees require complex rotation logic.",
+    "spaceTimeTradeoff": "Multiple forward pointers trade geometric memory overhead for expected logarithmic search bounds.",
+    "interviewerExpectation": "Multi-level forward link structure, coin-toss level generation, and predecessor update tracking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import random\n\nclass Node:\n    def __init__(self, val=-1, level=1):\n        self.val = val\n        self.forward = [None] * level\n\nclass Skiplist:\n    def __init__(self):\n        self.head = Node(-1, 16)\n        self.level = 1\n\n    def search(self, target: int) -> bool:\n        curr = self.head\n        for i in range(self.level - 1, -1, -1):\n            while curr.forward[i] and curr.forward[i].val < target:\n                curr = curr.forward[i]\n        curr = curr.forward[0]\n        return curr is not None and curr.val == target\n\n    def add(self, num: int) -> None:\n        update = [None] * 16\n        curr = self.head\n        for i in range(self.level - 1, -1, -1):\n            while curr.forward[i] and curr.forward[i].val < num:\n                curr = curr.forward[i]\n            update[i] = curr\n\n        lvl = 1\n        while random.random() < 0.5 and lvl < 16:\n            lvl += 1\n        if lvl > self.level:\n            for i in range(self.level, lvl):\n                update[i] = self.head\n            self.level = lvl\n\n        new_node = Node(num, lvl)\n        for i in range(lvl):\n            new_node.forward[i] = update[i].forward[i]\n            update[i].forward[i] = new_node\n\n    def erase(self, num: int) -> bool:\n        update = [None] * 16\n        curr = self.head\n        for i in range(self.level - 1, -1, -1):\n            while curr.forward[i] and curr.forward[i].val < num:\n                curr = curr.forward[i]\n            update[i] = curr\n        curr = curr.forward[0]\n        if not curr or curr.val != num:\n            return False\n        for i in range(self.level):\n            if update[i].forward[i] != curr:\n                break\n            update[i].forward[i] = curr.forward[i]\n        while self.level > 1 and not self.head.forward[self.level - 1]:\n            self.level -= 1\n        return True",
+      "approach": "Probabilistic Skip List with Predecessor Updates",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "struct Node {\n    int val;\n    vector<Node*> forward;\n    Node(int v, int l) : val(v), forward(l, nullptr) {}\n};\n\nclass Skiplist {\n    Node* head;\n    int maxLevel;\npublic:\n    Skiplist() : maxLevel(16) {\n        head = new Node(-1, maxLevel);\n    }\n    bool search(int target) {\n        Node* curr = head;\n        for (int i = maxLevel - 1; i >= 0; --i) {\n            while (curr->forward[i] && curr->forward[i]->val < target)\n                curr = curr->forward[i];\n        }\n        curr = curr->forward[0];\n        return curr && curr->val == target;\n    }\n    void add(int num) {\n        vector<Node*> update(maxLevel, nullptr);\n        Node* curr = head;\n        for (int i = maxLevel - 1; i >= 0; --i) {\n            while (curr->forward[i] && curr->forward[i]->val < num)\n                curr = curr->forward[i];\n            update[i] = curr;\n        }\n        int lvl = 1;\n        while ((rand() & 1) && lvl < maxLevel) ++lvl;\n        Node* newNode = new Node(num, lvl);\n        for (int i = 0; i < lvl; ++i) {\n            newNode->forward[i] = update[i]->forward[i];\n            update[i]->forward[i] = newNode;\n        }\n    }\n    bool erase(int num) {\n        vector<Node*> update(maxLevel, nullptr);\n        Node* curr = head;\n        for (int i = maxLevel - 1; i >= 0; --i) {\n            while (curr->forward[i] && curr->forward[i]->val < num)\n                curr = curr->forward[i];\n            update[i] = curr;\n        }\n        curr = curr->forward[0];\n        if (!curr || curr->val != num) return false;\n        for (int i = 0; i < maxLevel; ++i) {\n            if (update[i]->forward[i] != curr) break;\n            update[i]->forward[i] = curr->forward[i];\n        }\n        delete curr;\n        return true;\n    }\n};",
+      "approach": "C++ Multi-Level Node Vector Skiplist",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Skiplist {\n    static class Node {\n        int val;\n        Node[] forward;\n        Node(int val, int level) {\n            this.val = val;\n            this.forward = new Node[level];\n        }\n    }\n    private static final int MAX_LEVEL = 16;\n    private final Node head = new Node(-1, MAX_LEVEL);\n    private final Random rand = new Random();\n\n    public boolean search(int target) {\n        Node curr = head;\n        for (int i = MAX_LEVEL - 1; i >= 0; i--) {\n            while (curr.forward[i] != null && curr.forward[i].val < target) {\n                curr = curr.forward[i];\n            }\n        }\n        curr = curr.forward[0];\n        return curr != null && curr.val == target;\n    }\n\n    public void add(int num) {\n        Node[] update = new Node[MAX_LEVEL];\n        Node curr = head;\n        for (int i = MAX_LEVEL - 1; i >= 0; i--) {\n            while (curr.forward[i] != null && curr.forward[i].val < num) {\n                curr = curr.forward[i];\n            }\n            update[i] = curr;\n        }\n        int lvl = 1;\n        while (rand.nextBoolean() && lvl < MAX_LEVEL) lvl++;\n        Node newNode = new Node(num, lvl);\n        for (int i = 0; i < lvl; i++) {\n            newNode.forward[i] = update[i].forward[i];\n            update[i].forward[i] = newNode;\n        }\n    }\n\n    public boolean erase(int num) {\n        Node[] update = new Node[MAX_LEVEL];\n        Node curr = head;\n        for (int i = MAX_LEVEL - 1; i >= 0; i--) {\n            while (curr.forward[i] != null && curr.forward[i].val < num) {\n                curr = curr.forward[i];\n            }\n            update[i] = curr;\n        }\n        curr = curr.forward[0];\n        if (curr == null || curr.val != num) return false;\n        for (int i = 0; i < MAX_LEVEL; i++) {\n            if (update[i].forward[i] != curr) break;\n            update[i].forward[i] = curr.forward[i];\n        }\n        return true;\n    }\n}",
+      "approach": "Java Node Array Pointer Skiplist",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class SkiplistNode {\n    constructor(val, level) {\n        this.val = val;\n        this.forward = Array(level).fill(null);\n    }\n}\n\nclass Skiplist {\n    constructor() {\n        this.maxLevel = 16;\n        this.head = new SkiplistNode(-1, this.maxLevel);\n    }\n    search(target) {\n        let curr = this.head;\n        for (let i = this.maxLevel - 1; i >= 0; i--) {\n            while (curr.forward[i] && curr.forward[i].val < target) {\n                curr = curr.forward[i];\n            }\n        }\n        curr = curr.forward[0];\n        return Boolean(curr && curr.val === target);\n    }\n    add(num) {\n        const update = Array(this.maxLevel).fill(null);\n        let curr = this.head;\n        for (let i = this.maxLevel - 1; i >= 0; i--) {\n            while (curr.forward[i] && curr.forward[i].val < num) {\n                curr = curr.forward[i];\n            }\n            update[i] = curr;\n        }\n        let lvl = 1;\n        while (Math.random() < 0.5 && lvl < this.maxLevel) lvl++;\n        const newNode = new SkiplistNode(num, lvl);\n        for (let i = 0; i < lvl; i++) {\n            newNode.forward[i] = update[i].forward[i];\n            update[i].forward[i] = newNode;\n        }\n    }\n    erase(num) {\n        const update = Array(this.maxLevel).fill(null);\n        let curr = this.head;\n        for (let i = this.maxLevel - 1; i >= 0; i--) {\n            while (curr.forward[i] && curr.forward[i].val < num) {\n                curr = curr.forward[i];\n            }\n            update[i] = curr;\n        }\n        curr = curr.forward[0];\n        if (!curr || curr.val !== num) return false;\n        for (let i = 0; i < this.maxLevel; i++) {\n            if (update[i].forward[i] !== curr) break;\n            update[i].forward[i] = curr.forward[i];\n        }\n        return true;\n    }\n}",
+      "approach": "JavaScript Forward Node Array Skiplist",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
