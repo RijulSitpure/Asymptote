@@ -1,0 +1,72 @@
+{
+  "slug": "activity-participants",
+  "number": 1355,
+  "category": "Database",
+  "patterns": [
+    "having-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Extrema Participant Frequency Exclusion",
+      "text": "Find all activities whose participant counts are neither the maximum nor the minimum participant count across all activities."
+    },
+    {
+      "level": 2,
+      "title": "Having Filter with Subquery Min and Max",
+      "text": "group by activity and filter having count(*) > min_participants and count(*) < max_participants."
+    },
+    {
+      "level": 3,
+      "title": "Activity Participants Blueprint",
+      "text": "with ActivityCounts as (select activity, count(*) as cnt from Friends group by activity) select activity from ActivityCounts where cnt > (select min(cnt) from ActivityCounts) and cnt < (select max(cnt) from ActivityCounts)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH ActivityCounts AS (\n    SELECT activity, COUNT(*) AS cnt\n    FROM Friends\n    GROUP BY activity\n)\nSELECT activity\nFROM ActivityCounts\nWHERE cnt > (SELECT MIN(cnt) FROM ActivityCounts)\n  AND cnt < (SELECT MAX(cnt) FROM ActivityCounts);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(F + A)",
+    "space": "O(A)",
+    "variables": [
+      "F: number of friends",
+      "A: number of activities"
+    ],
+    "notes": "Group aggregation followed by subquery scalar min/max comparison runs in linear time.",
+    "whyNaiveFails": "Hardcoding static count thresholds fails when all activities have identical participant numbers.",
+    "spaceTimeTradeoff": "CTE caches activity frequencies to compute dynamic min and max cleanly.",
+    "interviewerExpectation": "Exclusion of both global minimum and maximum frequencies using aggregate subqueries."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH ActivityCounts AS (\n    SELECT activity, COUNT(*) AS cnt\n    FROM Friends\n    GROUP BY activity\n)\nSELECT activity\nFROM ActivityCounts\nWHERE cnt > (SELECT MIN(cnt) FROM ActivityCounts)\n  AND cnt < (SELECT MAX(cnt) FROM ActivityCounts);",
+      "approach": "CTE Activity Frequency Count with Extrema Exclusion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH ActivityCounts AS (\n    SELECT activity, COUNT(*) AS cnt\n    FROM Friends\n    GROUP BY activity\n)\nSELECT activity\nFROM ActivityCounts\nWHERE cnt > (SELECT MIN(cnt) FROM ActivityCounts)\n  AND cnt < (SELECT MAX(cnt) FROM ActivityCounts);",
+      "approach": "PostgreSQL CTE Extrema Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef activity_participants(friends: pd.DataFrame, activities: pd.DataFrame) -> pd.DataFrame:\n    counts = friends.groupby('activity').size().reset_index(name='cnt')\n    if counts.empty:\n        return pd.DataFrame(columns=['activity'])\n    min_c = counts['cnt'].min()\n    max_c = counts['cnt'].max()\n    res = counts[(counts['cnt'] > min_c) & (counts['cnt'] < max_c)]\n    return res[['activity']]",
+      "approach": "Pandas Size Groupby with Min/Max Exclusions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

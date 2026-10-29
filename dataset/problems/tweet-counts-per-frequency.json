@@ -1,0 +1,80 @@
+{
+  "slug": "tweet-counts-per-frequency",
+  "number": 1348,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Time Bucket Frequency Partitioning",
+      "text": "Record occurrences under their tweet name and categorize timestamps into minute, hour, or day chunks."
+    },
+    {
+      "level": 2,
+      "title": "Binary Search or Bucket Tallying",
+      "text": "Divide the interval [startTime, endTime] into fixed-length windows and count events falling in each slot."
+    },
+    {
+      "level": 3,
+      "title": "Interval Delta Mapping Blueprint",
+      "text": "Determine chunk step size (60, 3600, or 86400). Create an array of size ceil((endTime - startTime + 1) / step) and populate counts."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\n\nclass TweetCounts:\n    def __init__(self):\n        self.tweets = {}\n\n    def recordTweet(self, tweetName: str, time: int) -> None:\n        if tweetName not in self.tweets:\n            self.tweets[tweetName] = []\n        bisect.insort(self.tweets[tweetName], time)\n\n    def getTweetCountsPerFrequency(self, freq: str, tweetName: str, startTime: int, endTime: int) -> list[int]:\n        delta = 60 if freq == \"minute\" else (3600 if freq == \"hour\" else 86400)\n        times = self.tweets.get(tweetName, [])\n        ans = []\n        cur = startTime\n        while cur <= endTime:\n            nxt = min(cur + delta, endTime + 1)\n            left = bisect.bisect_left(times, cur)\n            right = bisect.bisect_left(times, nxt)\n            ans.append(right - left)\n            cur = nxt\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log N + N) record, O(B * log N) query",
+    "space": "O(T)",
+    "variables": [
+      "N: number of timestamps for tweet",
+      "B: number of buckets in query",
+      "T: total recorded tweets"
+    ],
+    "notes": "Bisection identifies bucket boundaries in logarithmic time per chunk interval.",
+    "whyNaiveFails": "Full unsorted scans across millions of events yield linear per-query latencies.",
+    "spaceTimeTradeoff": "Sorted timestamp lists enable range count difference via binary search.",
+    "interviewerExpectation": "Correct frequency delta mapping and bisect range boundaries."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass TweetCounts:\n    def __init__(self):\n        self.tweets = {}\n\n    def recordTweet(self, tweetName: str, time: int) -> None:\n        if tweetName not in self.tweets:\n            self.tweets[tweetName] = []\n        bisect.insort(self.tweets[tweetName], time)\n\n    def getTweetCountsPerFrequency(self, freq: str, tweetName: str, startTime: int, endTime: int) -> list[int]:\n        delta = 60 if freq == \"minute\" else (3600 if freq == \"hour\" else 86400)\n        times = self.tweets.get(tweetName, [])\n        ans = []\n        cur = startTime\n        while cur <= endTime:\n            nxt = min(cur + delta, endTime + 1)\n            left = bisect.bisect_left(times, cur)\n            right = bisect.bisect_left(times, nxt)\n            ans.append(right - left)\n            cur = nxt\n        return ans",
+      "approach": "Sorted List with Bisect Range Queries",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class TweetCounts {\n    unordered_map<string, multiset<int>> tweets;\npublic:\n    TweetCounts() {}\n    void recordTweet(string tweetName, int time) {\n        tweets[tweetName].insert(time);\n    }\n    vector<int> getTweetCountsPerFrequency(string freq, string tweetName, int startTime, int endTime) {\n        int delta = (freq == \"minute\") ? 60 : ((freq == \"hour\") ? 3600 : 86400);\n        vector<int> ans;\n        if (!tweets.count(tweetName)) {\n            for (int t = startTime; t <= endTime; t += delta) ans.push_back(0);\n            return ans;\n        }\n        auto& s = tweets[tweetName];\n        for (int cur = startTime; cur <= endTime; cur += delta) {\n            int nxt = min(cur + delta - 1, endTime);\n            auto it1 = s.lower_bound(cur);\n            auto it2 = s.upper_bound(nxt);\n            ans.push_back(distance(it1, it2));\n        }\n        return ans;\n    }\n};",
+      "approach": "C++ Multiset Lower/Upper Bound Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class TweetCounts {\n    private Map<String, List<Integer>> tweets = new HashMap<>();\n\n    public TweetCounts() {}\n\n    public void recordTweet(String tweetName, int time) {\n        tweets.computeIfAbsent(tweetName, k -> new ArrayList<>());\n        List<Integer> list = tweets.get(tweetName);\n        int idx = Collections.binarySearch(list, time);\n        if (idx < 0) idx = -(idx + 1);\n        list.add(idx, time);\n    }\n\n    public List<Integer> getTweetCountsPerFrequency(String freq, String tweetName, int startTime, int endTime) {\n        int delta = freq.equals(\"minute\") ? 60 : (freq.equals(\"hour\") ? 3600 : 86400);\n        List<Integer> ans = new ArrayList<>();\n        List<Integer> times = tweets.getOrDefault(tweetName, Collections.emptyList());\n        int cur = startTime;\n        while (cur <= endTime) {\n            int nxt = Math.min(cur + delta, endTime + 1);\n            int left = Collections.binarySearch(times, cur);\n            if (left < 0) left = -(left + 1);\n            int right = Collections.binarySearch(times, nxt);\n            if (right < 0) right = -(right + 1);\n            ans.add(right - left);\n            cur = nxt;\n        }\n        return ans;\n    }\n}",
+      "approach": "Java Sorted ArrayList with Binary Search Range",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var TweetCounts = function() {\n    this.tweets = new Map();\n};\n\nTweetCounts.prototype.recordTweet = function(tweetName, time) {\n    if (!this.tweets.has(tweetName)) this.tweets.set(tweetName, []);\n    const arr = this.tweets.get(tweetName);\n    let l = 0, r = arr.length;\n    while (l < r) {\n        const m = Math.floor((l + r) / 2);\n        if (arr[m] < time) l = m + 1;\n        else r = m;\n    }\n    arr.splice(l, 0, time);\n};\n\nTweetCounts.prototype.getTweetCountsPerFrequency = function(freq, tweetName, startTime, endTime) {\n    const delta = freq === 'minute' ? 60 : (freq === 'hour' ? 3600 : 86400);\n    const arr = this.tweets.get(tweetName) || [];\n    const ans = [];\n    let cur = startTime;\n    while (cur <= endTime) {\n        const nxt = Math.min(cur + delta, endTime + 1);\n        let l1 = 0, r1 = arr.length;\n        while (l1 < r1) {\n            const m = Math.floor((l1 + r1) / 2);\n            if (arr[m] < cur) l1 = m + 1;\n            else r1 = m;\n        }\n        let l2 = 0, r2 = arr.length;\n        while (l2 < r2) {\n            const m = Math.floor((l2 + r2) / 2);\n            if (arr[m] < nxt) l2 = m + 1;\n            else r2 = m;\n        }\n        ans.push(l2 - l1);\n        cur = nxt;\n    }\n    return ans;\n};",
+      "approach": "JavaScript Binary Search Insertion and Range Count",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "slug": "page-recommendations",
+  "number": 1264,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Friendship Graph Direct Neighborhood",
+      "text": "Retrieve user 1 friends by checking friendship connections in either user1_id or user2_id directions."
+    },
+    {
+      "level": 2,
+      "title": "Distinct Recommended Pages Union",
+      "text": "join the retrieved friends list with the likes table and filter out pages user 1 already likes."
+    },
+    {
+      "level": 3,
+      "title": "Page Recommendations Blueprint",
+      "text": "select distinct page_id as recommended_page from Likes where user_id in (select user2_id from Friendship where user1_id = 1 union select user1_id from Friendship where user2_id = 1) and page_id not in (select page_id from Likes where user_id = 1)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT DISTINCT page_id AS recommended_page\nFROM Likes\nWHERE user_id IN (\n    SELECT user2_id FROM Friendship WHERE user1_id = 1\n    UNION\n    SELECT user1_id FROM Friendship WHERE user2_id = 1\n)\nAND page_id NOT IN (\n    SELECT page_id FROM Likes WHERE user_id = 1\n);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(F + L)",
+    "space": "O(F + L)",
+    "variables": [
+      "F: number of friendship records",
+      "L: number of likes records"
+    ],
+    "notes": "Filtering by user 1 friends and anti-joining against user 1 likes runs in linear time using indices.",
+    "whyNaiveFails": "Failing to union bidirectional friendship records misses friends logged in reverse order.",
+    "spaceTimeTradeoff": "Union of friend ids into an in-memory hash set avoids complex outer joins.",
+    "interviewerExpectation": "Bidirectional friendship handling and exclusion of already-liked pages."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT DISTINCT page_id AS recommended_page\nFROM Likes\nWHERE user_id IN (\n    SELECT user2_id FROM Friendship WHERE user1_id = 1\n    UNION\n    SELECT user1_id FROM Friendship WHERE user2_id = 1\n)\nAND page_id NOT IN (\n    SELECT page_id FROM Likes WHERE user_id = 1\n);",
+      "approach": "Bidirectional Friendship Filter and Anti-Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT DISTINCT page_id AS recommended_page\nFROM Likes\nWHERE user_id IN (\n    SELECT user2_id FROM Friendship WHERE user1_id = 1\n    UNION\n    SELECT user1_id FROM Friendship WHERE user2_id = 1\n)\nAND page_id NOT IN (\n    SELECT page_id FROM Likes WHERE user_id = 1\n);",
+      "approach": "PostgreSQL Subquery Filter with Set Exclusion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef page_recommendations(friendship: pd.DataFrame, likes: pd.DataFrame) -> pd.DataFrame:\n    f1 = friendship[friendship['user1_id'] == 1]['user2_id']\n    f2 = friendship[friendship['user2_id'] == 1]['user1_id']\n    friends = set(f1).union(set(f2))\n    user1_likes = set(likes[likes['user_id'] == 1]['page_id'])\n    rec = likes[likes['user_id'].isin(friends) & (~likes['page_id'].isin(user1_likes))]\n    res = rec[['page_id']].drop_duplicates().rename(columns={'page_id': 'recommended_page'})\n    return res",
+      "approach": "Pandas Set Union and Boolean Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "slug": "weather-type-in-each-country",
+  "number": 1294,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monthly Weather Average Classification",
+      "text": "Filter weather observations to November 2019, calculate average weather_state per country, and categorize using conditional logic."
+    },
+    {
+      "level": 2,
+      "title": "Case When Weather Thresholds",
+      "text": "Assign Cold when average <= 15, Hot when average >= 25, and Warm otherwise."
+    },
+    {
+      "level": 3,
+      "title": "Weather Classification Blueprint",
+      "text": "select c.country_name, case when avg(w.weather_state) <= 15 then \"Cold\" when avg(w.weather_state) >= 25 then \"Hot\" else \"Warm\" end as weather_type from Countries c join Weather w on c.country_id = w.country_id where w.day between \"2019-11-01\" and \"2019-11-30\" group by c.country_id, c.country_name."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT c.country_name,\n       CASE \n           WHEN AVG(w.weather_state) <= 15 THEN 'Cold'\n           WHEN AVG(w.weather_state) >= 25 THEN 'Hot'\n           ELSE 'Warm'\n       END AS weather_type\nFROM Countries c\nJOIN Weather w ON c.country_id = w.country_id\nWHERE w.day BETWEEN '2019-11-01' AND '2019-11-30'\nGROUP BY c.country_id, c.country_name;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(W + C)",
+    "space": "O(C)",
+    "variables": [
+      "W: weather records in November 2019",
+      "C: number of countries"
+    ],
+    "notes": "Filtering by November date range and grouping country ids takes linear time.",
+    "whyNaiveFails": "Evaluating weather outside November 2019 corrupts the monthly average temperature.",
+    "spaceTimeTradeoff": "Inner join only categorizes countries with recorded November observations.",
+    "interviewerExpectation": "Date range filtering and conditional CASE statement on aggregate AVG."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT c.country_name,\n       CASE \n           WHEN AVG(w.weather_state) <= 15 THEN 'Cold'\n           WHEN AVG(w.weather_state) >= 25 THEN 'Hot'\n           ELSE 'Warm'\n       END AS weather_type\nFROM Countries c\nJOIN Weather w ON c.country_id = w.country_id\nWHERE w.day BETWEEN '2019-11-01' AND '2019-11-30'\nGROUP BY c.country_id, c.country_name;",
+      "approach": "Date Range Join with Conditional Case Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT c.country_name,\n       CASE \n           WHEN AVG(w.weather_state) <= 15 THEN 'Cold'\n           WHEN AVG(w.weather_state) >= 25 THEN 'Hot'\n           ELSE 'Warm'\n       END AS weather_type\nFROM Countries c\nJOIN Weather w ON c.country_id = w.country_id\nWHERE w.day BETWEEN '2019-11-01' AND '2019-11-30'\nGROUP BY c.country_id, c.country_name;",
+      "approach": "PostgreSQL Conditional Case Average",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef weather_type(countries: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:\n    nov = weather[weather['day'].astype(str).str.startswith('2019-11')]\n    if nov.empty:\n        return pd.DataFrame(columns=['country_name', 'weather_type'])\n    merged = nov.merge(countries, on='country_id')\n    grouped = merged.groupby('country_name')['weather_state'].mean().reset_index()\n    def classify(avg):\n        if avg <= 15: return 'Cold'\n        if avg >= 25: return 'Hot'\n        return 'Warm'\n    grouped['weather_type'] = grouped['weather_state'].apply(classify)\n    return grouped[['country_name', 'weather_type']]",
+      "approach": "Pandas Date Filtering and Mean Classification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "slug": "all-people-report-to-the-given-manager",
+  "number": 1270,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Manager Hierarchy Traversal",
+      "text": "Find all employees who report directly or indirectly within three management levels to the head of the company."
+    },
+    {
+      "level": 2,
+      "title": "Self-Join or Recursive CTE",
+      "text": "Join the employee hierarchy three times, or use a recursive CTE starting from manager_id = 1."
+    },
+    {
+      "level": 3,
+      "title": "Three Level Hierarchy Blueprint",
+      "text": "with recursive Subordinates as (select employee_id from Employees where manager_id = 1 and employee_id <> 1 union all select e.employee_id from Employees e join Subordinates s on e.manager_id = s.employee_id) select employee_id from Subordinates."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RECURSIVE Hierarchy AS (\n    SELECT employee_id, 1 AS level\n    FROM Employees\n    WHERE manager_id = 1 AND employee_id != 1\n    UNION ALL\n    SELECT e.employee_id, h.level + 1\n    FROM Employees e\n    JOIN Hierarchy h ON e.manager_id = h.employee_id\n    WHERE h.level < 3\n)\nSELECT employee_id\nFROM Hierarchy;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of employee records"
+    ],
+    "notes": "Recursive expansion descends at most 3 levels, visiting each subordinate employee once.",
+    "whyNaiveFails": "Single join only captures direct reports and omits employees reporting through intermediaries.",
+    "spaceTimeTradeoff": "Recursive CTE avoids hardcoding multiple nested self-joins.",
+    "interviewerExpectation": "Use of recursive CTE or 3-level self-join excluding the head manager."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RECURSIVE Hierarchy AS (\n    SELECT employee_id, 1 AS level\n    FROM Employees\n    WHERE manager_id = 1 AND employee_id != 1\n    UNION ALL\n    SELECT e.employee_id, h.level + 1\n    FROM Employees e\n    JOIN Hierarchy h ON e.manager_id = h.employee_id\n    WHERE h.level < 3\n)\nSELECT employee_id\nFROM Hierarchy;",
+      "approach": "Recursive CTE Depth-Bounded Tree Walk",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RECURSIVE Hierarchy AS (\n    SELECT employee_id, 1 AS level\n    FROM Employees\n    WHERE manager_id = 1 AND employee_id != 1\n    UNION ALL\n    SELECT e.employee_id, h.level + 1\n    FROM Employees e\n    JOIN Hierarchy h ON e.manager_id = h.employee_id\n    WHERE h.level < 3\n)\nSELECT employee_id\nFROM Hierarchy;",
+      "approach": "PostgreSQL Recursive CTE Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_reporting_people(employees: pd.DataFrame) -> pd.DataFrame:\n    direct = employees[(employees['manager_id'] == 1) & (employees['employee_id'] != 1)]['employee_id'].tolist()\n    all_reports = set(direct)\n    curr = direct\n    for _ in range(2):\n        nxt = employees[employees['manager_id'].isin(curr)]['employee_id'].tolist()\n        all_reports.update(nxt)\n        curr = nxt\n    return pd.DataFrame({'employee_id': list(all_reports)})",
+      "approach": "Pandas Iterative Level Breadth Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

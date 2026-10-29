@@ -1,0 +1,73 @@
+{
+  "slug": "movie-rating",
+  "number": 1341,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two Distinct Metric Queries with Union All",
+      "text": "The problem requires finding the user who rated the most movies, and the movie with the highest average rating in February 2020."
+    },
+    {
+      "level": 2,
+      "title": "Tie-Breaking via Lexicographical Order",
+      "text": "Sort first by metric descending (count or avg rating), and break ties by name alphabetically in ascending order."
+    },
+    {
+      "level": 3,
+      "title": "Union All Limit Blueprint",
+      "text": "(select u.name as results from Users u join MovieRating mr on u.user_id = mr.user_id group by u.user_id, u.name order by count(*) desc, u.name asc limit 1) union all (select m.title as results from Movies m join MovieRating mr on m.movie_id = mr.movie_id where mr.created_at between \"2020-02-01\" and \"2020-02-29\" group by m.movie_id, m.title order by avg(mr.rating) desc, m.title asc limit 1)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\n(SELECT u.name AS results\n FROM Users u\n JOIN MovieRating mr ON u.user_id = mr.user_id\n GROUP BY u.user_id, u.name\n ORDER BY COUNT(*) DESC, u.name ASC\n LIMIT 1)\nUNION ALL\n(SELECT m.title AS results\n FROM Movies m\n JOIN MovieRating mr ON m.movie_id = mr.movie_id\n WHERE mr.created_at BETWEEN '2020-02-01' AND '2020-02-29'\n GROUP BY m.movie_id, m.title\n ORDER BY AVG(mr.rating) DESC, m.title ASC\n LIMIT 1);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(R log R)",
+    "space": "O(U + M)",
+    "variables": [
+      "R: movie ratings records",
+      "U: users",
+      "M: movies"
+    ],
+    "notes": "Two independent group aggregations with top-1 limits united into a 2-row result set.",
+    "whyNaiveFails": "Using simple UNION instead of UNION ALL deduplicates if the top user and movie have identical names.",
+    "spaceTimeTradeoff": "Parenthesized sub-queries with LIMIT 1 execute the two independent rankings concurrently.",
+    "interviewerExpectation": "Use of UNION ALL and separate group aggregations with tie-breaking."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "(SELECT u.name AS results\n FROM Users u\n JOIN MovieRating mr ON u.user_id = mr.user_id\n GROUP BY u.user_id, u.name\n ORDER BY COUNT(*) DESC, u.name ASC\n LIMIT 1)\nUNION ALL\n(SELECT m.title AS results\n FROM Movies m\n JOIN MovieRating mr ON m.movie_id = mr.movie_id\n WHERE mr.created_at BETWEEN '2020-02-01' AND '2020-02-29'\n GROUP BY m.movie_id, m.title\n ORDER BY AVG(mr.rating) DESC, m.title ASC\n LIMIT 1);",
+      "approach": "Dual Subquery Ranking with Union All",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "(SELECT u.name AS results\n FROM Users u\n JOIN MovieRating mr ON u.user_id = mr.user_id\n GROUP BY u.user_id, u.name\n ORDER BY COUNT(*) DESC, u.name ASC\n LIMIT 1)\nUNION ALL\n(SELECT m.title AS results\n FROM Movies m\n JOIN MovieRating mr ON m.movie_id = mr.movie_id\n WHERE mr.created_at BETWEEN '2020-02-01' AND '2020-02-29'\n GROUP BY m.movie_id, m.title\n ORDER BY AVG(mr.rating) DESC, m.title ASC\n LIMIT 1);",
+      "approach": "PostgreSQL Dual Branch Union All",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef movie_rating(movies: pd.DataFrame, users: pd.DataFrame, movie_rating: pd.DataFrame) -> pd.DataFrame:\n    # 1. Top user\n    u_counts = movie_rating.groupby('user_id').size().reset_index(name='cnt')\n    u_merged = u_counts.merge(users, on='user_id')\n    u_sorted = u_merged.sort_values(by=['cnt', 'name'], ascending=[False, True])\n    top_user = u_sorted.iloc[0]['name']\n\n    # 2. Top movie in Feb 2020\n    feb = movie_rating[movie_rating['created_at'].astype(str).str.startswith('2020-02')]\n    m_avg = feb.groupby('movie_id')['rating'].mean().reset_index()\n    m_merged = m_avg.merge(movies, on='movie_id')\n    m_sorted = m_merged.sort_values(by=['rating', 'title'], ascending=[False, True])\n    top_movie = m_sorted.iloc[0]['title']\n\n    return pd.DataFrame({'results': [top_user, top_movie]})",
+      "approach": "Pandas Independent Metric Sorts and Concatenation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

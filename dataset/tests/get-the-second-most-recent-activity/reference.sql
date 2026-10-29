@@ -1,0 +1,1 @@
+WITH Ranked AS (SELECT username, activity, startDate, endDate, ROW_NUMBER() OVER (PARTITION BY username ORDER BY endDate DESC) AS rn, COUNT(*) OVER (PARTITION BY username) AS total FROM UserActivity) SELECT username, activity, startDate, endDate FROM Ranked WHERE rn = 2 OR total = 1;

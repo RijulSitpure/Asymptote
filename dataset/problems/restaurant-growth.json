@@ -1,0 +1,71 @@
+{
+  "slug": "restaurant-growth",
+  "number": 1321,
+  "category": "Database",
+  "patterns": [
+    "window-offset"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Daily Aggregation Before Moving Window",
+      "text": "Multiple customer transactions occur on the same day. First aggregate daily revenue amounts before calculating 7-day rolling metrics."
+    },
+    {
+      "level": 2,
+      "title": "7-Day Rolling Window Frame",
+      "text": "Use sum(amount) over (order by visited_on rows between 6 preceding and current row) on daily totals."
+    },
+    {
+      "level": 3,
+      "title": "Warmup Period Filter Blueprint",
+      "text": "Filter results where row_number() over (order by visited_on) >= 7 to exclude the initial 6 warmup days."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Daily AS (\n    SELECT visited_on, SUM(amount) AS daily_amount\n    FROM Customer\n    GROUP BY visited_on\n),\nRolling AS (\n    SELECT visited_on,\n           SUM(daily_amount) OVER (ORDER BY visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS amount,\n           ROUND(AVG(daily_amount) OVER (ORDER BY visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 2) AS average_amount,\n           ROW_NUMBER() OVER (ORDER BY visited_on) AS rn\n    FROM Daily\n)\nSELECT visited_on, amount, average_amount\nFROM Rolling\nWHERE rn >= 7\nORDER BY visited_on;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(D log D)",
+    "space": "O(D)",
+    "variables": [
+      "D: number of distinct days in Customer records"
+    ],
+    "notes": "Daily aggregation followed by rolling 7-day window function operates in linear-logarithmic time.",
+    "whyNaiveFails": "Applying rolling windows directly on raw records averages individual transactions rather than daily totals.",
+    "spaceTimeTradeoff": "Daily CTE intermediate table collapses duplicate transactions for clean sliding window math.",
+    "interviewerExpectation": "Pre-aggregation to daily level followed by 6 preceding window frame and warmup filter."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Daily AS (\n    SELECT visited_on, SUM(amount) AS daily_amount\n    FROM Customer\n    GROUP BY visited_on\n),\nRolling AS (\n    SELECT visited_on,\n           SUM(daily_amount) OVER (ORDER BY visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS amount,\n           ROUND(AVG(daily_amount) OVER (ORDER BY visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 2) AS average_amount,\n           ROW_NUMBER() OVER (ORDER BY visited_on) AS rn\n    FROM Daily\n)\nSELECT visited_on, amount, average_amount\nFROM Rolling\nWHERE rn >= 7\nORDER BY visited_on;",
+      "approach": "Daily Aggregation with 7-Day Window Sum and Average",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Daily AS (\n    SELECT visited_on, SUM(amount) AS daily_amount\n    FROM Customer\n    GROUP BY visited_on\n),\nRolling AS (\n    SELECT visited_on,\n           SUM(daily_amount) OVER (ORDER BY visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS amount,\n           ROUND(AVG(daily_amount) OVER (ORDER BY visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 2) AS average_amount,\n           ROW_NUMBER() OVER (ORDER BY visited_on) AS rn\n    FROM Daily\n)\nSELECT visited_on, amount, average_amount\nFROM Rolling\nWHERE rn >= 7\nORDER BY visited_on;",
+      "approach": "PostgreSQL Daily Rolling Window",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef restaurant_growth(customer: pd.DataFrame) -> pd.DataFrame:\n    daily = customer.groupby('visited_on')['amount'].sum().reset_index()\n    daily = daily.sort_values(by='visited_on').reset_index(drop=True)\n    if len(daily) < 7:\n        return pd.DataFrame(columns=['visited_on', 'amount', 'average_amount'])\n    daily['amount'] = daily['amount'].rolling(window=7).sum()\n    daily['average_amount'] = (daily['amount'] / 7.0).round(2)\n    res = daily.dropna().copy()\n    return res[['visited_on', 'amount', 'average_amount']]",
+      "approach": "Pandas Daily Groupby and Rolling Window",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

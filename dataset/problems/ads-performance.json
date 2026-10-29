@@ -1,0 +1,71 @@
+{
+  "slug": "ads-performance",
+  "number": 1322,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Click-Through Rate Ratio Metric",
+      "text": "The click-through rate is defined as clicks / (clicks + views) * 100. If clicks and views sum to zero, the rate equals 0."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Sum with Null If Safe Division",
+      "text": "Use sum(action = \"Clicked\") / nullif(sum(action in (\"Clicked\", \"Viewed\")), 0) to avoid divide-by-zero errors."
+    },
+    {
+      "level": 3,
+      "title": "Ads Performance Blueprint",
+      "text": "select ad_id, round(ifnull(sum(action = \"Clicked\") / sum(action in (\"Clicked\", \"Viewed\")) * 100, 0), 2) as ctr from Ads group by ad_id order by ctr desc, ad_id asc."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT ad_id,\n       ROUND(IFNULL(SUM(action = 'Clicked') / SUM(action IN ('Clicked', 'Viewed')) * 100, 0), 2) AS ctr\nFROM Ads\nGROUP BY ad_id\nORDER BY ctr DESC, ad_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(A log A)",
+    "space": "O(A)",
+    "variables": [
+      "A: number of distinct ads"
+    ],
+    "notes": "Group aggregation and sorting by CTR and ad_id runs in linear-logarithmic time.",
+    "whyNaiveFails": "Simple division without null handling raises divide-by-zero errors when ads only have Ignored actions.",
+    "spaceTimeTradeoff": "IFNULL wrapper prevents runtime division exceptions in constant time.",
+    "interviewerExpectation": "Handling of zero clicks/views and compound sorting (ctr desc, ad_id asc)."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT ad_id,\n       ROUND(IFNULL(SUM(action = 'Clicked') / SUM(action IN ('Clicked', 'Viewed')) * 100, 0), 2) AS ctr\nFROM Ads\nGROUP BY ad_id\nORDER BY ctr DESC, ad_id ASC;",
+      "approach": "Conditional Sum Aggregation with Divide-by-Zero Guard",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT ad_id,\n       ROUND(COALESCE(SUM(CASE WHEN action = 'Clicked' THEN 1.0 ELSE 0.0 END) / NULLIF(SUM(CASE WHEN action IN ('Clicked', 'Viewed') THEN 1.0 ELSE 0.0 END), 0) * 100, 0), 2) AS ctr\nFROM Ads\nGROUP BY ad_id\nORDER BY ctr DESC, ad_id ASC;",
+      "approach": "PostgreSQL Coalesce with Nullif Safe Division",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef ads_performance(ads: pd.DataFrame) -> pd.DataFrame:\n    grouped = ads.groupby('ad_id')\n    res = []\n    for ad_id, g in grouped:\n        clicks = (g['action'] == 'Clicked').sum()\n        views = (g['action'] == 'Viewed').sum()\n        denom = clicks + views\n        ctr = round((clicks / denom) * 100.0, 2) if denom > 0 else 0.0\n        res.append({'ad_id': ad_id, 'ctr': ctr})\n    df = pd.DataFrame(res)\n    if df.empty:\n        return pd.DataFrame(columns=['ad_id', 'ctr'])\n    return df.sort_values(by=['ctr', 'ad_id'], ascending=[False, True])",
+      "approach": "Pandas Groupby Ratio Evaluation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

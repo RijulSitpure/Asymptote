@@ -1,0 +1,71 @@
+{
+  "slug": "get-the-second-most-recent-activity",
+  "number": 1369,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Second Most Recent or Singular Activity Fallback",
+      "text": "Retrieve the second most recent activity for each user. If a user has only one activity record, return that single activity."
+    },
+    {
+      "level": 2,
+      "title": "Window Ranking and Total Count Partition",
+      "text": "Use row_number() over (partition by username order by endDate desc) and count(*) over (partition by username)."
+    },
+    {
+      "level": 3,
+      "title": "Second Recent Activity Blueprint",
+      "text": "with Ranked as (select username, activity, startDate, endDate, row_number() over (partition by username order by endDate desc) as rn, count(*) over (partition by username) as total from UserActivity) select username, activity, startDate, endDate from Ranked where rn = 2 or total = 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Ranked AS (\n    SELECT username, activity, startDate, endDate,\n           ROW_NUMBER() OVER (PARTITION BY username ORDER BY endDate DESC) AS rn,\n           COUNT(*) OVER (PARTITION BY username) AS total\n    FROM UserActivity\n)\nSELECT username, activity, startDate, endDate\nFROM Ranked\nWHERE rn = 2 OR total = 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(U log U)",
+    "space": "O(U)",
+    "variables": [
+      "U: number of records in UserActivity table"
+    ],
+    "notes": "Window ranking and total count partition by user executes in linear-logarithmic time.",
+    "whyNaiveFails": "Simple limit offset 1 fails when users with a single activity should retain their solitary record.",
+    "spaceTimeTradeoff": "Dual analytic functions evaluate rank and total count in a single window partition pass.",
+    "interviewerExpectation": "Use of ROW_NUMBER() with COUNT(*) partition fallback (rn = 2 OR total = 1)."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Ranked AS (\n    SELECT username, activity, startDate, endDate,\n           ROW_NUMBER() OVER (PARTITION BY username ORDER BY endDate DESC) AS rn,\n           COUNT(*) OVER (PARTITION BY username) AS total\n    FROM UserActivity\n)\nSELECT username, activity, startDate, endDate\nFROM Ranked\nWHERE rn = 2 OR total = 1;",
+      "approach": "Window Ranking with Single Activity Fallback",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Ranked AS (\n    SELECT username, activity, startDate, endDate,\n           ROW_NUMBER() OVER (PARTITION BY username ORDER BY endDate DESC) AS rn,\n           COUNT(*) OVER (PARTITION BY username) AS total\n    FROM UserActivity\n)\nSELECT username, activity, startDate, endDate\nFROM Ranked\nWHERE rn = 2 OR total = 1;",
+      "approach": "PostgreSQL Window Rank and Partition Count",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef second_most_recent_activity(user_activity: pd.DataFrame) -> pd.DataFrame:\n    user_activity = user_activity.sort_values(by=['username', 'endDate'], ascending=[True, False])\n    user_activity['rn'] = user_activity.groupby('username').cumcount() + 1\n    user_activity['total'] = user_activity.groupby('username')['endDate'].transform('count')\n    res = user_activity[(user_activity['rn'] == 2) | (user_activity['total'] == 1)]\n    return res[['username', 'activity', 'startDate', 'endDate']]",
+      "approach": "Pandas Cumcount and Transform Count Fallback",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

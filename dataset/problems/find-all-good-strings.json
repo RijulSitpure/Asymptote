@@ -1,0 +1,79 @@
+{
+  "slug": "find-all-good-strings",
+  "number": 1397,
+  "category": "Algorithms",
+  "patterns": [
+    "string-matching"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Digit DP on Strings with Evil Pattern Automaton",
+      "text": "Count strings of length n lexicographically bounded by s1 and s2 that do not contain evil as a substring."
+    },
+    {
+      "level": 2,
+      "title": "KMP Failure Function for Evil Matching",
+      "text": "Build prefix function for evil. As digits are placed, advance through the prefix automaton. A transition reaching len(evil) is invalid."
+    },
+    {
+      "level": 3,
+      "title": "Digit DP State Memoization Blueprint",
+      "text": "State is (idx, evil_match_idx, is_less_s1, is_greater_s2). Iterate allowed characters bounded by s1[idx] and s2[idx]."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def findGoodStrings(self, n: int, s1: str, s2: str, evil: str) -> int:\n        MOD = 10**9 + 7\n        m = len(evil)\n        kmp = [0] * m\n        j = 0\n        for i in range(1, m):\n            while j > 0 and evil[i] != evil[j]:\n                j = kmp[j - 1]\n            if evil[i] == evil[j]:\n                j += 1\n            kmp[i] = j\n\n        def get_next(match, ch):\n            while match > 0 and evil[match] != ch:\n                match = kmp[match - 1]\n            if evil[match] == ch:\n                match += 1\n            return match\n\n        memo = {}\n\n        def dp(i, match, is_lo, is_hi):\n            if match == m:\n                return 0\n            if i == n:\n                return 1\n            state = (i, match, is_lo, is_hi)\n            if state in memo:\n                return memo[state]\n\n            c_min = s1[i] if is_lo else \"a\"\n            c_max = s2[i] if is_hi else \"z\"\n            ans = 0\n            for c in range(ord(c_min), ord(c_max) + 1):\n                ch = chr(c)\n                nxt_match = get_next(match, ch)\n                nxt_lo = is_lo and (ch == c_min)\n                nxt_hi = is_hi and (ch == c_max)\n                ans = (ans + dp(i + 1, nxt_match, nxt_lo, nxt_hi)) % MOD\n\n            memo[state] = ans\n            return ans\n\n        return dp(0, 0, True, True)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * M * 26)",
+    "space": "O(N * M)",
+    "variables": [
+      "N: string length",
+      "M: evil string length"
+    ],
+    "notes": "State space is bounded by N positions times M evil automaton states times 4 boolean limit flags.",
+    "whyNaiveFails": "Generating all 26^N candidate strings and executing substring searches causes exponential blowup.",
+    "spaceTimeTradeoff": "KMP state transitions enable instant O(1) state descent without backtracking string history.",
+    "interviewerExpectation": "Digit dynamic programming integrated with KMP pattern matching automaton."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def findGoodStrings(self, n: int, s1: str, s2: str, evil: str) -> int:\n        MOD = 10**9 + 7\n        m = len(evil)\n        kmp = [0] * m\n        j = 0\n        for i in range(1, m):\n            while j > 0 and evil[i] != evil[j]:\n                j = kmp[j - 1]\n            if evil[i] == evil[j]:\n                j += 1\n            kmp[i] = j\n\n        def get_next(match, ch):\n            while match > 0 and evil[match] != ch:\n                match = kmp[match - 1]\n            if evil[match] == ch:\n                match += 1\n            return match\n\n        memo = {}\n\n        def dp(i, match, is_lo, is_hi):\n            if match == m:\n                return 0\n            if i == n:\n                return 1\n            state = (i, match, is_lo, is_hi)\n            if state in memo:\n                return memo[state]\n\n            c_min = s1[i] if is_lo else \"a\"\n            c_max = s2[i] if is_hi else \"z\"\n            ans = 0\n            for c in range(ord(c_min), ord(c_max) + 1):\n                ch = chr(c)\n                nxt_match = get_next(match, ch)\n                nxt_lo = is_lo and (ch == c_min)\n                nxt_hi = is_hi and (ch == c_max)\n                ans = (ans + dp(i + 1, nxt_match, nxt_lo, nxt_hi)) % MOD\n\n            memo[state] = ans\n            return ans\n\n        return dp(0, 0, True, True)",
+      "approach": "Digit DP with KMP Evil State Automaton",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int memo[501][51][2][2];\n    int MOD = 1e9 + 7;\n    int kmp[51];\n    string S1, S2, E;\n    int N, M;\n\n    int getNext(int match, char ch) {\n        while (match > 0 && E[match] != ch) match = kmp[match - 1];\n        if (E[match] == ch) match++;\n        return match;\n    }\n\n    int dp(int i, int match, bool isLo, bool isHi) {\n        if (match == M) return 0;\n        if (i == N) return 1;\n        if (memo[i][match][isLo][isHi] != -1) return memo[i][match][isLo][isHi];\n\n        char cMin = isLo ? S1[i] : 'a';\n        char cMax = isHi ? S2[i] : 'z';\n        long long ans = 0;\n        for (char ch = cMin; ch <= cMax; ch++) {\n            int nxtMatch = getNext(match, ch);\n            bool nxtLo = isLo && (ch == cMin);\n            bool nxtHi = isHi && (ch == cMax);\n            ans = (ans + dp(i + 1, nxtMatch, nxtLo, nxtHi)) % MOD;\n        }\n        return memo[i][match][isLo][isHi] = ans;\n    }\npublic:\n    int findGoodStrings(int n, string s1, string s2, string evil) {\n        N = n; S1 = s1; S2 = s2; E = evil; M = evil.size();\n        kmp[0] = 0;\n        int j = 0;\n        for (int i = 1; i < M; i++) {\n            while (j > 0 && E[i] != E[j]) j = kmp[j - 1];\n            if (E[i] == E[j]) j++;\n            kmp[i] = j;\n        }\n        memset(memo, -1, sizeof(memo));\n        return dp(0, 0, true, true);\n    }\n};",
+      "approach": "C++ Digit DP with KMP Transitions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int[][][][] memo;\n    private int MOD = 1_000_000_007;\n    private int[] kmp;\n    private String S1, S2, E;\n    private int N, M;\n\n    private int getNext(int match, char ch) {\n        while (match > 0 && E.charAt(match) != ch) match = kmp[match - 1];\n        if (E.charAt(match) == ch) match++;\n        return match;\n    }\n\n    private int dp(int i, int match, int isLo, int isHi) {\n        if (match == M) return 0;\n        if (i == N) return 1;\n        if (memo[i][match][isLo][isHi] != -1) return memo[i][match][isLo][isHi];\n\n        char cMin = isLo == 1 ? S1.charAt(i) : 'a';\n        char cMax = isHi == 1 ? S2.charAt(i) : 'z';\n        long ans = 0;\n        for (char ch = cMin; ch <= cMax; ch++) {\n            int nxtMatch = getNext(match, ch);\n            int nxtLo = (isLo == 1 && ch == cMin) ? 1 : 0;\n            int nxtHi = (isHi == 1 && ch == cMax) ? 1 : 0;\n            ans = (ans + dp(i + 1, nxtMatch, nxtLo, nxtHi)) % MOD;\n        }\n        return memo[i][match][isLo][isHi] = (int) ans;\n    }\n\n    public int findGoodStrings(int n, String s1, String s2, String evil) {\n        N = n; S1 = s1; S2 = s2; E = evil; M = evil.length();\n        kmp = new int[M];\n        int j = 0;\n        for (int i = 1; i < M; i++) {\n            while (j > 0 && E.charAt(i) != E.charAt(j)) j = kmp[j - 1];\n            if (E.charAt(i) == E.charAt(j)) j++;\n            kmp[i] = j;\n        }\n        memo = new int[n + 1][M + 1][2][2];\n        for (int[][][] a : memo)\n            for (int[][] b : a)\n                for (int[] c : b)\n                    Arrays.fill(c, -1);\n        return dp(0, 0, 1, 1);\n    }\n}",
+      "approach": "Java DP Automaton State Memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findGoodStrings = function(n, s1, s2, evil) {\n    const MOD = 1000000007;\n    const m = evil.length;\n    const kmp = Array(m).fill(0);\n    let j = 0;\n    for (let i = 1; i < m; i++) {\n        while (j > 0 && evil[i] !== evil[j]) j = kmp[j - 1];\n        if (evil[i] === evil[j]) j++;\n        kmp[i] = j;\n    }\n    function getNext(match, ch) {\n        while (match > 0 && evil[match] !== ch) match = kmp[match - 1];\n        if (evil[match] === ch) match++;\n        return match;\n    }\n    const memo = new Map();\n    function dp(i, match, isLo, isHi) {\n        if (match === m) return 0;\n        if (i === n) return 1;\n        const key = `${i},${match},${isLo ? 1 : 0},${isHi ? 1 : 0}`;\n        if (memo.has(key)) return memo.get(key);\n        const cMin = isLo ? s1.charCodeAt(i) : 97;\n        const cMax = isHi ? s2.charCodeAt(i) : 122;\n        let ans = 0;\n        for (let c = cMin; c <= cMax; c++) {\n            const ch = String.fromCharCode(c);\n            const nxtMatch = getNext(match, ch);\n            const nxtLo = isLo && (c === cMin);\n            const nxtHi = isHi && (c === cMax);\n            ans = (ans + dp(i + 1, nxtMatch, nxtLo, nxtHi)) % MOD;\n        }\n        memo.set(key, ans);\n        return ans;\n    }\n    return dp(0, 0, true, true);\n};",
+      "approach": "JavaScript Digit DP with KMP Match",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

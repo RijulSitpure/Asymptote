@@ -85,6 +85,16 @@ class CustomFunction {
 public:
     int f(int x, int y);
 };
+class ImmutableListNode {
+public:
+    void printValue();
+    ImmutableListNode* getNext();
+};
+class Sea {
+public:
+    bool hasShips(vector<int> topRight, vector<int> bottomLeft);
+};
+
 `;
     codeToTest = preamble + codeToTest;
     const cppRes = spawnSync('g++', ['-std=c++17', '-fsyntax-only', '-x', 'c++', '-'], {

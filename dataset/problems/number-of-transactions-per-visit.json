@@ -1,0 +1,73 @@
+{
+  "slug": "number-of-transactions-per-visit",
+  "number": 1336,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Zero Fill Frequency Sequence Generation",
+      "text": "Count transactions per user visit, and use a recursive CTE to produce continuous transaction counts from 0 up to max transactions."
+    },
+    {
+      "level": 2,
+      "title": "Left Join Visits with Transactions",
+      "text": "Left join Visits with Transactions on user_id and visit_date to determine count of transactions completed on each visit."
+    },
+    {
+      "level": 3,
+      "title": "Recursive Sequence Join Blueprint",
+      "text": "with recursive Numbers as (select 0 as n union all select n + 1 from Numbers where n < (select max(cnt) from VisitTxns)) join Numbers with VisitTxns counts."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RECURSIVE VisitTxns AS (\n    SELECT v.user_id, v.visit_date, COUNT(t.transaction_date) AS txn_count\n    FROM Visits v\n    LEFT JOIN Transactions t ON v.user_id = t.user_id AND v.visit_date = t.transaction_date\n    GROUP BY v.user_id, v.visit_date\n),\nMaxVal AS (\n    SELECT IFNULL(MAX(txn_count), 0) AS max_n FROM VisitTxns\n),\nNumbers AS (\n    SELECT 0 AS n\n    UNION ALL\n    SELECT n + 1 FROM Numbers, MaxVal WHERE n < max_n\n)\nSELECT num.n AS transactions_count, COUNT(vt.user_id) AS visits_count\nFROM Numbers num\nLEFT JOIN VisitTxns vt ON num.n = vt.txn_count\nGROUP BY num.n\nORDER BY num.n;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(V + T + M)",
+    "space": "O(V + M)",
+    "variables": [
+      "V: number of visits",
+      "T: number of transactions",
+      "M: max transactions per visit"
+    ],
+    "notes": "Recursive CTE generates integer range [0..M] followed by grouping on visit transaction counts.",
+    "whyNaiveFails": "Grouping directly on visits omits intermediate transaction count frequencies with zero occurrences.",
+    "spaceTimeTradeoff": "Recursive generator guarantees gap-free integer continuum without hardcoding table literals.",
+    "interviewerExpectation": "Recursive CTE sequence generation and left join with visit transactions."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RECURSIVE VisitTxns AS (\n    SELECT v.user_id, v.visit_date, COUNT(t.transaction_date) AS txn_count\n    FROM Visits v\n    LEFT JOIN Transactions t ON v.user_id = t.user_id AND v.visit_date = t.transaction_date\n    GROUP BY v.user_id, v.visit_date\n),\nMaxVal AS (\n    SELECT IFNULL(MAX(txn_count), 0) AS max_n FROM VisitTxns\n),\nNumbers AS (\n    SELECT 0 AS n\n    UNION ALL\n    SELECT n + 1 FROM Numbers, MaxVal WHERE n < max_n\n)\nSELECT num.n AS transactions_count, COUNT(vt.user_id) AS visits_count\nFROM Numbers num\nLEFT JOIN VisitTxns vt ON num.n = vt.txn_count\nGROUP BY num.n\nORDER BY num.n;",
+      "approach": "Recursive CTE Number Sequence with Left Join Count",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RECURSIVE VisitTxns AS (\n    SELECT v.user_id, v.visit_date, COUNT(t.transaction_date) AS txn_count\n    FROM Visits v\n    LEFT JOIN Transactions t ON v.user_id = t.user_id AND v.visit_date = t.transaction_date\n    GROUP BY v.user_id, v.visit_date\n),\nMaxVal AS (\n    SELECT COALESCE(MAX(txn_count), 0) AS max_n FROM VisitTxns\n),\nNumbers AS (\n    SELECT 0 AS n\n    UNION ALL\n    SELECT n + 1 FROM Numbers, MaxVal WHERE n < max_n\n)\nSELECT num.n AS transactions_count, COUNT(vt.user_id) AS visits_count\nFROM Numbers num\nLEFT JOIN VisitTxns vt ON num.n = vt.txn_count\nGROUP BY num.n\nORDER BY num.n;",
+      "approach": "PostgreSQL Recursive CTE with Full Range Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef draw_chart(visits: pd.DataFrame, transactions: pd.DataFrame) -> pd.DataFrame:\n    txns = transactions.groupby(['user_id', 'transaction_date']).size().reset_index(name='txn_count')\n    merged = visits.merge(txns, left_on=['user_id', 'visit_date'], right_on=['user_id', 'transaction_date'], how='left')\n    merged['txn_count'] = merged['txn_count'].fillna(0).astype(int)\n    counts = merged.groupby('txn_count').size().to_dict()\n    max_txn = merged['txn_count'].max() if not merged.empty else 0\n    res = []\n    for n in range(max_txn + 1):\n        res.append({'transactions_count': n, 'visits_count': counts.get(n, 0)})\n    return pd.DataFrame(res)",
+      "approach": "Pandas Full Integer Range Generator and Count Mapping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

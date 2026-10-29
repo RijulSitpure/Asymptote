@@ -1,0 +1,73 @@
+{
+  "slug": "number-of-trusted-contacts-of-a-customer",
+  "number": 1364,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Invoice Customer Contact Metrics",
+      "text": "For each invoice, report invoice_id, customer_name, price, total contacts, and trusted contacts who are also customers."
+    },
+    {
+      "level": 2,
+      "title": "Left Join Contacts and Customers",
+      "text": "left join Invoices with Customers, Contacts, and again Customers on contact email to identify trusted contacts."
+    },
+    {
+      "level": 3,
+      "title": "Trusted Contacts Aggregation Blueprint",
+      "text": "select inv.invoice_id, c.customer_name, inv.price, count(con.user_id) as contacts_cnt, count(cust_con.customer_id) as trusted_contacts_cnt from Invoices inv join Customers c on inv.user_id = c.customer_id left join Contacts con on inv.user_id = con.user_id left join Customers cust_con on con.contact_email = cust_con.email group by inv.invoice_id, c.customer_name, inv.price order by inv.invoice_id."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT inv.invoice_id, \n       c.customer_name, \n       inv.price, \n       COUNT(con.user_id) AS contacts_cnt, \n       COUNT(cust_con.customer_id) AS trusted_contacts_cnt\nFROM Invoices inv\nJOIN Customers c ON inv.user_id = c.customer_id\nLEFT JOIN Contacts con ON inv.user_id = con.user_id\nLEFT JOIN Customers cust_con ON con.contact_email = cust_con.email\nGROUP BY inv.invoice_id, c.customer_name, inv.price\nORDER BY inv.invoice_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(I + C + N)",
+    "space": "O(I)",
+    "variables": [
+      "I: number of invoices",
+      "C: number of contacts",
+      "N: number of customers"
+    ],
+    "notes": "Equi-joins and group aggregation order invoice summaries in linear time.",
+    "whyNaiveFails": "Inner joining contacts drops invoices for customers with zero contacts recorded.",
+    "spaceTimeTradeoff": "Dual left join on customer email counts contacts and trusted contacts in one pass.",
+    "interviewerExpectation": "Use of LEFT JOIN to preserve invoices with zero contacts and COUNT on matched customer_id."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT inv.invoice_id, \n       c.customer_name, \n       inv.price, \n       COUNT(con.user_id) AS contacts_cnt, \n       COUNT(cust_con.customer_id) AS trusted_contacts_cnt\nFROM Invoices inv\nJOIN Customers c ON inv.user_id = c.customer_id\nLEFT JOIN Contacts con ON inv.user_id = con.user_id\nLEFT JOIN Customers cust_con ON con.contact_email = cust_con.email\nGROUP BY inv.invoice_id, c.customer_name, inv.price\nORDER BY inv.invoice_id;",
+      "approach": "Multi-Table Left Join with Contact Email Verification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT inv.invoice_id, \n       c.customer_name, \n       inv.price, \n       COUNT(con.user_id) AS contacts_cnt, \n       COUNT(cust_con.customer_id) AS trusted_contacts_cnt\nFROM Invoices inv\nJOIN Customers c ON inv.user_id = c.customer_id\nLEFT JOIN Contacts con ON inv.user_id = con.user_id\nLEFT JOIN Customers cust_con ON con.contact_email = cust_con.email\nGROUP BY inv.invoice_id, c.customer_name, inv.price\nORDER BY inv.invoice_id;",
+      "approach": "PostgreSQL Left Join Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef count_visited_nodes(customers: pd.DataFrame, contacts: pd.DataFrame, invoices: pd.DataFrame) -> pd.DataFrame:\n    cust_emails = set(customers['email'])\n    res = []\n    cust_map = dict(zip(customers['customer_id'], customers['customer_name']))\n    for _, inv in invoices.iterrows():\n        uid = inv['user_id']\n        c_name = cust_map.get(uid, '')\n        user_contacts = contacts[contacts['user_id'] == uid]\n        contacts_cnt = len(user_contacts)\n        trusted_cnt = user_contacts['contact_email'].isin(cust_emails).sum()\n        res.append({\n            'invoice_id': inv['invoice_id'],\n            'customer_name': c_name,\n            'price': inv['price'],\n            'contacts_cnt': contacts_cnt,\n            'trusted_contacts_cnt': trusted_cnt\n        })\n    df = pd.DataFrame(res)\n    return df.sort_values(by='invoice_id') if not df.empty else df",
+      "approach": "Pandas Iterative Invoice Summary with Email Set Lookup",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

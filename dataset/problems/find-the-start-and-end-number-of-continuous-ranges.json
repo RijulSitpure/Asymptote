@@ -1,0 +1,71 @@
+{
+  "slug": "find-the-start-and-end-number-of-continuous-ranges",
+  "number": 1285,
+  "category": "Database",
+  "patterns": [
+    "gaps-and-islands"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Consecutive Value Grouping via Row Offset",
+      "text": "A sequence of consecutive numbers has a constant difference between each log_id and its row number."
+    },
+    {
+      "level": 2,
+      "title": "Window Function Island Partition",
+      "text": "Calculate log_id - row_number() over (order by log_id) to assign a uniform group identifier to every continuous sequence."
+    },
+    {
+      "level": 3,
+      "title": "Continuous Ranges Blueprint",
+      "text": "with NumberedLogs as (select log_id, log_id - row_number() over (order by log_id) as grp from Logs) select min(log_id) as start_id, max(log_id) as end_id from NumberedLogs group by grp order by start_id."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH NumberedLogs AS (\n    SELECT log_id, log_id - ROW_NUMBER() OVER (ORDER BY log_id) AS grp\n    FROM Logs\n)\nSELECT MIN(log_id) AS start_id, MAX(log_id) AS end_id\nFROM NumberedLogs\nGROUP BY grp\nORDER BY start_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of records in Logs table"
+    ],
+    "notes": "Window ranking and grouping by constant delta executes in linear-logarithmic time.",
+    "whyNaiveFails": "Self-joins across gaps require quadratic comparisons to connect endpoints.",
+    "spaceTimeTradeoff": "Row number subtraction forms island groups in a single scan.",
+    "interviewerExpectation": "Classic gaps-and-islands pattern using ROW_NUMBER() difference."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH NumberedLogs AS (\n    SELECT log_id, log_id - ROW_NUMBER() OVER (ORDER BY log_id) AS grp\n    FROM Logs\n)\nSELECT MIN(log_id) AS start_id, MAX(log_id) AS end_id\nFROM NumberedLogs\nGROUP BY grp\nORDER BY start_id;",
+      "approach": "Row Number Delta Gaps and Islands",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH NumberedLogs AS (\n    SELECT log_id, log_id - ROW_NUMBER() OVER (ORDER BY log_id) AS grp\n    FROM Logs\n)\nSELECT MIN(log_id) AS start_id, MAX(log_id) AS end_id\nFROM NumberedLogs\nGROUP BY grp\nORDER BY start_id;",
+      "approach": "PostgreSQL Window Function Island Partition",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_continuous_ranges(logs: pd.DataFrame) -> pd.DataFrame:\n    if logs.empty:\n        return pd.DataFrame(columns=['start_id', 'end_id'])\n    logs = logs.sort_values(by='log_id').reset_index(drop=True)\n    logs['grp'] = logs['log_id'] - logs.index\n    res = logs.groupby('grp').agg(start_id=('log_id', 'min'), end_id=('log_id', 'max')).reset_index()\n    return res[['start_id', 'end_id']].sort_values(by='start_id')",
+      "approach": "Pandas Index Subtraction Island Grouping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

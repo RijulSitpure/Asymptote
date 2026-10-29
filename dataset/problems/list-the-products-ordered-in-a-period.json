@@ -1,0 +1,72 @@
+{
+  "slug": "list-the-products-ordered-in-a-period",
+  "number": 1327,
+  "category": "Database",
+  "patterns": [
+    "date-time"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monthly Order Aggregation Filtering",
+      "text": "Filter orders placed in February 2020, sum units by product, and retain products with total units >= 100."
+    },
+    {
+      "level": 2,
+      "title": "Having Filter on Summed Units",
+      "text": "join Products with Orders, filter on order_date between 2020-02-01 and 2020-02-29, and use having sum(unit) >= 100."
+    },
+    {
+      "level": 3,
+      "title": "Product Orders Blueprint",
+      "text": "select p.product_name, sum(o.unit) as unit from Products p join Orders o on p.product_id = o.product_id where o.order_date between \"2020-02-01\" and \"2020-02-29\" group by p.product_id, p.product_name having sum(o.unit) >= 100."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT p.product_name, SUM(o.unit) AS unit\nFROM Products p\nJOIN Orders o ON p.product_id = o.product_id\nWHERE o.order_date BETWEEN '2020-02-01' AND '2020-02-29'\nGROUP BY p.product_id, p.product_name\nHAVING SUM(o.unit) >= 100;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(O + P)",
+    "space": "O(P)",
+    "variables": [
+      "O: orders in February 2020",
+      "P: number of products"
+    ],
+    "notes": "Date filtering followed by group aggregation runs in linear time relative to monthly orders.",
+    "whyNaiveFails": "Grouping without date restrictions tallies units across the entire order history.",
+    "spaceTimeTradeoff": "HAVING clause prunes low-volume products prior to output materialization.",
+    "interviewerExpectation": "Date filtering for February 2020 leap year and HAVING sum >= 100."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT p.product_name, SUM(o.unit) AS unit\nFROM Products p\nJOIN Orders o ON p.product_id = o.product_id\nWHERE o.order_date BETWEEN '2020-02-01' AND '2020-02-29'\nGROUP BY p.product_id, p.product_name\nHAVING SUM(o.unit) >= 100;",
+      "approach": "Date Range Join with Having Aggregate Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT p.product_name, SUM(o.unit) AS unit\nFROM Products p\nJOIN Orders o ON p.product_id = o.product_id\nWHERE o.order_date BETWEEN '2020-02-01' AND '2020-02-29'\nGROUP BY p.product_id, p.product_name\nHAVING SUM(o.unit) >= 100;",
+      "approach": "PostgreSQL Date Filter with Having Clause",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef list_products(products: pd.DataFrame, orders: pd.DataFrame) -> pd.DataFrame:\n    feb = orders[orders['order_date'].astype(str).str.startswith('2020-02')]\n    merged = feb.merge(products, on='product_id')\n    grouped = merged.groupby(['product_name'])['unit'].sum().reset_index()\n    return grouped[grouped['unit'] >= 100]",
+      "approach": "Pandas Date String Filter and Groupby Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

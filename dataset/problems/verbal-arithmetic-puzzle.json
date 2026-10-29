@@ -1,0 +1,79 @@
+{
+  "slug": "verbal-arithmetic-puzzle",
+  "number": 1307,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Column-by-Column Digit Arithmetic",
+      "text": "Rather than assigning digits to all letters at once, evaluate addition column by column from units place to leading digits with carry."
+    },
+    {
+      "level": 2,
+      "title": "Leading Zero Restriction Check",
+      "text": "Leading letters of any multi-digit word or result cannot be mapped to digit 0."
+    },
+    {
+      "level": 3,
+      "title": "Backtracking with Column Sum Verification",
+      "text": "When moving to the next column, verify sum of column digits plus carry matches target digit modulo 10."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def isSolvable(self, words: list[str], result: str) -> bool:\n        words = [w[::-1] for w in words]\n        result = result[::-1]\n        max_len = max(max(len(w) for w in words), len(result))\n        if len(result) < max(len(w) for w in words):\n            return False\n        non_zero = set()\n        for w in words:\n            if len(w) > 1: non_zero.add(w[-1])\n        if len(result) > 1: non_zero.add(result[-1])\n\n        letter_to_digit = {}\n        used_digits = [False] * 10\n\n        def dfs(col, word_idx, carry):\n            if col == max_len:\n                return carry == 0\n            if word_idx == len(words):\n                res_char = result[col] if col < len(result) else None\n                val = carry % 10\n                nxt_carry = carry // 10\n                if res_char is None:\n                    return val == 0 and dfs(col + 1, 0, nxt_carry)\n                if res_char in letter_to_digit:\n                    if letter_to_digit[res_char] != val:\n                        return False\n                    return dfs(col + 1, 0, nxt_carry)\n                else:\n                    if used_digits[val] or (val == 0 and res_char in non_zero):\n                        return False\n                    letter_to_digit[res_char] = val\n                    used_digits[val] = True\n                    if dfs(col + 1, 0, nxt_carry):\n                        return True\n                    del letter_to_digit[res_char]\n                    used_digits[val] = False\n                    return False\n\n            w = words[word_idx]\n            if col >= len(w):\n                return dfs(col, word_idx + 1, carry)\n            ch = w[col]\n            if ch in letter_to_digit:\n                return dfs(col, word_idx + 1, carry + letter_to_digit[ch])\n            for d in range(10):\n                if not used_digits[d]:\n                    if d == 0 and ch in non_zero:\n                        continue\n                    letter_to_digit[ch] = d\n                    used_digits[d] = True\n                    if dfs(col, word_idx + 1, carry + d):\n                        return True\n                    del letter_to_digit[ch]\n                    used_digits[d] = False\n            return False\n\n        return dfs(0, 0, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(10! / (10 - U)!) bounded by column pruning",
+    "space": "O(U + L)",
+    "variables": [
+      "U: number of unique letters (at most 10)",
+      "L: max word length"
+    ],
+    "notes": "Column-wise pruning reduces search state from 10! to a fraction of branches.",
+    "whyNaiveFails": "Trying all digit permutations without column verification explores 10! combinations that fail early on units place.",
+    "spaceTimeTradeoff": "Column-first backtracking prunes invalid assignments immediately after verifying each decimal position.",
+    "interviewerExpectation": "Column-wise addition backtracking with carry propagation and non-zero constraints."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def isSolvable(self, words: list[str], result: str) -> bool:\n        words = [w[::-1] for w in words]\n        result = result[::-1]\n        max_len = max(max(len(w) for w in words), len(result))\n        if len(result) < max(len(w) for w in words):\n            return False\n        non_zero = set()\n        for w in words:\n            if len(w) > 1: non_zero.add(w[-1])\n        if len(result) > 1: non_zero.add(result[-1])\n\n        letter_to_digit = {}\n        used_digits = [False] * 10\n\n        def dfs(col, word_idx, carry):\n            if col == max_len:\n                return carry == 0\n            if word_idx == len(words):\n                res_char = result[col] if col < len(result) else None\n                val = carry % 10\n                nxt_carry = carry // 10\n                if res_char is None:\n                    return val == 0 and dfs(col + 1, 0, nxt_carry)\n                if res_char in letter_to_digit:\n                    if letter_to_digit[res_char] != val:\n                        return False\n                    return dfs(col + 1, 0, nxt_carry)\n                else:\n                    if used_digits[val] or (val == 0 and res_char in non_zero):\n                        return False\n                    letter_to_digit[res_char] = val\n                    used_digits[val] = True\n                    if dfs(col + 1, 0, nxt_carry):\n                        return True\n                    del letter_to_digit[res_char]\n                    used_digits[val] = False\n                    return False\n\n            w = words[word_idx]\n            if col >= len(w):\n                return dfs(col, word_idx + 1, carry)\n            ch = w[col]\n            if ch in letter_to_digit:\n                return dfs(col, word_idx + 1, carry + letter_to_digit[ch])\n            for d in range(10):\n                if not used_digits[d]:\n                    if d == 0 and ch in non_zero:\n                        continue\n                    letter_to_digit[ch] = d\n                    used_digits[d] = True\n                    if dfs(col, word_idx + 1, carry + d):\n                        return True\n                    del letter_to_digit[ch]\n                    used_digits[d] = False\n            return False\n\n        return dfs(0, 0, 0)",
+      "approach": "Column-wise Backtracking with Carry Propagation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    vector<string> W;\n    string R;\n    int maxLen;\n    bool nonZero[26] = {false};\n    int letterToDigit[26];\n    bool used[10] = {false};\n\n    bool dfs(int col, int wIdx, int carry) {\n        if (col == maxLen) return carry == 0;\n        if (wIdx == W.size()) {\n            int val = carry % 10;\n            int nxtCarry = carry / 10;\n            if (col >= R.size()) return val == 0 && dfs(col + 1, 0, nxtCarry);\n            int ch = R[col] - 'A';\n            if (letterToDigit[ch] != -1) {\n                if (letterToDigit[ch] != val) return false;\n                return dfs(col + 1, 0, nxtCarry);\n            }\n            if (used[val] || (val == 0 && nonZero[ch])) return false;\n            letterToDigit[ch] = val;\n            used[val] = true;\n            if (dfs(col + 1, 0, nxtCarry)) return true;\n            letterToDigit[ch] = -1;\n            used[val] = false;\n            return false;\n        }\n        if (col >= W[wIdx].size()) return dfs(col, wIdx + 1, carry);\n        int ch = W[wIdx][col] - 'A';\n        if (letterToDigit[ch] != -1) return dfs(col, wIdx + 1, carry + letterToDigit[ch]);\n        for (int d = 0; d < 10; d++) {\n            if (!used[d]) {\n                if (d == 0 && nonZero[ch]) continue;\n                letterToDigit[ch] = d;\n                used[d] = true;\n                if (dfs(col, wIdx + 1, carry + d)) return true;\n                letterToDigit[ch] = -1;\n                used[d] = false;\n            }\n        }\n        return false;\n    }\npublic:\n    bool isSolvable(vector<string>& words, string result) {\n        W = words;\n        R = result;\n        int maxW = 0;\n        for (auto& w : W) {\n            maxW = max(maxW, (int)w.size());\n            if (w.size() > 1) nonZero[w[0] - 'A'] = true;\n            reverse(w.begin(), w.end());\n        }\n        if (R.size() < maxW) return false;\n        if (R.size() > 1) nonZero[R[0] - 'A'] = true;\n        reverse(R.begin(), R.end());\n        maxLen = max(maxW, (int)R.size());\n        memset(letterToDigit, -1, sizeof(letterToDigit));\n        return dfs(0, 0, 0);\n    }\n};",
+      "approach": "C++ Column Backtracking DFS",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private String[] W;\n    private String R;\n    private int maxLen;\n    private boolean[] nonZero = new boolean[26];\n    private int[] letterToDigit = new int[26];\n    private boolean[] used = new boolean[10];\n\n    private boolean dfs(int col, int wIdx, int carry) {\n        if (col == maxLen) return carry == 0;\n        if (wIdx == W.length) {\n            int val = carry % 10;\n            int nxtCarry = carry / 10;\n            if (col >= R.length()) return val == 0 && dfs(col + 1, 0, nxtCarry);\n            int ch = R.charAt(col) - 'A';\n            if (letterToDigit[ch] != -1) {\n                if (letterToDigit[ch] != val) return false;\n                return dfs(col + 1, 0, nxtCarry);\n            }\n            if (used[val] || (val == 0 && nonZero[ch])) return false;\n            letterToDigit[ch] = val;\n            used[val] = true;\n            if (dfs(col + 1, 0, nxtCarry)) return true;\n            letterToDigit[ch] = -1;\n            used[val] = false;\n            return false;\n        }\n        if (col >= W[wIdx].length()) return dfs(col, wIdx + 1, carry);\n        int ch = W[wIdx].charAt(col) - 'A';\n        if (letterToDigit[ch] != -1) return dfs(col, wIdx + 1, carry + letterToDigit[ch]);\n        for (int d = 0; d < 10; d++) {\n            if (!used[d]) {\n                if (d == 0 && nonZero[ch]) continue;\n                letterToDigit[ch] = d;\n                used[d] = true;\n                if (dfs(col, wIdx + 1, carry + d)) return true;\n                letterToDigit[ch] = -1;\n                used[d] = false;\n            }\n        }\n        return false;\n    }\n\n    public boolean isSolvable(String[] words, String result) {\n        W = new String[words.length];\n        int maxW = 0;\n        for (int i = 0; i < words.length; i++) {\n            maxW = Math.max(maxW, words[i].length());\n            if (words[i].length() > 1) nonZero[words[i].charAt(0) - 'A'] = true;\n            W[i] = new StringBuilder(words[i]).reverse().toString();\n        }\n        if (result.length() < maxW) return false;\n        if (result.length() > 1) nonZero[result.charAt(0) - 'A'] = true;\n        R = new StringBuilder(result).reverse().toString();\n        maxLen = Math.max(maxW, R.length());\n        Arrays.fill(letterToDigit, -1);\n        return dfs(0, 0, 0);\n    }\n}",
+      "approach": "Java Column Arithmetic Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var isSolvable = function(words, result) {\n    const W = words.map(w => w.split('').reverse().join(''));\n    const R = result.split('').reverse().join('');\n    let maxW = 0;\n    const nonZero = new Set();\n    for (const w of words) {\n        maxW = Math.max(maxW, w.length);\n        if (w.length > 1) nonZero.add(w[0]);\n    }\n    if (result.length < maxW) return false;\n    if (result.length > 1) nonZero.add(result[0]);\n    const maxLen = Math.max(maxW, R.length);\n    const letterToDigit = {};\n    const used = Array(10).fill(false);\n\n    function dfs(col, wIdx, carry) {\n        if (col === maxLen) return carry === 0;\n        if (wIdx === W.length) {\n            const val = carry % 10;\n            const nxtCarry = Math.floor(carry / 10);\n            if (col >= R.length) return val === 0 && dfs(col + 1, 0, nxtCarry);\n            const ch = R[col];\n            if (ch in letterToDigit) {\n                if (letterToDigit[ch] !== val) return false;\n                return dfs(col + 1, 0, nxtCarry);\n            }\n            if (used[val] || (val === 0 && nonZero.has(ch))) return false;\n            letterToDigit[ch] = val;\n            used[val] = true;\n            if (dfs(col + 1, 0, nxtCarry)) return true;\n            delete letterToDigit[ch];\n            used[val] = false;\n            return false;\n        }\n        if (col >= W[wIdx].length) return dfs(col, wIdx + 1, carry);\n        const ch = W[wIdx][col];\n        if (ch in letterToDigit) return dfs(col, wIdx + 1, carry + letterToDigit[ch]);\n        for (let d = 0; d < 10; d++) {\n            if (!used[d]) {\n                if (d === 0 && nonZero.has(ch)) continue;\n                letterToDigit[ch] = d;\n                used[d] = true;\n                if (dfs(col, wIdx + 1, carry + d)) return true;\n                delete letterToDigit[ch];\n                used[d] = false;\n            }\n        }\n        return false;\n    }\n    return dfs(0, 0, 0);\n};",
+      "approach": "JavaScript Column Constraint Backtracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

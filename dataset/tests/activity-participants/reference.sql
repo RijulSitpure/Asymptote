@@ -1,0 +1,1 @@
+WITH ActivityCounts AS (SELECT activity, COUNT(*) AS cnt FROM Friends GROUP BY activity) SELECT activity FROM ActivityCounts WHERE cnt > (SELECT MIN(cnt) FROM ActivityCounts) AND cnt < (SELECT MAX(cnt) FROM ActivityCounts);

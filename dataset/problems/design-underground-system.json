@@ -1,0 +1,79 @@
+{
+  "slug": "design-underground-system",
+  "number": 1396,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Check-In and Route Aggregation Maps",
+      "text": "Store ongoing passenger journeys keyed by customer identifier, and aggregate total travel duration and trip count between station pairs."
+    },
+    {
+      "level": 2,
+      "title": "Station Pair Route Keying",
+      "text": "Use composite string key (startStation, endStation) to accumulate cumulative travel time and completed trip count."
+    },
+    {
+      "level": 3,
+      "title": "Check-Out and Average Computation Blueprint",
+      "text": "On checkOut, pop (startStation, t_in) from customer map, add (t_out - t_in) to route map, and increment trips. getAverageTime returns total / trips."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass UndergroundSystem:\n    def __init__(self):\n        self.check_ins = {}\n        self.routes = {}\n\n    def checkIn(self, id: int, stationName: str, t: int) -> None:\n        self.check_ins[id] = (stationName, t)\n\n    def checkOut(self, id: int, stationName: str, t: int) -> None:\n        start_station, t_in = self.check_ins.pop(id)\n        route = (start_station, stationName)\n        total_time, count = self.routes.get(route, (0, 0))\n        self.routes[route] = (total_time + (t - t_in), count + 1)\n\n    def getAverageTime(self, startStation: str, endStation: str) -> float:\n        total_time, count = self.routes[(startStation, endStation)]\n        return total_time / count\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1) checkIn, O(1) checkOut, O(1) getAverageTime",
+    "space": "O(P + R)",
+    "variables": [
+      "P: active passengers",
+      "R: distinct station routes"
+    ],
+    "notes": "All operations execute in constant time via hash map lookups and running sums.",
+    "whyNaiveFails": "Scanning historical journey logs on each average query leads to O(T) search time per request.",
+    "spaceTimeTradeoff": "Dual map architecture maintains active journeys and cumulative route totals simultaneously.",
+    "interviewerExpectation": "O(1) average time query using incremental running sum and trip counter."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class UndergroundSystem:\n    def __init__(self):\n        self.check_ins = {}\n        self.routes = {}\n\n    def checkIn(self, id: int, stationName: str, t: int) -> None:\n        self.check_ins[id] = (stationName, t)\n\n    def checkOut(self, id: int, stationName: str, t: int) -> None:\n        start_station, t_in = self.check_ins.pop(id)\n        route = (start_station, stationName)\n        total_time, count = self.routes.get(route, (0, 0))\n        self.routes[route] = (total_time + (t - t_in), count + 1)\n\n    def getAverageTime(self, startStation: str, endStation: str) -> float:\n        total_time, count = self.routes[(startStation, endStation)]\n        return total_time / count",
+      "approach": "Dual Hash Map Route Aggregator",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class UndergroundSystem {\n    unordered_map<int, pair<string, int>> checkIns;\n    unordered_map<string, pair<double, int>> routes;\npublic:\n    UndergroundSystem() {}\n    void checkIn(int id, string stationName, int t) {\n        checkIns[id] = {stationName, t};\n    }\n    void checkOut(int id, string stationName, int t) {\n        auto [startStation, tIn] = checkIns[id];\n        checkIns.erase(id);\n        string key = startStation + \"->\" + stationName;\n        routes[key].first += (t - tIn);\n        routes[key].second += 1;\n    }\n    double getAverageTime(string startStation, string endStation) {\n        string key = startStation + \"->\" + endStation;\n        return routes[key].first / routes[key].second;\n    }\n};",
+      "approach": "C++ Hash Table Running Averages",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class UndergroundSystem {\n    private Map<Integer, Pair<String, Integer>> checkIns = new HashMap<>();\n    private Map<String, double[]> routes = new HashMap<>();\n\n    public UndergroundSystem() {}\n\n    public void checkIn(int id, String stationName, int t) {\n        checkIns.put(id, new Pair<>(stationName, t));\n    }\n\n    public void checkOut(int id, String stationName, int t) {\n        Pair<String, Integer> in = checkIns.remove(id);\n        String key = in.getKey() + \"->\" + stationName;\n        routes.computeIfAbsent(key, k -> new double[2]);\n        routes.get(key)[0] += (t - in.getValue());\n        routes.get(key)[1] += 1;\n    }\n\n    public double getAverageTime(String startStation, String endStation) {\n        String key = startStation + \"->\" + endStation;\n        double[] r = routes.get(key);\n        return r[0] / r[1];\n    }\n\n    private static class Pair<K, V> {\n        private K key;\n        private V value;\n        public Pair(K key, V value) { this.key = key; this.value = value; }\n        public K getKey() { return key; }\n        public V getValue() { return value; }\n    }\n}",
+      "approach": "Java Route String Key Map",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var UndergroundSystem = function() {\n    this.checkIns = new Map();\n    this.routes = new Map();\n};\n\nUndergroundSystem.prototype.checkIn = function(id, stationName, t) {\n    this.checkIns.set(id, [stationName, t]);\n};\n\nUndergroundSystem.prototype.checkOut = function(id, stationName, t) {\n    const [startStation, tIn] = this.checkIns.get(id);\n    this.checkIns.delete(id);\n    const key = `${startStation}->${stationName}`;\n    if (!this.routes.has(key)) this.routes.set(key, [0, 0]);\n    const r = this.routes.get(key);\n    r[0] += (t - tIn);\n    r[1] += 1;\n};\n\nUndergroundSystem.prototype.getAverageTime = function(startStation, endStation) {\n    const key = `${startStation}->${endStation}`;\n    const [total, count] = this.routes.get(key);\n    return total / count;\n};",
+      "approach": "JavaScript Route Aggregation Map",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

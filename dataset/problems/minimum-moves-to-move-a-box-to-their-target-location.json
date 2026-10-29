@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-moves-to-move-a-box-to-their-target-location",
+  "number": 1263,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Composite Box and Player Positioning",
+      "text": "The state space consists of the current box coordinates paired with the current player coordinates on the grid."
+    },
+    {
+      "level": 2,
+      "title": "Player Reachability Pre-check",
+      "text": "For the player to push the box in direction D, the player must be able to reach the cell opposite to direction D without passing through the box."
+    },
+    {
+      "level": 3,
+      "title": "Nested Breadth Search Formulation",
+      "text": "Use 0-1 BFS or Dijkstra on state (box_r, box_c, player_r, player_c) where box moves cost 1 push and player repositioning costs 0."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def minPushBox(self, grid: list[list[str]]) -> int:\n        R, C = len(grid), len(grid[0])\n        for r in range(R):\n            for c in range(C):\n                if grid[r][c] == \"B\":\n                    box = (r, c)\n                elif grid[r][c] == \"S\":\n                    player = (r, c)\n                elif grid[r][c] == \"T\":\n                    target = (r, c)\n\n        def can_reach(start, dest, b_pos):\n            if start == dest: return True\n            q = deque([start])\n            seen = {start, b_pos}\n            while q:\n                cr, cc = q.popleft()\n                if (cr, cc) == dest: return True\n                for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:\n                    nr, nc = cr + dr, cc + dc\n                    if 0 <= nr < R and 0 <= nc < C and grid[nr][nc] != \"#\" and (nr, nc) not in seen:\n                        seen.add((nr, nc))\n                        q.append((nr, nc))\n            return False\n\n        q = deque([(0, box[0], box[1], player[0], player[1])])\n        visited = {(box[0], box[1], player[0], player[1])}\n\n        while q:\n            pushes, br, bc, pr, pc = q.popleft()\n            if (br, bc) == target:\n                return pushes\n\n            for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:\n                nbr, nbc = br + dr, bc + dc\n                push_from_r, push_from_c = br - dr, bc - dc\n                if 0 <= nbr < R and 0 <= nbc < C and grid[nbr][nbc] != \"#\":\n                    if 0 <= push_from_r < R and 0 <= push_from_c < C and grid[push_from_r][push_from_c] != \"#\":\n                        if can_reach((pr, pc), (push_from_r, push_from_c), (br, bc)):\n                            nxt_state = (nbr, nbc, br, bc)\n                            if nxt_state not in visited:\n                                visited.add(nxt_state)\n                                q.append((pushes + 1, nbr, nbc, br, bc))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((R * C)^2)",
+    "space": "O((R * C)^2)",
+    "variables": [
+      "R: grid rows",
+      "C: grid columns"
+    ],
+    "notes": "Total states is bounded by (R * C) box positions times 4 adjacent player positions, each verified with BFS in O(R * C) time.",
+    "whyNaiveFails": "Simple shortest path ignores the physical constraint that player must navigate around obstacles and the box to execute pushes.",
+    "spaceTimeTradeoff": "Memoizing reachable player components prevents redundant flood-fill sub-searches.",
+    "interviewerExpectation": "Nested breadth-first search separating push transitions from player transit reachability."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def minPushBox(self, grid: list[list[str]]) -> int:\n        R, C = len(grid), len(grid[0])\n        for r in range(R):\n            for c in range(C):\n                if grid[r][c] == \"B\":\n                    box = (r, c)\n                elif grid[r][c] == \"S\":\n                    player = (r, c)\n                elif grid[r][c] == \"T\":\n                    target = (r, c)\n\n        def can_reach(start, dest, b_pos):\n            if start == dest: return True\n            q = deque([start])\n            seen = {start, b_pos}\n            while q:\n                cr, cc = q.popleft()\n                if (cr, cc) == dest: return True\n                for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:\n                    nr, nc = cr + dr, cc + dc\n                    if 0 <= nr < R and 0 <= nc < C and grid[nr][nc] != \"#\" and (nr, nc) not in seen:\n                        seen.add((nr, nc))\n                        q.append((nr, nc))\n            return False\n\n        q = deque([(0, box[0], box[1], player[0], player[1])])\n        visited = {(box[0], box[1], player[0], player[1])}\n\n        while q:\n            pushes, br, bc, pr, pc = q.popleft()\n            if (br, bc) == target:\n                return pushes\n\n            for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:\n                nbr, nbc = br + dr, bc + dc\n                push_from_r, push_from_c = br - dr, bc - dc\n                if 0 <= nbr < R and 0 <= nbc < C and grid[nbr][nbc] != \"#\":\n                    if 0 <= push_from_r < R and 0 <= push_from_c < C and grid[push_from_r][push_from_c] != \"#\":\n                        if can_reach((pr, pc), (push_from_r, push_from_c), (br, bc)):\n                            nxt_state = (nbr, nbc, br, bc)\n                            if nxt_state not in visited:\n                                visited.add(nxt_state)\n                                q.append((pushes + 1, nbr, nbc, br, bc))\n        return -1",
+      "approach": "Dual State BFS with Reachability Check",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minPushBox(vector<vector<char>>& grid) {\n        int R = grid.size(), C = grid[0].size();\n        pair<int,int> box, player, target;\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                if (grid[r][c] == 'B') box = {r, c};\n                else if (grid[r][c] == 'S') player = {r, c};\n                else if (grid[r][c] == 'T') target = {r, c};\n            }\n        }\n        auto canReach = [&](pair<int,int> s, pair<int,int> d, pair<int,int> b) {\n            if (s == d) return true;\n            queue<pair<int,int>> q;\n            vector<vector<bool>> vis(R, vector<bool>(C, false));\n            q.push(s);\n            vis[s.first][s.second] = true;\n            vis[b.first][b.second] = true;\n            int dirs[4][2] = {{-1,0},{1,0},{0,-1},{0,1}};\n            while (!q.empty()) {\n                auto [r, c] = q.front(); q.pop();\n                if (r == d.first && c == d.second) return true;\n                for (auto& dir : dirs) {\n                    int nr = r + dir[0], nc = c + dir[1];\n                    if (nr >= 0 && nr < R && nc >= 0 && nc < C && grid[nr][nc] != '#' && !vis[nr][nc]) {\n                        vis[nr][nc] = true;\n                        q.push({nr, nc});\n                    }\n                }\n            }\n            return false;\n        };\n        queue<vector<int>> q;\n        vector<vector<vector<vector<bool>>>> visited(R, vector<vector<vector<bool>>>(C, vector<vector<bool>>(R, vector<bool>(C, false))));\n        q.push({0, box.first, box.second, player.first, player.second});\n        visited[box.first][box.second][player.first][player.second] = true;\n        int dirs[4][2] = {{-1,0},{1,0},{0,-1},{0,1}};\n        while (!q.empty()) {\n            auto curr = q.front(); q.pop();\n            int d = curr[0], br = curr[1], bc = curr[2], pr = curr[3], pc = curr[4];\n            if (br == target.first && bc == target.second) return d;\n            for (auto& dir : dirs) {\n                int nbr = br + dir[0], nbc = bc + dir[1];\n                int pfr = br - dir[0], pfc = bc - dir[1];\n                if (nbr >= 0 && nbr < R && nbc >= 0 && nbc < C && grid[nbr][nbc] != '#') {\n                    if (pfr >= 0 && pfr < R && pfc >= 0 && pfc < C && grid[pfr][pfc] != '#') {\n                        if (canReach({pr, pc}, {pfr, pfc}, {br, bc})) {\n                            if (!visited[nbr][nbc][br][bc]) {\n                                visited[nbr][nbc][br][bc] = true;\n                                q.push({d + 1, nbr, nbc, br, bc});\n                            }\n                        }\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "C++ 4D State Breadth Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int minPushBox(char[][] grid) {\n        int R = grid.length, C = grid[0].length;\n        int[] box = new int[2], player = new int[2], target = new int[2];\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                if (grid[r][c] == 'B') { box[0] = r; box[1] = c; }\n                else if (grid[r][c] == 'S') { player[0] = r; player[1] = c; }\n                else if (grid[r][c] == 'T') { target[0] = r; target[1] = c; }\n            }\n        }\n        Queue<int[]> q = new LinkedList<>();\n        boolean[][][][] vis = new boolean[R][C][R][C];\n        q.offer(new int[]{0, box[0], box[1], player[0], player[1]});\n        vis[box[0]][box[1]][player[0]][player[1]] = true;\n        int[][] dirs = {{-1,0},{1,0},{0,-1},{0,1}};\n        while (!q.isEmpty()) {\n            int[] curr = q.poll();\n            int d = curr[0], br = curr[1], bc = curr[2], pr = curr[3], pc = curr[4];\n            if (br == target[0] && bc == target[1]) return d;\n            for (int[] dir : dirs) {\n                int nbr = br + dir[0], nbc = bc + dir[1];\n                int pfr = br - dir[0], pfc = bc - dir[1];\n                if (nbr >= 0 && nbr < R && nbc >= 0 && nbc < C && grid[nbr][nbc] != '#') {\n                    if (pfr >= 0 && pfr < R && pfc >= 0 && pfc < C && grid[pfr][pfc] != '#') {\n                        if (canReach(grid, R, C, pr, pc, pfr, pfc, br, bc)) {\n                            if (!vis[nbr][nbc][br][bc]) {\n                                vis[nbr][nbc][br][bc] = true;\n                                q.offer(new int[]{d + 1, nbr, nbc, br, bc});\n                            }\n                        }\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n    private boolean canReach(char[][] grid, int R, int C, int sr, int sc, int dr, int dc, int br, int bc) {\n        if (sr == dr && sc == dc) return true;\n        Queue<int[]> q = new LinkedList<>();\n        boolean[][] vis = new boolean[R][C];\n        q.offer(new int[]{sr, sc});\n        vis[sr][sc] = true;\n        vis[br][bc] = true;\n        int[][] dirs = {{-1,0},{1,0},{0,-1},{0,1}};\n        while (!q.isEmpty()) {\n            int[] curr = q.poll();\n            if (curr[0] == dr && curr[1] == dc) return true;\n            for (int[] dir : dirs) {\n                int nr = curr[0] + dir[0], nc = curr[1] + dir[1];\n                if (nr >= 0 && nr < R && nc >= 0 && nc < C && grid[nr][nc] != '#' && !vis[nr][nc]) {\n                    vis[nr][nc] = true;\n                    q.offer(new int[]{nr, nc});\n                }\n            }\n        }\n        return false;\n    }\n}",
+      "approach": "Java Breadth Search with Reachability Subroutine",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minPushBox = function(grid) {\n    const R = grid.length, C = grid[0].length;\n    let box, player, target;\n    for (let r = 0; r < R; r++) {\n        for (let c = 0; c < C; c++) {\n            if (grid[r][c] === 'B') box = [r, c];\n            else if (grid[r][c] === 'S') player = [r, c];\n            else if (grid[r][c] === 'T') target = [r, c];\n        }\n    }\n    function canReach(sr, sc, dr, dc, br, bc) {\n        if (sr === dr && sc === dc) return true;\n        const q = [[sr, sc]];\n        const vis = Array.from({ length: R }, () => Array(C).fill(false));\n        vis[sr][sc] = true;\n        vis[br][bc] = true;\n        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];\n        while (q.length > 0) {\n            const [r, c] = q.shift();\n            if (r === dr && c === dc) return true;\n            for (const [drr, dcc] of dirs) {\n                const nr = r + drr, nc = c + dcc;\n                if (nr >= 0 && nr < R && nc >= 0 && nc < C && grid[nr][nc] !== '#' && !vis[nr][nc]) {\n                    vis[nr][nc] = true;\n                    q.push([nr, nc]);\n                }\n            }\n        }\n        return false;\n    }\n    const q = [[0, box[0], box[1], player[0], player[1]]];\n    const visited = new Set([`${box[0]},${box[1]},${player[0]},${player[1]}`]);\n    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];\n    while (q.length > 0) {\n        const [d, br, bc, pr, pc] = q.shift();\n        if (br === target[0] && bc === target[1]) return d;\n        for (const [dr, dc] of dirs) {\n            const nbr = br + dr, nbc = bc + dc;\n            const pfr = br - dr, pfc = bc - dc;\n            if (nbr >= 0 && nbr < R && nbc >= 0 && nbc < C && grid[nbr][nbc] !== '#') {\n                if (pfr >= 0 && pfr < R && pfc >= 0 && pfc < C && grid[pfr][pfc] !== '#') {\n                    if (canReach(pr, pc, pfr, pfc, br, bc)) {\n                        const key = `${nbr},${nbc},${br},${bc}`;\n                        if (!visited.has(key)) {\n                            visited.add(key);\n                            q.push([d + 1, nbr, nbc, br, bc]);\n                        }\n                    }\n                }\n            }\n        }\n    }\n    return -1;\n};",
+      "approach": "JavaScript Push BFS and Player Reachability",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

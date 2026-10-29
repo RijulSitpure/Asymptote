@@ -1,0 +1,1 @@
+WITH RECURSIVE Hierarchy AS (SELECT employee_id, 1 AS level FROM Employees WHERE manager_id = 1 AND employee_id != 1 UNION ALL SELECT e.employee_id, h.level + 1 FROM Employees e JOIN Hierarchy h ON e.manager_id = h.employee_id WHERE h.level < 3) SELECT employee_id FROM Hierarchy;
