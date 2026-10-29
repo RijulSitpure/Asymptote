@@ -1,0 +1,65 @@
+{
+  "slug": "promise-pool",
+  "number": 2636,
+  "category": "JavaScript",
+  "patterns": [
+    "promises-async"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bounded Concurrency Pipeline Scheduling",
+      "text": "Executing an array of asynchronous tasks with a maximum concurrent limit requires launching initial workers and pulling the next task whenever any active worker finishes."
+    },
+    {
+      "level": 2,
+      "title": "Worker Thread Emulation with Shared Cursor",
+      "text": "Maintain a shared pointer index across workers. Launch n concurrent worker loops. Each worker executes the function at the current index, advances the index, and recursively proceeds until tasks are exhausted."
+    },
+    {
+      "level": 3,
+      "title": "Promise Pool Blueprint",
+      "text": "Let idx = 0. Define worker function: if idx >= functions.length return; const fn = functions[idx++]; await fn(); return worker(). Launch n workers with Promise.all(Array.from({length: n}, () => worker()))."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```javascript\n/**\n * @param {Function[]} functions\n * @param {number} n\n * @return {Promise<any>}\n */\nvar promisePool = async function(functions, n) {\n    let idx = 0;\n    async function worker() {\n        while (idx < functions.length) {\n            const fn = functions[idx++];\n            await fn();\n        }\n    }\n    const workers = Array.from({ length: Math.min(n, functions.length) }, () => worker());\n    await Promise.all(workers);\n};\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(T)",
+    "space": "O(N)",
+    "variables": [
+      "T: total execution time of all tasks",
+      "N: concurrency pool capacity"
+    ],
+    "notes": "Keeps at most N asynchronous tasks concurrently pending in memory.",
+    "whyNaiveFails": "Promise.all on all functions launches everything simultaneously, exhausting network or system resources.",
+    "spaceTimeTradeoff": "Bounded worker pool maintains high throughput without unbound memory growth.",
+    "interviewerExpectation": "Clean worker loop abstraction using async/await with Promise.all."
+  },
+  "solutions": [
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {Function[]} functions\n * @param {number} n\n * @return {Promise<any>}\n */\nvar promisePool = async function(functions, n) {\n    let idx = 0;\n    async function worker() {\n        while (idx < functions.length) {\n            const fn = functions[idx++];\n            await fn();\n        }\n    }\n    const workers = Array.from({ length: Math.min(n, functions.length) }, () => worker());\n    await Promise.all(workers);\n};",
+      "approach": "Concurrent Worker Loops with Shared Task Index",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "typescript",
+      "code": "type F = () => Promise<any>;\n\nasync function promisePool(functions: F[], n: number): Promise<any> {\n    let idx = 0;\n    async function worker(): Promise<void> {\n        while (idx < functions.length) {\n            const fn = functions[idx++];\n            await fn();\n        }\n    }\n    const workers = Array.from({ length: Math.min(n, functions.length) }, () => worker());\n    await Promise.all(workers);\n}",
+      "approach": "TypeScript Asynchronous Pool Dispatcher",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

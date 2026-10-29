@@ -1,0 +1,64 @@
+{
+  "slug": "design-cancellable-function",
+  "number": 2650,
+  "category": "JavaScript",
+  "patterns": [
+    "promises-async"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Cooperative Coroutine Cancellation",
+      "text": "Controlling an asynchronous generator with cancellation support requires driving its step progression while listening for an external cancel signal."
+    },
+    {
+      "level": 2,
+      "title": "Driving Generator Steps with Throw Handling",
+      "text": "Await each yielded promise. If the cancel function is invoked before completion, inject an error into the generator via generator.throw(\"Cancelled\") so it can run catch/finally blocks."
+    },
+    {
+      "level": 3,
+      "title": "Step Progression Blueprint",
+      "text": "Create promise with resolve/reject. Define step(nextFn, arg): try { res = nextFn(arg) } catch (err) { reject(err); return; } if (res.done) resolve(res.value); else Promise.resolve(res.value).then(v => step(() => generator.next(v)), e => step(() => generator.throw(e))). In cancel(): step(() => generator.throw(\"Cancelled\")). Return [cancel, promise]."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```javascript\n/**\n * @param {Generator}\n * @return {[Function, Promise]}\n */\nvar cancellable = function(generator) {\n    let cancel;\n    const promise = new Promise((resolve, reject) => {\n        cancel = () => {\n            step(() => generator.throw('Cancelled'));\n        };\n        function step(fn) {\n            let res;\n            try {\n                res = fn();\n            } catch (err) {\n                reject(err);\n                return;\n            }\n            if (res.done) {\n                resolve(res.value);\n                return;\n            }\n            Promise.resolve(res.value).then(\n                val => step(() => generator.next(val)),\n                err => step(() => generator.throw(err))\n            );\n        }\n        step(() => generator.next());\n    });\n    return [cancel, promise];\n};\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(S)",
+    "space": "O(1)",
+    "variables": [
+      "S: number of generator yield steps"
+    ],
+    "notes": "Each yield step advances the coroutine asynchronously in constant memory.",
+    "whyNaiveFails": "Simply rejecting the outer promise leaves the inner generator dangling without executing its finally cleanup blocks.",
+    "spaceTimeTradeoff": "generator.throw cleanly unwinds generator state according to standard language semantics.",
+    "interviewerExpectation": "Correctly handling generator.throw to allow internal try/catch/finally execution."
+  },
+  "solutions": [
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {Generator}\n * @return {[Function, Promise]}\n */\nvar cancellable = function(generator) {\n    let cancel;\n    const promise = new Promise((resolve, reject) => {\n        cancel = () => {\n            step(() => generator.throw('Cancelled'));\n        };\n        function step(fn) {\n            let res;\n            try {\n                res = fn();\n            } catch (err) {\n                reject(err);\n                return;\n            }\n            if (res.done) {\n                resolve(res.value);\n                return;\n            }\n            Promise.resolve(res.value).then(\n                val => step(() => generator.next(val)),\n                err => step(() => generator.throw(err))\n            );\n        }\n        step(() => generator.next());\n    });\n    return [cancel, promise];\n};",
+      "approach": "Async Coroutine Runner with Generator Throw Delegation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "typescript",
+      "code": "function cancellable<T>(generator: Generator<Promise<any>, T, unknown>): [() => void, Promise<T>] {\n    let cancel: () => void = () => {};\n    const promise = new Promise<T>((resolve, reject) => {\n        cancel = () => {\n            step(() => generator.throw('Cancelled'));\n        };\n        function step(fn: () => IteratorResult<Promise<any>, T>) {\n            let res: IteratorResult<Promise<any>, T>;\n            try {\n                res = fn();\n            } catch (err) {\n                reject(err);\n                return;\n            }\n            if (res.done) {\n                resolve(res.value);\n                return;\n            }\n            Promise.resolve(res.value).then(\n                val => step(() => generator.next(val)),\n                err => step(() => generator.throw(err))\n            );\n        }\n        step(() => generator.next());\n    });\n    return [cancel, promise];\n}",
+      "approach": "TypeScript Cancellable Generator Runner",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

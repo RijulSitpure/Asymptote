@@ -1,0 +1,64 @@
+{
+  "slug": "throttle",
+  "number": 2676,
+  "category": "JavaScript",
+  "patterns": [
+    "timing-control"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Rate-Limited Invocations with Trailing Execution",
+      "text": "Throttling ensures that a target function is triggered at most once per time window, executing immediately on the leading edge and postponing the most recent call to the trailing edge."
+    },
+    {
+      "level": 2,
+      "title": "Timer Flag and Trailing Arguments Staging",
+      "text": "If no timer is active, execute immediately and set a cooldown timer. If calls arrive during cooldown, save the latest arguments. When cooldown expires, execute with saved arguments if present."
+    },
+    {
+      "level": 3,
+      "title": "Throttle Blueprint",
+      "text": "Variables: timeoutId = null, nextArgs = null. In wrapper(...args): if timeoutId is null, execute fn(...args) and schedule helper after delay t; otherwise store latest arguments in nextArgs. helper(): if nextArgs exists, invoke fn(...nextArgs), clear nextArgs, and reschedule helper; else reset timeoutId to null."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```javascript\n/**\n * @param {Function} fn\n * @param {number} t\n * @return {Function}\n */\nvar throttle = function(fn, t) {\n    let timeoutId = null;\n    let nextArgs = null;\n\n    const helper = () => {\n        if (nextArgs) {\n            fn(...nextArgs);\n            nextArgs = null;\n            timeoutId = setTimeout(helper, t);\n        } else {\n            timeoutId = null;\n        }\n    };\n\n    return function(...args) {\n        if (!timeoutId) {\n            fn(...args);\n            timeoutId = setTimeout(helper, t);\n        } else {\n            nextArgs = args;\n        }\n    };\n};\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1)",
+    "space": "O(1)",
+    "variables": [
+      "Per function call"
+    ],
+    "notes": "Timer scheduling and argument swapping execute in constant time.",
+    "whyNaiveFails": "Simple debouncing postpones execution indefinitely while bursts continue, whereas throttling guarantees periodic execution.",
+    "spaceTimeTradeoff": "Retaining only the latest arguments avoids memory queues for intermediate suppressed invocations.",
+    "interviewerExpectation": "Handling both leading execution and trailing execution with the most recent argument payload."
+  },
+  "solutions": [
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {Function} fn\n * @param {number} t\n * @return {Function}\n */\nvar throttle = function(fn, t) {\n    let timeoutId = null;\n    let nextArgs = null;\n\n    const helper = () => {\n        if (nextArgs) {\n            fn(...nextArgs);\n            nextArgs = null;\n            timeoutId = setTimeout(helper, t);\n        } else {\n            timeoutId = null;\n        }\n    };\n\n    return function(...args) {\n        if (!timeoutId) {\n            fn(...args);\n            timeoutId = setTimeout(helper, t);\n        } else {\n            nextArgs = args;\n        }\n    };\n};",
+      "approach": "Leading Edge Execution with Trailing Argument Timer Scheduling",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "typescript",
+      "code": "type F = (...args: any[]) => void;\n\nfunction throttle(fn: F, t: number): F {\n    let timeoutId: any = null;\n    let nextArgs: any[] | null = null;\n\n    const helper = () => {\n        if (nextArgs) {\n            fn(...nextArgs);\n            nextArgs = null;\n            timeoutId = setTimeout(helper, t);\n        } else {\n            timeoutId = null;\n        }\n    };\n\n    return function(...args: any[]) {\n        if (!timeoutId) {\n            fn(...args);\n            timeoutId = setTimeout(helper, t);\n        } else {\n            nextArgs = args;\n        }\n    };\n}",
+      "approach": "TypeScript Rate Limiter with Trailing Queue",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

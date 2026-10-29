@@ -1,0 +1,64 @@
+{
+  "slug": "make-object-immutable",
+  "number": 2692,
+  "category": "JavaScript",
+  "patterns": [
+    "object-array-utilities"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Deep Read-Only Proxy Guarding",
+      "text": "Protecting an object tree from mutations requires intercepting assignment, deletion, and mutating array methods across all nested levels."
+    },
+    {
+      "level": 2,
+      "title": "Recursive Proxy Interception on Property Access",
+      "text": "Wrap the object in a Proxy. The get trap wraps any nested object or array in a read-only Proxy. The set and deleteProperty traps throw an error specifying the modified key."
+    },
+    {
+      "level": 3,
+      "title": "Proxy Guard Blueprint",
+      "text": "Traps: set(target, prop) throws `Error: Cannot modify key: ${String(prop)}`. deleteProperty throws same. For array methods like pop, push, shift, unshift, splice, sort, reverse: return function that throws error."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```javascript\n/**\n * @param {Object|Array} obj\n * @return {Object|Array}\n */\nvar makeImmutable = function(obj) {\n    const mutatingMethods = new Set(['pop', 'push', 'shift', 'unshift', 'splice', 'sort', 'reverse']);\n    function createProxy(target) {\n        return new Proxy(target, {\n            get(t, prop) {\n                if (Array.isArray(t) && mutatingMethods.has(prop)) {\n                    return () => {\n                        throw `Error: Method ${String(prop)} is not allowed on immutable array`;\n                    };\n                }\n                const val = t[prop];\n                if (val !== null && typeof val === 'object') {\n                    return createProxy(val);\n                }\n                return val;\n            },\n            set(t, prop) {\n                throw `Error: Cannot modify key: ${String(prop)}`;\n            },\n            deleteProperty(t, prop) {\n                throw `Error: Cannot delete key: ${String(prop)}`;\n            }\n        });\n    }\n    return createProxy(obj);\n};\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1)",
+    "space": "O(1)",
+    "variables": [
+      "Per property access"
+    ],
+    "notes": "Intercepts property accesses on the fly without upfront recursive traversal.",
+    "whyNaiveFails": "Object.freeze is shallow and does not protect nested arrays or objects unless recursively applied.",
+    "spaceTimeTradeoff": "Lazy proxy wrapping incurs overhead only on accessed branches.",
+    "interviewerExpectation": "Correctly guarding both dictionary key writes and built-in array mutating methods."
+  },
+  "solutions": [
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {Object|Array} obj\n * @return {Object|Array}\n */\nvar makeImmutable = function(obj) {\n    const mutatingMethods = new Set(['pop', 'push', 'shift', 'unshift', 'splice', 'sort', 'reverse']);\n    function createProxy(target) {\n        return new Proxy(target, {\n            get(t, prop) {\n                if (Array.isArray(t) && mutatingMethods.has(prop)) {\n                    return () => {\n                        throw `Error: Method ${String(prop)} is not allowed on immutable array`;\n                    };\n                }\n                const val = t[prop];\n                if (val !== null && typeof val === 'object') {\n                    return createProxy(val);\n                }\n                return val;\n            },\n            set(t, prop) {\n                throw `Error: Cannot modify key: ${String(prop)}`;\n            },\n            deleteProperty(t, prop) {\n                throw `Error: Cannot delete key: ${String(prop)}`;\n            }\n        });\n    }\n    return createProxy(obj);\n};",
+      "approach": "Deep Read-Only Proxy with Mutation Method Guarding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "typescript",
+      "code": "function makeImmutable<T extends object>(obj: T): T {\n    const mutatingMethods = new Set(['pop', 'push', 'shift', 'unshift', 'splice', 'sort', 'reverse']);\n    function createProxy(target: any): any {\n        return new Proxy(target, {\n            get(t, prop) {\n                if (Array.isArray(t) && mutatingMethods.has(prop as string)) {\n                    return () => {\n                        throw `Error: Method ${String(prop)} is not allowed on immutable array`;\n                    };\n                }\n                const val = t[prop];\n                if (val !== null && typeof val === 'object') {\n                    return createProxy(val);\n                }\n                return val;\n            },\n            set(t, prop) {\n                throw `Error: Cannot modify key: ${String(prop)}`;\n            },\n            deleteProperty(t, prop) {\n                throw `Error: Cannot delete key: ${String(prop)}`;\n            }\n        });\n    }\n    return createProxy(obj);\n}",
+      "approach": "TypeScript Deep Immutable Proxy Wrapper",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

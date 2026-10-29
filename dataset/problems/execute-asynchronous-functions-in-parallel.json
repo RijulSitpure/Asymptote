@@ -1,0 +1,64 @@
+{
+  "slug": "execute-asynchronous-functions-in-parallel",
+  "number": 2721,
+  "category": "JavaScript",
+  "patterns": [
+    "promises-async"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Parallel Promise Aggregator Polyfill",
+      "text": "Running multiple asynchronous tasks concurrently and gathering all results in original index order emulates standard promise aggregation."
+    },
+    {
+      "level": 2,
+      "title": "Ordered Resolution Counter",
+      "text": "Maintain an array of results sized to the input functions. Track a completed count. When any promise rejects, reject the outer promise immediately. When completed count equals total functions, resolve with the results array."
+    },
+    {
+      "level": 3,
+      "title": "Promise All Blueprint",
+      "text": "Return new Promise((resolve, reject) => { if (functions.length === 0) resolve([]); const results = new Array(functions.length); let count = 0; functions.forEach((fn, i) => { fn().then(val => { results[i] = val; count++; if (count === functions.length) resolve(results); }, reject); }); })."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```javascript\n/**\n * @param {Array<Function>}\n * @return {Promise<any>}\n */\nvar promiseAll = function(functions) {\n    return new Promise((resolve, reject) => {\n        if (functions.length === 0) {\n            resolve([]);\n            return;\n        }\n        const results = new Array(functions.length);\n        let completed = 0;\n        functions.forEach((fn, idx) => {\n            fn().then(\n                val => {\n                    results[idx] = val;\n                    completed++;\n                    if (completed === functions.length) {\n                        resolve(results);\n                    }\n                },\n                err => reject(err)\n            );\n        });\n    });\n};\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of promise factory functions"
+    ],
+    "notes": "Executes all tasks in parallel; results array tracks completed slots.",
+    "whyNaiveFails": "Awaiting functions sequentially runs in O(N * T) serialized time instead of max(T) parallel execution.",
+    "spaceTimeTradeoff": "Results array preserves original order regardless of resolution timing.",
+    "interviewerExpectation": "Fast-fail rejection on first error and handling empty array edge case immediately."
+  },
+  "solutions": [
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {Array<Function>}\n * @return {Promise<any>}\n */\nvar promiseAll = function(functions) {\n    return new Promise((resolve, reject) => {\n        if (functions.length === 0) {\n            resolve([]);\n            return;\n        }\n        const results = new Array(functions.length);\n        let completed = 0;\n        functions.forEach((fn, idx) => {\n            fn().then(\n                val => {\n                    results[idx] = val;\n                    completed++;\n                    if (completed === functions.length) {\n                        resolve(results);\n                    }\n                },\n                err => reject(err)\n            );\n        });\n    });\n};",
+      "approach": "Promise.all Polyfill with Index Order Preservation and Fast Rejection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "typescript",
+      "code": "type Fn<T> = () => Promise<T>;\n\nfunction promiseAll<T>(functions: Fn<T>[]): Promise<T[]> {\n    return new Promise<T[]>((resolve, reject) => {\n        if (functions.length === 0) {\n            resolve([]);\n            return;\n        }\n        const results = new Array<T>(functions.length);\n        let completed = 0;\n        functions.forEach((fn, idx) => {\n            fn().then(\n                val => {\n                    results[idx] = val;\n                    completed++;\n                    if (completed === functions.length) {\n                        resolve(results);\n                    }\n                },\n                err => reject(err)\n            );\n        });\n    });\n}",
+      "approach": "TypeScript Concurrent Promise All Implementation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}
