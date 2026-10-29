@@ -11,7 +11,7 @@ export const STORAGE_KEY_LAST_CHECK = 'asymptote_last_ota_check';
 export const SYNC_COOLDOWN_MS = 1000 * 60 * 60 * 6; // 6 hours
 
 // Remote repository base URL where updated dataset shards and manifest are published
-export const DEFAULT_REMOTE_BASE_URL = 'https://raw.githubusercontent.com/RijulSitpure/Asymptote/main/extension/data';
+export const DEFAULT_REMOTE_BASE_URL = 'https://raw.githubusercontent.com/RijulSitpure/Asymptote/main/dist-dataset';
 
 /**
  * Calculates SHA-256 hash across Node.js, Web Worker, and Browser environments.
