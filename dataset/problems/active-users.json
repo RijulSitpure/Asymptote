@@ -1,0 +1,71 @@
+{
+  "slug": "active-users",
+  "number": 1454,
+  "category": "Database",
+  "patterns": [
+    "gaps-and-islands"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Distinct User Login Days",
+      "text": "A user may log in multiple times in a single day. Deduplicate to distinct (id, login_date) pairs first."
+    },
+    {
+      "level": 2,
+      "title": "Gaps and Islands Date Delta",
+      "text": "date_sub(login_date, interval dense_rank() over (partition by id order by login_date) day) yields a constant island date for consecutive sequences."
+    },
+    {
+      "level": 3,
+      "title": "Minimum Streak Threshold",
+      "text": "Group by id and the constant island date having count(*) >= 5 to filter active users."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH DistinctLogins AS (\n    SELECT DISTINCT id, login_date\n    FROM Logins\n),\nRankedLogins AS (\n    SELECT id, login_date,\n           DATE_SUB(login_date, INTERVAL DENSE_RANK() OVER (PARTITION BY id ORDER BY login_date) DAY) AS grp\n    FROM DistinctLogins\n),\nActiveUserIDs AS (\n    SELECT id\n    FROM RankedLogins\n    GROUP BY id, grp\n    HAVING COUNT(*) >= 5\n)\nSELECT DISTINCT a.id, a.name\nFROM Accounts a\nJOIN ActiveUserIDs au ON a.id = au.id\nORDER BY a.id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(L log L)",
+    "space": "O(L)",
+    "variables": [
+      "L: number of logins"
+    ],
+    "notes": "Window ranking and date subtraction group contiguous days in linear-logarithmic time.",
+    "whyNaiveFails": "Five-way self-joins across consecutive dates scale poorly and fail to generalize cleanly.",
+    "spaceTimeTradeoff": "DENSE_RANK() date offset groups arbitrary streak lengths in a single pass.",
+    "interviewerExpectation": "Classic gaps-and-islands pattern subtracting rank offsets from dates."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH DistinctLogins AS (\n    SELECT DISTINCT id, login_date\n    FROM Logins\n),\nRankedLogins AS (\n    SELECT id, login_date,\n           DATE_SUB(login_date, INTERVAL DENSE_RANK() OVER (PARTITION BY id ORDER BY login_date) DAY) AS grp\n    FROM DistinctLogins\n),\nActiveUserIDs AS (\n    SELECT id\n    FROM RankedLogins\n    GROUP BY id, grp\n    HAVING COUNT(*) >= 5\n)\nSELECT DISTINCT a.id, a.name\nFROM Accounts a\nJOIN ActiveUserIDs au ON a.id = au.id\nORDER BY a.id;",
+      "approach": "DENSE_RANK Date Offset Gaps and Islands",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH DistinctLogins AS (\n    SELECT DISTINCT id, login_date\n    FROM Logins\n),\nRankedLogins AS (\n    SELECT id, login_date,\n           login_date - CAST(DENSE_RANK() OVER (PARTITION BY id ORDER BY login_date) || ' days' AS INTERVAL) AS grp\n    FROM DistinctLogins\n),\nActiveUserIDs AS (\n    SELECT id\n    FROM RankedLogins\n    GROUP BY id, grp\n    HAVING COUNT(*) >= 5\n)\nSELECT DISTINCT a.id, a.name\nFROM Accounts a\nJOIN ActiveUserIDs au ON a.id = au.id\nORDER BY a.id;",
+      "approach": "PostgreSQL Interval Offset Gaps and Islands",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef active_users(accounts: pd.DataFrame, logins: pd.DataFrame) -> pd.DataFrame:\n    dl = logins[['id', 'login_date']].drop_duplicates()\n    dl['login_date'] = pd.to_datetime(dl['login_date'])\n    dl = dl.sort_values(by=['id', 'login_date']).reset_index(drop=True)\n    dl['rn'] = dl.groupby('id').cumcount()\n    dl['grp'] = dl['login_date'] - pd.to_timedelta(dl['rn'], unit='D')\n    counts = dl.groupby(['id', 'grp']).size().reset_index(name='streak')\n    active_ids = set(counts[counts['streak'] >= 5]['id'])\n    res = accounts[accounts['id'].isin(active_ids)].drop_duplicates()\n    return res[['id', 'name']].sort_values(by='id')",
+      "approach": "Pandas Timedelta Cumcount Island Grouping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

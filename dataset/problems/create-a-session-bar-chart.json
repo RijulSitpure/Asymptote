@@ -1,0 +1,71 @@
+{
+  "slug": "create-a-session-bar-chart",
+  "number": 1435,
+  "category": "Database",
+  "patterns": [
+    "conditional-pivot"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Complete Bin Listing",
+      "text": "All 4 bins: \"[0-5>\", \"[5-10>\", \"[10-15>\", and \"15 or more\" must appear even when count is 0."
+    },
+    {
+      "level": 2,
+      "title": "Duration Conversion",
+      "text": "Calculate duration in minutes using duration / 60."
+    },
+    {
+      "level": 3,
+      "title": "Bin Union or Conditional Aggregation",
+      "text": "Union the four static bins and left join session duration counts matching each range."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT '[0-5>' AS bin, SUM(duration / 60 < 5) AS total FROM Sessions\nUNION\nSELECT '[5-10>' AS bin, SUM(duration / 60 >= 5 AND duration / 60 < 10) AS total FROM Sessions\nUNION\nSELECT '[10-15>' AS bin, SUM(duration / 60 >= 10 AND duration / 60 < 15) AS total FROM Sessions\nUNION\nSELECT '15 or more' AS bin, SUM(duration / 60 >= 15) AS total FROM Sessions;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N)",
+    "space": "O(1)",
+    "variables": [
+      "N: records in Sessions table"
+    ],
+    "notes": "Scanning the Sessions table 4 times or in a single union pass executes in linear time with 4 constant output rows.",
+    "whyNaiveFails": "Grouping by a calculated CASE statement omits empty bins where no sessions fall into that bracket.",
+    "spaceTimeTradeoff": "Unioning predefined literal bins guarantees output completeness regardless of data distribution.",
+    "interviewerExpectation": "Ensuring non-existent bins are represented with 0 counts using UNION of literals."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT '[0-5>' AS bin, SUM(duration / 60 < 5) AS total FROM Sessions\nUNION\nSELECT '[5-10>' AS bin, SUM(duration / 60 >= 5 AND duration / 60 < 10) AS total FROM Sessions\nUNION\nSELECT '[10-15>' AS bin, SUM(duration / 60 >= 10 AND duration / 60 < 15) AS total FROM Sessions\nUNION\nSELECT '15 or more' AS bin, SUM(duration / 60 >= 15) AS total FROM Sessions;",
+      "approach": "Static Bin Union with Boolean Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT '[0-5>' AS bin, COALESCE(SUM(CASE WHEN duration / 60.0 < 5 THEN 1 ELSE 0 END), 0) AS total FROM Sessions\nUNION ALL\nSELECT '[5-10>' AS bin, COALESCE(SUM(CASE WHEN duration / 60.0 >= 5 AND duration / 60.0 < 10 THEN 1 ELSE 0 END), 0) AS total FROM Sessions\nUNION ALL\nSELECT '[10-15>' AS bin, COALESCE(SUM(CASE WHEN duration / 60.0 >= 10 AND duration / 60.0 < 15 THEN 1 ELSE 0 END), 0) AS total FROM Sessions\nUNION ALL\nSELECT '15 or more' AS bin, COALESCE(SUM(CASE WHEN duration / 60.0 >= 15 THEN 1 ELSE 0 END), 0) AS total FROM Sessions;",
+      "approach": "PostgreSQL Union of Bin Aggregations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef create_bar_chart(sessions: pd.DataFrame) -> pd.DataFrame:\n    b1 = ((sessions['duration'] / 60) < 5).sum()\n    b2 = (((sessions['duration'] / 60) >= 5) & ((sessions['duration'] / 60) < 10)).sum()\n    b3 = (((sessions['duration'] / 60) >= 10) & ((sessions['duration'] / 60) < 15)).sum()\n    b4 = ((sessions['duration'] / 60) >= 15).sum()\n    return pd.DataFrame([\n        {'bin': '[0-5>', 'total': b1},\n        {'bin': '[5-10>', 'total': b2},\n        {'bin': '[10-15>', 'total': b3},\n        {'bin': '15 or more', 'total': b4}\n    ])",
+      "approach": "Pandas Vectorized Boolean Sum per Bin",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

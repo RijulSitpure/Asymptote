@@ -1,0 +1,71 @@
+{
+  "slug": "rectangles-area",
+  "number": 1459,
+  "category": "Database",
+  "patterns": [
+    "self-join"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Strict ID Ordering to Avoid Duplicates",
+      "text": "Join Points p1 with Points p2 on p1.id < p2.id to ensure each unordered point pair is examined exactly once."
+    },
+    {
+      "level": 2,
+      "title": "Non-Degenerate Rectangle Filter",
+      "text": "A valid rectangle requires p1.x_value <> p2.x_value and p1.y_value <> p2.y_value."
+    },
+    {
+      "level": 3,
+      "title": "Area Computation and Ordering",
+      "text": "Compute abs(p1.x_value - p2.x_value) * abs(p1.y_value - p2.y_value) as area, ordered by area desc, p1 asc, p2 asc."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT p1.id AS p1, p2.id AS p2,\n       ABS(p1.x_value - p2.x_value) * ABS(p1.y_value - p2.y_value) AS area\nFROM Points p1\nJOIN Points p2 ON p1.id < p2.id\n              AND p1.x_value != p2.x_value\n              AND p1.y_value != p2.y_value\nORDER BY area DESC, p1 ASC, p2 ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N^2)",
+    "space": "O(N^2)",
+    "variables": [
+      "N: number of points in Points table"
+    ],
+    "notes": "Testing all unordered pairs of points executes in quadratic time with secondary sorting.",
+    "whyNaiveFails": "Full Cartesian product without id ordering creates symmetric duplicates and zero-area pairs.",
+    "spaceTimeTradeoff": "Condition p1.id < p2.id halves pair comparisons and guarantees unique representation.",
+    "interviewerExpectation": "Self-join with triangle condition p1.id < p2.id and non-zero dimension predicates."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT p1.id AS p1, p2.id AS p2,\n       ABS(p1.x_value - p2.x_value) * ABS(p1.y_value - p2.y_value) AS area\nFROM Points p1\nJOIN Points p2 ON p1.id < p2.id\n              AND p1.x_value != p2.x_value\n              AND p1.y_value != p2.y_value\nORDER BY area DESC, p1 ASC, p2 ASC;",
+      "approach": "Self-Join with Triangular ID Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT p1.id AS p1, p2.id AS p2,\n       ABS(p1.x_value - p2.x_value) * ABS(p1.y_value - p2.y_value) AS area\nFROM Points p1\nJOIN Points p2 ON p1.id < p2.id\n              AND p1.x_value != p2.x_value\n              AND p1.y_value != p2.y_value\nORDER BY area DESC, p1 ASC, p2 ASC;",
+      "approach": "PostgreSQL Self-Join Area Calculation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef rectangles_area(points: pd.DataFrame) -> pd.DataFrame:\n    merged = pd.merge(points, points, how='cross', suffixes=('_1', '_2'))\n    filtered = merged[(merged['id_1'] < merged['id_2']) &\n                      (merged['x_value_1'] != merged['x_value_2']) &\n                      (merged['y_value_1'] != merged['y_value_2'])].copy()\n    filtered['area'] = (filtered['x_value_1'] - filtered['x_value_2']).abs() * (filtered['y_value_1'] - filtered['y_value_2']).abs()\n    filtered.rename(columns={'id_1': 'p1', 'id_2': 'p2'}, inplace=True)\n    return filtered[['p1', 'p2', 'area']].sort_values(by=['area', 'p1', 'p2'], ascending=[False, True, True])",
+      "approach": "Pandas Cross Join and Diagonal Filtration",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "design-a-file-sharing-system",
+  "number": 1500,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Recyclable Identifier Pool",
+      "text": "Keep an ordered pool of released user identifiers and an incrementing counter for fresh user identifiers."
+    },
+    {
+      "level": 2,
+      "title": "Bidirectional File Chunk Mapping",
+      "text": "Map user IDs to owned chunk sets, and chunk IDs to sets of user IDs holding that chunk."
+    },
+    {
+      "level": 3,
+      "title": "Dynamic Chunk Acquisition",
+      "text": "When a user requests chunkID, return all users owning that chunk sorted ascending, and add chunkID to the requesting user ownership."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass FileSharing:\n    def __init__(self, m: int):\n        self.free_ids = []\n        self.next_id = 1\n        self.user_chunks = {}\n        self.chunk_users = {}\n\n    def join(self, ownedChunks: list[int]) -> int:\n        uid = heapq.heappop(self.free_ids) if self.free_ids else self.next_id\n        if uid == self.next_id:\n            self.next_id += 1\n        self.user_chunks[uid] = set(ownedChunks)\n        for chunk in ownedChunks:\n            if chunk not in self.chunk_users:\n                self.chunk_users[chunk] = set()\n            self.chunk_users[chunk].add(uid)\n        return uid\n\n    def leave(self, userID: int) -> None:\n        if userID in self.user_chunks:\n            for chunk in self.user_chunks[userID]:\n                self.chunk_users[chunk].discard(userID)\n            del self.user_chunks[userID]\n            heapq.heappush(self.free_ids, userID)\n\n    def request(self, userID: int, chunkID: int) -> list[int]:\n        users = sorted(list(self.chunk_users.get(chunkID, set())))\n        if users and userID in self.user_chunks:\n            self.user_chunks[userID].add(chunkID)\n            if chunkID not in self.chunk_users:\n                self.chunk_users[chunkID] = set()\n            self.chunk_users[chunkID].add(userID)\n        return users\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(C log U) join/leave/request",
+    "space": "O(U * C)",
+    "variables": [
+      "U: active user count",
+      "C: chunk count per user"
+    ],
+    "notes": "Min-heap provides O(log U) allocation, and inverted chunk index retrieves holders in sorted order.",
+    "whyNaiveFails": "Scanning every user linearly on each chunk query takes O(U) operations per request.",
+    "spaceTimeTradeoff": "Dual user-to-chunks and chunk-to-users maps optimize request time at the cost of dual storage.",
+    "interviewerExpectation": "Min-heap for smallest reusable ID paired with inverted index for chunk peers."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass FileSharing:\n    def __init__(self, m: int):\n        self.free_ids = []\n        self.next_id = 1\n        self.user_chunks = {}\n        self.chunk_users = {}\n\n    def join(self, ownedChunks: list[int]) -> int:\n        uid = heapq.heappop(self.free_ids) if self.free_ids else self.next_id\n        if uid == self.next_id:\n            self.next_id += 1\n        self.user_chunks[uid] = set(ownedChunks)\n        for chunk in ownedChunks:\n            if chunk not in self.chunk_users:\n                self.chunk_users[chunk] = set()\n            self.chunk_users[chunk].add(uid)\n        return uid\n\n    def leave(self, userID: int) -> None:\n        if userID in self.user_chunks:\n            for chunk in self.user_chunks[userID]:\n                self.chunk_users[chunk].discard(userID)\n            del self.user_chunks[userID]\n            heapq.heappush(self.free_ids, userID)\n\n    def request(self, userID: int, chunkID: int) -> list[int]:\n        users = sorted(list(self.chunk_users.get(chunkID, set())))\n        if users and userID in self.user_chunks:\n            self.user_chunks[userID].add(chunkID)\n            if chunkID not in self.chunk_users:\n                self.chunk_users[chunkID] = set()\n            self.chunk_users[chunkID].add(userID)\n        return users",
+      "approach": "Min-Heap ID Reuse and Inverted Chunk Index",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class FileSharing {\n    priority_queue<int, vector<int>, greater<int>> free_ids;\n    int next_id;\n    unordered_map<int, unordered_set<int>> user_chunks;\n    unordered_map<int, set<int>> chunk_users;\npublic:\n    FileSharing(int m) {\n        next_id = 1;\n    }\n    \n    int join(vector<int> ownedChunks) {\n        int uid;\n        if (!free_ids.empty()) {\n            uid = free_ids.top();\n            free_ids.pop();\n        } else {\n            uid = next_id++;\n        }\n        for (int c : ownedChunks) {\n            user_chunks[uid].insert(c);\n            chunk_users[c].insert(uid);\n        }\n        return uid;\n    }\n    \n    void leave(int userID) {\n        if (!user_chunks.count(userID)) return;\n        for (int c : user_chunks[userID]) {\n            chunk_users[c].erase(userID);\n        }\n        user_chunks.erase(userID);\n        free_ids.push(userID);\n    }\n    \n    vector<int> request(int userID, int chunkID) {\n        vector<int> res;\n        if (chunk_users.count(chunkID)) {\n            for (int u : chunk_users[chunkID]) res.push_back(u);\n        }\n        if (!res.empty() && user_chunks.count(userID)) {\n            user_chunks[userID].insert(chunkID);\n            chunk_users[chunkID].insert(userID);\n        }\n        return res;\n    }\n};",
+      "approach": "C++ Priority Queue and Chunk Inverted Sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class FileSharing {\n    private PriorityQueue<Integer> freeIds = new PriorityQueue<>();\n    private int nextId = 1;\n    private Map<Integer, Set<Integer>> userChunks = new HashMap<>();\n    private Map<Integer, TreeSet<Integer>> chunkUsers = new HashMap<>();\n\n    public FileSharing(int m) {\n    }\n    \n    public int join(List<Integer> ownedChunks) {\n        int uid = freeIds.isEmpty() ? nextId++ : freeIds.poll();\n        userChunks.put(uid, new HashSet<>(ownedChunks));\n        for (int c : ownedChunks) {\n            chunkUsers.computeIfAbsent(c, k -> new TreeSet<>()).add(uid);\n        }\n        return uid;\n    }\n    \n    public void leave(int userID) {\n        if (!userChunks.containsKey(userID)) return;\n        for (int c : userChunks.get(userID)) {\n            if (chunkUsers.containsKey(c)) {\n                chunkUsers.get(c).remove(userID);\n            }\n        }\n        userChunks.remove(userID);\n        freeIds.offer(userID);\n    }\n    \n    public List<Integer> request(int userID, int chunkID) {\n        List<Integer> res = new ArrayList<>();\n        if (chunkUsers.containsKey(chunkID)) {\n            res.addAll(chunkUsers.get(chunkID));\n        }\n        if (!res.isEmpty() && userChunks.containsKey(userID)) {\n            userChunks.get(userID).add(chunkID);\n            chunkUsers.computeIfAbsent(chunkID, k -> new TreeSet<>()).add(userID);\n        }\n        return res;\n    }\n}",
+      "approach": "Java PriorityQueue and TreeSet Inverted Index",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var FileSharing = function(m) {\n    this.freeIds = [];\n    this.nextId = 1;\n    this.userChunks = new Map();\n    this.chunkUsers = new Map();\n};\n\nFileSharing.prototype.join = function(ownedChunks) {\n    let uid;\n    if (this.freeIds.length > 0) {\n        this.freeIds.sort((a, b) => a - b);\n        uid = this.freeIds.shift();\n    } else {\n        uid = this.nextId++;\n    }\n    this.userChunks.set(uid, new Set(ownedChunks));\n    for (const c of ownedChunks) {\n        if (!this.chunkUsers.has(c)) this.chunkUsers.set(c, new Set());\n        this.chunkUsers.get(c).add(uid);\n    }\n    return uid;\n};\n\nFileSharing.prototype.leave = function(userID) {\n    if (!this.userChunks.has(userID)) return;\n    for (const c of this.userChunks.get(userID)) {\n        if (this.chunkUsers.has(c)) {\n            this.chunkUsers.get(c).delete(userID);\n        }\n    }\n    this.userChunks.delete(userID);\n    this.freeIds.push(userID);\n};\n\nFileSharing.prototype.request = function(userID, chunkID) {\n    let res = [];\n    if (this.chunkUsers.has(chunkID)) {\n        res = Array.from(this.chunkUsers.get(chunkID)).sort((a, b) => a - b);\n    }\n    if (res.length > 0 && this.userChunks.has(userID)) {\n        this.userChunks.get(userID).add(chunkID);\n        if (!this.chunkUsers.has(chunkID)) this.chunkUsers.set(chunkID, new Set());\n        this.chunkUsers.get(chunkID).add(userID);\n    }\n    return res;\n};",
+      "approach": "JavaScript Inverted Index and ID Pool",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

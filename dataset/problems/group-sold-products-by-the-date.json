@@ -1,0 +1,72 @@
+{
+  "slug": "group-sold-products-by-the-date",
+  "number": 1484,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Distinct Product Aggregation",
+      "text": "A product may appear multiple times on the same date. Deduplicate products per sell_date."
+    },
+    {
+      "level": 2,
+      "title": "String Concatenation Aggregate",
+      "text": "group_concat(distinct product order by product separator \",\") in MySQL concatenates names alphabetically."
+    },
+    {
+      "level": 3,
+      "title": "Distinct Count Calculation",
+      "text": "count(distinct product) as num_sold provides the unique product tally per date."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT sell_date,\n       COUNT(DISTINCT product) AS num_sold,\n       GROUP_CONCAT(DISTINCT product ORDER BY product SEPARATOR ',') AS products\nFROM Activities\nGROUP BY sell_date\nORDER BY sell_date;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log P)",
+    "space": "O(N)",
+    "variables": [
+      "N: records in Activities",
+      "P: distinct products per date"
+    ],
+    "notes": "Group-by aggregation sorts distinct product names per date in linear-logarithmic time.",
+    "whyNaiveFails": "Without DISTINCT in GROUP_CONCAT, duplicate sales produce redundant repetitive lists.",
+    "spaceTimeTradeoff": "In-engine string concatenation assembles CSV output directly without application-level overhead.",
+    "interviewerExpectation": "GROUP_CONCAT with DISTINCT and ORDER BY sorting inside the aggregate function."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT sell_date,\n       COUNT(DISTINCT product) AS num_sold,\n       GROUP_CONCAT(DISTINCT product ORDER BY product SEPARATOR ',') AS products\nFROM Activities\nGROUP BY sell_date\nORDER BY sell_date;",
+      "approach": "GROUP_CONCAT with Distinct Product Sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT sell_date,\n       COUNT(DISTINCT product) AS num_sold,\n       STRING_AGG(DISTINCT product, ',' ORDER BY product) AS products\nFROM Activities\nGROUP BY sell_date\nORDER BY sell_date;",
+      "approach": "PostgreSQL STRING_AGG Distinct",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef categorize_products(activities: pd.DataFrame) -> pd.DataFrame:\n    grouped = activities.groupby('sell_date')['product'].agg(\n        num_sold=lambda s: len(set(s)),\n        products=lambda s: ','.join(sorted(set(s)))\n    ).reset_index()\n    return grouped.sort_values(by='sell_date')",
+      "approach": "Pandas Groupby Agg with Sorted Set Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

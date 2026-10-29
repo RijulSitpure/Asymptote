@@ -1,0 +1,73 @@
+{
+  "slug": "sales-by-day-of-the-week",
+  "number": 1479,
+  "category": "Database",
+  "patterns": [
+    "conditional-pivot"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Include All Item Categories",
+      "text": "Every item category from Items must appear in the final report even if it experienced zero orders."
+    },
+    {
+      "level": 2,
+      "title": "Day of Week Extraction",
+      "text": "dayname(order_date) or dayofweek(order_date) classifies each order into Monday through Sunday."
+    },
+    {
+      "level": 3,
+      "title": "Pivot Aggregation by Category",
+      "text": "Use sum(case when dayname(order_date) = \"Monday\" then quantity else 0 end) for each of the 7 days."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT i.item_category AS CATEGORY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 2 THEN o.quantity ELSE 0 END), 0) AS MONDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 3 THEN o.quantity ELSE 0 END), 0) AS TUESDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 4 THEN o.quantity ELSE 0 END), 0) AS WEDNESDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 5 THEN o.quantity ELSE 0 END), 0) AS THURSDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 6 THEN o.quantity ELSE 0 END), 0) AS FRIDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 7 THEN o.quantity ELSE 0 END), 0) AS SATURDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 1 THEN o.quantity ELSE 0 END), 0) AS SUNDAY\nFROM Items i\nLEFT JOIN Orders o ON i.item_id = o.item_id\nGROUP BY i.item_category\nORDER BY CATEGORY;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(I + O)",
+    "space": "O(C)",
+    "variables": [
+      "I: items count",
+      "O: orders count",
+      "C: distinct categories"
+    ],
+    "notes": "Left join followed by grouping by item_category processes all day columns in a single table pass.",
+    "whyNaiveFails": "Multiple separate queries for each weekday joined together require seven separate table scans.",
+    "spaceTimeTradeoff": "Conditional SUM aggregation flattens 7 days of sales into a single report row per category.",
+    "interviewerExpectation": "Left outer join preserving empty categories and conditional pivot aggregation across weekdays."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT i.item_category AS CATEGORY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 2 THEN o.quantity ELSE 0 END), 0) AS MONDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 3 THEN o.quantity ELSE 0 END), 0) AS TUESDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 4 THEN o.quantity ELSE 0 END), 0) AS WEDNESDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 5 THEN o.quantity ELSE 0 END), 0) AS THURSDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 6 THEN o.quantity ELSE 0 END), 0) AS FRIDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 7 THEN o.quantity ELSE 0 END), 0) AS SATURDAY,\n       IFNULL(SUM(CASE WHEN DAYOFWEEK(o.order_date) = 1 THEN o.quantity ELSE 0 END), 0) AS SUNDAY\nFROM Items i\nLEFT JOIN Orders o ON i.item_id = o.item_id\nGROUP BY i.item_category\nORDER BY CATEGORY;",
+      "approach": "Left Join with Conditional Day-of-Week Pivot",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT i.item_category AS CATEGORY,\n       COALESCE(SUM(CASE WHEN EXTRACT(DOW FROM o.order_date) = 1 THEN o.quantity ELSE 0 END), 0) AS MONDAY,\n       COALESCE(SUM(CASE WHEN EXTRACT(DOW FROM o.order_date) = 2 THEN o.quantity ELSE 0 END), 0) AS TUESDAY,\n       COALESCE(SUM(CASE WHEN EXTRACT(DOW FROM o.order_date) = 3 THEN o.quantity ELSE 0 END), 0) AS WEDNESDAY,\n       COALESCE(SUM(CASE WHEN EXTRACT(DOW FROM o.order_date) = 4 THEN o.quantity ELSE 0 END), 0) AS THURSDAY,\n       COALESCE(SUM(CASE WHEN EXTRACT(DOW FROM o.order_date) = 5 THEN o.quantity ELSE 0 END), 0) AS FRIDAY,\n       COALESCE(SUM(CASE WHEN EXTRACT(DOW FROM o.order_date) = 6 THEN o.quantity ELSE 0 END), 0) AS SATURDAY,\n       COALESCE(SUM(CASE WHEN EXTRACT(DOW FROM o.order_date) = 0 THEN o.quantity ELSE 0 END), 0) AS SUNDAY\nFROM Items i\nLEFT JOIN Orders o ON i.item_id = o.item_id\nGROUP BY i.item_category\nORDER BY CATEGORY;",
+      "approach": "PostgreSQL EXTRACT DOW Conditional Summation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef sales_by_day(orders: pd.DataFrame, items: pd.DataFrame) -> pd.DataFrame:\n    cats = sorted(items['item_category'].unique())\n    merged = pd.merge(items, orders, on='item_id', how='left')\n    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']\n    merged['day_name'] = pd.to_datetime(merged['order_date']).dt.day_name()\n    records = []\n    for cat in cats:\n        sub = merged[merged['item_category'] == cat]\n        rec = {'CATEGORY': cat}\n        for d in days:\n            qty = sub[sub['day_name'] == d]['quantity'].sum()\n            rec[d.upper()] = 0 if pd.isna(qty) else int(qty)\n        records.append(rec)\n    return pd.DataFrame(records)",
+      "approach": "Pandas Category Pivot and Day Name Grouping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

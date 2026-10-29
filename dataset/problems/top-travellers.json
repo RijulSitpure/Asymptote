@@ -1,0 +1,72 @@
+{
+  "slug": "top-travellers",
+  "number": 1407,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Include All Users",
+      "text": "Users who have taken zero rides must appear in the final table with a travelled distance of 0."
+    },
+    {
+      "level": 2,
+      "title": "Null Coalescing Sum",
+      "text": "left join Rides on Users.id = Rides.user_id and apply ifnull(sum(distance), 0)."
+    },
+    {
+      "level": 3,
+      "title": "Tie-Breaking Sort Order",
+      "text": "order by travelled_distance desc, name asc."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT u.name,\n       IFNULL(SUM(r.distance), 0) AS travelled_distance\nFROM Users u\nLEFT JOIN Rides r ON u.id = r.user_id\nGROUP BY u.id, u.name\nORDER BY travelled_distance DESC, u.name ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(U + R log U)",
+    "space": "O(U)",
+    "variables": [
+      "U: users count",
+      "R: rides count"
+    ],
+    "notes": "Left join followed by grouping by user id runs in linear time, followed by sorting users.",
+    "whyNaiveFails": "Inner join omits users without any rides instead of reporting 0 distance.",
+    "spaceTimeTradeoff": "Grouping by unique user key guarantees accurate aggregation even with duplicate names.",
+    "interviewerExpectation": "Left outer join with COALESCE or IFNULL handling zero rides and secondary name sorting."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT u.name,\n       IFNULL(SUM(r.distance), 0) AS travelled_distance\nFROM Users u\nLEFT JOIN Rides r ON u.id = r.user_id\nGROUP BY u.id, u.name\nORDER BY travelled_distance DESC, u.name ASC;",
+      "approach": "Left Join with IFNULL Distance Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT u.name,\n       COALESCE(SUM(r.distance), 0) AS travelled_distance\nFROM Users u\nLEFT JOIN Rides r ON u.id = r.user_id\nGROUP BY u.id, u.name\nORDER BY travelled_distance DESC, u.name ASC;",
+      "approach": "PostgreSQL Left Join with COALESCE",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef top_travellers(users: pd.DataFrame, rides: pd.DataFrame) -> pd.DataFrame:\n    merged = pd.merge(users, rides, left_on='id', right_on='user_id', how='left')\n    res = merged.groupby(['id_x', 'name'])['distance'].sum().fillna(0).reset_index()\n    res.rename(columns={'distance': 'travelled_distance'}, inplace=True)\n    return res[['name', 'travelled_distance']].sort_values(by=['travelled_distance', 'name'], ascending=[False, True])",
+      "approach": "Pandas Left Merge and Fillna Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

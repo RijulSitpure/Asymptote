@@ -61,10 +61,15 @@ struct TreeNode {
 class Node {
 public:
     int val;
+    Node* left;
+    Node* right;
+    Node* random;
+    Node* next;
     vector<Node*> neighbors;
-    Node() : val(0), neighbors() {}
-    Node(int _val) : val(_val), neighbors() {}
-    Node(int _val, vector<Node*> _neighbors) : val(_val), neighbors(_neighbors) {}
+    vector<Node*> children;
+    Node() : val(0), left(nullptr), right(nullptr), random(nullptr), next(nullptr) {}
+    Node(int _val) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr) {}
+    Node(int _val, vector<Node*> _vec) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr), neighbors(_vec), children(_vec) {}
 };
 `;
     }
@@ -94,6 +99,21 @@ class Sea {
 public:
     bool hasShips(vector<int> topRight, vector<int> bottomLeft);
 };
+class BinaryMatrix {
+public:
+    int get(int row, int col);
+    vector<int> dimensions();
+};
+class NodeCopy {
+public:
+    int val;
+    NodeCopy* left;
+    NodeCopy* right;
+    NodeCopy* random;
+    NodeCopy() : val(0), left(nullptr), right(nullptr), random(nullptr) {}
+    NodeCopy(int _val) : val(_val), left(nullptr), right(nullptr), random(nullptr) {}
+};
+
 
 `;
     codeToTest = preamble + codeToTest;

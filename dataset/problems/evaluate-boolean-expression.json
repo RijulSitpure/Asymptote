@@ -1,0 +1,71 @@
+{
+  "slug": "evaluate-boolean-expression",
+  "number": 1440,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two-Variable Join Resolution",
+      "text": "Join Expressions twice with Variables: once for left_operand and once for right_operand."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Operator Evaluation",
+      "text": "Use a conditional case expression inspecting operator against \">\", \"<\", and \"=\"."
+    },
+    {
+      "level": 3,
+      "title": "Output Literal Generation",
+      "text": "Return \"true\" when the condition holds and \"false\" otherwise."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT e.left_operand, e.operator, e.right_operand,\n       CASE\n           WHEN e.operator = '>' AND v1.value > v2.value THEN 'true'\n           WHEN e.operator = '<' AND v1.value < v2.value THEN 'true'\n           WHEN e.operator = '=' AND v1.value = v2.value THEN 'true'\n           ELSE 'false'\n       END AS value\nFROM Expressions e\nJOIN Variables v1 ON e.left_operand = v1.name\nJOIN Variables v2 ON e.right_operand = v2.name;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(E)",
+    "space": "O(E)",
+    "variables": [
+      "E: number of expressions"
+    ],
+    "notes": "Joining variables via hash lookup and evaluating CASE condition executes in linear time.",
+    "whyNaiveFails": "Correlated scalar subqueries for each operand require repetitive index lookups.",
+    "spaceTimeTradeoff": "Dual joins resolve operand values in a single tabular scan.",
+    "interviewerExpectation": "Self-aliased joins mapping operands paired with exhaustive CASE evaluation."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT e.left_operand, e.operator, e.right_operand,\n       CASE\n           WHEN e.operator = '>' AND v1.value > v2.value THEN 'true'\n           WHEN e.operator = '<' AND v1.value < v2.value THEN 'true'\n           WHEN e.operator = '=' AND v1.value = v2.value THEN 'true'\n           ELSE 'false'\n       END AS value\nFROM Expressions e\nJOIN Variables v1 ON e.left_operand = v1.name\nJOIN Variables v2 ON e.right_operand = v2.name;",
+      "approach": "Dual Variable Join with Evaluated CASE",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT e.left_operand, e.operator, e.right_operand,\n       CASE\n           WHEN e.operator = '>' AND v1.value > v2.value THEN 'true'\n           WHEN e.operator = '<' AND v1.value < v2.value THEN 'true'\n           WHEN e.operator = '=' AND v1.value = v2.value THEN 'true'\n           ELSE 'false'\n       END AS value\nFROM Expressions e\nJOIN Variables v1 ON e.left_operand = v1.name\nJOIN Variables v2 ON e.right_operand = v2.name;",
+      "approach": "PostgreSQL Dual Variable Join and CASE Expression",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef eval_expression(variables: pd.DataFrame, expressions: pd.DataFrame) -> pd.DataFrame:\n    m1 = pd.merge(expressions, variables, left_on='left_operand', right_on='name', how='left')\n    m2 = pd.merge(m1, variables, left_on='right_operand', right_on='name', how='left', suffixes=('_l', '_r'))\n    def evaluate(row):\n        op = row['operator']\n        vl = row['value_l']\n        vr = row['value_r']\n        if op == '>' and vl > vr: return 'true'\n        if op == '<' and vl < vr: return 'true'\n        if op == '=' and vl == vr: return 'true'\n        return 'false'\n    m2['value'] = m2.apply(evaluate, axis=1)\n    return m2[['left_operand', 'operator', 'right_operand', 'value']]",
+      "approach": "Pandas Dual Merge and Rowwise Comparison",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

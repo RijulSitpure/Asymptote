@@ -1,0 +1,72 @@
+{
+  "slug": "customers-who-bought-products-a-and-b-but-not-c",
+  "number": 1398,
+  "category": "Database",
+  "patterns": [
+    "having-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Customer Purchase Conditions",
+      "text": "Identify customers who purchased product A, purchased product B, and never purchased product C."
+    },
+    {
+      "level": 2,
+      "title": "Group-Level Boolean Aggregation",
+      "text": "Join Customers and Orders, then apply having sum(product_name = \"A\") > 0 and sum(product_name = \"B\") > 0 and sum(product_name = \"C\") = 0."
+    },
+    {
+      "level": 3,
+      "title": "Sorting Output",
+      "text": "order by customer_id ascending as specified in the schema specification."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT c.customer_id, c.customer_name\nFROM Customers c\nJOIN Orders o ON c.customer_id = o.customer_id\nGROUP BY c.customer_id, c.customer_name\nHAVING SUM(o.product_name = 'A') > 0\n   AND SUM(o.product_name = 'B') > 0\n   AND SUM(o.product_name = 'C') = 0\nORDER BY c.customer_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(C + O)",
+    "space": "O(C)",
+    "variables": [
+      "C: customer count",
+      "O: order count"
+    ],
+    "notes": "Group-by aggregation over orders filtered by HAVING conditions resolves in linear time.",
+    "whyNaiveFails": "Multiple IN and NOT IN subqueries cause repeated scans across the entire Orders table.",
+    "spaceTimeTradeoff": "Evaluating boolean sums in HAVING processes all conditions in a single group-by pass.",
+    "interviewerExpectation": "Single GROUP BY with boolean condition aggregation inside the HAVING clause."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT c.customer_id, c.customer_name\nFROM Customers c\nJOIN Orders o ON c.customer_id = o.customer_id\nGROUP BY c.customer_id, c.customer_name\nHAVING SUM(o.product_name = 'A') > 0\n   AND SUM(o.product_name = 'B') > 0\n   AND SUM(o.product_name = 'C') = 0\nORDER BY c.customer_id;",
+      "approach": "HAVING Boolean Sum Filtration",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT c.customer_id, c.customer_name\nFROM Customers c\nJOIN Orders o ON c.customer_id = o.customer_id\nGROUP BY c.customer_id, c.customer_name\nHAVING SUM(CASE WHEN o.product_name = 'A' THEN 1 ELSE 0 END) > 0\n   AND SUM(CASE WHEN o.product_name = 'B' THEN 1 ELSE 0 END) > 0\n   AND SUM(CASE WHEN o.product_name = 'C' THEN 1 ELSE 0 END) = 0\nORDER BY c.customer_id;",
+      "approach": "PostgreSQL CASE Sum in HAVING",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_customers(customers: pd.DataFrame, orders: pd.DataFrame) -> pd.DataFrame:\n    grouped = orders.groupby('customer_id')['product_name'].agg(set).reset_index()\n    valid_ids = grouped[grouped['product_name'].apply(lambda s: 'A' in s and 'B' in s and 'C' not in s)]['customer_id']\n    res = customers[customers['customer_id'].isin(valid_ids)]\n    return res[['customer_id', 'customer_name']].sort_values(by='customer_id')",
+      "approach": "Pandas Groupby Set Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

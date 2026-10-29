@@ -1,0 +1,71 @@
+{
+  "slug": "calculate-salaries",
+  "number": 1468,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Company Max Salary Partition",
+      "text": "Compute max(salary) over (partition by company_id) to establish the tax tier for each company."
+    },
+    {
+      "level": 2,
+      "title": "Tiered Tax Calculation",
+      "text": "If max salary < 1000 tax is 0%; if between 1000 and 10000 tax is 24%; if > 10000 tax is 49%."
+    },
+    {
+      "level": 3,
+      "title": "Rounding Net Salary",
+      "text": "Compute round(salary * (1 - tax_rate)) as the post-tax salary for each employee."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH CompanyMax AS (\n    SELECT company_id, employee_id, employee_name, salary,\n           MAX(salary) OVER (PARTITION BY company_id) AS max_sal\n    FROM Salaries\n)\nSELECT company_id, employee_id, employee_name,\n       ROUND(salary * (1 - CASE\n           WHEN max_sal < 1000 THEN 0.00\n           WHEN max_sal <= 10000 THEN 0.24\n           ELSE 0.49\n       END)) AS salary\nFROM CompanyMax;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of employee records in Salaries"
+    ],
+    "notes": "Window aggregation partitions employees by company_id in linear time followed by scalar math.",
+    "whyNaiveFails": "Correlated subqueries to find company max salary repeat table scans for every individual employee.",
+    "spaceTimeTradeoff": "Window MAX computes company ceilings without reducing row cardinality.",
+    "interviewerExpectation": "Window function MAX() OVER (PARTITION BY company_id) combined with CASE tax arithmetic."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH CompanyMax AS (\n    SELECT company_id, employee_id, employee_name, salary,\n           MAX(salary) OVER (PARTITION BY company_id) AS max_sal\n    FROM Salaries\n)\nSELECT company_id, employee_id, employee_name,\n       ROUND(salary * (1 - CASE\n           WHEN max_sal < 1000 THEN 0.00\n           WHEN max_sal <= 10000 THEN 0.24\n           ELSE 0.49\n       END)) AS salary\nFROM CompanyMax;",
+      "approach": "Window MAX Partition with Tiered Tax Rounding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH CompanyMax AS (\n    SELECT company_id, employee_id, employee_name, salary,\n           MAX(salary) OVER (PARTITION BY company_id) AS max_sal\n    FROM Salaries\n)\nSELECT company_id, employee_id, employee_name,\n       ROUND(salary * (1 - CASE\n           WHEN max_sal < 1000 THEN 0.00\n           WHEN max_sal <= 10000 THEN 0.24\n           ELSE 0.49\n       END)) AS salary\nFROM CompanyMax;",
+      "approach": "PostgreSQL Window Function Salary Tax Adjustment",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef calculate_salaries(salaries: pd.DataFrame) -> pd.DataFrame:\n    salaries['max_sal'] = salaries.groupby('company_id')['salary'].transform('max')\n    def get_tax(max_s):\n        if max_s < 1000: return 0.0\n        if max_s <= 10000: return 0.24\n        return 0.49\n    salaries['tax'] = salaries['max_sal'].apply(get_tax)\n    salaries['salary'] = (salaries['salary'] * (1 - salaries['tax'])).round()\n    return salaries[['company_id', 'employee_id', 'employee_name', 'salary']]",
+      "approach": "Pandas Transform Max and Round",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

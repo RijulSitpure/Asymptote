@@ -1,0 +1,72 @@
+{
+  "slug": "total-sales-amount-by-year",
+  "number": 1384,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Static Calendar Year Series",
+      "text": "Sales spans cover years 2018, 2019, and 2020. Construct or join against these three calendar years."
+    },
+    {
+      "level": 2,
+      "title": "Date Overlap Computation",
+      "text": "The active sales duration in year Y is datediff(least(period_end, concat(Y, \"-12-31\")), greatest(period_start, concat(Y, \"-01-01\"))) + 1."
+    },
+    {
+      "level": 3,
+      "title": "Revenue Aggregation by Year",
+      "text": "Multiply overlapping days by average_daily_revenue where period_start <= concat(Y, \"-12-31\") and period_end >= concat(Y, \"-01-01\")."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RECURSIVE Years AS (\n    SELECT 2018 AS report_year\n    UNION ALL\n    SELECT report_year + 1 FROM Years WHERE report_year < 2020\n)\nSELECT p.product_id,\n       p.product_name,\n       CAST(y.report_year AS CHAR) AS report_year,\n       (DATEDIFF(\n           LEAST(s.period_end, DATE(CONCAT(y.report_year, '-12-31'))),\n           GREATEST(s.period_start, DATE(CONCAT(y.report_year, '-01-01')))\n       ) + 1) * s.average_daily_revenue AS total_amount\nFROM Sales s\nJOIN Product p ON s.product_id = p.product_id\nJOIN Years y ON s.period_start <= DATE(CONCAT(y.report_year, '-12-31'))\n            AND s.period_end >= DATE(CONCAT(y.report_year, '-01-01'))\nORDER BY p.product_id, report_year;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S * Y)",
+    "space": "O(S * Y)",
+    "variables": [
+      "S: sales records",
+      "Y: number of calendar years (constant 3)"
+    ],
+    "notes": "Joining sales intervals with a fixed 3-year recursive sequence executes in linear time proportional to S.",
+    "whyNaiveFails": "Attempting to expand day-by-day generates millions of intermediate rows.",
+    "spaceTimeTradeoff": "Interval clipping with LEAST and GREATEST computes overlap days in a single mathematical expression.",
+    "interviewerExpectation": "Date boundary clipping using LEAST and GREATEST functions joined against distinct years."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RECURSIVE Years AS (\n    SELECT 2018 AS report_year\n    UNION ALL\n    SELECT report_year + 1 FROM Years WHERE report_year < 2020\n)\nSELECT p.product_id,\n       p.product_name,\n       CAST(y.report_year AS CHAR) AS report_year,\n       (DATEDIFF(\n           LEAST(s.period_end, DATE(CONCAT(y.report_year, '-12-31'))),\n           GREATEST(s.period_start, DATE(CONCAT(y.report_year, '-01-01')))\n       ) + 1) * s.average_daily_revenue AS total_amount\nFROM Sales s\nJOIN Product p ON s.product_id = p.product_id\nJOIN Years y ON s.period_start <= DATE(CONCAT(y.report_year, '-12-31'))\n            AND s.period_end >= DATE(CONCAT(y.report_year, '-01-01'))\nORDER BY p.product_id, report_year;",
+      "approach": "Recursive Year Sequence with Date Clamping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RECURSIVE Years AS (\n    SELECT 2018 AS report_year\n    UNION ALL\n    SELECT report_year + 1 FROM Years WHERE report_year < 2020\n)\nSELECT p.product_id,\n       p.product_name,\n       CAST(y.report_year AS TEXT) AS report_year,\n       ((LEAST(s.period_end, TO_DATE(CONCAT(y.report_year, '-12-31'), 'YYYY-MM-DD')) -\n         GREATEST(s.period_start, TO_DATE(CONCAT(y.report_year, '-01-01'), 'YYYY-MM-DD'))) + 1) * s.average_daily_revenue AS total_amount\nFROM Sales s\nJOIN Product p ON s.product_id = p.product_id\nJOIN Years y ON s.period_start <= TO_DATE(CONCAT(y.report_year, '-12-31'), 'YYYY-MM-DD')\n            AND s.period_end >= TO_DATE(CONCAT(y.report_year, '-01-01'), 'YYYY-MM-DD')\nORDER BY p.product_id, report_year;",
+      "approach": "PostgreSQL Recursive CTE with Date Subtraction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef total_sales_by_year(product: pd.DataFrame, sales: pd.DataFrame) -> pd.DataFrame:\n    rows = []\n    for _, s in sales.iterrows():\n        p_start = pd.to_datetime(s['period_start'])\n        p_end = pd.to_datetime(s['period_end'])\n        rate = s['average_daily_revenue']\n        pid = s['product_id']\n        for year in [2018, 2019, 2020]:\n            y_start = pd.to_datetime(f\"{year}-01-01\")\n            y_end = pd.to_datetime(f\"{year}-12-31\")\n            if p_start <= y_end and p_end >= y_start:\n                start = max(p_start, y_start)\n                end = min(p_end, y_end)\n                days = (end - start).days + 1\n                rows.append({'product_id': pid, 'report_year': str(year), 'total_amount': days * rate})\n    if not rows:\n        return pd.DataFrame(columns=['product_id', 'product_name', 'report_year', 'total_amount'])\n    res = pd.DataFrame(rows)\n    res = pd.merge(res, product, on='product_id')\n    return res[['product_id', 'product_name', 'report_year', 'total_amount']].sort_values(by=['product_id', 'report_year'])",
+      "approach": "Pandas Date Clamping Overlap Calculation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

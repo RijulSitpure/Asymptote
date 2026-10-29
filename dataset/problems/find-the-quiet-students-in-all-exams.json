@@ -1,0 +1,72 @@
+{
+  "slug": "find-the-quiet-students-in-all-exams",
+  "number": 1412,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Exam Extremes Identification",
+      "text": "A student is loud in an exam if their score is the maximum or minimum for that exam."
+    },
+    {
+      "level": 2,
+      "title": "Window Ranking across Exams",
+      "text": "Compute rank() over (partition by exam_id order by score asc) and desc to flag rank 1 students."
+    },
+    {
+      "level": 3,
+      "title": "Exclusion of Loud Students",
+      "text": "Select distinct students who took at least one exam and whose student_id is not in the set of loud students."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH ExamRanks AS (\n    SELECT exam_id, student_id,\n           RANK() OVER (PARTITION BY exam_id ORDER BY score ASC) AS rk_low,\n           RANK() OVER (PARTITION BY exam_id ORDER BY score DESC) AS rk_high\n    FROM Exam\n),\nLoudStudents AS (\n    SELECT DISTINCT student_id\n    FROM ExamRanks\n    WHERE rk_low = 1 OR rk_high = 1\n)\nSELECT DISTINCT s.student_id, s.student_name\nFROM Student s\nJOIN Exam e ON s.student_id = e.student_id\nWHERE s.student_id NOT IN (SELECT student_id FROM LoudStudents)\nORDER BY s.student_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(E log E + S)",
+    "space": "O(E)",
+    "variables": [
+      "E: exam records",
+      "S: student records"
+    ],
+    "notes": "Window ranking groups scores per exam in O(E log E) time followed by set exclusion.",
+    "whyNaiveFails": "Correlated subqueries per student and exam cause repeated max and min evaluations across all exams.",
+    "spaceTimeTradeoff": "Computing ascending and descending ranks simultaneously identifies both extremes in a single CTE pass.",
+    "interviewerExpectation": "Window ranking partitioned by exam excluding loud performers from active exam participants."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH ExamRanks AS (\n    SELECT exam_id, student_id,\n           RANK() OVER (PARTITION BY exam_id ORDER BY score ASC) AS rk_low,\n           RANK() OVER (PARTITION BY exam_id ORDER BY score DESC) AS rk_high\n    FROM Exam\n),\nLoudStudents AS (\n    SELECT DISTINCT student_id\n    FROM ExamRanks\n    WHERE rk_low = 1 OR rk_high = 1\n)\nSELECT DISTINCT s.student_id, s.student_name\nFROM Student s\nJOIN Exam e ON s.student_id = e.student_id\nWHERE s.student_id NOT IN (SELECT student_id FROM LoudStudents)\nORDER BY s.student_id;",
+      "approach": "Bidirectional Window Ranking and Loud Exclusion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH ExamRanks AS (\n    SELECT exam_id, student_id,\n           RANK() OVER (PARTITION BY exam_id ORDER BY score ASC) AS rk_low,\n           RANK() OVER (PARTITION BY exam_id ORDER BY score DESC) AS rk_high\n    FROM Exam\n),\nLoudStudents AS (\n    SELECT DISTINCT student_id\n    FROM ExamRanks\n    WHERE rk_low = 1 OR rk_high = 1\n)\nSELECT DISTINCT s.student_id, s.student_name\nFROM Student s\nJOIN Exam e ON s.student_id = e.student_id\nWHERE s.student_id NOT IN (SELECT student_id FROM LoudStudents)\nORDER BY s.student_id;",
+      "approach": "PostgreSQL Window Ranking Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_quiet_students(student: pd.DataFrame, exam: pd.DataFrame) -> pd.DataFrame:\n    if exam.empty:\n        return pd.DataFrame(columns=['student_id', 'student_name'])\n    exam['min_score'] = exam.groupby('exam_id')['score'].transform('min')\n    exam['max_score'] = exam.groupby('exam_id')['score'].transform('max')\n    loud_ids = set(exam[(exam['score'] == exam['min_score']) | (exam['score'] == exam['max_score'])]['student_id'])\n    active_ids = set(exam['student_id'])\n    quiet_ids = active_ids - loud_ids\n    res = student[student['student_id'].isin(quiet_ids)]\n    return res[['student_id', 'student_name']].sort_values(by='student_id')",
+      "approach": "Pandas Transform Min/Max Exclusion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

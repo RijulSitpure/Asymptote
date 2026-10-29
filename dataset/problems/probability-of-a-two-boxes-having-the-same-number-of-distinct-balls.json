@@ -1,0 +1,79 @@
+{
+  "slug": "probability-of-a-two-boxes-having-the-same-number-of-distinct-balls",
+  "number": 1467,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Color Partition State Space",
+      "text": "For each distinct color i, decide how many balls k (from 0 to balls[i]) are distributed into box 1."
+    },
+    {
+      "level": 2,
+      "title": "Multinomial Counting Weights",
+      "text": "Placing k balls into box 1 contributes comb(balls[i], k) ways to the aggregate product of configurations."
+    },
+    {
+      "level": 3,
+      "title": "Target Verification Conditions",
+      "text": "Valid terminal states must have total balls in box 1 equal to n, and distinct color counts in box 1 and box 2 equal."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport math\n\nclass Solution:\n    def getProbability(self, balls: list[int]) -> float:\n        k = len(balls)\n        n = sum(balls) // 2\n        memo = {}\n        def dfs(i, count1, d1, d2):\n            if count1 > n:\n                return 0, 0\n            if i == k:\n                if count1 == n:\n                    return (1 if d1 == d2 else 0), 1\n                return 0, 0\n            state = (i, count1, d1, d2)\n            if state in memo:\n                return memo[state]\n            valid_ways, total_ways = 0, 0\n            b = balls[i]\n            for c in range(b + 1):\n                ways = math.comb(b, c)\n                nd1 = d1 + (1 if c > 0 else 0)\n                nd2 = d2 + (1 if b - c > 0 else 0)\n                v, t = dfs(i + 1, count1 + c, nd1, nd2)\n                valid_ways += v * ways\n                total_ways += t * ways\n            memo[state] = (valid_ways, total_ways)\n            return valid_ways, total_ways\n        valid, total = dfs(0, 0, 0, 0)\n        return valid / total\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(K * N * K^2)",
+    "space": "O(K * N * K^2)",
+    "variables": [
+      "K: number of colors",
+      "N: half the total number of balls"
+    ],
+    "notes": "Memoized state captures (color index, count of balls in box 1, distinct colors in box 1, distinct colors in box 2).",
+    "whyNaiveFails": "Generating all individual ball permutations results in factorial state explosion.",
+    "spaceTimeTradeoff": "Color-wise distribution with combination weights groups identical ball permutations together.",
+    "interviewerExpectation": "DFS with multinomial coefficient counting and memoization across distinct color states."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import math\n\nclass Solution:\n    def getProbability(self, balls: list[int]) -> float:\n        k = len(balls)\n        n = sum(balls) // 2\n        memo = {}\n        def dfs(i, count1, d1, d2):\n            if count1 > n:\n                return 0, 0\n            if i == k:\n                if count1 == n:\n                    return (1 if d1 == d2 else 0), 1\n                return 0, 0\n            state = (i, count1, d1, d2)\n            if state in memo:\n                return memo[state]\n            valid_ways, total_ways = 0, 0\n            b = balls[i]\n            for c in range(b + 1):\n                ways = math.comb(b, c)\n                nd1 = d1 + (1 if c > 0 else 0)\n                nd2 = d2 + (1 if b - c > 0 else 0)\n                v, t = dfs(i + 1, count1 + c, nd1, nd2)\n                valid_ways += v * ways\n                total_ways += t * ways\n            memo[state] = (valid_ways, total_ways)\n            return valid_ways, total_ways\n        valid, total = dfs(0, 0, 0, 0)\n        return valid / total",
+      "approach": "Multinomial Memoized DFS Partition",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    double comb[9][9];\n    int n, k;\n    double memo[9][49][9][9];\n    bool vis[9][49][9][9];\n    pair<double, double> dp(int i, int c1, int d1, int d2, const vector<int>& balls) {\n        if (c1 > n) return {0.0, 0.0};\n        if (i == k) {\n            if (c1 == n) return {d1 == d2 ? 1.0 : 0.0, 1.0};\n            return {0.0, 0.0};\n        }\n        if (vis[i][c1][d1][d2]) return {memo[i][c1][d1][d2], memo[i][c1][d1][d2]};\n        double valid = 0, total = 0;\n        int b = balls[i];\n        for (int c = 0; c <= b; c++) {\n            double ways = comb[b][c];\n            int nd1 = d1 + (c > 0 ? 1 : 0);\n            int nd2 = d2 + (b - c > 0 ? 1 : 0);\n            auto [v, t] = dp(i + 1, c1 + c, nd1, nd2, balls);\n            valid += v * ways;\n            total += t * ways;\n        }\n        return {valid, total};\n    }\npublic:\n    double getProbability(vector<int>& balls) {\n        k = balls.size();\n        int totalBalls = 0;\n        for (int x : balls) totalBalls += x;\n        n = totalBalls / 2;\n        for (int i = 0; i <= 8; i++) {\n            comb[i][0] = comb[i][i] = 1.0;\n            for (int j = 1; j < i; j++) comb[i][j] = comb[i-1][j-1] + comb[i-1][j];\n        }\n        memset(vis, 0, sizeof(vis));\n        auto res = dp(0, 0, 0, 0, balls);\n        return res.first / res.second;\n    }\n};",
+      "approach": "C++ Dynamic State Memoization with Combinations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private double[][] comb = new double[9][9];\n    private int n, k;\n    private double solve(int i, int c1, int d1, int d2, int[] balls, boolean forValid) {\n        if (c1 > n) return 0.0;\n        if (i == k) {\n            if (c1 == n) return forValid ? (d1 == d2 ? 1.0 : 0.0) : 1.0;\n            return 0.0;\n        }\n        double sum = 0.0;\n        int b = balls[i];\n        for (int c = 0; c <= b; c++) {\n            double ways = comb[b][c];\n            int nd1 = d1 + (c > 0 ? 1 : 0);\n            int nd2 = d2 + (b - c > 0 ? 1 : 0);\n            sum += ways * solve(i + 1, c1 + c, nd1, nd2, balls, forValid);\n        }\n        return sum;\n    }\n    public double getProbability(int[] balls) {\n        k = balls.length;\n        int tot = 0;\n        for (int x : balls) tot += x;\n        n = tot / 2;\n        for (int i = 0; i <= 8; i++) {\n            comb[i][0] = comb[i][i] = 1.0;\n            for (int j = 1; j < i; j++) comb[i][j] = comb[i - 1][j - 1] + comb[i - 1][j];\n        }\n        double valid = solve(0, 0, 0, 0, balls, true);\n        double total = solve(0, 0, 0, 0, balls, false);\n        return valid / total;\n    }\n}",
+      "approach": "Java Combinatorial Branching Evaluation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var getProbability = function(balls) {\n    const k = balls.length;\n    const totalBalls = balls.reduce((a, b) => a + b, 0);\n    const n = Math.floor(totalBalls / 2);\n    const comb = Array.from({ length: 9 }, () => Array(9).fill(0));\n    for (let i = 0; i <= 8; i++) {\n        comb[i][0] = comb[i][i] = 1;\n        for (let j = 1; j < i; j++) comb[i][j] = comb[i - 1][j - 1] + comb[i - 1][j];\n    }\n    const memo = new Map();\n    function dfs(i, c1, d1, d2) {\n        if (c1 > n) return [0, 0];\n        if (i === k) {\n            if (c1 === n) return [d1 === d2 ? 1 : 0, 1];\n            return [0, 0];\n        }\n        const key = `${i},${c1},${d1},${d2}`;\n        if (memo.has(key)) return memo.get(key);\n        let valid = 0, total = 0;\n        const b = balls[i];\n        for (let c = 0; c <= b; c++) {\n            const ways = comb[b][c];\n            const nd1 = d1 + (c > 0 ? 1 : 0);\n            const nd2 = d2 + (b - c > 0 ? 1 : 0);\n            const [v, t] = dfs(i + 1, c1 + c, nd1, nd2);\n            valid += v * ways;\n            total += t * ways;\n        }\n        const res = [valid, total];\n        memo.set(key, res);\n        return res;\n    }\n    const [v, t] = dfs(0, 0, 0, 0);\n    return v / t;\n};",
+      "approach": "JavaScript Combination Memoized Partition",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
