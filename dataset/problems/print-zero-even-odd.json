@@ -1,0 +1,71 @@
+{
+  "slug": "print-zero-even-odd",
+  "number": 1116,
+  "category": "Concurrency",
+  "patterns": [
+    "ordering-signals"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Alternating Print Coordination",
+      "text": "Three concurrent threads must emit a strictly ordered sequence: zero followed alternately by odd and even integers up to N. How can signaling primitives coordinate the exact order of execution?"
+    },
+    {
+      "level": 2,
+      "title": "Signaling Triad Formulation",
+      "text": "Configure three synchronization signals: one initialized to grant immediate execution to the zero emitter, and two initialized in waiting states for odd and even emitters."
+    },
+    {
+      "level": 3,
+      "title": "State Transition Logic",
+      "text": "After emitting zero for step i, unblock the odd emitter if i is odd, or the even emitter if i is even. Once the non-zero integer is printed, return control back to the zero emitter for the next cycle."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport threading\n\nclass ZeroEvenOdd:\n    def __init__(self, n: int):\n        self.n = n\n        self.sem_zero = threading.Semaphore(1)\n        self.sem_odd = threading.Semaphore(0)\n        self.sem_even = threading.Semaphore(0)\n\n    def zero(self, printNumber: 'Callable[[int], None]') -> None:\n        for i in range(1, self.n + 1):\n            self.sem_zero.acquire()\n            printNumber(0)\n            if i % 2 == 1:\n                self.sem_odd.release()\n            else:\n                self.sem_even.release()\n\n    def even(self, printNumber: 'Callable[[int], None]') -> None:\n        for i in range(2, self.n + 1, 2):\n            self.sem_even.acquire()\n            printNumber(i)\n            self.sem_zero.release()\n\n    def odd(self, printNumber: 'Callable[[int], None]') -> None:\n        for i in range(1, self.n + 1, 2):\n            self.sem_odd.acquire()\n            printNumber(i)\n            self.sem_zero.release()\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(1)",
+    "variables": [
+      "N: target integer limit"
+    ],
+    "notes": "Executes 2N total thread context switches and emits each integer in strict alternating sequence.",
+    "whyNaiveFails": "Unsynchronized loops or spinning on atomic variables wastes CPU cycles through busy waiting and causes race conditions.",
+    "spaceTimeTradeoff": "Constant space for three synchronization primitives provides deterministic ordering without auxiliary buffers.",
+    "interviewerExpectation": "Clean hand-off signaling between zero and alternating number threads with proper loop bounds for odd and even terminations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import threading\n\nclass ZeroEvenOdd:\n    def __init__(self, n: int):\n        self.n = n\n        self.sem_zero = threading.Semaphore(1)\n        self.sem_odd = threading.Semaphore(0)\n        self.sem_even = threading.Semaphore(0)\n\n    def zero(self, printNumber: 'Callable[[int], None]') -> None:\n        for i in range(1, self.n + 1):\n            self.sem_zero.acquire()\n            printNumber(0)\n            if i % 2 == 1:\n                self.sem_odd.release()\n            else:\n                self.sem_even.release()\n\n    def even(self, printNumber: 'Callable[[int], None]') -> None:\n        for i in range(2, self.n + 1, 2):\n            self.sem_even.acquire()\n            printNumber(i)\n            self.sem_zero.release()\n\n    def odd(self, printNumber: 'Callable[[int], None]') -> None:\n        for i in range(1, self.n + 1, 2):\n            self.sem_odd.acquire()\n            printNumber(i)\n            self.sem_zero.release()",
+      "approach": "Three-way semaphore coordination",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <semaphore.h>\n#include <functional>\n\nusing namespace std;\n\nclass ZeroEvenOdd {\nprivate:\n    int n;\n    sem_t sem_zero, sem_odd, sem_even;\n\npublic:\n    ZeroEvenOdd(int n) : n(n) {\n        sem_init(&sem_zero, 0, 1);\n        sem_init(&sem_odd, 0, 0);\n        sem_init(&sem_even, 0, 0);\n    }\n\n    void zero(function<void(int)> printNumber) {\n        for (int i = 1; i <= n; ++i) {\n            sem_wait(&sem_zero);\n            printNumber(0);\n            if (i % 2 == 1) sem_post(&sem_odd);\n            else sem_post(&sem_even);\n        }\n    }\n\n    void even(function<void(int)> printNumber) {\n        for (int i = 2; i <= n; i += 2) {\n            sem_wait(&sem_even);\n            printNumber(i);\n            sem_post(&sem_zero);\n        }\n    }\n\n    void odd(function<void(int)> printNumber) {\n        for (int i = 1; i <= n; i += 2) {\n            sem_wait(&sem_odd);\n            printNumber(i);\n            sem_post(&sem_zero);\n        }\n    }\n};",
+      "approach": "Three-way semaphore coordination",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.concurrent.Semaphore;\nimport java.util.function.IntConsumer;\n\nclass ZeroEvenOdd {\n    private int n;\n    private Semaphore semZero = new Semaphore(1);\n    private Semaphore semOdd = new Semaphore(0);\n    private Semaphore semEven = new Semaphore(0);\n\n    public ZeroEvenOdd(int n) {\n        this.n = n;\n    }\n\n    public void zero(IntConsumer printNumber) throws InterruptedException {\n        for (int i = 1; i <= n; i++) {\n            semZero.acquire();\n            printNumber.accept(0);\n            if (i % 2 == 1) {\n                semOdd.release();\n            } else {\n                semEven.release();\n            }\n        }\n    }\n\n    public void even(IntConsumer printNumber) throws InterruptedException {\n        for (int i = 2; i <= n; i += 2) {\n            semEven.acquire();\n            printNumber.accept(i);\n            semZero.release();\n        }\n    }\n\n    public void odd(IntConsumer printNumber) throws InterruptedException {\n        for (int i = 1; i <= n; i += 2) {\n            semOdd.acquire();\n            printNumber.accept(i);\n            semZero.release();\n        }\n    }\n}",
+      "approach": "Three-way semaphore coordination",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

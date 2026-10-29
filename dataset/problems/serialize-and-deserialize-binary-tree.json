@@ -1,0 +1,78 @@
+{
+  "slug": "serialize-and-deserialize-binary-tree",
+  "number": 297,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Preorder Stream Framing with Null Sentinels",
+      "text": "A binary tree can be uniquely reconstructed from a single traversal sequence if null child pointers are explicitly marked with sentinel symbols."
+    },
+    {
+      "level": 2,
+      "title": "Recursive Preorder Encoding",
+      "text": "Traverse root, left child, right child. Emit the node value followed by a delimiter, or emit a sentinel symbol like \"N\" whenever a null reference is reached."
+    },
+    {
+      "level": 3,
+      "title": "Iterator-Based Tree Reconstruction",
+      "text": "Split the serialized string by delimiter into a token iterator. For each token, if it equals \"N\", return None; otherwise construct a node and recursively build left and right subtrees."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Codec:\n    def serialize(self, root):\n        vals = []\n        def dfs(node):\n            if not node:\n                vals.append(\"N\")\n                return\n            vals.append(str(node.val))\n            dfs(node.left)\n            dfs(node.right)\n        dfs(root)\n        return \",\".join(vals)\n\n    def deserialize(self, data):\n        vals = iter(data.split(\",\"))\n        def dfs():\n            val = next(vals)\n            if val == \"N\":\n                return None\n            node = TreeNode(int(val))\n            node.left = dfs()\n            node.right = dfs()\n            return node\n        return dfs()\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) for serialize and deserialize",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in binary tree (0 <= N <= 10^4)"
+    ],
+    "notes": "Visits each node and null pointer exactly once during serialization and deserialization.",
+    "whyNaiveFails": "Reconstruction from inorder + preorder traversals without null markers fails when node values contain duplicates.",
+    "spaceTimeTradeoff": "Explicit null sentinels allow unique linear tree reconstruction in O(N) memory.",
+    "interviewerExpectation": "Handling negative values, empty trees, and recursion depth limits."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Codec:\n    def serialize(self, root):\n        vals = []\n        def dfs(node):\n            if not node:\n                vals.append(\"N\")\n                return\n            vals.append(str(node.val))\n            dfs(node.left)\n            dfs(node.right)\n        dfs(root)\n        return \",\".join(vals)\n\n    def deserialize(self, data):\n        vals = iter(data.split(\",\"))\n        def dfs():\n            val = next(vals)\n            if val == \"N\":\n                return None\n            node = TreeNode(int(val))\n            node.left = dfs()\n            node.right = dfs()\n            return node\n        return dfs()",
+      "approach": "Preorder depth-first traversal with null sentinel tokens",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Codec {\nprivate:\n    void serializeDfs(TreeNode* node, ostringstream& out) {\n        if (!node) {\n            out << \"N,\";\n            return;\n        }\n        out << node->val << \",\";\n        serializeDfs(node->left, out);\n        serializeDfs(node->right, out);\n    }\n\n    TreeNode* deserializeDfs(istringstream& in) {\n        string val;\n        if (!getline(in, val, ',')) return nullptr;\n        if (val == \"N\") return nullptr;\n        TreeNode* node = new TreeNode(stoi(val));\n        node->left = deserializeDfs(in);\n        node->right = deserializeDfs(in);\n        return node;\n    }\n\npublic:\n    string serialize(TreeNode* root) {\n        ostringstream out;\n        serializeDfs(root, out);\n        return out.str();\n    }\n\n    TreeNode* deserialize(string data) {\n        istringstream in(data);\n        return deserializeDfs(in);\n    }\n};",
+      "approach": "Preorder stringstream serialization with sentinel markers",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Arrays;\nimport java.util.Iterator;\n\npublic class Codec {\n    public String serialize(TreeNode root) {\n        StringBuilder sb = new StringBuilder();\n        serializeDfs(root, sb);\n        return sb.toString();\n    }\n\n    private void serializeDfs(TreeNode node, StringBuilder sb) {\n        if (node == null) {\n            sb.append(\"N,\");\n            return;\n        }\n        sb.append(node.val).append(',');\n        serializeDfs(node.left, sb);\n        serializeDfs(node.right, sb);\n    }\n\n    public TreeNode deserialize(String data) {\n        Iterator<String> it = Arrays.asList(data.split(\",\")).iterator();\n        return deserializeDfs(it);\n    }\n\n    private TreeNode deserializeDfs(Iterator<String> it) {\n        if (!it.hasNext()) return null;\n        String val = it.next();\n        if (val.equals(\"N\")) return null;\n        TreeNode node = new TreeNode(Integer.parseInt(val));\n        node.left = deserializeDfs(it);\n        node.right = deserializeDfs(it);\n        return node;\n    }\n}",
+      "approach": "Preorder traversal with sentinel tokens",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var serialize = function(root) {\n    const vals = [];\n    const dfs = (node) => {\n        if (!node) {\n            vals.push(\"N\");\n            return;\n        }\n        vals.push(String(node.val));\n        dfs(node.left);\n        dfs(node.right);\n    };\n    dfs(root);\n    return vals.join(\",\");\n};\n\nvar deserialize = function(data) {\n    const vals = data.split(\",\");\n    let idx = 0;\n    const dfs = () => {\n        if (idx >= vals.length || vals[idx] === \"N\") {\n            idx++;\n            return null;\n        }\n        const node = new TreeNode(Number(vals[idx++]));\n        node.left = dfs();\n        node.right = dfs();\n        return node;\n    };\n    return dfs();\n};",
+      "approach": "Preorder array serialization with sentinel tokens",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

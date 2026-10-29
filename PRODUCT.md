@@ -34,7 +34,7 @@ A free, 100% serverless, local-first, privacy-respecting alternative to LeetCode
 ## Capabilities and Constraints
 
 - **Capabilities:**
-  - **1,570+ Curated Problems & 99 Algorithmic Patterns:** Structured across 5 master tiers (Foundations, Core DSA, Advanced Dynamic Programming, Graph Theory, and Specialized Topics).
+  - **1,600+ Curated Problems & 99 Algorithmic Patterns:** Structured across 5 master tiers (Foundations, Core DSA, Advanced Dynamic Programming, Graph Theory, and Specialized Topics).
   - **Multi-Language Blueprints:** Python, C++, Java, JavaScript, Go, and Rust support across blueprints and implementation hints.
   - **Constraint-Derived Target Big-O Analyzer:** Automatic deduction of time/space complexity budgets derived from constraints against the 10⁸ ops/sec CPU threshold.
   - **4-Tier Socratic Progressive Hint Ladder:** Spoilers unlocked sequentially with clear warnings.

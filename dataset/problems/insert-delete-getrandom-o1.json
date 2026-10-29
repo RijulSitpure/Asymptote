@@ -1,0 +1,78 @@
+{
+  "slug": "insert-delete-getrandom-o1",
+  "number": 380,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Constant-Time Random Sampling and Removal",
+      "text": "Generating an element with equal probability in constant time requires contiguous array indexing, while O(1) membership checks require index mapping. How can swapping to the back enable constant-time removal from an array?"
+    },
+    {
+      "level": 2,
+      "title": "Dynamic Array with Index Dictionary",
+      "text": "Pair a dynamic array storing values with a dictionary mapping val to its current index in the array. Insert appends to the array and records the index."
+    },
+    {
+      "level": 3,
+      "title": "Swap with Last Element on Deletion",
+      "text": "To delete val in O(1) time without shifting elements, retrieve its index, overwrite it with the array last element, update the moved element index in the dictionary, and pop from the back."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport random\n\nclass RandomizedSet:\n    def __init__(self):\n        self.nums = []\n        self.idx_map = {}\n\n    def insert(self, val: int) -> bool:\n        if val in self.idx_map:\n            return False\n        self.idx_map[val] = len(self.nums)\n        self.nums.append(val)\n        return True\n\n    def remove(self, val: int) -> bool:\n        if val not in self.idx_map:\n            return False\n        idx = self.idx_map[val]\n        last_val = self.nums[-1]\n        self.nums[idx] = last_val\n        self.idx_map[last_val] = idx\n        self.nums.pop()\n        del self.idx_map[val]\n        return True\n\n    def getRandom(self) -> int:\n        return random.choice(self.nums)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1) average for insert, remove, and getRandom",
+    "space": "O(N)",
+    "variables": [
+      "N: number of elements currently stored in the set"
+    ],
+    "notes": "Swap-with-last element technique turns O(N) array shift deletions into O(1) pop operations.",
+    "whyNaiveFails": "Array removal costs O(N) due to element shifting; hash sets do not support uniform random index sampling in O(1) without arrays.",
+    "spaceTimeTradeoff": "Dual array + dictionary storage coordinates O(1) indexed sampling and O(1) lookups.",
+    "interviewerExpectation": "Handling removal when the element to delete is already the last element in the array without corrupting dictionary state."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import random\n\nclass RandomizedSet:\n    def __init__(self):\n        self.nums = []\n        self.idx_map = {}\n\n    def insert(self, val: int) -> bool:\n        if val in self.idx_map:\n            return False\n        self.idx_map[val] = len(self.nums)\n        self.nums.append(val)\n        return True\n\n    def remove(self, val: int) -> bool:\n        if val not in self.idx_map:\n            return False\n        idx = self.idx_map[val]\n        last_val = self.nums[-1]\n        self.nums[idx] = last_val\n        self.idx_map[last_val] = idx\n        self.nums.pop()\n        del self.idx_map[val]\n        return True\n\n    def getRandom(self) -> int:\n        return random.choice(self.nums)",
+      "approach": "Array + hash map with swap-to-back O(1) deletion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class RandomizedSet {\nprivate:\n    vector<int> nums;\n    unordered_map<int, int> idx_map;\n\npublic:\n    RandomizedSet() {}\n\n    bool insert(int val) {\n        if (idx_map.count(val)) return false;\n        idx_map[val] = nums.size();\n        nums.push_back(val);\n        return true;\n    }\n\n    bool remove(int val) {\n        if (!idx_map.count(val)) return false;\n        int idx = idx_map[val];\n        int lastVal = nums.back();\n        nums[idx] = lastVal;\n        idx_map[lastVal] = idx;\n        nums.pop_back();\n        idx_map.erase(val);\n        return true;\n    }\n\n    int getRandom() {\n        return nums[rand() % nums.size()];\n    }\n};",
+      "approach": "Vector and unordered_map with swap-to-back deletion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass RandomizedSet {\n    private final List<Integer> nums = new ArrayList<>();\n    private final Map<Integer, Integer> idxMap = new HashMap<>();\n    private final Random rand = new Random();\n\n    public RandomizedSet() {}\n\n    public boolean insert(int val) {\n        if (idxMap.containsKey(val)) return false;\n        idxMap.put(val, nums.size());\n        nums.add(val);\n        return true;\n    }\n\n    public boolean remove(int val) {\n        if (!idxMap.containsKey(val)) return false;\n        int idx = idxMap.get(val);\n        int lastVal = nums.get(nums.size() - 1);\n        nums.set(idx, lastVal);\n        idxMap.put(lastVal, idx);\n        nums.remove(nums.size() - 1);\n        idxMap.remove(val);\n        return true;\n    }\n\n    public int getRandom() {\n        return nums.get(rand.nextInt(nums.size()));\n    }\n}",
+      "approach": "ArrayList with HashMap and swap-to-back removal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var RandomizedSet = function() {\n    this.nums = [];\n    this.idxMap = new Map();\n};\n\nRandomizedSet.prototype.insert = function(val) {\n    if (this.idxMap.has(val)) return false;\n    this.idxMap.set(val, this.nums.length);\n    this.nums.push(val);\n    return true;\n};\n\nRandomizedSet.prototype.remove = function(val) {\n    if (!this.idxMap.has(val)) return false;\n    const idx = this.idxMap.get(val);\n    const lastVal = this.nums[this.nums.length - 1];\n    this.nums[idx] = lastVal;\n    this.idxMap.set(lastVal, idx);\n    this.nums.pop();\n    this.idxMap.delete(val);\n    return true;\n};\n\nRandomizedSet.prototype.getRandom = function() {\n    const randIdx = Math.floor(Math.random() * this.nums.length);\n    return this.nums[randIdx];\n};",
+      "approach": "Array and Map with swap-to-back deletion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

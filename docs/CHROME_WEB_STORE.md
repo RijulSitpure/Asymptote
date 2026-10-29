@@ -45,7 +45,7 @@ Online judges enforce a strict CPU execution budget (~10⁸ operations per secon
 🧠 On-Device Gemini Nano AI
 Powered by Chrome's native window.ai Prompt API for zero-latency, private, and offline conversational tutoring. Your code and prompts never leave your browser.
 
-🧭 1,570+ Curated Problems & 99 Algorithmic Archetypes
+🧭 1,600+ Curated Problems & 99 Algorithmic Archetypes
 Deep pattern coverage across all 6 LeetCode domains:
 • Algorithms (Monotonic Stack, Layered Graph DP, Bitmask BFS, Interval DP, Binary Lifting)
 • Database SQL (Window Functions, CTEs, Self-Joins)

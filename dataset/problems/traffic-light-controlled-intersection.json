@@ -1,0 +1,71 @@
+{
+  "slug": "traffic-light-controlled-intersection",
+  "number": 1279,
+  "category": "Concurrency",
+  "patterns": [
+    "resource-allocation"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Single Direction Road Mutual Exclusion",
+      "text": "Cars arrive randomly at an intersection connecting Road 1 and Road 2. Cars traveling on the current green road may proceed immediately. What synchronization primitive protects light switching?"
+    },
+    {
+      "level": 2,
+      "title": "Active Green Road State Guard",
+      "text": "Maintain an integer variable recording the currently active green road. Protect light checks and signal changes with a mutual exclusion lock."
+    },
+    {
+      "level": 3,
+      "title": "Conditional Signal Switch and Car Passage",
+      "text": "When a car arrives from roadId, acquire the lock. If roadId differs from current green road, invoke changeGreen() and update the state variable. Then invoke crossCar() and release the lock."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport threading\n\nclass TrafficLight:\n    def __init__(self):\n        self.green_road = 1\n        self.lock = threading.Lock()\n\n    def carArrived(\n        self,\n        carId: int,\n        roadId: int,\n        direction: int,\n        changeGreen: 'Callable[[], None]',\n        crossCar: 'Callable[[], None]'\n    ) -> None:\n        with self.lock:\n            if self.green_road != roadId:\n                self.green_road = roadId\n                changeGreen()\n            crossCar()\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1)",
+    "space": "O(1)",
+    "variables": [
+      "N: number of arriving cars"
+    ],
+    "notes": "Each car arrival processes light state checking and crossing within a constant time critical section.",
+    "whyNaiveFails": "Unsynchronized direction changes cause multiple cars from intersecting roads to enter simultaneously.",
+    "spaceTimeTradeoff": "Requires only a single lock and integer state variable.",
+    "interviewerExpectation": "Simple serializing lock ensuring thread-safe road direction transitions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import threading\n\nclass TrafficLight:\n    def __init__(self):\n        self.green_road = 1\n        self.lock = threading.Lock()\n\n    def carArrived(\n        self,\n        carId: int,\n        roadId: int,\n        direction: int,\n        changeGreen: 'Callable[[], None]',\n        crossCar: 'Callable[[], None]'\n    ) -> None:\n        with self.lock:\n            if self.green_road != roadId:\n                self.green_road = roadId\n                changeGreen()\n            crossCar()",
+      "approach": "Single-lock stateful road direction serialization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <mutex>\n#include <functional>\n\nusing namespace std;\n\nclass TrafficLight {\nprivate:\n    int greenRoad = 1;\n    mutex mtx;\n\npublic:\n    TrafficLight() {}\n\n    void carArrived(\n        int carId,\n        int roadId,\n        int direction,\n        function<void()> changeGreen,\n        function<void()> crossCar\n    ) {\n        lock_guard<mutex> lock(mtx);\n        if (greenRoad != roadId) {\n            greenRoad = roadId;\n            changeGreen();\n        }\n        crossCar();\n    }\n};",
+      "approach": "Mutex-guarded direction switching",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class TrafficLight {\n    private int greenRoad = 1;\n\n    public TrafficLight() {}\n\n    public synchronized void carArrived(\n        int carId,\n        int roadId,\n        int direction,\n        Runnable changeGreen,\n        Runnable crossCar\n    ) {\n        if (greenRoad != roadId) {\n            greenRoad = roadId;\n            changeGreen.run();\n        }\n        crossCar.run();\n    }\n}",
+      "approach": "Synchronized method controlling road direction state",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

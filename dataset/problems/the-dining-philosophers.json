@@ -1,0 +1,71 @@
+{
+  "slug": "the-dining-philosophers",
+  "number": 1226,
+  "category": "Concurrency",
+  "patterns": [
+    "deadlock-avoidance"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Resource Hierarchy or Capacity Restriction",
+      "text": "Five philosophers seated around a circular table share adjacent forks. If all five pick up their left fork simultaneously, a circular deadlock occurs. What resource constraint prevents deadlocks?"
+    },
+    {
+      "level": 2,
+      "title": "Limiting Concurrency to 4 Eaters",
+      "text": "Allowing at most four philosophers to attempt eating at any moment guarantees by the pigeonhole principle that at least one philosopher can claim both forks and finish eating."
+    },
+    {
+      "level": 3,
+      "title": "Semaphore Guard and Fork Locks",
+      "text": "Acquire an eater semaphore initialized to 4. Then acquire both adjacent fork locks, perform eating actions, release the fork locks, and release the eater semaphore."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport threading\n\nclass DiningPhilosophers:\n    def __init__(self):\n        self.forks = [threading.Lock() for _ in range(5)]\n        self.limit = threading.Semaphore(4)\n\n    def wantsToEat(self,\n                   philosopher: int,\n                   pickLeftFork: 'Callable[[], None]',\n                   pickRightFork: 'Callable[[], None]',\n                   eat: 'Callable[[], None]',\n                   putLeftFork: 'Callable[[], None]',\n                   putRightFork: 'Callable[[], None]') -> None:\n        left = philosopher\n        right = (philosopher + 1) % 5\n\n        with self.limit:\n            with self.forks[left]:\n                with self.forks[right]:\n                    pickLeftFork()\n                    pickRightFork()\n                    eat()\n                    putLeftFork()\n                    putRightFork()\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1)",
+    "space": "O(1)",
+    "variables": [
+      "Five philosophers and five forks"
+    ],
+    "notes": "Each meal involves acquiring bounded synchronization locks in constant time.",
+    "whyNaiveFails": "Symmetric lock acquisition without limiting eaters creates a circular wait condition leading to deadlock.",
+    "spaceTimeTradeoff": "Constant auxiliary storage for 5 fork locks and 1 counting semaphore.",
+    "interviewerExpectation": "Formal explanation of how the 4-eater limit or asymmetric fork ordering breaks Coffman deadlock conditions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import threading\n\nclass DiningPhilosophers:\n    def __init__(self):\n        self.forks = [threading.Lock() for _ in range(5)]\n        self.limit = threading.Semaphore(4)\n\n    def wantsToEat(self,\n                   philosopher: int,\n                   pickLeftFork: 'Callable[[], None]',\n                   pickRightFork: 'Callable[[], None]',\n                   eat: 'Callable[[], None]',\n                   putLeftFork: 'Callable[[], None]',\n                   putRightFork: 'Callable[[], None]') -> None:\n        left = philosopher\n        right = (philosopher + 1) % 5\n\n        with self.limit:\n            with self.forks[left]:\n                with self.forks[right]:\n                    pickLeftFork()\n                    pickRightFork()\n                    eat()\n                    putLeftFork()\n                    putRightFork()",
+      "approach": "Deadlock avoidance via 4-eater capacity limit",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <mutex>\n#include <semaphore.h>\n#include <functional>\n\nusing namespace std;\n\nclass DiningPhilosophers {\nprivate:\n    mutex forks[5];\n    sem_t limit;\n\npublic:\n    DiningPhilosophers() {\n        sem_init(&limit, 0, 4);\n    }\n\n    void wantsToEat(int philosopher,\n                    function<void()> pickLeftFork,\n                    function<void()> pickRightFork,\n                    function<void()> eat,\n                    function<void()> putLeftFork,\n                    function<void()> putRightFork) {\n        int left = philosopher;\n        int right = (philosopher + 1) % 5;\n\n        sem_wait(&limit);\n        lock_guard<mutex> lk1(forks[min(left, right)]);\n        lock_guard<mutex> lk2(forks[max(left, right)]);\n\n        pickLeftFork();\n        pickRightFork();\n        eat();\n        putLeftFork();\n        putRightFork();\n\n        sem_post(&limit);\n    }\n};",
+      "approach": "Resource hierarchy with semaphore limiter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.concurrent.Semaphore;\nimport java.util.concurrent.locks.ReentrantLock;\n\nclass DiningPhilosophers {\n    private final ReentrantLock[] forks = new ReentrantLock[5];\n    private final Semaphore limit = new Semaphore(4);\n\n    public DiningPhilosophers() {\n        for (int i = 0; i < 5; i++) {\n            forks[i] = new ReentrantLock();\n        }\n    }\n\n    public void wantsToEat(int philosopher,\n                           Runnable pickLeftFork,\n                           Runnable pickRightFork,\n                           Runnable eat,\n                           Runnable putLeftFork,\n                           Runnable putRightFork) throws InterruptedException {\n        int left = philosopher;\n        int right = (philosopher + 1) % 5;\n\n        limit.acquire();\n        forks[left].lock();\n        forks[right].lock();\n        try {\n            pickLeftFork.run();\n            pickRightFork.run();\n            eat.run();\n            putLeftFork.run();\n            putRightFork.run();\n        } finally {\n            forks[right].unlock();\n            forks[left].unlock();\n            limit.release();\n        }\n    }\n}",
+      "approach": "Deadlock avoidance using Semaphore capacity bound",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

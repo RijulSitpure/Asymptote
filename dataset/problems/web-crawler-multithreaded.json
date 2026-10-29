@@ -1,0 +1,72 @@
+{
+  "slug": "web-crawler-multithreaded",
+  "number": 1242,
+  "category": "Concurrency",
+  "patterns": [
+    "mutual-exclusion"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Domain-Scoped Graph Traversal",
+      "text": "Crawling web pages concurrently requires expanding unvisited hyperlinks under the same host name. How do you prevent multiple worker threads from re-fetching duplicate pages?"
+    },
+    {
+      "level": 2,
+      "title": "Synchronized Visited Set and Worker Pool",
+      "text": "Protect the visited address collection with a mutual exclusion lock. Parse the hostname once from startUrl and submit discovered same-host links to a thread pool."
+    },
+    {
+      "level": 3,
+      "title": "Threaded Work Completion Coordination",
+      "text": "Use concurrent futures or a task counter with a condition variable. When all submitted worker tasks complete and no active workers remain, finalize and return the visited list."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport threading\nfrom concurrent.futures import ThreadPoolExecutor\nfrom urllib.parse import urlparse\n\nclass Solution:\n    def crawl(self, startUrl: str, htmlParser: 'HtmlParser') -> list[str]:\n        hostname = urlparse(startUrl).netloc\n        visited = {startUrl}\n        lock = threading.Lock()\n\n        def get_same_host_urls(url):\n            links = htmlParser.getUrls(url)\n            new_links = []\n            for link in links:\n                if urlparse(link).netloc == hostname:\n                    with lock:\n                        if link not in visited:\n                            visited.add(link)\n                            new_links.append(link)\n            return new_links\n\n        with ThreadPoolExecutor(max_workers=16) as executor:\n            queue = [startUrl]\n            while queue:\n                futures = [executor.submit(get_same_host_urls, url) for url in queue]\n                queue = []\n                for f in futures:\n                    queue.extend(f.result())\n\n        return list(visited)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V)",
+    "variables": [
+      "V: number of unique reachable same-host URLs",
+      "E: total hyperlinks traversed"
+    ],
+    "notes": "Parallel breadth-first expansion across worker threads synchronized by URL uniqueness checks.",
+    "whyNaiveFails": "Sequential fetching is bottlenecked by network latency, while unsynchronized concurrent sets suffer race conditions and cycle loops.",
+    "spaceTimeTradeoff": "Visited set requires O(V) space to prevent redundant network fetches.",
+    "interviewerExpectation": "Accurate hostname extraction using URL parsing and thread-safe visited set synchronization."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import threading\nfrom concurrent.futures import ThreadPoolExecutor\nfrom urllib.parse import urlparse\n\nclass Solution:\n    def crawl(self, startUrl: str, htmlParser: 'HtmlParser') -> list[str]:\n        hostname = urlparse(startUrl).netloc\n        visited = {startUrl}\n        lock = threading.Lock()\n\n        def get_same_host_urls(url):\n            links = htmlParser.getUrls(url)\n            new_links = []\n            for link in links:\n                if urlparse(link).netloc == hostname:\n                    with lock:\n                        if link not in visited:\n                            visited.add(link)\n                            new_links.append(link)\n            return new_links\n\n        with ThreadPoolExecutor(max_workers=16) as executor:\n            queue = [startUrl]\n            while queue:\n                futures = [executor.submit(get_same_host_urls, url) for url in queue]\n                queue = []\n                for f in futures:\n                    queue.extend(f.result())\n\n        return list(visited)",
+      "approach": "ThreadPoolExecutor breadth-first search with synchronized visited set",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <string>\n#include <unordered_set>\n#include <mutex>\n#include <queue>\n#include <thread>\n#include <condition_variable>\n\nusing namespace std;\n\nclass Solution {\nprivate:\n    string getHostname(const string& url) {\n        size_t start = url.find(\"http://\");\n        if (start != string::npos) start += 7;\n        else {\n            start = url.find(\"https://\");\n            if (start != string::npos) start += 8;\n            else start = 0;\n        }\n        size_t end = url.find('/', start);\n        return (end == string::npos) ? url.substr(start) : url.substr(start, end - start);\n    }\n\npublic:\n    vector<string> crawl(string startUrl, HtmlParser htmlParser) {\n        string hostname = getHostname(startUrl);\n        unordered_set<string> visited;\n        queue<string> q;\n        mutex mtx;\n        condition_variable cv;\n        int activeTasks = 0;\n\n        visited.insert(startUrl);\n        q.push(startUrl);\n\n        auto worker = [&]() {\n            while (true) {\n                string url;\n                {\n                    unique_lock<mutex> lock(mtx);\n                    while (q.empty() && activeTasks > 0) {\n                        cv.wait(lock);\n                    }\n                    if (q.empty() && activeTasks == 0) return;\n                    url = q.front();\n                    q.pop();\n                    activeTasks++;\n                }\n\n                vector<string> nextUrls = htmlParser.getUrls(url);\n                {\n                    unique_lock<mutex> lock(mtx);\n                    for (const string& next : nextUrls) {\n                        if (getHostname(next) == hostname && !visited.count(next)) {\n                            visited.insert(next);\n                            q.push(next);\n                        }\n                    }\n                    activeTasks--;\n                    cv.notify_all();\n                }\n            }\n        };\n\n        const int numWorkers = 8;\n        vector<thread> threads;\n        for (int i = 0; i < numWorkers; ++i) {\n            threads.emplace_back(worker);\n        }\n        for (auto& t : threads) {\n            t.join();\n        }\n\n        return vector<string>(visited.begin(), visited.end());\n    }\n};",
+      "approach": "Thread pool worker queue with active task counter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.net.URI;\nimport java.util.*;\nimport java.util.concurrent.*;\n\nclass Solution {\n    public List<String> crawl(String startUrl, HtmlParser htmlParser) {\n        String hostname = URI.create(startUrl).getHost();\n        Set<String> visited = ConcurrentHashMap.newKeySet();\n        visited.add(startUrl);\n\n        ExecutorService executor = Executors.newFixedThreadPool(16);\n        List<String> current = Collections.singletonList(startUrl);\n\n        while (!current.isEmpty()) {\n            List<Future<List<String>>> futures = new ArrayList<>();\n            for (String url : current) {\n                futures.add(executor.submit(() -> {\n                    List<String> links = htmlParser.getUrls(url);\n                    List<String> valid = new ArrayList<>();\n                    for (String link : links) {\n                        if (hostname.equals(URI.create(link).getHost())) {\n                            if (visited.add(link)) {\n                                valid.add(link);\n                            }\n                        }\n                    }\n                    return valid;\n                }));\n            }\n\n            List<String> nextLevel = new ArrayList<>();\n            for (Future<List<String>> f : futures) {\n                try {\n                    nextLevel.addAll(f.get());\n                } catch (Exception ignored) {}\n            }\n            current = nextLevel;\n        }\n\n        executor.shutdown();\n        return new ArrayList<>(visited);\n    }\n}",
+      "approach": "ConcurrentHashMap key set with ExecutorService level batches",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

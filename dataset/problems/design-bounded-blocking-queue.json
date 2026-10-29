@@ -1,0 +1,71 @@
+{
+  "slug": "design-bounded-blocking-queue",
+  "number": 1188,
+  "category": "Concurrency",
+  "patterns": [
+    "producer-consumer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Capacity-Bounded Buffer Synchronization",
+      "text": "A fixed-capacity buffer must block producer threads when internal storage is full and block consumer threads when storage is empty. How do condition monitors coordinate capacity states?"
+    },
+    {
+      "level": 2,
+      "title": "Dual Condition Formulation",
+      "text": "Guard the internal buffer with a mutual exclusion lock. Use condition variables to notify awaiting consumers when an element arrives and notify awaiting producers when a slot frees up."
+    },
+    {
+      "level": 3,
+      "title": "While Loop Invariant Check",
+      "text": "Always check queue fullness and emptiness inside while loops before proceeding to defend against spurious wakeups. Signal the counterpart condition after modifying queue state."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport threading\nfrom collections import deque\n\nclass BoundedBlockingQueue:\n    def __init__(self, capacity: int):\n        self.capacity = capacity\n        self.queue = deque()\n        self.lock = threading.Lock()\n        self.not_full = threading.Condition(self.lock)\n        self.not_empty = threading.Condition(self.lock)\n\n    def enqueue(self, element: int) -> None:\n        with self.not_full:\n            while len(self.queue) >= self.capacity:\n                self.not_full.wait()\n            self.queue.append(element)\n            self.not_empty.notify()\n\n    def dequeue(self) -> int:\n        with self.not_empty:\n            while len(self.queue) == 0:\n                self.not_empty.wait()\n            val = self.queue.popleft()\n            self.not_full.notify()\n            return val\n\n    def size(self) -> int:\n        with self.lock:\n            return len(self.queue)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1)",
+    "space": "O(C)",
+    "variables": [
+      "C: capacity limit of the bounded queue"
+    ],
+    "notes": "Enqueue and dequeue operations perform amortized O(1) buffer mutations under condition synchronization.",
+    "whyNaiveFails": "Unsynchronized collections result in lost updates, race conditions on length calculations, and deadlocks.",
+    "spaceTimeTradeoff": "Memory bounded strictly by capacity C prevents unbounded heap exhaustion under rapid producers.",
+    "interviewerExpectation": "Use of while loop guards around wait() calls to guard against spurious wakeups."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import threading\nfrom collections import deque\n\nclass BoundedBlockingQueue:\n    def __init__(self, capacity: int):\n        self.capacity = capacity\n        self.queue = deque()\n        self.lock = threading.Lock()\n        self.not_full = threading.Condition(self.lock)\n        self.not_empty = threading.Condition(self.lock)\n\n    def enqueue(self, element: int) -> None:\n        with self.not_full:\n            while len(self.queue) >= self.capacity:\n                self.not_full.wait()\n            self.queue.append(element)\n            self.not_empty.notify()\n\n    def dequeue(self) -> int:\n        with self.not_empty:\n            while len(self.queue) == 0:\n                self.not_empty.wait()\n            val = self.queue.popleft()\n            self.not_full.notify()\n            return val\n\n    def size(self) -> int:\n        with self.lock:\n            return len(self.queue)",
+      "approach": "Monitor pattern with dual condition variables",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <queue>\n#include <mutex>\n#include <condition_variable>\n\nusing namespace std;\n\nclass BoundedBlockingQueue {\nprivate:\n    int capacity;\n    queue<int> q;\n    mutex mtx;\n    condition_variable not_full;\n    condition_variable not_empty;\n\npublic:\n    BoundedBlockingQueue(int capacity) : capacity(capacity) {}\n\n    void enqueue(int element) {\n        unique_lock<mutex> lock(mtx);\n        not_full.wait(lock, [this]() { return (int)q.size() < capacity; });\n        q.push(element);\n        not_empty.notify_one();\n    }\n\n    int dequeue() {\n        unique_lock<mutex> lock(mtx);\n        not_empty.wait(lock, [this]() { return !q.empty(); });\n        int val = q.front();\n        q.pop();\n        not_full.notify_one();\n        return val;\n    }\n\n    int size() {\n        unique_lock<mutex> lock(mtx);\n        return q.size();\n    }\n};",
+      "approach": "Monitor pattern with condition_variable",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayDeque;\nimport java.util.Deque;\nimport java.util.concurrent.locks.Condition;\nimport java.util.concurrent.locks.ReentrantLock;\n\nclass BoundedBlockingQueue {\n    private final int capacity;\n    private final Deque<Integer> queue = new ArrayDeque<>();\n    private final ReentrantLock lock = new ReentrantLock();\n    private final Condition notFull = lock.newCondition();\n    private final Condition notEmpty = lock.newCondition();\n\n    public BoundedBlockingQueue(int capacity) {\n        this.capacity = capacity;\n    }\n\n    public void enqueue(int element) throws InterruptedException {\n        lock.lock();\n        try {\n            while (queue.size() == capacity) {\n                notFull.await();\n            }\n            queue.addLast(element);\n            notEmpty.signal();\n        } finally {\n            lock.unlock();\n        }\n    }\n\n    public int dequeue() throws InterruptedException {\n        lock.lock();\n        try {\n            while (queue.isEmpty()) {\n                notEmpty.await();\n            }\n            int val = queue.removeFirst();\n            notFull.signal();\n            return val;\n        } finally {\n            lock.unlock();\n        }\n    }\n\n    public int size() {\n        lock.lock();\n        try {\n            return queue.size();\n        } finally {\n            lock.unlock();\n        }\n    }\n}",
+      "approach": "ReentrantLock with notFull and notEmpty conditions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

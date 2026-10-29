@@ -1,0 +1,78 @@
+{
+  "slug": "design-add-and-search-words-data-structure",
+  "number": 211,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Branching with Wildcard Matching",
+      "text": "A dictionary must support word insertion and pattern search where the dot character matches any single character. How can a prefix tree structure branching options?"
+    },
+    {
+      "level": 2,
+      "title": "Recursive Search on Wildcard Encounter",
+      "text": "Standard characters navigate directly to the matching child node. When a dot character appears, branch across all available child nodes in the current dictionary node."
+    },
+    {
+      "level": 3,
+      "title": "Depth-First Branch Exploration",
+      "text": "Define a helper function dfs(node, index). If index reaches word length, return whether node marks a terminal word. If character is a dot, iterate over all node children and return true if any path succeeds."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass WordDictionary:\n    def __init__(self):\n        self.root = {}\n\n    def addWord(self, word: str) -> None:\n        curr = self.root\n        for ch in word:\n            if ch not in curr:\n                curr[ch] = {}\n            curr = curr[ch]\n        curr['$'] = True\n\n    def search(self, word: str) -> bool:\n        def dfs(node, i):\n            if i == len(word):\n                return '$' in node\n            ch = word[i]\n            if ch == '.':\n                for k, child in node.items():\n                    if k != '$' and dfs(child, i + 1):\n                        return True\n                return False\n            if ch not in node:\n                return False\n            return dfs(node[ch], i + 1)\n        return dfs(self.root, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M) for add, O(26^M) worst-case for search with dots",
+    "space": "O(total characters inserted)",
+    "variables": [
+      "M: length of word (1 <= M <= 25)"
+    ],
+    "notes": "addWord is linear in word length. Search without dots is O(M); search with dots explores candidate branches.",
+    "whyNaiveFails": "Scanning a flat list of words with regular expressions costs O(N * M) per query and times out on 10,000 queries.",
+    "spaceTimeTradeoff": "Common prefixes share internal nodes, conserving memory across large vocabularies.",
+    "interviewerExpectation": "Clean recursive backtracking for wildcard exploration and terminal word boundary tracking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class WordDictionary:\n    def __init__(self):\n        self.root = {}\n\n    def addWord(self, word: str) -> None:\n        curr = self.root\n        for ch in word:\n            if ch not in curr:\n                curr[ch] = {}\n            curr = curr[ch]\n        curr['$'] = True\n\n    def search(self, word: str) -> bool:\n        def dfs(node, i):\n            if i == len(word):\n                return '$' in node\n            ch = word[i]\n            if ch == '.':\n                for k, child in node.items():\n                    if k != '$' and dfs(child, i + 1):\n                        return True\n                return False\n            if ch not in node:\n                return False\n            return dfs(node[ch], i + 1)\n        return dfs(self.root, 0)",
+      "approach": "Nested dictionary prefix tree with recursive wildcard search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class WordDictionary {\nprivate:\n    struct TrieNode {\n        TrieNode* children[26] = {nullptr};\n        bool isEnd = false;\n    };\n    TrieNode* root;\n\n    bool dfs(TrieNode* node, const string& word, int i) {\n        if (!node) return false;\n        if (i == (int)word.size()) return node->isEnd;\n        char ch = word[i];\n        if (ch == '.') {\n            for (int c = 0; c < 26; ++c) {\n                if (node->children[c] && dfs(node->children[c], word, i + 1)) {\n                    return true;\n                }\n            }\n            return false;\n        } else {\n            int idx = ch - 'a';\n            return dfs(node->children[idx], word, i + 1);\n        }\n    }\n\npublic:\n    WordDictionary() {\n        root = new TrieNode();\n    }\n\n    void addWord(string word) {\n        TrieNode* curr = root;\n        for (char ch : word) {\n            int idx = ch - 'a';\n            if (!curr->children[idx]) {\n                curr->children[idx] = new TrieNode();\n            }\n            curr = curr->children[idx];\n        }\n        curr->isEnd = true;\n    }\n\n    bool search(string word) {\n        return dfs(root, word, 0);\n    }\n};",
+      "approach": "Prefix tree with recursive wildcard DFS",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class WordDictionary {\n    private static class Node {\n        Node[] children = new Node[26];\n        boolean isEnd = false;\n    }\n    private final Node root = new Node();\n\n    public WordDictionary() {}\n\n    public void addWord(String word) {\n        Node curr = root;\n        for (char ch : word.toCharArray()) {\n            int idx = ch - 'a';\n            if (curr.children[idx] == null) {\n                curr.children[idx] = new Node();\n            }\n            curr = curr.children[idx];\n        }\n        curr.isEnd = true;\n    }\n\n    public boolean search(String word) {\n        return dfs(root, word, 0);\n    }\n\n    private boolean dfs(Node node, String word, int i) {\n        if (node == null) return false;\n        if (i == word.length()) return node.isEnd;\n        char ch = word.charAt(i);\n        if (ch == '.') {\n            for (Node child : node.children) {\n                if (child != null && dfs(child, word, i + 1)) return true;\n            }\n            return false;\n        }\n        return dfs(node.children[ch - 'a'], word, i + 1);\n    }\n}",
+      "approach": "Array-based Trie with recursive wildcard branch evaluation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var WordDictionary = function() {\n    this.root = {};\n};\n\nWordDictionary.prototype.addWord = function(word) {\n    let curr = this.root;\n    for (const ch of word) {\n        if (!curr[ch]) curr[ch] = {};\n        curr = curr[ch];\n    }\n    curr.isEnd = true;\n};\n\nWordDictionary.prototype.search = function(word) {\n    const dfs = (node, i) => {\n        if (i === word.length) return Boolean(node.isEnd);\n        const ch = word[i];\n        if (ch === '.') {\n            for (const key of Object.keys(node)) {\n                if (key !== 'isEnd' && dfs(node[key], i + 1)) return true;\n            }\n            return false;\n        }\n        if (!node[ch]) return false;\n        return dfs(node[ch], i + 1);\n    };\n    return dfs(this.root, 0);\n};",
+      "approach": "Object trie with recursive wildcard branch evaluation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

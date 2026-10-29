@@ -1,0 +1,71 @@
+{
+  "slug": "fizz-buzz-multithreaded",
+  "number": 1195,
+  "category": "Concurrency",
+  "patterns": [
+    "turn-taking"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Four-Way Divisibility Arbitration",
+      "text": "Four specialized threads must output words or numbers based on divisibility by 3 and 5 up to N. How can an integer state counter safely coordinate which thread is eligible to act?"
+    },
+    {
+      "level": 2,
+      "title": "Barrier or Condition Monitor",
+      "text": "Protect the current counter value with a lock and condition variable. Each thread awakens when the counter satisfies its exact divisibility condition or when the counter exceeds N."
+    },
+    {
+      "level": 3,
+      "title": "Condition Notification Loop",
+      "text": "While the current counter is at most N, wait until divisibility matches. Perform the print invocation, increment the counter, and broadcast notification to all waiting threads."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport threading\n\nclass FizzBuzz:\n    def __init__(self, n: int):\n        self.n = n\n        self.curr = 1\n        self.lock = threading.Lock()\n        self.cond = threading.Condition(self.lock)\n\n    def fizz(self, printFizz: 'Callable[[], None]') -> None:\n        while True:\n            with self.cond:\n                while self.curr <= self.n and not (self.curr % 3 == 0 and self.curr % 5 != 0):\n                    self.cond.wait()\n                if self.curr > self.n:\n                    return\n                printFizz()\n                self.curr += 1\n                self.cond.notify_all()\n\n    def buzz(self, printBuzz: 'Callable[[], None]') -> None:\n        while True:\n            with self.cond:\n                while self.curr <= self.n and not (self.curr % 5 == 0 and self.curr % 3 != 0):\n                    self.cond.wait()\n                if self.curr > self.n:\n                    return\n                printBuzz()\n                self.curr += 1\n                self.cond.notify_all()\n\n    def fizzbuzz(self, printFizzBuzz: 'Callable[[], None]') -> None:\n        while True:\n            with self.cond:\n                while self.curr <= self.n and not (self.curr % 15 == 0):\n                    self.cond.wait()\n                if self.curr > self.n:\n                    return\n                printFizzBuzz()\n                self.curr += 1\n                self.cond.notify_all()\n\n    def number(self, printNumber: 'Callable[[int], None]') -> None:\n        while True:\n            with self.cond:\n                while self.curr <= self.n and not (self.curr % 3 != 0 and self.curr % 5 != 0):\n                    self.cond.wait()\n                if self.curr > self.n:\n                    return\n                printNumber(self.curr)\n                self.curr += 1\n                self.cond.notify_all()\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(1)",
+    "variables": [
+      "N: sequence length limit"
+    ],
+    "notes": "Each number from 1 to N triggers exactly one print action with coordinated condition broadcast.",
+    "whyNaiveFails": "Four threads polling without condition synchronization create massive CPU spinning and non-deterministic interleaving.",
+    "spaceTimeTradeoff": "A single lock and condition monitor uses constant O(1) auxiliary space.",
+    "interviewerExpectation": "Correct loop exit conditions handling thread termination when counter exceeds N."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import threading\n\nclass FizzBuzz:\n    def __init__(self, n: int):\n        self.n = n\n        self.curr = 1\n        self.lock = threading.Lock()\n        self.cond = threading.Condition(self.lock)\n\n    def fizz(self, printFizz: 'Callable[[], None]') -> None:\n        while True:\n            with self.cond:\n                while self.curr <= self.n and not (self.curr % 3 == 0 and self.curr % 5 != 0):\n                    self.cond.wait()\n                if self.curr > self.n:\n                    return\n                printFizz()\n                self.curr += 1\n                self.cond.notify_all()\n\n    def buzz(self, printBuzz: 'Callable[[], None]') -> None:\n        while True:\n            with self.cond:\n                while self.curr <= self.n and not (self.curr % 5 == 0 and self.curr % 3 != 0):\n                    self.cond.wait()\n                if self.curr > self.n:\n                    return\n                printBuzz()\n                self.curr += 1\n                self.cond.notify_all()\n\n    def fizzbuzz(self, printFizzBuzz: 'Callable[[], None]') -> None:\n        while True:\n            with self.cond:\n                while self.curr <= self.n and not (self.curr % 15 == 0):\n                    self.cond.wait()\n                if self.curr > self.n:\n                    return\n                printFizzBuzz()\n                self.curr += 1\n                self.cond.notify_all()\n\n    def number(self, printNumber: 'Callable[[int], None]') -> None:\n        while True:\n            with self.cond:\n                while self.curr <= self.n and not (self.curr % 3 != 0 and self.curr % 5 != 0):\n                    self.cond.wait()\n                if self.curr > self.n:\n                    return\n                printNumber(self.curr)\n                self.curr += 1\n                self.cond.notify_all()",
+      "approach": "Condition monitor with state-based notification broadcast",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <mutex>\n#include <condition_variable>\n#include <functional>\n\nusing namespace std;\n\nclass FizzBuzz {\nprivate:\n    int n;\n    int curr = 1;\n    mutex mtx;\n    condition_variable cv;\n\npublic:\n    FizzBuzz(int n) : n(n) {}\n\n    void fizz(function<void()> printFizz) {\n        while (true) {\n            unique_lock<mutex> lock(mtx);\n            cv.wait(lock, [this]() { return curr > n || (curr % 3 == 0 && curr % 5 != 0); });\n            if (curr > n) return;\n            printFizz();\n            curr++;\n            cv.notify_all();\n        }\n    }\n\n    void buzz(function<void()> printBuzz) {\n        while (true) {\n            unique_lock<mutex> lock(mtx);\n            cv.wait(lock, [this]() { return curr > n || (curr % 5 == 0 && curr % 3 != 0); });\n            if (curr > n) return;\n            printBuzz();\n            curr++;\n            cv.notify_all();\n        }\n    }\n\n    void fizzbuzz(function<void()> printFizzBuzz) {\n        while (true) {\n            unique_lock<mutex> lock(mtx);\n            cv.wait(lock, [this]() { return curr > n || (curr % 15 == 0); });\n            if (curr > n) return;\n            printFizzBuzz();\n            curr++;\n            cv.notify_all();\n        }\n    }\n\n    void number(function<void(int)> printNumber) {\n        while (true) {\n            unique_lock<mutex> lock(mtx);\n            cv.wait(lock, [this]() { return curr > n || (curr % 3 != 0 && curr % 5 != 0); });\n            if (curr > n) return;\n            printNumber(curr);\n            curr++;\n            cv.notify_all();\n        }\n    }\n};",
+      "approach": "Condition variable predicate synchronization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.function.IntConsumer;\n\nclass FizzBuzz {\n    private int n;\n    private int curr = 1;\n\n    public FizzBuzz(int n) {\n        this.n = n;\n    }\n\n    public synchronized void fizz(Runnable printFizz) throws InterruptedException {\n        while (curr <= n) {\n            if (curr % 3 == 0 && curr % 5 != 0) {\n                printFizz.run();\n                curr++;\n                notifyAll();\n            } else {\n                wait();\n            }\n        }\n    }\n\n    public synchronized void buzz(Runnable printBuzz) throws InterruptedException {\n        while (curr <= n) {\n            if (curr % 5 == 0 && curr % 3 != 0) {\n                printBuzz.run();\n                curr++;\n                notifyAll();\n            } else {\n                wait();\n            }\n        }\n    }\n\n    public synchronized void fizzbuzz(Runnable printFizzBuzz) throws InterruptedException {\n        while (curr <= n) {\n            if (curr % 15 == 0) {\n                printFizzBuzz.run();\n                curr++;\n                notifyAll();\n            } else {\n                wait();\n            }\n        }\n    }\n\n    public synchronized void number(IntConsumer printNumber) throws InterruptedException {\n        while (curr <= n) {\n            if (curr % 3 != 0 && curr % 5 != 0) {\n                printNumber.accept(curr);\n                curr++;\n                notifyAll();\n            } else {\n                wait();\n            }\n        }\n    }\n}",
+      "approach": "Synchronized monitor with notifyAll turn-taking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}

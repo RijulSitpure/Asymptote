@@ -1,0 +1,80 @@
+{
+  "slug": "design-twitter",
+  "number": 355,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "News Feed Chronological Aggregation",
+      "text": "A user news feed must display the 10 most recent tweets posted by the user and people they follow. How can a global timestamp sequence determine chronological order across followees?"
+    },
+    {
+      "level": 2,
+      "title": "Relational Mappings and Global Timestamp Clock",
+      "text": "Map each user to a set of followees and a list of their posted tweets (storing timestamp and tweetId). Increment a global integer timestamp on each postTweet call."
+    },
+    {
+      "level": 3,
+      "title": "Bounded Top-10 Selection",
+      "text": "Gather the recent tweets of the user and all their followees. Use a sorting pass or a min-heap of size 10 to extract the 10 highest-timestamped tweets."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\nfrom collections import defaultdict\n\nclass Twitter:\n    def __init__(self):\n        self.time = 0\n        self.tweets = defaultdict(list)\n        self.following = defaultdict(set)\n\n    def postTweet(self, userId: int, tweetId: int) -> None:\n        self.time += 1\n        self.tweets[userId].append((self.time, tweetId))\n\n    def getNewsFeed(self, userId: int) -> list[int]:\n        feed_users = self.following[userId] | {userId}\n        candidates = []\n        for u in feed_users:\n            candidates.extend(self.tweets[u][-10:])\n        top10 = heapq.nlargest(10, candidates, key=lambda x: x[0])\n        return [tweetId for _, tweetId in top10]\n\n    def follow(self, followerId: int, followeeId: int) -> None:\n        self.following[followerId].add(followeeId)\n\n    def unfollow(self, followerId: int, followeeId: int) -> None:\n        self.following[followerId].discard(followeeId)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1) post/follow/unfollow, O(F * 10 log 10) for getNewsFeed",
+    "space": "O(U + T)",
+    "variables": [
+      "F: number of followees",
+      "U: unique users",
+      "T: total tweets"
+    ],
+    "notes": "Posting and following are constant time. Feed aggregation evaluates at most 10 recent tweets per followee.",
+    "whyNaiveFails": "Re-sorting all historical tweets in the system takes O(T log T) and violates SLA response times.",
+    "spaceTimeTradeoff": "Storing tweets per user allows bounded retrieval of only the most recent tweets per author.",
+    "interviewerExpectation": "Ensuring a user always sees their own tweets even without self-following, and handling unfollow idempotently."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\nfrom collections import defaultdict\n\nclass Twitter:\n    def __init__(self):\n        self.time = 0\n        self.tweets = defaultdict(list)\n        self.following = defaultdict(set)\n\n    def postTweet(self, userId: int, tweetId: int) -> None:\n        self.time += 1\n        self.tweets[userId].append((self.time, tweetId))\n\n    def getNewsFeed(self, userId: int) -> list[int]:\n        feed_users = self.following[userId] | {userId}\n        candidates = []\n        for u in feed_users:\n            candidates.extend(self.tweets[u][-10:])\n        top10 = heapq.nlargest(10, candidates, key=lambda x: x[0])\n        return [tweetId for _, tweetId in top10]\n\n    def follow(self, followerId: int, followeeId: int) -> None:\n        self.following[followerId].add(followeeId)\n\n    def unfollow(self, followerId: int, followeeId: int) -> None:\n        self.following[followerId].discard(followeeId)",
+      "approach": "Timestamped user tweet lists with bounded k-way selection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Twitter {\nprivate:\n    int time = 0;\n    unordered_map<int, vector<pair<int, int>>> tweets;\n    unordered_map<int, unordered_set<int>> following;\n\npublic:\n    Twitter() {}\n\n    void postTweet(int userId, int tweetId) {\n        tweets[userId].push_back({++time, tweetId});\n    }\n\n    vector<int> getNewsFeed(int userId) {\n        unordered_set<int> users = following[userId];\n        users.insert(userId);\n        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> minHeap;\n        for (int u : users) {\n            auto& ut = tweets[u];\n            int start = max(0, (int)ut.size() - 10);\n            for (int i = start; i < (int)ut.size(); ++i) {\n                minHeap.push(ut[i]);\n                if (minHeap.size() > 10) minHeap.pop();\n            }\n        }\n        vector<int> res;\n        while (!minHeap.empty()) {\n            res.push_back(minHeap.top().second);\n            minHeap.pop();\n        }\n        reverse(res.begin(), res.end());\n        return res;\n    }\n\n    void follow(int followerId, int followeeId) {\n        following[followerId].insert(followeeId);\n    }\n\n    void unfollow(int followerId, int followeeId) {\n        following[followerId].erase(followeeId);\n    }\n};",
+      "approach": "Hash maps with priority queue top-10 extraction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Twitter {\n    private int time = 0;\n    private final Map<Integer, List<int[]>> tweets = new HashMap<>();\n    private final Map<Integer, Set<Integer>> following = new HashMap<>();\n\n    public Twitter() {}\n\n    public void postTweet(int userId, int tweetId) {\n        tweets.computeIfAbsent(userId, k -> new ArrayList<>()).add(new int[]{++time, tweetId});\n    }\n\n    public List<Integer> getNewsFeed(int userId) {\n        Set<Integer> users = new HashSet<>(following.getOrDefault(userId, Collections.emptySet()));\n        users.add(userId);\n        PriorityQueue<int[]> minHeap = new PriorityQueue<>(Comparator.comparingInt(a -> a[0]));\n        for (int u : users) {\n            List<int[]> list = tweets.getOrDefault(u, Collections.emptyList());\n            int start = Math.max(0, list.size() - 10);\n            for (int i = start; i < list.size(); i++) {\n                minHeap.offer(list.get(i));\n                if (minHeap.size() > 10) minHeap.poll();\n            }\n        }\n        LinkedList<Integer> res = new LinkedList<>();\n        while (!minHeap.isEmpty()) {\n            res.addFirst(minHeap.poll()[1]);\n        }\n        return res;\n    }\n\n    public void follow(int followerId, int followeeId) {\n        following.computeIfAbsent(followerId, k -> new HashSet<>()).add(followeeId);\n    }\n\n    public void unfollow(int followerId, int followeeId) {\n        Set<Integer> set = following.get(followerId);\n        if (set != null) set.remove(followeeId);\n    }\n}",
+      "approach": "Priority queue with bounded top-10 retrieval",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var Twitter = function() {\n    this.time = 0;\n    this.tweets = new Map();\n    this.following = new Map();\n};\n\nTwitter.prototype.postTweet = function(userId, tweetId) {\n    if (!this.tweets.has(userId)) this.tweets.set(userId, []);\n    this.tweets.get(userId).push({ time: ++this.time, tweetId });\n};\n\nTwitter.prototype.getNewsFeed = function(userId) {\n    const users = new Set(this.following.get(userId) || []);\n    users.add(userId);\n    const candidates = [];\n    for (const u of users) {\n        const list = this.tweets.get(u) || [];\n        const start = Math.max(0, list.length - 10);\n        for (let i = start; i < list.length; i++) {\n            candidates.push(list[i]);\n        }\n    }\n    candidates.sort((a, b) => b.time - a.time);\n    return candidates.slice(0, 10).map(x => x.tweetId);\n};\n\nTwitter.prototype.follow = function(followerId, followeeId) {\n    if (!this.following.has(followerId)) this.following.set(followerId, new Set());\n    this.following.get(followerId).add(followeeId);\n};\n\nTwitter.prototype.unfollow = function(followerId, followeeId) {\n    if (this.following.has(followerId)) {\n        this.following.get(followerId).delete(followeeId);\n    }\n};",
+      "approach": "Map with candidate slice and sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z"
+}
