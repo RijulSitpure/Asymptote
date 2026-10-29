@@ -227,24 +227,34 @@ export function SyncModal({ isOpen, onClose, onSyncComplete }) {
           </div>
         </div>
 
-        {/* Footer buttons: "Close" and "Open LeetCode" */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e2e8f0]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-secondary !py-2 !px-4 !text-[14px]"
-          >
-            Close
-          </button>
+        {/* Footer buttons: Chrome Web Store link, "Close" and "Open LeetCode" */}
+        <div className="flex items-center justify-between pt-4 border-t border-[#e2e8f0]">
           <a
-            href="https://leetcode.com/problemset/"
+            href="https://chromewebstore.google.com/detail/micohhdeepmpciohinomlngdlhkpbfhh?utm_source=item-share-cb"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-primary !py-2 !px-4 !text-[14px] inline-flex items-center gap-1.5"
+            className="text-[13px] font-semibold text-[#047857] hover:text-[#065f46] inline-flex items-center gap-1.5 transition-colors"
           >
-            <span>Open LeetCode</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Get Extension ↗</span>
           </a>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-secondary !py-2 !px-4 !text-[14px]"
+            >
+              Close
+            </button>
+            <a
+              href="https://leetcode.com/problemset/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary !py-2 !px-4 !text-[14px] inline-flex items-center gap-1.5"
+            >
+              <span>Open LeetCode</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
         </div>
       </div>
     </div>

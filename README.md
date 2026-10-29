@@ -5,8 +5,9 @@
   <p><em>The Free, 100% Serverless & Local-First Alternative to LeetCode Premium's Paywalled ($35/mo) "Leet AI"</em></p>
 
   <p>
+    <a href="https://chromewebstore.google.com/detail/micohhdeepmpciohinomlngdlhkpbfhh?utm_source=item-share-cb"><img src="https://img.shields.io/badge/Chrome_Web_Store-Add_to_Chrome-blue?logo=googlechrome&logoColor=white" alt="Chrome Web Store" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
-    <a href="https://github.com/RijulSitpure/Asymptote/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/Tests-117%2F117%20Passed-brightgreen.svg" alt="Tests" /></a>
+    <a href="https://github.com/RijulSitpure/Asymptote/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/Tests-120%2F120%20Passed-brightgreen.svg" alt="Tests" /></a>
     <a href="https://github.com/RijulSitpure/Asymptote/actions/workflows/dataset.yml"><img src="https://img.shields.io/badge/Dataset-Verified%20(99%20Patterns)-emerald.svg" alt="Dataset Verified" /></a>
     <a href="https://developer.chrome.com/docs/extensions/mv3/intro/"><img src="https://img.shields.io/badge/Chrome_Extension-Manifest_V3-brightgreen.svg" alt="Chrome MV3" /></a>
     <a href="#-on-device-gemini-nano-ai"><img src="https://img.shields.io/badge/On--Device_AI-Gemini_Nano-red.svg" alt="Gemini Nano AI" /></a>
@@ -87,11 +88,11 @@ Asymptote integrates Chrome's built-in **Gemini Nano** (`window.ai` Prompt API) 
 
 ## 📦 Installation & Setup
 
-### Path 1: Chrome Web Store (Recommended)
+### Path 1: Chrome Web Store (Recommended — 1-Click Install)
 
-[![Available in the Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Available_Soon-blue?logo=googlechrome&logoColor=white)](https://github.com/RijulSitpure/Asymptote/releases)
+[![Available in the Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Add_to_Chrome-blue?logo=googlechrome&logoColor=white&style=for-the-badge)](https://chromewebstore.google.com/detail/micohhdeepmpciohinomlngdlhkpbfhh?utm_source=item-share-cb)
 
-*(Chrome Web Store submission in progress — install via Path 2 in 30 seconds!)*
+👉 **[Install Asymptote from the Chrome Web Store](https://chromewebstore.google.com/detail/micohhdeepmpciohinomlngdlhkpbfhh?utm_source=item-share-cb)** (Automatic background updates, zero manual setup).
 
 ---
 

@@ -1,5 +1,8 @@
 # Chrome Web Store Developer Dashboard Submission Guide
 
+> **Live Chrome Web Store URL:** [Asymptote on Chrome Web Store](https://chromewebstore.google.com/detail/micohhdeepmpciohinomlngdlhkpbfhh?utm_source=item-share-cb)  
+> **Extension ID:** `micohhdeepmpciohinomlngdlhkpbfhh`
+
 Copy and paste the exact fields below directly into the Google Chrome Web Store Developer Dashboard (`chrome.google.com/webstore/devcenter`).
 
 ---

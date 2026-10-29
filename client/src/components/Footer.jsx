@@ -101,6 +101,17 @@ export function Footer({ onOpenFeedback }) {
 
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <a
+                  href="https://chromewebstore.google.com/detail/micohhdeepmpciohinomlngdlhkpbfhh?utm_source=item-share-cb"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-secondary !py-1.5 !px-3 !text-[12px] flex items-center gap-1.5 hover:!border-[#10b981] hover:!text-[#047857] transition-colors"
+                  title="Install Asymptote from Chrome Web Store"
+                >
+                  <img src="./asymptote-icon-small.svg" className="w-3.5 h-3.5" alt="" />
+                  <span>Chrome Store</span>
+                </a>
+
+                <a
                   href="https://github.com/RijulSitpure/LeetCode-Pattern_Tracker"
                   target="_blank"
                   rel="noopener noreferrer"
