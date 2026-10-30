@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-ways-to-arrive-at-destination",
+  "number": 1976,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tracking Minimal Distances and Path Counts",
+      "text": "Maintain both the shortest distance dist[u] and the number of ways to reach u in that minimal time."
+    },
+    {
+      "level": 2,
+      "title": "Priority Exploration",
+      "text": "Explore nodes in order of shortest elapsed travel time from starting intersection 0."
+    },
+    {
+      "level": 3,
+      "title": "Relaxation and Combination Rules",
+      "text": "If a strictly shorter path is found, update distance and inherit ways[u]. If an equal distance is found, add ways[u] modulo 1,000,000,007."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def countPaths(self, n: int, roads: list[list[int]]) -> int:\n        MOD = 1_000_000_007\n        adj = [[] for _ in range(n)]\n        for u, v, time in roads:\n            adj[u].append((v, time))\n            adj[v].append((u, time))\n            \n        dist = [float(\"inf\")] * n\n        ways = [0] * n\n        dist[0] = 0\n        ways[0] = 1\n        \n        pq = [(0, 0)]\n        while pq:\n            d, u = heapq.heappop(pq)\n            if d > dist[u]:\n                continue\n            for v, time in adj[u]:\n                nd = d + time\n                if nd < dist[v]:\n                    dist[v] = nd\n                    ways[v] = ways[u]\n                    heapq.heappush(pq, (nd, v))\n                elif nd == dist[v]:\n                    ways[v] = (ways[v] + ways[u]) % MOD\n                    \n        return ways[n - 1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E log V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: count of intersections (up to 200)",
+      "E: count of bidirectional roads"
+    ],
+    "notes": "Modified Dijkstra tracking path frequencies alongside minimal travel duration.",
+    "whyNaiveFails": "All-paths DFS exploration traverses exponential path combinations without pruning.",
+    "spaceTimeTradeoff": "Priority heap processes each edge at most once per optimal arrival.",
+    "interviewerExpectation": "Candidate should recognize tracking path counts during Dijkstra relaxation."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass Solution:\n    def countPaths(self, n: int, roads: list[list[int]]) -> int:\n        MOD = 1_000_000_007\n        adj = [[] for _ in range(n)]\n        for u, v, time in roads:\n            adj[u].append((v, time))\n            adj[v].append((u, time))\n            \n        dist = [float(\"inf\")] * n\n        ways = [0] * n\n        dist[0] = 0\n        ways[0] = 1\n        \n        pq = [(0, 0)]\n        while pq:\n            d, u = heapq.heappop(pq)\n            if d > dist[u]:\n                continue\n            for v, time in adj[u]:\n                nd = d + time\n                if nd < dist[v]:\n                    dist[v] = nd\n                    ways[v] = ways[u]\n                    heapq.heappush(pq, (nd, v))\n                elif nd == dist[v]:\n                    ways[v] = (ways[v] + ways[u]) % MOD\n                    \n        return ways[n - 1]",
+      "approach": "Dijkstra with path counting in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int countPaths(int n, vector<vector<int>>& roads) {\n        const int MOD = 1e9 + 7;\n        vector<vector<pair<int, int>>> adj(n);\n        for (auto& r : roads) {\n            adj[r[0]].push_back({r[1], r[2]});\n            adj[r[1]].push_back({r[0], r[2]});\n        }\n        vector<long long> dist(n, LLONG_MAX);\n        vector<long long> ways(n, 0);\n        dist[0] = 0;\n        ways[0] = 1;\n        \n        priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<>> pq;\n        pq.push({0, 0});\n        \n        while (!pq.empty()) {\n            auto [d, u] = pq.top();\n            pq.pop();\n            if (d > dist[u]) continue;\n            for (auto& [v, time] : adj[u]) {\n                long long nd = d + time;\n                if (nd < dist[v]) {\n                    dist[v] = nd;\n                    ways[v] = ways[u];\n                    pq.push({nd, v});\n                } else if (nd == dist[v]) {\n                    ways[v] = (ways[v] + ways[u]) % MOD;\n                }\n            }\n        }\n        return ways[n - 1];\n    }\n};",
+      "approach": "Dijkstra with path counting in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int countPaths(int n, int[][] roads) {\n        final int MOD = 1_000_000_007;\n        java.util.List<int[]>[] adj = new java.util.ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new java.util.ArrayList<>();\n        for (int[] r : roads) {\n            adj[r[0]].add(new int[]{r[1], r[2]});\n            adj[r[1]].add(new int[]{r[0], r[2]});\n        }\n        long[] dist = new long[n];\n        long[] ways = new long[n];\n        java.util.Arrays.fill(dist, Long.MAX_VALUE);\n        dist[0] = 0;\n        ways[0] = 1;\n        \n        java.util.PriorityQueue<long[]> pq = new java.util.PriorityQueue<>((a, b) -> Long.compare(a[0], b[0]));\n        pq.offer(new long[]{0, 0});\n        \n        while (!pq.isEmpty()) {\n            long[] curr = pq.poll();\n            long d = curr[0];\n            int u = (int) curr[1];\n            if (d > dist[u]) continue;\n            for (int[] edge : adj[u]) {\n                int v = edge[0], time = edge[1];\n                long nd = d + time;\n                if (nd < dist[v]) {\n                    dist[v] = nd;\n                    ways[v] = ways[u];\n                    pq.offer(new long[]{nd, v});\n                } else if (nd == dist[v]) {\n                    ways[v] = (ways[v] + ways[u]) % MOD;\n                }\n            }\n        }\n        return (int) ways[n - 1];\n    }\n}",
+      "approach": "Dijkstra with path counting in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var countPaths = function(n, roads) {\n  const MOD = 1000000007;\n  const adj = Array.from({ length: n }, () => []);\n  for (const [u, v, time] of roads) {\n    adj[u].push([v, time]);\n    adj[v].push([u, time]);\n  }\n  const dist = new Array(n).fill(Infinity);\n  const ways = new Array(n).fill(0);\n  dist[0] = 0;\n  ways[0] = 1;\n  \n  const q = [[0, 0]];\n  while (q.length > 0) {\n    q.sort((a, b) => a[0] - b[0]);\n    const [d, u] = q.shift();\n    if (d > dist[u]) continue;\n    for (const [v, time] of adj[u]) {\n      const nd = d + time;\n      if (nd < dist[v]) {\n        dist[v] = nd;\n        ways[v] = ways[u];\n        q.push([nd, v]);\n      } else if (nd === dist[v]) {\n        ways[v] = (ways[v] + ways[u]) % MOD;\n      }\n    }\n  }\n  return ways[n - 1];\n};",
+      "approach": "Dijkstra with path counting in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

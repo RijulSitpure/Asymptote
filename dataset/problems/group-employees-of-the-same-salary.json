@@ -1,0 +1,71 @@
+{
+  "slug": "group-employees-of-the-same-salary",
+  "number": 1875,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Filtering Shared Salaries",
+      "text": "A team requires at least two employees sharing the exact same salary value."
+    },
+    {
+      "level": 2,
+      "title": "Enumerating Valid Salary Categories",
+      "text": "Filter for salaries appearing with count >= 2, and use dense_rank ordered by salary to assign team identifiers."
+    },
+    {
+      "level": 3,
+      "title": "Sorting Team Members",
+      "text": "Order the final output by team_id ascending, then employee_id ascending."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH ValidSalaries AS (\n    SELECT salary\n    FROM Employees\n    GROUP BY salary\n    HAVING COUNT(*) >= 2\n),\nEligibleEmployees AS (\n    SELECT\n        e.employee_id,\n        e.name,\n        e.salary,\n        DENSE_RANK() OVER (ORDER BY e.salary ASC) AS team_id\n    FROM Employees e\n    JOIN ValidSalaries v ON e.salary = v.salary\n)\nSELECT employee_id, name, salary, team_id\nFROM EligibleEmployees\nORDER BY team_id ASC, employee_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) window sort over filtered salary groups",
+    "space": "O(N) working memory",
+    "variables": [
+      "N: number of employees"
+    ],
+    "notes": "Grouped frequency filtering followed by dense rank window assignment.",
+    "whyNaiveFails": "Self-joins can generate unwanted duplicate employee pairs.",
+    "spaceTimeTradeoff": "Filtering invalid salaries first reduces the row count prior to window ranking.",
+    "interviewerExpectation": "Candidate should use dense_rank to assign sequential team IDs ordered by salary."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH ValidSalaries AS (\n    SELECT salary\n    FROM Employees\n    GROUP BY salary\n    HAVING COUNT(*) >= 2\n),\nEligibleEmployees AS (\n    SELECT\n        e.employee_id,\n        e.name,\n        e.salary,\n        DENSE_RANK() OVER (ORDER BY e.salary ASC) AS team_id\n    FROM Employees e\n    JOIN ValidSalaries v ON e.salary = v.salary\n)\nSELECT employee_id, name, salary, team_id\nFROM EligibleEmployees\nORDER BY team_id ASC, employee_id ASC;",
+      "approach": "DENSE_RANK over Shared Salaries in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH ValidSalaries AS (\n    SELECT salary\n    FROM Employees\n    GROUP BY salary\n    HAVING COUNT(*) >= 2\n),\nEligibleEmployees AS (\n    SELECT\n        e.employee_id,\n        e.name,\n        e.salary,\n        DENSE_RANK() OVER (ORDER BY e.salary ASC) AS team_id\n    FROM Employees e\n    JOIN ValidSalaries v ON e.salary = v.salary\n)\nSELECT employee_id, name, salary, team_id\nFROM EligibleEmployees\nORDER BY team_id ASC, employee_id ASC;",
+      "approach": "DENSE_RANK over Shared Salaries in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef group_employees(employees: pd.DataFrame) -> pd.DataFrame:\n    salary_counts = employees[\"salary\"].value_counts()\n    shared_salaries = salary_counts[salary_counts >= 2].index\n    df = employees[employees[\"salary\"].isin(shared_salaries)].copy()\n    if df.empty:\n        return pd.DataFrame(columns=[\"employee_id\", \"name\", \"salary\", \"team_id\"])\n    unique_salaries = sorted(df[\"salary\"].unique())\n    salary_to_team = {sal: i + 1 for i, sal in enumerate(unique_salaries)}\n    df[\"team_id\"] = df[\"salary\"].map(salary_to_team)\n    return df.sort_values(by=[\"team_id\", \"employee_id\"])[[\"employee_id\", \"name\", \"salary\", \"team_id\"]]",
+      "approach": "Value counts and rank mapping in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

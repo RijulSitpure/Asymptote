@@ -1,0 +1,72 @@
+{
+  "slug": "the-latest-login-in-2020",
+  "number": 1890,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Filtering Year 2020 Sessions",
+      "text": "Filter login timestamps occurring strictly within calendar year 2020."
+    },
+    {
+      "level": 2,
+      "title": "Grouping by User Identifier",
+      "text": "Group records by user_id and compute the maximum timestamp."
+    },
+    {
+      "level": 3,
+      "title": "Projecting Results with Required Column Name",
+      "text": "Rename the aggregated maximum timestamp to last_stamp in the output table."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT\n    user_id,\n    MAX(time_stamp) AS last_stamp\nFROM Logins\nWHERE time_stamp >= '2020-01-01 00:00:00'\n  AND time_stamp < '2021-01-01 00:00:00'\nGROUP BY user_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N) single pass or O(U) with index on (time_stamp, user_id)",
+    "space": "O(U) hash table for distinct users",
+    "variables": [
+      "N: total login entries",
+      "U: unique users"
+    ],
+    "notes": "Grouped aggregation with half-open timestamp range filtering.",
+    "whyNaiveFails": "YEAR(time_stamp) = 2020 prevents using standard b-tree indexes on time_stamp.",
+    "spaceTimeTradeoff": "Half-open range predicate enables index range scan.",
+    "interviewerExpectation": "Candidate should prefer sargable date bounds and use MAX aggregate."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT\n    user_id,\n    MAX(time_stamp) AS last_stamp\nFROM Logins\nWHERE time_stamp >= '2020-01-01 00:00:00'\n  AND time_stamp < '2021-01-01 00:00:00'\nGROUP BY user_id;",
+      "approach": "Index-friendly date range aggregation in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT\n    user_id,\n    MAX(time_stamp) AS last_stamp\nFROM Logins\nWHERE time_stamp >= '2020-01-01 00:00:00'\n  AND time_stamp < '2021-01-01 00:00:00'\nGROUP BY user_id;",
+      "approach": "Index-friendly date range aggregation in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef latest_login(logins: pd.DataFrame) -> pd.DataFrame:\n    logins[\"ts\"] = pd.to_datetime(logins[\"time_stamp\"])\n    l2020 = logins[(logins[\"ts\"] >= \"2020-01-01\") & (logins[\"ts\"] < \"2021-01-01\")]\n    res = l2020.groupby(\"user_id\", as_index=False)[\"time_stamp\"].max()\n    return res.rename(columns={\"time_stamp\": \"last_stamp\"})",
+      "approach": "Date filtering and groupby max in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "slug": "maximum-transaction-each-day",
+  "number": 1831,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Ranking Daily Amounts",
+      "text": "Partition transaction records by the day date and order each day transactions by amount descending."
+    },
+    {
+      "level": 2,
+      "title": "Handling Ties with Dense Ranking",
+      "text": "Use the dense_rank window function to assign rank 1 to all transactions tied for the maximum amount of that day."
+    },
+    {
+      "level": 3,
+      "title": "Filtering and Sorting Output",
+      "text": "Filter ranked records for rank 1 and sort transaction identifiers in ascending order."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Ranked AS (\n    SELECT\n        transaction_id,\n        DENSE_RANK() OVER (PARTITION BY DATE(day) ORDER BY amount DESC) AS rk\n    FROM Transactions\n)\nSELECT transaction_id\nFROM Ranked\nWHERE rk = 1\nORDER BY transaction_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) window sort over daily partition buckets",
+    "space": "O(N) working memory for window evaluation",
+    "variables": [
+      "N: count of transactions"
+    ],
+    "notes": "Window ranking partitioned by calendar day.",
+    "whyNaiveFails": "Correlated subqueries scanning the daily max per row take quadratic time.",
+    "spaceTimeTradeoff": "Window ranking processes all partitions in a single sorted pass.",
+    "interviewerExpectation": "Candidate should recognize that ties for the maximum amount must all be included using dense_rank."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Ranked AS (\n    SELECT\n        transaction_id,\n        DENSE_RANK() OVER (PARTITION BY DATE(day) ORDER BY amount DESC) AS rk\n    FROM Transactions\n)\nSELECT transaction_id\nFROM Ranked\nWHERE rk = 1\nORDER BY transaction_id ASC;",
+      "approach": "Window Ranking in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Ranked AS (\n    SELECT\n        transaction_id,\n        DENSE_RANK() OVER (PARTITION BY CAST(day AS DATE) ORDER BY amount DESC) AS rk\n    FROM Transactions\n)\nSELECT transaction_id\nFROM Ranked\nWHERE rk = 1\nORDER BY transaction_id ASC;",
+      "approach": "Window Ranking in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef max_transaction_each_day(transactions: pd.DataFrame) -> pd.DataFrame:\n    transactions[\"date\"] = pd.to_datetime(transactions[\"day\"]).dt.date\n    max_per_day = transactions.groupby(\"date\")[\"amount\"].transform(\"max\")\n    res = transactions[transactions[\"amount\"] == max_per_day][[\"transaction_id\"]]\n    return res.sort_values(by=\"transaction_id\")",
+      "approach": "Groupby transform max in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-product-of-the-length-of-two-palindromic-substrings",
+  "number": 1960,
+  "category": "Algorithms",
+  "patterns": [
+    "string-matching"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Separating Left and Right Disjoint Palindromes",
+      "text": "The two odd-length palindromes cannot overlap, dividing the string at an index boundary into a left prefix and right suffix."
+    },
+    {
+      "level": 2,
+      "title": "Manacher Algorithm for Odd Palindrome Radii",
+      "text": "Run Manacher algorithm to determine the maximal odd-length palindrome radius centered at each character in linear time."
+    },
+    {
+      "level": 3,
+      "title": "Monotonic Prefix and Suffix Maxima",
+      "text": "Calculate left[i] as the longest odd palindrome ending on or before i, and right[i] as the longest starting on or after i."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def maxProduct(self, s: str) -> int:\n        n = len(s)\n        span = [0] * n\n        l, r = 0, -1\n        for i in range(n):\n            k = 1 if i > r else min(span[l + r - i], r - i + 1)\n            while 0 <= i - k and i + k < n and s[i - k] == s[i + k]:\n                k += 1\n            span[i] = k\n            k -= 1\n            if i + k > r:\n                l = i - k\n                r = i + k\n                \n        left = [1] * n\n        right = [1] * n\n        \n        for i in range(n):\n            left[i + span[i] - 1] = max(left[i + span[i] - 1], 2 * span[i] - 1)\n            right[i - span[i] + 1] = max(right[i - span[i] + 1], 2 * span[i] - 1)\n            \n        for i in range(n - 2, -1, -1):\n            left[i] = max(left[i], left[i + 1] - 2)\n        for i in range(1, n):\n            left[i] = max(left[i], left[i - 1])\n            \n        for i in range(1, n):\n            right[i] = max(right[i], right[i - 1] - 2)\n        for i in range(n - 2, -1, -1):\n            right[i] = max(right[i], right[i + 1])\n            \n        ans = 0\n        for i in range(n - 1):\n            ans = max(ans, left[i] * right[i + 1])\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of string s"
+    ],
+    "notes": "Manacher algorithm with linear propagation of prefix and suffix maximum lengths.",
+    "whyNaiveFails": "Expanding around centers independently takes O(N^2) time, which times out for N = 100,000.",
+    "spaceTimeTradeoff": "Manacher algorithm computes all palindrome radii in linear time.",
+    "interviewerExpectation": "Candidate should utilize Manacher algorithm and propagate lengths to boundaries."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maxProduct(self, s: str) -> int:\n        n = len(s)\n        span = [0] * n\n        l, r = 0, -1\n        for i in range(n):\n            k = 1 if i > r else min(span[l + r - i], r - i + 1)\n            while 0 <= i - k and i + k < n and s[i - k] == s[i + k]:\n                k += 1\n            span[i] = k\n            k -= 1\n            if i + k > r:\n                l = i - k\n                r = i + k\n                \n        left = [1] * n\n        right = [1] * n\n        \n        for i in range(n):\n            left[i + span[i] - 1] = max(left[i + span[i] - 1], 2 * span[i] - 1)\n            right[i - span[i] + 1] = max(right[i - span[i] + 1], 2 * span[i] - 1)\n            \n        for i in range(n - 2, -1, -1):\n            left[i] = max(left[i], left[i + 1] - 2)\n        for i in range(1, n):\n            left[i] = max(left[i], left[i - 1])\n            \n        for i in range(1, n):\n            right[i] = max(right[i], right[i - 1] - 2)\n        for i in range(n - 2, -1, -1):\n            right[i] = max(right[i], right[i + 1])\n            \n        ans = 0\n        for i in range(n - 1):\n            ans = max(ans, left[i] * right[i + 1])\n        return ans",
+      "approach": "Manacher algorithm with boundary propagation in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    long long maxProduct(string s) {\n        int n = s.size();\n        vector<int> span(n, 0);\n        int l = 0, r = -1;\n        for (int i = 0; i < n; i++) {\n            int k = (i > r) ? 1 : min(span[l + r - i], r - i + 1);\n            while (i - k >= 0 && i + k < n && s[i - k] == s[i + k]) k++;\n            span[i] = k;\n            k--;\n            if (i + k > r) {\n                l = i - k;\n                r = i + k;\n            }\n        }\n        vector<long long> left(n, 1), right(n, 1);\n        for (int i = 0; i < n; i++) {\n            left[i + span[i] - 1] = max(left[i + span[i] - 1], (long long)(2 * span[i] - 1));\n            right[i - span[i] + 1] = max(right[i - span[i] + 1], (long long)(2 * span[i] - 1));\n        }\n        for (int i = n - 2; i >= 0; i--) left[i] = max(left[i], left[i + 1] - 2);\n        for (int i = 1; i < n; i++) left[i] = max(left[i], left[i - 1]);\n        for (int i = 1; i < n; i++) right[i] = max(right[i], right[i - 1] - 2);\n        for (int i = n - 2; i >= 0; i--) right[i] = max(right[i], right[i + 1]);\n        \n        long long ans = 0;\n        for (int i = 0; i < n - 1; i++) {\n            ans = max(ans, left[i] * right[i + 1]);\n        }\n        return ans;\n    }\n};",
+      "approach": "Manacher algorithm with boundary propagation in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public long maxProduct(String s) {\n        int n = s.length();\n        int[] span = new int[n];\n        int l = 0, r = -1;\n        for (int i = 0; i < n; i++) {\n            int k = (i > r) ? 1 : Math.min(span[l + r - i], r - i + 1);\n            while (i - k >= 0 && i + k < n && s.charAt(i - k) == s.charAt(i + k)) k++;\n            span[i] = k;\n            k--;\n            if (i + k > r) {\n                l = i - k;\n                r = i + k;\n            }\n        }\n        long[] left = new long[n];\n        long[] right = new long[n];\n        java.util.Arrays.fill(left, 1);\n        java.util.Arrays.fill(right, 1);\n        for (int i = 0; i < n; i++) {\n            left[i + span[i] - 1] = Math.max(left[i + span[i] - 1], 2 * span[i] - 1);\n            right[i - span[i] + 1] = Math.max(right[i - span[i] + 1], 2 * span[i] - 1);\n        }\n        for (int i = n - 2; i >= 0; i--) left[i] = Math.max(left[i], left[i + 1] - 2);\n        for (int i = 1; i < n; i++) left[i] = Math.max(left[i], left[i - 1]);\n        for (int i = 1; i < n; i++) right[i] = Math.max(right[i], right[i - 1] - 2);\n        for (int i = n - 2; i >= 0; i--) right[i] = Math.max(right[i], right[i + 1]);\n        \n        long ans = 0;\n        for (int i = 0; i < n - 1; i++) {\n            ans = Math.max(ans, left[i] * right[i + 1]);\n        }\n        return ans;\n    }\n}",
+      "approach": "Manacher algorithm with boundary propagation in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxProduct = function(s) {\n  const n = s.length;\n  const span = new Array(n).fill(0);\n  let l = 0, r = -1;\n  for (let i = 0; i < n; i++) {\n    let k = (i > r) ? 1 : Math.min(span[l + r - i], r - i + 1);\n    while (i - k >= 0 && i + k < n && s[i - k] === s[i + k]) k++;\n    span[i] = k;\n    k--;\n    if (i + k > r) {\n      l = i - k;\n      r = i + k;\n    }\n  }\n  const left = new Array(n).fill(1);\n  const right = new Array(n).fill(1);\n  for (let i = 0; i < n; i++) {\n    left[i + span[i] - 1] = Math.max(left[i + span[i] - 1], 2 * span[i] - 1);\n    right[i - span[i] + 1] = Math.max(right[i - span[i] + 1], 2 * span[i] - 1);\n  }\n  for (let i = n - 2; i >= 0; i--) left[i] = Math.max(left[i], left[i + 1] - 2);\n  for (let i = 1; i < n; i++) left[i] = Math.max(left[i], left[i - 1]);\n  for (let i = 1; i < n; i++) right[i] = Math.max(right[i], right[i - 1] - 2);\n  for (let i = n - 2; i >= 0; i--) right[i] = Math.max(right[i], right[i + 1]);\n  \n  let ans = 0;\n  for (let i = 0; i < n - 1; i++) {\n    ans = Math.max(ans, left[i] * right[i + 1]);\n  }\n  return ans;\n};",
+      "approach": "Manacher algorithm with boundary propagation in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

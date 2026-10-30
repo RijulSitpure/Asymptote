@@ -1,0 +1,72 @@
+{
+  "slug": "league-statistics",
+  "number": 1841,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Unifying Home and Away Match Perspectives",
+      "text": "Unify match records from both the home team and away team perspectives using union all."
+    },
+    {
+      "level": 2,
+      "title": "Calculating Match Points and Goal Stats",
+      "text": "Assign 3 points for a win, 1 point for a tie, and 0 points for a loss. Track goals scored and goals conceded."
+    },
+    {
+      "level": 3,
+      "title": "Aggregating and Sorting League Table",
+      "text": "Join with the teams table to include teams with played matches, computing matches played, points, and goal differences."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH AllMatches AS (\n    SELECT home_team_id AS team_id, home_team_goals AS goals_for, away_team_goals AS goals_against,\n           CASE WHEN home_team_goals > away_team_goals THEN 3 WHEN home_team_goals = away_team_goals THEN 1 ELSE 0 END AS points\n    FROM Matches\n    UNION ALL\n    SELECT away_team_id AS team_id, away_team_goals AS goals_for, home_team_goals AS goals_against,\n           CASE WHEN away_team_goals > home_team_goals THEN 3 WHEN away_team_goals = home_team_goals THEN 1 ELSE 0 END AS points\n    FROM Matches\n)\nSELECT\n    t.team_name,\n    COUNT(*) AS matches_played,\n    SUM(m.points) AS points,\n    SUM(m.goals_for) AS goal_for,\n    SUM(m.goals_against) AS goal_against,\n    SUM(m.goals_for) - SUM(m.goals_against) AS goal_diff\nFROM Teams t\nJOIN AllMatches m ON t.team_id = m.team_id\nGROUP BY t.team_id, t.team_name\nORDER BY points DESC, goal_diff DESC, t.team_name ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(M + T log T) where M is matches and T is teams",
+    "space": "O(M) for unpivoted match buffer",
+    "variables": [
+      "M: count of matches",
+      "T: count of teams"
+    ],
+    "notes": "Unpivot of fixture results followed by team aggregation and composite ranking.",
+    "whyNaiveFails": "Separate queries for home and away records require complex full outer join merging.",
+    "spaceTimeTradeoff": "UNION ALL streaming doubles match rows without sorting overhead.",
+    "interviewerExpectation": "Candidate should unpivot matches symmetrically and order by points, goal difference, and team name."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH AllMatches AS (\n    SELECT home_team_id AS team_id, home_team_goals AS goals_for, away_team_goals AS goals_against,\n           CASE WHEN home_team_goals > away_team_goals THEN 3 WHEN home_team_goals = away_team_goals THEN 1 ELSE 0 END AS points\n    FROM Matches\n    UNION ALL\n    SELECT away_team_id AS team_id, away_team_goals AS goals_for, home_team_goals AS goals_against,\n           CASE WHEN away_team_goals > home_team_goals THEN 3 WHEN away_team_goals = home_team_goals THEN 1 ELSE 0 END AS points\n    FROM Matches\n)\nSELECT\n    t.team_name,\n    COUNT(*) AS matches_played,\n    SUM(m.points) AS points,\n    SUM(m.goals_for) AS goal_for,\n    SUM(m.goals_against) AS goal_against,\n    SUM(m.goals_for) - SUM(m.goals_against) AS goal_diff\nFROM Teams t\nJOIN AllMatches m ON t.team_id = m.team_id\nGROUP BY t.team_id, t.team_name\nORDER BY points DESC, goal_diff DESC, t.team_name ASC;",
+      "approach": "Unpivot and Grouped Aggregation in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH AllMatches AS (\n    SELECT home_team_id AS team_id, home_team_goals AS goals_for, away_team_goals AS goals_against,\n           CASE WHEN home_team_goals > away_team_goals THEN 3 WHEN home_team_goals = away_team_goals THEN 1 ELSE 0 END AS points\n    FROM Matches\n    UNION ALL\n    SELECT away_team_id AS team_id, away_team_goals AS goals_for, home_team_goals AS goals_against,\n           CASE WHEN away_team_goals > home_team_goals THEN 3 WHEN away_team_goals = home_team_goals THEN 1 ELSE 0 END AS points\n    FROM Matches\n)\nSELECT\n    t.team_name,\n    COUNT(*) AS matches_played,\n    SUM(m.points) AS points,\n    SUM(m.goals_for) AS goal_for,\n    SUM(m.goals_against) AS goal_against,\n    SUM(m.goals_for) - SUM(m.goals_against) AS goal_diff\nFROM Teams t\nJOIN AllMatches m ON t.team_id = m.team_id\nGROUP BY t.team_id, t.team_name\nORDER BY points DESC, goal_diff DESC, t.team_name ASC;",
+      "approach": "Unpivot and Grouped Aggregation in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef league_statistics(teams: pd.DataFrame, matches: pd.DataFrame) -> pd.DataFrame:\n    home = matches[[\"home_team_id\", \"home_team_goals\", \"away_team_goals\"]].copy()\n    home.columns = [\"team_id\", \"goals_for\", \"goals_against\"]\n    home[\"points\"] = home.apply(lambda r: 3 if r[\"goals_for\"] > r[\"goals_against\"] else (1 if r[\"goals_for\"] == r[\"goals_against\"] else 0), axis=1)\n    \n    away = matches[[\"away_team_id\", \"away_team_goals\", \"home_team_goals\"]].copy()\n    away.columns = [\"team_id\", \"goals_for\", \"goals_against\"]\n    away[\"points\"] = away.apply(lambda r: 3 if r[\"goals_for\"] > r[\"goals_against\"] else (1 if r[\"goals_for\"] == r[\"goals_against\"] else 0), axis=1)\n    \n    all_m = pd.concat([home, away])\n    agg = all_m.groupby(\"team_id\").agg(\n        matches_played=(\"points\", \"count\"),\n        points=(\"points\", \"sum\"),\n        goal_for=(\"goals_for\", \"sum\"),\n        goal_against=(\"goals_against\", \"sum\")\n    ).reset_index()\n    agg[\"goal_diff\"] = agg[\"goal_for\"] - agg[\"goal_against\"]\n    \n    res = teams.merge(agg, on=\"team_id\")\n    res = res.sort_values(by=[\"points\", \"goal_diff\", \"team_name\"], ascending=[False, False, True])\n    return res[[\"team_name\", \"matches_played\", \"points\", \"goal_for\", \"goal_against\", \"goal_diff\"]]",
+      "approach": "Concat unpivot and groupby aggregation in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

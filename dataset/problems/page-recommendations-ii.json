@@ -1,0 +1,72 @@
+{
+  "slug": "page-recommendations-ii",
+  "number": 1892,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bidirectional Friendship Mapping",
+      "text": "Unify friendships in both directions so that each user lists all their immediate friends."
+    },
+    {
+      "level": 2,
+      "title": "Joining Pages Liked by Friends",
+      "text": "Join each user friends with the likes table to discover pages endorsed by their social network."
+    },
+    {
+      "level": 3,
+      "title": "Excluding Self-Liked Pages",
+      "text": "Filter out pages the user has already liked themselves, grouping by user and page to count friend likes."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH AllFriends AS (\n    SELECT user1_id AS user_id, user2_id AS friend_id FROM Friendship\n    UNION\n    SELECT user2_id AS user_id, user1_id AS friend_id FROM Friendship\n)\nSELECT\n    f.user_id,\n    l.page_id,\n    COUNT(DISTINCT f.friend_id) AS friends_likes\nFROM AllFriends f\nJOIN Likes l ON f.friend_id = l.user_id\nLEFT JOIN Likes self ON f.user_id = self.user_id AND l.page_id = self.page_id\nWHERE self.page_id IS NULL\nGROUP BY f.user_id, l.page_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(F * L) where F is friendships and L is likes",
+    "space": "O(F + L) working memory for join buckets",
+    "variables": [
+      "F: bidirectional friendships count",
+      "L: page likes count"
+    ],
+    "notes": "Symmetric friendship graph traversal with anti-join exclusion.",
+    "whyNaiveFails": "Correlated subqueries per user page recommendation recompute friendship sets repeatedly.",
+    "spaceTimeTradeoff": "UNION deduplication ensures bidirectional friendship symmetry.",
+    "interviewerExpectation": "Candidate should handle bidirectional graph representation and exclude already-liked pages."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH AllFriends AS (\n    SELECT user1_id AS user_id, user2_id AS friend_id FROM Friendship\n    UNION\n    SELECT user2_id AS user_id, user1_id AS friend_id FROM Friendship\n)\nSELECT\n    f.user_id,\n    l.page_id,\n    COUNT(DISTINCT f.friend_id) AS friends_likes\nFROM AllFriends f\nJOIN Likes l ON f.friend_id = l.user_id\nLEFT JOIN Likes self ON f.user_id = self.user_id AND l.page_id = self.page_id\nWHERE self.page_id IS NULL\nGROUP BY f.user_id, l.page_id;",
+      "approach": "Bidirectional Friendship Join and Anti-Join in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH AllFriends AS (\n    SELECT user1_id AS user_id, user2_id AS friend_id FROM Friendship\n    UNION\n    SELECT user2_id AS user_id, user1_id AS friend_id FROM Friendship\n)\nSELECT\n    f.user_id,\n    l.page_id,\n    COUNT(DISTINCT f.friend_id) AS friends_likes\nFROM AllFriends f\nJOIN Likes l ON f.friend_id = l.user_id\nLEFT JOIN Likes self ON f.user_id = self.user_id AND l.page_id = self.page_id\nWHERE self.page_id IS NULL\nGROUP BY f.user_id, l.page_id;",
+      "approach": "Bidirectional Friendship Join and Anti-Join in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef recommend_page(friendship: pd.DataFrame, likes: pd.DataFrame) -> pd.DataFrame:\n    f1 = friendship.rename(columns={\"user1_id\": \"user_id\", \"user2_id\": \"friend_id\"})\n    f2 = friendship.rename(columns={\"user2_id\": \"user_id\", \"user1_id\": \"friend_id\"})\n    all_friends = pd.concat([f1, f2]).drop_duplicates()\n    \n    friend_likes = all_friends.merge(likes, left_on=\"friend_id\", right_on=\"user_id\", suffixes=(\"\", \"_like\"))\n    self_likes = set(zip(likes[\"user_id\"], likes[\"page_id\"]))\n    \n    recs = friend_likes[~friend_likes.apply(lambda r: (r[\"user_id\"], r[\"page_id\"]) in self_likes, axis=1)]\n    res = recs.groupby([\"user_id\", \"page_id\"])[\"friend_id\"].nunique().reset_index()\n    return res.rename(columns={\"friend_id\": \"friends_likes\"})",
+      "approach": "Symmetric merge and self-like exclusion in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

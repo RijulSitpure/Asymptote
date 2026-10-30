@@ -1,0 +1,72 @@
+{
+  "slug": "orders-with-maximum-quantity-above-average",
+  "number": 1867,
+  "category": "Database",
+  "patterns": [
+    "having-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Calculating Order-Level Aggregates",
+      "text": "For each order_id, calculate both the average quantity and the maximum quantity across all line items."
+    },
+    {
+      "level": 2,
+      "title": "Determining the Global Maximum Average",
+      "text": "Find the largest average quantity across all orders in the entire table."
+    },
+    {
+      "level": 3,
+      "title": "Comparing Maximum Quantity Against Global Benchmark",
+      "text": "Filter orders whose maximum line item quantity is strictly greater than the global maximum average."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT order_id\nFROM OrdersDetails\nGROUP BY order_id\nHAVING MAX(quantity) > (\n    SELECT MAX(avg_qty)\n    FROM (\n        SELECT AVG(quantity) AS avg_qty\n        FROM OrdersDetails\n        GROUP BY order_id\n    ) t\n);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N) grouped scan to compute averages + O(N) filter pass",
+    "space": "O(O) memory for distinct orders",
+    "variables": [
+      "N: total line items",
+      "O: distinct orders"
+    ],
+    "notes": "Grouped aggregation with subquery scalar threshold comparison.",
+    "whyNaiveFails": "Correlated subqueries per order recompute the global average repeatedly.",
+    "spaceTimeTradeoff": "Scalar subquery computes the global maximum average once.",
+    "interviewerExpectation": "Candidate should correctly contrast order-level MAX with the global MAX of AVG."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT order_id\nFROM OrdersDetails\nGROUP BY order_id\nHAVING MAX(quantity) > (\n    SELECT MAX(avg_qty)\n    FROM (\n        SELECT AVG(quantity) AS avg_qty\n        FROM OrdersDetails\n        GROUP BY order_id\n    ) t\n);",
+      "approach": "HAVING with Scalar Subquery in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT order_id\nFROM OrdersDetails\nGROUP BY order_id\nHAVING MAX(quantity) > (\n    SELECT MAX(avg_qty)\n    FROM (\n        SELECT AVG(quantity) AS avg_qty\n        FROM OrdersDetails\n        GROUP BY order_id\n    ) t\n);",
+      "approach": "HAVING with Scalar Subquery in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef orders_above_average(orders_details: pd.DataFrame) -> pd.DataFrame:\n    grp = orders_details.groupby(\"order_id\")[\"quantity\"].agg([\"max\", \"mean\"]).reset_index()\n    max_avg = grp[\"mean\"].max()\n    res = grp[grp[\"max\"] > max_avg][[\"order_id\"]]\n    return res",
+      "approach": "Groupby aggregation and scalar filtering in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

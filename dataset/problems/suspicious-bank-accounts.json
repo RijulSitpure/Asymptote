@@ -1,0 +1,71 @@
+{
+  "slug": "suspicious-bank-accounts",
+  "number": 1843,
+  "category": "Database",
+  "patterns": [
+    "gaps-and-islands"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monthly Credited Income Sums",
+      "text": "Filter transactions for deposit type and sum amounts grouped by account and formatted year-month date."
+    },
+    {
+      "level": 2,
+      "title": "Filtering Accounts Exceeding Limits",
+      "text": "Join with the accounts table to identify months where total credited deposit strictly exceeds max_income."
+    },
+    {
+      "level": 3,
+      "title": "Consecutive Month Detection",
+      "text": "Use the lag or lead window function on month date values to check for two or more consecutive suspicious months."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH MonthlyIncome AS (\n    SELECT\n        t.account_id,\n        DATE_FORMAT(t.day, '%Y%m') AS ym,\n        PERIOD_DIFF(DATE_FORMAT(t.day, '%Y%m'), '202001') AS m_num,\n        SUM(t.amount) AS total_income,\n        a.max_income\n    FROM Transactions t\n    JOIN Accounts a ON t.account_id = a.account_id\n    WHERE t.type = 'Credited'\n    GROUP BY t.account_id, DATE_FORMAT(t.day, '%Y%m'), PERIOD_DIFF(DATE_FORMAT(t.day, '%Y%m'), '202001'), a.max_income\n    HAVING total_income > a.max_income\n),\nRanked AS (\n    SELECT\n        account_id,\n        m_num - ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY m_num) AS grp\n    FROM MonthlyIncome\n)\nSELECT DISTINCT account_id\nFROM Ranked\nGROUP BY account_id, grp\nHAVING COUNT(*) >= 2\nORDER BY account_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(T log T) for grouping and window partitioning",
+    "space": "O(T) for CTE storage",
+    "variables": [
+      "T: count of transactions"
+    ],
+    "notes": "Consecutive month grouping via PERIOD_DIFF and ROW_NUMBER.",
+    "whyNaiveFails": "Self-joins comparing date strings fail when consecutive months span across calendar year boundaries.",
+    "spaceTimeTradeoff": "Linear sequence mapping simplifies month difference arithmetic.",
+    "interviewerExpectation": "Candidate should handle calendar year boundaries when defining consecutive calendar months."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH MonthlyIncome AS (\n    SELECT\n        t.account_id,\n        DATE_FORMAT(t.day, '%Y%m') AS ym,\n        PERIOD_DIFF(DATE_FORMAT(t.day, '%Y%m'), '202001') AS m_num,\n        SUM(t.amount) AS total_income,\n        a.max_income\n    FROM Transactions t\n    JOIN Accounts a ON t.account_id = a.account_id\n    WHERE t.type = 'Credited'\n    GROUP BY t.account_id, DATE_FORMAT(t.day, '%Y%m'), PERIOD_DIFF(DATE_FORMAT(t.day, '%Y%m'), '202001'), a.max_income\n    HAVING total_income > a.max_income\n),\nRanked AS (\n    SELECT\n        account_id,\n        m_num - ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY m_num) AS grp\n    FROM MonthlyIncome\n)\nSELECT DISTINCT account_id\nFROM Ranked\nGROUP BY account_id, grp\nHAVING COUNT(*) >= 2\nORDER BY account_id ASC;",
+      "approach": "Gaps and Islands Consecutive Month Detection in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH MonthlyIncome AS (\n    SELECT\n        t.account_id,\n        EXTRACT(YEAR FROM t.day) * 12 + EXTRACT(MONTH FROM t.day) AS m_num,\n        SUM(t.amount) AS total_income,\n        a.max_income\n    FROM Transactions t\n    JOIN Accounts a ON t.account_id = a.account_id\n    WHERE t.type = 'Credited'\n    GROUP BY t.account_id, EXTRACT(YEAR FROM t.day) * 12 + EXTRACT(MONTH FROM t.day), a.max_income\n    HAVING SUM(t.amount) > a.max_income\n),\nRanked AS (\n    SELECT\n        account_id,\n        m_num - ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY m_num) AS grp\n    FROM MonthlyIncome\n)\nSELECT DISTINCT account_id\nFROM Ranked\nGROUP BY account_id, grp\nHAVING COUNT(*) >= 2\nORDER BY account_id ASC;",
+      "approach": "Gaps and Islands Consecutive Month Detection in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef suspicious_bank_accounts(accounts: pd.DataFrame, transactions: pd.DataFrame) -> pd.DataFrame:\n    credited = transactions[transactions[\"type\"] == \"Credited\"].copy()\n    credited[\"ym\"] = pd.to_datetime(credited[\"day\"]).dt.to_period(\"M\")\n    agg = credited.groupby([\"account_id\", \"ym\"])[\"amount\"].sum().reset_index()\n    merged = agg.merge(accounts, on=\"account_id\")\n    susp = merged[merged[\"amount\"] > merged[\"max_income\"]].sort_values([\"account_id\", \"ym\"])\n    \n    susp_accs = set()\n    for aid, grp in susp.groupby(\"account_id\"):\n        periods = list(grp[\"ym\"])\n        for i in range(1, len(periods)):\n            if periods[i] - periods[i - 1] == 1:\n                susp_accs.add(aid)\n                break\n    return pd.DataFrame({\"account_id\": sorted(list(susp_accs))})",
+      "approach": "Period difference check in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "last-day-where-you-can-still-cross",
+  "number": 1970,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monotonicity of Crossing Feasibility",
+      "text": "If it is possible to cross on day d, it was also possible on any earlier day; this allows binary searching the threshold day."
+    },
+    {
+      "level": 2,
+      "title": "Verifying Connectivity with BFS",
+      "text": "On day d, place water on the grid for all cells flooded up to day d, and test if a path from the top row to bottom row exists."
+    },
+    {
+      "level": 3,
+      "title": "Multi-Source Level Exploration",
+      "text": "Start breadth exploration simultaneously from all unflooded cells along row 0 to test reachability of row row - 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def latestDayToCross(self, row: int, col: int, cells: list[list[int]]) -> int:\n        def can_cross(day):\n            grid = [[0] * col for _ in range(row)]\n            for i in range(day):\n                r, c = cells[i]\n                grid[r - 1][c - 1] = 1\n                \n            q = deque()\n            for c in range(col):\n                if grid[0][c] == 0:\n                    q.append((0, c))\n                    grid[0][c] = 1\n                    \n            while q:\n                r, c = q.popleft()\n                if r == row - 1:\n                    return True\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < row and 0 <= nc < col and grid[nr][nc] == 0:\n                        grid[nr][nc] = 1\n                        q.append((nr, nc))\n            return False\n            \n        low = 1\n        high = len(cells)\n        ans = 1\n        while low <= high:\n            mid = (low + high) // 2\n            if can_cross(mid):\n                ans = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R * C * log(N))",
+    "space": "O(R * C)",
+    "variables": [
+      "R, C: grid dimensions",
+      "N: count of flooded cells (R * C)"
+    ],
+    "notes": "Binary search over day sequence verified via level-order BFS reachability.",
+    "whyNaiveFails": "Simulating cell additions one-by-one with full connectivity checks takes O(N * R * C) time.",
+    "spaceTimeTradeoff": "Binary search tests at most log(20,000) ~ 15 days.",
+    "interviewerExpectation": "Candidate should recognize monotonic predicate and verify connectivity efficiently."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def latestDayToCross(self, row: int, col: int, cells: list[list[int]]) -> int:\n        def can_cross(day):\n            grid = [[0] * col for _ in range(row)]\n            for i in range(day):\n                r, c = cells[i]\n                grid[r - 1][c - 1] = 1\n                \n            q = deque()\n            for c in range(col):\n                if grid[0][c] == 0:\n                    q.append((0, c))\n                    grid[0][c] = 1\n                    \n            while q:\n                r, c = q.popleft()\n                if r == row - 1:\n                    return True\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < row and 0 <= nc < col and grid[nr][nc] == 0:\n                        grid[nr][nc] = 1\n                        q.append((nr, nc))\n            return False\n            \n        low = 1\n        high = len(cells)\n        ans = 1\n        while low <= high:\n            mid = (low + high) // 2\n            if can_cross(mid):\n                ans = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n        return ans",
+      "approach": "Binary search and BFS in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int latestDayToCross(int row, int col, vector<vector<int>>& cells) {\n        auto canCross = [&](int day) -> bool {\n            vector<vector<int>> grid(row, vector<int>(col, 0));\n            for (int i = 0; i < day; i++) {\n                grid[cells[i][0] - 1][cells[i][1] - 1] = 1;\n            }\n            queue<pair<int, int>> q;\n            for (int c = 0; c < col; c++) {\n                if (!grid[0][c]) {\n                    q.push({0, c});\n                    grid[0][c] = 1;\n                }\n            }\n            int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n            while (!q.empty()) {\n                auto [r, c] = q.front();\n                q.pop();\n                if (r == row - 1) return true;\n                for (auto& d : dirs) {\n                    int nr = r + d[0], nc = c + d[1];\n                    if (nr >= 0 && nr < row && nc >= 0 && nc < col && !grid[nr][nc]) {\n                        grid[nr][nc] = 1;\n                        q.push({nr, nc});\n                    }\n                }\n            }\n            return false;\n        };\n        \n        int low = 1, high = cells.size(), ans = 1;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (canCross(mid)) {\n                ans = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "Binary search and BFS in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int latestDayToCross(int row, int col, int[][] cells) {\n        int low = 1, high = cells.length, ans = 1;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (canCross(row, col, cells, mid)) {\n                ans = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        return ans;\n    }\n    \n    private boolean canCross(int row, int col, int[][] cells, int day) {\n        int[][] grid = new int[row][col];\n        for (int i = 0; i < day; i++) {\n            grid[cells[i][0] - 1][cells[i][1] - 1] = 1;\n        }\n        java.util.Queue<int[]> q = new java.util.LinkedList<>();\n        for (int c = 0; c < col; c++) {\n            if (grid[0][c] == 0) {\n                q.offer(new int[]{0, c});\n                grid[0][c] = 1;\n            }\n        }\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!q.isEmpty()) {\n            int[] curr = q.poll();\n            int r = curr[0], c = curr[1];\n            if (r == row - 1) return true;\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < row && nc >= 0 && nc < col && grid[nr][nc] == 0) {\n                    grid[nr][nc] = 1;\n                    q.offer(new int[]{nr, nc});\n                }\n            }\n        }\n        return false;\n    }\n}",
+      "approach": "Binary search and BFS in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var latestDayToCross = function(row, col, cells) {\n  const canCross = (day) => {\n    const grid = Array.from({ length: row }, () => new Array(col).fill(0));\n    for (let i = 0; i < day; i++) {\n      grid[cells[i][0] - 1][cells[i][1] - 1] = 1;\n    }\n    const q = [];\n    for (let c = 0; c < col; c++) {\n      if (!grid[0][c]) {\n        q.push([0, c]);\n        grid[0][c] = 1;\n      }\n    }\n    let head = 0;\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    while (head < q.length) {\n      const [r, c] = q[head++];\n      if (r === row - 1) return true;\n      for (const [dr, dc] of dirs) {\n        const nr = r + dr, nc = c + dc;\n        if (nr >= 0 && nr < row && nc >= 0 && nc < col && !grid[nr][nc]) {\n          grid[nr][nc] = 1;\n          q.push([nr, nc]);\n        }\n      }\n    }\n    return false;\n  };\n  \n  let low = 1, high = cells.length, ans = 1;\n  while (low <= high) {\n    const mid = (low + high) >> 1;\n    if (canCross(mid)) {\n      ans = mid;\n      low = mid + 1;\n    } else {\n      high = mid - 1;\n    }\n  }\n  return ans;\n};",
+      "approach": "Binary search and BFS in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

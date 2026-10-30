@@ -1,0 +1,78 @@
+{
+  "slug": "number-of-ways-to-separate-numbers",
+  "number": 1977,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Partitioning Without Leading Zeros",
+      "text": "A number string cannot start with digit \"0\", meaning any segment starting with 0 is an invalid partition component."
+    },
+    {
+      "level": 2,
+      "title": "Non-Decreasing Adjacent Segments",
+      "text": "For adjacent segments, either the current number has longer length than previous, or equal length with lexicographically greater or equal characters."
+    },
+    {
+      "level": 3,
+      "title": "Fast Prefix Comparison via LCP",
+      "text": "Precompute the longest common prefix between all pairs of string suffixes to compare equal-length segments in O(1) time."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def numberOfCombinations(self, num: str) -> int:\n        if num[0] == \"0\":\n            return 0\n        n = len(num)\n        MOD = 1_000_000_007\n        \n        lcp = [[0] * (n + 1) for _ in range(n + 1)]\n        for i in range(n - 1, -1, -1):\n            for j in range(n - 1, -1, -1):\n                if num[i] == num[j]:\n                    lcp[i][j] = 1 + lcp[i + 1][j + 1]\n                    \n        def cmp(i, j, k):\n            match = lcp[i][j]\n            if match >= k:\n                return True\n            return num[i + match] <= num[j + match]\n            \n        dp = [[0] * (n + 1) for _ in range(n + 1)]\n        for l in range(1, n + 1):\n            dp[0][l] = 1\n            \n        for i in range(1, n + 1):\n            for l in range(1, i + 1):\n                start = i - l\n                if num[start] != \"0\":\n                    res = dp[start][min(l - 1, start)]\n                    if start >= l and cmp(start - l, start, l):\n                        res = (res + dp[start][l] - dp[start][l - 1]) % MOD\n                    dp[i][l] = (dp[i][l - 1] + res) % MOD\n                else:\n                    dp[i][l] = dp[i][l - 1]\n                    \n        return dp[n][n]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2)",
+    "space": "O(N^2)",
+    "variables": [
+      "N: length of digits string num (up to 3,500)"
+    ],
+    "notes": "Dynamic programming with 2D LCP array and prefix sum acceleration.",
+    "whyNaiveFails": "Partition backtracking has exponential branching factor.",
+    "spaceTimeTradeoff": "LCP array enables O(1) lexicographical comparisons between equal-length numeric slices.",
+    "interviewerExpectation": "Candidate should recognize that comparing numbers of equal length reduces to LCP string comparison."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def numberOfCombinations(self, num: str) -> int:\n        if num[0] == \"0\":\n            return 0\n        n = len(num)\n        MOD = 1_000_000_007\n        \n        lcp = [[0] * (n + 1) for _ in range(n + 1)]\n        for i in range(n - 1, -1, -1):\n            for j in range(n - 1, -1, -1):\n                if num[i] == num[j]:\n                    lcp[i][j] = 1 + lcp[i + 1][j + 1]\n                    \n        def cmp(i, j, k):\n            match = lcp[i][j]\n            if match >= k:\n                return True\n            return num[i + match] <= num[j + match]\n            \n        dp = [[0] * (n + 1) for _ in range(n + 1)]\n        for l in range(1, n + 1):\n            dp[0][l] = 1\n            \n        for i in range(1, n + 1):\n            for l in range(1, i + 1):\n                start = i - l\n                if num[start] != \"0\":\n                    res = dp[start][min(l - 1, start)]\n                    if start >= l and cmp(start - l, start, l):\n                        res = (res + dp[start][l] - dp[start][l - 1]) % MOD\n                    dp[i][l] = (dp[i][l - 1] + res) % MOD\n                else:\n                    dp[i][l] = dp[i][l - 1]\n                    \n        return dp[n][n]",
+      "approach": "DP with LCP precomputation in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int numberOfCombinations(string num) {\n        if (num[0] == '0') return 0;\n        int n = num.size();\n        const int MOD = 1e9 + 7;\n        \n        vector<vector<short>> lcp(n + 1, vector<short>(n + 1, 0));\n        for (int i = n - 1; i >= 0; i--) {\n            for (int j = n - 1; j >= 0; j--) {\n                if (num[i] == num[j]) lcp[i][j] = 1 + lcp[i + 1][j + 1];\n            }\n        }\n        \n        auto cmp = [&](int i, int j, int k) -> bool {\n            int match = lcp[i][j];\n            if (match >= k) return true;\n            return num[i + match] <= num[j + match];\n        };\n        \n        vector<vector<int>> dp(n + 1, vector<int>(n + 1, 0));\n        for (int l = 1; l <= n; l++) dp[0][l] = 1;\n        \n        for (int i = 1; i <= n; i++) {\n            for (int l = 1; l <= i; l++) {\n                int start = i - l;\n                if (num[start] != '0') {\n                    int res = dp[start][min(l - 1, start)];\n                    if (start >= l && cmp(start - l, start, l)) {\n                        int diff = (dp[start][l] - dp[start][l - 1] + MOD) % MOD;\n                        res = (res + diff) % MOD;\n                    }\n                    dp[i][l] = (dp[i][l - 1] + res) % MOD;\n                } else {\n                    dp[i][l] = dp[i][l - 1];\n                }\n            }\n            for (int l = i + 1; l <= n; l++) dp[i][l] = dp[i][i];\n        }\n        return dp[n][n];\n    }\n};",
+      "approach": "DP with LCP precomputation in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int numberOfCombinations(String num) {\n        if (num.charAt(0) == '0') return 0;\n        int n = num.length();\n        final int MOD = 1_000_000_007;\n        \n        short[][] lcp = new short[n + 1][n + 1];\n        for (int i = n - 1; i >= 0; i--) {\n            for (int j = n - 1; j >= 0; j--) {\n                if (num.charAt(i) == num.charAt(j)) lcp[i][j] = (short)(1 + lcp[i + 1][j + 1]);\n            }\n        }\n        \n        int[][] dp = new int[n + 1][n + 1];\n        for (int l = 1; l <= n; l++) dp[0][l] = 1;\n        \n        for (int i = 1; i <= n; i++) {\n            for (int l = 1; l <= i; l++) {\n                int start = i - l;\n                if (num.charAt(start) != '0') {\n                    int res = dp[start][Math.min(l - 1, start)];\n                    if (start >= l) {\n                        int match = lcp[start - l][start];\n                        boolean ok = (match >= l) || (num.charAt(start - l + match) <= num.charAt(start + match));\n                        if (ok) {\n                            int diff = (dp[start][l] - dp[start][l - 1] + MOD) % MOD;\n                            res = (res + diff) % MOD;\n                        }\n                    }\n                    dp[i][l] = (dp[i][l - 1] + res) % MOD;\n                } else {\n                    dp[i][l] = dp[i][l - 1];\n                }\n            }\n            for (int l = i + 1; l <= n; l++) dp[i][l] = dp[i][i];\n        }\n        return dp[n][n];\n    }\n}",
+      "approach": "DP with LCP precomputation in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var numberOfCombinations = function(num) {\n  if (num[0] === '0') return 0;\n  const n = num.length;\n  const MOD = 1000000007;\n  \n  const lcp = Array.from({ length: n + 1 }, () => new Int16Array(n + 1));\n  for (let i = n - 1; i >= 0; i--) {\n    for (let j = n - 1; j >= 0; j--) {\n      if (num[i] === num[j]) lcp[i][j] = 1 + lcp[i + 1][j + 1];\n    }\n  }\n  \n  const cmp = (i, j, k) => {\n    const match = lcp[i][j];\n    if (match >= k) return true;\n    return num[i + match] <= num[j + match];\n  };\n  \n  const dp = Array.from({ length: n + 1 }, () => new Int32Array(n + 1));\n  for (let l = 1; l <= n; l++) dp[0][l] = 1;\n  \n  for (let i = 1; i <= n; i++) {\n    for (let l = 1; l <= i; l++) {\n      const start = i - l;\n      if (num[start] !== '0') {\n        let res = dp[start][Math.min(l - 1, start)];\n        if (start >= l && cmp(start - l, start, l)) {\n          const diff = (dp[start][l] - dp[start][l - 1] + MOD) % MOD;\n          res = (res + diff) % MOD;\n        }\n        dp[i][l] = (dp[i][l - 1] + res) % MOD;\n      } else {\n        dp[i][l] = dp[i][l - 1];\n      }\n    }\n    for (let l = i + 1; l <= n; l++) dp[i][l] = dp[i][i];\n  }\n  return dp[n][n];\n};",
+      "approach": "DP with LCP precomputation in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
