@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-time-to-visit-a-cell-in-a-grid",
+  "number": 2577,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Initial Feasibility Check",
+      "text": "If both adjacent neighbors of (0, 0) require a time greater than 1, you can never make a first step, so reaching the destination is impossible."
+    },
+    {
+      "level": 2,
+      "title": "Ping-Pong Step Delay",
+      "text": "Once you can take a step, you can oscillate back and forth between two adjacent cells to waste time until the target cell unlocks."
+    },
+    {
+      "level": 3,
+      "title": "Parity Arrival Timing",
+      "text": "Because each round-trip oscillation takes 2 time units, the parity of the arrival time is constrained by the grid value and current time."
+    },
+    {
+      "level": 4,
+      "title": "Dijkstra Shortest Arrival Implementation",
+      "text": "```python\nclass Solution:\n    def minimumTime(self, grid: list[list[int]]) -> int:\n        import heapq\n        if grid[0][1] > 1 and grid[1][0] > 1:\n            return -1\n        m, n = len(grid), len(grid[0])\n        dist = [[float('inf')] * n for _ in range(m)]\n        dist[0][0] = 0\n        pq = [(0, 0, 0)]\n        while pq:\n            t, r, c = heapq.heappop(pq)\n            if r == m - 1 and c == n - 1:\n                return t\n            if t > dist[r][c]:\n                continue\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    if t + 1 >= grid[nr][nc]:\n                        nt = t + 1\n                    else:\n                        diff = grid[nr][nc] - t\n                        nt = grid[nr][nc] if diff % 2 == 1 else grid[nr][nc] + 1\n                    if nt < dist[nr][nc]:\n                        dist[nr][nc] = nt\n                        heapq.heappush(pq, (nt, nr, nc))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n * log(m * n))",
+    "space": "O(m * n)",
+    "variables": [
+      "m: row count of grid",
+      "n: column count of grid"
+    ],
+    "notes": "Dijkstra priority exploration visits each grid cell with logarithmic heap operations.",
+    "whyNaiveFails": "Standard exploration without parity adjustment fails to account for waiting oscillations.",
+    "spaceTimeTradeoff": "O(m * n) distance matrix and priority queue.",
+    "interviewerExpectation": "Identifies the unsolvable initial trap and parity-based delay calculation."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Dijkstra Shortest Arrival",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def minimumTime(self, grid: list[list[int]]) -> int:\n        import heapq\n        if grid[0][1] > 1 and grid[1][0] > 1:\n            return -1\n        m, n = len(grid), len(grid[0])\n        dist = [[float('inf')] * n for _ in range(m)]\n        dist[0][0] = 0\n        pq = [(0, 0, 0)]\n        while pq:\n            t, r, c = heapq.heappop(pq)\n            if r == m - 1 and c == n - 1:\n                return t\n            if t > dist[r][c]:\n                continue\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    if t + 1 >= grid[nr][nc]:\n                        nt = t + 1\n                    else:\n                        diff = grid[nr][nc] - t\n                        nt = grid[nr][nc] if diff % 2 == 1 else grid[nr][nc] + 1\n                    if nt < dist[nr][nc]:\n                        dist[nr][nc] = nt\n                        heapq.heappush(pq, (nt, nr, nc))\n        return -1"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Dijkstra Shortest Arrival",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int minimumTime(std::vector<std::vector<int>>& grid) {\n        if (grid[0][1] > 1 && grid[1][0] > 1) return -1;\n        int m = grid.size(), n = grid[0].size();\n        std::vector<std::vector<int>> dist(m, std::vector<int>(n, INT_MAX));\n        dist[0][0] = 0;\n        using State = std::tuple<int, int, int>;\n        std::priority_queue<State, std::vector<State>, std::greater<State>> pq;\n        pq.push({0, 0, 0});\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!pq.empty()) {\n            auto [t, r, c] = pq.top();\n            pq.pop();\n            if (r == m - 1 && c == n - 1) return t;\n            if (t > dist[r][c]) continue;\n            for (auto& d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int nt = 0;\n                    if (t + 1 >= grid[nr][nc]) {\n                        nt = t + 1;\n                    } else {\n                        int diff = grid[nr][nc] - t;\n                        nt = (diff % 2 == 1) ? grid[nr][nc] : grid[nr][nc] + 1;\n                    }\n                    if (nt < dist[nr][nc]) {\n                        dist[nr][nc] = nt;\n                        pq.push({nt, nr, nc});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Dijkstra Shortest Arrival",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int minimumTime(int[][] grid) {\n        if (grid[0][1] > 1 && grid[1][0] > 1) return -1;\n        int m = grid.length, n = grid[0].length;\n        int[][] dist = new int[m][n];\n        for (int[] row : dist) java.util.Arrays.fill(row, Integer.MAX_VALUE);\n        dist[0][0] = 0;\n        java.util.PriorityQueue<int[]> pq = new java.util.PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        pq.offer(new int[]{0, 0, 0});\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!pq.isEmpty()) {\n            int[] curr = pq.poll();\n            int t = curr[0], r = curr[1], c = curr[2];\n            if (r == m - 1 && c == n - 1) return t;\n            if (t > dist[r][c]) continue;\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int nt;\n                    if (t + 1 >= grid[nr][nc]) {\n                        nt = t + 1;\n                    } else {\n                        int diff = grid[nr][nc] - t;\n                        nt = (diff % 2 == 1) ? grid[nr][nc] : grid[nr][nc] + 1;\n                    }\n                    if (nt < dist[nr][nc]) {\n                        dist[nr][nc] = nt;\n                        pq.offer(new int[]{nt, nr, nc});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Dijkstra Shortest Arrival",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var minimumTime = function(grid) {\n    if (grid[0][1] > 1 && grid[1][0] > 1) return -1;\n    const m = grid.length, n = grid[0].length;\n    const dist = Array.from({ length: m }, () => new Int32Array(n).fill(1e9));\n    dist[0][0] = 0;\n    // Simple min-heap simulation with binary heap or flat array for grid sizes\n    const heap = [[0, 0, 0]];\n    const push = (item) => {\n        heap.push(item);\n        let idx = heap.length - 1;\n        while (idx > 0) {\n            let p = (idx - 1) >> 1;\n            if (heap[p][0] > heap[idx][0]) {\n                let temp = heap[p];\n                heap[p] = heap[idx];\n                heap[idx] = temp;\n                idx = p;\n            } else break;\n        }\n    };\n    const pop = () => {\n        const top = heap[0];\n        const end = heap.pop();\n        if (heap.length > 0) {\n            heap[0] = end;\n            let idx = 0;\n            const len = heap.length;\n            while ((idx << 1) + 1 < len) {\n                let left = (idx << 1) + 1;\n                let right = left + 1;\n                let best = (right < len && heap[right][0] < heap[left][0]) ? right : left;\n                if (heap[best][0] < heap[idx][0]) {\n                    let temp = heap[best];\n                    heap[best] = heap[idx];\n                    heap[idx] = temp;\n                    idx = best;\n                } else break;\n            }\n        }\n        return top;\n    };\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    while (heap.length > 0) {\n        const [t, r, c] = pop();\n        if (r === m - 1 && c === n - 1) return t;\n        if (t > dist[r][c]) continue;\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                let nt;\n                if (t + 1 >= grid[nr][nc]) {\n                    nt = t + 1;\n                } else {\n                    let diff = grid[nr][nc] - t;\n                    nt = (diff % 2 === 1) ? grid[nr][nc] : grid[nr][nc] + 1;\n                }\n                if (nt < dist[nr][nc]) {\n                    dist[nr][nc] = nt;\n                    push([nt, nr, nc]);\n                }\n            }\n        }\n    }\n    return -1;\n};"
+    }
+  ]
+}

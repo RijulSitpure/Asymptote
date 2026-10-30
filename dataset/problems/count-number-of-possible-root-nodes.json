@@ -1,0 +1,79 @@
+{
+  "slug": "count-number-of-possible-root-nodes",
+  "number": 2581,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Arbitrary Initial Rooting",
+      "text": "Root the tree arbitrarily at node 0 and count how many guesses are satisfied in that initial rooted configuration."
+    },
+    {
+      "level": 2,
+      "title": "Adjacent Root Transition",
+      "text": "When moving the root from node u to an adjacent node v, the only directed edge that changes direction is the edge between u and v."
+    },
+    {
+      "level": 3,
+      "title": "Local Delta Adjustment",
+      "text": "Subtract 1 if (u, v) was among the guesses, and add 1 if (v, u) is among the guesses. Propagate this change to all roots."
+    },
+    {
+      "level": 4,
+      "title": "Rerooting Tree DFS Implementation",
+      "text": "```python\nclass Solution:\n    def rootCount(self, edges: list[list[int]], guesses: list[list[int]], k: int) -> int:\n        from collections import defaultdict\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        guess_set = {(u, v) for u, v in guesses}\n        base_matches = 0\n        def dfs1(u, p):\n            nonlocal base_matches\n            for v in adj[u]:\n                if v != p:\n                    if (u, v) in guess_set:\n                        base_matches += 1\n                    dfs1(v, u)\n        dfs1(0, -1)\n        valid_roots = 0\n        def dfs2(u, p, current_matches):\n            nonlocal valid_roots\n            if current_matches >= k:\n                valid_roots += 1\n            for v in adj[u]:\n                if v != p:\n                    next_matches = current_matches\n                    if (u, v) in guess_set:\n                        next_matches -= 1\n                    if (v, u) in guess_set:\n                        next_matches += 1\n                    dfs2(v, u, next_matches)\n        dfs2(0, -1, base_matches)\n        return valid_roots\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + g)",
+    "space": "O(n + g)",
+    "variables": [
+      "n: number of nodes in tree",
+      "g: number of guesses"
+    ],
+    "notes": "Two DFS passes over tree edges and O(1) hash set lookups for guesses.",
+    "whyNaiveFails": "Running a full traversal from every node takes O(n * (n + g)) time.",
+    "spaceTimeTradeoff": "O(n + g) adjacency list and guess set.",
+    "interviewerExpectation": "Applies standard rerooting dynamic programming across tree edges."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Rerooting Tree Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def rootCount(self, edges: list[list[int]], guesses: list[list[int]], k: int) -> int:\n        from collections import defaultdict\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        guess_set = {(u, v) for u, v in guesses}\n        base_matches = 0\n        def dfs1(u, p):\n            nonlocal base_matches\n            for v in adj[u]:\n                if v != p:\n                    if (u, v) in guess_set:\n                        base_matches += 1\n                    dfs1(v, u)\n        dfs1(0, -1)\n        valid_roots = 0\n        def dfs2(u, p, current_matches):\n            nonlocal valid_roots\n            if current_matches >= k:\n                valid_roots += 1\n            for v in adj[u]:\n                if v != p:\n                    next_matches = current_matches\n                    if (u, v) in guess_set:\n                        next_matches -= 1\n                    if (v, u) in guess_set:\n                        next_matches += 1\n                    dfs2(v, u, next_matches)\n        dfs2(0, -1, base_matches)\n        return valid_roots"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Rerooting Tree Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int rootCount(std::vector<std::vector<int>>& edges, std::vector<std::vector<int>>& guesses, int k) {\n        int n = edges.size() + 1;\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        auto encode = [](long long u, long long v) -> long long {\n            return (u << 32) | v;\n        };\n        std::unordered_set<long long> guess_set;\n        for (const auto& g : guesses) {\n            guess_set.insert(encode(g[0], g[1]));\n        }\n        int base_matches = 0;\n        auto dfs1 = [&](auto& self, int u, int p) -> void {\n            for (int v : adj[u]) {\n                if (v != p) {\n                    if (guess_set.count(encode(u, v))) {\n                        base_matches++;\n                    }\n                    self(self, v, u);\n                }\n            }\n        };\n        dfs1(dfs1, 0, -1);\n        int valid_roots = 0;\n        auto dfs2 = [&](auto& self, int u, int p, int curr) -> void {\n            if (curr >= k) valid_roots++;\n            for (int v : adj[u]) {\n                if (v != p) {\n                    int next_m = curr;\n                    if (guess_set.count(encode(u, v))) next_m--;\n                    if (guess_set.count(encode(v, u))) next_m++;\n                    self(self, v, u, next_m);\n                }\n            }\n        };\n        dfs2(dfs2, 0, -1, base_matches);\n        return valid_roots;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Rerooting Tree Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int baseMatches = 0;\n    private int validRoots = 0;\n    private java.util.Set<Long> guessSet = new java.util.HashSet<>();\n\n    private long encode(long u, long v) {\n        return (u << 32) | v;\n    }\n\n    public int rootCount(int[][] edges, int[][] guesses, int k) {\n        int n = edges.length + 1;\n        java.util.List<Integer>[] adj = new java.util.ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new java.util.ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(e[1]);\n            adj[e[1]].add(e[0]);\n        }\n        for (int[] g : guesses) {\n            guessSet.add(encode(g[0], g[1]));\n        }\n        dfs1(0, -1, adj);\n        dfs2(0, -1, baseMatches, k, adj);\n        return validRoots;\n    }\n\n    private void dfs1(int u, int p, java.util.List<Integer>[] adj) {\n        for (int v : adj[u]) {\n            if (v != p) {\n                if (guessSet.contains(encode(u, v))) {\n                    baseMatches++;\n                }\n                dfs1(v, u, adj);\n            }\n        }\n    }\n\n    private void dfs2(int u, int p, int curr, int k, java.util.List<Integer>[] adj) {\n        if (curr >= k) validRoots++;\n        for (int v : adj[u]) {\n            if (v != p) {\n                int nextM = curr;\n                if (guessSet.contains(encode(u, v))) nextM--;\n                if (guessSet.contains(encode(v, u))) nextM++;\n                dfs2(v, u, nextM, k, adj);\n            }\n        }\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Rerooting Tree Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var rootCount = function(edges, guesses, k) {\n    const n = edges.length + 1;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const guessSet = new Set();\n    for (const [u, v] of guesses) {\n        guessSet.add(`${u},${v}`);\n    }\n    let baseMatches = 0;\n    function dfs1(u, p) {\n        for (const v of adj[u]) {\n            if (v !== p) {\n                if (guessSet.has(`${u},${v}`)) {\n                    baseMatches++;\n                }\n                dfs1(v, u);\n            }\n        }\n    }\n    dfs1(0, -1);\n    let validRoots = 0;\n    function dfs2(u, p, curr) {\n        if (curr >= k) validRoots++;\n        for (const v of adj[u]) {\n            if (v !== p) {\n                let nextM = curr;\n                if (guessSet.has(`${u},${v}`)) nextM--;\n                if (guessSet.has(`${v},${u}`)) nextM++;\n                dfs2(v, u, nextM);\n            }\n        }\n    }\n    dfs2(0, -1, baseMatches);\n    return validRoots;\n};"
+    }
+  ]
+}

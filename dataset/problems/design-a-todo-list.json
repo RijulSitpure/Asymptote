@@ -1,0 +1,79 @@
+{
+  "slug": "design-a-todo-list",
+  "number": 2590,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "User-Partitioned Tasks",
+      "text": "Maintain task records indexed by user identifier, along with a global task counter for generating unique task ids."
+    },
+    {
+      "level": 2,
+      "title": "Task Metadata Tracking",
+      "text": "For each task, store its description, due date, tags, and completion flag."
+    },
+    {
+      "level": 3,
+      "title": "Ordered Retrieval",
+      "text": "When querying tasks, filter out completed tasks (and optionally match tags), then sort by due date ascending."
+    },
+    {
+      "level": 4,
+      "title": "Todo List Class Implementation",
+      "text": "```python\nclass TodoList:\n    def __init__(self):\n        self.task_id = 0\n        self.tasks = {}\n        self.user_tasks = {}\n    def addTask(self, userId: int, taskDescription: str, dueDate: int, tags: list[str]) -> int:\n        self.task_id += 1\n        tid = self.task_id\n        task = {\n            'id': tid,\n            'user': userId,\n            'desc': taskDescription,\n            'due': dueDate,\n            'tags': set(tags),\n            'done': False\n        }\n        self.tasks[tid] = task\n        if userId not in self.user_tasks:\n            self.user_tasks[userId] = []\n        self.user_tasks[userId].append(tid)\n        return tid\n    def getAllTasks(self, userId: int) -> list[str]:\n        if userId not in self.user_tasks:\n            return []\n        active = [self.tasks[tid] for tid in self.user_tasks[userId] if not self.tasks[tid]['done']]\n        active.sort(key=lambda t: t['due'])\n        return [t['desc'] for t in active]\n    def getTasksForTag(self, userId: int, tag: str) -> list[str]:\n        if userId not in self.user_tasks:\n            return []\n        active = [self.tasks[tid] for tid in self.user_tasks[userId] if not self.tasks[tid]['done'] and tag in self.tasks[tid]['tags']]\n        active.sort(key=lambda t: t['due'])\n        return [t['desc'] for t in active]\n    def completeTask(self, userId: int, taskId: int) -> None:\n        if taskId in self.tasks and self.tasks[taskId]['user'] == userId:\n            self.tasks[taskId]['done'] = True\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m log m) for retrieval, O(1) for adding and completing",
+    "space": "O(N)",
+    "variables": [
+      "m: number of tasks for user",
+      "N: total tasks across all users"
+    ],
+    "notes": "Sorting uncompleted tasks takes O(m log m); insertions and completion updates take O(1).",
+    "whyNaiveFails": "Scanning tasks of other users causes unnecessary time complexity.",
+    "spaceTimeTradeoff": "O(N) dictionary storage for tasks and user mappings.",
+    "interviewerExpectation": "Maintains user partition and returns uncompleted tasks ordered by due date."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Partitioned Task Registry",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class TodoList:\n    def __init__(self):\n        self.task_id = 0\n        self.tasks = {}\n        self.user_tasks = {}\n    def addTask(self, userId: int, taskDescription: str, dueDate: int, tags: list[str]) -> int:\n        self.task_id += 1\n        tid = self.task_id\n        task = {\n            'id': tid,\n            'user': userId,\n            'desc': taskDescription,\n            'due': dueDate,\n            'tags': set(tags),\n            'done': False\n        }\n        self.tasks[tid] = task\n        if userId not in self.user_tasks:\n            self.user_tasks[userId] = []\n        self.user_tasks[userId].append(tid)\n        return tid\n    def getAllTasks(self, userId: int) -> list[str]:\n        if userId not in self.user_tasks:\n            return []\n        active = [self.tasks[tid] for tid in self.user_tasks[userId] if not self.tasks[tid]['done']]\n        active.sort(key=lambda t: t['due'])\n        return [t['desc'] for t in active]\n    def getTasksForTag(self, userId: int, tag: str) -> list[str]:\n        if userId not in self.user_tasks:\n            return []\n        active = [self.tasks[tid] for tid in self.user_tasks[userId] if not self.tasks[tid]['done'] and tag in self.tasks[tid]['tags']]\n        active.sort(key=lambda t: t['due'])\n        return [t['desc'] for t in active]\n    def completeTask(self, userId: int, taskId: int) -> None:\n        if taskId in self.tasks and self.tasks[taskId]['user'] == userId:\n            self.tasks[taskId]['done'] = True"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Partitioned Task Registry",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class TodoList {\n    struct Task {\n        int id;\n        int user;\n        std::string desc;\n        int due;\n        std::unordered_set<std::string> tags;\n        bool done;\n    };\n    int next_id = 1;\n    std::unordered_map<int, Task> tasks;\n    std::unordered_map<int, std::vector<int>> user_tasks;\npublic:\n    TodoList() {}\n    int addTask(int userId, std::string taskDescription, int dueDate, std::vector<std::string> tags) {\n        int tid = next_id++;\n        std::unordered_set<std::string> tag_set(tags.begin(), tags.end());\n        tasks[tid] = {tid, userId, taskDescription, dueDate, tag_set, false};\n        user_tasks[userId].push_back(tid);\n        return tid;\n    }\n    std::vector<std::string> getAllTasks(int userId) {\n        std::vector<Task*> active;\n        for (int tid : user_tasks[userId]) {\n            if (!tasks[tid].done) {\n                active.push_back(&tasks[tid]);\n            }\n        }\n        std::sort(active.begin(), active.end(), [](Task* a, Task* b) {\n            return a->due < b->due;\n        });\n        std::vector<std::string> res;\n        for (auto* t : active) res.push_back(t->desc);\n        return res;\n    }\n    std::vector<std::string> getTasksForTag(int userId, std::string tag) {\n        std::vector<Task*> active;\n        for (int tid : user_tasks[userId]) {\n            if (!tasks[tid].done && tasks[tid].tags.count(tag)) {\n                active.push_back(&tasks[tid]);\n            }\n        }\n        std::sort(active.begin(), active.end(), [](Task* a, Task* b) {\n            return a->due < b->due;\n        });\n        std::vector<std::string> res;\n        for (auto* t : active) res.push_back(t->desc);\n        return res;\n    }\n    void completeTask(int userId, int taskId) {\n        if (tasks.count(taskId) && tasks[taskId].user == userId) {\n            tasks[taskId].done = true;\n        }\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Partitioned Task Registry",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class TodoList {\n    static class Task {\n        int id;\n        int user;\n        String desc;\n        int due;\n        java.util.Set<String> tags;\n        boolean done;\n        Task(int id, int user, String desc, int due, java.util.List<String> tags) {\n            this.id = id;\n            this.user = user;\n            this.desc = desc;\n            this.due = due;\n            this.tags = new java.util.HashSet<>(tags);\n            this.done = false;\n        }\n    }\n    private int nextId = 1;\n    private java.util.Map<Integer, Task> tasks = new java.util.HashMap<>();\n    private java.util.Map<Integer, java.util.List<Integer>> userTasks = new java.util.HashMap<>();\n    public TodoList() {}\n    public int addTask(int userId, String taskDescription, int dueDate, java.util.List<String> tags) {\n        int tid = nextId++;\n        tasks.put(tid, new Task(tid, userId, taskDescription, dueDate, tags));\n        userTasks.computeIfAbsent(userId, k -> new java.util.ArrayList<>()).add(tid);\n        return tid;\n    }\n    public java.util.List<String> getAllTasks(int userId) {\n        java.util.List<Task> active = new java.util.ArrayList<>();\n        for (int tid : userTasks.getOrDefault(userId, java.util.Collections.emptyList())) {\n            Task t = tasks.get(tid);\n            if (!t.done) active.add(t);\n        }\n        active.sort((a, b) -> Integer.compare(a.due, b.due));\n        java.util.List<String> res = new java.util.ArrayList<>();\n        for (Task t : active) res.add(t.desc);\n        return res;\n    }\n    public java.util.List<String> getTasksForTag(int userId, String tag) {\n        java.util.List<Task> active = new java.util.ArrayList<>();\n        for (int tid : userTasks.getOrDefault(userId, java.util.Collections.emptyList())) {\n            Task t = tasks.get(tid);\n            if (!t.done && t.tags.contains(tag)) active.add(t);\n        }\n        active.sort((a, b) -> Integer.compare(a.due, b.due));\n        java.util.List<String> res = new java.util.ArrayList<>();\n        for (Task t : active) res.add(t.desc);\n        return res;\n    }\n    public void completeTask(int userId, int taskId) {\n        Task t = tasks.get(taskId);\n        if (t != null && t.user == userId) {\n            t.done = true;\n        }\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Partitioned Task Registry",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var TodoList = function() {\n    this.nextId = 1;\n    this.tasks = new Map();\n    this.userTasks = new Map();\n};\nTodoList.prototype.addTask = function(userId, taskDescription, dueDate, tags) {\n    const tid = this.nextId++;\n    const task = {\n        id: tid,\n        user: userId,\n        desc: taskDescription,\n        due: dueDate,\n        tags: new Set(tags),\n        done: false\n    };\n    this.tasks.set(tid, task);\n    if (!this.userTasks.has(userId)) {\n        this.userTasks.set(userId, []);\n    }\n    this.userTasks.get(userId).push(tid);\n    return tid;\n};\nTodoList.prototype.getAllTasks = function(userId) {\n    const ids = this.userTasks.get(userId) || [];\n    const active = [];\n    for (const tid of ids) {\n        const t = this.tasks.get(tid);\n        if (!t.done) active.push(t);\n    }\n    active.sort((a, b) => a.due - b.due);\n    return active.map(t => t.desc);\n};\nTodoList.prototype.getTasksForTag = function(userId, tag) {\n    const ids = this.userTasks.get(userId) || [];\n    const active = [];\n    for (const tid of ids) {\n        const t = this.tasks.get(tid);\n        if (!t.done && t.tags.has(tag)) active.push(t);\n    }\n    active.sort((a, b) => a.due - b.due);\n    return active.map(t => t.desc);\n};\nTodoList.prototype.completeTask = function(userId, taskId) {\n    const t = this.tasks.get(taskId);\n    if (t && t.user === userId) {\n        t.done = true;\n    }\n};"
+    }
+  ]
+}
