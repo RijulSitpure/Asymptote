@@ -1,0 +1,78 @@
+{
+  "slug": "design-sql",
+  "number": 2408,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Per-Table Storage Model",
+      "text": "Maintain an internal mapping of tables where each table tracks its own auto-incrementing row id and row data."
+    },
+    {
+      "level": 2,
+      "title": "Row Storage Indexing",
+      "text": "For each table, map integer row ids to string arrays representing the row columns."
+    },
+    {
+      "level": 3,
+      "title": "Column Indexing Conversion",
+      "text": "Note that column ids in the select operation are 1-indexed, so convert columnId to columnId - 1 when accessing the row array."
+    },
+    {
+      "level": 4,
+      "title": "In-Memory Table Storage Implementation",
+      "text": "```python\nclass SQL:\n    def __init__(self, names: list[str], columns: list[int]):\n        self.tables = {}\n        for name in names:\n            self.tables[name] = {\"next_id\": 1, \"rows\": {}}\n\n    def insertRow(self, name: str, row: list[str]) -> None:\n        table = self.tables[name]\n        row_id = table[\"next_id\"]\n        table[\"rows\"][row_id] = row\n        table[\"next_id\"] += 1\n\n    def deleteRow(self, name: str, rowId: int) -> None:\n        self.tables[name][\"rows\"].pop(rowId, None)\n\n    def selectCell(self, name: str, rowId: int, columnId: int) -> str:\n        return self.tables[name][\"rows\"][rowId][columnId - 1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1) for insertRow, deleteRow, selectCell",
+    "space": "O(total inserted cells)",
+    "variables": [
+      "total inserted cells: cumulative count of stored string values"
+    ],
+    "notes": "Hash map operations provide O(1) row insertions, deletions, and cell queries.",
+    "whyNaiveFails": "Sequential array scans for row lookups yield O(number of rows) overhead.",
+    "spaceTimeTradeoff": "Hash map index per table trades pointer overhead for instant row retrieval.",
+    "interviewerExpectation": "Clean separation of table state with auto-increment counter and constant-time row lookup."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Hash Maps with Table State Records",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class SQL:\n    def __init__(self, names: list[str], columns: list[int]):\n        self.tables = {}\n        for name in names:\n            self.tables[name] = {\"next_id\": 1, \"rows\": {}}\n\n    def insertRow(self, name: str, row: list[str]) -> None:\n        table = self.tables[name]\n        row_id = table[\"next_id\"]\n        table[\"rows\"][row_id] = row\n        table[\"next_id\"] += 1\n\n    def deleteRow(self, name: str, rowId: int) -> None:\n        self.tables[name][\"rows\"].pop(rowId, None)\n\n    def selectCell(self, name: str, rowId: int, columnId: int) -> str:\n        return self.tables[name][\"rows\"][rowId][columnId - 1]"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Hash Maps with Table State Records",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class SQL {\nprivate:\n    struct Table {\n        int nextId = 1;\n        std::unordered_map<int, std::vector<std::string>> rows;\n    };\n    std::unordered_map<std::string, Table> tables;\n\npublic:\n    SQL(std::vector<std::string>& names, std::vector<int>& columns) {\n        for (const auto& name : names) {\n            tables[name] = Table();\n        }\n    }\n    \n    void insertRow(std::string name, std::vector<std::string> row) {\n        auto& tbl = tables[name];\n        tbl.rows[tbl.nextId++] = std::move(row);\n    }\n    \n    void deleteRow(std::string name, int rowId) {\n        tables[name].rows.erase(rowId);\n    }\n    \n    std::string selectCell(std::string name, int rowId, int columnId) {\n        return tables[name].rows[rowId][columnId - 1];\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Hash Maps with Table State Records",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class SQL {\n    static class Table {\n        int nextId = 1;\n        java.util.Map<Integer, java.util.List<String>> rows = new java.util.HashMap<>();\n    }\n    \n    private java.util.Map<String, Table> tables = new java.util.HashMap<>();\n\n    public SQL(java.util.List<String> names, java.util.List<Integer> columns) {\n        for (String name : names) {\n            tables.put(name, new Table());\n        }\n    }\n    \n    public void insertRow(String name, java.util.List<String> row) {\n        Table tbl = tables.get(name);\n        tbl.rows.put(tbl.nextId++, row);\n    }\n    \n    public void deleteRow(String name, int rowId) {\n        tables.get(name).rows.remove(rowId);\n    }\n    \n    public String selectCell(String name, int rowId, int columnId) {\n        return tables.get(name).rows.get(rowId).get(columnId - 1);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Hash Maps with Table State Records",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var SQL = function(names, columns) {\n    this.tables = new Map();\n    for (const name of names) {\n        this.tables.set(name, { nextId: 1, rows: new Map() });\n    }\n};\n\nSQL.prototype.insertRow = function(name, row) {\n    const tbl = this.tables.get(name);\n    tbl.rows.set(tbl.nextId++, row);\n};\n\nSQL.prototype.deleteRow = function(name, rowId) {\n    this.tables.get(name).rows.delete(rowId);\n};\n\nSQL.prototype.selectCell = function(name, rowId, columnId) {\n    return this.tables.get(name).rows.get(rowId)[columnId - 1];\n};"
+    }
+  ]
+}

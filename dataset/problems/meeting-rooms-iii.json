@@ -1,0 +1,79 @@
+{
+  "slug": "meeting-rooms-iii",
+  "number": 2402,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Room Availability Tracking",
+      "text": "Sort the meetings by start time and maintain the set of currently free rooms and currently occupied rooms."
+    },
+    {
+      "level": 2,
+      "title": "Dual Priority Queue Structure",
+      "text": "Use a min-priority queue of available room numbers and another min-priority queue of busy rooms storing pair (end_time, room_number)."
+    },
+    {
+      "level": 3,
+      "title": "Delayed Meeting Scheduling",
+      "text": "When scheduling a meeting, release all rooms whose end time is less than or equal to current meeting start time. If no room is free, wait for the earliest busy room to finish."
+    },
+    {
+      "level": 4,
+      "title": "Meeting Room Simulation Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def mostBooked(self, n: int, meetings: list[list[int]]) -> int:\n        meetings.sort()\n        free_rooms = list(range(n))\n        heapq.heapify(free_rooms)\n        busy_rooms = []\n        count = [0] * n\n        \n        for start, end in meetings:\n            duration = end - start\n            while busy_rooms and busy_rooms[0][0] <= start:\n                _, room = heapq.heappop(busy_rooms)\n                heapq.heappush(free_rooms, room)\n            \n            if free_rooms:\n                room = heapq.heappop(free_rooms)\n                heapq.heappush(busy_rooms, (end, room))\n            else:\n                earliest_end, room = heapq.heappop(busy_rooms)\n                heapq.heappush(busy_rooms, (earliest_end + duration, room))\n            count[room] += 1\n        \n        max_meetings = max(count)\n        return count.index(max_meetings)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m log m + m log n)",
+    "space": "O(n + m)",
+    "variables": [
+      "n: number of rooms",
+      "m: number of meetings"
+    ],
+    "notes": "Sorting meetings takes O(m log m); each meeting performs priority queue operations in O(log n).",
+    "whyNaiveFails": "Scanning all n rooms sequentially per meeting causes O(m * n) overhead.",
+    "spaceTimeTradeoff": "Dual heaps maintain minimum room indices and earliest completion times in logarithmic steps.",
+    "interviewerExpectation": "Maintains separate heaps for free room ids and busy room completion pairs."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Dual Min-Heaps for Free and Busy Rooms",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import heapq\n\nclass Solution:\n    def mostBooked(self, n: int, meetings: list[list[int]]) -> int:\n        meetings.sort()\n        free_rooms = list(range(n))\n        heapq.heapify(free_rooms)\n        busy_rooms = []\n        count = [0] * n\n        \n        for start, end in meetings:\n            duration = end - start\n            while busy_rooms and busy_rooms[0][0] <= start:\n                _, room = heapq.heappop(busy_rooms)\n                heapq.heappush(free_rooms, room)\n            \n            if free_rooms:\n                room = heapq.heappop(free_rooms)\n                heapq.heappush(busy_rooms, (end, room))\n            else:\n                earliest_end, room = heapq.heappop(busy_rooms)\n                heapq.heappush(busy_rooms, (earliest_end + duration, room))\n            count[room] += 1\n        \n        max_meetings = max(count)\n        return count.index(max_meetings)"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Dual Min-Heaps for Free and Busy Rooms",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int mostBooked(int n, std::vector<std::vector<int>>& meetings) {\n        std::sort(meetings.begin(), meetings.end());\n        std::priority_queue<int, std::vector<int>, std::greater<int>> free_rooms;\n        for (int i = 0; i < n; i++) free_rooms.push(i);\n        \n        using P = std::pair<long long, int>;\n        std::priority_queue<P, std::vector<P>, std::greater<P>> busy_rooms;\n        std::vector<int> count(n, 0);\n        \n        for (const auto& m : meetings) {\n            long long start = m[0], end = m[1];\n            long long duration = end - start;\n            \n            while (!busy_rooms.empty() && busy_rooms.top().first <= start) {\n                free_rooms.push(busy_rooms.top().second);\n                busy_rooms.pop();\n            }\n            \n            if (!free_rooms.empty()) {\n                int room = free_rooms.top();\n                free_rooms.pop();\n                busy_rooms.push({end, room});\n                count[room]++;\n            } else {\n                auto [earliest_end, room] = busy_rooms.top();\n                busy_rooms.pop();\n                busy_rooms.push({earliest_end + duration, room});\n                count[room]++;\n            }\n        }\n        \n        int max_idx = 0;\n        for (int i = 1; i < n; i++) {\n            if (count[i] > count[max_idx]) max_idx = i;\n        }\n        return max_idx;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Dual Min-Heaps for Free and Busy Rooms",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int mostBooked(int n, int[][] meetings) {\n        java.util.Arrays.sort(meetings, (a, b) -> Integer.compare(a[0], b[0]));\n        java.util.PriorityQueue<Integer> freeRooms = new java.util.PriorityQueue<>();\n        for (int i = 0; i < n; i++) freeRooms.offer(i);\n        \n        java.util.PriorityQueue<long[]> busyRooms = new java.util.PriorityQueue<>((a, b) -> {\n            if (a[0] != b[0]) return Long.compare(a[0], b[0]);\n            return Long.compare(a[1], b[1]);\n        });\n        int[] count = new int[n];\n        \n        for (int[] m : meetings) {\n            long start = m[0], end = m[1];\n            long duration = end - start;\n            \n            while (!busyRooms.isEmpty() && busyRooms.peek()[0] <= start) {\n                freeRooms.offer((int) busyRooms.poll()[1]);\n            }\n            \n            if (!freeRooms.isEmpty()) {\n                int room = freeRooms.poll();\n                busyRooms.offer(new long[]{end, room});\n                count[room]++;\n            } else {\n                long[] top = busyRooms.poll();\n                long earliestEnd = top[0];\n                int room = (int) top[1];\n                busyRooms.offer(new long[]{earliestEnd + duration, room});\n                count[room]++;\n            }\n        }\n        \n        int maxIdx = 0;\n        for (int i = 1; i < n; i++) {\n            if (count[i] > count[maxIdx]) maxIdx = i;\n        }\n        return maxIdx;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Dual Min-Heaps for Free and Busy Rooms",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var mostBooked = function(n, meetings) {\n    meetings.sort((a, b) => a[0] - b[0]);\n    const freeRooms = Array.from({ length: n }, (_, i) => i);\n    const busyRooms = [];\n    const count = new Array(n).fill(0);\n    \n    for (const [start, end] of meetings) {\n        const duration = end - start;\n        while (busyRooms.length > 0 && busyRooms[0].endTime <= start) {\n            busyRooms.sort((a, b) => a.endTime - b.endTime || a.room - b.room);\n            if (busyRooms[0].endTime > start) break;\n            const released = busyRooms.shift();\n            freeRooms.push(released.room);\n            freeRooms.sort((a, b) => a - b);\n        }\n        \n        if (freeRooms.length > 0) {\n            const room = freeRooms.shift();\n            busyRooms.push({ endTime: end, room });\n            busyRooms.sort((a, b) => a.endTime - b.endTime || a.room - b.room);\n            count[room]++;\n        } else {\n            busyRooms.sort((a, b) => a.endTime - b.endTime || a.room - b.room);\n            const earliest = busyRooms.shift();\n            busyRooms.push({ endTime: earliest.endTime + duration, room: earliest.room });\n            busyRooms.sort((a, b) => a.endTime - b.endTime || a.room - b.room);\n            count[earliest.room]++;\n        }\n    }\n    \n    let maxIdx = 0;\n    for (let i = 1; i < n; i++) {\n        if (count[i] > count[maxIdx]) maxIdx = i;\n    }\n    return maxIdx;\n};"
+    }
+  ]
+}

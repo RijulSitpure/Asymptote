@@ -1,0 +1,79 @@
+{
+  "slug": "longest-increasing-subsequence-ii",
+  "number": 2407,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Value Range Query Formulation",
+      "text": "For each number x, the predecessor must be in the range [max(1, x - k), x - 1] and strictly precede x in the array."
+    },
+    {
+      "level": 2,
+      "title": "Segment Tree Maximum Tracking",
+      "text": "Use a segment tree built over value domain [1, max_val] where each leaf stores the maximum length of a valid subsequence ending at that value."
+    },
+    {
+      "level": 3,
+      "title": "Point Update and Range Query",
+      "text": "For current value x, query the maximum in [max(1, x - k), x - 1], let it be L. Update position x in the segment tree with L + 1."
+    },
+    {
+      "level": 4,
+      "title": "Segment Tree Range Maximum Implementation",
+      "text": "```python\nclass Solution:\n    def lengthOfLIS(self, nums: list[int], k: int) -> int:\n        max_v = max(nums)\n        tree = [0] * (4 * (max_v + 1))\n        \n        def query(node, l, r, ql, qr):\n            if ql <= l and r <= qr:\n                return tree[node]\n            mid = (l + r) // 2\n            res = 0\n            if ql <= mid:\n                res = max(res, query(2 * node, l, mid, ql, qr))\n            if qr > mid:\n                res = max(res, query(2 * node + 1, mid + 1, r, ql, qr))\n            return res\n        \n        def update(node, l, r, idx, val):\n            if l == r:\n                tree[node] = max(tree[node], val)\n                return\n            mid = (l + r) // 2\n            if idx <= mid:\n                update(2 * node, l, mid, idx, val)\n            else:\n                update(2 * node + 1, mid + 1, r, idx, val)\n            tree[node] = max(tree[2 * node], tree[2 * node + 1])\n        \n        ans = 0\n        for x in nums:\n            left_bound = max(1, x - k)\n            right_bound = x - 1\n            best = 0\n            if left_bound <= right_bound:\n                best = query(1, 1, max_v, left_bound, right_bound)\n            cur = best + 1\n            update(1, 1, max_v, x, cur)\n            ans = max(ans, cur)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log(max_val))",
+    "space": "O(max_val)",
+    "variables": [
+      "n: length of nums",
+      "max_val: largest value in nums"
+    ],
+    "notes": "Each element performs O(log(max_val)) range maximum query and point update on segment tree.",
+    "whyNaiveFails": "Checking all earlier indices per element yields O(n^2) time.",
+    "spaceTimeTradeoff": "Segment tree maintains range maximums dynamically in 4 * max_val memory.",
+    "interviewerExpectation": "Models dynamic programming transitions over bounded value ranges via segment tree."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Segment Tree Range Maximum Queries over Value Spectrum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def lengthOfLIS(self, nums: list[int], k: int) -> int:\n        max_v = max(nums)\n        tree = [0] * (4 * (max_v + 1))\n        \n        def query(node, l, r, ql, qr):\n            if ql <= l and r <= qr:\n                return tree[node]\n            mid = (l + r) // 2\n            res = 0\n            if ql <= mid:\n                res = max(res, query(2 * node, l, mid, ql, qr))\n            if qr > mid:\n                res = max(res, query(2 * node + 1, mid + 1, r, ql, qr))\n            return res\n        \n        def update(node, l, r, idx, val):\n            if l == r:\n                tree[node] = max(tree[node], val)\n                return\n            mid = (l + r) // 2\n            if idx <= mid:\n                update(2 * node, l, mid, idx, val)\n            else:\n                update(2 * node + 1, mid + 1, r, idx, val)\n            tree[node] = max(tree[2 * node], tree[2 * node + 1])\n        \n        ans = 0\n        for x in nums:\n            left_bound = max(1, x - k)\n            right_bound = x - 1\n            best = 0\n            if left_bound <= right_bound:\n                best = query(1, 1, max_v, left_bound, right_bound)\n            cur = best + 1\n            update(1, 1, max_v, x, cur)\n            ans = max(ans, cur)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Segment Tree Range Maximum Queries over Value Spectrum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int lengthOfLIS(std::vector<int>& nums, int k) {\n        int max_v = 0;\n        for (int x : nums) max_v = std::max(max_v, x);\n        std::vector<int> tree(4 * (max_v + 1), 0);\n        \n        std::function<int(int, int, int, int, int)> query = [&](int node, int l, int r, int ql, int qr) {\n            if (ql <= l && r <= qr) return tree[node];\n            int mid = (l + r) / 2;\n            int res = 0;\n            if (ql <= mid) res = std::max(res, query(2 * node, l, mid, ql, qr));\n            if (qr > mid) res = std::max(res, query(2 * node + 1, mid + 1, r, ql, qr));\n            return res;\n        };\n        \n        std::function<void(int, int, int, int, int)> update = [&](int node, int l, int r, int idx, int val) {\n            if (l == r) {\n                tree[node] = std::max(tree[node], val);\n                return;\n            }\n            int mid = (l + r) / 2;\n            if (idx <= mid) update(2 * node, l, mid, idx, val);\n            else update(2 * node + 1, mid + 1, r, idx, val);\n            tree[node] = std::max(tree[2 * node], tree[2 * node + 1]);\n        };\n        \n        int ans = 0;\n        for (int x : nums) {\n            int ql = std::max(1, x - k), qr = x - 1;\n            int best = (ql <= qr) ? query(1, 1, max_v, ql, qr) : 0;\n            int cur = best + 1;\n            update(1, 1, max_v, x, cur);\n            ans = std::max(ans, cur);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Segment Tree Range Maximum Queries over Value Spectrum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int[] tree;\n    \n    public int lengthOfLIS(int[] nums, int k) {\n        int maxV = 0;\n        for (int x : nums) maxV = Math.max(maxV, x);\n        tree = new int[4 * (maxV + 1)];\n        \n        int ans = 0;\n        for (int x : nums) {\n            int ql = Math.max(1, x - k), qr = x - 1;\n            int best = (ql <= qr) ? query(1, 1, maxV, ql, qr) : 0;\n            int cur = best + 1;\n            update(1, 1, maxV, x, cur);\n            ans = Math.max(ans, cur);\n        }\n        return ans;\n    }\n    \n    private int query(int node, int l, int r, int ql, int qr) {\n        if (ql <= l && r <= qr) return tree[node];\n        int mid = (l + r) / 2;\n        int res = 0;\n        if (ql <= mid) res = Math.max(res, query(2 * node, l, mid, ql, qr));\n        if (qr > mid) res = Math.max(res, query(2 * node + 1, mid + 1, r, ql, qr));\n        return res;\n    }\n    \n    private void update(int node, int l, int r, int idx, int val) {\n        if (l == r) {\n            tree[node] = Math.max(tree[node], val);\n            return;\n        }\n        int mid = (l + r) / 2;\n        if (idx <= mid) update(2 * node, l, mid, idx, val);\n        else update(2 * node + 1, mid + 1, r, idx, val);\n        tree[node] = Math.max(tree[2 * node], tree[2 * node + 1]);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Segment Tree Range Maximum Queries over Value Spectrum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var lengthOfLIS = function(nums, k) {\n    let maxV = 0;\n    for (const x of nums) maxV = Math.max(maxV, x);\n    const tree = new Array(4 * (maxV + 1)).fill(0);\n    \n    function query(node, l, r, ql, qr) {\n        if (ql <= l && r <= qr) return tree[node];\n        const mid = Math.floor((l + r) / 2);\n        let res = 0;\n        if (ql <= mid) res = Math.max(res, query(2 * node, l, mid, ql, qr));\n        if (qr > mid) res = Math.max(res, query(2 * node + 1, mid + 1, r, ql, qr));\n        return res;\n    }\n    \n    function update(node, l, r, idx, val) {\n        if (l === r) {\n            tree[node] = Math.max(tree[node], val);\n            return;\n        }\n        const mid = Math.floor((l + r) / 2);\n        if (idx <= mid) update(2 * node, l, mid, idx, val);\n        else update(2 * node + 1, mid + 1, r, idx, val);\n        tree[node] = Math.max(tree[2 * node], tree[2 * node + 1]);\n    }\n    \n    let ans = 0;\n    for (const x of nums) {\n        const ql = Math.max(1, x - k), qr = x - 1;\n        const best = (ql <= qr) ? query(1, 1, maxV, ql, qr) : 0;\n        const cur = best + 1;\n        update(1, 1, maxV, x, cur);\n        ans = Math.max(ans, cur);\n    }\n    return ans;\n};"
+    }
+  ]
+}

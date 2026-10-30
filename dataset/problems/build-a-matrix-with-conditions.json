@@ -1,0 +1,78 @@
+{
+  "slug": "build-a-matrix-with-conditions",
+  "number": 2392,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dimension Independence",
+      "text": "The row ordering and column ordering are completely independent and can be solved as two separate dependency problems."
+    },
+    {
+      "level": 2,
+      "title": "Topological Order Extraction",
+      "text": "Build directed graphs for both row conditions and column conditions. Use in-degree based topological sorting to find valid coordinate sequences."
+    },
+    {
+      "level": 3,
+      "title": "Cycle Detection and Grid Placement",
+      "text": "If either graph contains a cycle (fewer than k elements ordered), return an empty matrix. Otherwise, place each number at its corresponding row and column indices."
+    },
+    {
+      "level": 4,
+      "title": "Topological Matrix Construction Implementation",
+      "text": "```python\nfrom collections import defaultdict, deque\n\nclass Solution:\n    def buildMatrix(self, k: int, rowConditions: list[list[int]], colConditions: list[list[int]]) -> list[list[int]]:\n        def topo_sort(edges):\n            adj = defaultdict(list)\n            indeg = [0] * (k + 1)\n            for u, v in edges:\n                adj[u].append(v)\n                indeg[v] += 1\n            q = deque([i for i in range(1, k + 1) if indeg[i] == 0])\n            order = []\n            while q:\n                node = q.popleft()\n                order.append(node)\n                for nxt in adj[node]:\n                    indeg[nxt] -= 1\n                    if indeg[nxt] == 0:\n                        q.append(nxt)\n            return order if len(order) == k else []\n        \n        row_order = topo_sort(rowConditions)\n        col_order = topo_sort(colConditions)\n        if not row_order or not col_order:\n            return []\n        \n        row_pos = {val: i for i, val in enumerate(row_order)}\n        col_pos = {val: j for j, val in enumerate(col_order)}\n        res = [[0] * k for _ in range(k)]\n        for num in range(1, k + 1):\n            res[row_pos[num]][col_pos[num]] = num\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(k^2 + len(rowConditions) + len(colConditions))",
+    "space": "O(k^2 + len(rowConditions) + len(colConditions))",
+    "variables": [
+      "k: matrix dimensions and number count"
+    ],
+    "notes": "Linear topological sort over condition graphs followed by k x k grid assignment.",
+    "whyNaiveFails": "Trial-and-error permutations over k elements results in factorial complexity O(k!).",
+    "spaceTimeTradeoff": "Stores adjacency lists and position maps for direct O(1) grid placement.",
+    "interviewerExpectation": "Recognizes that row and column constraints decouple cleanly into two independent topological sorts."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Independent Kahn Topological Sorts on Row and Column Constraints",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "from collections import defaultdict, deque\n\nclass Solution:\n    def buildMatrix(self, k: int, rowConditions: list[list[int]], colConditions: list[list[int]]) -> list[list[int]]:\n        def topo_sort(edges):\n            adj = defaultdict(list)\n            indeg = [0] * (k + 1)\n            for u, v in edges:\n                adj[u].append(v)\n                indeg[v] += 1\n            q = deque([i for i in range(1, k + 1) if indeg[i] == 0])\n            order = []\n            while q:\n                node = q.popleft()\n                order.append(node)\n                for nxt in adj[node]:\n                    indeg[nxt] -= 1\n                    if indeg[nxt] == 0:\n                        q.append(nxt)\n            return order if len(order) == k else []\n        \n        row_order = topo_sort(rowConditions)\n        col_order = topo_sort(colConditions)\n        if not row_order or not col_order:\n            return []\n        \n        row_pos = {val: i for i, val in enumerate(row_order)}\n        col_pos = {val: j for j, val in enumerate(col_order)}\n        res = [[0] * k for _ in range(k)]\n        for num in range(1, k + 1):\n            res[row_pos[num]][col_pos[num]] = num\n        return res"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Independent Kahn Topological Sorts on Row and Column Constraints",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    std::vector<std::vector<int>> buildMatrix(int k, std::vector<std::vector<int>>& rowConditions, std::vector<std::vector<int>>& colConditions) {\n        auto topoSort = [&](const std::vector<std::vector<int>>& edges) {\n            std::vector<std::vector<int>> adj(k + 1);\n            std::vector<int> indeg(k + 1, 0);\n            for (const auto& e : edges) {\n                adj[e[0]].push_back(e[1]);\n                indeg[e[1]]++;\n            }\n            std::queue<int> q;\n            for (int i = 1; i <= k; i++) {\n                if (indeg[i] == 0) q.push(i);\n            }\n            std::vector<int> order;\n            while (!q.empty()) {\n                int u = q.front();\n                q.pop();\n                order.push_back(u);\n                for (int v : adj[u]) {\n                    if (--indeg[v] == 0) q.push(v);\n                }\n            }\n            return (int)order.size() == k ? order : std::vector<int>();\n        };\n        \n        auto rowOrder = topoSort(rowConditions);\n        auto colOrder = topoSort(colConditions);\n        if (rowOrder.empty() || colOrder.empty()) return {};\n        \n        std::vector<int> rowPos(k + 1), colPos(k + 1);\n        for (int i = 0; i < k; i++) {\n            rowPos[rowOrder[i]] = i;\n            colPos[colOrder[i]] = i;\n        }\n        \n        std::vector<std::vector<int>> res(k, std::vector<int>(k, 0));\n        for (int num = 1; num <= k; num++) {\n            res[rowPos[num]][colPos[num]] = num;\n        }\n        return res;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Independent Kahn Topological Sorts on Row and Column Constraints",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int[][] buildMatrix(int k, int[][] rowConditions, int[][] colConditions) {\n        int[] rowOrder = topoSort(k, rowConditions);\n        int[] colOrder = topoSort(k, colConditions);\n        if (rowOrder.length == 0 || colOrder.length == 0) return new int[0][0];\n        \n        int[] rowPos = new int[k + 1];\n        int[] colPos = new int[k + 1];\n        for (int i = 0; i < k; i++) {\n            rowPos[rowOrder[i]] = i;\n            colPos[colOrder[i]] = i;\n        }\n        \n        int[][] res = new int[k][k];\n        for (int num = 1; num <= k; num++) {\n            res[rowPos[num]][colPos[num]] = num;\n        }\n        return res;\n    }\n    \n    private int[] topoSort(int k, int[][] edges) {\n        java.util.List<java.util.List<Integer>> adj = new java.util.ArrayList<>();\n        for (int i = 0; i <= k; i++) adj.add(new java.util.ArrayList<>());\n        int[] indeg = new int[k + 1];\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            indeg[e[1]]++;\n        }\n        java.util.Queue<Integer> q = new java.util.LinkedList<>();\n        for (int i = 1; i <= k; i++) {\n            if (indeg[i] == 0) q.offer(i);\n        }\n        int[] order = new int[k];\n        int idx = 0;\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            order[idx++] = u;\n            for (int v : adj.get(u)) {\n                if (--indeg[v] == 0) q.offer(v);\n            }\n        }\n        return idx == k ? order : new int[0];\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Independent Kahn Topological Sorts on Row and Column Constraints",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var buildMatrix = function(k, rowConditions, colConditions) {\n    function topoSort(edges) {\n        const adj = Array.from({ length: k + 1 }, () => []);\n        const indeg = new Array(k + 1).fill(0);\n        for (const [u, v] of edges) {\n            adj[u].push(v);\n            indeg[v]++;\n        }\n        const q = [];\n        for (let i = 1; i <= k; i++) {\n            if (indeg[i] === 0) q.push(i);\n        }\n        const order = [];\n        while (q.length > 0) {\n            const u = q.shift();\n            order.push(u);\n            for (const v of adj[u]) {\n                indeg[v]--;\n                if (indeg[v] === 0) q.push(v);\n            }\n        }\n        return order.length === k ? order : [];\n    }\n    \n    const rowOrder = topoSort(rowConditions);\n    const colOrder = topoSort(colConditions);\n    if (rowOrder.length === 0 || colOrder.length === 0) return [];\n    \n    const rowPos = new Array(k + 1);\n    const colPos = new Array(k + 1);\n    for (let i = 0; i < k; i++) {\n        rowPos[rowOrder[i]] = i;\n        colPos[colOrder[i]] = i;\n    }\n    \n    const res = Array.from({ length: k }, () => new Array(k).fill(0));\n    for (let num = 1; num <= k; num++) {\n        res[rowPos[num]][colPos[num]] = num;\n    }\n    return res;\n};"
+    }
+  ]
+}

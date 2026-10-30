@@ -1,0 +1,71 @@
+{
+  "slug": "change-null-values-in-a-table-to-the-previous-value",
+  "number": 2388,
+  "category": "Database",
+  "patterns": [
+    "window-offset"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Row Position Assignment",
+      "text": "Assign a sequence row number to retain the physical order of records in the table."
+    },
+    {
+      "level": 2,
+      "title": "Group Partitioning by Non-Null Values",
+      "text": "Compute a running count of non-null drink values ordered by row number to assign each row to its preceding non-null island."
+    },
+    {
+      "level": 3,
+      "title": "Value Imputation",
+      "text": "Pick the first non-null drink value within each group ordered by row number."
+    },
+    {
+      "level": 4,
+      "title": "Window Function Imputation Query Implementation",
+      "text": "```sql\nwith ranked as (\n    select\n        id,\n        drink,\n        row_number() over () as rn\n    from CoffeeShop\n),\ngrouped as (\n    select\n        id,\n        drink,\n        rn,\n        count(drink) over (order by rn rows between unbounded preceding and current row) as grp\n    from ranked\n)\nselect\n    id,\n    first_value(drink) over (partition by grp order by rn) as drink\nfrom grouped\norder by rn;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of rows in CoffeeShop"
+    ],
+    "notes": "Row numbering and window partition scans require linear-logarithmic sorting.",
+    "whyNaiveFails": "Correlated scalar subqueries scanning all preceding rows cause quadratic execution time.",
+    "spaceTimeTradeoff": "Window functions process streams in partitioned passes without Cartesian joins.",
+    "interviewerExpectation": "Understands running count technique for forward fill imputation over SQL streams."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window Count Grouping with First Value Imputation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "with ranked as (\n    select\n        id,\n        drink,\n        row_number() over () as rn\n    from CoffeeShop\n),\ngrouped as (\n    select\n        id,\n        drink,\n        rn,\n        count(drink) over (order by rn rows between unbounded preceding and current row) as grp\n    from ranked\n)\nselect\n    id,\n    first_value(drink) over (partition by grp order by rn) as drink\nfrom grouped\norder by rn;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window Count Grouping with First Value Imputation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "with ranked as (\n    select\n        id,\n        drink,\n        row_number() over () as rn\n    from CoffeeShop\n),\ngrouped as (\n    select\n        id,\n        drink,\n        rn,\n        count(drink) over (order by rn rows between unbounded preceding and current row) as grp\n    from ranked\n)\nselect\n    id,\n    first_value(drink) over (partition by grp order by rn) as drink\nfrom grouped\norder by rn;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Forward Fill Imputation with Pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef change_null_values(coffee_shop: pd.DataFrame) -> pd.DataFrame:\n    df = coffee_shop.copy()\n    df['drink'] = df['drink'].ffill()\n    return df[['id', 'drink']]"
+    }
+  ]
+}

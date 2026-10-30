@@ -1,0 +1,72 @@
+{
+  "slug": "employees-with-deductions",
+  "number": 2394,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Session Duration Rounding",
+      "text": "For each session in Logs, compute the duration in seconds and round up to the nearest minute using the ceiling function."
+    },
+    {
+      "level": 2,
+      "title": "Left Join All Employees",
+      "text": "Join Employees with Logs using a left join so that employees with zero recorded sessions are retained with zero total minutes."
+    },
+    {
+      "level": 3,
+      "title": "Deduction Threshold Comparison",
+      "text": "Group by employee id and filter for employees whose summed logged minutes are strictly less than their required hours multiplied by 60."
+    },
+    {
+      "level": 4,
+      "title": "Group Filter Query Implementation",
+      "text": "```sql\nselect\n    e.employee_id\nfrom Employees e\nleft join Logs l on e.employee_id = l.employee_id\ngroup by e.employee_id, e.needed_hours\nhaving coalesce(sum(ceil(timestampdiff(second, l.in_time, l.out_time) / 60.0)), 0) < e.needed_hours * 60;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + m)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of employees",
+      "m: number of log records"
+    ],
+    "notes": "Hash join and single-pass aggregation over employee logs.",
+    "whyNaiveFails": "Correlated scalar subqueries scanning the logs per employee cause quadratic overhead.",
+    "spaceTimeTradeoff": "Grouping by employee aggregates minutes directly in memory.",
+    "interviewerExpectation": "Properly accounts for ceiling rounding per session and handles employees with no activity via left join."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Left Join Aggregation with Ceiling Rounding and Having Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "select\n    e.employee_id\nfrom Employees e\nleft join Logs l on e.employee_id = l.employee_id\ngroup by e.employee_id, e.needed_hours\nhaving coalesce(sum(ceil(timestampdiff(second, l.in_time, l.out_time) / 60.0)), 0) < e.needed_hours * 60;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Left Join Aggregation with Ceiling Rounding and Having Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "select\n    e.employee_id\nfrom Employees e\nleft join Logs l on e.employee_id = l.employee_id\ngroup by e.employee_id, e.needed_hours\nhaving coalesce(sum(ceil(extract(epoch from (l.out_time - l.in_time)) / 60.0)), 0) < e.needed_hours * 60;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Merge and Ceiling Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\nimport numpy as np\n\ndef employees_with_deductions(employees: pd.DataFrame, logs: pd.DataFrame) -> pd.DataFrame:\n    if logs.empty:\n        return employees[['employee_id']]\n    \n    logs_copy = logs.copy()\n    diff_sec = (pd.to_datetime(logs_copy['out_time']) - pd.to_datetime(logs_copy['in_time'])).dt.total_seconds()\n    logs_copy['minutes'] = np.ceil(diff_sec / 60.0)\n    \n    worked = logs_copy.groupby('employee_id')['minutes'].sum().reset_index()\n    merged = employees.merge(worked, on='employee_id', how='left')\n    merged['minutes'] = merged['minutes'].fillna(0)\n    \n    res = merged[merged['minutes'] < merged['needed_hours'] * 60]\n    return res[['employee_id']]"
+    }
+  ]
+}
