@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-segment-sum-after-removals",
+  "number": 2382,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Reverse Time Processing",
+      "text": "Instead of removing elements and splitting segments, process queries in reverse order by adding elements and merging adjacent segments."
+    },
+    {
+      "level": 2,
+      "title": "Disjoint Set Component Sums",
+      "text": "Use a disjoint set data structure where each set root stores the sum of all elements in its contiguous segment."
+    },
+    {
+      "level": 3,
+      "title": "Running Maximum Component",
+      "text": "When activating an element, merge with active left and right neighbors, updating the running maximum segment sum."
+    },
+    {
+      "level": 4,
+      "title": "Reverse Disjoint Set Implementation",
+      "text": "```python\nclass Solution:\n    def maximumSegmentSum(self, nums: list[int], removeQueries: list[int]) -> list[int]:\n        n = len(nums)\n        parent = list(range(n))\n        seg_sum = [0] * n\n        active = [False] * n\n        def find(i):\n            if parent[i] != i:\n                parent[i] = find(parent[i])\n            return parent[i]\n        def union(i, j):\n            ri, rj = find(i), find(j)\n            if ri != rj:\n                parent[ri] = rj\n                seg_sum[rj] += seg_sum[ri]\n        ans = [0] * n\n        cur_max = 0\n        for q_idx in range(n - 1, -1, -1):\n            ans[q_idx] = cur_max\n            i = removeQueries[q_idx]\n            active[i] = True\n            seg_sum[i] = nums[i]\n            if i > 0 and active[i - 1]:\n                union(i, i - 1)\n            if i < n - 1 and active[i + 1]:\n                union(i, i + 1)\n            cur_max = max(cur_max, seg_sum[find(i)])\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * alpha(n))",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums array"
+    ],
+    "notes": "Near-linear runtime using reverse disjoint set union operations.",
+    "whyNaiveFails": "Splitting intervals explicitly per removal requires tree balancing with logarithmic overhead.",
+    "spaceTimeTradeoff": "Parent, segment sum, and activation arrays of size n.",
+    "interviewerExpectation": "Applies offline reverse query time-travel to replace deletion with disjoint set union."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Offline Reverse Time-Travel with Disjoint Set",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def maximumSegmentSum(self, nums: list[int], removeQueries: list[int]) -> list[int]:\n        n = len(nums)\n        parent = list(range(n))\n        seg_sum = [0] * n\n        active = [False] * n\n        def find(i):\n            if parent[i] != i:\n                parent[i] = find(parent[i])\n            return parent[i]\n        def union(i, j):\n            ri, rj = find(i), find(j)\n            if ri != rj:\n                parent[ri] = rj\n                seg_sum[rj] += seg_sum[ri]\n        ans = [0] * n\n        cur_max = 0\n        for q_idx in range(n - 1, -1, -1):\n            ans[q_idx] = cur_max\n            i = removeQueries[q_idx]\n            active[i] = True\n            seg_sum[i] = nums[i]\n            if i > 0 and active[i - 1]:\n                union(i, i - 1)\n            if i < n - 1 and active[i + 1]:\n                union(i, i + 1)\n            cur_max = max(cur_max, seg_sum[find(i)])\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Offline Reverse Time-Travel with Disjoint Set",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    std::vector<long long> maximumSegmentSum(std::vector<int>& nums, std::vector<int>& removeQueries) {\n        int n = nums.size();\n        std::vector<int> parent(n);\n        std::iota(parent.begin(), parent.end(), 0);\n        std::vector<long long> seg_sum(n, 0);\n        std::vector<bool> active(n, false);\n        auto find = [&](auto& self, int i) -> int {\n            return parent[i] == i ? i : (parent[i] = self(self, parent[i]));\n        };\n        auto unite = [&](int i, int j) {\n            int ri = find(find, i), rj = find(find, j);\n            if (ri != rj) {\n                parent[ri] = rj;\n                seg_sum[rj] += seg_sum[ri];\n            }\n        };\n        std::vector<long long> ans(n, 0);\n        long long cur_max = 0;\n        for (int q = n - 1; q >= 0; --q) {\n            ans[q] = cur_max;\n            int i = removeQueries[q];\n            active[i] = true;\n            seg_sum[i] = nums[i];\n            if (i > 0 && active[i - 1]) unite(i, i - 1);\n            if (i < n - 1 && active[i + 1]) unite(i, i + 1);\n            cur_max = std::max(cur_max, seg_sum[find(find, i)]);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Offline Reverse Time-Travel with Disjoint Set",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public long[] maximumSegmentSum(int[] nums, int[] removeQueries) {\n        int n = nums.length;\n        int[] parent = new int[n];\n        for (int i = 0; i < n; ++i) parent[i] = i;\n        long[] segSum = new long[n];\n        boolean[] active = new boolean[n];\n        long[] ans = new long[n];\n        long curMax = 0;\n        for (int q = n - 1; q >= 0; --q) {\n            ans[q] = curMax;\n            int i = removeQueries[q];\n            active[i] = true;\n            segSum[i] = nums[i];\n            if (i > 0 && active[i - 1]) union(parent, segSum, i, i - 1);\n            if (i < n - 1 && active[i + 1]) union(parent, segSum, i, i + 1);\n            curMax = Math.max(curMax, segSum[find(parent, i)]);\n        }\n        return ans;\n    }\n    private int find(int[] parent, int i) {\n        if (parent[i] != i) parent[i] = find(parent, parent[i]);\n        return parent[i];\n    }\n    private void union(int[] parent, long[] segSum, int i, int j) {\n        int ri = find(parent, i), rj = find(parent, j);\n        if (ri != rj) {\n            parent[ri] = rj;\n            segSum[rj] += segSum[ri];\n        }\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Offline Reverse Time-Travel with Disjoint Set",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var maximumSegmentSum = function(nums, removeQueries) {\n    const n = nums.length;\n    const parent = new Int32Array(n);\n    for (let i = 0; i < n; ++i) parent[i] = i;\n    const segSum = new BigInt64Array(n);\n    const active = new Uint8Array(n);\n    function find(i) {\n        if (parent[i] !== i) parent[i] = find(parent[i]);\n        return parent[i];\n    }\n    function union(i, j) {\n        const ri = find(i), rj = find(j);\n        if (ri !== rj) {\n            parent[ri] = rj;\n            segSum[rj] += segSum[ri];\n        }\n    }\n    const ans = new Array(n);\n    let curMax = 0n;\n    for (let q = n - 1; q >= 0; --q) {\n        ans[q] = Number(curMax);\n        const i = removeQueries[q];\n        active[i] = 1;\n        segSum[i] = BigInt(nums[i]);\n        if (i > 0 && active[i - 1]) union(i, i - 1);\n        if (i < n - 1 && active[i + 1]) union(i, i + 1);\n        const rootVal = segSum[find(i)];\n        if (rootVal > curMax) curMax = rootVal;\n    }\n    return ans;\n};"
+    }
+  ]
+}

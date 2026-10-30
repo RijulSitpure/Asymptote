@@ -1,0 +1,73 @@
+{
+  "slug": "calculate-the-influence-of-each-salesperson",
+  "number": 2372,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Multi-Table Left Joins",
+      "text": "Join salesperson to customer on salesperson id, and join customer to sales on customer id using left joins to preserve inactive salespersons."
+    },
+    {
+      "level": 2,
+      "title": "Salesperson Grouping",
+      "text": "Group by salesperson id and salesperson name."
+    },
+    {
+      "level": 3,
+      "title": "Null Coalescing Total",
+      "text": "Calculate sum of price, wrapping with coalesce to substitute 0 for salespersons without transactions."
+    },
+    {
+      "level": 4,
+      "title": "Left Join Aggregation Query Implementation",
+      "text": "```sql\nselect\n    sp.salesperson_id,\n    sp.name,\n    coalesce(sum(s.price), 0) as total\nfrom Salesperson sp\nleft join Customer c on sp.salesperson_id = c.salesperson_id\nleft join Sales s on c.customer_id = s.customer_id\ngroup by sp.salesperson_id, sp.name;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + m + k)",
+    "space": "O(n)",
+    "variables": [
+      "n: salespersons",
+      "m: customers",
+      "k: sales transactions"
+    ],
+    "notes": "Left hash joins followed by group by aggregation.",
+    "whyNaiveFails": "Correlated subquery per salesperson produces quadratic scan overhead.",
+    "spaceTimeTradeoff": "Accumulator table tracks sums per salesperson.",
+    "interviewerExpectation": "Demonstrates multi-table left joins with proper null handling."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Multi-Table Left Joins with Coalesced Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "select\n    sp.salesperson_id,\n    sp.name,\n    coalesce(sum(s.price), 0) as total\nfrom Salesperson sp\nleft join Customer c on sp.salesperson_id = c.salesperson_id\nleft join Sales s on c.customer_id = s.customer_id\ngroup by sp.salesperson_id, sp.name;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Multi-Table Left Joins with Coalesced Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "select\n    sp.salesperson_id,\n    sp.name,\n    coalesce(sum(s.price), 0) as total\nfrom Salesperson sp\nleft join Customer c on sp.salesperson_id = c.salesperson_id\nleft join Sales s on c.customer_id = s.customer_id\ngroup by sp.salesperson_id, sp.name;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Merge with Fillna and Groupby Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef calculate_influence(salesperson: pd.DataFrame, customer: pd.DataFrame, sales: pd.DataFrame) -> pd.DataFrame:\n    df = salesperson.merge(customer, on='salesperson_id', how='left')\n    df = df.merge(sales, on='customer_id', how='left')\n    res = df.groupby(['salesperson_id', 'name'], as_index=False)['price'].sum()\n    return res.rename(columns={'price': 'total'})"
+    }
+  ]
+}

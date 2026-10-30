@@ -1,0 +1,71 @@
+{
+  "slug": "generate-the-invoice",
+  "number": 2362,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Compute Total Invoice Spending",
+      "text": "Join purchases with products on product id to calculate the sum of quantity * price for each invoice."
+    },
+    {
+      "level": 2,
+      "title": "Identify Top Invoice",
+      "text": "Order invoices by total spending descending and invoice id ascending to break ties, limiting to the first invoice."
+    },
+    {
+      "level": 3,
+      "title": "Retrieve Invoice Line Items",
+      "text": "Join the selected invoice back to purchases and products to output product id, quantity, and total item price."
+    },
+    {
+      "level": 4,
+      "title": "Common Table Expression Query Implementation",
+      "text": "```sql\nwith invoice_totals as (\n    select\n        p.invoice_id,\n        sum(p.quantity * pr.price) as total_price\n    from Purchases p\n    join Products pr on p.product_id = pr.product_id\n    group by p.invoice_id\n    order by total_price desc, p.invoice_id asc\n    limit 1\n)\nselect\n    p.product_id,\n    p.quantity,\n    p.quantity * pr.price as price\nfrom Purchases p\njoin Products pr on p.product_id = pr.product_id\nwhere p.invoice_id = (select invoice_id from invoice_totals);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m log m)",
+    "space": "O(m)",
+    "variables": [
+      "m: number of purchases rows"
+    ],
+    "notes": "Hash join and group aggregation followed by single top-invoice filter.",
+    "whyNaiveFails": "Correlated subquery per line item checking max invoice price causes quadratic overhead.",
+    "spaceTimeTradeoff": "CTE isolates top invoice id before item retrieval.",
+    "interviewerExpectation": "Employs common table expression or subquery to select top invoice by spending and id tie-breaker."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Common Table Expression with Aggregation and Subquery Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "with invoice_totals as (\n    select\n        p.invoice_id,\n        sum(p.quantity * pr.price) as total_price\n    from Purchases p\n    join Products pr on p.product_id = pr.product_id\n    group by p.invoice_id\n    order by total_price desc, p.invoice_id asc\n    limit 1\n)\nselect\n    p.product_id,\n    p.quantity,\n    p.quantity * pr.price as price\nfrom Purchases p\njoin Products pr on p.product_id = pr.product_id\nwhere p.invoice_id = (select invoice_id from invoice_totals);"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Common Table Expression with Aggregation and Subquery Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "with invoice_totals as (\n    select\n        p.invoice_id,\n        sum(p.quantity * pr.price) as total_price\n    from Purchases p\n    join Products pr on p.product_id = pr.product_id\n    group by p.invoice_id\n    order by total_price desc, p.invoice_id asc\n    limit 1\n)\nselect\n    p.product_id,\n    p.quantity,\n    p.quantity * pr.price as price\nfrom Purchases p\njoin Products pr on p.product_id = pr.product_id\nwhere p.invoice_id = (select invoice_id from invoice_totals);"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Merge, Groupby Aggregation, and Slicing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef generate_the_invoice(products: pd.DataFrame, purchases: pd.DataFrame) -> pd.DataFrame:\n    df = purchases.merge(products, on='product_id')\n    df['item_cost'] = df['quantity'] * df['price']\n    totals = df.groupby('invoice_id')['item_cost'].sum().reset_index()\n    totals = totals.sort_values(by=['item_cost', 'invoice_id'], ascending=[False, True])\n    if totals.empty:\n        return pd.DataFrame(columns=['product_id', 'quantity', 'price'])\n    top_invoice = totals.iloc[0]['invoice_id']\n    res = df[df['invoice_id'] == top_invoice][['product_id', 'quantity', 'item_cost']]\n    return res.rename(columns={'item_cost': 'price'})"
+    }
+  ]
+}

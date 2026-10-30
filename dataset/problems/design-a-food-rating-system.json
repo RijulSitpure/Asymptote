@@ -1,0 +1,78 @@
+{
+  "slug": "design-a-food-rating-system",
+  "number": 2353,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dual Indexing by Food and Cuisine",
+      "text": "Maintain mapping from each food to its cuisine and rating, along with rating rankings partitioned by cuisine."
+    },
+    {
+      "level": 2,
+      "title": "Lazy Deletion Strategy",
+      "text": "When modifying a food rating, push the updated score to the cuisine ranking pool and discard outdated entries lazily."
+    },
+    {
+      "level": 3,
+      "title": "Lexicographical Tie Breaking",
+      "text": "Order ratings descending and food names ascending to resolve ties deterministically."
+    },
+    {
+      "level": 4,
+      "title": "Cuisine Priority Pools Implementation",
+      "text": "```python\nimport heapq\nfrom collections import defaultdict\n\nclass FoodRatings:\n    def __init__(self, foods: list[str], cuisines: list[str], ratings: list[int]):\n        self.food_info = {}\n        self.cuisine_heaps = defaultdict(list)\n        for f, c, r in zip(foods, cuisines, ratings):\n            self.food_info[f] = (c, r)\n            heapq.heappush(self.cuisine_heaps[c], (-r, f))\n\n    def changeRating(self, food: str, newRating: int) -> None:\n        cuisine, _ = self.food_info[food]\n        self.food_info[food] = (cuisine, newRating)\n        heapq.heappush(self.cuisine_heaps[cuisine], (-newRating, food))\n\n    def highestRated(self, cuisine: str) -> str:\n        h = self.cuisine_heaps[cuisine]\n        while h:\n            neg_r, food = h[0]\n            c, cur_r = self.food_info[food]\n            if -neg_r == cur_r:\n                return food\n            heapq.heappop(h)\n        return \"\"\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log n) for changeRating, amortized O(log n) for highestRated",
+    "space": "O(n)",
+    "variables": [
+      "n: total number of foods"
+    ],
+    "notes": "Lazy priority queue pruning amortizes cleanly.",
+    "whyNaiveFails": "Scanning foods per cuisine query takes O(n) time.",
+    "spaceTimeTradeoff": "Stores inverted cuisine heaps and food metadata.",
+    "interviewerExpectation": "Designs state using lazy deletion or ordered sets with lexicographical tie-breakers."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Hash Maps with Lazy Heap Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import heapq\nfrom collections import defaultdict\n\nclass FoodRatings:\n    def __init__(self, foods: list[str], cuisines: list[str], ratings: list[int]):\n        self.food_info = {}\n        self.cuisine_heaps = defaultdict(list)\n        for f, c, r in zip(foods, cuisines, ratings):\n            self.food_info[f] = (c, r)\n            heapq.heappush(self.cuisine_heaps[c], (-r, f))\n\n    def changeRating(self, food: str, newRating: int) -> None:\n        cuisine, _ = self.food_info[food]\n        self.food_info[food] = (cuisine, newRating)\n        heapq.heappush(self.cuisine_heaps[cuisine], (-newRating, food))\n\n    def highestRated(self, cuisine: str) -> str:\n        h = self.cuisine_heaps[cuisine]\n        while h:\n            neg_r, food = h[0]\n            c, cur_r = self.food_info[food]\n            if -neg_r == cur_r:\n                return food\n            heapq.heappop(h)\n        return \"\""
+    },
+    {
+      "lang": "cpp",
+      "approach": "Hash Maps with Ordered Sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class FoodRatings {\nprivate:\n    struct Comp {\n        bool operator()(const std::pair<int, std::string>& a, const std::pair<int, std::string>& b) const {\n            if (a.first != b.first) return a.first > b.first;\n            return a.second < b.second;\n        }\n    };\n    std::unordered_map<std::string, std::pair<std::string, int>> food_info;\n    std::unordered_map<std::string, std::set<std::pair<int, std::string>, Comp>> cuisine_sets;\npublic:\n    FoodRatings(std::vector<std::string>& foods, std::vector<std::string>& cuisines, std::vector<int>& ratings) {\n        for (size_t i = 0; i < foods.size(); ++i) {\n            food_info[foods[i]] = {cuisines[i], ratings[i]};\n            cuisine_sets[cuisines[i]].insert({ratings[i], foods[i]});\n        }\n    }\n    \n    void changeRating(std::string food, int newRating) {\n        auto& [cuisine, oldRating] = food_info[food];\n        cuisine_sets[cuisine].erase({oldRating, food});\n        oldRating = newRating;\n        cuisine_sets[cuisine].insert({newRating, food});\n    }\n    \n    std::string highestRated(std::string cuisine) {\n        return cuisine_sets[cuisine].begin()->second;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Hash Maps with Ordered Sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class FoodRatings {\n    private static class Entry {\n        int rating;\n        String food;\n        Entry(int rating, String food) {\n            this.rating = rating;\n            this.food = food;\n        }\n    }\n    private java.util.Map<String, String> foodToCuisine = new java.util.HashMap<>();\n    private java.util.Map<String, Integer> foodToRating = new java.util.HashMap<>();\n    private java.util.Map<String, java.util.TreeSet<Entry>> cuisineToFoods = new java.util.HashMap<>();\n\n    public FoodRatings(String[] foods, String[] cuisines, int[] ratings) {\n        for (int i = 0; i < foods.length; ++i) {\n            foodToCuisine.put(foods[i], cuisines[i]);\n            foodToRating.put(foods[i], ratings[i]);\n            cuisineToFoods.computeIfAbsent(cuisines[i], k -> new java.util.TreeSet<>((a, b) -> {\n                if (a.rating != b.rating) return Integer.compare(b.rating, a.rating);\n                return a.food.compareTo(b.food);\n            })).add(new Entry(ratings[i], foods[i]));\n        }\n    }\n    \n    public void changeRating(String food, int newRating) {\n        String cuisine = foodToCuisine.get(food);\n        int oldRating = foodToRating.get(food);\n        foodToRating.put(food, newRating);\n        java.util.TreeSet<Entry> set = cuisineToFoods.get(cuisine);\n        set.remove(new Entry(oldRating, food));\n        set.add(new Entry(newRating, food));\n    }\n    \n    public String highestRated(String cuisine) {\n        return cuisineToFoods.get(cuisine).first().food;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Hash Maps with Inverted Indexing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var FoodRatings = function(foods, cuisines, ratings) {\n    this.foodInfo = new Map();\n    this.cuisineFoods = new Map();\n    for (let i = 0; i < foods.length; ++i) {\n        this.foodInfo.set(foods[i], { cuisine: cuisines[i], rating: ratings[i] });\n        if (!this.cuisineFoods.has(cuisines[i])) this.cuisineFoods.set(cuisines[i], []);\n        this.cuisineFoods.get(cuisines[i]).push(foods[i]);\n    }\n};\n\nFoodRatings.prototype.changeRating = function(food, newRating) {\n    this.foodInfo.get(food).rating = newRating;\n};\n\nFoodRatings.prototype.highestRated = function(cuisine) {\n    const foods = this.cuisineFoods.get(cuisine);\n    let bestFood = foods[0];\n    let bestRating = this.foodInfo.get(bestFood).rating;\n    for (let i = 1; i < foods.length; ++i) {\n        const f = foods[i];\n        const r = this.foodInfo.get(f).rating;\n        if (r > bestRating || (r === bestRating && f < bestFood)) {\n            bestRating = r;\n            bestFood = f;\n        }\n    }\n    return bestFood;\n};"
+    }
+  ]
+}
