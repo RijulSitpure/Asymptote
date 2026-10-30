@@ -1,0 +1,72 @@
+{
+  "slug": "find-cutoff-score-for-each-school",
+  "number": 1988,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Matching Schools With Passing Exam Scores",
+      "text": "A score satisfies a school requirement if student_count is less than or equal to the school capacity."
+    },
+    {
+      "level": 2,
+      "title": "Choosing the Minimum Valid Score",
+      "text": "Left join Schools with Exam on student_count <= capacity. For each school, aggregate the minimum score among qualifying options."
+    },
+    {
+      "level": 3,
+      "title": "Fallback for Unreachable Capacities",
+      "text": "If no score has student_count <= capacity, return -1 using coalesce or ifnull."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT\n    s.school_id,\n    IFNULL(MIN(e.score), -1) AS score\nFROM Schools s\nLEFT JOIN Exam e\n    ON e.student_count <= s.capacity\nGROUP BY s.school_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S * E) for theta-join on capacity",
+    "space": "O(S) space for grouped school cutoffs",
+    "variables": [
+      "S: number of schools in Schools table",
+      "E: number of score tiers in Exam table"
+    ],
+    "notes": "Theta-join on student_count <= capacity with MIN aggregation.",
+    "whyNaiveFails": "An inner join discards schools with small capacities where no exam score fits.",
+    "spaceTimeTradeoff": "LEFT JOIN with IFNULL correctly assigns -1 when no valid score exists.",
+    "interviewerExpectation": "Candidate should choose MIN(score) and default null results to -1."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT\n    s.school_id,\n    IFNULL(MIN(e.score), -1) AS score\nFROM Schools s\nLEFT JOIN Exam e\n    ON e.student_count <= s.capacity\nGROUP BY s.school_id;",
+      "approach": "LEFT JOIN with MIN aggregation in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT\n    s.school_id,\n    COALESCE(MIN(e.score), -1) AS score\nFROM Schools s\nLEFT JOIN Exam e\n    ON e.student_count <= s.capacity\nGROUP BY s.school_id;",
+      "approach": "LEFT JOIN with MIN aggregation in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_cutoff_score(schools: pd.DataFrame, exam: pd.DataFrame) -> pd.DataFrame:\n    m = pd.merge(schools, exam, how='cross')\n    qual = m[m['student_count'] <= m['capacity']]\n    if qual.empty:\n        schools['score'] = -1\n        return schools[['school_id', 'score']]\n    grouped = qual.groupby('school_id')['score'].min().reset_index()\n    res = pd.merge(schools[['school_id']], grouped, on='school_id', how='left')\n    res['score'] = res['score'].fillna(-1).astype(int)\n    return res",
+      "approach": "Cross merge with capacity filtering in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

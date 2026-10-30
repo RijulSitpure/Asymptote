@@ -450,7 +450,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
       asymptote_user_problems: {
         '1': { is_solved: 1, title: 'Two Sum' },
         '15': { is_solved: 1, title: '3Sum' },
-        '2000': { is_solved: 1, title: 'Reverse Prefix of Word' }
+        '2001': { is_solved: 1, title: 'Number of Pairs of Interchangeable Rectangles' }
       }
     });
 
@@ -478,13 +478,13 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(threeSum.pattern_id).toBe('two-pointers-opposite');
     expect(threeSum.pattern_title).toBe('Opposite Ends Two Pointers');
 
-    // Reverse Prefix of Word (#2000) - uncurated catalog problem keyed by numeric string "2000"
-    const revPrefix = solved.find(p => p.number === 2000);
-    expect(revPrefix).toBeDefined();
-    expect(revPrefix.slug).toBe('reverse-prefix-of-word');
-    expect(revPrefix.verified).toBe(0);
-    expect(revPrefix.pattern_id).toBe('two-pointers-opposite');
-    expect(revPrefix.pattern_title).toBe('Opposite Ends Two Pointers');
+    // Number of Pairs of Interchangeable Rectangles (#2001) - uncurated catalog problem keyed by numeric string "2001"
+    const rectPairs = solved.find(p => p.number === 2001);
+    expect(rectPairs).toBeDefined();
+    expect(rectPairs.slug).toBe('number-of-pairs-of-interchangeable-rectangles');
+    expect(rectPairs.verified).toBe(0);
+    expect(rectPairs.pattern_id).toBe('math-number-theory');
+    expect(rectPairs.pattern_title).toBe('Number Theory, GCD & Fast Exponentiation');
 
     // Verify stats calculation includes solved problems properly
     const stats = await testEngine.getStats();

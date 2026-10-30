@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-number-of-work-sessions-to-finish-the-tasks",
+  "number": 1986,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Task Count and State Representation",
+      "text": "Since n is at most 14, represent any subset of completed tasks as a bitmask."
+    },
+    {
+      "level": 2,
+      "title": "Compound State Structure",
+      "text": "For each bitmask of completed tasks, store a pair (sessions, current_session_time) minimizing the number of sessions, breaking ties with smallest current session time."
+    },
+    {
+      "level": 3,
+      "title": "Bit Transition Logic",
+      "text": "To add task i to mask: if current_time + tasks[i] <= sessionTime, session count remains the same and time increases; otherwise, start a new session of duration tasks[i]."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def minSessions(self, tasks: list[int], sessionTime: int) -> int:\n        n = len(tasks)\n        dp = [(n + 1, 0)] * (1 << n)\n        dp[0] = (1, 0)\n        for mask in range(1 << n):\n            sessions, cur_time = dp[mask]\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    nxt_mask = mask | (1 << i)\n                    if cur_time + tasks[i] <= sessionTime:\n                        nxt_val = (sessions, cur_time + tasks[i])\n                    else:\n                        nxt_val = (sessions + 1, tasks[i])\n                    if nxt_val < dp[nxt_mask]:\n                        dp[nxt_mask] = nxt_val\n        return dp[(1 << n) - 1][0]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * 2^N)",
+    "space": "O(2^N)",
+    "variables": [
+      "N: number of tasks (N <= 14)",
+      "sessionTime: maximum capacity of a work session"
+    ],
+    "notes": "Bitmask dynamic programming minimizing session count and residual time.",
+    "whyNaiveFails": "Testing all permutations or partitions takes O(N!) or Bell number complexity.",
+    "spaceTimeTradeoff": "Tracking optimal (sessions, current_time) per subset explores all 2^N states in order.",
+    "interviewerExpectation": "Candidate should recognize bitmask DP over small N (<= 14) and maintain compound session state."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minSessions(self, tasks: list[int], sessionTime: int) -> int:\n        n = len(tasks)\n        dp = [(n + 1, 0)] * (1 << n)\n        dp[0] = (1, 0)\n        for mask in range(1 << n):\n            sessions, cur_time = dp[mask]\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    nxt_mask = mask | (1 << i)\n                    if cur_time + tasks[i] <= sessionTime:\n                        nxt_val = (sessions, cur_time + tasks[i])\n                    else:\n                        nxt_val = (sessions + 1, tasks[i])\n                    if nxt_val < dp[nxt_mask]:\n                        dp[nxt_mask] = nxt_val\n        return dp[(1 << n) - 1][0]",
+      "approach": "Bitmask DP with (sessions, cur_time) compound state in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minSessions(vector<int>& tasks, int sessionTime) {\n        int n = tasks.size();\n        vector<pair<int, int>> dp(1 << n, {n + 1, 0});\n        dp[0] = {1, 0};\n        for (int mask = 0; mask < (1 << n); mask++) {\n            auto [sessions, cur_time] = dp[mask];\n            for (int i = 0; i < n; i++) {\n                if (!(mask & (1 << i))) {\n                    int nxt_mask = mask | (1 << i);\n                    pair<int, int> nxt_val;\n                    if (cur_time + tasks[i] <= sessionTime) {\n                        nxt_val = {sessions, cur_time + tasks[i]};\n                    } else {\n                        nxt_val = {sessions + 1, tasks[i]};\n                    }\n                    if (nxt_val < dp[nxt_mask]) {\n                        dp[nxt_mask] = nxt_val;\n                    }\n                }\n            }\n        }\n        return dp[(1 << n) - 1].first;\n    }\n};",
+      "approach": "Bitmask DP with pair<int, int> in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    public int minSessions(int[] tasks, int sessionTime) {\n        int n = tasks.length;\n        int[] sessions = new int[1 << n];\n        int[] times = new int[1 << n];\n        Arrays.fill(sessions, n + 1);\n        sessions[0] = 1;\n        times[0] = 0;\n\n        for (int mask = 0; mask < (1 << n); mask++) {\n            for (int i = 0; i < n; i++) {\n                if ((mask & (1 << i)) == 0) {\n                    int nxtMask = mask | (1 << i);\n                    int nxtSess = sessions[mask];\n                    int nxtTime = times[mask] + tasks[i];\n                    if (nxtTime > sessionTime) {\n                        nxtSess++;\n                        nxtTime = tasks[i];\n                    }\n                    if (nxtSess < sessions[nxtMask] || (nxtSess == sessions[nxtMask] && nxtTime < times[nxtMask])) {\n                        sessions[nxtMask] = nxtSess;\n                        times[nxtMask] = nxtTime;\n                    }\n                }\n            }\n        }\n        return sessions[(1 << n) - 1];\n    }\n}",
+      "approach": "Bitmask DP with dual state arrays in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minSessions = function(tasks, sessionTime) {\n  const n = tasks.length;\n  const sessions = new Array(1 << n).fill(n + 1);\n  const times = new Array(1 << n).fill(0);\n  sessions[0] = 1;\n  times[0] = 0;\n\n  for (let mask = 0; mask < (1 << n); mask++) {\n    for (let i = 0; i < n; i++) {\n      if (!(mask & (1 << i))) {\n        const nxtMask = mask | (1 << i);\n        let nxtSess = sessions[mask];\n        let nxtTime = times[mask] + tasks[i];\n        if (nxtTime > sessionTime) {\n          nxtSess++;\n          nxtTime = tasks[i];\n        }\n        if (nxtSess < sessions[nxtMask] || (nxtSess === sessions[nxtMask] && nxtTime < times[nxtMask])) {\n          sessions[nxtMask] = nxtSess;\n          times[nxtMask] = nxtTime;\n        }\n      }\n    }\n  }\n  return sessions[(1 << n) - 1];\n};",
+      "approach": "Bitmask DP with dual state arrays in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

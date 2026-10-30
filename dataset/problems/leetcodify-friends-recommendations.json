@@ -1,0 +1,71 @@
+{
+  "slug": "leetcodify-friends-recommendations",
+  "number": 1917,
+  "category": "Database",
+  "patterns": [
+    "having-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Song Listening Overlap",
+      "text": "Two users share listening interest if they both listened to the exact same song on the exact same date."
+    },
+    {
+      "level": 2,
+      "title": "Threshold for Recommendations",
+      "text": "Join the listens table with itself on date and song_id where user1 is distinct from user2, then filter for pairs sharing at least 3 distinct song_ids on that day."
+    },
+    {
+      "level": 3,
+      "title": "Excluding Existing Friendships",
+      "text": "Ensure the two users are not already connected as friends in the friendship table in either direction."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH DailyListening AS (\n    SELECT\n        l1.user_id AS user_id,\n        l2.user_id AS recommended_id,\n        l1.day\n    FROM Listens l1\n    JOIN Listens l2\n        ON l1.day = l2.day\n        AND l1.song_id = l2.song_id\n        AND l1.user_id != l2.user_id\n    GROUP BY l1.user_id, l2.user_id, l1.day\n    HAVING COUNT(DISTINCT l1.song_id) >= 3\n)\nSELECT DISTINCT\n    d.user_id,\n    d.recommended_id\nFROM DailyListening d\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM Friendship f\n    WHERE (f.user1_id = d.user_id AND f.user2_id = d.recommended_id)\n       OR (f.user1_id = d.recommended_id AND f.user2_id = d.user_id)\n);\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(L^2) in worst case for self-joining listens on date and song",
+    "space": "O(L) auxiliary space for intermediate recommendations",
+    "variables": [
+      "L: number of listening records in Listens table"
+    ],
+    "notes": "Self-join on date and song with distinct song threshold.",
+    "whyNaiveFails": "Failing to check bidirectional friendship can recommend people who are already friends.",
+    "spaceTimeTradeoff": "Group by with having filters qualifying pairs before friendship lookup.",
+    "interviewerExpectation": "Candidate should handle symmetry and verify at least 3 distinct songs on the same day."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH DailyListening AS (\n    SELECT\n        l1.user_id AS user_id,\n        l2.user_id AS recommended_id,\n        l1.day\n    FROM Listens l1\n    JOIN Listens l2\n        ON l1.day = l2.day\n        AND l1.song_id = l2.song_id\n        AND l1.user_id != l2.user_id\n    GROUP BY l1.user_id, l2.user_id, l1.day\n    HAVING COUNT(DISTINCT l1.song_id) >= 3\n)\nSELECT DISTINCT\n    d.user_id,\n    d.recommended_id\nFROM DailyListening d\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM Friendship f\n    WHERE (f.user1_id = d.user_id AND f.user2_id = d.recommended_id)\n       OR (f.user1_id = d.recommended_id AND f.user2_id = d.user_id)\n);",
+      "approach": "Self-join with HAVING count distinct songs in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH DailyListening AS (\n    SELECT\n        l1.user_id AS user_id,\n        l2.user_id AS recommended_id,\n        l1.day\n    FROM Listens l1\n    JOIN Listens l2\n        ON l1.day = l2.day\n        AND l1.song_id = l2.song_id\n        AND l1.user_id != l2.user_id\n    GROUP BY l1.user_id, l2.user_id, l1.day\n    HAVING COUNT(DISTINCT l1.song_id) >= 3\n)\nSELECT DISTINCT\n    d.user_id,\n    d.recommended_id\nFROM DailyListening d\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM Friendship f\n    WHERE (f.user1_id = d.user_id AND f.user2_id = d.recommended_id)\n       OR (f.user1_id = d.recommended_id AND f.user2_id = d.user_id)\n);",
+      "approach": "Self-join with HAVING count distinct songs in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef recommend_friends(listens: pd.DataFrame, friendship: pd.DataFrame) -> pd.DataFrame:\n    m = pd.merge(listens, listens, on=['day', 'song_id'], suffixes=('_1', '_2'))\n    m = m[m['user_id_1'] != m['user_id_2']]\n    g = m.groupby(['user_id_1', 'user_id_2', 'day'])['song_id'].nunique().reset_index()\n    qual = g[g['song_id'] >= 3][['user_id_1', 'user_id_2']].drop_duplicates()\n    \n    friends = set()\n    for _, row in friendship.iterrows():\n        friends.add((row['user1_id'], row['user2_id']))\n        friends.add((row['user2_id'], row['user1_id']))\n        \n    res = []\n    for _, row in qual.iterrows():\n        u1, u2 = row['user_id_1'], row['user_id_2']\n        if (u1, u2) not in friends:\n            res.append({'user_id': u1, 'recommended_id': u2})\n            \n    if not res:\n        return pd.DataFrame(columns=['user_id', 'recommended_id'])\n    return pd.DataFrame(res).drop_duplicates()",
+      "approach": "Pairwise merge and set membership check in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

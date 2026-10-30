@@ -1,0 +1,71 @@
+{
+  "slug": "count-the-number-of-experiments",
+  "number": 1990,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Generating All Platform and Experiment Pairs",
+      "text": "The platforms are Android, iOS, Web and experiment types are Reading, Sports, Programming. Every one of the 9 combinations must appear in the output."
+    },
+    {
+      "level": 2,
+      "title": "Cartesian Product of Categories",
+      "text": "Create a cross join of the three platforms and three experiment names to generate all 9 combinations."
+    },
+    {
+      "level": 3,
+      "title": "Joining and Counting",
+      "text": "Left join the combinations with Experiments on platform and experiment_name, then count experiment_id grouped by platform and experiment_name."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Platforms AS (\n    SELECT 'Android' AS platform\n    UNION ALL SELECT 'IOS'\n    UNION ALL SELECT 'Web'\n),\nNames AS (\n    SELECT 'Reading' AS experiment_name\n    UNION ALL SELECT 'Sports'\n    UNION ALL SELECT 'Programming'\n),\nAllPairs AS (\n    SELECT p.platform, n.experiment_name\n    FROM Platforms p\n    CROSS JOIN Names n\n)\nSELECT\n    a.platform,\n    a.experiment_name,\n    COUNT(e.experiment_id) AS num_experiments\nFROM AllPairs a\nLEFT JOIN Experiments e\n    ON a.platform = e.platform\n    AND a.experiment_name = e.experiment_name\nGROUP BY a.platform, a.experiment_name;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(E) where E is number of experiments conducted",
+    "space": "O(1) output fixed at exactly 9 rows",
+    "variables": [
+      "E: number of records in Experiments table"
+    ],
+    "notes": "Cross join of dimensions left joined with facts table.",
+    "whyNaiveFails": "Grouping on the Experiments table alone drops combinations that have 0 trials.",
+    "spaceTimeTradeoff": "Dimension cross join ensures zero-count combinations are retained.",
+    "interviewerExpectation": "Candidate should construct Cartesian product and use COUNT(column) instead of COUNT(*)."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Platforms AS (\n    SELECT 'Android' AS platform\n    UNION ALL SELECT 'IOS'\n    UNION ALL SELECT 'Web'\n),\nNames AS (\n    SELECT 'Reading' AS experiment_name\n    UNION ALL SELECT 'Sports'\n    UNION ALL SELECT 'Programming'\n),\nAllPairs AS (\n    SELECT p.platform, n.experiment_name\n    FROM Platforms p\n    CROSS JOIN Names n\n)\nSELECT\n    a.platform,\n    a.experiment_name,\n    COUNT(e.experiment_id) AS num_experiments\nFROM AllPairs a\nLEFT JOIN Experiments e\n    ON a.platform = e.platform\n    AND a.experiment_name = e.experiment_name\nGROUP BY a.platform, a.experiment_name;",
+      "approach": "Dimension CTE cross join with LEFT JOIN in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Platforms AS (\n    SELECT 'Android' AS platform\n    UNION ALL SELECT 'IOS'\n    UNION ALL SELECT 'Web'\n),\nNames AS (\n    SELECT 'Reading' AS experiment_name\n    UNION ALL SELECT 'Sports'\n    UNION ALL SELECT 'Programming'\n),\nAllPairs AS (\n    SELECT p.platform, n.experiment_name\n    FROM Platforms p\n    CROSS JOIN Names n\n)\nSELECT\n    a.platform,\n    a.experiment_name,\n    COUNT(e.experiment_id) AS num_experiments\nFROM AllPairs a\nLEFT JOIN Experiments e\n    ON a.platform = e.platform\n    AND a.experiment_name = e.experiment_name\nGROUP BY a.platform, a.experiment_name;",
+      "approach": "Dimension CTE cross join with LEFT JOIN in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef count_experiments(experiments: pd.DataFrame) -> pd.DataFrame:\n    platforms = pd.DataFrame({'platform': ['Android', 'IOS', 'Web']})\n    names = pd.DataFrame({'experiment_name': ['Reading', 'Sports', 'Programming']})\n    grid = platforms.merge(names, how='cross')\n    counts = experiments.groupby(['platform', 'experiment_name'])['experiment_id'].count().reset_index(name='num_experiments')\n    res = grid.merge(counts, on=['platform', 'experiment_name'], how='left')\n    res['num_experiments'] = res['num_experiments'].fillna(0).astype(int)\n    return res",
+      "approach": "Cartesian grid cross merge with counts in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

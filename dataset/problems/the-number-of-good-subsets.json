@@ -1,0 +1,78 @@
+{
+  "slug": "the-number-of-good-subsets",
+  "number": 1994,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Square-Free Numbers and Prime Factorization",
+      "text": "The only prime numbers up to 30 are 2, 3, 5, 7, 11, 13, 17, 19, 23, 29 (10 primes). Discard any number divisible by 4, 9, or 25."
+    },
+    {
+      "level": 2,
+      "title": "Bitmask of Prime Factors",
+      "text": "Represent the prime factors of each valid integer x as a 10-bit mask. Two numbers can both belong to a good subset if their masks are disjoint (mask1 & mask2 == 0)."
+    },
+    {
+      "level": 3,
+      "title": "Knapsack Bitmask DP with Ones Handling",
+      "text": "Run 0/1 knapsack DP over the frequency of each square-free number. Finally, multiply the sum of all non-empty subset counts by 2 raised to the count of 1s in nums."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import Counter\n\nclass Solution:\n    def numberOfGoodSubsets(self, nums: list[int]) -> int:\n        MOD = 10**9 + 7\n        primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]\n        num_to_mask = {}\n        for x in range(2, 31):\n            if x % 4 == 0 or x % 9 == 0 or x % 25 == 0:\n                continue\n            mask = 0\n            for i, p in enumerate(primes):\n                if x % p == 0:\n                    mask |= (1 << i)\n            num_to_mask[x] = mask\n            \n        count = Counter(nums)\n        dp = [0] * 1024\n        dp[0] = 1\n        for x, mask in num_to_mask.items():\n            if count[x] == 0:\n                continue\n            c = count[x]\n            for cur_mask in range(1023, -1, -1):\n                if dp[cur_mask] and (cur_mask & mask) == 0:\n                    dp[cur_mask | mask] = (dp[cur_mask | mask] + dp[cur_mask] * c) % MOD\n                    \n        ans = sum(dp[1:]) % MOD\n        ans = (ans * pow(2, count[1], MOD)) % MOD\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N + 30 * 2^10)",
+    "space": "O(2^10)",
+    "variables": [
+      "N: length of array nums"
+    ],
+    "notes": "Frequency counting followed by 10-bit knapsack dynamic programming.",
+    "whyNaiveFails": "Generating all 2^N subsets is impossible for N up to 10^5.",
+    "spaceTimeTradeoff": "Bitmasking over the 10 primes <= 30 collapses states to 1024 values.",
+    "interviewerExpectation": "Candidate should recognize that nums[i] <= 30 bounds prime factors and use bitmask knapsack DP."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import Counter\n\nclass Solution:\n    def numberOfGoodSubsets(self, nums: list[int]) -> int:\n        MOD = 10**9 + 7\n        primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]\n        num_to_mask = {}\n        for x in range(2, 31):\n            if x % 4 == 0 or x % 9 == 0 or x % 25 == 0:\n                continue\n            mask = 0\n            for i, p in enumerate(primes):\n                if x % p == 0:\n                    mask |= (1 << i)\n            num_to_mask[x] = mask\n            \n        count = Counter(nums)\n        dp = [0] * 1024\n        dp[0] = 1\n        for x, mask in num_to_mask.items():\n            if count[x] == 0:\n                continue\n            c = count[x]\n            for cur_mask in range(1023, -1, -1):\n                if dp[cur_mask] and (cur_mask & mask) == 0:\n                    dp[cur_mask | mask] = (dp[cur_mask | mask] + dp[cur_mask] * c) % MOD\n                    \n        ans = sum(dp[1:]) % MOD\n        ans = (ans * pow(2, count[1], MOD)) % MOD\n        return ans",
+      "approach": "10-bit prime factor knapsack DP in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int numberOfGoodSubsets(vector<int>& nums) {\n        long long MOD = 1e9 + 7;\n        vector<int> primes = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29};\n        vector<int> count(31, 0);\n        for (int x : nums) count[x]++;\n        \n        vector<pair<int, int>> valid;\n        for (int x = 2; x <= 30; x++) {\n            if (x % 4 == 0 || x % 9 == 0 || x % 25 == 0) continue;\n            int mask = 0;\n            for (int i = 0; i < 10; i++) {\n                if (x % primes[i] == 0) mask |= (1 << i);\n            }\n            if (count[x] > 0) valid.push_back({mask, count[x]});\n        }\n        \n        vector<long long> dp(1024, 0);\n        dp[0] = 1;\n        for (auto [mask, c] : valid) {\n            for (int cur = 1023; cur >= 0; cur--) {\n                if (dp[cur] && (cur & mask) == 0) {\n                    dp[cur | mask] = (dp[cur | mask] + dp[cur] * c) % MOD;\n                }\n            }\n        }\n        \n        long long ans = 0;\n        for (int i = 1; i < 1024; i++) ans = (ans + dp[i]) % MOD;\n        for (int i = 0; i < count[1]; i++) ans = (ans * 2) % MOD;\n        return ans;\n    }\n};",
+      "approach": "10-bit prime factor knapsack DP in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int numberOfGoodSubsets(int[] nums) {\n        int MOD = 1_000_000_007;\n        int[] primes = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29};\n        int[] count = new int[31];\n        for (int x : nums) count[x]++;\n\n        int[] maskOf = new int[31];\n        for (int x = 2; x <= 30; x++) {\n            if (x % 4 == 0 || x % 9 == 0 || x % 25 == 0) continue;\n            int m = 0;\n            for (int i = 0; i < 10; i++) {\n                if (x % primes[i] == 0) m |= (1 << i);\n            }\n            maskOf[x] = m;\n        }\n\n        long[] dp = new long[1024];\n        dp[0] = 1;\n        for (int x = 2; x <= 30; x++) {\n            if (count[x] == 0 || maskOf[x] == 0) continue;\n            int mask = maskOf[x];\n            long c = count[x];\n            for (int cur = 1023; cur >= 0; cur--) {\n                if (dp[cur] > 0 && (cur & mask) == 0) {\n                    dp[cur | mask] = (dp[cur | mask] + dp[cur] * c) % MOD;\n                }\n            }\n        }\n\n        long ans = 0;\n        for (int i = 1; i < 1024; i++) ans = (ans + dp[i]) % MOD;\n        for (int i = 0; i < count[1]; i++) ans = (ans * 2) % MOD;\n        return (int)ans;\n    }\n}",
+      "approach": "10-bit prime factor knapsack DP in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var numberOfGoodSubsets = function(nums) {\n  const MOD = 1000000007;\n  const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29];\n  const count = new Array(31).fill(0);\n  for (const x of nums) count[x]++;\n\n  const maskOf = new Array(31).fill(0);\n  for (let x = 2; x <= 30; x++) {\n    if (x % 4 === 0 || x % 9 === 0 || x % 25 === 0) continue;\n    let m = 0;\n    for (let i = 0; i < 10; i++) {\n      if (x % primes[i] === 0) m |= (1 << i);\n    }\n    maskOf[x] = m;\n  }\n\n  const dp = new Array(1024).fill(0);\n  dp[0] = 1;\n  for (let x = 2; x <= 30; x++) {\n    if (count[x] === 0 || maskOf[x] === 0) continue;\n    const mask = maskOf[x];\n    const c = count[x];\n    for (let cur = 1023; cur >= 0; cur--) {\n      if (dp[cur] > 0 && (cur & mask) === 0) {\n        dp[cur | mask] = (dp[cur | mask] + dp[cur] * c) % MOD;\n      }\n    }\n  }\n\n  let ans = 0;\n  for (let i = 1; i < 1024; i++) ans = (ans + dp[i]) % MOD;\n  for (let i = 0; i < count[1]; i++) ans = (ans * 2) % MOD;\n  return ans;\n};",
+      "approach": "10-bit prime factor knapsack DP in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

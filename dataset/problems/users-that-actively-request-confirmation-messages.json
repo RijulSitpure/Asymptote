@@ -1,0 +1,72 @@
+{
+  "slug": "users-that-actively-request-confirmation-messages",
+  "number": 1939,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Window Between Requests",
+      "text": "A user actively requests messages if two distinct requests occur within 24 hours (86,400 seconds) of one another."
+    },
+    {
+      "level": 2,
+      "title": "Pairing Consecutive Requests",
+      "text": "Self-join confirmations on user_id where the second timestamp is strictly greater than the first timestamp."
+    },
+    {
+      "level": 3,
+      "title": "Elapsed Time Condition",
+      "text": "Check timestamp difference between the two events to ensure it is at most 24 hours."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT DISTINCT\n    c1.user_id\nFROM Confirmations c1\nJOIN Confirmations c2\n    ON c1.user_id = c2.user_id\n    AND c1.time_stamp < c2.time_stamp\n    AND TIMESTAMPDIFF(SECOND, c1.time_stamp, c2.time_stamp) <= 86400;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) if utilizing an index on (user_id, time_stamp)",
+    "space": "O(U) space for distinct qualifying user IDs",
+    "variables": [
+      "N: number of confirmation requests",
+      "U: number of distinct users"
+    ],
+    "notes": "Self-join on timestamp difference within 86400 seconds.",
+    "whyNaiveFails": "Comparing timestamps with identical equality can produce false zero-second intervals.",
+    "spaceTimeTradeoff": "Inequality join with TIMESTAMPDIFF handles boundaries cleanly.",
+    "interviewerExpectation": "Candidate should account for exact 24-hour limits and distinct user outputs."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT DISTINCT\n    c1.user_id\nFROM Confirmations c1\nJOIN Confirmations c2\n    ON c1.user_id = c2.user_id\n    AND c1.time_stamp < c2.time_stamp\n    AND TIMESTAMPDIFF(SECOND, c1.time_stamp, c2.time_stamp) <= 86400;",
+      "approach": "Self-join with TIMESTAMPDIFF in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT DISTINCT\n    c1.user_id\nFROM Confirmations c1\nJOIN Confirmations c2\n    ON c1.user_id = c2.user_id\n    AND c1.time_stamp < c2.time_stamp\n    AND EXTRACT(EPOCH FROM (c2.time_stamp - c1.time_stamp)) <= 86400;",
+      "approach": "Self-join with EXTRACT EPOCH in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_requesting_users(confirmations: pd.DataFrame) -> pd.DataFrame:\n    df = confirmations.sort_values(['user_id', 'time_stamp'])\n    df['diff'] = df.groupby('user_id')['time_stamp'].diff()\n    qual = df[df['diff'] <= pd.Timedelta(hours=24)]\n    return qual[['user_id']].drop_duplicates()",
+      "approach": "Sort and grouped time difference in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

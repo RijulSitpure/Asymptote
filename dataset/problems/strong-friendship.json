@@ -1,0 +1,71 @@
+{
+  "slug": "strong-friendship",
+  "number": 1949,
+  "category": "Database",
+  "patterns": [
+    "having-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bidirectional Friendship Graph",
+      "text": "Friendship is symmetric. Build a view or cte containing all direct friend pairs (u, v) and (v, u)."
+    },
+    {
+      "level": 2,
+      "title": "Finding Common Friends",
+      "text": "For each existing edge (u1, u2) where u1 < u2, count common neighbors who are friends with both u1 and u2."
+    },
+    {
+      "level": 3,
+      "title": "Filtering by Threshold",
+      "text": "Group by u1 and u2 and require the common friend count to be at least 3."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH AllFriends AS (\n    SELECT user1_id AS u1, user2_id AS u2 FROM Friendship\n    UNION ALL\n    SELECT user2_id AS u1, user1_id AS u2 FROM Friendship\n)\nSELECT\n    f.user1_id,\n    f.user2_id,\n    COUNT(af1.u2) AS common_friend\nFROM Friendship f\nJOIN AllFriends af1\n    ON f.user1_id = af1.u1\nJOIN AllFriends af2\n    ON f.user2_id = af2.u1\n    AND af1.u2 = af2.u2\nGROUP BY f.user1_id, f.user2_id\nHAVING COUNT(af1.u2) >= 3;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(F * D) where F is friendships and D is max degree",
+    "space": "O(F) space for symmetric graph view",
+    "variables": [
+      "F: number of friendship records in Friendship"
+    ],
+    "notes": "Symmetric edge union joined on shared adjacent neighbor.",
+    "whyNaiveFails": "Looking only at directed friendship misses common friends stored in the reverse direction.",
+    "spaceTimeTradeoff": "Bidirectional union guarantees every mutual neighbor is discovered.",
+    "interviewerExpectation": "Candidate should ensure user1_id < user2_id and common_friend >= 3."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH AllFriends AS (\n    SELECT user1_id AS u1, user2_id AS u2 FROM Friendship\n    UNION ALL\n    SELECT user2_id AS u1, user1_id AS u2 FROM Friendship\n)\nSELECT\n    f.user1_id,\n    f.user2_id,\n    COUNT(af1.u2) AS common_friend\nFROM Friendship f\nJOIN AllFriends af1\n    ON f.user1_id = af1.u1\nJOIN AllFriends af2\n    ON f.user2_id = af2.u1\n    AND af1.u2 = af2.u2\nGROUP BY f.user1_id, f.user2_id\nHAVING COUNT(af1.u2) >= 3;",
+      "approach": "Bidirectional CTE with mutual neighbor join in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH AllFriends AS (\n    SELECT user1_id AS u1, user2_id AS u2 FROM Friendship\n    UNION ALL\n    SELECT user2_id AS u1, user1_id AS u2 FROM Friendship\n)\nSELECT\n    f.user1_id,\n    f.user2_id,\n    COUNT(af1.u2) AS common_friend\nFROM Friendship f\nJOIN AllFriends af1\n    ON f.user1_id = af1.u1\nJOIN AllFriends af2\n    ON f.user2_id = af2.u1\n    AND af1.u2 = af2.u2\nGROUP BY f.user1_id, f.user2_id\nHAVING COUNT(af1.u2) >= 3;",
+      "approach": "Bidirectional CTE with mutual neighbor join in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\nfrom collections import defaultdict\n\ndef strong_friendship(friendship: pd.DataFrame) -> pd.DataFrame:\n    adj = defaultdict(set)\n    for _, row in friendship.iterrows():\n        u1, u2 = row['user1_id'], row['user2_id']\n        adj[u1].add(u2)\n        adj[u2].add(u1)\n        \n    res = []\n    for _, row in friendship.iterrows():\n        u1, u2 = row['user1_id'], row['user2_id']\n        common = len(adj[u1].intersection(adj[u2]))\n        if common >= 3:\n            res.append({'user1_id': u1, 'user2_id': u2, 'common_friend': common})\n            \n    if not res:\n        return pd.DataFrame(columns=['user1_id', 'user2_id', 'common_friend'])\n    return pd.DataFrame(res)",
+      "approach": "Adjacency set intersection in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

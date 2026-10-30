@@ -1,0 +1,72 @@
+{
+  "slug": "all-the-pairs-with-the-maximum-number-of-common-followers",
+  "number": 1951,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Joining on Shared Followers",
+      "text": "Join the relations table with itself on follower_id where user1 is strictly less than user2."
+    },
+    {
+      "level": 2,
+      "title": "Counting Common Followers",
+      "text": "Group by user1_id and user2_id, counting the common followers for each distinct pair."
+    },
+    {
+      "level": 3,
+      "title": "Ranking Pairs by Follower Count",
+      "text": "Use the rank window function over follower count descending to select all pairs achieving the top rank of 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RankedPairs AS (\n    SELECT\n        r1.user_id AS user1_id,\n        r2.user_id AS user2_id,\n        RANK() OVER (ORDER BY COUNT(r1.follower_id) DESC) AS rnk\n    FROM Relations r1\n    JOIN Relations r2\n        ON r1.follower_id = r2.follower_id\n        AND r1.user_id < r2.user_id\n    GROUP BY r1.user_id, r2.user_id\n)\nSELECT\n    user1_id,\n    user2_id\nFROM RankedPairs\nWHERE rnk = 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(R^2) worst case for self-joining relations on follower_id",
+    "space": "O(P) space for grouped user pairs",
+    "variables": [
+      "R: number of relation records",
+      "P: distinct pairs of users with shared followers"
+    ],
+    "notes": "Self-join on follower_id with RANK() window filter.",
+    "whyNaiveFails": "Using LIMIT 1 misses ties when multiple user pairs share the maximum number of followers.",
+    "spaceTimeTradeoff": "RANK() over count descending captures all maximal pairs uniformly.",
+    "interviewerExpectation": "Candidate should handle multiple ties correctly using RANK() or DENSE_RANK()."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RankedPairs AS (\n    SELECT\n        r1.user_id AS user1_id,\n        r2.user_id AS user2_id,\n        RANK() OVER (ORDER BY COUNT(r1.follower_id) DESC) AS rnk\n    FROM Relations r1\n    JOIN Relations r2\n        ON r1.follower_id = r2.follower_id\n        AND r1.user_id < r2.user_id\n    GROUP BY r1.user_id, r2.user_id\n)\nSELECT\n    user1_id,\n    user2_id\nFROM RankedPairs\nWHERE rnk = 1;",
+      "approach": "Self-join with RANK() window ranking in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RankedPairs AS (\n    SELECT\n        r1.user_id AS user1_id,\n        r2.user_id AS user2_id,\n        RANK() OVER (ORDER BY COUNT(r1.follower_id) DESC) AS rnk\n    FROM Relations r1\n    JOIN Relations r2\n        ON r1.follower_id = r2.follower_id\n        AND r1.user_id < r2.user_id\n    GROUP BY r1.user_id, r2.user_id\n)\nSELECT\n    user1_id,\n    user2_id\nFROM RankedPairs\nWHERE rnk = 1;",
+      "approach": "Self-join with RANK() window ranking in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_pairs(relations: pd.DataFrame) -> pd.DataFrame:\n    m = pd.merge(relations, relations, on='follower_id', suffixes=('_1', '_2'))\n    m = m[m['user_id_1'] < m['user_id_2']]\n    if m.empty:\n        return pd.DataFrame(columns=['user1_id', 'user2_id'])\n    counts = m.groupby(['user_id_1', 'user_id_2']).size().reset_index(name='common')\n    max_c = counts['common'].max()\n    res = counts[counts['common'] == max_c][['user_id_1', 'user_id_2']]\n    res.rename(columns={'user_id_1': 'user1_id', 'user_id_2': 'user2_id'}, inplace=True)\n    return res",
+      "approach": "Merge on follower and filter maximum count in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

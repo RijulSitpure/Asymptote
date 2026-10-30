@@ -1,0 +1,72 @@
+{
+  "slug": "confirmation-rate",
+  "number": 1934,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Handling Users Without Requests",
+      "text": "A user who never requested a confirmation message has a confirmation rate of 0.00. Use a left join starting from Signups."
+    },
+    {
+      "level": 2,
+      "title": "Calculating the Confirmation Ratio",
+      "text": "The confirmation rate is the number of confirmed requests divided by the total number of confirmation requests."
+    },
+    {
+      "level": 3,
+      "title": "Averaging and Rounding",
+      "text": "Compute the average of a conditional expression where action = \"confirmed\" yields 1 and other values yield 0, rounded to 2 decimal places with coalesce fallback to 0.00."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT\n    s.user_id,\n    ROUND(IFNULL(AVG(c.action = 'confirmed'), 0), 2) AS confirmation_rate\nFROM Signups s\nLEFT JOIN Confirmations c\n    ON s.user_id = c.user_id\nGROUP BY s.user_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S + C) where S is signups and C is confirmation requests",
+    "space": "O(S) space for grouped confirmation rates",
+    "variables": [
+      "S: number of users in Signups",
+      "C: number of events in Confirmations"
+    ],
+    "notes": "Left join from signups with conditional average aggregation.",
+    "whyNaiveFails": "An inner join drops users who never triggered a confirmation message.",
+    "spaceTimeTradeoff": "Grouping directly on indexed user_id computes rates in a single aggregation pass.",
+    "interviewerExpectation": "Candidate should use ROUND with 2 decimals and properly default null averages to 0."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT\n    s.user_id,\n    ROUND(IFNULL(AVG(c.action = 'confirmed'), 0), 2) AS confirmation_rate\nFROM Signups s\nLEFT JOIN Confirmations c\n    ON s.user_id = c.user_id\nGROUP BY s.user_id;",
+      "approach": "LEFT JOIN with conditional AVG in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT\n    s.user_id,\n    ROUND(COALESCE(AVG(CASE WHEN c.action = 'confirmed' THEN 1.0 ELSE 0.0 END), 0.0), 2) AS confirmation_rate\nFROM Signups s\nLEFT JOIN Confirmations c\n    ON s.user_id = c.user_id\nGROUP BY s.user_id;",
+      "approach": "LEFT JOIN with conditional AVG in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef confirmation_rate(signups: pd.DataFrame, confirmations: pd.DataFrame) -> pd.DataFrame:\n    m = pd.merge(signups, confirmations, on='user_id', how='left')\n    m['is_confirmed'] = (m['action'] == 'confirmed').astype(float)\n    res = m.groupby('user_id')['is_confirmed'].mean().round(2).reset_index()\n    res.rename(columns={'is_confirmed': 'confirmation_rate'}, inplace=True)\n    res['confirmation_rate'] = res['confirmation_rate'].fillna(0.0)\n    return res",
+      "approach": "Left merge and group mean in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

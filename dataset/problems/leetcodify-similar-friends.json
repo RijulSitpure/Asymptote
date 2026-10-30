@@ -1,0 +1,72 @@
+{
+  "slug": "leetcodify-similar-friends",
+  "number": 1919,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Comparing Friends Songs",
+      "text": "Join listens with friendship such that user1 and user2 are already friends, then compare their song lists on the same day."
+    },
+    {
+      "level": 2,
+      "title": "Aggregating Same Day Listens",
+      "text": "Group by user1_id, user2_id, and day, counting the distinct song_ids heard by both users."
+    },
+    {
+      "level": 3,
+      "title": "Meeting the Three Song Threshold",
+      "text": "Use a having clause requiring count(distinct song_id) >= 3, and return unique user1_id and user2_id pairs."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT DISTINCT\n    f.user1_id,\n    f.user2_id\nFROM Friendship f\nJOIN Listens l1\n    ON f.user1_id = l1.user_id\nJOIN Listens l2\n    ON f.user2_id = l2.user_id\n    AND l1.day = l2.day\n    AND l1.song_id = l2.song_id\nGROUP BY f.user1_id, f.user2_id, l1.day\nHAVING COUNT(DISTINCT l1.song_id) >= 3;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(F * S) where F is friends and S is average listens per user",
+    "space": "O(F) space for distinct friend pairs",
+    "variables": [
+      "F: number of friendship records",
+      "S: average number of listens per user"
+    ],
+    "notes": "Joining friends with identical daily songs and filtering via HAVING.",
+    "whyNaiveFails": "Omitting distinct song counting can miscount duplicate plays of the same track.",
+    "spaceTimeTradeoff": "Joining directly through the Friendship table restricts candidates early.",
+    "interviewerExpectation": "Candidate should maintain the canonical user1_id < user2_id ordering from Friendship."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT DISTINCT\n    f.user1_id,\n    f.user2_id\nFROM Friendship f\nJOIN Listens l1\n    ON f.user1_id = l1.user_id\nJOIN Listens l2\n    ON f.user2_id = l2.user_id\n    AND l1.day = l2.day\n    AND l1.song_id = l2.song_id\nGROUP BY f.user1_id, f.user2_id, l1.day\nHAVING COUNT(DISTINCT l1.song_id) >= 3;",
+      "approach": "Friendship join with daily song aggregation in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT DISTINCT\n    f.user1_id,\n    f.user2_id\nFROM Friendship f\nJOIN Listens l1\n    ON f.user1_id = l1.user_id\nJOIN Listens l2\n    ON f.user2_id = l2.user_id\n    AND l1.day = l2.day\n    AND l1.song_id = l2.song_id\nGROUP BY f.user1_id, f.user2_id, l1.day\nHAVING COUNT(DISTINCT l1.song_id) >= 3;",
+      "approach": "Friendship join with daily song aggregation in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef leetcodify_similar_friends(listens: pd.DataFrame, friendship: pd.DataFrame) -> pd.DataFrame:\n    m = pd.merge(friendship, listens, left_on='user1_id', right_on='user_id')\n    m = pd.merge(m, listens, left_on=['user2_id', 'day', 'song_id'], right_on=['user_id', 'day', 'song_id'])\n    g = m.groupby(['user1_id', 'user2_id', 'day'])['song_id'].nunique().reset_index()\n    res = g[g['song_id'] >= 3][['user1_id', 'user2_id']].drop_duplicates()\n    return res",
+      "approach": "Multi-merge and grouping in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
