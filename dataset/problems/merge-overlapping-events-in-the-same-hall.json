@@ -1,0 +1,71 @@
+{
+  "slug": "merge-overlapping-events-in-the-same-hall",
+  "number": 2494,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Hall Event Chronology",
+      "text": "Sort the events per hall chronologically by start date and end date."
+    },
+    {
+      "level": 2,
+      "title": "Island Boundary Flagging",
+      "text": "A new non-overlapping interval island begins whenever the current start_day exceeds the maximum end_day of all preceding events for that hall."
+    },
+    {
+      "level": 3,
+      "title": "Island Group Aggregation",
+      "text": "Compute a cumulative sum of the new island indicators to assign group keys, then aggregate with min start_day and max end_day."
+    },
+    {
+      "level": 4,
+      "title": "Window Function Gaps and Islands Implementation",
+      "text": "```sql\nWITH HallEventsWithIsNewEvent AS (\n    SELECT \n        hall_id, \n        start_day, \n        end_day,\n        CASE \n            WHEN start_day > MAX(end_day) OVER (\n                PARTITION BY hall_id \n                ORDER BY start_day, end_day DESC \n                ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING\n            ) THEN 1 \n            ELSE 0 \n        END AS is_new_event\n    FROM HallEvents\n),\nHallEventsWithGroupId AS (\n    SELECT \n        hall_id, \n        start_day, \n        end_day,\n        SUM(is_new_event) OVER (\n            PARTITION BY hall_id \n            ORDER BY start_day, end_day DESC\n            ROWS UNBOUNDED PRECEDING\n        ) AS group_id\n    FROM HallEventsWithIsNewEvent\n)\nSELECT \n    hall_id, \n    MIN(start_day) AS start_day, \n    MAX(end_day) AS end_day\nFROM HallEventsWithGroupId\nGROUP BY hall_id, group_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of event rows"
+    ],
+    "notes": "Sorting followed by running window maximum and grouping.",
+    "whyNaiveFails": "Iterative line-by-line interval merges in SQL require non-standard recursive loops.",
+    "spaceTimeTradeoff": "O(n) memory to materialize interval window states.",
+    "interviewerExpectation": "Applies standard window-based gaps and islands interval merging pattern."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window Function Gaps and Islands Interval Merging",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH HallEventsWithIsNewEvent AS (\n    SELECT \n        hall_id, \n        start_day, \n        end_day,\n        CASE \n            WHEN start_day > MAX(end_day) OVER (\n                PARTITION BY hall_id \n                ORDER BY start_day, end_day DESC \n                ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING\n            ) THEN 1 \n            ELSE 0 \n        END AS is_new_event\n    FROM HallEvents\n),\nHallEventsWithGroupId AS (\n    SELECT \n        hall_id, \n        start_day, \n        end_day,\n        SUM(is_new_event) OVER (\n            PARTITION BY hall_id \n            ORDER BY start_day, end_day DESC\n            ROWS UNBOUNDED PRECEDING\n        ) AS group_id\n    FROM HallEventsWithIsNewEvent\n)\nSELECT \n    hall_id, \n    MIN(start_day) AS start_day, \n    MAX(end_day) AS end_day\nFROM HallEventsWithGroupId\nGROUP BY hall_id, group_id;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window Function Gaps and Islands Interval Merging",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH HallEventsWithIsNewEvent AS (\n    SELECT \n        hall_id, \n        start_day, \n        end_day,\n        CASE \n            WHEN start_day > MAX(end_day) OVER (\n                PARTITION BY hall_id \n                ORDER BY start_day, end_day DESC \n                ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING\n            ) THEN 1 \n            ELSE 0 \n        END AS is_new_event\n    FROM HallEvents\n),\nHallEventsWithGroupId AS (\n    SELECT \n        hall_id, \n        start_day, \n        end_day,\n        SUM(is_new_event) OVER (\n            PARTITION BY hall_id \n            ORDER BY start_day, end_day DESC\n            ROWS UNBOUNDED PRECEDING\n        ) AS group_id\n    FROM HallEventsWithIsNewEvent\n)\nSELECT \n    hall_id, \n    MIN(start_day) AS start_day, \n    MAX(end_day) AS end_day\nFROM HallEventsWithGroupId\nGROUP BY hall_id, group_id;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Interval Sorting and Merging",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef merge_events(hall_events: pd.DataFrame) -> pd.DataFrame:\n    if hall_events.empty:\n        return pd.DataFrame(columns=['hall_id', 'start_day', 'end_day'])\n    hall_events = hall_events.sort_values(['hall_id', 'start_day', 'end_day'], ascending=[True, True, False])\n    results = []\n    for hall_id, group in hall_events.groupby('hall_id', sort=False):\n        curr_start = None\n        curr_end = None\n        for _, row in group.iterrows():\n            s = row['start_day']\n            e = row['end_day']\n            if curr_start is None:\n                curr_start = s\n                curr_end = e\n            elif s <= curr_end:\n                if e > curr_end:\n                    curr_end = e\n            else:\n                results.append({'hall_id': hall_id, 'start_day': curr_start, 'end_day': curr_end})\n                curr_start = s\n                curr_end = e\n        if curr_start is not None:\n            results.append({'hall_id': hall_id, 'start_day': curr_start, 'end_day': curr_end})\n    return pd.DataFrame(results)"
+    }
+  ]
+}

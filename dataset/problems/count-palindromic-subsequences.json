@@ -1,0 +1,78 @@
+{
+  "slug": "count-palindromic-subsequences",
+  "number": 2484,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Symmetric Length 5 Decomposition",
+      "text": "A length-5 palindromic subsequence has pattern (d1, d2, d3, d2, d1). The middle character is at index i, with pair (d1, d2) on the left and (d2, d1) on the right."
+    },
+    {
+      "level": 2,
+      "title": "Digit Pair Tables",
+      "text": "Precompute prefix tables pref[i][d1][d2] counting occurrences of ordered digit pair (d1, d2) strictly before index i."
+    },
+    {
+      "level": 3,
+      "title": "Suffix Pair Matching",
+      "text": "Precompute suffix tables suff[i][d2][d1] counting occurrences of ordered digit pair (d2, d1) strictly after index i."
+    },
+    {
+      "level": 4,
+      "title": "Prefix and Suffix Pair Counting Implementation",
+      "text": "```python\nclass Solution:\n    def countPalindromes(self, s: str) -> int:\n        MOD = 1_000_000_007\n        n = len(s)\n        if n < 5:\n            return 0\n        pref = [[[0] * 10 for _ in range(10)] for _ in range(n)]\n        suff = [[[0] * 10 for _ in range(10)] for _ in range(n)]\n        cnt = [0] * 10\n        for i in range(n):\n            d = int(s[i])\n            if i > 0:\n                for j in range(10):\n                    for k in range(10):\n                        pref[i][j][k] = pref[i - 1][j][k]\n                for j in range(10):\n                    pref[i][j][d] = (pref[i][j][d] + cnt[j]) % MOD\n            cnt[d] += 1\n        cnt = [0] * 10\n        for i in range(n - 1, -1, -1):\n            d = int(s[i])\n            if i < n - 1:\n                for j in range(10):\n                    for k in range(10):\n                        suff[i][j][k] = suff[i + 1][j][k]\n                for k in range(10):\n                    suff[i][d][k] = (suff[i][d][k] + cnt[k]) % MOD\n            cnt[d] += 1\n        ans = 0\n        for i in range(2, n - 2):\n            for j in range(10):\n                for k in range(10):\n                    ans = (ans + pref[i - 1][j][k] * suff[i + 1][k][j]) % MOD\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * 100)",
+    "space": "O(n * 100)",
+    "variables": [
+      "n: length of string s"
+    ],
+    "notes": "There are only 100 possible digit pairs (d1, d2). Linear scan updates pair states in constant time.",
+    "whyNaiveFails": "Enumerating all 5-tuples of indices requires O(n^5) combinatorial search.",
+    "spaceTimeTradeoff": "O(n * 100) space for prefix and suffix pair tables.",
+    "interviewerExpectation": "Fixes middle index i and uses precomputed prefix/suffix counts for 2-digit pairs."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Prefix and Suffix Ordered Digit Pair Precomputation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def countPalindromes(self, s: str) -> int:\n        MOD = 1_000_000_007\n        n = len(s)\n        if n < 5:\n            return 0\n        pref = [[[0] * 10 for _ in range(10)] for _ in range(n)]\n        suff = [[[0] * 10 for _ in range(10)] for _ in range(n)]\n        cnt = [0] * 10\n        for i in range(n):\n            d = int(s[i])\n            if i > 0:\n                for j in range(10):\n                    for k in range(10):\n                        pref[i][j][k] = pref[i - 1][j][k]\n                for j in range(10):\n                    pref[i][j][d] = (pref[i][j][d] + cnt[j]) % MOD\n            cnt[d] += 1\n        cnt = [0] * 10\n        for i in range(n - 1, -1, -1):\n            d = int(s[i])\n            if i < n - 1:\n                for j in range(10):\n                    for k in range(10):\n                        suff[i][j][k] = suff[i + 1][j][k]\n                for k in range(10):\n                    suff[i][d][k] = (suff[i][d][k] + cnt[k]) % MOD\n            cnt[d] += 1\n        ans = 0\n        for i in range(2, n - 2):\n            for j in range(10):\n                for k in range(10):\n                    ans = (ans + pref[i - 1][j][k] * suff[i + 1][k][j]) % MOD\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Prefix and Suffix Ordered Digit Pair Precomputation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int countPalindromes(std::string s) {\n        int n = s.length();\n        if (n < 5) return 0;\n        const int MOD = 1000000007;\n        std::vector<std::vector<std::vector<int>>> pref(n, std::vector<std::vector<int>>(10, std::vector<int>(10, 0)));\n        std::vector<std::vector<std::vector<int>>> suff(n, std::vector<std::vector<int>>(10, std::vector<int>(10, 0)));\n        std::vector<int> cnt(10, 0);\n        for (int i = 0; i < n; ++i) {\n            int d = s[i] - '0';\n            if (i > 0) {\n                pref[i] = pref[i - 1];\n                for (int j = 0; j < 10; ++j) {\n                    pref[i][j][d] = (pref[i][j][d] + cnt[j]) % MOD;\n                }\n            }\n            cnt[d]++;\n        }\n        std::fill(cnt.begin(), cnt.end(), 0);\n        for (int i = n - 1; i >= 0; --i) {\n            int d = s[i] - '0';\n            if (i < n - 1) {\n                suff[i] = suff[i + 1];\n                for (int k = 0; k < 10; ++k) {\n                    suff[i][d][k] = (suff[i][d][k] + cnt[k]) % MOD;\n                }\n            }\n            cnt[d]++;\n        }\n        long long ans = 0;\n        for (int i = 2; i < n - 2; ++i) {\n            for (int j = 0; j < 10; ++j) {\n                for (int k = 0; k < 10; ++k) {\n                    ans = (ans + 1LL * pref[i - 1][j][k] * suff[i + 1][k][j]) % MOD;\n                }\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Prefix and Suffix Ordered Digit Pair Precomputation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int countPalindromes(String s) {\n        int n = s.length();\n        if (n < 5) return 0;\n        int MOD = 1_000_000_007;\n        int[][][] pref = new int[n][10][10];\n        int[][][] suff = new int[n][10][10];\n        int[] cnt = new int[10];\n        for (int i = 0; i < n; i++) {\n            int d = s.charAt(i) - '0';\n            if (i > 0) {\n                for (int j = 0; j < 10; j++) {\n                    for (int k = 0; k < 10; k++) {\n                        pref[i][j][k] = pref[i - 1][j][k];\n                    }\n                }\n                for (int j = 0; j < 10; j++) {\n                    pref[i][j][d] = (pref[i][j][d] + cnt[j]) % MOD;\n                }\n            }\n            cnt[d]++;\n        }\n        java.util.Arrays.fill(cnt, 0);\n        for (int i = n - 1; i >= 0; i--) {\n            int d = s.charAt(i) - '0';\n            if (i < n - 1) {\n                for (int j = 0; j < 10; j++) {\n                    for (int k = 0; k < 10; k++) {\n                        suff[i][j][k] = suff[i + 1][j][k];\n                    }\n                }\n                for (int k = 0; k < 10; k++) {\n                    suff[i][d][k] = (suff[i][d][k] + cnt[k]) % MOD;\n                }\n            }\n            cnt[d]++;\n        }\n        long ans = 0;\n        for (int i = 2; i < n - 2; i++) {\n            for (int j = 0; j < 10; j++) {\n                for (int k = 0; k < 10; k++) {\n                    ans = (ans + (long) pref[i - 1][j][k] * suff[i + 1][k][j]) % MOD;\n                }\n            }\n        }\n        return (int) ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Prefix and Suffix Ordered Digit Pair Precomputation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var countPalindromes = function(s) {\n    const n = s.length;\n    if (n < 5) return 0;\n    const MOD = 1000000007;\n    const pref = Array.from({ length: n }, () => Array.from({ length: 10 }, () => new Array(10).fill(0)));\n    const suff = Array.from({ length: n }, () => Array.from({ length: 10 }, () => new Array(10).fill(0)));\n    let cnt = new Array(10).fill(0);\n    for (let i = 0; i < n; i++) {\n        const d = s.charCodeAt(i) - 48;\n        if (i > 0) {\n            for (let j = 0; j < 10; j++) {\n                for (let k = 0; k < 10; k++) {\n                    pref[i][j][k] = pref[i - 1][j][k];\n                }\n            }\n            for (let j = 0; j < 10; j++) {\n                pref[i][j][d] = (pref[i][j][d] + cnt[j]) % MOD;\n            }\n        }\n        cnt[d]++;\n    }\n    cnt = new Array(10).fill(0);\n    for (let i = n - 1; i >= 0; i--) {\n        const d = s.charCodeAt(i) - 48;\n        if (i < n - 1) {\n            for (let j = 0; j < 10; j++) {\n                for (let k = 0; k < 10; k++) {\n                    suff[i][j][k] = suff[i + 1][j][k];\n                }\n            }\n            for (let k = 0; k < 10; k++) {\n                suff[i][d][k] = (suff[i][d][k] + cnt[k]) % MOD;\n            }\n        }\n        cnt[d]++;\n    }\n    let ans = 0;\n    for (let i = 2; i < n - 2; i++) {\n        for (let j = 0; j < 10; j++) {\n            for (let k = 0; k < 10; k++) {\n                ans = (ans + pref[i - 1][j][k] * suff[i + 1][k][j]) % MOD;\n            }\n        }\n    }\n    return ans;\n};"
+    }
+  ]
+}

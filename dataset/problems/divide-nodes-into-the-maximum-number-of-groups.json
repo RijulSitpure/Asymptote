@@ -1,0 +1,79 @@
+{
+  "slug": "divide-nodes-into-the-maximum-number-of-groups",
+  "number": 2493,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bipartite Condition",
+      "text": "Adjacent nodes must belong to groups with difference exactly 1. A valid grouping is possible if and only if each connected component is bipartite (has no odd cycles)."
+    },
+    {
+      "level": 2,
+      "title": "Per-Component Breadth Traversal",
+      "text": "For each bipartite component, running a breadth-first search from a node produces group layers equal to the maximum distance from that root plus 1."
+    },
+    {
+      "level": 3,
+      "title": "Component-Wise Diameter Maximization",
+      "text": "For each component, evaluate BFS from all candidate vertices in that component. Take the maximum layers achieved and sum these maximums across all components."
+    },
+    {
+      "level": 4,
+      "title": "Bipartite Check and Multi-Source BFS Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def magnificentSets(self, n: int, edges: list[list[int]]) -> int:\n        adj = [[] for _ in range(n + 1)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        color = [0] * (n + 1)\n        components = []\n        for i in range(1, n + 1):\n            if color[i] != 0:\n                continue\n            comp = []\n            q = deque([i])\n            color[i] = 1\n            while q:\n                u = q.popleft()\n                comp.append(u)\n                for v in adj[u]:\n                    if color[v] == 0:\n                        color[v] = -color[u]\n                        q.append(v)\n                    elif color[v] == color[u]:\n                        return -1\n            components.append(comp)\n        def bfs_depth(start):\n            dist = {start: 1}\n            q = deque([start])\n            max_d = 1\n            while q:\n                u = q.popleft()\n                d = dist[u]\n                max_d = max(max_d, d)\n                for v in adj[u]:\n                    if v not in dist:\n                        dist[v] = d + 1\n                        q.append(v)\n            return max_d\n        total_groups = 0\n        for comp in components:\n            total_groups += max(bfs_depth(node) for node in comp)\n        return total_groups\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V * (V + E))",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes",
+      "E: number of edges"
+    ],
+    "notes": "BFS from every vertex across components to maximize layer count.",
+    "whyNaiveFails": "Backtracking partition assignments blows up exponentially.",
+    "spaceTimeTradeoff": "O(V + E) memory for graph adjacency lists and component buffers.",
+    "interviewerExpectation": "Recognizes equivalence to bipartite graph layer diameter and aggregates maximal component depths."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Bipartite Component Verification and BFS Diameter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "from collections import deque\n\nclass Solution:\n    def magnificentSets(self, n: int, edges: list[list[int]]) -> int:\n        adj = [[] for _ in range(n + 1)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        color = [0] * (n + 1)\n        components = []\n        for i in range(1, n + 1):\n            if color[i] != 0:\n                continue\n            comp = []\n            q = deque([i])\n            color[i] = 1\n            while q:\n                u = q.popleft()\n                comp.append(u)\n                for v in adj[u]:\n                    if color[v] == 0:\n                        color[v] = -color[u]\n                        q.append(v)\n                    elif color[v] == color[u]:\n                        return -1\n            components.append(comp)\n        def bfs_depth(start):\n            dist = {start: 1}\n            q = deque([start])\n            max_d = 1\n            while q:\n                u = q.popleft()\n                d = dist[u]\n                max_d = max(max_d, d)\n                for v in adj[u]:\n                    if v not in dist:\n                        dist[v] = d + 1\n                        q.append(v)\n            return max_d\n        total_groups = 0\n        for comp in components:\n            total_groups += max(bfs_depth(node) for node in comp)\n        return total_groups"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Bipartite Component Verification and BFS Diameter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int magnificentSets(int n, std::vector<std::vector<int>>& edges) {\n        std::vector<std::vector<int>> adj(n + 1);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        std::vector<int> color(n + 1, 0);\n        std::vector<std::vector<int>> components;\n        for (int i = 1; i <= n; ++i) {\n            if (color[i] != 0) continue;\n            std::vector<int> comp;\n            std::queue<int> q;\n            q.push(i);\n            color[i] = 1;\n            while (!q.empty()) {\n                int u = q.front();\n                q.pop();\n                comp.push_back(u);\n                for (int v : adj[u]) {\n                    if (color[v] == 0) {\n                        color[v] = -color[u];\n                        q.push(v);\n                    } else if (color[v] == color[u]) return -1;\n                }\n            }\n            components.push_back(comp);\n        }\n        auto bfs_depth = [&](int start) {\n            std::vector<int> dist(n + 1, 0);\n            dist[start] = 1;\n            std::queue<int> q;\n            q.push(start);\n            int max_d = 1;\n            while (!q.empty()) {\n                int u = q.front();\n                q.pop();\n                int d = dist[u];\n                max_d = std::max(max_d, d);\n                for (int v : adj[u]) {\n                    if (dist[v] == 0) {\n                        dist[v] = d + 1;\n                        q.push(v);\n                    }\n                }\n            }\n            return max_d;\n        };\n        int total_groups = 0;\n        for (const auto& comp : components) {\n            int best = 0;\n            for (int node : comp) best = std::max(best, bfs_depth(node));\n            total_groups += best;\n        }\n        return total_groups;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Bipartite Component Verification and BFS Diameter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int magnificentSets(int n, int[][] edges) {\n        java.util.List<Integer>[] adj = new java.util.ArrayList[n + 1];\n        for (int i = 0; i <= n; i++) adj[i] = new java.util.ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(e[1]);\n            adj[e[1]].add(e[0]);\n        }\n        int[] color = new int[n + 1];\n        java.util.List<java.util.List<Integer>> components = new java.util.ArrayList<>();\n        for (int i = 1; i <= n; i++) {\n            if (color[i] != 0) continue;\n            java.util.List<Integer> comp = new java.util.ArrayList<>();\n            java.util.Queue<Integer> q = new java.util.LinkedList<>();\n            q.offer(i);\n            color[i] = 1;\n            while (!q.isEmpty()) {\n                int u = q.poll();\n                comp.add(u);\n                for (int v : adj[u]) {\n                    if (color[v] == 0) {\n                        color[v] = -color[u];\n                        q.offer(v);\n                    } else if (color[v] == color[u]) return -1;\n                }\n            }\n            components.add(comp);\n        }\n        int totalGroups = 0;\n        for (java.util.List<Integer> comp : components) {\n            int best = 0;\n            for (int node : comp) {\n                best = Math.max(best, bfsDepth(node, adj, n));\n            }\n            totalGroups += best;\n        }\n        return totalGroups;\n    }\n    private int bfsDepth(int start, java.util.List<Integer>[] adj, int n) {\n        int[] dist = new int[n + 1];\n        dist[start] = 1;\n        java.util.Queue<Integer> q = new java.util.LinkedList<>();\n        q.offer(start);\n        int maxD = 1;\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            int d = dist[u];\n            maxD = Math.max(maxD, d);\n            for (int v : adj[u]) {\n                if (dist[v] == 0) {\n                    dist[v] = d + 1;\n                    q.offer(v);\n                }\n            }\n        }\n        return maxD;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Bipartite Component Verification and BFS Diameter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var magnificentSets = function(n, edges) {\n    const adj = Array.from({ length: n + 1 }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const color = new Array(n + 1).fill(0);\n    const components = [];\n    for (let i = 1; i <= n; i++) {\n        if (color[i] !== 0) continue;\n        const comp = [];\n        const q = [i];\n        color[i] = 1;\n        while (q.length > 0) {\n            const u = q.shift();\n            comp.push(u);\n            for (const v of adj[u]) {\n                if (color[v] === 0) {\n                    color[v] = -color[u];\n                    q.push(v);\n                } else if (color[v] === color[u]) return -1;\n            }\n        }\n        components.push(comp);\n    }\n    const bfsDepth = (start) => {\n        const dist = new Array(n + 1).fill(0);\n        dist[start] = 1;\n        const q = [start];\n        let maxD = 1;\n        while (q.length > 0) {\n            const u = q.shift();\n            const d = dist[u];\n            if (d > maxD) maxD = d;\n            for (const v of adj[u]) {\n                if (dist[v] === 0) {\n                    dist[v] = d + 1;\n                    q.push(v);\n                }\n            }\n        }\n        return maxD;\n    };\n    let totalGroups = 0;\n    for (const comp of components) {\n        let best = 0;\n        for (const node of comp) {\n            const d = bfsDepth(node);\n            if (d > best) best = d;\n        }\n        totalGroups += best;\n    }\n    return totalGroups;\n};"
+    }
+  ]
+}
