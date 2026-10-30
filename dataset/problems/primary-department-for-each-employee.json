@@ -1,0 +1,72 @@
+{
+  "slug": "primary-department-for-each-employee",
+  "number": 1789,
+  "category": "Database",
+  "patterns": [
+    "set-operations"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Categorizing Primary Assignments",
+      "text": "An employee has a primary department either if marked with primary_flag = \"Y\" or if they belong to only one department overall."
+    },
+    {
+      "level": 2,
+      "title": "Extracting Flagged Departments",
+      "text": "Query all rows where primary_flag = \"Y\"."
+    },
+    {
+      "level": 3,
+      "title": "Extracting Single-Department Workers",
+      "text": "Query employees having a count of one across their department affiliations."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT employee_id, department_id\nFROM Employee\nWHERE primary_flag = 'Y'\nUNION\nSELECT employee_id, department_id\nFROM Employee\nGROUP BY employee_id\nHAVING COUNT(*) = 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N) pass for flagged rows + O(N) grouped scan with UNION deduplication",
+    "space": "O(E) working memory for unique employee departments",
+    "variables": [
+      "N: total employee records",
+      "E: count of employees"
+    ],
+    "notes": "Disjunctive filtering combined via UNION.",
+    "whyNaiveFails": "Complex subqueries in WHERE clauses can cause correlated full scans per row.",
+    "spaceTimeTradeoff": "UNION automatically handles cases where an employee with one department also has primary_flag = \"Y\".",
+    "interviewerExpectation": "Candidate should handle both explicitly flagged primary departments and single-department defaults."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT employee_id, department_id\nFROM Employee\nWHERE primary_flag = 'Y'\nUNION\nSELECT employee_id, department_id\nFROM Employee\nGROUP BY employee_id\nHAVING COUNT(*) = 1;",
+      "approach": "Disjunctive Selection via UNION in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT employee_id, department_id\nFROM Employee\nWHERE primary_flag = 'Y'\nUNION\nSELECT employee_id, department_id\nFROM Employee\nGROUP BY employee_id, department_id\nHAVING employee_id IN (\n    SELECT employee_id FROM Employee GROUP BY employee_id HAVING COUNT(*) = 1\n);",
+      "approach": "Disjunctive Selection via UNION in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_primary_department(employee: pd.DataFrame) -> pd.DataFrame:\n    flagged = employee[employee[\"primary_flag\"] == \"Y\"][[\"employee_id\", \"department_id\"]]\n    counts = employee.groupby(\"employee_id\")[\"department_id\"].count().reset_index()\n    single_emp_ids = counts[counts[\"department_id\"] == 1][\"employee_id\"]\n    single = employee[employee[\"employee_id\"].isin(single_emp_ids)][[\"employee_id\", \"department_id\"]]\n    return pd.concat([flagged, single]).drop_duplicates()",
+      "approach": "Union of flagged and single-department sets in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

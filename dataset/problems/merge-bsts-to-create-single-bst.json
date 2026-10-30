@@ -1,0 +1,78 @@
+{
+  "slug": "merge-bsts-to-create-single-bst",
+  "number": 1932,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bst-properties"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Locating the Unique Master Root",
+      "text": "The root of the final combined tree must be a tree root that never appears as a leaf in any other tree."
+    },
+    {
+      "level": 2,
+      "title": "Recursive Leaf Expansion",
+      "text": "Traverse the master root; whenever encountering a leaf node whose value matches another tree root, splice that tree into place."
+    },
+    {
+      "level": 3,
+      "title": "Validating Global Binary Search Invariant",
+      "text": "Ensure the merged tree strictly satisfies min and max key boundaries and accounts for all input trees."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def canMerge(self, trees: list[TreeNode]) -> TreeNode | None:\n        root_map = {t.val: t for t in trees}\n        leaves = set()\n        for t in trees:\n            if t.left:\n                leaves.add(t.left.val)\n            if t.right:\n                leaves.add(t.right.val)\n                \n        root_candidates = [t for t in trees if t.val not in leaves]\n        if len(root_candidates) != 1:\n            return None\n            \n        root = root_candidates[0]\n        del root_map[root.val]\n        \n        def validate(node, low, high):\n            if not node:\n                return True\n            if not (low < node.val < high):\n                return False\n            if not node.left and not node.right and node.val in root_map:\n                sub = root_map.pop(node.val)\n                node.left = sub.left\n                node.right = sub.right\n            return validate(node.left, low, node.val) and validate(node.right, node.val, high)\n            \n        if validate(root, float(\"-inf\"), float(\"inf\")) and not root_map:\n            return root\n        return None\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total nodes across all trees"
+    ],
+    "notes": "Leaf collection, root identification, and recursive BST range validation.",
+    "whyNaiveFails": "Trying all permutations of tree mergers takes factorial time.",
+    "spaceTimeTradeoff": "Since each leaf value in a valid BST must be unique, the root candidate is uniquely determined in linear time.",
+    "interviewerExpectation": "Candidate should recognize that only the single tree root absent from all leaf sets can be the merged tree root."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class TreeNode:\n    def __init__(self, val=0, left=None, right=None):\n        self.val = val\n        self.left = left\n        self.right = right\n\nclass Solution:\n    def canMerge(self, trees: list[TreeNode]) -> TreeNode | None:\n        root_map = {t.val: t for t in trees}\n        leaves = set()\n        for t in trees:\n            if t.left:\n                leaves.add(t.left.val)\n            if t.right:\n                leaves.add(t.right.val)\n                \n        root_candidates = [t for t in trees if t.val not in leaves]\n        if len(root_candidates) != 1:\n            return None\n            \n        root = root_candidates[0]\n        del root_map[root.val]\n        \n        def validate(node, low, high):\n            if not node:\n                return True\n            if not (low < node.val < high):\n                return False\n            if not node.left and not node.right and node.val in root_map:\n                sub = root_map.pop(node.val)\n                node.left = sub.left\n                node.right = sub.right\n            return validate(node.left, low, node.val) and validate(node.right, node.val, high)\n            \n        if validate(root, float(\"-inf\"), float(\"inf\")) and not root_map:\n            return root\n        return None",
+      "approach": "Single root identification and validated expansion in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    TreeNode* canMerge(vector<TreeNode*>& trees) {\n        unordered_map<int, TreeNode*> rootMap;\n        unordered_set<int> leaves;\n        for (auto t : trees) {\n            rootMap[t->val] = t;\n            if (t->left) leaves.insert(t->left->val);\n            if (t->right) leaves.insert(t->right->val);\n        }\n        TreeNode* root = nullptr;\n        for (auto t : trees) {\n            if (!leaves.count(t->val)) {\n                if (root) return nullptr;\n                root = t;\n            }\n        }\n        if (!root) return nullptr;\n        rootMap.erase(root->val);\n        \n        auto validate = [&](auto& self, TreeNode* node, long long low, long long high) -> bool {\n            if (!node) return true;\n            if (node->val <= low || node->val >= high) return false;\n            if (!node->left && !node->right && rootMap.count(node->val)) {\n                TreeNode* sub = rootMap[node->val];\n                rootMap.erase(node->val);\n                node->left = sub->left;\n                node->right = sub->right;\n            }\n            return self(self, node->left, low, node->val) && self(self, node->right, node->val, high);\n        };\n        \n        if (validate(validate, root, LLONG_MIN, LLONG_MAX) && rootMap.empty()) return root;\n        return nullptr;\n    }\n};",
+      "approach": "Single root identification and validated expansion in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public TreeNode canMerge(java.util.List<TreeNode> trees) {\n        java.util.Map<Integer, TreeNode> rootMap = new java.util.HashMap<>();\n        java.util.Set<Integer> leaves = new java.util.HashSet<>();\n        for (TreeNode t : trees) {\n            rootMap.put(t.val, t);\n            if (t.left != null) leaves.add(t.left.val);\n            if (t.right != null) leaves.add(t.right.val);\n        }\n        TreeNode root = null;\n        for (TreeNode t : trees) {\n            if (!leaves.contains(t.val)) {\n                if (root != null) return null;\n                root = t;\n            }\n        }\n        if (root == null) return null;\n        rootMap.remove(root.val);\n        \n        if (validate(root, Long.MIN_VALUE, Long.MAX_VALUE, rootMap) && rootMap.isEmpty()) return root;\n        return null;\n    }\n    \n    private boolean validate(TreeNode node, long low, long high, java.util.Map<Integer, TreeNode> rootMap) {\n        if (node == null) return true;\n        if (node.val <= low || node.val >= high) return false;\n        if (node.left == null && node.right == null && rootMap.containsKey(node.val)) {\n            TreeNode sub = rootMap.remove(node.val);\n            node.left = sub.left;\n            node.right = sub.right;\n        }\n        return validate(node.left, low, node.val, rootMap) && validate(node.right, node.val, high, rootMap);\n    }\n}",
+      "approach": "Single root identification and validated expansion in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var canMerge = function(trees) {\n  const rootMap = new Map();\n  const leaves = new Set();\n  for (const t of trees) {\n    rootMap.set(t.val, t);\n    if (t.left) leaves.add(t.left.val);\n    if (t.right) leaves.add(t.right.val);\n  }\n  let root = null;\n  for (const t of trees) {\n    if (!leaves.has(t.val)) {\n      if (root) return null;\n      root = t;\n    }\n  }\n  if (!root) return null;\n  rootMap.delete(root.val);\n  \n  const validate = (node, low, high) => {\n    if (!node) return true;\n    if (node.val <= low || node.val >= high) return false;\n    if (!node.left && !node.right && rootMap.has(node.val)) {\n      const sub = rootMap.get(node.val);\n      rootMap.delete(node.val);\n      node.left = sub.left;\n      node.right = sub.right;\n    }\n    return validate(node.left, low, node.val) && validate(node.right, node.val, high);\n  };\n  \n  if (validate(root, -Infinity, Infinity) && rootMap.size === 0) return root;\n  return null;\n};",
+      "approach": "Single root identification and validated expansion in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

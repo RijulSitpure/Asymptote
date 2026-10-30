@@ -1,0 +1,78 @@
+{
+  "slug": "the-number-of-the-smallest-unoccupied-chair",
+  "number": 1942,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sorting Events Temporally",
+      "text": "Sort friends by their arrival times, associating each friend with their original index."
+    },
+    {
+      "level": 2,
+      "title": "Tracking Available and Occupied Chairs",
+      "text": "Maintain an ordered container of currently available chair numbers, and another container of occupied chairs ordered by departure time."
+    },
+    {
+      "level": 3,
+      "title": "Releasing Chairs Prior to Seating",
+      "text": "Before assigning a chair to an arriving friend, return all chairs occupied by friends whose departure time is less than or equal to arrival."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def smallestChair(self, times: list[list[int]], targetFriend: int) -> int:\n        events = []\n        for i, (arr, leave) in enumerate(times):\n            events.append((arr, leave, i))\n        events.sort()\n        \n        available_chairs = list(range(len(times)))\n        heapq.heapify(available_chairs)\n        leaving_heap = []\n        \n        for arr, leave, i in events:\n            while leaving_heap and leaving_heap[0][0] <= arr:\n                _, chair = heapq.heappop(leaving_heap)\n                heapq.heappush(available_chairs, chair)\n                \n            assigned_chair = heapq.heappop(available_chairs)\n            if i == targetFriend:\n                return assigned_chair\n            heapq.heappush(leaving_heap, (leave, assigned_chair))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of friends"
+    ],
+    "notes": "Two priority structures managing available chair numbers and pending release times.",
+    "whyNaiveFails": "Scanning all chairs linearly for the minimum available index takes O(N^2) time.",
+    "spaceTimeTradeoff": "Dual heaps process chair allocations and releases in logarithmic time per arrival.",
+    "interviewerExpectation": "Candidate should coordinate two priority heaps (available chair IDs and departure timestamps)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass Solution:\n    def smallestChair(self, times: list[list[int]], targetFriend: int) -> int:\n        events = []\n        for i, (arr, leave) in enumerate(times):\n            events.append((arr, leave, i))\n        events.sort()\n        \n        available_chairs = list(range(len(times)))\n        heapq.heapify(available_chairs)\n        leaving_heap = []\n        \n        for arr, leave, i in events:\n            while leaving_heap and leaving_heap[0][0] <= arr:\n                _, chair = heapq.heappop(leaving_heap)\n                heapq.heappush(available_chairs, chair)\n                \n            assigned_chair = heapq.heappop(available_chairs)\n            if i == targetFriend:\n                return assigned_chair\n            heapq.heappush(leaving_heap, (leave, assigned_chair))\n        return -1",
+      "approach": "Dual priority queue simulation in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int smallestChair(vector<vector<int>>& times, int targetFriend) {\n        int n = times.size();\n        vector<tuple<int, int, int>> events;\n        for (int i = 0; i < n; i++) events.push_back({times[i][0], times[i][1], i});\n        sort(events.begin(), events.end());\n        \n        priority_queue<int, vector<int>, greater<int>> available;\n        for (int i = 0; i < n; i++) available.push(i);\n        \n        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> leaving;\n        \n        for (auto& [arr, leave, idx] : events) {\n            while (!leaving.empty() && leaving.top().first <= arr) {\n                available.push(leaving.top().second);\n                leaving.pop();\n            }\n            int chair = available.top();\n            available.pop();\n            if (idx == targetFriend) return chair;\n            leaving.push({leave, chair});\n        }\n        return -1;\n    }\n};",
+      "approach": "Dual priority queue simulation in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int smallestChair(int[][] times, int targetFriend) {\n        int n = times.length;\n        int[][] events = new int[n][3];\n        for (int i = 0; i < n; i++) {\n            events[i][0] = times[i][0];\n            events[i][1] = times[i][1];\n            events[i][2] = i;\n        }\n        java.util.Arrays.sort(events, (a, b) -> Integer.compare(a[0], b[0]));\n        \n        java.util.PriorityQueue<Integer> available = new java.util.PriorityQueue<>();\n        for (int i = 0; i < n; i++) available.offer(i);\n        \n        java.util.PriorityQueue<int[]> leaving = new java.util.PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        \n        for (int[] e : events) {\n            int arr = e[0], leave = e[1], idx = e[2];\n            while (!leaving.isEmpty() && leaving.peek()[0] <= arr) {\n                available.offer(leaving.poll()[1]);\n            }\n            int chair = available.poll();\n            if (idx == targetFriend) return chair;\n            leaving.offer(new int[]{leave, chair});\n        }\n        return -1;\n    }\n}",
+      "approach": "Dual priority queue simulation in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var smallestChair = function(times, targetFriend) {\n  const n = times.length;\n  const events = times.map((t, i) => [t[0], t[1], i]);\n  events.sort((a, b) => a[0] - b[0]);\n  \n  const available = Array.from({ length: n }, (_, i) => i);\n  const leaving = []; // [leaveTime, chair]\n  \n  for (const [arr, leave, idx] of events) {\n    leaving.sort((a, b) => a[0] - b[0]);\n    while (leaving.length > 0 && leaving[0][0] <= arr) {\n      const [_, chair] = leaving.shift();\n      available.push(chair);\n      available.sort((a, b) => a - b);\n    }\n    const chair = available.shift();\n    if (idx === targetFriend) return chair;\n    leaving.push([leave, chair]);\n  }\n  return -1;\n};",
+      "approach": "Dual priority queue simulation in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

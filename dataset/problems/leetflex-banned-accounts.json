@@ -1,0 +1,71 @@
+{
+  "slug": "leetflex-banned-accounts",
+  "number": 1747,
+  "category": "Database",
+  "patterns": [
+    "self-join"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Pairing Simultaneous Sessions",
+      "text": "Join the log records to themselves matching on account identity while ensuring distinct IP addresses."
+    },
+    {
+      "level": 2,
+      "title": "Detecting Temporal Overlap",
+      "text": "Filter pairs where session intervals overlap by ensuring login of one session is between login and logout of the other."
+    },
+    {
+      "level": 3,
+      "title": "Deduplicating Account Identifiers",
+      "text": "Use distinct on the account identifier to return each offending account once."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT DISTINCT a.account_id\nFROM LogInfo a\nJOIN LogInfo b ON a.account_id = b.account_id\n  AND a.ip_address <> b.ip_address\n  AND a.login <= b.logout\n  AND a.logout >= b.login;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N^2) worst case per account, O(N log N) with index on (account_id, login)",
+    "space": "O(N) for join buffer",
+    "variables": [
+      "N: total log records"
+    ],
+    "notes": "Self-join on overlapping time intervals with differing network addresses.",
+    "whyNaiveFails": "Correlated subqueries or repeated scans can be quadratic without index pruning on account identifiers.",
+    "spaceTimeTradeoff": "Filtering on differing IP addresses prunes symmetrical pairs efficiently.",
+    "interviewerExpectation": "Candidate should correctly state interval overlap conditions (a.start <= b.end and a.end >= b.start)."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT DISTINCT a.account_id\nFROM LogInfo a\nJOIN LogInfo b ON a.account_id = b.account_id\n  AND a.ip_address <> b.ip_address\n  AND a.login <= b.logout\n  AND a.logout >= b.login;",
+      "approach": "Self-Join Interval Overlap in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT DISTINCT a.account_id\nFROM LogInfo a\nJOIN LogInfo b ON a.account_id = b.account_id\n  AND a.ip_address <> b.ip_address\n  AND a.login <= b.logout\n  AND a.logout >= b.login;",
+      "approach": "Self-Join Interval Overlap in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef leetflex_banned_accnts(log_info: pd.DataFrame) -> pd.DataFrame:\n    merged = log_info.merge(log_info, on=\"account_id\", suffixes=(\"_a\", \"_b\"))\n    diff_ip = merged[merged[\"ip_address_a\"] != merged[\"ip_address_b\"]]\n    overlap = diff_ip[(diff_ip[\"login_a\"] <= diff_ip[\"logout_b\"]) & (diff_ip[\"logout_a\"] >= diff_ip[\"login_b\"])]\n    return pd.DataFrame({\"account_id\": overlap[\"account_id\"].drop_duplicates()})",
+      "approach": "Self-merge and overlap filtering in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

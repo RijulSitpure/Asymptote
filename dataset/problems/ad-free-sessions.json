@@ -1,0 +1,72 @@
+{
+  "slug": "ad-free-sessions",
+  "number": 1809,
+  "category": "Database",
+  "patterns": [
+    "anti-join"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Correlating Playbacks with Advertising",
+      "text": "Join each streaming session with ads shown to that customer falling within the session time frame."
+    },
+    {
+      "level": 2,
+      "title": "Temporal Window Condition",
+      "text": "Match on identical customer_id where the ad timestamp is between the session start_time and end_time."
+    },
+    {
+      "level": 3,
+      "title": "Isolating Sessions Without Interruptions",
+      "text": "Perform a left join and filter for records where the matched ad identifier is null."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT p.session_id\nFROM Playback p\nLEFT JOIN Ads a ON p.customer_id = a.customer_id\n  AND a.timestamp BETWEEN p.start_time AND p.end_time\nWHERE a.ad_id IS NULL;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(P + A) with index on Ads(customer_id, timestamp)",
+    "space": "O(1) auxiliary query space",
+    "variables": [
+      "P: playback sessions",
+      "A: ad impressions"
+    ],
+    "notes": "Anti-join pattern using LEFT JOIN and IS NULL on timestamp range.",
+    "whyNaiveFails": "NOT IN subqueries fail or degrade if null values appear in the correlated ad tables.",
+    "spaceTimeTradeoff": "Range index on timestamp speeds up the between evaluation.",
+    "interviewerExpectation": "Candidate should apply standard anti-join syntax with proper timestamp range filtering."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT p.session_id\nFROM Playback p\nLEFT JOIN Ads a ON p.customer_id = a.customer_id\n  AND a.timestamp BETWEEN p.start_time AND p.end_time\nWHERE a.ad_id IS NULL;",
+      "approach": "Anti-Join Range Match in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT p.session_id\nFROM Playback p\nLEFT JOIN Ads a ON p.customer_id = a.customer_id\n  AND a.timestamp BETWEEN p.start_time AND p.end_time\nWHERE a.ad_id IS NULL;",
+      "approach": "Anti-Join Range Match in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef ad_free_sessions(playback: pd.DataFrame, ads: pd.DataFrame) -> pd.DataFrame:\n    merged = playback.merge(ads, on=\"customer_id\", how=\"left\")\n    interrupted = merged[(merged[\"timestamp\"] >= merged[\"start_time\"]) & (merged[\"timestamp\"] <= merged[\"end_time\"])][\"session_id\"].unique()\n    res = playback[~playback[\"session_id\"].isin(interrupted)][[\"session_id\"]]\n    return res",
+      "approach": "Merge and exclusion filtering in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

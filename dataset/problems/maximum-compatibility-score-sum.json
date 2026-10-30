@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-compatibility-score-sum",
+  "number": 1947,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Precomputing Match Matrices",
+      "text": "Precompute the compatibility score between every student i and mentor j as the count of identical answers."
+    },
+    {
+      "level": 2,
+      "title": "Bitmask of Assigned Mentors",
+      "text": "Use an integer bitmask where the j-th bit represents whether mentor j has already been matched to a student."
+    },
+    {
+      "level": 3,
+      "title": "Dynamic Transition Over Students",
+      "text": "For student index matching the number of set bits in mask, assign any unallocated mentor j and recurse."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def maxCompatibilitySum(self, students: list[list[int]], mentors: list[list[int]]) -> int:\n        m = len(students)\n        scores = [[0] * m for _ in range(m)]\n        for i in range(m):\n            for j in range(m):\n                scores[i][j] = sum(s == t for s, t in zip(students[i], mentors[j]))\n                \n        memo = {}\n        def dp(s_idx, mask):\n            if s_idx == m:\n                return 0\n            state = (s_idx, mask)\n            if state in memo:\n                return memo[state]\n            best = 0\n            for j in range(m):\n                if not (mask & (1 << j)):\n                    best = max(best, scores[s_idx][j] + dp(s_idx + 1, mask | (1 << j)))\n            memo[state] = best\n            return best\n            \n        return dp(0, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M^2 * 2^M)",
+    "space": "O(2^M)",
+    "variables": [
+      "M: count of students and mentors (at most 8)"
+    ],
+    "notes": "Bitmask dynamic programming assigning one student per set bit count.",
+    "whyNaiveFails": "Generating all M! mentor permutations tests up to 8! = 40,320 permutations repeatedly.",
+    "spaceTimeTradeoff": "Since M <= 8, 2^M = 256 states cache overlapping subproblems.",
+    "interviewerExpectation": "Candidate should recognize assignment matching via bitmask memoization."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maxCompatibilitySum(self, students: list[list[int]], mentors: list[list[int]]) -> int:\n        m = len(students)\n        scores = [[0] * m for _ in range(m)]\n        for i in range(m):\n            for j in range(m):\n                scores[i][j] = sum(s == t for s, t in zip(students[i], mentors[j]))\n                \n        memo = {}\n        def dp(s_idx, mask):\n            if s_idx == m:\n                return 0\n            state = (s_idx, mask)\n            if state in memo:\n                return memo[state]\n            best = 0\n            for j in range(m):\n                if not (mask & (1 << j)):\n                    best = max(best, scores[s_idx][j] + dp(s_idx + 1, mask | (1 << j)))\n            memo[state] = best\n            return best\n            \n        return dp(0, 0)",
+      "approach": "Bitmask DP with memoization in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int maxCompatibilitySum(vector<vector<int>>& students, vector<vector<int>>& mentors) {\n        int m = students.size(), n = students[0].size();\n        vector<vector<int>> scores(m, vector<int>(m, 0));\n        for (int i = 0; i < m; i++) {\n            for (int j = 0; j < m; j++) {\n                for (int k = 0; k < n; k++) {\n                    if (students[i][k] == mentors[j][k]) scores[i][j]++;\n                }\n            }\n        }\n        vector<int> dp(1 << m, 0);\n        for (int mask = 0; mask < (1 << m); mask++) {\n            int sIdx = __builtin_popcount(mask);\n            if (sIdx >= m) continue;\n            for (int j = 0; j < m; j++) {\n                if (!(mask & (1 << j))) {\n                    int nextMask = mask | (1 << j);\n                    dp[nextMask] = max(dp[nextMask], dp[mask] + scores[sIdx][j]);\n                }\n            }\n        }\n        return dp[(1 << m) - 1];\n    }\n};",
+      "approach": "Iterative bitmask DP in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int maxCompatibilitySum(int[][] students, int[][] mentors) {\n        int m = students.length, n = students[0].length;\n        int[][] scores = new int[m][m];\n        for (int i = 0; i < m; i++) {\n            for (int j = 0; j < m; j++) {\n                for (int k = 0; k < n; k++) {\n                    if (students[i][k] == mentors[j][k]) scores[i][j]++;\n                }\n            }\n        }\n        int[] dp = new int[1 << m];\n        for (int mask = 0; mask < (1 << m); mask++) {\n            int sIdx = Integer.bitCount(mask);\n            if (sIdx >= m) continue;\n            for (int j = 0; j < m; j++) {\n                if ((mask & (1 << j)) == 0) {\n                    int nextMask = mask | (1 << j);\n                    dp[nextMask] = Math.max(dp[nextMask], dp[mask] + scores[sIdx][j]);\n                }\n            }\n        }\n        return dp[(1 << m) - 1];\n    }\n}",
+      "approach": "Iterative bitmask DP in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxCompatibilitySum = function(students, mentors) {\n  const m = students.length, n = students[0].length;\n  const scores = Array.from({ length: m }, () => new Array(m).fill(0));\n  for (let i = 0; i < m; i++) {\n    for (let j = 0; j < m; j++) {\n      for (let k = 0; k < n; k++) {\n        if (students[i][k] === mentors[j][k]) scores[i][j]++;\n      }\n    }\n  }\n  const dp = new Array(1 << m).fill(0);\n  const popcount = (x) => {\n    let c = 0;\n    while (x > 0) { c += (x & 1); x >>= 1; }\n    return c;\n  };\n  \n  for (let mask = 0; mask < (1 << m); mask++) {\n    const sIdx = popcount(mask);\n    if (sIdx >= m) continue;\n    for (let j = 0; j < m; j++) {\n      if (!(mask & (1 << j))) {\n        const nextMask = mask | (1 << j);\n        dp[nextMask] = Math.max(dp[nextMask], dp[mask] + scores[sIdx][j]);\n      }\n    }\n  }\n  return dp[(1 << m) - 1];\n};",
+      "approach": "Iterative bitmask DP in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

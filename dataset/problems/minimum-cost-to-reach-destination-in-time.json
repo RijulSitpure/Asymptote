@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-cost-to-reach-destination-in-time",
+  "number": 1928,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tracking Time and Expense Simultaneously",
+      "text": "State transitions require tracking both accumulated travel duration and passing fee expenses."
+    },
+    {
+      "level": 2,
+      "title": "Pruning Suboptimal Arrival Times",
+      "text": "Maintain an array storing the minimum time observed to reach each node; discard states arriving later with higher or equal cost."
+    },
+    {
+      "level": 3,
+      "title": "Priority Traversal by Cost",
+      "text": "Use a prioritized container ordered by cumulative cost, stopping when the target city is first reached within maxTime."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def minCost(self, maxTime: int, edges: list[list[int]], passingFees: list[int]) -> int:\n        n = len(passingFees)\n        adj = [[] for _ in range(n)]\n        for u, v, time in edges:\n            adj[u].append((v, time))\n            adj[v].append((u, time))\n            \n        min_time = [float(\"inf\")] * n\n        pq = [(passingFees[0], 0, 0)]\n        min_time[0] = 0\n        \n        while pq:\n            cost, u, t = heapq.heappop(pq)\n            if u == n - 1:\n                return cost\n            for v, travel_time in adj[u]:\n                nt = t + travel_time\n                if nt <= maxTime and nt < min_time[v]:\n                    min_time[v] = nt\n                    heapq.heappush(pq, (cost + passingFees[v], v, nt))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E * maxTime * log(N * maxTime))",
+    "space": "O(N * maxTime)",
+    "variables": [
+      "N: number of cities",
+      "E: number of road edges",
+      "maxTime: maximum permitted travel time"
+    ],
+    "notes": "State-space Dijkstra where node state is defined by (city, time).",
+    "whyNaiveFails": "Classic Dijkstra optimizing only cost fails because shorter time paths may be required to stay within deadline.",
+    "spaceTimeTradeoff": "Pruning with min_time array prevents exploring strictly worse time states for higher fees.",
+    "interviewerExpectation": "Candidate should recognize 2D dynamic programming / modified Dijkstra with time constraints."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass Solution:\n    def minCost(self, maxTime: int, edges: list[list[int]], passingFees: list[int]) -> int:\n        n = len(passingFees)\n        adj = [[] for _ in range(n)]\n        for u, v, time in edges:\n            adj[u].append((v, time))\n            adj[v].append((u, time))\n            \n        min_time = [float(\"inf\")] * n\n        pq = [(passingFees[0], 0, 0)]\n        min_time[0] = 0\n        \n        while pq:\n            cost, u, t = heapq.heappop(pq)\n            if u == n - 1:\n                return cost\n            for v, travel_time in adj[u]:\n                nt = t + travel_time\n                if nt <= maxTime and nt < min_time[v]:\n                    min_time[v] = nt\n                    heapq.heappush(pq, (cost + passingFees[v], v, nt))\n        return -1",
+      "approach": "Constrained Dijkstra in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minCost(int maxTime, vector<vector<int>>& edges, vector<int>& passingFees) {\n        int n = passingFees.size();\n        vector<vector<pair<int, int>>> adj(n);\n        for (auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            adj[e[1]].push_back({e[0], e[2]});\n        }\n        vector<int> minTime(n, INT_MAX);\n        priority_queue<tuple<int, int, int>, vector<tuple<int, int, int>>, greater<>> pq;\n        pq.push({passingFees[0], 0, 0});\n        minTime[0] = 0;\n        \n        while (!pq.empty()) {\n            auto [cost, u, t] = pq.top();\n            pq.pop();\n            if (u == n - 1) return cost;\n            for (auto& [v, travelTime] : adj[u]) {\n                int nt = t + travelTime;\n                if (nt <= maxTime && nt < minTime[v]) {\n                    minTime[v] = nt;\n                    pq.push({cost + passingFees[v], v, nt});\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "Constrained Dijkstra in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int minCost(int maxTime, int[][] edges, int[] passingFees) {\n        int n = passingFees.length;\n        java.util.List<int[]>[] adj = new java.util.ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new java.util.ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(new int[]{e[1], e[2]});\n            adj[e[1]].add(new int[]{e[0], e[2]});\n        }\n        int[] minTime = new int[n];\n        java.util.Arrays.fill(minTime, Integer.MAX_VALUE);\n        java.util.PriorityQueue<int[]> pq = new java.util.PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        pq.offer(new int[]{passingFees[0], 0, 0});\n        minTime[0] = 0;\n        \n        while (!pq.isEmpty()) {\n            int[] curr = pq.poll();\n            int cost = curr[0], u = curr[1], t = curr[2];\n            if (u == n - 1) return cost;\n            for (int[] edge : adj[u]) {\n                int v = edge[0], travelTime = edge[1];\n                int nt = t + travelTime;\n                if (nt <= maxTime && nt < minTime[v]) {\n                    minTime[v] = nt;\n                    pq.offer(new int[]{cost + passingFees[v], v, nt});\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "approach": "Constrained Dijkstra in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minCost = function(maxTime, edges, passingFees) {\n  const n = passingFees.length;\n  const adj = Array.from({ length: n }, () => []);\n  for (const [u, v, time] of edges) {\n    adj[u].push([v, time]);\n    adj[v].push([u, time]);\n  }\n  const minTime = new Array(n).fill(Infinity);\n  // Simple min-heap simulation or array sort\n  const q = [[passingFees[0], 0, 0]];\n  minTime[0] = 0;\n  \n  while (q.length > 0) {\n    q.sort((a, b) => a[0] - b[0]);\n    const [cost, u, t] = q.shift();\n    if (u === n - 1) return cost;\n    for (const [v, travelTime] of adj[u]) {\n      const nt = t + travelTime;\n      if (nt <= maxTime && nt < minTime[v]) {\n        minTime[v] = nt;\n        q.push([cost + passingFees[v], v, nt]);\n      }\n    }\n  }\n  return -1;\n};",
+      "approach": "Constrained Dijkstra in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

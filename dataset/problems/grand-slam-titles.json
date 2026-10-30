@@ -1,0 +1,72 @@
+{
+  "slug": "grand-slam-titles",
+  "number": 1783,
+  "category": "Database",
+  "patterns": [
+    "set-operations"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Unifying Championship Winners",
+      "text": "Unify winners from Wimbledon, French Open, US Open, and Australian Open into a single stream of winner player IDs."
+    },
+    {
+      "level": 2,
+      "title": "Counting Titles per Player",
+      "text": "Group the combined winner IDs by player ID and count occurrences to determine total grand slams."
+    },
+    {
+      "level": 3,
+      "title": "Joining Player Details",
+      "text": "Join the aggregated title counts with the Players table to retrieve player names."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT\n    p.player_id,\n    p.player_name,\n    SUM(p.player_id = c.Wimbledon) +\n    SUM(p.player_id = c.Fr_open) +\n    SUM(p.player_id = c.US_open) +\n    SUM(p.player_id = c.Au_open) AS grand_slams_count\nFROM Players p\nJOIN Championships c ON p.player_id IN (c.Wimbledon, c.Fr_open, c.US_open, c.Au_open)\nGROUP BY p.player_id, p.player_name;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(P * C) or O(C) with UNION ALL unpivot",
+    "space": "O(P) hash table for players",
+    "variables": [
+      "P: number of players",
+      "C: number of championship years"
+    ],
+    "notes": "Unpivot of multiple competition columns with grouped count.",
+    "whyNaiveFails": "Four separate queries merged in application memory require multiple round trips.",
+    "spaceTimeTradeoff": "Filtering on join condition with IN limits records to active title winners.",
+    "interviewerExpectation": "Candidate should demonstrate unpivot techniques or multi-column equality counting."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT\n    p.player_id,\n    p.player_name,\n    SUM(p.player_id = c.Wimbledon) +\n    SUM(p.player_id = c.Fr_open) +\n    SUM(p.player_id = c.US_open) +\n    SUM(p.player_id = c.Au_open) AS grand_slams_count\nFROM Players p\nJOIN Championships c ON p.player_id IN (c.Wimbledon, c.Fr_open, c.US_open, c.Au_open)\nGROUP BY p.player_id, p.player_name;",
+      "approach": "Multi-column Join and Boolean Sum in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT\n    p.player_id,\n    p.player_name,\n    SUM(CASE WHEN p.player_id = c.Wimbledon THEN 1 ELSE 0 END) +\n    SUM(CASE WHEN p.player_id = c.Fr_open THEN 1 ELSE 0 END) +\n    SUM(CASE WHEN p.player_id = c.US_open THEN 1 ELSE 0 END) +\n    SUM(CASE WHEN p.player_id = c.Au_open THEN 1 ELSE 0 END) AS grand_slams_count\nFROM Players p\nJOIN Championships c ON p.player_id IN (c.Wimbledon, c.Fr_open, c.US_open, c.Au_open)\nGROUP BY p.player_id, p.player_name;",
+      "approach": "Multi-column Join and CASE Sum in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef grand_slam_titles(players: pd.DataFrame, championships: pd.DataFrame) -> pd.DataFrame:\n    winners = pd.concat([championships[\"Wimbledon\"], championships[\"Fr_open\"], championships[\"US_open\"], championships[\"Au_open\"]])\n    counts = winners.value_counts().reset_index()\n    counts.columns = [\"player_id\", \"grand_slams_count\"]\n    res = players.merge(counts, on=\"player_id\")\n    return res[[\"player_id\", \"player_name\", \"grand_slams_count\"]]",
+      "approach": "Series concatenation and value counts in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

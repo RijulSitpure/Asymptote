@@ -1,0 +1,79 @@
+{
+  "slug": "painting-a-grid-with-three-different-colors",
+  "number": 1931,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Column Profile State Encoding",
+      "text": "Since m is at most 5, precompute all valid color assignments for a single column of height m."
+    },
+    {
+      "level": 2,
+      "title": "Verifying Horizontal Compatibility",
+      "text": "Two adjacent column color patterns are compatible if no row shares identical colors in both columns."
+    },
+    {
+      "level": 3,
+      "title": "Column-by-Column Dynamic Programming",
+      "text": "Iterate column by column from 1 to n, accumulating the count of valid patterns modulo 1,000,000,007."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def colorTheGrid(self, m: int, n: int) -> int:\n        MOD = 1_000_000_007\n        \n        valid_cols = []\n        def gen(curr):\n            if len(curr) == m:\n                valid_cols.append(tuple(curr))\n                return\n            for c in range(3):\n                if not curr or curr[-1] != c:\n                    gen(curr + [c])\n        gen([])\n        \n        adj = [[] for _ in range(len(valid_cols))]\n        for i, c1 in enumerate(valid_cols):\n            for j, c2 in enumerate(valid_cols):\n                if all(c1[r] != c2[r] for r in range(m)):\n                    adj[i].append(j)\n                    \n        dp = [1] * len(valid_cols)\n        for _ in range(1, n):\n            new_dp = [0] * len(valid_cols)\n            for i in range(len(valid_cols)):\n                cnt = dp[i]\n                if cnt:\n                    for nxt in adj[i]:\n                        new_dp[nxt] = (new_dp[nxt] + cnt) % MOD\n            dp = new_dp\n            \n        return sum(dp) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * 3^(2M))",
+    "space": "O(3^M)",
+    "variables": [
+      "M: row count (at most 5)",
+      "N: column count (at most 1,000)"
+    ],
+    "notes": "Profile dynamic programming with precomputed column compatibility transitions.",
+    "whyNaiveFails": "Global grid backtracking suffers exponential state explosion of 3^(M*N).",
+    "spaceTimeTradeoff": "Since M <= 5, at most 3 * 2^(M-1) <= 48 valid column configurations exist.",
+    "interviewerExpectation": "Candidate should exploit M <= 5 by compressing columns into small state spaces."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def colorTheGrid(self, m: int, n: int) -> int:\n        MOD = 1_000_000_007\n        \n        valid_cols = []\n        def gen(curr):\n            if len(curr) == m:\n                valid_cols.append(tuple(curr))\n                return\n            for c in range(3):\n                if not curr or curr[-1] != c:\n                    gen(curr + [c])\n        gen([])\n        \n        adj = [[] for _ in range(len(valid_cols))]\n        for i, c1 in enumerate(valid_cols):\n            for j, c2 in enumerate(valid_cols):\n                if all(c1[r] != c2[r] for r in range(m)):\n                    adj[i].append(j)\n                    \n        dp = [1] * len(valid_cols)\n        for _ in range(1, n):\n            new_dp = [0] * len(valid_cols)\n            for i in range(len(valid_cols)):\n                cnt = dp[i]\n                if cnt:\n                    for nxt in adj[i]:\n                        new_dp[nxt] = (new_dp[nxt] + cnt) % MOD\n            dp = new_dp\n            \n        return sum(dp) % MOD",
+      "approach": "Profile DP in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int colorTheGrid(int m, int n) {\n        const int MOD = 1e9 + 7;\n        vector<vector<int>> validCols;\n        vector<int> curr;\n        auto gen = [&](auto& self) -> void {\n            if (curr.size() == m) {\n                validCols.push_back(curr);\n                return;\n            }\n            for (int c = 0; c < 3; c++) {\n                if (curr.empty() || curr.back() != c) {\n                    curr.push_back(c);\n                    self(self);\n                    curr.pop_back();\n                }\n            }\n        };\n        gen(gen);\n        \n        int S = validCols.size();\n        vector<vector<int>> adj(S);\n        for (int i = 0; i < S; i++) {\n            for (int j = 0; j < S; j++) {\n                bool ok = true;\n                for (int r = 0; r < m; r++) {\n                    if (validCols[i][r] == validCols[j][r]) {\n                        ok = false;\n                        break;\n                    }\n                }\n                if (ok) adj[i].push_back(j);\n            }\n        }\n        \n        vector<int> dp(S, 1);\n        for (int col = 1; col < n; col++) {\n            vector<int> newDp(S, 0);\n            for (int i = 0; i < S; i++) {\n                if (!dp[i]) continue;\n                for (int nxt : adj[i]) {\n                    newDp[nxt] = (newDp[nxt] + dp[i]) % MOD;\n                }\n            }\n            dp = newDp;\n        }\n        long long ans = 0;\n        for (int x : dp) ans = (ans + x) % MOD;\n        return ans;\n    }\n};",
+      "approach": "Profile DP in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int colorTheGrid(int m, int n) {\n        final int MOD = 1_000_000_007;\n        java.util.List<int[]> validCols = new java.util.ArrayList<>();\n        generate(m, new int[m], 0, validCols);\n        int S = validCols.size();\n        java.util.List<Integer>[] adj = new java.util.ArrayList[S];\n        for (int i = 0; i < S; i++) adj[i] = new java.util.ArrayList<>();\n        for (int i = 0; i < S; i++) {\n            for (int j = 0; j < S; j++) {\n                boolean ok = true;\n                for (int r = 0; r < m; r++) {\n                    if (validCols.get(i)[r] == validCols.get(j)[r]) {\n                        ok = false;\n                        break;\n                    }\n                }\n                if (ok) adj[i].add(j);\n            }\n        }\n        int[] dp = new int[S];\n        java.util.Arrays.fill(dp, 1);\n        for (int col = 1; col < n; col++) {\n            int[] newDp = new int[S];\n            for (int i = 0; i < S; i++) {\n                if (dp[i] == 0) continue;\n                for (int nxt : adj[i]) {\n                    newDp[nxt] = (newDp[nxt] + dp[i]) % MOD;\n                }\n            }\n            dp = newDp;\n        }\n        long ans = 0;\n        for (int x : dp) ans = (ans + x) % MOD;\n        return (int) ans;\n    }\n    \n    private void generate(int m, int[] curr, int idx, java.util.List<int[]> res) {\n        if (idx == m) {\n            res.add(curr.clone());\n            return;\n        }\n        for (int c = 0; c < 3; c++) {\n            if (idx == 0 || curr[idx - 1] != c) {\n                curr[idx] = c;\n                generate(m, curr, idx + 1, res);\n            }\n        }\n    }\n}",
+      "approach": "Profile DP in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var colorTheGrid = function(m, n) {\n  const MOD = 1000000007;\n  const validCols = [];\n  const gen = (curr) => {\n    if (curr.length === m) {\n      validCols.push([...curr]);\n      return;\n    }\n    for (let c = 0; c < 3; c++) {\n      if (curr.length === 0 || curr[curr.length - 1] !== c) {\n        curr.push(c);\n        gen(curr);\n        curr.pop();\n      }\n    }\n  };\n  gen([]);\n  \n  const S = validCols.length;\n  const adj = Array.from({ length: S }, () => []);\n  for (let i = 0; i < S; i++) {\n    for (let j = 0; j < S; j++) {\n      let ok = true;\n      for (let r = 0; r < m; r++) {\n        if (validCols[i][r] === validCols[j][r]) {\n          ok = false;\n          break;\n        }\n      }\n      if (ok) adj[i].push(j);\n    }\n  }\n  \n  let dp = new Array(S).fill(1);\n  for (let col = 1; col < n; col++) {\n    const newDp = new Array(S).fill(0);\n    for (let i = 0; i < S; i++) {\n      if (!dp[i]) continue;\n      for (const nxt of adj[i]) {\n        newDp[nxt] = (newDp[nxt] + dp[i]) % MOD;\n      }\n    }\n    dp = newDp;\n  }\n  return dp.reduce((acc, x) => (acc + x) % MOD, 0);\n};",
+      "approach": "Profile DP in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

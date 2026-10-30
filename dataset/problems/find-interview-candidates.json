@@ -1,0 +1,71 @@
+{
+  "slug": "find-interview-candidates",
+  "number": 1811,
+  "category": "Database",
+  "patterns": [
+    "gaps-and-islands"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two Paths to Interview Qualification",
+      "text": "A user qualifies if they won gold in at least three competitions or medaled in three or more consecutive contests."
+    },
+    {
+      "level": 2,
+      "title": "Consecutive Medal Streak Detection",
+      "text": "Unpivot all medal winners (gold, silver, bronze) with contest_id, compute row_number ordered by contest_id, and group by (contest_id - row_number) having count >= 3."
+    },
+    {
+      "level": 3,
+      "title": "Combining Candidate Streams",
+      "text": "Union candidates from gold medal counts with candidates from consecutive medal streaks, then join Users for names and emails."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH AllMedals AS (\n    SELECT contest_id, gold_medal AS user_id FROM Contests\n    UNION ALL\n    SELECT contest_id, silver_medal AS user_id FROM Contests\n    UNION ALL\n    SELECT contest_id, bronze_medal AS user_id FROM Contests\n),\nStreaks AS (\n    SELECT\n        user_id,\n        contest_id - ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY contest_id) AS grp\n    FROM AllMedals\n),\nConsecutiveWinners AS (\n    SELECT user_id\n    FROM Streaks\n    GROUP BY user_id, grp\n    HAVING COUNT(*) >= 3\n),\nGoldWinners AS (\n    SELECT gold_medal AS user_id\n    FROM Contests\n    GROUP BY gold_medal\n    HAVING COUNT(*) >= 3\n),\nCandidateIds AS (\n    SELECT user_id FROM ConsecutiveWinners\n    UNION\n    SELECT user_id FROM GoldWinners\n)\nSELECT u.name, u.mail\nFROM Users u\nJOIN CandidateIds c ON u.user_id = c.user_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(C log C) window sort over medal records",
+    "space": "O(C) for CTE storage",
+    "variables": [
+      "C: total contest entries"
+    ],
+    "notes": "Gaps-and-islands streak detection combined with frequency aggregation.",
+    "whyNaiveFails": "Self-joins across 3 consecutive contests are brittle and miss streaks spanning more contests.",
+    "spaceTimeTradeoff": "Window ranking row_number difference partitions consecutive series in a single sort pass.",
+    "interviewerExpectation": "Candidate should recognize gaps-and-islands technique using contest_id - row_number."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH AllMedals AS (\n    SELECT contest_id, gold_medal AS user_id FROM Contests\n    UNION ALL\n    SELECT contest_id, silver_medal AS user_id FROM Contests\n    UNION ALL\n    SELECT contest_id, bronze_medal AS user_id FROM Contests\n),\nStreaks AS (\n    SELECT\n        user_id,\n        contest_id - ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY contest_id) AS grp\n    FROM AllMedals\n),\nConsecutiveWinners AS (\n    SELECT user_id\n    FROM Streaks\n    GROUP BY user_id, grp\n    HAVING COUNT(*) >= 3\n),\nGoldWinners AS (\n    SELECT gold_medal AS user_id\n    FROM Contests\n    GROUP BY gold_medal\n    HAVING COUNT(*) >= 3\n),\nCandidateIds AS (\n    SELECT user_id FROM ConsecutiveWinners\n    UNION\n    SELECT user_id FROM GoldWinners\n)\nSELECT u.name, u.mail\nFROM Users u\nJOIN CandidateIds c ON u.user_id = c.user_id;",
+      "approach": "Gaps and Islands CTE in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH AllMedals AS (\n    SELECT contest_id, gold_medal AS user_id FROM Contests\n    UNION ALL\n    SELECT contest_id, silver_medal AS user_id FROM Contests\n    UNION ALL\n    SELECT contest_id, bronze_medal AS user_id FROM Contests\n),\nStreaks AS (\n    SELECT\n        user_id,\n        contest_id - ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY contest_id) AS grp\n    FROM AllMedals\n),\nConsecutiveWinners AS (\n    SELECT user_id\n    FROM Streaks\n    GROUP BY user_id, grp\n    HAVING COUNT(*) >= 3\n),\nGoldWinners AS (\n    SELECT gold_medal AS user_id\n    FROM Contests\n    GROUP BY gold_medal\n    HAVING COUNT(*) >= 3\n),\nCandidateIds AS (\n    SELECT user_id FROM ConsecutiveWinners\n    UNION\n    SELECT user_id FROM GoldWinners\n)\nSELECT u.name, u.mail\nFROM Users u\nJOIN CandidateIds c ON u.user_id = c.user_id;",
+      "approach": "Gaps and Islands CTE in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_interview_candidates(contests: pd.DataFrame, users: pd.DataFrame) -> pd.DataFrame:\n    gold = contests[\"gold_medal\"].value_counts()\n    golds_3 = set(gold[gold >= 3].index)\n    \n    all_m = []\n    for _, r in contests.iterrows():\n        all_m.append((r[\"contest_id\"], r[\"gold_medal\"]))\n        all_m.append((r[\"contest_id\"], r[\"silver_medal\"]))\n        all_m.append((r[\"contest_id\"], r[\"bronze_medal\"]))\n    df_m = pd.DataFrame(all_m, columns=[\"contest_id\", \"user_id\"]).sort_values([\"user_id\", \"contest_id\"])\n    \n    streak_users = set()\n    for uid, grp in df_m.groupby(\"user_id\"):\n        cids = sorted(grp[\"contest_id\"].unique())\n        streak = 1\n        for i in range(1, len(cids)):\n            if cids[i] == cids[i - 1] + 1:\n                streak += 1\n                if streak >= 3:\n                    streak_users.add(uid)\n            else:\n                streak = 1\n    candidates = list(golds_3.union(streak_users))\n    res = users[users[\"user_id\"].isin(candidates)][[\"name\", \"mail\"]]\n    return res",
+      "approach": "Streak counting and set union in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+import json
+
+cases = [
+    {
+        "name": "example1",
+        "inserts": """
+INSERT INTO LogInfo VALUES (1, 1, '2021-02-01 09:00:00', '2021-02-01 09:30:00');
+INSERT INTO LogInfo VALUES (1, 2, '2021-02-01 08:00:00', '2021-02-01 11:30:00');
+INSERT INTO LogInfo VALUES (2, 6, '2021-02-01 20:30:00', '2021-02-01 22:00:00');
+INSERT INTO LogInfo VALUES (2, 7, '2021-02-02 20:30:00', '2021-02-02 22:00:00');
+INSERT INTO LogInfo VALUES (3, 9, '2021-02-01 16:00:00', '2021-02-01 16:59:59');
+INSERT INTO LogInfo VALUES (3, 13, '2021-02-01 17:00:00', '2021-02-01 17:59:59');
+INSERT INTO LogInfo VALUES (4, 10, '2021-02-01 16:00:00', '2021-02-01 17:00:00');
+INSERT INTO LogInfo VALUES (4, 11, '2021-02-01 17:00:00', '2021-02-01 17:59:59');
+"""
+    }
+]
+print(json.dumps(cases))

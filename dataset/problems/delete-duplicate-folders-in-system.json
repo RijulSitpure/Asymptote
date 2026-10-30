@@ -1,0 +1,80 @@
+{
+  "slug": "delete-duplicate-folders-in-system",
+  "number": 1948,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Hierarchical Subtree Serialization",
+      "text": "Build a prefix tree of folder hierarchies and compute a canonical serialization string for every node subfolder tree."
+    },
+    {
+      "level": 2,
+      "title": "Post-Order Canonical Representation",
+      "text": "In post-order fashion, concatenate sorted child folder names and their respective serialized child trees."
+    },
+    {
+      "level": 3,
+      "title": "Pruning Duplicate Subtree Signatures",
+      "text": "Count serial string frequencies across all nodes; any non-empty subfolder signature with count >= 2 is marked for deletion."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass FolderNode:\n    def __init__(self, name=\"\"):\n        self.name = name\n        self.children = {}\n        self.serial = \"\"\n        self.deleted = False\n\nclass Solution:\n    def deleteDuplicateFolder(self, paths: list[list[str]]) -> list[list[str]]:\n        root = FolderNode()\n        for p in paths:\n            curr = root\n            for folder in p:\n                if folder not in curr.children:\n                    curr.children[folder] = FolderNode(folder)\n                curr = curr.children[folder]\n                \n        serial_counts = defaultdict(int)\n        \n        def serialize(node):\n            if not node.children:\n                return \"\"\n            child_serials = []\n            for name in sorted(node.children):\n                sub = serialize(node.children[name])\n                child_serials.append(f\"{name}({sub})\")\n            node.serial = \"\".join(child_serials)\n            serial_counts[node.serial] += 1\n            return node.serial\n            \n        serialize(root)\n        \n        def mark_deleted(node):\n            if node.serial and serial_counts[node.serial] > 1:\n                node.deleted = True\n                return\n            for child in node.children.values():\n                mark_deleted(child)\n                \n        mark_deleted(root)\n        \n        ans = []\n        def collect(node, curr_path):\n            for name in sorted(node.children):\n                child = node.children[name]\n                if not child.deleted:\n                    ans.append(curr_path + [name])\n                    collect(child, curr_path + [name])\n                    \n        collect(root, [])\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * L * log(deg))",
+    "space": "O(N * L)",
+    "variables": [
+      "N: total directory paths",
+      "L: maximum path depth",
+      "deg: branching degree of folder nodes"
+    ],
+    "notes": "Subtree canonical serialization and frequency table hashing.",
+    "whyNaiveFails": "Comparing subtrees pairwise takes O(N^2) recursive comparisons.",
+    "spaceTimeTradeoff": "Post-order string serialization enables O(1) expected hashing for identical folder architectures.",
+    "interviewerExpectation": "Candidate should recognize Merkle tree / subfolder serialization hashing."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass FolderNode:\n    def __init__(self, name=\"\"):\n        self.name = name\n        self.children = {}\n        self.serial = \"\"\n        self.deleted = False\n\nclass Solution:\n    def deleteDuplicateFolder(self, paths: list[list[str]]) -> list[list[str]]:\n        root = FolderNode()\n        for p in paths:\n            curr = root\n            for folder in p:\n                if folder not in curr.children:\n                    curr.children[folder] = FolderNode(folder)\n                curr = curr.children[folder]\n                \n        serial_counts = defaultdict(int)\n        \n        def serialize(node):\n            if not node.children:\n                return \"\"\n            child_serials = []\n            for name in sorted(node.children):\n                sub = serialize(node.children[name])\n                child_serials.append(f\"{name}({sub})\")\n            node.serial = \"\".join(child_serials)\n            serial_counts[node.serial] += 1\n            return node.serial\n            \n        serialize(root)\n        \n        def mark_deleted(node):\n            if node.serial and serial_counts[node.serial] > 1:\n                node.deleted = True\n                return\n            for child in node.children.values():\n                mark_deleted(child)\n                \n        mark_deleted(root)\n        \n        ans = []\n        def collect(node, curr_path):\n            for name in sorted(node.children):\n                child = node.children[name]\n                if not child.deleted:\n                    ans.append(curr_path + [name])\n                    collect(child, curr_path + [name])\n                    \n        collect(root, [])\n        return ans",
+      "approach": "Subtree serialization hashing in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    struct Node {\n        string name;\n        map<string, Node*> children;\n        string serial;\n        bool deleted = false;\n        Node(string n = \"\") : name(n) {}\n    };\n    unordered_map<string, int> serialCounts;\n    \n    string serialize(Node* node) {\n        if (node->children.empty()) return \"\";\n        string s = \"\";\n        for (auto& [name, child] : node->children) {\n            string sub = serialize(child);\n            s += name + \"(\" + sub + \")\";\n        }\n        node->serial = s;\n        serialCounts[s]++;\n        return s;\n    }\n    \n    void mark(Node* node) {\n        if (!node->serial.empty() && serialCounts[node->serial] > 1) {\n            node->deleted = true;\n            return;\n        }\n        for (auto& [_, child] : node->children) mark(child);\n    }\n    \n    void collect(Node* node, vector<string>& curr, vector<vector<string>>& ans) {\n        for (auto& [name, child] : node->children) {\n            if (!child->deleted) {\n                curr.push_back(name);\n                ans.push_back(curr);\n                collect(child, curr, ans);\n                curr.pop_back();\n            }\n        }\n    }\n    \npublic:\n    vector<vector<string>> deleteDuplicateFolder(vector<vector<string>>& paths) {\n        Node* root = new Node();\n        for (auto& p : paths) {\n            Node* curr = root;\n            for (const string& folder : p) {\n                if (!curr->children.count(folder)) curr->children[folder] = new Node(folder);\n                curr = curr->children[folder];\n            }\n        }\n        serialize(root);\n        mark(root);\n        vector<vector<string>> ans;\n        vector<string> curr;\n        collect(root, curr, ans);\n        return ans;\n    }\n};",
+      "approach": "Subtree serialization hashing in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    static class Node {\n        String name;\n        java.util.TreeMap<String, Node> children = new java.util.TreeMap<>();\n        String serial = \"\";\n        boolean deleted = false;\n        Node(String n) { this.name = n; }\n    }\n    \n    private java.util.Map<String, Integer> serialCounts = new java.util.HashMap<>();\n    \n    private String serialize(Node node) {\n        if (node.children.isEmpty()) return \"\";\n        StringBuilder sb = new StringBuilder();\n        for (java.util.Map.Entry<String, Node> entry : node.children.entrySet()) {\n            String sub = serialize(entry.getValue());\n            sb.append(entry.getKey()).append(\"(\").append(sub).append(\")\");\n        }\n        node.serial = sb.toString();\n        serialCounts.put(node.serial, serialCounts.getOrDefault(node.serial, 0) + 1);\n        return node.serial;\n    }\n    \n    private void mark(Node node) {\n        if (!node.serial.isEmpty() && serialCounts.getOrDefault(node.serial, 0) > 1) {\n            node.deleted = true;\n            return;\n        }\n        for (Node child : node.children.values()) mark(child);\n    }\n    \n    private void collect(Node node, java.util.List<String> curr, java.util.List<java.util.List<String>> ans) {\n        for (java.util.Map.Entry<String, Node> entry : node.children.entrySet()) {\n            Node child = entry.getValue();\n            if (!child.deleted) {\n                curr.add(entry.getKey());\n                ans.add(new java.util.ArrayList<>(curr));\n                collect(child, curr, ans);\n                curr.remove(curr.size() - 1);\n            }\n        }\n    }\n    \n    public java.util.List<java.util.List<String>> deleteDuplicateFolder(java.util.List<java.util.List<String>> paths) {\n        Node root = new Node(\"\");\n        for (java.util.List<String> p : paths) {\n            Node curr = root;\n            for (String folder : p) {\n                curr.children.putIfAbsent(folder, new Node(folder));\n                curr = curr.children.get(folder);\n            }\n        }\n        serialize(root);\n        mark(root);\n        java.util.List<java.util.List<String>> ans = new java.util.ArrayList<>();\n        collect(root, new java.util.ArrayList<>(), ans);\n        return ans;\n    }\n}",
+      "approach": "Subtree serialization hashing in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var deleteDuplicateFolder = function(paths) {\n  class Node {\n    constructor(name = '') {\n      this.name = name;\n      this.children = new Map();\n      this.serial = '';\n      this.deleted = false;\n    }\n  }\n  \n  const root = new Node();\n  for (const p of paths) {\n    let curr = root;\n    for (const folder of p) {\n      if (!curr.children.has(folder)) curr.children.set(folder, new Node(folder));\n      curr = curr.children.get(folder);\n    }\n  }\n  \n  const serialCounts = new Map();\n  const serialize = (node) => {\n    if (node.children.size === 0) return '';\n    const sortedKeys = Array.from(node.children.keys()).sort();\n    const parts = [];\n    for (const k of sortedKeys) {\n      const sub = serialize(node.children.get(k));\n      parts.push(`${k}(${sub})`);\n    }\n    node.serial = parts.join('');\n    serialCounts.set(node.serial, (serialCounts.get(node.serial) || 0) + 1);\n    return node.serial;\n  };\n  \n  serialize(root);\n  \n  const mark = (node) => {\n    if (node.serial && (serialCounts.get(node.serial) || 0) > 1) {\n      node.deleted = true;\n      return;\n    }\n    for (const child of node.children.values()) mark(child);\n  };\n  \n  mark(root);\n  \n  const ans = [];\n  const collect = (node, curr) => {\n    const sortedKeys = Array.from(node.children.keys()).sort();\n    for (const k of sortedKeys) {\n      const child = node.children.get(k);\n      if (!child.deleted) {\n        ans.push([...curr, k]);\n        collect(child, [...curr, k]);\n      }\n    }\n  };\n  \n  collect(root, []);\n  return ans;\n};",
+      "approach": "Subtree serialization hashing in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

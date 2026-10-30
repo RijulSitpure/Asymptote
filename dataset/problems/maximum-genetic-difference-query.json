@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-genetic-difference-query",
+  "number": 1938,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Offline Query Reorganization",
+      "text": "Group queries by target node so that answers can be processed during a single tree traversal."
+    },
+    {
+      "level": 2,
+      "title": "Bitwise Prefix Tree with Reference Counts",
+      "text": "Maintain an 18-bit prefix tree supporting insertions and deletions as nodes enter and leave the active ancestor path."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Bit Inversion Querying",
+      "text": "At each bit from 17 down to 0, attempt to follow the inverted bit branch to maximize the bitwise difference."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Trie:\n    def __init__(self):\n        self.root = {}\n        \n    def insert(self, val):\n        node = self.root\n        for i in range(17, -1, -1):\n            bit = (val >> i) & 1\n            if bit not in node:\n                node[bit] = {\"cnt\": 0}\n            node = node[bit]\n            node[\"cnt\"] += 1\n            \n    def remove(self, val):\n        node = self.root\n        for i in range(17, -1, -1):\n            bit = (val >> i) & 1\n            node = node[bit]\n            node[\"cnt\"] -= 1\n            \n    def max_diff(self, val):\n        node = self.root\n        ans = 0\n        for i in range(17, -1, -1):\n            bit = (val >> i) & 1\n            want = 1 - bit\n            if want in node and node[want][\"cnt\"] > 0:\n                ans |= (1 << i)\n                node = node[want]\n            else:\n                node = node[bit]\n        return ans\n\nclass Solution:\n    def maxGeneticDifference(self, parents: list[int], queries: list[list[int]]) -> list[int]:\n        n = len(parents)\n        children = [[] for _ in range(n)]\n        root = -1\n        for i, p in enumerate(parents):\n            if p == -1:\n                root = i\n            else:\n                children[p].append(i)\n                \n        q_by_node = [[] for _ in range(n)]\n        for idx, (node, val) in enumerate(queries):\n            q_by_node[node].append((idx, val))\n            \n        ans = [0] * len(queries)\n        trie = Trie()\n        \n        def dfs(u):\n            trie.insert(u)\n            for q_idx, val in q_by_node[u]:\n                ans[q_idx] = trie.max_diff(val)\n            for v in children[u]:\n                dfs(v)\n            trie.remove(u)\n            \n        dfs(root)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((N + Q) * B)",
+    "space": "O(N * B + Q)",
+    "variables": [
+      "N: number of nodes in tree",
+      "Q: number of queries",
+      "B: bit width (18)"
+    ],
+    "notes": "Offline depth-first search using backtrackable bitwise prefix tree.",
+    "whyNaiveFails": "Querying each node by walking upwards to the root takes O(N * Q) time, causing time limit exceeded.",
+    "spaceTimeTradeoff": "Reference counted prefix tree maintains exact ancestor path in O(B) time per edge.",
+    "interviewerExpectation": "Candidate should recognize grouping queries offline and utilizing a bitwise trie."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Trie:\n    def __init__(self):\n        self.root = {}\n        \n    def insert(self, val):\n        node = self.root\n        for i in range(17, -1, -1):\n            bit = (val >> i) & 1\n            if bit not in node:\n                node[bit] = {\"cnt\": 0}\n            node = node[bit]\n            node[\"cnt\"] += 1\n            \n    def remove(self, val):\n        node = self.root\n        for i in range(17, -1, -1):\n            bit = (val >> i) & 1\n            node = node[bit]\n            node[\"cnt\"] -= 1\n            \n    def max_diff(self, val):\n        node = self.root\n        ans = 0\n        for i in range(17, -1, -1):\n            bit = (val >> i) & 1\n            want = 1 - bit\n            if want in node and node[want][\"cnt\"] > 0:\n                ans |= (1 << i)\n                node = node[want]\n            else:\n                node = node[bit]\n        return ans\n\nclass Solution:\n    def maxGeneticDifference(self, parents: list[int], queries: list[list[int]]) -> list[int]:\n        n = len(parents)\n        children = [[] for _ in range(n)]\n        root = -1\n        for i, p in enumerate(parents):\n            if p == -1:\n                root = i\n            else:\n                children[p].append(i)\n                \n        q_by_node = [[] for _ in range(n)]\n        for idx, (node, val) in enumerate(queries):\n            q_by_node[node].append((idx, val))\n            \n        ans = [0] * len(queries)\n        trie = Trie()\n        \n        def dfs(u):\n            trie.insert(u)\n            for q_idx, val in q_by_node[u]:\n                ans[q_idx] = trie.max_diff(val)\n            for v in children[u]:\n                dfs(v)\n            trie.remove(u)\n            \n        dfs(root)\n        return ans",
+      "approach": "Offline DFS with Trie in Python 3",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    struct TrieNode {\n        int next[2] = {0, 0};\n        int count = 0;\n    };\n    vector<TrieNode> trie;\n    \n    void insert(int val) {\n        int u = 0;\n        for (int i = 17; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            if (!trie[u].next[b]) {\n                trie[u].next[b] = trie.size();\n                trie.emplace_back();\n            }\n            u = trie[u].next[b];\n            trie[u].count++;\n        }\n    }\n    \n    void remove(int val) {\n        int u = 0;\n        for (int i = 17; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            u = trie[u].next[b];\n            trie[u].count--;\n        }\n    }\n    \n    int query(int val) {\n        int u = 0, ans = 0;\n        for (int i = 17; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            int want = 1 - b;\n            if (trie[u].next[want] && trie[trie[u].next[want]].count > 0) {\n                ans |= (1 << i);\n                u = trie[u].next[want];\n            } else {\n                u = trie[u].next[b];\n            }\n        }\n        return ans;\n    }\n    \npublic:\n    vector<int> maxGeneticDifference(vector<int>& parents, vector<vector<int>>& queries) {\n        int n = parents.size();\n        vector<vector<int>> children(n);\n        int root = -1;\n        for (int i = 0; i < n; i++) {\n            if (parents[i] == -1) root = i;\n            else children[parents[i]].push_back(i);\n        }\n        \n        vector<vector<pair<int, int>>> qByNode(n);\n        for (int i = 0; i < queries.size(); i++) {\n            qByNode[queries[i][0]].push_back({i, queries[i][1]});\n        }\n        \n        trie.emplace_back();\n        vector<int> ans(queries.size());\n        \n        auto dfs = [&](auto& self, int u) -> void {\n            insert(u);\n            for (auto& [qIdx, val] : qByNode[u]) ans[qIdx] = query(val);\n            for (int v : children[u]) self(self, v);\n            remove(u);\n        };\n        \n        dfs(dfs, root);\n        return ans;\n    }\n};",
+      "approach": "Offline DFS with Trie in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    static class Node {\n        int[] next = new int[2];\n        int count = 0;\n    }\n    private java.util.List<Node> trie;\n    \n    private void insert(int val) {\n        int u = 0;\n        for (int i = 17; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            if (trie.get(u).next[b] == 0) {\n                trie.get(u).next[b] = trie.size();\n                trie.add(new Node());\n            }\n            u = trie.get(u).next[b];\n            trie.get(u).count++;\n        }\n    }\n    \n    private void remove(int val) {\n        int u = 0;\n        for (int i = 17; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            u = trie.get(u).next[b];\n            trie.get(u).count--;\n        }\n    }\n    \n    private int query(int val) {\n        int u = 0, ans = 0;\n        for (int i = 17; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            int want = 1 - b;\n            int nextNode = trie.get(u).next[want];\n            if (nextNode != 0 && trie.get(nextNode).count > 0) {\n                ans |= (1 << i);\n                u = nextNode;\n            } else {\n                u = trie.get(u).next[b];\n            }\n        }\n        return ans;\n    }\n    \n    public int[] maxGeneticDifference(int[] parents, int[][] queries) {\n        int n = parents.length;\n        java.util.List<Integer>[] children = new java.util.ArrayList[n];\n        for (int i = 0; i < n; i++) children[i] = new java.util.ArrayList<>();\n        int root = -1;\n        for (int i = 0; i < n; i++) {\n            if (parents[i] == -1) root = i;\n            else children[parents[i]].add(i);\n        }\n        \n        java.util.List<int[]>[] qByNode = new java.util.ArrayList[n];\n        for (int i = 0; i < n; i++) qByNode[i] = new java.util.ArrayList<>();\n        for (int i = 0; i < queries.length; i++) {\n            qByNode[queries[i][0]].add(new int[]{i, queries[i][1]});\n        }\n        \n        trie = new java.util.ArrayList<>();\n        trie.add(new Node());\n        int[] ans = new int[queries.length];\n        dfs(root, children, qByNode, ans);\n        return ans;\n    }\n    \n    private void dfs(int u, java.util.List<Integer>[] children, java.util.List<int[]>[] qByNode, int[] ans) {\n        insert(u);\n        for (int[] q : qByNode[u]) ans[q[0]] = query(q[1]);\n        for (int v : children[u]) dfs(v, children, qByNode, ans);\n        remove(u);\n    }\n}",
+      "approach": "Offline DFS with Trie in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maxGeneticDifference = function(parents, queries) {\n  const n = parents.length;\n  const children = Array.from({ length: n }, () => []);\n  let root = -1;\n  for (let i = 0; i < n; i++) {\n    if (parents[i] === -1) root = i;\n    else children[parents[i]].push(i);\n  }\n  \n  const qByNode = Array.from({ length: n }, () => []);\n  for (let i = 0; i < queries.length; i++) {\n    qByNode[queries[i][0]].push([i, queries[i][1]]);\n  }\n  \n  const trie = [{ next: [0, 0], count: 0 }];\n  const insert = (val) => {\n    let u = 0;\n    for (let i = 17; i >= 0; i--) {\n      const b = (val >> i) & 1;\n      if (!trie[u].next[b]) {\n        trie[u].next[b] = trie.length;\n        trie.push({ next: [0, 0], count: 0 });\n      }\n      u = trie[u].next[b];\n      trie[u].count++;\n    }\n  };\n  \n  const remove = (val) => {\n    let u = 0;\n    for (let i = 17; i >= 0; i--) {\n      const b = (val >> i) & 1;\n      u = trie[u].next[b];\n      trie[u].count--;\n    }\n  };\n  \n  const query = (val) => {\n    let u = 0, ans = 0;\n    for (let i = 17; i >= 0; i--) {\n      const b = (val >> i) & 1;\n      const want = 1 - b;\n      const nextNode = trie[u].next[want];\n      if (nextNode && trie[nextNode].count > 0) {\n        ans |= (1 << i);\n        u = nextNode;\n      } else {\n        u = trie[u].next[b];\n      }\n    }\n    return ans;\n  };\n  \n  const ans = new Array(queries.length).fill(0);\n  const dfs = (u) => {\n    insert(u);\n    for (const [qIdx, val] of qByNode[u]) ans[qIdx] = query(val);\n    for (const v of children[u]) dfs(v);\n    remove(u);\n  };\n  dfs(root);\n  return ans;\n};",
+      "approach": "Offline DFS with Trie in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

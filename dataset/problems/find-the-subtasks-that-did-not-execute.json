@@ -1,0 +1,71 @@
+{
+  "slug": "find-the-subtasks-that-did-not-execute",
+  "number": 1767,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Generating Subtask Sequence",
+      "text": "Use a recursive common table expression to generate all integer subtask IDs from 1 up to subtasks_count for each task."
+    },
+    {
+      "level": 2,
+      "title": "Forming Expected Subtasks",
+      "text": "In the recursive step, increment the subtask ID by 1 while subtask_id is strictly less than subtasks_count."
+    },
+    {
+      "level": 3,
+      "title": "Excluding Executed Subtasks",
+      "text": "Left join the generated expected subtasks with the Executed table and filter where the executed subtask is null."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RECURSIVE SubtaskGenerator AS (\n    SELECT task_id, subtasks_count, 1 AS subtask_id\n    FROM Tasks\n    UNION ALL\n    SELECT task_id, subtasks_count, subtask_id + 1\n    FROM SubtaskGenerator\n    WHERE subtask_id < subtasks_count\n)\nSELECT s.task_id, s.subtask_id\nFROM SubtaskGenerator s\nLEFT JOIN Executed e ON s.task_id = e.task_id AND s.subtask_id = e.subtask_id\nWHERE e.subtask_id IS NULL;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(Total Subtasks) to generate sequence and left-join executed table",
+    "space": "O(Total Subtasks) recursion working table",
+    "variables": [
+      "Total Subtasks: sum of subtasks_count across all tasks"
+    ],
+    "notes": "Recursive sequence generation coupled with anti-join exclusion.",
+    "whyNaiveFails": "Static tables do not contain arbitrary numeric series without recursive generation or numbers tables.",
+    "spaceTimeTradeoff": "Recursive CTE avoids maintaining an external auxiliary numbers table.",
+    "interviewerExpectation": "Candidate should show proficiency in recursive CTE base case, recursive step, and anti-join."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RECURSIVE SubtaskGenerator AS (\n    SELECT task_id, subtasks_count, 1 AS subtask_id\n    FROM Tasks\n    UNION ALL\n    SELECT task_id, subtasks_count, subtask_id + 1\n    FROM SubtaskGenerator\n    WHERE subtask_id < subtasks_count\n)\nSELECT s.task_id, s.subtask_id\nFROM SubtaskGenerator s\nLEFT JOIN Executed e ON s.task_id = e.task_id AND s.subtask_id = e.subtask_id\nWHERE e.subtask_id IS NULL;",
+      "approach": "Recursive CTE Subtask Generation in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RECURSIVE SubtaskGenerator AS (\n    SELECT task_id, subtasks_count, 1 AS subtask_id\n    FROM Tasks\n    UNION ALL\n    SELECT task_id, subtasks_count, subtask_id + 1\n    FROM SubtaskGenerator\n    WHERE subtask_id < subtasks_count\n)\nSELECT s.task_id, s.subtask_id\nFROM SubtaskGenerator s\nLEFT JOIN Executed e ON s.task_id = e.task_id AND s.subtask_id = e.subtask_id\nWHERE e.subtask_id IS NULL;",
+      "approach": "Recursive CTE Subtask Generation in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_subtasks(tasks: pd.DataFrame, executed: pd.DataFrame) -> pd.DataFrame:\n    rows = []\n    for _, row in tasks.iterrows():\n        for sid in range(1, row[\"subtasks_count\"] + 1):\n            rows.append({\"task_id\": row[\"task_id\"], \"subtask_id\": sid})\n    all_subtasks = pd.DataFrame(rows)\n    if all_subtasks.empty:\n        return pd.DataFrame(columns=[\"task_id\", \"subtask_id\"])\n    merged = all_subtasks.merge(executed, on=[\"task_id\", \"subtask_id\"], how=\"left\", indicator=True)\n    return merged[merged[\"_merge\"] == \"left_only\"][[\"task_id\", \"subtask_id\"]]",
+      "approach": "Sequence generation and merge anti-join in pandas",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
