@@ -1,0 +1,73 @@
+{
+  "slug": "drop-type-1-orders-for-customers-with-type-0-orders",
+  "number": 2084,
+  "category": "Database",
+  "patterns": [
+    "anti-join",
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Customer Order Types",
+      "text": "Determine which customers have placed at least one order of type zero."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Order Inclusion",
+      "text": "Always include type zero orders in the output table."
+    },
+    {
+      "level": 3,
+      "title": "Exclude Type One for Identified Customers",
+      "text": "Include type one orders only when the placing customer has no recorded type zero transactions."
+    },
+    {
+      "level": 4,
+      "title": "Complete Query",
+      "text": "```mysql\nSELECT order_id, customer_id, order_type\nFROM Orders\nWHERE order_type = 0\n   OR customer_id NOT IN (\n       SELECT DISTINCT customer_id\n       FROM Orders\n       WHERE order_type = 0\n   );\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N) scanning and filtering orders",
+    "space": "O(C) distinct customers with type 0 orders",
+    "variables": [
+      "N: total orders count",
+      "C: customers with type 0 orders"
+    ],
+    "notes": "Preserves type 0 orders unconditionally and retains type 1 only if customer never ordered type 0.",
+    "whyNaiveFails": "Simple grouping drops individual order detail attributes.",
+    "spaceTimeTradeoff": "Anti-join subquery or window MIN check maintains all order rows without joins.",
+    "interviewerExpectation": "Candidate should use NOT IN or window MIN partition to check customer order profile."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT order_id, customer_id, order_type\nFROM Orders\nWHERE order_type = 0\n   OR customer_id NOT IN (\n       SELECT DISTINCT customer_id\n       FROM Orders\n       WHERE order_type = 0\n   );",
+      "approach": "Filter orders using OR condition with NOT IN subquery identifying customers having type 0 orders.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT order_id, customer_id, order_type\nFROM Orders\nWHERE order_type = 0\n   OR customer_id NOT IN (\n       SELECT DISTINCT customer_id\n       FROM Orders\n       WHERE order_type = 0\n   );",
+      "approach": "PostgreSQL anti-join filtering keeping type 0 orders or customers without type 0 orders.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef drop_specific_orders(orders: pd.DataFrame) -> pd.DataFrame:\n    has_zero = set(orders[orders['order_type'] == 0]['customer_id'])\n    cond = (orders['order_type'] == 0) | (~orders['customer_id'].isin(has_zero))\n    return orders[cond][['order_id', 'customer_id', 'order_type']]",
+      "approach": "Identify customer IDs having order_type == 0 and filter rows that are type 0 or not in that set.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

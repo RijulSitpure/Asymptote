@@ -1,0 +1,72 @@
+{
+  "slug": "account-balance",
+  "number": 2066,
+  "category": "Database",
+  "patterns": [
+    "running-total",
+    "conditional-pivot"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Running Total Partitioning",
+      "text": "Calculate the running transaction sum partitioned by user account and ordered chronologically by day."
+    },
+    {
+      "level": 2,
+      "title": "Signed Transaction Amounts",
+      "text": "Treat deposits as positive amounts and withdrawals as negative amounts using conditional logic."
+    },
+    {
+      "level": 3,
+      "title": "Window Function Sum",
+      "text": "Use an aggregate window function over the partition to determine the balance after each transaction."
+    },
+    {
+      "level": 4,
+      "title": "Complete Query",
+      "text": "```mysql\nSELECT\n    account_id,\n    day,\n    SUM(CASE WHEN type = 'Deposit' THEN amount ELSE -amount END) OVER (\n        PARTITION BY account_id\n        ORDER BY day\n    ) AS balance\nFROM Transactions\nORDER BY account_id, day;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) sorting transactions by account and day for window aggregate",
+    "space": "O(N) window partition buffer and result set",
+    "variables": [
+      "N: total transactions count"
+    ],
+    "notes": "SUM window function computes running balance per account partitioned by account_id and ordered by day.",
+    "whyNaiveFails": "Correlated subqueries for running totals take quadratic O(N^2) time.",
+    "spaceTimeTradeoff": "Window aggregation with partition and order achieves optimal linearithmic complexity.",
+    "interviewerExpectation": "Candidate should convert withdrawals to negative values inside SUM window function."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT\n    account_id,\n    day,\n    SUM(CASE WHEN type = 'Deposit' THEN amount ELSE -amount END) OVER (\n        PARTITION BY account_id\n        ORDER BY day\n    ) AS balance\nFROM Transactions\nORDER BY account_id, day;",
+      "approach": "Compute running balance per account using window SUM with conditional sign conversion.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT\n    account_id,\n    day,\n    SUM(CASE WHEN type = 'Deposit' THEN amount ELSE -amount END) OVER (\n        PARTITION BY account_id\n        ORDER BY day\n    ) AS balance\nFROM Transactions\nORDER BY account_id, day;",
+      "approach": "PostgreSQL window sum with CASE statement ordered by day.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef account_balance(transactions: pd.DataFrame) -> pd.DataFrame:\n    df = transactions.sort_values(by=['account_id', 'day']).copy()\n    df['signed'] = df.apply(lambda r: r['amount'] if r['type'] == 'Deposit' else -r['amount'], axis=1)\n    df['balance'] = df.groupby('account_id')['signed'].cumsum()\n    return df[['account_id', 'day', 'balance']]",
+      "approach": "Sort by account and day, compute signed amount, and calculate cumulative sum per account.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

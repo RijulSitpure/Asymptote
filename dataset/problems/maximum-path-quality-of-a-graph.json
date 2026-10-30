@@ -1,0 +1,81 @@
+{
+  "slug": "maximum-path-quality-of-a-graph",
+  "number": 2065,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-grid-dfs",
+    "graph-bfs-shortest-path"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Path Quality and Unique Collection",
+      "text": "A node value is collected only on the first visit along a valid route starting and ending at node zero."
+    },
+    {
+      "level": 2,
+      "title": "Backtracking Traversal",
+      "text": "Explore adjacent nodes recursively while tracking accumulated travel time and visit counts."
+    },
+    {
+      "level": 3,
+      "title": "Origin Re-entry Condition",
+      "text": "Whenever the route returns to the starting vertex within the time limit, update the global maximum quality."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def maximalPathQuality(self, values: list[int], edges: list[list[int]], maxTime: int) -> int:\n        n = len(values)\n        adj = [[] for _ in range(n)]\n        for u, v, t in edges:\n            adj[u].append((v, t))\n            adj[v].append((u, t))\n\n        visited = [0] * n\n        max_quality = 0\n\n        def dfs(node: int, current_time: int, current_quality: int) -> None:\n            nonlocal max_quality\n            if visited[node] == 0:\n                current_quality += values[node]\n            visited[node] += 1\n\n            if node == 0:\n                max_quality = max(max_quality, current_quality)\n\n            for nxt, t in adj[node]:\n                if current_time + t <= maxTime:\n                    dfs(nxt, current_time + t, current_quality)\n\n            visited[node] -= 1\n\n        dfs(0, 0, 0)\n        return max_quality\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(4^(maxTime / minEdge)) recursive search",
+    "space": "O(V + E) adjacency graph and recursion stack",
+    "variables": [
+      "V: number of nodes",
+      "E: number of edges",
+      "maxTime: maximum permitted travel time"
+    ],
+    "notes": "Node values contribute only on the initial visit and remain zero on revisits during the same path.",
+    "whyNaiveFails": "Standard shortest path algorithms do not account for revisiting nodes to collect rewards.",
+    "spaceTimeTradeoff": "Bounded recursion time limit prevents infinite search across cyclic paths.",
+    "interviewerExpectation": "Candidate should increment visit counts to add node value uniquely on first entry."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maximalPathQuality(self, values: list[int], edges: list[list[int]], maxTime: int) -> int:\n        n = len(values)\n        adj = [[] for _ in range(n)]\n        for u, v, t in edges:\n            adj[u].append((v, t))\n            adj[v].append((u, t))\n\n        visited = [0] * n\n        max_quality = 0\n\n        def dfs(node: int, current_time: int, current_quality: int) -> None:\n            nonlocal max_quality\n            if visited[node] == 0:\n                current_quality += values[node]\n            visited[node] += 1\n\n            if node == 0:\n                max_quality = max(max_quality, current_quality)\n\n            for nxt, t in adj[node]:\n                if current_time + t <= maxTime:\n                    dfs(nxt, current_time + t, current_quality)\n\n            visited[node] -= 1\n\n        dfs(0, 0, 0)\n        return max_quality",
+      "approach": "Python standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maximalPathQuality(std::vector<int>& values, std::vector<std::vector<int>>& edges, int maxTime) {\n        int n = values.size();\n        std::vector<std::vector<std::pair<int, int>>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            adj[e[1]].push_back({e[0], e[2]});\n        }\n\n        std::vector<int> visited(n, 0);\n        int maxQuality = 0;\n\n        auto dfs = [&](auto& self, int node, int curTime, int curQuality) -> void {\n            if (visited[node] == 0) curQuality += values[node];\n            visited[node]++;\n\n            if (node == 0) {\n                maxQuality = std::max(maxQuality, curQuality);\n            }\n\n            for (auto [nxt, t] : adj[node]) {\n                if (curTime + t <= maxTime) {\n                    self(self, nxt, curTime + t, curQuality);\n                }\n            }\n\n            visited[node]--;\n        };\n\n        dfs(dfs, 0, 0, 0);\n        return maxQuality;\n    }\n};",
+      "approach": "C++ STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Solution {\n    private int maxQuality = 0;\n\n    public int maximalPathQuality(int[] values, int[][] edges, int maxTime) {\n        int n = values.length;\n        List<List<int[]>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(new int[]{e[1], e[2]});\n            adj.get(e[1]).add(new int[]{e[0], e[2]});\n        }\n\n        int[] visited = new int[n];\n        dfs(0, 0, 0, values, adj, visited, maxTime);\n        return maxQuality;\n    }\n\n    private void dfs(int node, int curTime, int curQuality, int[] values, List<List<int[]>> adj, int[] visited, int maxTime) {\n        if (visited[node] == 0) curQuality += values[node];\n        visited[node]++;\n\n        if (node == 0) {\n            maxQuality = Math.max(maxQuality, curQuality);\n        }\n\n        for (int[] edge : adj.get(node)) {\n            int nxt = edge[0];\n            int t = edge[1];\n            if (curTime + t <= maxTime) {\n                dfs(nxt, curTime + t, curQuality, values, adj, visited, maxTime);\n            }\n        }\n\n        visited[node]--;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} values\n * @param {number[][]} edges\n * @param {number} maxTime\n * @return {number}\n */\nvar maximalPathQuality = function(values, edges, maxTime) {\n    const n = values.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, t] of edges) {\n        adj[u].push([v, t]);\n        adj[v].push([u, t]);\n    }\n\n    const visited = new Int32Array(n);\n    let maxQuality = 0;\n\n    function dfs(node, curTime, curQuality) {\n        if (visited[node] === 0) curQuality += values[node];\n        visited[node]++;\n\n        if (node === 0) {\n            if (curQuality > maxQuality) maxQuality = curQuality;\n        }\n\n        for (const [nxt, t] of adj[node]) {\n            if (curTime + t <= maxTime) {\n                dfs(nxt, curTime + t, curQuality);\n            }\n        }\n\n        visited[node]--;\n    }\n\n    dfs(0, 0, 0);\n    return maxQuality;\n};",
+      "approach": "JavaScript solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "slug": "maximum-number-of-tasks-you-can-assign",
+  "number": 2071,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer",
+    "queue-monotonic-sliding-window"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monotonic Capacity Search",
+      "text": "The total number of tasks that can be completed satisfies a monotonic feasibility property."
+    },
+    {
+      "level": 2,
+      "title": "Easiest Tasks and Strongest Workers",
+      "text": "To verify feasibility for k tasks, select the k smallest tasks and pair them with the k strongest workers."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Pill Distribution",
+      "text": "Assign tasks from hardest to easiest, using natural strength when possible or giving pills to the weakest eligible worker."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def maxTaskAssign(self, tasks: list[int], workers: list[int], pills: int, strength: int) -> int:\n        tasks.sort()\n        workers.sort()\n\n        def can_assign(k: int) -> bool:\n            if k == 0:\n                return True\n            curr_tasks = tasks[:k]\n            curr_workers = workers[-k:]\n            p = pills\n            q = deque()\n            w_idx = k - 1\n\n            for task in reversed(curr_tasks):\n                while w_idx >= 0 and curr_workers[w_idx] + strength >= task:\n                    q.appendleft(curr_workers[w_idx])\n                    w_idx -= 1\n\n                if not q:\n                    return False\n\n                if q[-1] >= task:\n                    q.pop()\n                else:\n                    if p == 0:\n                        return False\n                    p -= 1\n                    q.popleft()\n\n            return True\n\n        low = 0\n        high = min(len(tasks), len(workers))\n        ans = 0\n\n        while low <= high:\n            mid = (low + high) // 2\n            if can_assign(mid):\n                ans = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log(min(N, M)) * K log K) binary search on task capacity",
+    "space": "O(K) deque tracking available eligible workers",
+    "variables": [
+      "N: tasks count",
+      "M: workers count",
+      "pills: available strength boost pills"
+    ],
+    "notes": "For candidate k, test the k easiest tasks with the k strongest workers.",
+    "whyNaiveFails": "Greedy task assignment without binary search on the total achievable count fails due to pill tradeoffs.",
+    "spaceTimeTradeoff": "Monotonic feasibility allows logarithmic search over the answer range [0, min(N, M)].",
+    "interviewerExpectation": "Candidate should recognize that testing feasibility for k tasks is monotonic."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def maxTaskAssign(self, tasks: list[int], workers: list[int], pills: int, strength: int) -> int:\n        tasks.sort()\n        workers.sort()\n\n        def can_assign(k: int) -> bool:\n            if k == 0:\n                return True\n            curr_tasks = tasks[:k]\n            curr_workers = workers[-k:]\n            p = pills\n            q = deque()\n            w_idx = k - 1\n\n            for task in reversed(curr_tasks):\n                while w_idx >= 0 and curr_workers[w_idx] + strength >= task:\n                    q.appendleft(curr_workers[w_idx])\n                    w_idx -= 1\n\n                if not q:\n                    return False\n\n                if q[-1] >= task:\n                    q.pop()\n                else:\n                    if p == 0:\n                        return False\n                    p -= 1\n                    q.popleft()\n\n            return True\n\n        low = 0\n        high = min(len(tasks), len(workers))\n        ans = 0\n\n        while low <= high:\n            mid = (low + high) // 2\n            if can_assign(mid):\n                ans = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n\n        return ans",
+      "approach": "Python standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <deque>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxTaskAssign(std::vector<int>& tasks, std::vector<int>& workers, int pills, int strength) {\n        std::sort(tasks.begin(), tasks.end());\n        std::sort(workers.begin(), workers.end());\n\n        auto canAssign = [&](int k) -> bool {\n            if (k == 0) return true;\n            std::deque<int> q;\n            int p = pills;\n            int wIdx = k - 1;\n            int m = workers.size();\n\n            for (int i = k - 1; i >= 0; --i) {\n                int task = tasks[i];\n                while (wIdx >= 0 && workers[m - k + wIdx] + strength >= task) {\n                    q.push_front(workers[m - k + wIdx]);\n                    wIdx--;\n                }\n\n                if (q.empty()) return false;\n\n                if (q.back() >= task) {\n                    q.pop_back();\n                } else {\n                    if (p == 0) return false;\n                    p--;\n                    q.pop_front();\n                }\n            }\n            return true;\n        };\n\n        int low = 0, high = std::min(tasks.size(), workers.size());\n        int ans = 0;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (canAssign(mid)) {\n                ans = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "C++ STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayDeque;\nimport java.util.Arrays;\nimport java.util.Deque;\n\nclass Solution {\n    public int maxTaskAssign(int[] tasks, int[] workers, int pills, int strength) {\n        Arrays.sort(tasks);\n        Arrays.sort(workers);\n\n        int low = 0, high = Math.min(tasks.length, workers.length);\n        int ans = 0;\n\n        while (low <= high) {\n            int mid = (low + high) >>> 1;\n            if (canAssign(mid, tasks, workers, pills, strength)) {\n                ans = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        return ans;\n    }\n\n    private boolean canAssign(int k, int[] tasks, int[] workers, int pills, int strength) {\n        if (k == 0) return true;\n        Deque<Integer> q = new ArrayDeque<>();\n        int p = pills;\n        int wIdx = k - 1;\n        int m = workers.length;\n\n        for (int i = k - 1; i >= 0; i--) {\n            int task = tasks[i];\n            while (wIdx >= 0 && workers[m - k + wIdx] + strength >= task) {\n                q.offerFirst(workers[m - k + wIdx]);\n                wIdx--;\n            }\n\n            if (q.isEmpty()) return false;\n\n            if (q.peekLast() >= task) {\n                q.pollLast();\n            } else {\n                if (p == 0) return false;\n                p--;\n                q.pollFirst();\n            }\n        }\n        return true;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} tasks\n * @param {number[]} workers\n * @param {number} pills\n * @param {number} strength\n * @return {number}\n */\nvar maxTaskAssign = function(tasks, workers, pills, strength) {\n    tasks.sort((a, b) => a - b);\n    workers.sort((a, b) => a - b);\n\n    const canAssign = (k) => {\n        if (k === 0) return true;\n        const q = [];\n        let head = 0;\n        let p = pills;\n        let wIdx = k - 1;\n        const m = workers.length;\n\n        for (let i = k - 1; i >= 0; i--) {\n            const task = tasks[i];\n            while (wIdx >= 0 && workers[m - k + wIdx] + strength >= task) {\n                q.push(workers[m - k + wIdx]);\n                wIdx--;\n            }\n\n            if (head >= q.length) return false;\n\n            if (q[head] >= task) {\n                head++;\n            } else {\n                if (p === 0) return false;\n                p--;\n                q.pop();\n            }\n        }\n        return true;\n    };\n\n    let low = 0, high = Math.min(tasks.length, workers.length);\n    let ans = 0;\n\n    while (low <= high) {\n        const mid = (low + high) >> 1;\n        if (canAssign(mid)) {\n            ans = mid;\n            low = mid + 1;\n        } else {\n            high = mid - 1;\n        }\n    }\n    return ans;\n};",
+      "approach": "JavaScript solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

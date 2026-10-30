@@ -1,0 +1,80 @@
+{
+  "slug": "range-frequency-queries",
+  "number": 2080,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures",
+    "binary-search-basic"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Index Bucket Mapping",
+      "text": "Group occurrences of each distinct value into an ordered list of indices during initialization."
+    },
+    {
+      "level": 2,
+      "title": "Range Boundary Lookups",
+      "text": "For a query range and value, locate the first index at or after left and the first index strictly greater than right."
+    },
+    {
+      "level": 3,
+      "title": "Frequency Count Difference",
+      "text": "The difference between the two index positions gives the exact frequency in logarithmic time."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import defaultdict\nimport bisect\n\nclass RangeFreqQuery:\n    def __init__(self, arr: list[int]):\n        self.pos = defaultdict(list)\n        for i, v in enumerate(arr):\n            self.pos[v].append(i)\n\n    def query(self, left: int, right: int, value: int) -> int:\n        if value not in self.pos:\n            return 0\n        idx_list = self.pos[value]\n        l = bisect.bisect_left(idx_list, left)\n        r = bisect.bisect_right(idx_list, right)\n        return r - l\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log K) per query via bisect",
+    "space": "O(N) storing occurrence indices grouped by value",
+    "variables": [
+      "N: length of array",
+      "K: occurrences of queried value"
+    ],
+    "notes": "Indices for each value are sorted in increasing order, enabling binary search range queries.",
+    "whyNaiveFails": "Iterating through range [left, right] per query takes O(N * Q) and times out.",
+    "spaceTimeTradeoff": "Mapping value to sorted list of indices reduces range frequency to two binary search lookups.",
+    "interviewerExpectation": "Candidate should compute bisect_right(indices, right) - bisect_left(indices, left)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\nimport bisect\n\nclass RangeFreqQuery:\n    def __init__(self, arr: list[int]):\n        self.pos = defaultdict(list)\n        for i, v in enumerate(arr):\n            self.pos[v].append(i)\n\n    def query(self, left: int, right: int, value: int) -> int:\n        if value not in self.pos:\n            return 0\n        idx_list = self.pos[value]\n        l = bisect.bisect_left(idx_list, left)\n        r = bisect.bisect_right(idx_list, right)\n        return r - l",
+      "approach": "Python standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\n\nclass RangeFreqQuery {\nprivate:\n    std::unordered_map<int, std::vector<int>> pos;\n\npublic:\n    RangeFreqQuery(std::vector<int>& arr) {\n        for (int i = 0; i < static_cast<int>(arr.size()); ++i) {\n            pos[arr[i]].push_back(i);\n        }\n    }\n\n    int query(int left, int right, int value) {\n        auto it = pos.find(value);\n        if (it == pos.end()) return 0;\n        const auto& indices = it->second;\n        auto l = std::lower_bound(indices.begin(), indices.end(), left);\n        auto r = std::upper_bound(indices.begin(), indices.end(), right);\n        return std::distance(l, r);\n    }\n};",
+      "approach": "C++ STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\nclass RangeFreqQuery {\n    private Map<Integer, List<Integer>> pos = new HashMap<>();\n\n    public RangeFreqQuery(int[] arr) {\n        for (int i = 0; i < arr.length; i++) {\n            pos.computeIfAbsent(arr[i], k -> new ArrayList<>()).add(i);\n        }\n    }\n\n    public int query(int left, int right, int value) {\n        List<Integer> indices = pos.get(value);\n        if (indices == null) return 0;\n        int l = lowerBound(indices, left);\n        int r = upperBound(indices, right);\n        return r - l;\n    }\n\n    private int lowerBound(List<Integer> list, int target) {\n        int lo = 0, hi = list.size();\n        while (lo < hi) {\n            int mid = (lo + hi) >>> 1;\n            if (list.get(mid) < target) lo = mid + 1;\n            else hi = mid;\n        }\n        return lo;\n    }\n\n    private int upperBound(List<Integer> list, int target) {\n        int lo = 0, hi = list.size();\n        while (lo < hi) {\n            int mid = (lo + hi) >>> 1;\n            if (list.get(mid) <= target) lo = mid + 1;\n            else hi = mid;\n        }\n        return lo;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} arr\n */\nvar RangeFreqQuery = function(arr) {\n    this.pos = new Map();\n    for (let i = 0; i < arr.length; i++) {\n        const v = arr[i];\n        if (!this.pos.has(v)) this.pos.set(v, []);\n        this.pos.get(v).push(i);\n    }\n};\n\nRangeFreqQuery.prototype.query = function(left, right, value) {\n    const indices = this.pos.get(value);\n    if (!indices) return 0;\n\n    let lo = 0, hi = indices.length;\n    while (lo < hi) {\n        const mid = (lo + hi) >> 1;\n        if (indices[mid] < left) lo = mid + 1;\n        else hi = mid;\n    }\n    const l = lo;\n\n    lo = 0; hi = indices.length;\n    while (lo < hi) {\n        const mid = (lo + hi) >> 1;\n        if (indices[mid] <= right) lo = mid + 1;\n        else hi = mid;\n    }\n    const r = lo;\n\n    return r - l;\n};",
+      "approach": "JavaScript solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

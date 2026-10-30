@@ -450,7 +450,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
       asymptote_user_problems: {
         '1': { is_solved: 1, title: 'Two Sum' },
         '15': { is_solved: 1, title: '3Sum' },
-        '2065': { is_solved: 1, title: 'Maximum Path Quality of a Graph' }
+        '2097': { is_solved: 1, title: 'Valid Arrangement of Pairs' }
       }
     });
 
@@ -478,13 +478,13 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(threeSum.pattern_id).toBe('two-pointers-opposite');
     expect(threeSum.pattern_title).toBe('Opposite Ends Two Pointers');
 
-    // Maximum Path Quality of a Graph (#2065) - uncurated catalog problem keyed by numeric string "2065"
-    const maxPath = solved.find(p => p.number === 2065);
-    expect(maxPath).toBeDefined();
-    expect(maxPath.slug).toBe('maximum-path-quality-of-a-graph');
-    expect(maxPath.verified).toBe(0);
-    expect(maxPath.pattern_id).toBe('graph-bfs-shortest-path');
-    expect(maxPath.pattern_title).toBe('Multi-Source BFS / Unweighted Shortest Path');
+    // Valid Arrangement of Pairs (#2097) - uncurated catalog problem keyed by numeric string "2097"
+    const validPairs = solved.find(p => p.number === 2097);
+    expect(validPairs).toBeDefined();
+    expect(validPairs.slug).toBe('valid-arrangement-of-pairs');
+    expect(validPairs.verified).toBe(0);
+    expect(validPairs.pattern_id).toBe('tree-dfs-subproblem');
+    expect(validPairs.pattern_title).toBe('Tree DFS / Subtree Divide & Conquer');
 
     // Verify stats calculation includes solved problems properly
     const stats = await testEngine.getStats();

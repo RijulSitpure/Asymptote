@@ -1,0 +1,80 @@
+{
+  "slug": "process-restricted-friend-requests",
+  "number": 2076,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Connected Component Equivalence",
+      "text": "Friendship relationships form connected components where indirect friends share common roots."
+    },
+    {
+      "level": 2,
+      "title": "Pre-Merge Restriction Testing",
+      "text": "Before combining two components, verify that no restricted pair belongs to the two candidate groups."
+    },
+    {
+      "level": 3,
+      "title": "Disjoint Set Update",
+      "text": "If all restriction constraints hold, merge the two components and accept the friendship request."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def friendRequests(self, n: int, restrictions: list[list[int]], requests: list[list[int]]) -> list[bool]:\n        parent = list(range(n))\n\n        def find(i: int) -> int:\n            if parent[i] != i:\n                parent[i] = find(parent[i])\n            return parent[i]\n\n        res = []\n        for u, v in requests:\n            ru = find(u)\n            rv = find(v)\n            if ru == rv:\n                res.append(True)\n                continue\n\n            valid = True\n            for x, y in restrictions:\n                rx = find(x)\n                ry = find(y)\n                if (rx == ru and ry == rv) or (rx == rv and ry == ru):\n                    valid = False\n                    break\n\n            if valid:\n                parent[ru] = rv\n                res.append(True)\n            else:\n                res.append(False)\n\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R * M * alpha(N)) checking restrictions per request",
+    "space": "O(N) disjoint set parent array",
+    "variables": [
+      "N: number of users",
+      "M: friend requests count",
+      "R: restrictions count"
+    ],
+    "notes": "A request merges components only if no restricted pair ends up in the same merged component.",
+    "whyNaiveFails": "Graph traversal check per request takes O(M * (V + E)) which is significantly slower than DSU.",
+    "spaceTimeTradeoff": "DSU path compression achieves near-constant check and union operations.",
+    "interviewerExpectation": "Candidate should test whether find(x) and find(y) match the roots of u and v."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def friendRequests(self, n: int, restrictions: list[list[int]], requests: list[list[int]]) -> list[bool]:\n        parent = list(range(n))\n\n        def find(i: int) -> int:\n            if parent[i] != i:\n                parent[i] = find(parent[i])\n            return parent[i]\n\n        res = []\n        for u, v in requests:\n            ru = find(u)\n            rv = find(v)\n            if ru == rv:\n                res.append(True)\n                continue\n\n            valid = True\n            for x, y in restrictions:\n                rx = find(x)\n                ry = find(y)\n                if (rx == ru and ry == rv) or (rx == rv and ry == ru):\n                    valid = False\n                    break\n\n            if valid:\n                parent[ru] = rv\n                res.append(True)\n            else:\n                res.append(False)\n\n        return res",
+      "approach": "Python standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <numeric>\n\nclass Solution {\npublic:\n    std::vector<bool> friendRequests(int n, std::vector<std::vector<int>>& restrictions, std::vector<std::vector<int>>& requests) {\n        std::vector<int> parent(n);\n        std::iota(parent.begin(), parent.end(), 0);\n\n        auto find = [&](auto& self, int i) -> int {\n            if (parent[i] != i) parent[i] = self(self, parent[i]);\n            return parent[i];\n        };\n\n        std::vector<bool> res;\n        res.reserve(requests.size());\n\n        for (const auto& req : requests) {\n            int ru = find(find, req[0]);\n            int rv = find(find, req[1]);\n            if (ru == rv) {\n                res.push_back(true);\n                continue;\n            }\n\n            bool valid = true;\n            for (const auto& rest : restrictions) {\n                int rx = find(find, rest[0]);\n                int ry = find(find, rest[1]);\n                if ((rx == ru && ry == rv) || (rx == rv && ry == ru)) {\n                    valid = false;\n                    break;\n                }\n            }\n\n            if (valid) {\n                parent[ru] = rv;\n                res.push_back(true);\n            } else {\n                res.push_back(false);\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "C++ STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Solution {\n    public boolean[] friendRequests(int n, int[][] restrictions, int[][] requests) {\n        int[] parent = new int[n];\n        for (int i = 0; i < n; i++) parent[i] = i;\n\n        boolean[] res = new boolean[requests.length];\n        for (int i = 0; i < requests.length; i++) {\n            int ru = find(requests[i][0], parent);\n            int rv = find(requests[i][1], parent);\n            if (ru == rv) {\n                res[i] = true;\n                continue;\n            }\n\n            boolean valid = true;\n            for (int[] rest : restrictions) {\n                int rx = find(rest[0], parent);\n                int ry = find(rest[1], parent);\n                if ((rx == ru && ry == rv) || (rx == rv && ry == ru)) {\n                    valid = false;\n                    break;\n                }\n            }\n\n            if (valid) {\n                parent[ru] = rv;\n                res[i] = true;\n            } else {\n                res[i] = false;\n            }\n        }\n        return res;\n    }\n\n    private int find(int i, int[] parent) {\n        if (parent[i] != i) parent[i] = find(parent[i], parent);\n        return parent[i];\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} restrictions\n * @param {number[][]} requests\n * @return {boolean[]}\n */\nvar friendRequests = function(n, restrictions, requests) {\n    const parent = Array.from({ length: n }, (_, i) => i);\n\n    function find(i) {\n        if (parent[i] !== i) parent[i] = find(parent[i]);\n        return parent[i];\n    }\n\n    const res = [];\n    for (const [u, v] of requests) {\n        const ru = find(u);\n        const rv = find(v);\n        if (ru === rv) {\n            res.push(true);\n            continue;\n        }\n\n        let valid = true;\n        for (const [x, y] of restrictions) {\n            const rx = find(x);\n            const ry = find(y);\n            if ((rx === ru && ry === rv) || (rx === rv && ry === ru)) {\n                valid = false;\n                break;\n            }\n        }\n\n        if (valid) {\n            parent[ru] = rv;\n            res.push(true);\n        } else {\n            res.push(false);\n        }\n    }\n    return res;\n};",
+      "approach": "JavaScript solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}
