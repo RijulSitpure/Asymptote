@@ -1,0 +1,71 @@
+{
+  "slug": "tasks-count-in-the-weekend",
+  "number": 2298,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Day of Week Classification",
+      "text": "Determine the day of week for assign_date. Weekend days are Saturday and Sunday."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Counting",
+      "text": "Sum 1 when the day of week falls on a weekend, and sum 1 when it falls on a weekday."
+    },
+    {
+      "level": 3,
+      "title": "Single-Row Aggregation",
+      "text": "Produce a single row containing weekend_cnt and working_cnt columns."
+    },
+    {
+      "level": 4,
+      "title": "Conditional Day Sum Query",
+      "text": "```sql\nSELECT\n  SUM(CASE WHEN WEEKDAY(assign_date) >= 5 THEN 1 ELSE 0 END) AS weekend_cnt,\n  SUM(CASE WHEN WEEKDAY(assign_date) < 5 THEN 1 ELSE 0 END) AS working_cnt\nFROM Tasks;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(n) linear scan over tasks table",
+    "space": "O(1)",
+    "variables": [
+      "n: number of submitted tasks"
+    ],
+    "notes": "Conditional sum over all rows produces single aggregated summary row.",
+    "whyNaiveFails": "Running two separate queries with union is redundant when conditional aggregation computes both in one pass.",
+    "spaceTimeTradeoff": "Single-row output table.",
+    "interviewerExpectation": "Candidate handles weekend identification using dialect-appropriate day-of-week functions."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Conditional Sum with WEEKDAY",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT\n  SUM(CASE WHEN WEEKDAY(assign_date) >= 5 THEN 1 ELSE 0 END) AS weekend_cnt,\n  SUM(CASE WHEN WEEKDAY(assign_date) < 5 THEN 1 ELSE 0 END) AS working_cnt\nFROM Tasks;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Conditional Sum with EXTRACT DOW",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT\n  SUM(CASE WHEN EXTRACT(DOW FROM assign_date) IN (0, 6) THEN 1 ELSE 0 END)::INT AS weekend_cnt,\n  SUM(CASE WHEN EXTRACT(DOW FROM assign_date) NOT IN (0, 6) THEN 1 ELSE 0 END)::INT AS working_cnt\nFROM Tasks;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Dayofweek Flagging",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef count_tasks(tasks: pd.DataFrame) -> pd.DataFrame:\n    if tasks.empty:\n        return pd.DataFrame([{'weekend_cnt': 0, 'working_cnt': 0}])\n    dates = pd.to_datetime(tasks['assign_date'])\n    is_weekend = dates.dt.dayofweek >= 5\n    return pd.DataFrame([{\n        'weekend_cnt': int(is_weekend.sum()),\n        'working_cnt': int((~is_weekend).sum())\n    }])"
+    }
+  ]
+}

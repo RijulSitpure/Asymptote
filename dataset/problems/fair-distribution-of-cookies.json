@@ -1,0 +1,79 @@
+{
+  "slug": "fair-distribution-of-cookies",
+  "number": 2305,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Search Space Bounding",
+      "text": "With at most 8 cookie bags, each bag can be assigned to one of k children."
+    },
+    {
+      "level": 2,
+      "title": "Pruning Non-Optimal Branches",
+      "text": "If any child cookie count already exceeds the best known unfairness, abandon the branch immediately."
+    },
+    {
+      "level": 3,
+      "title": "Symmetry Breaking",
+      "text": "When assigning a bag to a child with zero cookies, subsequent empty children do not need separate exploration."
+    },
+    {
+      "level": 4,
+      "title": "Backtracking Cookie Allocation Implementation",
+      "text": "```python\nclass Solution:\n    def distributeCookies(self, cookies: list[int], k: int) -> int:\n        cookies.sort(reverse=True)\n        children = [0] * k\n        ans = float(\"inf\")\n        \n        def backtrack(idx: int):\n            nonlocal ans\n            if idx == len(cookies):\n                ans = min(ans, max(children))\n                return\n            if max(children) >= ans:\n                return\n            for i in range(k):\n                children[i] += cookies[idx]\n                backtrack(idx + 1)\n                children[i] -= cookies[idx]\n                if children[i] == 0:\n                    break\n                    \n        backtrack(0)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(k^n)",
+    "space": "O(k + n)",
+    "variables": [
+      "n: number of cookie bags (up to 8)",
+      "k: number of children"
+    ],
+    "notes": "Pruning and sorting bags in descending order reduces branch factor significantly.",
+    "whyNaiveFails": "Without symmetry breaking on empty children, duplicate distribution permutations are evaluated.",
+    "spaceTimeTradeoff": "O(k) array tracks allocated cookie counts per child.",
+    "interviewerExpectation": "Candidate sorts descending to fail early and breaks on the first child with zero cookies."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Pruned Backtracking with Symmetry Breaking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def distributeCookies(self, cookies: list[int], k: int) -> int:\n        cookies.sort(reverse=True)\n        children = [0] * k\n        ans = float(\"inf\")\n        \n        def backtrack(idx: int):\n            nonlocal ans\n            if idx == len(cookies):\n                ans = min(ans, max(children))\n                return\n            if max(children) >= ans:\n                return\n            for i in range(k):\n                children[i] += cookies[idx]\n                backtrack(idx + 1)\n                children[i] -= cookies[idx]\n                if children[i] == 0:\n                    break\n                    \n        backtrack(0)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Pruned Backtracking with Symmetry Breaking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    int ans = 1e9;\n    void backtrack(int idx, std::vector<int>& cookies, std::vector<int>& children, int k) {\n        if (idx == (int)cookies.size()) {\n            int cur = 0;\n            for (int c : children) cur = std::max(cur, c);\n            ans = std::min(ans, cur);\n            return;\n        }\n        int curMax = 0;\n        for (int c : children) curMax = std::max(curMax, c);\n        if (curMax >= ans) return;\n        for (int i = 0; i < k; ++i) {\n            children[i] += cookies[idx];\n            backtrack(idx + 1, cookies, children, k);\n            children[i] -= cookies[idx];\n            if (children[i] == 0) break;\n        }\n    }\npublic:\n    int distributeCookies(std::vector<int>& cookies, int k) {\n        std::sort(cookies.rbegin(), cookies.rend());\n        std::vector<int> children(k, 0);\n        ans = 1e9;\n        backtrack(0, cookies, children, k);\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Pruned Backtracking with Symmetry Breaking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int ans = Integer.MAX_VALUE;\n    public int distributeCookies(int[] cookies, int k) {\n        java.util.Arrays.sort(cookies);\n        for (int i = 0, j = cookies.length - 1; i < j; i++, j--) {\n            int t = cookies[i]; cookies[i] = cookies[j]; cookies[j] = t;\n        }\n        int[] children = new int[k];\n        ans = Integer.MAX_VALUE;\n        backtrack(0, cookies, children, k);\n        return ans;\n    }\n    private void backtrack(int idx, int[] cookies, int[] children, int k) {\n        if (idx == cookies.length) {\n            int cur = 0;\n            for (int c : children) cur = Math.max(cur, c);\n            ans = Math.min(ans, cur);\n            return;\n        }\n        int curMax = 0;\n        for (int c : children) curMax = Math.max(curMax, c);\n        if (curMax >= ans) return;\n        for (int i = 0; i < k; i++) {\n            children[i] += cookies[idx];\n            backtrack(idx + 1, cookies, children, k);\n            children[i] -= cookies[idx];\n            if (children[i] == 0) break;\n        }\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Pruned Backtracking with Symmetry Breaking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var distributeCookies = function(cookies, k) {\n    cookies.sort((a, b) => b - a);\n    const children = new Int32Array(k);\n    let ans = Infinity;\n    const backtrack = (idx) => {\n        if (idx === cookies.length) {\n            let cur = 0;\n            for (let i = 0; i < k; i++) if (children[i] > cur) cur = children[i];\n            if (cur < ans) ans = cur;\n            return;\n        }\n        let curMax = 0;\n        for (let i = 0; i < k; i++) if (children[i] > curMax) curMax = children[i];\n        if (curMax >= ans) return;\n        for (let i = 0; i < k; i++) {\n            children[i] += cookies[idx];\n            backtrack(idx + 1);\n            children[i] -= cookies[idx];\n            if (children[i] === 0) break;\n        }\n    };\n    backtrack(0);\n    return ans;\n};"
+    }
+  ]
+}

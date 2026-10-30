@@ -1,0 +1,79 @@
+{
+  "slug": "check-for-contradictions-in-equations",
+  "number": 2307,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Ratio Graph Consistency",
+      "text": "Each equation A / B = v creates a directed relationship with multiplicative weight between nodes A and B."
+    },
+    {
+      "level": 2,
+      "title": "Disjoint Set with Multiplicative Weights",
+      "text": "Maintain the parent of each variable along with the ratio value / parent_value."
+    },
+    {
+      "level": 3,
+      "title": "Floating Point Tolerance Check",
+      "text": "When uniting two already connected variables, compare the expected ratio to the existing ratio with an epsilon tolerance."
+    },
+    {
+      "level": 4,
+      "title": "Weighted Disjoint Set Implementation",
+      "text": "```python\nclass Solution:\n    def checkContradictions(self, equations: list[list[str]], values: list[float]) -> bool:\n        parent = {}\n        weight = {}\n        \n        def find(x: str) -> tuple[str, float]:\n            if x not in parent:\n                parent[x] = x\n                weight[x] = 1.0\n                return x, 1.0\n            if parent[x] != x:\n                p, w = find(parent[x])\n                parent[x] = p\n                weight[x] *= w\n            return parent[x], weight[x]\n            \n        for (a, b), val in zip(equations, values):\n            root_a, w_a = find(a)\n            root_b, w_b = find(b)\n            if root_a == root_b:\n                if abs(w_a / w_b - val) > 1e-5:\n                    return True\n            else:\n                parent[root_a] = root_b\n                weight[root_a] = val * w_b / w_a\n        return False\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * alpha(v))",
+    "space": "O(v)",
+    "variables": [
+      "n: number of equations",
+      "v: number of distinct variables"
+    ],
+    "notes": "Weighted union-find with path compression runs in near-linear time.",
+    "whyNaiveFails": "Running full graph search per equation is redundant when disjoint set maintains path ratios.",
+    "spaceTimeTradeoff": "Parent and ratio dictionaries store entries for distinct variables.",
+    "interviewerExpectation": "Candidate updates cumulative ratio weights during find path compression and handles floating point precision with epsilon."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Weighted Disjoint Set Union",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def checkContradictions(self, equations: list[list[str]], values: list[float]) -> bool:\n        parent = {}\n        weight = {}\n        \n        def find(x: str) -> tuple[str, float]:\n            if x not in parent:\n                parent[x] = x\n                weight[x] = 1.0\n                return x, 1.0\n            if parent[x] != x:\n                p, w = find(parent[x])\n                parent[x] = p\n                weight[x] *= w\n            return parent[x], weight[x]\n            \n        for (a, b), val in zip(equations, values):\n            root_a, w_a = find(a)\n            root_b, w_b = find(b)\n            if root_a == root_b:\n                if abs(w_a / w_b - val) > 1e-5:\n                    return True\n            else:\n                parent[root_a] = root_b\n                weight[root_a] = val * w_b / w_a\n        return False"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Weighted Disjoint Set Union",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    std::unordered_map<std::string, std::string> parent;\n    std::unordered_map<std::string, double> weight;\n\n    std::pair<std::string, double> find(const std::string& x) {\n        if (!parent.count(x)) {\n            parent[x] = x;\n            weight[x] = 1.0;\n            return {x, 1.0};\n        }\n        if (parent[x] != x) {\n            auto [p, w] = find(parent[x]);\n            parent[x] = p;\n            weight[x] *= w;\n        }\n        return {parent[x], weight[x]};\n    }\npublic:\n    bool checkContradictions(std::vector<std::vector<std::string>>& equations, std::vector<double>& values) {\n        for (size_t i = 0; i < equations.size(); ++i) {\n            const auto& a = equations[i][0];\n            const auto& b = equations[i][1];\n            double val = values[i];\n            auto [ra, wa] = find(a);\n            auto [rb, wb] = find(b);\n            if (ra == rb) {\n                if (std::abs(wa / wb - val) > 1e-5) return true;\n            } else {\n                parent[ra] = rb;\n                weight[ra] = val * wb / wa;\n            }\n        }\n        return false;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Weighted Disjoint Set Union",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private java.util.Map<String, String> parent = new java.util.HashMap<>();\n    private java.util.Map<String, Double> weight = new java.util.HashMap<>();\n\n    private Object[] find(String x) {\n        if (!parent.containsKey(x)) {\n            parent.put(x, x);\n            weight.put(x, 1.0);\n            return new Object[]{x, 1.0};\n        }\n        if (!parent.get(x).equals(x)) {\n            Object[] res = find(parent.get(x));\n            parent.put(x, (String) res[0]);\n            weight.put(x, weight.get(x) * (Double) res[1]);\n        }\n        return new Object[]{parent.get(x), weight.get(x)};\n    }\n\n    public boolean checkContradictions(java.util.List<java.util.List<String>> equations, double[] values) {\n        for (int i = 0; i < equations.size(); i++) {\n            String a = equations.get(i).get(0);\n            String b = equations.get(i).get(1);\n            double val = values[i];\n            Object[] resA = find(a);\n            Object[] resB = find(b);\n            String ra = (String) resA[0];\n            double wa = (Double) resA[1];\n            String rb = (String) resB[0];\n            double wb = (Double) resB[1];\n            if (ra.equals(rb)) {\n                if (Math.abs(wa / wb - val) > 1e-5) return true;\n            } else {\n                parent.put(ra, rb);\n                weight.put(ra, val * wb / wa);\n            }\n        }\n        return false;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Weighted Disjoint Set Union",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var checkContradictions = function(equations, values) {\n    const parent = new Map();\n    const weight = new Map();\n    const find = (x) => {\n        if (!parent.has(x)) {\n            parent.set(x, x);\n            weight.set(x, 1.0);\n            return [x, 1.0];\n        }\n        if (parent.get(x) !== x) {\n            const [p, w] = find(parent.get(x));\n            parent.set(x, p);\n            weight.set(x, weight.get(x) * w);\n        }\n        return [parent.get(x), weight.get(x)];\n    };\n    for (let i = 0; i < equations.length; i++) {\n        const [a, b] = equations[i];\n        const val = values[i];\n        const [ra, wa] = find(a);\n        const [rb, wb] = find(b);\n        if (ra === rb) {\n            if (Math.abs(wa / wb - val) > 1e-5) return true;\n        } else {\n            parent.set(ra, rb);\n            weight.set(ra, val * wb / wa);\n        }\n    }\n    return false;\n};"
+    }
+  ]
+}

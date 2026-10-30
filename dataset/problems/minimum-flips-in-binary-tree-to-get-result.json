@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-flips-in-binary-tree-to-get-result",
+  "number": 2313,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subtree Target Cost Pair",
+      "text": "For each node in the tree, compute a pair (cost_false, cost_true) representing min flips for the subtree to evaluate to False or True."
+    },
+    {
+      "level": 2,
+      "title": "Leaf Base Cases",
+      "text": "For a leaf with value 0: (0, 1). For a leaf with value 1: (1, 0)."
+    },
+    {
+      "level": 3,
+      "title": "Boolean Operator Truth Tables",
+      "text": "For operations 2 (or), 3 (and), 4 (xor), combine left and right child costs. For operation 5 (not), invert the costs of the child."
+    },
+    {
+      "level": 4,
+      "title": "Bottom-Up Tree Cost DP Implementation",
+      "text": "```python\nclass Solution:\n    def minimumFlips(self, root, result: bool) -> int:\n        def dfs(node):\n            if not node:\n                return 0, 0\n            if node.val in (0, 1):\n                return (0, 1) if node.val == 0 else (1, 0)\n            \n            l_f, l_t = dfs(node.left)\n            r_f, r_t = dfs(node.right)\n            \n            if node.val == 2:  # OR\n                c_false = l_f + r_f\n                c_true = min(l_t + r_t, l_t + r_f, l_f + r_t)\n                return c_false, c_true\n            elif node.val == 3:  # AND\n                c_false = min(l_f + r_f, l_f + r_t, l_t + r_f)\n                c_true = l_t + r_t\n                return c_false, c_true\n            elif node.val == 4:  # XOR\n                c_false = min(l_f + r_f, l_t + r_t)\n                c_true = min(l_f + r_t, l_t + r_f)\n                return c_false, c_true\n            elif node.val == 5:  # NOT\n                child_f, child_t = (l_f, l_t) if node.left else (r_f, r_t)\n                return child_t, child_f\n            return float(\"inf\"), float(\"inf\")\n            \n        c_f, c_t = dfs(root)\n        return c_t if result else c_f\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(h)",
+    "variables": [
+      "n: number of nodes in tree",
+      "h: tree height"
+    ],
+    "notes": "Single postorder traversal evaluates each node in O(1) operations.",
+    "whyNaiveFails": "Trying all 2^(leaf_count) combinations times out exponentially.",
+    "spaceTimeTradeoff": "Recursion stack proportional to tree height.",
+    "interviewerExpectation": "Candidate returns (cost_false, cost_true) from every subtree and implements truth tables for OR, AND, XOR, NOT."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Postorder Boolean Cost Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def minimumFlips(self, root, result: bool) -> int:\n        def dfs(node):\n            if not node:\n                return 0, 0\n            if node.val in (0, 1):\n                return (0, 1) if node.val == 0 else (1, 0)\n            \n            l_f, l_t = dfs(node.left)\n            r_f, r_t = dfs(node.right)\n            \n            if node.val == 2:  # OR\n                c_false = l_f + r_f\n                c_true = min(l_t + r_t, l_t + r_f, l_f + r_t)\n                return c_false, c_true\n            elif node.val == 3:  # AND\n                c_false = min(l_f + r_f, l_f + r_t, l_t + r_f)\n                c_true = l_t + r_t\n                return c_false, c_true\n            elif node.val == 4:  # XOR\n                c_false = min(l_f + r_f, l_t + r_t)\n                c_true = min(l_f + r_t, l_t + r_f)\n                return c_false, c_true\n            elif node.val == 5:  # NOT\n                child_f, child_t = (l_f, l_t) if node.left else (r_f, r_t)\n                return child_t, child_f\n            return float(\"inf\"), float(\"inf\")\n            \n        c_f, c_t = dfs(root)\n        return c_t if result else c_f"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Postorder Boolean Cost Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    std::pair<int, int> dfs(TreeNode* node) {\n        if (!node) return {0, 0};\n        if (node->val == 0) return {0, 1};\n        if (node->val == 1) return {1, 0};\n        auto [lf, lt] = dfs(node->left);\n        auto [rf, rt] = dfs(node->right);\n        if (node->val == 2) { // OR\n            return {lf + rf, std::min({lt + rt, lt + rf, lf + rt})};\n        } else if (node->val == 3) { // AND\n            return {std::min({lf + rf, lf + rt, lt + rf}), lt + rt};\n        } else if (node->val == 4) { // XOR\n            return {std::min(lf + rf, lt + rt), std::min(lf + rt, lt + rf)};\n        } else if (node->val == 5) { // NOT\n            auto child = node->left ? std::make_pair(lf, lt) : std::make_pair(rf, rt);\n            return {child.second, child.first};\n        }\n        return {1000000, 1000000};\n    }\npublic:\n    int minimumFlips(TreeNode* root, bool result) {\n        auto [cf, ct] = dfs(root);\n        return result ? ct : cf;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Postorder Boolean Cost Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int[] dfs(TreeNode node) {\n        if (node == null) return new int[]{0, 0};\n        if (node.val == 0) return new int[]{0, 1};\n        if (node.val == 1) return new int[]{1, 0};\n        int[] left = dfs(node.left);\n        int[] right = dfs(node.right);\n        int lf = left[0], lt = left[1], rf = right[0], rt = right[1];\n        if (node.val == 2) { // OR\n            return new int[]{lf + rf, Math.min(lt + rt, Math.min(lt + rf, lf + rt))};\n        } else if (node.val == 3) { // AND\n            return new int[]{Math.min(lf + rf, Math.min(lf + rt, lt + rf)), lt + rt};\n        } else if (node.val == 4) { // XOR\n            return new int[]{Math.min(lf + rf, lt + rt), Math.min(lf + rt, lt + rf)};\n        } else if (node.val == 5) { // NOT\n            int[] child = node.left != null ? left : right;\n            return new int[]{child[1], child[0]};\n        }\n        return new int[]{1000000, 1000000};\n    }\n    public int minimumFlips(TreeNode root, boolean result) {\n        int[] res = dfs(root);\n        return result ? res[1] : res[0];\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Postorder Boolean Cost Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var minimumFlips = function(root, result) {\n    const dfs = (node) => {\n        if (!node) return [0, 0];\n        if (node.val === 0) return [0, 1];\n        if (node.val === 1) return [1, 0];\n        const [lf, lt] = dfs(node.left);\n        const [rf, rt] = dfs(node.right);\n        if (node.val === 2) {\n            return [lf + rf, Math.min(lt + rt, lt + rf, lf + rt)];\n        } else if (node.val === 3) {\n            return [Math.min(lf + rf, lf + rt, lt + rf), lt + rt];\n        } else if (node.val === 4) {\n            return [Math.min(lf + rf, lt + rt), Math.min(lf + rt, lt + rf)];\n        } else if (node.val === 5) {\n            const [cf, ct] = node.left ? [lf, lt] : [rf, rt];\n            return [ct, cf];\n        }\n        return [1000000, 1000000];\n    };\n    const [cf, ct] = dfs(root);\n    return result ? ct : cf;\n};"
+    }
+  ]
+}

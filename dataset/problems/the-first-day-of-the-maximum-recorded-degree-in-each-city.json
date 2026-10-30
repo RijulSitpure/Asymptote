@@ -1,0 +1,72 @@
+{
+  "slug": "the-first-day-of-the-maximum-recorded-degree-in-each-city",
+  "number": 2314,
+  "category": "Database",
+  "patterns": [
+    "date-time",
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "City Partition Ranking",
+      "text": "Partition weather recordings by city_id, ordering by degree descending, then day ascending."
+    },
+    {
+      "level": 2,
+      "title": "Row Number Assignment",
+      "text": "Use row number within the partition so that the record with highest degree and earliest day receives rank 1."
+    },
+    {
+      "level": 3,
+      "title": "Filtering Top Record",
+      "text": "Select records where rank equals 1, ordered by city_id ascending."
+    },
+    {
+      "level": 4,
+      "title": "Ranked First Day Query",
+      "text": "```sql\nWITH Ranked AS (\n  SELECT city_id, day, degree,\n         ROW_NUMBER() OVER (PARTITION BY city_id ORDER BY degree DESC, day ASC) AS rn\n  FROM Weather\n)\nSELECT city_id, day, degree\nFROM Ranked\nWHERE rn = 1\nORDER BY city_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(n log n) window ranking per city",
+    "space": "O(n)",
+    "variables": [
+      "n: number of weather recordings"
+    ],
+    "notes": "Partition sort breaks degree ties using chronological order.",
+    "whyNaiveFails": "Grouping by max(degree) alone requires re-joining with weather table on degree and min(day).",
+    "spaceTimeTradeoff": "O(n) memory to compute row numbers.",
+    "interviewerExpectation": "Candidate resolves ties for highest degree by selecting earliest day cleanly using row_number."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window ROW_NUMBER Partition Ranking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH Ranked AS (\n  SELECT city_id, day, degree,\n         ROW_NUMBER() OVER (PARTITION BY city_id ORDER BY degree DESC, day ASC) AS rn\n  FROM Weather\n)\nSELECT city_id, day, degree\nFROM Ranked\nWHERE rn = 1\nORDER BY city_id;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window ROW_NUMBER Partition Ranking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH Ranked AS (\n  SELECT city_id, day, degree,\n         ROW_NUMBER() OVER (PARTITION BY city_id ORDER BY degree DESC, day ASC) AS rn\n  FROM Weather\n)\nSELECT city_id, day, degree\nFROM Ranked\nWHERE rn = 1\nORDER BY city_id;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Sort Values with Drop Duplicates",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef find_first_day_of_max_degree(weather: pd.DataFrame) -> pd.DataFrame:\n    if weather.empty:\n        return pd.DataFrame({'city_id': [], 'day': [], 'degree': []})\n    sorted_df = weather.sort_values(['city_id', 'degree', 'day'], ascending=[True, False, True])\n    res = sorted_df.drop_duplicates(subset=['city_id'], keep='first')\n    return res[['city_id', 'day', 'degree']]"
+    }
+  ]
+}

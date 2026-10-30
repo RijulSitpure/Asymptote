@@ -1,0 +1,71 @@
+{
+  "slug": "arrange-table-by-gender",
+  "number": 2308,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Within-Gender Row Ranking",
+      "text": "Assign a sequential rank to users within each gender ordered ascending by user_id."
+    },
+    {
+      "level": 2,
+      "title": "Gender Order Sequencing",
+      "text": "Map genders to explicit sequence numbers: female as 1, other as 2, male as 3."
+    },
+    {
+      "level": 3,
+      "title": "Interleaved Ordering",
+      "text": "Order the final results by within-gender rank first, then by the gender sequence number."
+    },
+    {
+      "level": 4,
+      "title": "Alternating Gender Ranking Query",
+      "text": "```sql\nSELECT user_id, gender\nFROM (\n  SELECT user_id, gender,\n         ROW_NUMBER() OVER (PARTITION BY gender ORDER BY user_id) AS rn,\n         CASE gender WHEN 'female' THEN 1 WHEN 'other' THEN 2 WHEN 'male' THEN 3 END AS g_order\n  FROM Genders\n) t\nORDER BY rn, g_order;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(n log n) window function partition and sort",
+    "space": "O(n)",
+    "variables": [
+      "n: number of rows in Genders table"
+    ],
+    "notes": "Partitioned row number groups each gender independently before round-robin order.",
+    "whyNaiveFails": "Simple order by cannot interleave rows without window ranks.",
+    "spaceTimeTradeoff": "O(n) memory for row number evaluation.",
+    "interviewerExpectation": "Candidate uses window functions to assign alternating positions across categories."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window Partition Ranking with Custom Sort Order",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT user_id, gender\nFROM (\n  SELECT user_id, gender,\n         ROW_NUMBER() OVER (PARTITION BY gender ORDER BY user_id) AS rn,\n         CASE gender WHEN 'female' THEN 1 WHEN 'other' THEN 2 WHEN 'male' THEN 3 END AS g_order\n  FROM Genders\n) t\nORDER BY rn, g_order;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window Partition Ranking with Custom Sort Order",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT user_id, gender\nFROM (\n  SELECT user_id, gender,\n         ROW_NUMBER() OVER (PARTITION BY gender ORDER BY user_id) AS rn,\n         CASE gender WHEN 'female' THEN 1 WHEN 'other' THEN 2 WHEN 'male' THEN 3 END AS g_order\n  FROM Genders\n) t\nORDER BY rn, g_order;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas GroupBy Cumcount with Sorting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef arrange_table_by_gender(genders: pd.DataFrame) -> pd.DataFrame:\n    if genders.empty:\n        return pd.DataFrame({'user_id': [], 'gender': []})\n    order_map = {'female': 1, 'other': 2, 'male': 3}\n    genders['g_order'] = genders['gender'].map(order_map)\n    genders = genders.sort_values(['gender', 'user_id'])\n    genders['rn'] = genders.groupby('gender').cumcount()\n    sorted_df = genders.sort_values(['rn', 'g_order'])\n    return sorted_df[['user_id', 'gender']]"
+    }
+  ]
+}

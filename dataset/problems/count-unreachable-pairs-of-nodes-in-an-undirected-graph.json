@@ -1,0 +1,79 @@
+{
+  "slug": "count-unreachable-pairs-of-nodes-in-an-undirected-graph",
+  "number": 2316,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Connected Component Partition",
+      "text": "Nodes in the same connected component can reach each other. Nodes in different components cannot."
+    },
+    {
+      "level": 2,
+      "title": "Component Sizes",
+      "text": "Compute the size of each connected component using disjoint set union or graph traversal."
+    },
+    {
+      "level": 3,
+      "title": "Complement Counting",
+      "text": "Total possible pairs is n * (n - 1) // 2. Subtract the number of reachable pairs sum(c * (c - 1) // 2) across all components."
+    },
+    {
+      "level": 4,
+      "title": "Component Size Pair Counting Implementation",
+      "text": "```python\nclass Solution:\n    def countPairs(self, n: int, edges: list[list[int]]) -> int:\n        parent = list(range(n))\n        size = [1] * n\n        \n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n            \n        def union(u: int, v: int):\n            ru, rv = find(u), find(v)\n            if ru != rv:\n                if size[ru] < size[rv]:\n                    ru, rv = rv, ru\n                parent[rv] = ru\n                size[ru] += size[rv]\n                \n        for u, v in edges:\n            union(u, v)\n            \n        total_pairs = n * (n - 1) // 2\n        reachable_pairs = 0\n        for i in range(n):\n            if parent[i] == i:\n                c = size[i]\n                reachable_pairs += c * (c - 1) // 2\n        return total_pairs - reachable_pairs\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + m * alpha(n))",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes",
+      "m: number of edges"
+    ],
+    "notes": "Union-find with size tracking runs in nearly linear time.",
+    "whyNaiveFails": "Checking reachability between all O(n^2) pairs directly takes quadratic time.",
+    "spaceTimeTradeoff": "Parent and size arrays take O(n) memory.",
+    "interviewerExpectation": "Candidate calculates unreachable pairs via total_pairs - reachable_pairs in O(1) arithmetic."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Connected Component Size Complement Counting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def countPairs(self, n: int, edges: list[list[int]]) -> int:\n        parent = list(range(n))\n        size = [1] * n\n        \n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n            \n        def union(u: int, v: int):\n            ru, rv = find(u), find(v)\n            if ru != rv:\n                if size[ru] < size[rv]:\n                    ru, rv = rv, ru\n                parent[rv] = ru\n                size[ru] += size[rv]\n                \n        for u, v in edges:\n            union(u, v)\n            \n        total_pairs = n * (n - 1) // 2\n        reachable_pairs = 0\n        for i in range(n):\n            if parent[i] == i:\n                c = size[i]\n                reachable_pairs += c * (c - 1) // 2\n        return total_pairs - reachable_pairs"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Connected Component Size Complement Counting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    long long countPairs(int n, std::vector<std::vector<int>>& edges) {\n        std::vector<int> parent(n), size(n, 1);\n        std::iota(parent.begin(), parent.end(), 0);\n        auto find = [&](auto& self, int x) -> int {\n            return parent[x] == x ? x : parent[x] = self(self, parent[x]);\n        };\n        for (const auto& e : edges) {\n            int ru = find(find, e[0]), rv = find(find, e[1]);\n            if (ru != rv) {\n                if (size[ru] < size[rv]) std::swap(ru, rv);\n                parent[rv] = ru;\n                size[ru] += size[rv];\n            }\n        }\n        long long total = (long long)n * (n - 1) / 2;\n        long long reachable = 0;\n        for (int i = 0; i < n; ++i) {\n            if (parent[i] == i) {\n                long long c = size[i];\n                reachable += c * (c - 1) / 2;\n            }\n        }\n        return total - reachable;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Connected Component Size Complement Counting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int[] parent;\n    private int[] size;\n    private int find(int x) {\n        if (parent[x] != x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    public long countPairs(int n, int[][] edges) {\n        parent = new int[n];\n        size = new int[n];\n        for (int i = 0; i < n; i++) {\n            parent[i] = i;\n            size[i] = 1;\n        }\n        for (int[] e : edges) {\n            int ru = find(e[0]), rv = find(e[1]);\n            if (ru != rv) {\n                if (size[ru] < size[rv]) {\n                    int t = ru; ru = rv; rv = t;\n                }\n                parent[rv] = ru;\n                size[ru] += size[rv];\n            }\n        }\n        long total = (long) n * (n - 1) / 2;\n        long reachable = 0;\n        for (int i = 0; i < n; i++) {\n            if (parent[i] == i) {\n                long c = size[i];\n                reachable += c * (c - 1) / 2;\n            }\n        }\n        return total - reachable;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Connected Component Size Complement Counting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var countPairs = function(n, edges) {\n    const parent = new Int32Array(n);\n    const size = new Int32Array(n).fill(1);\n    for (let i = 0; i < n; i++) parent[i] = i;\n    const find = (x) => {\n        if (parent[x] !== x) parent[x] = find(parent[x]);\n        return parent[x];\n    };\n    for (const [u, v] of edges) {\n        let ru = find(u), rv = find(v);\n        if (ru !== rv) {\n            if (size[ru] < size[rv]) {\n                const t = ru; ru = rv; rv = t;\n            }\n            parent[rv] = ru;\n            size[ru] += size[rv];\n        }\n    }\n    const total = BigInt(n) * BigInt(n - 1) / 2n;\n    let reachable = 0n;\n    for (let i = 0; i < n; i++) {\n        if (parent[i] === i) {\n            const c = BigInt(size[i]);\n            reachable += c * (c - 1n) / 2n;\n        }\n    }\n    return Number(total - reachable);\n};"
+    }
+  ]
+}

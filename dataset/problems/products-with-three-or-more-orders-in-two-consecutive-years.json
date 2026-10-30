@@ -1,0 +1,73 @@
+{
+  "slug": "products-with-three-or-more-orders-in-two-consecutive-years",
+  "number": 2292,
+  "category": "Database",
+  "patterns": [
+    "window-offset",
+    "self-join"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Yearly Order Aggregation",
+      "text": "Extract the year from purchase_date and filter product-year combinations having at least 3 orders."
+    },
+    {
+      "level": 2,
+      "title": "Consecutive Year Pairing",
+      "text": "Join the qualified yearly orders with itself on the same product_id where second year equals first year plus 1."
+    },
+    {
+      "level": 3,
+      "title": "Deduplicating Product Identifiers",
+      "text": "Select distinct product_id values from the joined relation."
+    },
+    {
+      "level": 4,
+      "title": "Consecutive Year Orders Query",
+      "text": "```sql\nWITH YearlyOrders AS (\n  SELECT product_id, YEAR(purchase_date) AS yr\n  FROM Orders\n  GROUP BY product_id, YEAR(purchase_date)\n  HAVING COUNT(order_id) >= 3\n)\nSELECT DISTINCT y1.product_id\nFROM YearlyOrders y1\nJOIN YearlyOrders y2\n  ON y1.product_id = y2.product_id\n AND y2.yr = y1.yr + 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) to aggregate orders by product and year, followed by self-join",
+    "space": "O(P)",
+    "variables": [
+      "N: total orders",
+      "P: qualifying distinct products"
+    ],
+    "notes": "Group-by filters out non-qualifying years early before self-join.",
+    "whyNaiveFails": "Examining individual order dates directly without grouping by year leads to slow window lookups.",
+    "spaceTimeTradeoff": "Intermediate CTE stores qualifying (product_id, yr) pairs.",
+    "interviewerExpectation": "Candidate aggregates orders per year with having clause, then matches consecutive year records."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "CTE Aggregation with Consecutive Year Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH YearlyOrders AS (\n  SELECT product_id, YEAR(purchase_date) AS yr\n  FROM Orders\n  GROUP BY product_id, YEAR(purchase_date)\n  HAVING COUNT(order_id) >= 3\n)\nSELECT DISTINCT y1.product_id\nFROM YearlyOrders y1\nJOIN YearlyOrders y2\n  ON y1.product_id = y2.product_id\n AND y2.yr = y1.yr + 1;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "CTE Aggregation with Consecutive Year Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH YearlyOrders AS (\n  SELECT product_id, EXTRACT(YEAR FROM purchase_date)::INT AS yr\n  FROM Orders\n  GROUP BY product_id, EXTRACT(YEAR FROM purchase_date)::INT\n  HAVING COUNT(order_id) >= 3\n)\nSELECT DISTINCT y1.product_id\nFROM YearlyOrders y1\nJOIN YearlyOrders y2\n  ON y1.product_id = y2.product_id\n AND y2.yr = y1.yr + 1;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas GroupBy with Consecutive Year Shift",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef find_valid_products(orders: pd.DataFrame) -> pd.DataFrame:\n    if orders.empty:\n        return pd.DataFrame({'product_id': []})\n    orders['yr'] = pd.to_datetime(orders['purchase_date']).dt.year\n    grp = orders.groupby(['product_id', 'yr']).size().reset_index(name='cnt')\n    valid = grp[grp['cnt'] >= 3]\n    merged = pd.merge(valid, valid, on='product_id', suffixes=('_1', '_2'))\n    res = merged[merged['yr_2'] == merged['yr_1'] + 1]['product_id'].drop_duplicates()\n    return pd.DataFrame({'product_id': res})"
+    }
+  ]
+}

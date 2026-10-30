@@ -1,0 +1,78 @@
+{
+  "slug": "number-of-distinct-roll-sequences",
+  "number": 2318,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "History Dependencies",
+      "text": "The next roll value depends on the previous roll (must be coprime and distinct) and the roll before that (must be distinct)."
+    },
+    {
+      "level": 2,
+      "title": "State Formulation",
+      "text": "Maintain dp[prev][prev_prev] storing the number of valid sequences of current length ending with (prev, prev_prev)."
+    },
+    {
+      "level": 3,
+      "title": "Coprime Transition Table",
+      "text": "Precompute valid transitions where gcd(curr, prev) is 1, curr differs from prev, and curr differs from prev_prev, modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "Die Roll History State DP Implementation",
+      "text": "```python\nimport math\n\nclass Solution:\n    def distinctSequences(self, n: int) -> int:\n        if n == 1:\n            return 6\n        MOD = 1_000_000_007\n        dp = [[0] * 7 for _ in range(7)]\n        for i in range(1, 7):\n            for j in range(1, 7):\n                if i != j and math.gcd(i, j) == 1:\n                    dp[j][i] = 1\n                    \n        for _ in range(3, n + 1):\n            next_dp = [[0] * 7 for _ in range(7)]\n            for prev in range(1, 7):\n                for prev_prev in range(1, 7):\n                    if dp[prev][prev_prev] == 0:\n                        continue\n                    for curr in range(1, 7):\n                        if curr != prev and curr != prev_prev and math.gcd(curr, prev) == 1:\n                            next_dp[curr][prev] = (next_dp[curr][prev] + dp[prev][prev_prev]) % MOD\n            dp = next_dp\n            \n        return sum(sum(row) for row in dp) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * 6^3)",
+    "space": "O(6^2)",
+    "variables": [
+      "n: length of sequence"
+    ],
+    "notes": "State transitions evaluate 6^3 = 216 states per step.",
+    "whyNaiveFails": "Recursive exploration explores 6^n states.",
+    "spaceTimeTradeoff": "6x6 matrix stores active states.",
+    "interviewerExpectation": "Candidate observes that only the last two dice rolls constrain the next choice."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Two-Step Roll History DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import math\n\nclass Solution:\n    def distinctSequences(self, n: int) -> int:\n        if n == 1:\n            return 6\n        MOD = 1_000_000_007\n        dp = [[0] * 7 for _ in range(7)]\n        for i in range(1, 7):\n            for j in range(1, 7):\n                if i != j and math.gcd(i, j) == 1:\n                    dp[j][i] = 1\n                    \n        for _ in range(3, n + 1):\n            next_dp = [[0] * 7 for _ in range(7)]\n            for prev in range(1, 7):\n                for prev_prev in range(1, 7):\n                    if dp[prev][prev_prev] == 0:\n                        continue\n                    for curr in range(1, 7):\n                        if curr != prev and curr != prev_prev and math.gcd(curr, prev) == 1:\n                            next_dp[curr][prev] = (next_dp[curr][prev] + dp[prev][prev_prev]) % MOD\n            dp = next_dp\n            \n        return sum(sum(row) for row in dp) % MOD"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Two-Step Roll History DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int distinctSequences(int n) {\n        if (n == 1) return 6;\n        long long MOD = 1e9 + 7;\n        long long dp[7][7] = {0};\n        for (int i = 1; i <= 6; ++i) {\n            for (int j = 1; j <= 6; ++j) {\n                if (i != j && std::gcd(i, j) == 1) dp[j][i] = 1;\n            }\n        }\n        for (int step = 3; step <= n; ++step) {\n            long long next_dp[7][7] = {0};\n            for (int prev = 1; prev <= 6; ++prev) {\n                for (int pp = 1; pp <= 6; ++pp) {\n                    if (dp[prev][pp] == 0) continue;\n                    for (int curr = 1; curr <= 6; ++curr) {\n                        if (curr != prev && curr != pp && std::gcd(curr, prev) == 1) {\n                            next_dp[curr][prev] = (next_dp[curr][prev] + dp[prev][pp]) % MOD;\n                        }\n                    }\n                }\n            }\n            std::memcpy(dp, next_dp, sizeof(dp));\n        }\n        long long ans = 0;\n        for (int i = 1; i <= 6; ++i) {\n            for (int j = 1; j <= 6; ++j) ans = (ans + dp[i][j]) % MOD;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Two-Step Roll History DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int gcd(int a, int b) {\n        return b == 0 ? a : gcd(b, a % b);\n    }\n    public int distinctSequences(int n) {\n        if (n == 1) return 6;\n        long MOD = 1_000_000_007L;\n        long[][] dp = new long[7][7];\n        for (int i = 1; i <= 6; i++) {\n            for (int j = 1; j <= 6; j++) {\n                if (i != j && gcd(i, j) == 1) dp[j][i] = 1;\n            }\n        }\n        for (int step = 3; step <= n; step++) {\n            long[][] nextDp = new long[7][7];\n            for (int prev = 1; prev <= 6; prev++) {\n                for (int pp = 1; pp <= 6; pp++) {\n                    if (dp[prev][pp] == 0) continue;\n                    for (int curr = 1; curr <= 6; curr++) {\n                        if (curr != prev && curr != pp && gcd(curr, prev) == 1) {\n                            nextDp[curr][prev] = (nextDp[curr][prev] + dp[prev][pp]) % MOD;\n                        }\n                    }\n                }\n            }\n            dp = nextDp;\n        }\n        long ans = 0;\n        for (int i = 1; i <= 6; i++) {\n            for (int j = 1; j <= 6; j++) ans = (ans + dp[i][j]) % MOD;\n        }\n        return (int) ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Two-Step Roll History DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var distinctSequences = function(n) {\n    if (n === 1) return 6;\n    const MOD = 1000000007;\n    const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);\n    let dp = Array.from({ length: 7 }, () => new Int32Array(7));\n    for (let i = 1; i <= 6; i++) {\n        for (let j = 1; j <= 6; j++) {\n            if (i !== j && gcd(i, j) === 1) dp[j][i] = 1;\n        }\n    }\n    for (let step = 3; step <= n; step++) {\n        const nextDp = Array.from({ length: 7 }, () => new Int32Array(7));\n        for (let prev = 1; prev <= 6; prev++) {\n            for (let pp = 1; pp <= 6; pp++) {\n                if (dp[prev][pp] === 0) continue;\n                for (let curr = 1; curr <= 6; curr++) {\n                    if (curr !== prev && curr !== pp && gcd(curr, prev) === 1) {\n                        nextDp[curr][prev] = (nextDp[curr][prev] + dp[prev][pp]) % MOD;\n                    }\n                }\n            }\n        }\n        dp = nextDp;\n    }\n    let ans = 0;\n    for (let i = 1; i <= 6; i++) {\n        for (let j = 1; j <= 6; j++) ans = (ans + dp[i][j]) % MOD;\n    }\n    return ans;\n};"
+    }
+  ]
+}
