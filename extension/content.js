@@ -948,6 +948,10 @@ async function toggleHintsDrawer() {
         <span style="font-size:18px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:#1e2033; letter-spacing:-0.02em;">Asymptote</span>
       </div>
       <div style="display:flex; align-items:center; gap:6px;">
+        <a href="https://github.com/RijulSitpure/Asymptote" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:3px; background:#ffffff; color:#854d0e; border:1px solid #fef08a; border-radius:6px; padding:3px 7px; font-size:11px; font-weight:700; text-decoration:none; font-family:'DM Sans',sans-serif;" title="Star Asymptote on GitHub">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>Star</span>
+        </a>
         <button id="lc-open-dashboard-header-btn" style="display:inline-flex; align-items:center; gap:4px; background:#1e2033; color:#ffffff; border:1px solid #1e2033; border-radius:6px; padding:4px 8px; font-size:11px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif;" title="Open full Asymptote Dashboard">
           <span>Dashboard</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>

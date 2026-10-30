@@ -791,7 +791,7 @@ export function FeedbackModal({ isOpen, initialType = 'bug', onClose }) {
           <span>Created by <strong className="text-[#1e2033]">Rijul Sitpure</strong></span>
           <div className="flex items-center gap-3">
             <a
-              href="https://github.com/RijulSitpure"
+              href="https://github.com/RijulSitpure/Asymptote"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#1e2033] flex items-center gap-1 transition-colors"

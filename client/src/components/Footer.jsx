@@ -112,7 +112,7 @@ export function Footer({ onOpenFeedback }) {
                 </a>
 
                 <a
-                  href="https://github.com/RijulSitpure/LeetCode-Pattern_Tracker"
+                  href="https://github.com/RijulSitpure/Asymptote"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-secondary !py-1.5 !px-3 !text-[12px] flex items-center gap-1.5 hover:!border-[#eab308] hover:!text-[#854d0e] transition-colors"
