@@ -1,0 +1,80 @@
+{
+  "slug": "number-of-valid-move-combinations-on-chessboard",
+  "number": 2056,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-grid-dfs",
+    "matrix-simulation"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Path Generation",
+      "text": "Generate all legal directional paths and step lengths for each piece on the eight by eight board."
+    },
+    {
+      "level": 2,
+      "title": "Pairwise Compatibility",
+      "text": "Check collisions incrementally between pairs of pieces along their simultaneous movement paths."
+    },
+    {
+      "level": 3,
+      "title": "Stationary Retention",
+      "text": "Once a piece reaches its destination, it remains stationed on that square for all subsequent seconds."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def countCombinations(self, pieces: list[str], positions: list[list[int]]) -> int:\n        dir_map = {\n            \"rook\": [(-1, 0), (1, 0), (0, -1), (0, 1)],\n            \"bishop\": [(-1, -1), (-1, 1), (1, -1), (1, 1)],\n            \"queen\": [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]\n        }\n        n = len(pieces)\n        pos = [[r - 1, c - 1] for r, c in positions]\n\n        def get_all_moves(piece_type: str, r: int, c: int) -> list[tuple[int, int, int]]:\n            moves = [(0, 0, 0)]\n            for dr, dc in dir_map[piece_type]:\n                for step in range(1, 8):\n                    nr, nc = r + dr * step, c + dc * step\n                    if 0 <= nr < 8 and 0 <= nc < 8:\n                        moves.append((dr, dc, step))\n                    else:\n                        break\n            return moves\n\n        all_moves = [get_all_moves(pieces[i], pos[i][0], pos[i][1]) for i in range(n)]\n\n        def is_compatible(m1: tuple[int, int, int], p1: list[int], m2: tuple[int, int, int], p2: list[int]) -> bool:\n            dr1, dc1, s1 = m1\n            dr2, dc2, s2 = m2\n            max_t = max(s1, s2)\n            for t in range(1, max_t + 1):\n                r1 = p1[0] + dr1 * min(t, s1)\n                c1 = p1[1] + dc1 * min(t, s1)\n                r2 = p2[0] + dr2 * min(t, s2)\n                c2 = p2[1] + dc2 * min(t, s2)\n                if r1 == r2 and c1 == c2:\n                    return False\n            return True\n\n        count = 0\n        current_moves = []\n\n        def backtrack(idx: int) -> None:\n            nonlocal count\n            if idx == n:\n                count += 1\n                return\n\n            for move in all_moves[idx]:\n                valid = True\n                for i in range(idx):\n                    if not is_compatible(current_moves[i], pos[i], move, pos[idx]):\n                        valid = False\n                        break\n                if valid:\n                    current_moves.append(move)\n                    backtrack(idx + 1)\n                    current_moves.pop()\n\n        backtrack(0)\n        return count\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M^N) backtracking with incremental collision checks",
+    "space": "O(N) recursion stack and trajectory tracking",
+    "variables": [
+      "N: number of chess pieces (N <= 4)",
+      "M: legal moves per piece (M <= 28)"
+    ],
+    "notes": "Pieces move simultaneously and stay at their destination once reached.",
+    "whyNaiveFails": "Generating full board states per second without pairwise collision pruning blows up.",
+    "spaceTimeTradeoff": "Incremental pairwise validation prunes invalid configurations immediately.",
+    "interviewerExpectation": "Candidate should simulate simultaneous trajectories step-by-step."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def countCombinations(self, pieces: list[str], positions: list[list[int]]) -> int:\n        dir_map = {\n            \"rook\": [(-1, 0), (1, 0), (0, -1), (0, 1)],\n            \"bishop\": [(-1, -1), (-1, 1), (1, -1), (1, 1)],\n            \"queen\": [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]\n        }\n        n = len(pieces)\n        pos = [[r - 1, c - 1] for r, c in positions]\n\n        def get_all_moves(piece_type: str, r: int, c: int) -> list[tuple[int, int, int]]:\n            moves = [(0, 0, 0)]\n            for dr, dc in dir_map[piece_type]:\n                for step in range(1, 8):\n                    nr, nc = r + dr * step, c + dc * step\n                    if 0 <= nr < 8 and 0 <= nc < 8:\n                        moves.append((dr, dc, step))\n                    else:\n                        break\n            return moves\n\n        all_moves = [get_all_moves(pieces[i], pos[i][0], pos[i][1]) for i in range(n)]\n\n        def is_compatible(m1: tuple[int, int, int], p1: list[int], m2: tuple[int, int, int], p2: list[int]) -> bool:\n            dr1, dc1, s1 = m1\n            dr2, dc2, s2 = m2\n            max_t = max(s1, s2)\n            for t in range(1, max_t + 1):\n                r1 = p1[0] + dr1 * min(t, s1)\n                c1 = p1[1] + dc1 * min(t, s1)\n                r2 = p2[0] + dr2 * min(t, s2)\n                c2 = p2[1] + dc2 * min(t, s2)\n                if r1 == r2 and c1 == c2:\n                    return False\n            return True\n\n        count = 0\n        current_moves = []\n\n        def backtrack(idx: int) -> None:\n            nonlocal count\n            if idx == n:\n                count += 1\n                return\n\n            for move in all_moves[idx]:\n                valid = True\n                for i in range(idx):\n                    if not is_compatible(current_moves[i], pos[i], move, pos[idx]):\n                        valid = False\n                        break\n                if valid:\n                    current_moves.append(move)\n                    backtrack(idx + 1)\n                    current_moves.pop()\n\n        backtrack(0)\n        return count",
+      "approach": "Python 3 standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <string>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int countCombinations(std::vector<std::string>& pieces, std::vector<std::vector<int>>& positions) {\n        int n = pieces.size();\n        std::vector<std::pair<int, int>> pos(n);\n        for (int i = 0; i < n; ++i) pos[i] = {positions[i][0] - 1, positions[i][1] - 1};\n\n        auto getDirs = [](const std::string& type) -> std::vector<std::pair<int, int>> {\n            if (type == \"rook\") return {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n            if (type == \"bishop\") return {{-1, -1}, {-1, 1}, {1, -1}, {1, 1}};\n            return {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};\n        };\n\n        struct Move {\n            int dr, dc, steps;\n        };\n\n        std::vector<std::vector<Move>> allMoves(n);\n        for (int i = 0; i < n; ++i) {\n            allMoves[i].push_back({0, 0, 0});\n            for (auto [dr, dc] : getDirs(pieces[i])) {\n                for (int step = 1; step < 8; ++step) {\n                    int nr = pos[i].first + dr * step;\n                    int nc = pos[i].second + dc * step;\n                    if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {\n                        allMoves[i].push_back({dr, dc, step});\n                    } else break;\n                }\n            }\n        }\n\n        auto isCompatible = [&](const Move& m1, std::pair<int, int> p1, const Move& m2, std::pair<int, int> p2) {\n            int maxT = std::max(m1.steps, m2.steps);\n            for (int t = 1; t <= maxT; ++t) {\n                int r1 = p1.first + m1.dr * std::min(t, m1.steps);\n                int c1 = p1.second + m1.dc * std::min(t, m1.steps);\n                int r2 = p2.first + m2.dr * std::min(t, m2.steps);\n                int c2 = p2.second + m2.dc * std::min(t, m2.steps);\n                if (r1 == r2 && c1 == c2) return false;\n            }\n            return true;\n        };\n\n        int count = 0;\n        std::vector<Move> currentMoves;\n\n        auto backtrack = [&](auto& self, int idx) -> void {\n            if (idx == n) {\n                count++;\n                return;\n            }\n            for (const auto& move : allMoves[idx]) {\n                bool valid = true;\n                for (int i = 0; i < idx; ++i) {\n                    if (!isCompatible(currentMoves[i], pos[i], move, pos[idx])) {\n                        valid = false;\n                        break;\n                    }\n                }\n                if (valid) {\n                    currentMoves.push_back(move);\n                    self(self, idx + 1);\n                    currentMoves.pop_back();\n                }\n            }\n        };\n\n        backtrack(backtrack, 0);\n        return count;\n    }\n};",
+      "approach": "C++ modern STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Solution {\n    static class Move {\n        int dr, dc, steps;\n        Move(int dr, int dc, int steps) {\n            this.dr = dr;\n            this.dc = dc;\n            this.steps = steps;\n        }\n    }\n\n    private int count = 0;\n\n    public int countCombinations(String[] pieces, int[][] positions) {\n        int n = pieces.length;\n        int[][] pos = new int[n][2];\n        for (int i = 0; i < n; i++) {\n            pos[i][0] = positions[i][0] - 1;\n            pos[i][1] = positions[i][1] - 1;\n        }\n\n        List<List<Move>> allMoves = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            List<Move> moves = new ArrayList<>();\n            moves.add(new Move(0, 0, 0));\n            int[][] dirs = getDirs(pieces[i]);\n            for (int[] d : dirs) {\n                for (int step = 1; step < 8; step++) {\n                    int nr = pos[i][0] + d[0] * step;\n                    int nc = pos[i][1] + d[1] * step;\n                    if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {\n                        moves.add(new Move(d[0], d[1], step));\n                    } else break;\n                }\n            }\n            allMoves.add(moves);\n        }\n\n        backtrack(0, n, pos, allMoves, new ArrayList<>());\n        return count;\n    }\n\n    private int[][] getDirs(String type) {\n        if (type.equals(\"rook\")) return new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        if (type.equals(\"bishop\")) return new int[][]{{-1, -1}, {-1, 1}, {1, -1}, {1, 1}};\n        return new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};\n    }\n\n    private void backtrack(int idx, int n, int[][] pos, List<List<Move>> allMoves, List<Move> cur) {\n        if (idx == n) {\n            count++;\n            return;\n        }\n        for (Move move : allMoves.get(idx)) {\n            boolean valid = true;\n            for (int i = 0; i < idx; i++) {\n                if (!isCompatible(cur.get(i), pos[i], move, pos[idx])) {\n                    valid = false;\n                    break;\n                }\n            }\n            if (valid) {\n                cur.add(move);\n                backtrack(idx + 1, n, pos, allMoves, cur);\n                cur.remove(cur.size() - 1);\n            }\n        }\n    }\n\n    private boolean isCompatible(Move m1, int[] p1, Move m2, int[] p2) {\n        int maxT = Math.max(m1.steps, m2.steps);\n        for (int t = 1; t <= maxT; t++) {\n            int r1 = p1[0] + m1.dr * Math.min(t, m1.steps);\n            int c1 = p1[1] + m1.dc * Math.min(t, m1.steps);\n            int r2 = p2[0] + m2.dr * Math.min(t, m2.steps);\n            int c2 = p2[1] + m2.dc * Math.min(t, m2.steps);\n            if (r1 == r2 && c1 == c2) return false;\n        }\n        return true;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string[]} pieces\n * @param {number[][]} positions\n * @return {number}\n */\nvar countCombinations = function(pieces, positions) {\n    const dirMap = {\n        \"rook\": [[-1, 0], [1, 0], [0, -1], [0, 1]],\n        \"bishop\": [[-1, -1], [-1, 1], [1, -1], [1, 1]],\n        \"queen\": [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]]\n    };\n\n    const n = pieces.length;\n    const pos = positions.map(([r, c]) => [r - 1, c - 1]);\n\n    const allMoves = [];\n    for (let i = 0; i < n; i++) {\n        const moves = [[0, 0, 0]];\n        for (const [dr, dc] of dirMap[pieces[i]]) {\n            for (let step = 1; step < 8; step++) {\n                const nr = pos[i][0] + dr * step;\n                const nc = pos[i][1] + dc * step;\n                if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {\n                    moves.push([dr, dc, step]);\n                } else break;\n            }\n        }\n        allMoves.push(moves);\n    }\n\n    function isCompatible(m1, p1, m2, p2) {\n        const [dr1, dc1, s1] = m1;\n        const [dr2, dc2, s2] = m2;\n        const maxT = Math.max(s1, s2);\n        for (let t = 1; t <= maxT; t++) {\n            const r1 = p1[0] + dr1 * Math.min(t, s1);\n            const c1 = p1[1] + dc1 * Math.min(t, s1);\n            const r2 = p2[0] + dr2 * Math.min(t, s2);\n            const c2 = p2[1] + dc2 * Math.min(t, s2);\n            if (r1 === r2 && c1 === c2) return false;\n        }\n        return true;\n    }\n\n    let count = 0;\n    const cur = [];\n\n    function backtrack(idx) {\n        if (idx === n) {\n            count++;\n            return;\n        }\n        for (const move of allMoves[idx]) {\n            let valid = true;\n            for (let i = 0; i < idx; i++) {\n                if (!isCompatible(cur[i], pos[i], move, pos[idx])) {\n                    valid = false;\n                    break;\n                }\n            }\n            if (valid) {\n                cur.push(move);\n                backtrack(idx + 1);\n                cur.pop();\n            }\n        }\n    }\n\n    backtrack(0);\n    return count;\n};",
+      "approach": "JavaScript standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

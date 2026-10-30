@@ -1,0 +1,79 @@
+{
+  "slug": "second-minimum-time-to-reach-destination",
+  "number": 2045,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dual Distance State",
+      "text": "Track the first and second shortest travel times to every vertex."
+    },
+    {
+      "level": 2,
+      "title": "Traffic Signal Schedule",
+      "text": "Account for traffic signal waiting times whenever a signal is currently red."
+    },
+    {
+      "level": 3,
+      "title": "Early Exit Condition",
+      "text": "Stop exploring once the second shortest arrival time at the destination vertex is resolved."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def secondMinimum(self, n: int, edges: list[list[int]], time: int, change: int) -> int:\n        adj = [[] for _ in range(n + 1)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n\n        dist1 = [-1] * (n + 1)\n        dist2 = [-1] * (n + 1)\n        dist1[1] = 0\n\n        q = deque([(1, 0)])\n\n        while q:\n            node, curr_time = q.popleft()\n            signal_period = curr_time // change\n            if signal_period % 2 == 1:\n                curr_time = (signal_period + 1) * change\n\n            next_time = curr_time + time\n\n            for nxt in adj[node]:\n                if dist1[nxt] == -1:\n                    dist1[nxt] = next_time\n                    q.append((nxt, next_time))\n                elif dist2[nxt] == -1 and dist1[nxt] < next_time:\n                    dist2[nxt] = next_time\n                    if nxt == n:\n                        return next_time\n                    q.append((nxt, next_time))\n        return dist2[n]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E) level-order traversal with dual state tracking",
+    "space": "O(V + E) distance tables and queue storage",
+    "variables": [
+      "V: number of intersections (nodes)",
+      "E: number of bidirectional roads"
+    ],
+    "notes": "Tracks the two strictly distinct minimum times to reach every node.",
+    "whyNaiveFails": "Standard Dijkstra only retains the single shortest distance per vertex.",
+    "spaceTimeTradeoff": "Dual distance tracking maintains BFS efficiency without priority queue overhead.",
+    "interviewerExpectation": "Candidate should handle red light waiting periods accurately."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def secondMinimum(self, n: int, edges: list[list[int]], time: int, change: int) -> int:\n        adj = [[] for _ in range(n + 1)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n\n        dist1 = [-1] * (n + 1)\n        dist2 = [-1] * (n + 1)\n        dist1[1] = 0\n\n        q = deque([(1, 0)])\n\n        while q:\n            node, curr_time = q.popleft()\n            signal_period = curr_time // change\n            if signal_period % 2 == 1:\n                curr_time = (signal_period + 1) * change\n\n            next_time = curr_time + time\n\n            for nxt in adj[node]:\n                if dist1[nxt] == -1:\n                    dist1[nxt] = next_time\n                    q.append((nxt, next_time))\n                elif dist2[nxt] == -1 and dist1[nxt] < next_time:\n                    dist2[nxt] = next_time\n                    if nxt == n:\n                        return next_time\n                    q.append((nxt, next_time))\n        return dist2[n]",
+      "approach": "Python 3 standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n\nclass Solution {\npublic:\n    int secondMinimum(int n, std::vector<std::vector<int>>& edges, int time, int change) {\n        std::vector<std::vector<int>> adj(n + 1);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n\n        std::vector<int> dist1(n + 1, -1), dist2(n + 1, -1);\n        dist1[1] = 0;\n        std::queue<std::pair<int, int>> q;\n        q.push({1, 0});\n\n        while (!q.empty()) {\n            auto [node, currTime] = q.front();\n            q.pop();\n\n            int period = currTime / change;\n            if (period % 2 == 1) {\n                currTime = (period + 1) * change;\n            }\n            int nextTime = currTime + time;\n\n            for (int nxt : adj[node]) {\n                if (dist1[nxt] == -1) {\n                    dist1[nxt] = nextTime;\n                    q.push({nxt, nextTime});\n                } else if (dist2[nxt] == -1 && dist1[nxt] < nextTime) {\n                    dist2[nxt] = nextTime;\n                    if (nxt == n) return nextTime;\n                    q.push({nxt, nextTime});\n                }\n            }\n        }\n        return dist2[n];\n    }\n};",
+      "approach": "C++ modern STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayDeque;\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.Queue;\n\nclass Solution {\n    public int secondMinimum(int n, int[][] edges, int time, int change) {\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i <= n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n\n        int[] dist1 = new int[n + 1];\n        int[] dist2 = new int[n + 1];\n        Arrays.fill(dist1, -1);\n        Arrays.fill(dist2, -1);\n        dist1[1] = 0;\n\n        Queue<int[]> q = new ArrayDeque<>();\n        q.offer(new int[]{1, 0});\n\n        while (!q.isEmpty()) {\n            int[] top = q.poll();\n            int node = top[0];\n            int currTime = top[1];\n\n            int period = currTime / change;\n            if (period % 2 == 1) {\n                currTime = (period + 1) * change;\n            }\n            int nextTime = currTime + time;\n\n            for (int nxt : adj.get(node)) {\n                if (dist1[nxt] == -1) {\n                    dist1[nxt] = nextTime;\n                    q.offer(new int[]{nxt, nextTime});\n                } else if (dist2[nxt] == -1 && dist1[nxt] < nextTime) {\n                    dist2[nxt] = nextTime;\n                    if (nxt == n) return nextTime;\n                    q.offer(new int[]{nxt, nextTime});\n                }\n            }\n        }\n        return dist2[n];\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number} time\n * @param {number} change\n * @return {number}\n */\nvar secondMinimum = function(n, edges, time, change) {\n    const adj = Array.from({ length: n + 1 }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n\n    const dist1 = new Array(n + 1).fill(-1);\n    const dist2 = new Array(n + 1).fill(-1);\n    dist1[1] = 0;\n\n    const q = [[1, 0]];\n    let head = 0;\n\n    while (head < q.length) {\n        let [node, currTime] = q[head++];\n        const period = Math.floor(currTime / change);\n        if (period % 2 === 1) {\n            currTime = (period + 1) * change;\n        }\n        const nextTime = currTime + time;\n\n        for (const nxt of adj[node]) {\n            if (dist1[nxt] === -1) {\n                dist1[nxt] = nextTime;\n                q.push([nxt, nextTime]);\n            } else if (dist2[nxt] === -1 && dist1[nxt] < nextTime) {\n                dist2[nxt] = nextTime;\n                if (nxt === n) return nextTime;\n                q.push([nxt, nextTime]);\n            }\n        }\n    }\n    return dist2[n];\n};",
+      "approach": "JavaScript standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

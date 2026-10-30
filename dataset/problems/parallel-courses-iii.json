@@ -1,0 +1,80 @@
+{
+  "slug": "parallel-courses-iii",
+  "number": 2050,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn",
+    "graph-dp-dag"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prerequisite Dependency Order",
+      "text": "Each course can start only after all its direct prerequisites have concluded."
+    },
+    {
+      "level": 2,
+      "title": "Dynamic Programming on DAG",
+      "text": "The earliest completion time of a course is its own duration plus the maximum completion time among its prerequisites."
+    },
+    {
+      "level": 3,
+      "title": "Topological Evaluation",
+      "text": "Process courses in dependency order to determine the global maximum completion time."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def minimumTime(self, n: int, relations: list[list[int]], time: list[int]) -> int:\n        adj = [[] for _ in range(n + 1)]\n        in_degree = [0] * (n + 1)\n        for prev_c, next_c in relations:\n            adj[prev_c].append(next_c)\n            in_degree[next_c] += 1\n\n        dist = [0] * (n + 1)\n        q = deque()\n        for i in range(1, n + 1):\n            if in_degree[i] == 0:\n                dist[i] = time[i - 1]\n                q.append(i)\n\n        while q:\n            curr = q.popleft()\n            for nxt in adj[curr]:\n                if dist[curr] + time[nxt - 1] > dist[nxt]:\n                    dist[nxt] = dist[curr] + time[nxt - 1]\n                in_degree[nxt] -= 1\n                if in_degree[nxt] == 0:\n                    q.append(nxt)\n\n        return max(dist)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E) topological processing of DAG",
+    "space": "O(V + E) adjacency lists and in-degree table",
+    "variables": [
+      "V: number of courses",
+      "E: number of prerequisite relations"
+    ],
+    "notes": "Earliest course completion equals course duration plus max prerequisite completion.",
+    "whyNaiveFails": "Greedy scheduling without prerequisite topological order misses longest dependency chains.",
+    "spaceTimeTradeoff": "Kahn algorithm in-degree queue updates longest path distances in linear time.",
+    "interviewerExpectation": "Candidate should formulate this as finding the longest path in a DAG."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def minimumTime(self, n: int, relations: list[list[int]], time: list[int]) -> int:\n        adj = [[] for _ in range(n + 1)]\n        in_degree = [0] * (n + 1)\n        for prev_c, next_c in relations:\n            adj[prev_c].append(next_c)\n            in_degree[next_c] += 1\n\n        dist = [0] * (n + 1)\n        q = deque()\n        for i in range(1, n + 1):\n            if in_degree[i] == 0:\n                dist[i] = time[i - 1]\n                q.append(i)\n\n        while q:\n            curr = q.popleft()\n            for nxt in adj[curr]:\n                if dist[curr] + time[nxt - 1] > dist[nxt]:\n                    dist[nxt] = dist[curr] + time[nxt - 1]\n                in_degree[nxt] -= 1\n                if in_degree[nxt] == 0:\n                    q.append(nxt)\n\n        return max(dist)",
+      "approach": "Python 3 standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minimumTime(int n, std::vector<std::vector<int>>& relations, std::vector<int>& time) {\n        std::vector<std::vector<int>> adj(n + 1);\n        std::vector<int> inDegree(n + 1, 0);\n        for (const auto& r : relations) {\n            adj[r[0]].push_back(r[1]);\n            inDegree[r[1]]++;\n        }\n\n        std::vector<int> dist(n + 1, 0);\n        std::queue<int> q;\n        for (int i = 1; i <= n; ++i) {\n            if (inDegree[i] == 0) {\n                dist[i] = time[i - 1];\n                q.push(i);\n            }\n        }\n\n        while (!q.empty()) {\n            int curr = q.front();\n            q.pop();\n            for (int nxt : adj[curr]) {\n                dist[nxt] = std::max(dist[nxt], dist[curr] + time[nxt - 1]);\n                if (--inDegree[nxt] == 0) {\n                    q.push(nxt);\n                }\n            }\n        }\n\n        return *std::max_element(dist.begin() + 1, dist.end());\n    }\n};",
+      "approach": "C++ modern STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayDeque;\nimport java.util.ArrayList;\nimport java.util.List;\nimport java.util.Queue;\n\nclass Solution {\n    public int minimumTime(int n, int[][] relations, int[] time) {\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i <= n; i++) adj.add(new ArrayList<>());\n        int[] inDegree = new int[n + 1];\n        for (int[] r : relations) {\n            adj.get(r[0]).add(r[1]);\n            inDegree[r[1]]++;\n        }\n\n        int[] dist = new int[n + 1];\n        Queue<Integer> q = new ArrayDeque<>();\n        for (int i = 1; i <= n; i++) {\n            if (inDegree[i] == 0) {\n                dist[i] = time[i - 1];\n                q.offer(i);\n            }\n        }\n\n        while (!q.isEmpty()) {\n            int curr = q.poll();\n            for (int nxt : adj.get(curr)) {\n                dist[nxt] = Math.max(dist[nxt], dist[curr] + time[nxt - 1]);\n                if (--inDegree[nxt] == 0) {\n                    q.offer(nxt);\n                }\n            }\n        }\n\n        int max = 0;\n        for (int i = 1; i <= n; i++) {\n            max = Math.max(max, dist[i]);\n        }\n        return max;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} relations\n * @param {number[]} time\n * @return {number}\n */\nvar minimumTime = function(n, relations, time) {\n    const adj = Array.from({ length: n + 1 }, () => []);\n    const inDegree = new Array(n + 1).fill(0);\n    for (const [u, v] of relations) {\n        adj[u].push(v);\n        inDegree[v]++;\n    }\n\n    const dist = new Array(n + 1).fill(0);\n    const q = [];\n    for (let i = 1; i <= n; i++) {\n        if (inDegree[i] === 0) {\n            dist[i] = time[i - 1];\n            q.push(i);\n        }\n    }\n\n    let head = 0;\n    while (head < q.length) {\n        const curr = q[head++];\n        for (const nxt of adj[curr]) {\n            dist[nxt] = Math.max(dist[nxt], dist[curr] + time[nxt - 1]);\n            inDegree[nxt]--;\n            if (inDegree[nxt] === 0) {\n                q.push(nxt);\n            }\n        }\n    }\n\n    let ans = 0;\n    for (let i = 1; i <= n; i++) {\n        ans = Math.max(ans, dist[i]);\n    }\n    return ans;\n};",
+      "approach": "JavaScript standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

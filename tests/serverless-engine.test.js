@@ -450,7 +450,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
       asymptote_user_problems: {
         '1': { is_solved: 1, title: 'Two Sum' },
         '15': { is_solved: 1, title: '3Sum' },
-        '2033': { is_solved: 1, title: 'Minimum Operations to Make a Uni-Value Grid' }
+        '2065': { is_solved: 1, title: 'Maximum Path Quality of a Graph' }
       }
     });
 
@@ -478,13 +478,13 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(threeSum.pattern_id).toBe('two-pointers-opposite');
     expect(threeSum.pattern_title).toBe('Opposite Ends Two Pointers');
 
-    // Minimum Operations to Make a Uni-Value Grid (#2033) - uncurated catalog problem keyed by numeric string "2033"
-    const uniVal = solved.find(p => p.number === 2033);
-    expect(uniVal).toBeDefined();
-    expect(uniVal.slug).toBe('minimum-operations-to-make-a-uni-value-grid');
-    expect(uniVal.verified).toBe(0);
-    expect(uniVal.pattern_id).toBe('math-number-theory');
-    expect(uniVal.pattern_title).toBe('Number Theory, GCD & Fast Exponentiation');
+    // Maximum Path Quality of a Graph (#2065) - uncurated catalog problem keyed by numeric string "2065"
+    const maxPath = solved.find(p => p.number === 2065);
+    expect(maxPath).toBeDefined();
+    expect(maxPath.slug).toBe('maximum-path-quality-of-a-graph');
+    expect(maxPath.verified).toBe(0);
+    expect(maxPath.pattern_id).toBe('graph-bfs-shortest-path');
+    expect(maxPath.pattern_title).toBe('Multi-Source BFS / Unweighted Shortest Path');
 
     // Verify stats calculation includes solved problems properly
     const stats = await testEngine.getStats();

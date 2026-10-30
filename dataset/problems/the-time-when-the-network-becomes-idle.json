@@ -1,0 +1,79 @@
+{
+  "slug": "the-time-when-the-network-becomes-idle",
+  "number": 2039,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Breadth Level Exploration",
+      "text": "Compute the shortest distance from the master server to every other server using level traversal."
+    },
+    {
+      "level": 2,
+      "title": "Round-Trip Latency",
+      "text": "Round-trip time for any server is twice its shortest distance from the master."
+    },
+    {
+      "level": 3,
+      "title": "Last Packet Calculation",
+      "text": "Determine the timestamp of the last transmitted packet and when it safely returns to the server."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def networkBecomesIdle(self, edges: list[list[int]], patience: list[int]) -> int:\n        n = len(patience)\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n\n        dist = [-1] * n\n        dist[0] = 0\n        q = deque([0])\n        while q:\n            curr = q.popleft()\n            for nxt in adj[curr]:\n                if dist[nxt] == -1:\n                    dist[nxt] = dist[curr] + 1\n                    q.append(nxt)\n\n        max_time = 0\n        for i in range(1, n):\n            round_trip = 2 * dist[i]\n            p = patience[i]\n            last_sent = ((round_trip - 1) // p) * p\n            last_received = last_sent + round_trip\n            if last_received > max_time:\n                max_time = last_received\n        return max_time + 1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E) traversing network servers and channels",
+    "space": "O(V + E) adjacency list and distance array",
+    "variables": [
+      "V: number of servers",
+      "E: number of bidirectional channels"
+    ],
+    "notes": "Shortest path from master server gives exact round-trip latency.",
+    "whyNaiveFails": "Dijkstra is unnecessary because all channel latencies are uniform.",
+    "spaceTimeTradeoff": "Unweighted BFS finds all server distances in linear time.",
+    "interviewerExpectation": "Candidate should derive the closed-form equation for the last packet departure."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def networkBecomesIdle(self, edges: list[list[int]], patience: list[int]) -> int:\n        n = len(patience)\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n\n        dist = [-1] * n\n        dist[0] = 0\n        q = deque([0])\n        while q:\n            curr = q.popleft()\n            for nxt in adj[curr]:\n                if dist[nxt] == -1:\n                    dist[nxt] = dist[curr] + 1\n                    q.append(nxt)\n\n        max_time = 0\n        for i in range(1, n):\n            round_trip = 2 * dist[i]\n            p = patience[i]\n            last_sent = ((round_trip - 1) // p) * p\n            last_received = last_sent + round_trip\n            if last_received > max_time:\n                max_time = last_received\n        return max_time + 1",
+      "approach": "Python 3 standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int networkBecomesIdle(std::vector<std::vector<int>>& edges, std::vector<int>& patience) {\n        int n = patience.size();\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n\n        std::vector<int> dist(n, -1);\n        dist[0] = 0;\n        std::queue<int> q;\n        q.push(0);\n\n        while (!q.empty()) {\n            int curr = q.front();\n            q.pop();\n            for (int nxt : adj[curr]) {\n                if (dist[nxt] == -1) {\n                    dist[nxt] = dist[curr] + 1;\n                    q.push(nxt);\n                }\n            }\n        }\n\n        int maxTime = 0;\n        for (int i = 1; i < n; ++i) {\n            int roundTrip = 2 * dist[i];\n            int p = patience[i];\n            int lastSent = ((roundTrip - 1) / p) * p;\n            int lastReceived = lastSent + roundTrip;\n            maxTime = std::max(maxTime, lastReceived);\n        }\n        return maxTime + 1;\n    }\n};",
+      "approach": "C++ modern STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayDeque;\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.Queue;\n\nclass Solution {\n    public int networkBecomesIdle(int[][] edges, int[] patience) {\n        int n = patience.length;\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n\n        int[] dist = new int[n];\n        Arrays.fill(dist, -1);\n        dist[0] = 0;\n        Queue<Integer> q = new ArrayDeque<>();\n        q.offer(0);\n\n        while (!q.isEmpty()) {\n            int curr = q.poll();\n            for (int nxt : adj.get(curr)) {\n                if (dist[nxt] == -1) {\n                    dist[nxt] = dist[curr] + 1;\n                    q.offer(nxt);\n                }\n            }\n        }\n\n        int maxTime = 0;\n        for (int i = 1; i < n; i++) {\n            int roundTrip = 2 * dist[i];\n            int p = patience[i];\n            int lastSent = ((roundTrip - 1) / p) * p;\n            int lastReceived = lastSent + roundTrip;\n            if (lastReceived > maxTime) {\n                maxTime = lastReceived;\n            }\n        }\n        return maxTime + 1;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} edges\n * @param {number[]} patience\n * @return {number}\n */\nvar networkBecomesIdle = function(edges, patience) {\n    const n = patience.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n\n    const dist = new Array(n).fill(-1);\n    dist[0] = 0;\n    const q = [0];\n    let head = 0;\n    while (head < q.length) {\n        const curr = q[head++];\n        for (const nxt of adj[curr]) {\n            if (dist[nxt] === -1) {\n                dist[nxt] = dist[curr] + 1;\n                q.push(nxt);\n            }\n        }\n    }\n\n    let maxTime = 0;\n    for (let i = 1; i < n; i++) {\n        const roundTrip = 2 * dist[i];\n        const p = patience[i];\n        const lastSent = Math.floor((roundTrip - 1) / p) * p;\n        const lastReceived = lastSent + roundTrip;\n        if (lastReceived > maxTime) {\n            maxTime = lastReceived;\n        }\n    }\n    return maxTime + 1;\n};",
+      "approach": "JavaScript standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

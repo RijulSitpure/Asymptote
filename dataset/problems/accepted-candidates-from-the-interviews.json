@@ -1,0 +1,74 @@
+{
+  "slug": "accepted-candidates-from-the-interviews",
+  "number": 2041,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate",
+    "having-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Filter by Experience",
+      "text": "Filter candidate records who satisfy the minimum experience threshold before aggregating round scores."
+    },
+    {
+      "level": 2,
+      "title": "Join Rounds Table",
+      "text": "Join candidates with rounds on the shared interview identifier to pair scores with candidate profiles."
+    },
+    {
+      "level": 3,
+      "title": "Having Filter on Sum",
+      "text": "Group candidate identifiers and keep only those whose total score strictly exceeds fifteen."
+    },
+    {
+      "level": 4,
+      "title": "Complete Query",
+      "text": "```mysql\nSELECT c.candidate_id\nFROM Candidates c\nJOIN Rounds r ON c.interview_id = r.interview_id\nWHERE c.years_of_experience >= 2\nGROUP BY c.candidate_id\nHAVING SUM(r.score) > 15;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(C + R) linear scan over candidates and interview rounds",
+    "space": "O(U) storage for aggregated candidate scores",
+    "variables": [
+      "C: candidates count",
+      "R: interview rounds count",
+      "U: eligible candidates count"
+    ],
+    "notes": "Filters candidates by minimum experience and sums their round scores.",
+    "whyNaiveFails": "Aggregating rounds without filtering candidates first increases join cardinality.",
+    "spaceTimeTradeoff": "Group aggregate with having clause minimizes intermediate record retention.",
+    "interviewerExpectation": "Candidate should recognize having filter for post-aggregation criteria."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT c.candidate_id\nFROM Candidates c\nJOIN Rounds r ON c.interview_id = r.interview_id\nWHERE c.years_of_experience >= 2\nGROUP BY c.candidate_id\nHAVING SUM(r.score) > 15;",
+      "approach": "Filter candidates by experience, join with interview rounds, group by candidate, and filter groups having total score strictly greater than 15.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT c.candidate_id\nFROM Candidates c\nJOIN Rounds r ON c.interview_id = r.interview_id\nWHERE c.years_of_experience >= 2\nGROUP BY c.candidate_id\nHAVING SUM(r.score) > 15;",
+      "approach": "Inner join candidates with rounds on interview_id, apply experience condition in where clause, and filter aggregated sum in having clause.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef accepted_candidates(candidates: pd.DataFrame, rounds: pd.DataFrame) -> pd.DataFrame:\n    cand_filtered = candidates[candidates['years_of_experience'] >= 2]\n    merged = pd.merge(cand_filtered, rounds, on='interview_id')\n    grouped = merged.groupby('candidate_id', as_index=False)['score'].sum()\n    return grouped[grouped['score'] > 15][['candidate_id']]",
+      "approach": "Filter candidate rows with experience >= 2, merge with rounds table, sum scores per candidate, and filter for total score > 15.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

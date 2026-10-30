@@ -1,0 +1,79 @@
+{
+  "slug": "partition-array-into-two-arrays-to-minimize-sum-difference",
+  "number": 2035,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic",
+    "backtracking-subsets-perm"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Split Array in Halves",
+      "text": "Split the array into two halves of length n to reduce combinatorial complexity."
+    },
+    {
+      "level": 2,
+      "title": "Group Sums by Subset Size",
+      "text": "For each half, generate all possible subset sums indexed by the number of elements picked."
+    },
+    {
+      "level": 3,
+      "title": "Ordered Lookup for Closest Sum",
+      "text": "For k elements from the first half, find the closest matching sum from the second half sorted lists."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def minimumDifference(self, nums: list[int]) -> int:\n        n = len(nums) // 2\n        total = sum(nums)\n        target = total // 2\n        left_sums = [[] for _ in range(n + 1)]\n        right_sums = [[] for _ in range(n + 1)]\n\n        for mask in range(1 << n):\n            sz = bin(mask).count('1')\n            s_l = sum(nums[i] for i in range(n) if (mask >> i) & 1)\n            left_sums[sz].append(s_l)\n            s_r = sum(nums[n + i] for i in range(n) if (mask >> i) & 1)\n            right_sums[sz].append(s_r)\n\n        for sz in range(n + 1):\n            right_sums[sz].sort()\n\n        ans = float('inf')\n        for k in range(n + 1):\n            req = n - k\n            r_list = right_sums[req]\n            for sl in left_sums[k]:\n                ideal = target - sl\n                idx = bisect.bisect_left(r_list, ideal)\n                if idx < len(r_list):\n                    s1 = sl + r_list[idx]\n                    s2 = total - s1\n                    ans = min(ans, abs(s1 - s2))\n                if idx > 0:\n                    s1 = sl + r_list[idx - 1]\n                    s2 = total - s1\n                    ans = min(ans, abs(s1 - s2))\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * 2^N) generating subsets and searching halves",
+    "space": "O(2^N) storing subset sums per partition size",
+    "variables": [
+      "N: half the length of input array"
+    ],
+    "notes": "Meet-in-the-middle splits 2N elements into two halves of size N.",
+    "whyNaiveFails": "Generating all 2^(2N) combinations exceeds time limits for 2N = 30.",
+    "spaceTimeTradeoff": "Sorting subset sums per element count enables logarithmic lookups.",
+    "interviewerExpectation": "Candidate should recognize meet-in-the-middle pattern for exponential reduction."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass Solution:\n    def minimumDifference(self, nums: list[int]) -> int:\n        n = len(nums) // 2\n        total = sum(nums)\n        target = total // 2\n        left_sums = [[] for _ in range(n + 1)]\n        right_sums = [[] for _ in range(n + 1)]\n\n        for mask in range(1 << n):\n            sz = bin(mask).count('1')\n            s_l = sum(nums[i] for i in range(n) if (mask >> i) & 1)\n            left_sums[sz].append(s_l)\n            s_r = sum(nums[n + i] for i in range(n) if (mask >> i) & 1)\n            right_sums[sz].append(s_r)\n\n        for sz in range(n + 1):\n            right_sums[sz].sort()\n\n        ans = float('inf')\n        for k in range(n + 1):\n            req = n - k\n            r_list = right_sums[req]\n            for sl in left_sums[k]:\n                ideal = target - sl\n                idx = bisect.bisect_left(r_list, ideal)\n                if idx < len(r_list):\n                    s1 = sl + r_list[idx]\n                    s2 = total - s1\n                    ans = min(ans, abs(s1 - s2))\n                if idx > 0:\n                    s1 = sl + r_list[idx - 1]\n                    s2 = total - s1\n                    ans = min(ans, abs(s1 - s2))\n        return ans",
+      "approach": "Python 3 standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <cmath>\n#include <algorithm>\n#include <numeric>\n\nclass Solution {\npublic:\n    int minimumDifference(std::vector<int>& nums) {\n        int n = nums.size() / 2;\n        int total = std::accumulate(nums.begin(), nums.end(), 0);\n        int target = total / 2;\n        std::vector<std::vector<int>> leftSums(n + 1), rightSums(n + 1);\n\n        for (int mask = 0; mask < (1 << n); ++mask) {\n            int sz = __builtin_popcount(mask);\n            int sl = 0, sr = 0;\n            for (int i = 0; i < n; ++i) {\n                if ((mask >> i) & 1) {\n                    sl += nums[i];\n                    sr += nums[n + i];\n                }\n            }\n            leftSums[sz].push_back(sl);\n            rightSums[sz].push_back(sr);\n        }\n\n        for (int sz = 0; sz <= n; ++sz) {\n            std::sort(rightSums[sz].begin(), rightSums[sz].end());\n        }\n\n        int ans = std::abs(total - 2 * (leftSums[n][0]));\n        for (int k = 0; k <= n; ++k) {\n            int req = n - k;\n            const auto& rList = rightSums[req];\n            for (int sl : leftSums[k]) {\n                int ideal = target - sl;\n                auto it = std::lower_bound(rList.begin(), rList.end(), ideal);\n                if (it != rList.end()) {\n                    int s1 = sl + *it;\n                    ans = std::min(ans, std::abs(total - 2 * s1));\n                }\n                if (it != rList.begin()) {\n                    int s1 = sl + *(it - 1);\n                    ans = std::min(ans, std::abs(total - 2 * s1));\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "C++ modern STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Solution {\n    public int minimumDifference(int[] nums) {\n        int n = nums.length / 2;\n        int total = 0;\n        for (int x : nums) total += x;\n        int target = total / 2;\n\n        List<List<Integer>> leftSums = new ArrayList<>();\n        List<List<Integer>> rightSums = new ArrayList<>();\n        for (int i = 0; i <= n; i++) {\n            leftSums.add(new ArrayList<>());\n            rightSums.add(new ArrayList<>());\n        }\n\n        for (int mask = 0; mask < (1 << n); mask++) {\n            int sz = Integer.bitCount(mask);\n            int sl = 0, sr = 0;\n            for (int i = 0; i < n; i++) {\n                if (((mask >> i) & 1) == 1) {\n                    sl += nums[i];\n                    sr += nums[n + i];\n                }\n            }\n            leftSums.get(sz).add(sl);\n            rightSums.get(sz).add(sr);\n        }\n\n        for (int sz = 0; sz <= n; sz++) {\n            Collections.sort(rightSums.get(sz));\n        }\n\n        int ans = Integer.MAX_VALUE;\n        for (int k = 0; k <= n; k++) {\n            int req = n - k;\n            List<Integer> rList = rightSums.get(req);\n            for (int sl : leftSums.get(k)) {\n                int ideal = target - sl;\n                int idx = Collections.binarySearch(rList, ideal);\n                if (idx >= 0) {\n                    return Math.abs(total - 2 * (sl + rList.get(idx)));\n                }\n                int ins = -idx - 1;\n                if (ins < rList.size()) {\n                    ans = Math.min(ans, Math.abs(total - 2 * (sl + rList.get(ins))));\n                }\n                if (ins > 0) {\n                    ans = Math.min(ans, Math.abs(total - 2 * (sl + rList.get(ins - 1))));\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar minimumDifference = function(nums) {\n    const n = Math.floor(nums.length / 2);\n    let total = 0;\n    for (const x of nums) total += x;\n    const target = Math.floor(total / 2);\n\n    const leftSums = Array.from({ length: n + 1 }, () => []);\n    const rightSums = Array.from({ length: n + 1 }, () => []);\n\n    for (let mask = 0; mask < (1 << n); mask++) {\n        let sz = 0;\n        let sl = 0, sr = 0;\n        for (let i = 0; i < n; i++) {\n            if ((mask >> i) & 1) {\n                sz++;\n                sl += nums[i];\n                sr += nums[n + i];\n            }\n        }\n        leftSums[sz].push(sl);\n        rightSums[sz].push(sr);\n    }\n\n    for (let sz = 0; sz <= n; sz++) {\n        rightSums[sz].sort((a, b) => a - b);\n    }\n\n    let ans = Infinity;\n    for (let k = 0; k <= n; k++) {\n        const req = n - k;\n        const rList = rightSums[req];\n        for (const sl of leftSums[k]) {\n            const ideal = target - sl;\n            let lo = 0, hi = rList.length;\n            while (lo < hi) {\n                const mid = (lo + hi) >> 1;\n                if (rList[mid] < ideal) lo = mid + 1;\n                else hi = mid;\n            }\n            if (lo < rList.length) {\n                ans = Math.min(ans, Math.abs(total - 2 * (sl + rList[lo])));\n            }\n            if (lo > 0) {\n                ans = Math.min(ans, Math.abs(total - 2 * (sl + rList[lo - 1])));\n            }\n        }\n    }\n    return ans;\n};",
+      "approach": "JavaScript standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

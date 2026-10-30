@@ -1,0 +1,81 @@
+{
+  "slug": "check-if-an-original-string-exists-given-two-encoded-strings",
+  "number": 2060,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear",
+    "string-matching"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Character Offset Balance",
+      "text": "Maintain an offset difference representing the pending character balance between the two strings."
+    },
+    {
+      "level": 2,
+      "title": "Wildcard Consumption",
+      "text": "A positive difference indicates the first string has remaining wildcard length to consume from the second string."
+    },
+    {
+      "level": 3,
+      "title": "Memoized Search Tuple",
+      "text": "Memoize search states based on pointer indices in both strings and the signed difference offset."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def possiblyEquals(self, s1: str, s2: str) -> bool:\n        memo = {}\n\n        def dfs(i: int, j: int, diff: int) -> bool:\n            if i == len(s1) and j == len(s2):\n                return diff == 0\n            state = (i, j, diff)\n            if state in memo:\n                return memo[state]\n\n            if diff < 0 and i < len(s1) and not s1[i].isdigit():\n                if dfs(i + 1, j, diff + 1):\n                    memo[state] = True\n                    return True\n            elif diff > 0 and j < len(s2) and not s2[j].isdigit():\n                if dfs(i, j + 1, diff - 1):\n                    memo[state] = True\n                    return True\n            elif diff == 0 and i < len(s1) and j < len(s2) and not s1[i].isdigit() and not s2[j].isdigit():\n                if s1[i] == s2[j] and dfs(i + 1, j + 1, 0):\n                    memo[state] = True\n                    return True\n\n            if i < len(s1) and s1[i].isdigit():\n                num = 0\n                for k in range(i, min(i + 3, len(s1))):\n                    if not s1[k].isdigit():\n                        break\n                    num = num * 10 + int(s1[k])\n                    if dfs(k + 1, j, diff + num):\n                        memo[state] = True\n                        return True\n\n            if j < len(s2) and s2[j].isdigit():\n                num = 0\n                for k in range(j, min(j + 3, len(s2))):\n                    if not s2[k].isdigit():\n                        break\n                    num = num * 10 + int(s2[k])\n                    if dfs(i, k + 1, diff - num):\n                        memo[state] = True\n                        return True\n\n            memo[state] = False\n            return False\n\n        return dfs(0, 0, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * M * K) memoized state search",
+    "space": "O(N * M * K) memoization table",
+    "variables": [
+      "N: length of s1",
+      "M: length of s2",
+      "K: range of pending difference offset"
+    ],
+    "notes": "Maintains signed offset difference of wildcard characters consumed.",
+    "whyNaiveFails": "Expanding all wildcard numeric combinations creates exponential string expansions.",
+    "spaceTimeTradeoff": "Memoizing (i, j, diff) state tuples collapses redundant paths.",
+    "interviewerExpectation": "Candidate should define the differential state tracking character balances."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def possiblyEquals(self, s1: str, s2: str) -> bool:\n        memo = {}\n\n        def dfs(i: int, j: int, diff: int) -> bool:\n            if i == len(s1) and j == len(s2):\n                return diff == 0\n            state = (i, j, diff)\n            if state in memo:\n                return memo[state]\n\n            if diff < 0 and i < len(s1) and not s1[i].isdigit():\n                if dfs(i + 1, j, diff + 1):\n                    memo[state] = True\n                    return True\n            elif diff > 0 and j < len(s2) and not s2[j].isdigit():\n                if dfs(i, j + 1, diff - 1):\n                    memo[state] = True\n                    return True\n            elif diff == 0 and i < len(s1) and j < len(s2) and not s1[i].isdigit() and not s2[j].isdigit():\n                if s1[i] == s2[j] and dfs(i + 1, j + 1, 0):\n                    memo[state] = True\n                    return True\n\n            if i < len(s1) and s1[i].isdigit():\n                num = 0\n                for k in range(i, min(i + 3, len(s1))):\n                    if not s1[k].isdigit():\n                        break\n                    num = num * 10 + int(s1[k])\n                    if dfs(k + 1, j, diff + num):\n                        memo[state] = True\n                        return True\n\n            if j < len(s2) and s2[j].isdigit():\n                num = 0\n                for k in range(j, min(j + 3, len(s2))):\n                    if not s2[k].isdigit():\n                        break\n                    num = num * 10 + int(s2[k])\n                    if dfs(i, k + 1, diff - num):\n                        memo[state] = True\n                        return True\n\n            memo[state] = False\n            return False\n\n        return dfs(0, 0, 0)",
+      "approach": "Python 3 standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <string>\n#include <vector>\n#include <unordered_set>\n\nclass Solution {\npublic:\n    bool possiblyEquals(std::string s1, std::string s2) {\n        int n1 = s1.size(), n2 = s2.size();\n        std::vector<std::vector<std::unordered_set<int>>> memo(n1 + 1, std::vector<std::unordered_set<int>>(n2 + 1));\n\n        auto dfs = [&](auto& self, int i, int j, int diff) -> bool {\n            if (i == n1 && j == n2) return diff == 0;\n            if (memo[i][j].count(diff)) return false;\n\n            if (diff < 0 && i < n1 && !std::isdigit(s1[i])) {\n                if (self(self, i + 1, j, diff + 1)) return true;\n            } else if (diff > 0 && j < n2 && !std::isdigit(s2[j])) {\n                if (self(self, i, j + 1, diff - 1)) return true;\n            } else if (diff == 0 && i < n1 && j < n2 && !std::isdigit(s1[i]) && !std::isdigit(s2[j])) {\n                if (s1[i] == s2[j] && self(self, i + 1, j + 1, 0)) return true;\n            }\n\n            if (i < n1 && std::isdigit(s1[i])) {\n                int num = 0;\n                for (int k = i; k < std::min(i + 3, n1); ++k) {\n                    if (!std::isdigit(s1[k])) break;\n                    num = num * 10 + (s1[k] - '0');\n                    if (self(self, k + 1, j, diff + num)) return true;\n                }\n            }\n\n            if (j < n2 && std::isdigit(s2[j])) {\n                int num = 0;\n                for (int k = j; k < std::min(j + 3, n2); ++k) {\n                    if (!std::isdigit(s2[k])) break;\n                    num = num * 10 + (s2[k] - '0');\n                    if (self(self, i, k + 1, diff - num)) return true;\n                }\n            }\n\n            memo[i][j].insert(diff);\n            return false;\n        };\n\n        return dfs(dfs, 0, 0, 0);\n    }\n};",
+      "approach": "C++ modern STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.HashSet;\nimport java.util.Set;\n\nclass Solution {\n    private Set<Integer>[][] memo;\n\n    public boolean possiblyEquals(String s1, String s2) {\n        int n1 = s1.length(), n2 = s2.length();\n        memo = new HashSet[n1 + 1][n2 + 1];\n        for (int i = 0; i <= n1; i++) {\n            for (int j = 0; j <= n2; j++) {\n                memo[i][j] = new HashSet<>();\n            }\n        }\n        return dfs(0, 0, 0, s1, s2);\n    }\n\n    private boolean dfs(int i, int j, int diff, String s1, String s2) {\n        int n1 = s1.length(), n2 = s2.length();\n        if (i == n1 && j == n2) return diff == 0;\n        if (memo[i][j].contains(diff)) return false;\n\n        if (diff < 0 && i < n1 && !Character.isDigit(s1.charAt(i))) {\n            if (dfs(i + 1, j, diff + 1, s1, s2)) return true;\n        } else if (diff > 0 && j < n2 && !Character.isDigit(s2.charAt(j))) {\n            if (dfs(i, j + 1, diff - 1, s1, s2)) return true;\n        } else if (diff == 0 && i < n1 && j < n2 && !Character.isDigit(s1.charAt(i)) && !Character.isDigit(s2.charAt(j))) {\n            if (s1.charAt(i) == s2.charAt(j) && dfs(i + 1, j + 1, 0, s1, s2)) return true;\n        }\n\n        if (i < n1 && Character.isDigit(s1.charAt(i))) {\n            int num = 0;\n            for (int k = i; k < Math.min(i + 3, n1); k++) {\n                if (!Character.isDigit(s1.charAt(k))) break;\n                num = num * 10 + (s1.charAt(k) - '0');\n                if (dfs(k + 1, j, diff + num, s1, s2)) return true;\n            }\n        }\n\n        if (j < n2 && Character.isDigit(s2.charAt(j))) {\n            int num = 0;\n            for (int k = j; k < Math.min(j + 3, n2); k++) {\n                if (!Character.isDigit(s2.charAt(k))) break;\n                num = num * 10 + (s2.charAt(k) - '0');\n                if (dfs(i, k + 1, diff - num, s1, s2)) return true;\n            }\n        }\n\n        memo[i][j].add(diff);\n        return false;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} s1\n * @param {string} s2\n * @return {boolean}\n */\nvar possiblyEquals = function(s1, s2) {\n    const memo = new Map();\n\n    function dfs(i, j, diff) {\n        if (i === s1.length && j === s2.length) return diff === 0;\n        const key = `${i},${j},${diff}`;\n        if (memo.has(key)) return memo.get(key);\n\n        if (diff < 0 && i < s1.length && !/\\d/.test(s1[i])) {\n            if (dfs(i + 1, j, diff + 1)) {\n                memo.set(key, true);\n                return true;\n            }\n        } else if (diff > 0 && j < s2.length && !/\\d/.test(s2[j])) {\n            if (dfs(i, j + 1, diff - 1)) {\n                memo.set(key, true);\n                return true;\n            }\n        } else if (diff === 0 && i < s1.length && j < s2.length && !/\\d/.test(s1[i]) && !/\\d/.test(s2[j])) {\n            if (s1[i] === s2[j] && dfs(i + 1, j + 1, 0)) {\n                memo.set(key, true);\n                return true;\n            }\n        }\n\n        if (i < s1.length && /\\d/.test(s1[i])) {\n            let num = 0;\n            for (let k = i; k < Math.min(i + 3, s1.length); k++) {\n                if (!/\\d/.test(s1[k])) break;\n                num = num * 10 + Number(s1[k]);\n                if (dfs(k + 1, j, diff + num)) {\n                    memo.set(key, true);\n                    return true;\n                }\n            }\n        }\n\n        if (j < s2.length && /\\d/.test(s2[j])) {\n            let num = 0;\n            for (let k = j; k < Math.min(j + 3, s2.length); k++) {\n                if (!/\\d/.test(s2[k])) break;\n                num = num * 10 + Number(s2[k]);\n                if (dfs(i, k + 1, diff - num)) {\n                    memo.set(key, true);\n                    return true;\n                }\n            }\n        }\n\n        memo.set(key, false);\n        return false;\n    }\n\n    return dfs(0, 0, 0);\n};",
+      "approach": "JavaScript standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

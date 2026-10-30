@@ -1,0 +1,74 @@
+{
+  "slug": "the-category-of-each-member-in-the-store",
+  "number": 2051,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate",
+    "conditional-pivot"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Retain All Members",
+      "text": "Retain every member in the report by combining member records with visits and purchases using outer joins."
+    },
+    {
+      "level": 2,
+      "title": "Group and Count",
+      "text": "Group rows by member to aggregate total visits and completed purchase interactions."
+    },
+    {
+      "level": 3,
+      "title": "Conversion Classification",
+      "text": "Use conditional expressions to evaluate conversion rates and assign tier categories."
+    },
+    {
+      "level": 4,
+      "title": "Complete Query",
+      "text": "```mysql\nSELECT\n    m.member_id,\n    m.name,\n    CASE\n        WHEN COUNT(v.visit_id) = 0 THEN 'Bronze'\n        WHEN 100.0 * COUNT(p.visit_id) / COUNT(v.visit_id) >= 80 THEN 'Diamond'\n        WHEN 100.0 * COUNT(p.visit_id) / COUNT(v.visit_id) >= 50 THEN 'Gold'\n        ELSE 'Silver'\n    END AS category\nFROM Members m\nLEFT JOIN Visits v ON m.member_id = v.member_id\nLEFT JOIN Purchases p ON v.visit_id = p.visit_id\nGROUP BY m.member_id, m.name;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(M + V + P) scanning members, visits, and purchases",
+    "space": "O(M) result set rows for all members",
+    "variables": [
+      "M: members count",
+      "V: visits count",
+      "P: purchases count"
+    ],
+    "notes": "Left joins preserve members with zero visits for bronze tier designation.",
+    "whyNaiveFails": "Inner joins drop members who never visited the store, omitting bronze tier members.",
+    "spaceTimeTradeoff": "Outer join grouping calculates conversion rates in a single aggregation step.",
+    "interviewerExpectation": "Candidate should handle division by zero and correctly prioritize bronze tier."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT\n    m.member_id,\n    m.name,\n    CASE\n        WHEN COUNT(v.visit_id) = 0 THEN 'Bronze'\n        WHEN 100.0 * COUNT(p.visit_id) / COUNT(v.visit_id) >= 80 THEN 'Diamond'\n        WHEN 100.0 * COUNT(p.visit_id) / COUNT(v.visit_id) >= 50 THEN 'Gold'\n        ELSE 'Silver'\n    END AS category\nFROM Members m\nLEFT JOIN Visits v ON m.member_id = v.member_id\nLEFT JOIN Purchases p ON v.visit_id = p.visit_id\nGROUP BY m.member_id, m.name;",
+      "approach": "Left join members to visits and purchases, group by member, and compute conversion tier with a case expression.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT\n    m.member_id,\n    m.name,\n    CASE\n        WHEN COUNT(v.visit_id) = 0 THEN 'Bronze'\n        WHEN 100.0 * COUNT(p.visit_id) / COUNT(v.visit_id) >= 80 THEN 'Diamond'\n        WHEN 100.0 * COUNT(p.visit_id) / COUNT(v.visit_id) >= 50 THEN 'Gold'\n        ELSE 'Silver'\n    END AS category\nFROM Members m\nLEFT JOIN Visits v ON m.member_id = v.member_id\nLEFT JOIN Purchases p ON v.visit_id = p.visit_id\nGROUP BY m.member_id, m.name;",
+      "approach": "Left join members to visits and visits to purchases, group by member id and name, and classify category using conversion percentage.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_categories(members: pd.DataFrame, visits: pd.DataFrame, purchases: pd.DataFrame) -> pd.DataFrame:\n    merged = pd.merge(members, visits, on='member_id', how='left')\n    merged = pd.merge(merged, purchases, on='visit_id', how='left')\n    \n    rows = []\n    for (mid, name), group in merged.groupby(['member_id', 'name']):\n        total_visits = group['visit_id'].dropna().nunique()\n        if total_visits == 0:\n            cat = 'Bronze'\n        else:\n            purchases_count = group['charged_amount'].dropna().count()\n            rate = (purchases_count * 100.0) / total_visits\n            if rate >= 80:\n                cat = 'Diamond'\n            elif rate >= 50:\n                cat = 'Gold'\n            else:\n                cat = 'Silver'\n        rows.append({'member_id': mid, 'name': name, 'category': cat})\n    return pd.DataFrame(rows)",
+      "approach": "Left join members, visits, and purchases, group by member id and name, compute conversion percentage, and map each member to a category.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

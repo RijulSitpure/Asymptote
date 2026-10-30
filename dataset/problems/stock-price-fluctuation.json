@@ -1,0 +1,79 @@
+{
+  "slug": "stock-price-fluctuation",
+  "number": 2034,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures",
+    "heap-top-k-elements"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Timestamp Lookups",
+      "text": "Store each recorded timestamp and price in a dictionary to track corrections."
+    },
+    {
+      "level": 2,
+      "title": "Track Extremes with Dual Containers",
+      "text": "Maintain the latest timestamp alongside min and max tracking containers."
+    },
+    {
+      "level": 3,
+      "title": "Lazy Discard Strategy",
+      "text": "Discard outdated prices lazily when querying extremal values from the containers."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass StockPrice:\n    def __init__(self):\n        self.time_price = {}\n        self.max_time = 0\n        self.max_heap = []\n        self.min_heap = []\n\n    def update(self, timestamp: int, price: int) -> None:\n        self.time_price[timestamp] = price\n        if timestamp > self.max_time:\n            self.max_time = timestamp\n        heapq.heappush(self.max_heap, (-price, timestamp))\n        heapq.heappush(self.min_heap, (price, timestamp))\n\n    def current(self) -> int:\n        return self.time_price[self.max_time]\n\n    def maximum(self) -> int:\n        while self.max_heap:\n            neg_price, t = self.max_heap[0]\n            if self.time_price[t] == -neg_price:\n                return -neg_price\n            heapq.heappop(self.max_heap)\n        return 0\n\n    def minimum(self) -> int:\n        while self.min_heap:\n            price, t = self.min_heap[0]\n            if self.time_price[t] == price:\n                return price\n            heapq.heappop(self.min_heap)\n        return 0\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log N) amortized per update, maximum, and minimum query",
+    "space": "O(N) storing timestamps and priority structures",
+    "variables": [
+      "N: distinct timestamps recorded"
+    ],
+    "notes": "Outdated price entries in priority structures are discarded lazily upon query.",
+    "whyNaiveFails": "Re-sorting prices on every update takes O(N log N) which leads to time out.",
+    "spaceTimeTradeoff": "Lazy deletion inside priority structures avoids expensive O(N) removals.",
+    "interviewerExpectation": "Candidate should implement lazy eviction with dictionary validation."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass StockPrice:\n    def __init__(self):\n        self.time_price = {}\n        self.max_time = 0\n        self.max_heap = []\n        self.min_heap = []\n\n    def update(self, timestamp: int, price: int) -> None:\n        self.time_price[timestamp] = price\n        if timestamp > self.max_time:\n            self.max_time = timestamp\n        heapq.heappush(self.max_heap, (-price, timestamp))\n        heapq.heappush(self.min_heap, (price, timestamp))\n\n    def current(self) -> int:\n        return self.time_price[self.max_time]\n\n    def maximum(self) -> int:\n        while self.max_heap:\n            neg_price, t = self.max_heap[0]\n            if self.time_price[t] == -neg_price:\n                return -neg_price\n            heapq.heappop(self.max_heap)\n        return 0\n\n    def minimum(self) -> int:\n        while self.min_heap:\n            price, t = self.min_heap[0]\n            if self.time_price[t] == price:\n                return price\n            heapq.heappop(self.min_heap)\n        return 0",
+      "approach": "Python 3 standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <unordered_map>\n#include <queue>\n\nclass StockPrice {\nprivate:\n    std::unordered_map<int, int> timePrice;\n    int maxTime = 0;\n    std::priority_queue<std::pair<int, int>> maxHeap;\n    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> minHeap;\n\npublic:\n    StockPrice() {}\n\n    void update(int timestamp, int price) {\n        timePrice[timestamp] = price;\n        if (timestamp > maxTime) maxTime = timestamp;\n        maxHeap.push({price, timestamp});\n        minHeap.push({price, timestamp});\n    }\n\n    int current() {\n        return timePrice[maxTime];\n    }\n\n    int maximum() {\n        while (!maxHeap.empty()) {\n            auto [p, t] = maxHeap.top();\n            if (timePrice[t] == p) return p;\n            maxHeap.pop();\n        }\n        return 0;\n    }\n\n    int minimum() {\n        while (!minHeap.empty()) {\n            auto [p, t] = minHeap.top();\n            if (timePrice[t] == p) return p;\n            minHeap.pop();\n        }\n        return 0;\n    }\n};",
+      "approach": "C++ modern STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.PriorityQueue;\n\nclass StockPrice {\n    private Map<Integer, Integer> timePrice = new HashMap<>();\n    private int maxTime = 0;\n    private PriorityQueue<int[]> maxHeap = new PriorityQueue<>((a, b) -> b[0] - a[0]);\n    private PriorityQueue<int[]> minHeap = new PriorityQueue<>((a, b) -> a[0] - b[0]);\n\n    public StockPrice() {}\n\n    public void update(int timestamp, int price) {\n        timePrice.put(timestamp, price);\n        if (timestamp > maxTime) maxTime = timestamp;\n        maxHeap.offer(new int[]{price, timestamp});\n        minHeap.offer(new int[]{price, timestamp});\n    }\n\n    public int current() {\n        return timePrice.get(maxTime);\n    }\n\n    public int maximum() {\n        while (!maxHeap.isEmpty()) {\n            int[] top = maxHeap.peek();\n            if (timePrice.get(top[1]) == top[0]) return top[0];\n            maxHeap.poll();\n        }\n        return 0;\n    }\n\n    public int minimum() {\n        while (!minHeap.isEmpty()) {\n            int[] top = minHeap.peek();\n            if (timePrice.get(top[1]) == top[0]) return top[0];\n            minHeap.poll();\n        }\n        return 0;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var StockPrice = function() {\n    this.timePrice = new Map();\n    this.maxTime = 0;\n    this.prices = new Map(); // price -> count\n    this.minPrice = Infinity;\n    this.maxPrice = -Infinity;\n};\n\nStockPrice.prototype.update = function(timestamp, price) {\n    if (this.timePrice.has(timestamp)) {\n        const old = this.timePrice.get(timestamp);\n        const cnt = this.prices.get(old) - 1;\n        if (cnt === 0) this.prices.delete(old);\n        else this.prices.set(old, cnt);\n    }\n    this.timePrice.set(timestamp, price);\n    this.prices.set(price, (this.prices.get(price) || 0) + 1);\n    if (timestamp > this.maxTime) this.maxTime = timestamp;\n    if (price < this.minPrice) this.minPrice = price;\n    if (price > this.maxPrice) this.maxPrice = price;\n};\n\nStockPrice.prototype.current = function() {\n    return this.timePrice.get(this.maxTime);\n};\n\nStockPrice.prototype.maximum = function() {\n    if (this.prices.has(this.maxPrice)) return this.maxPrice;\n    let max = -Infinity;\n    for (const p of this.prices.keys()) {\n        if (p > max) max = p;\n    }\n    this.maxPrice = max;\n    return max;\n};\n\nStockPrice.prototype.minimum = function() {\n    if (this.prices.has(this.minPrice)) return this.minPrice;\n    let min = Infinity;\n    for (const p of this.prices.keys()) {\n        if (p < min) min = p;\n    }\n    this.minPrice = min;\n    return min;\n};",
+      "approach": "JavaScript standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

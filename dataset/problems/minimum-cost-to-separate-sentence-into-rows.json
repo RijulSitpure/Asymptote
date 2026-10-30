@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-cost-to-separate-sentence-into-rows",
+  "number": 2052,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear",
+    "dp-interval"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tokenize and Measure",
+      "text": "Split the sentence into word tokens and precompute word lengths."
+    },
+    {
+      "level": 2,
+      "title": "Row Partition Exploration",
+      "text": "Iterate through possible breakpoints for the current row, ensuring length does not exceed the line limit."
+    },
+    {
+      "level": 3,
+      "title": "Last Line Exemption",
+      "text": "The last row contributes zero penalty to the accumulated total cost."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def minimumCost(self, sentence: str, k: int) -> int:\n        words = sentence.split()\n        n = len(words)\n        lens = [len(w) for w in words]\n\n        memo = {}\n\n        def dfs(i: int) -> int:\n            if i == n:\n                return 0\n            if i in memo:\n                return memo[i]\n\n            res = float('inf')\n            curr_len = -1\n            for j in range(i, n):\n                curr_len += lens[j] + 1\n                if curr_len > k:\n                    break\n                row_cost = 0 if j == n - 1 else (k - curr_len) ** 2\n                res = min(res, row_cost + dfs(j + 1))\n\n            memo[i] = res\n            return res\n\n        return dfs(0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2) state transitions for word prefixes",
+    "space": "O(N) memoization table",
+    "variables": [
+      "N: number of words in sentence",
+      "k: maximum characters per row"
+    ],
+    "notes": "The last row incurs zero penalty cost.",
+    "whyNaiveFails": "Greedily packing as many words as possible into each row can lead to suboptimal overall cost.",
+    "spaceTimeTradeoff": "1D memoization caches optimal suffixes to prevent exponential recursion.",
+    "interviewerExpectation": "Candidate should clearly identify that the last row cost must be zero."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minimumCost(self, sentence: str, k: int) -> int:\n        words = sentence.split()\n        n = len(words)\n        lens = [len(w) for w in words]\n\n        memo = {}\n\n        def dfs(i: int) -> int:\n            if i == n:\n                return 0\n            if i in memo:\n                return memo[i]\n\n            res = float('inf')\n            curr_len = -1\n            for j in range(i, n):\n                curr_len += lens[j] + 1\n                if curr_len > k:\n                    break\n                row_cost = 0 if j == n - 1 else (k - curr_len) ** 2\n                res = min(res, row_cost + dfs(j + 1))\n\n            memo[i] = res\n            return res\n\n        return dfs(0)",
+      "approach": "Python 3 standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <string>\n#include <vector>\n#include <sstream>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minimumCost(std::string sentence, int k) {\n        std::stringstream ss(sentence);\n        std::string w;\n        std::vector<int> lens;\n        while (ss >> w) {\n            lens.push_back(w.size());\n        }\n\n        int n = lens.size();\n        std::vector<int> memo(n + 1, -1);\n\n        auto dfs = [&](auto& self, int i) -> int {\n            if (i == n) return 0;\n            if (memo[i] != -1) return memo[i];\n\n            int res = 1e9;\n            int currLen = -1;\n            for (int j = i; j < n; ++j) {\n                currLen += lens[j] + 1;\n                if (currLen > k) break;\n                int rowCost = (j == n - 1) ? 0 : (k - currLen) * (k - currLen);\n                res = std::min(res, rowCost + self(self, j + 1));\n            }\n            return memo[i] = res;\n        };\n\n        return dfs(dfs, 0);\n    }\n};",
+      "approach": "C++ modern STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    public int minimumCost(String sentence, int k) {\n        String[] words = sentence.split(\" \");\n        int n = words.length;\n        int[] lens = new int[n];\n        for (int i = 0; i < n; i++) lens[i] = words[i].length();\n\n        int[] memo = new int[n + 1];\n        Arrays.fill(memo, -1);\n        return dfs(0, lens, k, memo);\n    }\n\n    private int dfs(int i, int[] lens, int k, int[] memo) {\n        int n = lens.length;\n        if (i == n) return 0;\n        if (memo[i] != -1) return memo[i];\n\n        int res = Integer.MAX_VALUE;\n        int currLen = -1;\n        for (int j = i; j < n; j++) {\n            currLen += lens[j] + 1;\n            if (currLen > k) break;\n            int rowCost = (j == n - 1) ? 0 : (k - currLen) * (k - currLen);\n            int nextCost = dfs(j + 1, lens, k, memo);\n            if (nextCost != Integer.MAX_VALUE) {\n                res = Math.min(res, rowCost + nextCost);\n            }\n        }\n        return memo[i] = res;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} sentence\n * @param {number} k\n * @return {number}\n */\nvar minimumCost = function(sentence, k) {\n    const words = sentence.split(' ');\n    const n = words.length;\n    const lens = words.map(w => w.length);\n    const memo = new Map();\n\n    function dfs(i) {\n        if (i === n) return 0;\n        if (memo.has(i)) return memo.get(i);\n\n        let res = Infinity;\n        let currLen = -1;\n        for (let j = i; j < n; j++) {\n            currLen += lens[j] + 1;\n            if (currLen > k) break;\n            const rowCost = (j === n - 1) ? 0 : (k - currLen) ** 2;\n            res = Math.min(res, rowCost + dfs(j + 1));\n        }\n        memo.set(i, res);\n        return res;\n    }\n\n    return dfs(0);\n};",
+      "approach": "JavaScript standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

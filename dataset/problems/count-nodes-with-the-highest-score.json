@@ -1,0 +1,78 @@
+{
+  "slug": "count-nodes-with-the-highest-score",
+  "number": 2049,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Component Partitioning",
+      "text": "Removing any vertex partitions the tree into the subtrees of its children plus the remaining component above it."
+    },
+    {
+      "level": 2,
+      "title": "Subtree Size Calculation",
+      "text": "Compute the subtree size rooted at each node using post-order tree traversal."
+    },
+    {
+      "level": 3,
+      "title": "Score Computation",
+      "text": "The score of a node is the product of the sizes of its disconnected non-empty components."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def countHighestScoreNodes(self, parents: list[int]) -> int:\n        n = len(parents)\n        children = [[] for _ in range(n)]\n        for i in range(1, n):\n            children[parents[i]].append(i)\n\n        subtree_size = [0] * n\n\n        def calc_size(node: int) -> int:\n            sz = 1\n            for ch in children[node]:\n                sz += calc_size(ch)\n            subtree_size[node] = sz\n            return sz\n\n        calc_size(0)\n\n        max_score = 0\n        count = 0\n\n        for i in range(n):\n            score = 1\n            rem = n - subtree_size[i]\n            if rem > 0:\n                score *= rem\n            for ch in children[i]:\n                score *= subtree_size[ch]\n            if score > max_score:\n                max_score = score\n                count = 1\n            elif score == max_score:\n                count += 1\n\n        return count\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) single post-order tree traversal",
+    "space": "O(N) subtree sizes and call stack",
+    "variables": [
+      "N: number of nodes in tree"
+    ],
+    "notes": "Removal of a node divides the tree into child subtrees and an upper component.",
+    "whyNaiveFails": "Recomputing connected components for each node independently takes O(N^2) time.",
+    "spaceTimeTradeoff": "One bottom-up traversal precomputes all subtree sizes for O(1) score evaluation per node.",
+    "interviewerExpectation": "Candidate should compute the upper component size as n - subtree_size[u]."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def countHighestScoreNodes(self, parents: list[int]) -> int:\n        n = len(parents)\n        children = [[] for _ in range(n)]\n        for i in range(1, n):\n            children[parents[i]].append(i)\n\n        subtree_size = [0] * n\n\n        def calc_size(node: int) -> int:\n            sz = 1\n            for ch in children[node]:\n                sz += calc_size(ch)\n            subtree_size[node] = sz\n            return sz\n\n        calc_size(0)\n\n        max_score = 0\n        count = 0\n\n        for i in range(n):\n            score = 1\n            rem = n - subtree_size[i]\n            if rem > 0:\n                score *= rem\n            for ch in children[i]:\n                score *= subtree_size[ch]\n            if score > max_score:\n                max_score = score\n                count = 1\n            elif score == max_score:\n                count += 1\n\n        return count",
+      "approach": "Python 3 standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int countHighestScoreNodes(std::vector<int>& parents) {\n        int n = parents.size();\n        std::vector<std::vector<int>> children(n);\n        for (int i = 1; i < n; ++i) {\n            children[parents[i]].push_back(i);\n        }\n\n        std::vector<long long> subtreeSize(n, 0);\n        auto calcSize = [&](auto& self, int node) -> long long {\n            long long sz = 1;\n            for (int ch : children[node]) {\n                sz += self(self, ch);\n            }\n            subtreeSize[node] = sz;\n            return sz;\n        };\n\n        calcSize(calcSize, 0);\n\n        long long maxScore = 0;\n        int count = 0;\n\n        for (int i = 0; i < n; ++i) {\n            long long score = 1;\n            long long rem = n - subtreeSize[i];\n            if (rem > 0) score *= rem;\n            for (int ch : children[i]) {\n                score *= subtreeSize[ch];\n            }\n            if (score > maxScore) {\n                maxScore = score;\n                count = 1;\n            } else if (score == maxScore) {\n                count++;\n            }\n        }\n        return count;\n    }\n};",
+      "approach": "C++ modern STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Solution {\n    public int countHighestScoreNodes(int[] parents) {\n        int n = parents.length;\n        List<List<Integer>> children = new ArrayList<>();\n        for (int i = 0; i < n; i++) children.add(new ArrayList<>());\n        for (int i = 1; i < n; i++) {\n            children.get(parents[i]).add(i);\n        }\n\n        long[] subtreeSize = new long[n];\n        calcSize(0, children, subtreeSize);\n\n        long maxScore = 0;\n        int count = 0;\n\n        for (int i = 0; i < n; i++) {\n            long score = 1;\n            long rem = n - subtreeSize[i];\n            if (rem > 0) score *= rem;\n            for (int ch : children.get(i)) {\n                score *= subtreeSize[ch];\n            }\n            if (score > maxScore) {\n                maxScore = score;\n                count = 1;\n            } else if (score == maxScore) {\n                count++;\n            }\n        }\n        return count;\n    }\n\n    private long calcSize(int node, List<List<Integer>> children, long[] subtreeSize) {\n        long sz = 1;\n        for (int ch : children.get(node)) {\n            sz += calcSize(ch, children, subtreeSize);\n        }\n        subtreeSize[node] = sz;\n        return sz;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} parents\n * @return {number}\n */\nvar countHighestScoreNodes = function(parents) {\n    const n = parents.length;\n    const children = Array.from({ length: n }, () => []);\n    for (let i = 1; i < n; i++) {\n        children[parents[i]].push(i);\n    }\n\n    const subtreeSize = new Array(n).fill(0);\n    function calcSize(node) {\n        let sz = 1;\n        for (const ch of children[node]) {\n            sz += calcSize(ch);\n        }\n        subtreeSize[node] = sz;\n        return sz;\n    }\n\n    calcSize(0);\n\n    let maxScore = 0n;\n    let count = 0;\n\n    for (let i = 0; i < n; i++) {\n        let score = 1n;\n        const rem = BigInt(n - subtreeSize[i]);\n        if (rem > 0n) score *= rem;\n        for (const ch of children[i]) {\n            score *= BigInt(subtreeSize[ch]);\n        }\n        if (score > maxScore) {\n            maxScore = score;\n            count = 1;\n        } else if (score === maxScore) {\n            count++;\n        }\n    }\n    return count;\n};",
+      "approach": "JavaScript standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

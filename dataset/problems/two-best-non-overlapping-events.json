@@ -1,0 +1,79 @@
+{
+  "slug": "two-best-non-overlapping-events",
+  "number": 2054,
+  "category": "Algorithms",
+  "patterns": [
+    "greedy-interval-scheduling",
+    "binary-search-basic"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Temporal Ordering",
+      "text": "Sort events primarily by their starting times."
+    },
+    {
+      "level": 2,
+      "title": "Suffix Maximum Array",
+      "text": "Precompute suffix maximum values for the largest event value reachable from each suffix."
+    },
+    {
+      "level": 3,
+      "title": "Complement Search",
+      "text": "For each event, find the first subsequent event starting strictly after its conclusion."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def maxTwoEvents(self, events: list[list[int]]) -> int:\n        events.sort(key=lambda x: x[0])\n        n = len(events)\n        suffix_max = [0] * (n + 1)\n        for i in range(n - 1, -1, -1):\n            suffix_max[i] = max(suffix_max[i + 1], events[i][2])\n\n        starts = [e[0] for e in events]\n        ans = 0\n\n        for s, e, val in events:\n            idx = bisect.bisect_right(starts, e)\n            ans = max(ans, val + suffix_max[idx])\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N) sorting events and searching suffix max",
+    "space": "O(N) suffix maximum array",
+    "variables": [
+      "N: number of events"
+    ],
+    "notes": "Combines at most two non-overlapping intervals to maximize total value.",
+    "whyNaiveFails": "Comparing all pairs of non-overlapping events takes O(N^2) quadratic time.",
+    "spaceTimeTradeoff": "Precomputed suffix maximums enable O(log N) lookup per event.",
+    "interviewerExpectation": "Candidate should handle both one-event and two-event options cleanly."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass Solution:\n    def maxTwoEvents(self, events: list[list[int]]) -> int:\n        events.sort(key=lambda x: x[0])\n        n = len(events)\n        suffix_max = [0] * (n + 1)\n        for i in range(n - 1, -1, -1):\n            suffix_max[i] = max(suffix_max[i + 1], events[i][2])\n\n        starts = [e[0] for e in events]\n        ans = 0\n\n        for s, e, val in events:\n            idx = bisect.bisect_right(starts, e)\n            ans = max(ans, val + suffix_max[idx])\n\n        return ans",
+      "approach": "Python 3 standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxTwoEvents(std::vector<std::vector<int>>& events) {\n        std::sort(events.begin(), events.end(), [](const auto& a, const auto& b) {\n            return a[0] < b[0];\n        });\n\n        int n = events.size();\n        std::vector<int> suffixMax(n + 1, 0);\n        for (int i = n - 1; i >= 0; --i) {\n            suffixMax[i] = std::max(suffixMax[i + 1], events[i][2]);\n        }\n\n        std::vector<int> starts(n);\n        for (int i = 0; i < n; ++i) starts[i] = events[i][0];\n\n        int ans = 0;\n        for (int i = 0; i < n; ++i) {\n            int endVal = events[i][1];\n            int val = events[i][2];\n            auto it = std::upper_bound(starts.begin(), starts.end(), endVal);\n            int idx = std::distance(starts.begin(), it);\n            ans = std::max(ans, val + suffixMax[idx]);\n        }\n        return ans;\n    }\n};",
+      "approach": "C++ modern STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    public int maxTwoEvents(int[][] events) {\n        Arrays.sort(events, (a, b) -> Integer.compare(a[0], b[0]));\n        int n = events.length;\n        int[] suffixMax = new int[n + 1];\n        for (int i = n - 1; i >= 0; i--) {\n            suffixMax[i] = Math.max(suffixMax[i + 1], events[i][2]);\n        }\n\n        int[] starts = new int[n];\n        for (int i = 0; i < n; i++) starts[i] = events[i][0];\n\n        int ans = 0;\n        for (int i = 0; i < n; i++) {\n            int end = events[i][1];\n            int val = events[i][2];\n            int idx = upperBound(starts, end);\n            ans = Math.max(ans, val + suffixMax[idx]);\n        }\n        return ans;\n    }\n\n    private int upperBound(int[] arr, int target) {\n        int lo = 0, hi = arr.length;\n        while (lo < hi) {\n            int mid = (lo + hi) >>> 1;\n            if (arr[mid] <= target) lo = mid + 1;\n            else hi = mid;\n        }\n        return lo;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} events\n * @return {number}\n */\nvar maxTwoEvents = function(events) {\n    events.sort((a, b) => a[0] - b[0]);\n    const n = events.length;\n    const suffixMax = new Array(n + 1).fill(0);\n    for (let i = n - 1; i >= 0; i--) {\n        suffixMax[i] = Math.max(suffixMax[i + 1], events[i][2]);\n    }\n\n    const starts = events.map(e => e[0]);\n    let ans = 0;\n\n    for (let i = 0; i < n; i++) {\n        const end = events[i][1];\n        const val = events[i][2];\n        let lo = 0, hi = n;\n        while (lo < hi) {\n            const mid = (lo + hi) >> 1;\n            if (starts[mid] <= end) lo = mid + 1;\n            else hi = mid;\n        }\n        ans = Math.max(ans, val + suffixMax[lo]);\n    }\n    return ans;\n};",
+      "approach": "JavaScript standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
