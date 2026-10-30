@@ -1,0 +1,72 @@
+{
+  "slug": "sellers-with-no-sales",
+  "number": 1607,
+  "category": "Database",
+  "patterns": [
+    "anti-join"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Filtering Orders to Year 2020",
+      "text": "Identify all sellers who have at least one sale with sale_date between 2020-01-01 and 2020-12-31."
+    },
+    {
+      "level": 2,
+      "title": "Anti-Join Exclusion",
+      "text": "Select sellers from Seller whose seller_id is not in the set of active 2020 sellers."
+    },
+    {
+      "level": 3,
+      "title": "Alphabetical Sorting",
+      "text": "Order the resulting seller names in ascending alphabetical order."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT seller_name\nFROM Seller\nWHERE seller_id NOT IN (\n    SELECT seller_id\n    FROM Orders\n    WHERE sale_date >= '2020-01-01' AND sale_date <= '2020-12-31'\n)\nORDER BY seller_name ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S + O)",
+    "space": "O(S)",
+    "variables": [
+      "S: sellers",
+      "O: orders"
+    ],
+    "notes": "Hash anti-join excludes sellers active in 2020 and sorts non-active sellers alphabetically.",
+    "whyNaiveFails": "Joining all orders without date filtering excludes sellers who had sales in other years but none in 2020.",
+    "spaceTimeTradeoff": "Subquery filtering isolates 2020 transactions into a hash set for linear exclusion.",
+    "interviewerExpectation": "Not in or left join anti-join with calendar interval boundaries."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT seller_name\nFROM Seller\nWHERE seller_id NOT IN (\n    SELECT seller_id\n    FROM Orders\n    WHERE sale_date >= '2020-01-01' AND sale_date <= '2020-12-31'\n)\nORDER BY seller_name ASC;",
+      "approach": "Subquery Anti-Join with Calendar Year Boundaries",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT seller_name\nFROM Seller\nWHERE seller_id NOT IN (\n    SELECT seller_id\n    FROM Orders\n    WHERE sale_date >= '2020-01-01' AND sale_date <= '2020-12-31'\n)\nORDER BY seller_name ASC;",
+      "approach": "PostgreSQL Not In Anti-Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef sellers_with_no_sales(customer: pd.DataFrame, orders: pd.DataFrame, seller: pd.DataFrame) -> pd.DataFrame:\n    orders['sale_date'] = orders['sale_date'].astype(str)\n    orders_2020 = orders[orders['sale_date'].str.startswith('2020')]\n    active_sellers = set(orders_2020['seller_id'])\n    inactive = seller[~seller['seller_id'].isin(active_sellers)]\n    return inactive[['seller_name']].sort_values(by='seller_name')",
+      "approach": "Pandas Isin Negation on 2020 Sellers",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

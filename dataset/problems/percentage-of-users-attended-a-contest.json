@@ -1,0 +1,72 @@
+{
+  "slug": "percentage-of-users-attended-a-contest",
+  "number": 1633,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Total User Base Subquery",
+      "text": "The total user count is computed once using scalar subquery (select count(*) from Users)."
+    },
+    {
+      "level": 2,
+      "title": "Percentage Ratio Calculation",
+      "text": "group Register by contest_id and calculate round(count(user_id) * 100.0 / total_users, 2)."
+    },
+    {
+      "level": 3,
+      "title": "Ordering by Attendance and Contest ID",
+      "text": "order by percentage in descending order, with ties broken by contest_id in ascending order."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT contest_id,\n       ROUND(COUNT(user_id) * 100.0 / (SELECT COUNT(*) FROM Users), 2) AS percentage\nFROM Register\nGROUP BY contest_id\nORDER BY percentage DESC, contest_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(R log R + U)",
+    "space": "O(R)",
+    "variables": [
+      "R: registrations",
+      "U: total users"
+    ],
+    "notes": "Computes total user count in O(U) and aggregates registration percentages in O(R log R).",
+    "whyNaiveFails": "Cross joining registrations with all users multiplies rows unnecessarily.",
+    "spaceTimeTradeoff": "Scalar subquery evaluates denominator once without expanding registration cardinality.",
+    "interviewerExpectation": "Scalar subquery for total count and secondary sorting on contest_id."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT contest_id,\n       ROUND(COUNT(user_id) * 100.0 / (SELECT COUNT(*) FROM Users), 2) AS percentage\nFROM Register\nGROUP BY contest_id\nORDER BY percentage DESC, contest_id ASC;",
+      "approach": "Scalar Denominator Subquery with Rounding and Secondary Sort",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT contest_id,\n       ROUND(COUNT(user_id) * 100.0 / (SELECT COUNT(*) FROM Users), 2) AS percentage\nFROM Register\nGROUP BY contest_id\nORDER BY percentage DESC, contest_id ASC;",
+      "approach": "PostgreSQL Ratio Rounding and Sorting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef users_percentage(users: pd.DataFrame, register: pd.DataFrame) -> pd.DataFrame:\n    total_users = len(users)\n    if total_users == 0 or register.empty:\n        return pd.DataFrame({'contest_id': [], 'percentage': []})\n    grouped = register.groupby('contest_id')['user_id'].count().reset_index()\n    grouped['percentage'] = (grouped['user_id'] * 100.0 / total_users).round(2)\n    res = grouped.sort_values(by=['percentage', 'contest_id'], ascending=[False, True])\n    return res[['contest_id', 'percentage']]",
+      "approach": "Pandas Vectorized Ratio Computation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

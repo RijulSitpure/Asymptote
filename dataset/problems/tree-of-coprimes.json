@@ -1,0 +1,79 @@
+{
+  "slug": "tree-of-coprimes",
+  "number": 1766,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Value Domain Constraint",
+      "text": "Node values are constrained to at most 50. Precompute all coprime pairs among values 1 to 50."
+    },
+    {
+      "level": 2,
+      "title": "Depth and Node History Stacks",
+      "text": "During depth-first traversal, maintain a stack of (node_id, depth) for each possible value from 1 to 50."
+    },
+    {
+      "level": 3,
+      "title": "Querying Closest Ancestor",
+      "text": "For node u, check all values coprime to nums[u]. The closest coprime ancestor is the one with maximum recorded depth."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport math\n\nclass Solution:\n    def getCoprimes(self, nums: list[int], edges: list[list[int]]) -> list[int]:\n        n = len(nums)\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        coprimes = [[] for _ in range(51)]\n        for i in range(1, 51):\n            for j in range(1, 51):\n                if math.gcd(i, j) == 1:\n                    coprimes[i].append(j)\n        ans = [-1] * n\n        history = [[] for _ in range(51)]\n        def dfs(u, parent, d):\n            val = nums[u]\n            best_depth = -1\n            best_node = -1\n            for c in coprimes[val]:\n                if history[c]:\n                    cand_node, cand_depth = history[c][-1]\n                    if cand_depth > best_depth:\n                        best_depth = cand_depth\n                        best_node = cand_node\n            ans[u] = best_node\n            history[val].append((u, d))\n            for v in adj[u]:\n                if v != parent:\n                    dfs(v, u, d + 1)\n            history[val].pop()\n        dfs(0, -1, 0)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * M)",
+    "space": "O(N + M)",
+    "variables": [
+      "N: number of nodes in tree",
+      "M: max node value (50)"
+    ],
+    "notes": "At each node, checks at most 50 coprime candidate stacks, running in O(50 * N) time.",
+    "whyNaiveFails": "Walking all ancestors from u towards root takes O(N) per node, resulting in O(N^2) worst case.",
+    "spaceTimeTradeoff": "Tracking ancestor stacks per value (1..50) provides O(1) query time for each value.",
+    "interviewerExpectation": "Exploiting small numerical upper bound with value-indexed ancestor stacks in DFS."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import math\n\nclass Solution:\n    def getCoprimes(self, nums: list[int], edges: list[list[int]]) -> list[int]:\n        n = len(nums)\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        coprimes = [[] for _ in range(51)]\n        for i in range(1, 51):\n            for j in range(1, 51):\n                if math.gcd(i, j) == 1:\n                    coprimes[i].append(j)\n        ans = [-1] * n\n        history = [[] for _ in range(51)]\n        def dfs(u, parent, d):\n            val = nums[u]\n            best_depth = -1\n            best_node = -1\n            for c in coprimes[val]:\n                if history[c]:\n                    cand_node, cand_depth = history[c][-1]\n                    if cand_depth > best_depth:\n                        best_depth = cand_depth\n                        best_node = cand_node\n            ans[u] = best_node\n            history[val].append((u, d))\n            for v in adj[u]:\n                if v != parent:\n                    dfs(v, u, d + 1)\n            history[val].pop()\n        dfs(0, -1, 0)\n        return ans",
+      "approach": "DFS with Value-Indexed Depth Stacks",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int gcd(int a, int b) {\n        return b == 0 ? a : gcd(b, a % b);\n    }\n    vector<int> getCoprimes(vector<int>& nums, vector<vector<int>>& edges) {\n        int n = nums.size();\n        vector<vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        vector<vector<int>> coprimes(51);\n        for (int i = 1; i <= 50; i++) {\n            for (int j = 1; j <= 50; j++) {\n                if (gcd(i, j) == 1) coprimes[i].push_back(j);\n            }\n        }\n        vector<int> ans(n, -1);\n        vector<vector<pair<int, int>>> history(51);\n        function<void(int, int, int)> dfs = [&](int u, int p, int d) {\n            int val = nums[u];\n            int bestDepth = -1, bestNode = -1;\n            for (int c : coprimes[val]) {\n                if (!history[c].empty()) {\n                    auto [candNode, candDepth] = history[c].back();\n                    if (candDepth > bestDepth) {\n                        bestDepth = candDepth;\n                        bestNode = candNode;\n                    }\n                }\n            }\n            ans[u] = bestNode;\n            history[val].push_back({u, d});\n            for (int v : adj[u]) {\n                if (v != p) dfs(v, u, d + 1);\n            }\n            history[val].pop_back();\n        };\n        dfs(0, -1, 0);\n        return ans;\n    }\n};",
+      "approach": "C++ Backtracking Stacks over Value Domain",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int gcd(int a, int b) {\n        return b == 0 ? a : gcd(b, a % b);\n    }\n    public int[] getCoprimes(int[] nums, int[][] edges) {\n        int n = nums.length;\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        List<List<Integer>> coprimes = new ArrayList<>();\n        for (int i = 0; i <= 50; i++) coprimes.add(new ArrayList<>());\n        for (int i = 1; i <= 50; i++) {\n            for (int j = 1; j <= 50; j++) {\n                if (gcd(i, j) == 1) coprimes.get(i).add(j);\n            }\n        }\n        int[] ans = new int[n];\n        List<Deque<int[]>> history = new ArrayList<>();\n        for (int i = 0; i <= 50; i++) history.add(new ArrayDeque<>());\n        dfs(0, -1, 0, nums, adj, coprimes, history, ans);\n        return ans;\n    }\n    private void dfs(int u, int p, int d, int[] nums, List<List<Integer>> adj,\n                     List<List<Integer>> coprimes, List<Deque<int[]>> history, int[] ans) {\n        int val = nums[u];\n        int bestDepth = -1, bestNode = -1;\n        for (int c : coprimes.get(val)) {\n            if (!history.get(c).isEmpty()) {\n                int[] cand = history.get(c).peek();\n                if (cand[1] > bestDepth) {\n                    bestDepth = cand[1];\n                    bestNode = cand[0];\n                }\n            }\n        }\n        ans[u] = bestNode;\n        history.get(val).push(new int[]{u, d});\n        for (int v : adj.get(u)) {\n            if (v != p) dfs(v, u, d + 1, nums, adj, coprimes, history, ans);\n        }\n        history.get(val).pop();\n    }\n}",
+      "approach": "Java DFS with Ancestor Stacks per Number",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var getCoprimes = function(nums, edges) {\n    function gcd(a, b) {\n        return b === 0 ? a : gcd(b, a % b);\n    }\n    const n = nums.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const coprimes = Array.from({ length: 51 }, () => []);\n    for (let i = 1; i <= 50; i++) {\n        for (let j = 1; j <= 50; j++) {\n            if (gcd(i, j) === 1) coprimes[i].push(j);\n        }\n    }\n    const ans = new Array(n).fill(-1);\n    const history = Array.from({ length: 51 }, () => []);\n    function dfs(u, p, d) {\n        const val = nums[u];\n        let bestDepth = -1, bestNode = -1;\n        for (const c of coprimes[val]) {\n            if (history[c].length > 0) {\n                const [candNode, candDepth] = history[c][history[c].length - 1];\n                if (candDepth > bestDepth) {\n                    bestDepth = candDepth;\n                    bestNode = candNode;\n                }\n            }\n        }\n        ans[u] = bestNode;\n        history[val].push([u, d]);\n        for (const v of adj[u]) {\n            if (v !== p) dfs(v, u, d + 1);\n        }\n        history[val].pop();\n    }\n    dfs(0, -1, 0);\n    return ans;\n};",
+      "approach": "JavaScript DFS Ancestor Stack Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

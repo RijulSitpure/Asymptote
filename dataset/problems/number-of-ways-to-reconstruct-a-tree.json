@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-ways-to-reconstruct-a-tree",
+  "number": 1719,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Degree Ordering and Root Identification",
+      "text": "In a valid tree, an ancestor must be paired with all descendants. The root must have degree equal to total nodes - 1."
+    },
+    {
+      "level": 2,
+      "title": "Parent Candidate Selection",
+      "text": "For node u, its parent p must be an adjacent node with the minimum degree >= degree(u)."
+    },
+    {
+      "level": 3,
+      "title": "Superset Neighborhood Verification",
+      "text": "Every neighbor of u (other than p) must also be a neighbor of p. If degree(u) == degree(p), multiple valid roots exist."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def checkWays(self, pairs: list[list[int]]) -> int:\n        adj = {}\n        for u, v in pairs:\n            adj.setdefault(u, set()).add(v)\n            adj.setdefault(v, set()).add(u)\n        for u in adj:\n            adj[u].add(u)\n        n = len(adj)\n        root_candidates = [u for u in adj if len(adj[u]) == n]\n        if not root_candidates:\n            return 0\n        multiple = False\n        nodes = sorted(adj.keys(), key=lambda x: len(adj[x]))\n        for u in nodes:\n            parent = None\n            min_deg = float('inf')\n            for v in adj[u]:\n                if v != u and len(adj[v]) >= len(adj[u]) and len(adj[v]) < min_deg:\n                    min_deg = len(adj[v])\n                    parent = v\n            if parent:\n                if not adj[u].issubset(adj[parent]):\n                    return 0\n                if len(adj[u]) == len(adj[parent]):\n                    multiple = True\n        return 2 if multiple else 1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V^2 + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of unique nodes",
+      "E: number of ancestor-descendant pairs"
+    ],
+    "notes": "Constructs neighbor sets and verifies subset relations along candidate parent edges.",
+    "whyNaiveFails": "Generating all combinatorial tree topologies runs in factorial time.",
+    "spaceTimeTradeoff": "Degree-based greedy parent identification determines tree validity in polynomial time.",
+    "interviewerExpectation": "Greedy parent selection by minimal superset degree and ambiguity detection."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def checkWays(self, pairs: list[list[int]]) -> int:\n        adj = {}\n        for u, v in pairs:\n            adj.setdefault(u, set()).add(v)\n            adj.setdefault(v, set()).add(u)\n        for u in adj:\n            adj[u].add(u)\n        n = len(adj)\n        root_candidates = [u for u in adj if len(adj[u]) == n]\n        if not root_candidates:\n            return 0\n        multiple = False\n        nodes = sorted(adj.keys(), key=lambda x: len(adj[x]))\n        for u in nodes:\n            parent = None\n            min_deg = float('inf')\n            for v in adj[u]:\n                if v != u and len(adj[v]) >= len(adj[u]) and len(adj[v]) < min_deg:\n                    min_deg = len(adj[v])\n                    parent = v\n            if parent:\n                if not adj[u].issubset(adj[parent]):\n                    return 0\n                if len(adj[u]) == len(adj[parent]):\n                    multiple = True\n        return 2 if multiple else 1",
+      "approach": "Greedy Minimum-Superset Parent Verification",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int checkWays(vector<vector<int>>& pairs) {\n        unordered_map<int, unordered_set<int>> adj;\n        for (const auto& p : pairs) {\n            adj[p[0]].insert(p[1]);\n            adj[p[1]].insert(p[0]);\n        }\n        for (auto& [u, neighbors] : adj) {\n            neighbors.insert(u);\n        }\n        int n = adj.size();\n        bool hasRoot = false;\n        for (const auto& [u, neighbors] : adj) {\n            if (neighbors.size() == n) {\n                hasRoot = true;\n                break;\n            }\n        }\n        if (!hasRoot) return 0;\n        vector<int> nodes;\n        for (const auto& [u, _] : adj) nodes.push_back(u);\n        sort(nodes.begin(), nodes.end(), [&](int a, int b) {\n            return adj[a].size() < adj[b].size();\n        });\n        bool multiple = false;\n        for (int u : nodes) {\n            int parent = -1;\n            int minDeg = 1e9;\n            for (int v : adj[u]) {\n                if (v != u && adj[v].size() >= adj[u].size() && (int)adj[v].size() < minDeg) {\n                    minDeg = adj[v].size();\n                    parent = v;\n                }\n            }\n            if (parent != -1) {\n                for (int x : adj[u]) {\n                    if (!adj[parent].count(x)) return 0;\n                }\n                if (adj[u].size() == adj[parent].size()) multiple = true;\n            }\n        }\n        return multiple ? 2 : 1;\n    }\n};",
+      "approach": "C++ Degree Sort and Neighbor Set Subset Testing",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int checkWays(int[][] pairs) {\n        Map<Integer, Set<Integer>> adj = new HashMap<>();\n        for (int[] p : pairs) {\n            adj.computeIfAbsent(p[0], k -> new HashSet<>()).add(p[1]);\n            adj.computeIfAbsent(p[1], k -> new HashSet<>()).add(p[0]);\n        }\n        for (var entry : adj.entrySet()) {\n            entry.getValue().add(entry.getKey());\n        }\n        int n = adj.size();\n        boolean hasRoot = false;\n        for (var set : adj.values()) {\n            if (set.size() == n) {\n                hasRoot = true;\n                break;\n            }\n        }\n        if (!hasRoot) return 0;\n        List<Integer> nodes = new ArrayList<>(adj.keySet());\n        nodes.sort(Comparator.comparingInt(a -> adj.get(a).size()));\n        boolean multiple = false;\n        for (int u : nodes) {\n            int parent = -1;\n            int minDeg = Integer.MAX_VALUE;\n            for (int v : adj.get(u)) {\n                if (v != u && adj.get(v).size() >= adj.get(u).size() && adj.get(v).size() < minDeg) {\n                    minDeg = adj.get(v).size();\n                    parent = v;\n                }\n            }\n            if (parent != -1) {\n                if (!adj.get(parent).containsAll(adj.get(u))) {\n                    return 0;\n                }\n                if (adj.get(u).size() == adj.get(parent).size()) {\n                    multiple = true;\n                }\n            }\n        }\n        return multiple ? 2 : 1;\n    }\n}",
+      "approach": "Java Set Inclusion and Degree Ordering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var checkWays = function(pairs) {\n    const adj = new Map();\n    for (const [u, v] of pairs) {\n        if (!adj.has(u)) adj.set(u, new Set());\n        if (!adj.has(v)) adj.set(v, new Set());\n        adj.get(u).add(v);\n        adj.get(v).add(u);\n    }\n    for (const [u, set] of adj) {\n        set.add(u);\n    }\n    const n = adj.size();\n    let hasRoot = false;\n    for (const [u, set] of adj) {\n        if (set.size() === n) {\n            hasRoot = true;\n            break;\n        }\n    }\n    if (!hasRoot) return 0;\n    const nodes = Array.from(adj.keys()).sort((a, b) => adj.get(a).size - adj.get(b).size);\n    let multiple = false;\n    for (const u of nodes) {\n        let parent = -1;\n        let minDeg = Infinity;\n        for (const v of adj.get(u)) {\n            if (v !== u && adj.get(v).size >= adj.get(u).size && adj.get(v).size < minDeg) {\n                minDeg = adj.get(v).size;\n                parent = v;\n            }\n        }\n        if (parent !== -1) {\n            for (const x of adj.get(u)) {\n                if (!adj.get(parent).has(x)) return 0;\n            }\n            if (adj.get(u).size === adj.get(parent).size) {\n                multiple = true;\n            }\n        }\n    }\n    return multiple ? 2 : 1;\n};",
+      "approach": "JavaScript Map and Set Tree Reconstruction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

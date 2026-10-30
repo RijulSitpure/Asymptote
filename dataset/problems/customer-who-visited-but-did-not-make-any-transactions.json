@@ -1,0 +1,72 @@
+{
+  "slug": "customer-who-visited-but-did-not-make-any-transactions",
+  "number": 1581,
+  "category": "Database",
+  "patterns": [
+    "anti-join"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Identifying Non-Purchasing Visits",
+      "text": "A customer visit results in no transaction if there is no corresponding row in Transactions matching visit_id."
+    },
+    {
+      "level": 2,
+      "title": "Left Outer Join with Null Check",
+      "text": "left join Visits with Transactions on visit_id. filter rows where transaction_id is null."
+    },
+    {
+      "level": 3,
+      "title": "Grouping by Customer ID",
+      "text": "group by customer_id and count matching visits as count_no_trans."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT v.customer_id, COUNT(*) AS count_no_trans\nFROM Visits v\nLEFT JOIN Transactions t ON v.visit_id = t.visit_id\nWHERE t.transaction_id IS NULL\nGROUP BY v.customer_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(V + T)",
+    "space": "O(V)",
+    "variables": [
+      "V: visits rows",
+      "T: transactions rows"
+    ],
+    "notes": "Executes hash anti-join between visits and transactions followed by grouping on customer_id.",
+    "whyNaiveFails": "Correlated not exists subquery runs in quadratic time without appropriate index support.",
+    "spaceTimeTradeoff": "Hash left join with null predicate identifies unmatched visits in linear time.",
+    "interviewerExpectation": "Standard anti-join pattern using left outer join with null check or not in."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT v.customer_id, COUNT(*) AS count_no_trans\nFROM Visits v\nLEFT JOIN Transactions t ON v.visit_id = t.visit_id\nWHERE t.transaction_id IS NULL\nGROUP BY v.customer_id;",
+      "approach": "Left Outer Join Anti-Join on Transaction ID",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT v.customer_id, COUNT(*) AS count_no_trans\nFROM Visits v\nLEFT JOIN Transactions t ON v.visit_id = t.visit_id\nWHERE t.transaction_id IS NULL\nGROUP BY v.customer_id;",
+      "approach": "PostgreSQL Anti-Join Group By",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_customers(visits: pd.DataFrame, transactions: pd.DataFrame) -> pd.DataFrame:\n    merged = visits.merge(transactions, on='visit_id', how='left')\n    no_trans = merged[merged['transaction_id'].isna()]\n    res = no_trans.groupby('customer_id').size().reset_index(name='count_no_trans')\n    return res",
+      "approach": "Pandas Left Merge with Isna Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

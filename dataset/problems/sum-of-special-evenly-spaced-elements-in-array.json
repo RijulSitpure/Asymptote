@@ -1,0 +1,79 @@
+{
+  "slug": "sum-of-special-evenly-spaced-elements-in-array",
+  "number": 1714,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Square Root Decomposition Threshold",
+      "text": "When step size y is large (y >= sqrt(N)), there are at most sqrt(N) terms to sum directly."
+    },
+    {
+      "level": 2,
+      "title": "Precalculating Small Step Sizes",
+      "text": "When step size y is small (y < sqrt(N)), precompute suffix sums table[y][x] = nums[x] + table[y][x + y] modulo 10^9 + 7."
+    },
+    {
+      "level": 3,
+      "title": "Answering Queries Dynamically",
+      "text": "For each query (x, y), look up table[y][x] if y < B, otherwise iterate directly summing nums[x + k * y]."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def solve(self, nums: list[int], queries: list[list[int]]) -> list[int]:\n        MOD = 10**9 + 7\n        n = len(nums)\n        B = int(n**0.5) + 1\n        pre = [[0] * (n + 1) for _ in range(B)]\n        for step in range(1, B):\n            for i in range(n - 1, -1, -1):\n                nxt = pre[step][i + step] if i + step < n else 0\n                pre[step][i] = (nums[i] + nxt) % MOD\n        ans = []\n        for x, y in queries:\n            if y < B:\n                ans.append(pre[y][x])\n            else:\n                tot = 0\n                curr = x\n                while curr < n:\n                    tot = (tot + nums[curr]) % MOD\n                    curr += y\n                ans.append(tot)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((N + Q) * sqrt(N))",
+    "space": "O(N * sqrt(N))",
+    "variables": [
+      "N: length of nums",
+      "Q: number of queries"
+    ],
+    "notes": "Threshold B = sqrt(N) balances precomputation time and online query evaluation.",
+    "whyNaiveFails": "Evaluating every query by linear iteration takes O(Q * N) time, causing time limit exceeded.",
+    "spaceTimeTradeoff": "Storing prefix tables for small steps consumes O(N * sqrt(N)) memory to bound query time to O(sqrt(N)).",
+    "interviewerExpectation": "Square root threshold decomposition splitting small and large step sizes."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def solve(self, nums: list[int], queries: list[list[int]]) -> list[int]:\n        MOD = 10**9 + 7\n        n = len(nums)\n        B = int(n**0.5) + 1\n        pre = [[0] * (n + 1) for _ in range(B)]\n        for step in range(1, B):\n            for i in range(n - 1, -1, -1):\n                nxt = pre[step][i + step] if i + step < n else 0\n                pre[step][i] = (nums[i] + nxt) % MOD\n        ans = []\n        for x, y in queries:\n            if y < B:\n                ans.append(pre[y][x])\n            else:\n                tot = 0\n                curr = x\n                while curr < n:\n                    tot = (tot + nums[curr]) % MOD\n                    curr += y\n                ans.append(tot)\n        return ans",
+      "approach": "Square Root Decomposition on Step Size",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> solve(vector<int>& nums, vector<vector<int>>& queries) {\n        long long MOD = 1e9 + 7;\n        int n = nums.size();\n        int B = sqrt(n) + 1;\n        vector<vector<int>> pre(B, vector<int>(n, 0));\n        for (int step = 1; step < B; step++) {\n            for (int i = n - 1; i >= 0; i--) {\n                int nxt = (i + step < n) ? pre[step][i + step] : 0;\n                pre[step][i] = (nums[i] + nxt) % MOD;\n            }\n        }\n        vector<int> ans;\n        ans.reserve(queries.size());\n        for (const auto& q : queries) {\n            int x = q[0], y = q[1];\n            if (y < B) {\n                ans.push_back(pre[y][x]);\n            } else {\n                long long tot = 0;\n                for (int curr = x; curr < n; curr += y) {\n                    tot = (tot + nums[curr]) % MOD;\n                }\n                ans.push_back(tot);\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "C++ Sqrt Step Decomposition with Precomputed Tables",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[] solve(int[] nums, int[][] queries) {\n        long MOD = 1_000_000_007L;\n        int n = nums.length;\n        int B = (int)Math.sqrt(n) + 1;\n        int[][] pre = new int[B][n];\n        for (int step = 1; step < B; step++) {\n            for (int i = n - 1; i >= 0; i--) {\n                int nxt = (i + step < n) ? pre[step][i + step] : 0;\n                pre[step][i] = (int)((nums[i] + nxt) % MOD);\n            }\n        }\n        int[] ans = new int[queries.length];\n        for (int q = 0; q < queries.length; q++) {\n            int x = queries[q][0];\n            int y = queries[q][1];\n            if (y < B) {\n                ans[q] = pre[y][x];\n            } else {\n                long tot = 0;\n                for (int curr = x; curr < n; curr += y) {\n                    tot = (tot + nums[curr]) % MOD;\n                }\n                ans[q] = (int)tot;\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "Java Sqrt Step Memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var solve = function(nums, queries) {\n    const MOD = 1000000007;\n    const n = nums.length;\n    const B = Math.floor(Math.sqrt(n)) + 1;\n    const pre = Array.from({ length: B }, () => new Int32Array(n));\n    for (let step = 1; step < B; step++) {\n        for (let i = n - 1; i >= 0; i--) {\n            const nxt = (i + step < n) ? pre[step][i + step] : 0;\n            pre[step][i] = (nums[i] + nxt) % MOD;\n        }\n    }\n    const ans = new Array(queries.length);\n    for (let q = 0; q < queries.length; q++) {\n        const [x, y] = queries[q];\n        if (y < B) {\n            ans[q] = pre[y][x];\n        } else {\n            let tot = 0;\n            for (let curr = x; curr < n; curr += y) {\n                tot = (tot + nums[curr]) % MOD;\n            }\n            ans[q] = tot;\n        }\n    }\n    return ans;\n};",
+      "approach": "JavaScript TypedArray Sqrt Decomposition",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

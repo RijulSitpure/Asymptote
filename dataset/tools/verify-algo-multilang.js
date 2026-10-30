@@ -65,16 +65,17 @@ public:
     Node* right;
     Node* random;
     Node* next;
+    Node* parent;
     vector<Node*> neighbors;
     vector<Node*> children;
     virtual ~Node() {}
     virtual int evaluate() { return 0; }
-    Node() : val(0), left(nullptr), right(nullptr), random(nullptr), next(nullptr) {}
-    Node(int _val) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr) {}
-    Node(char _val) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr) {}
-    Node(int _val, Node* _left, Node* _right) : val(_val), left(_left), right(_right), random(nullptr), next(nullptr) {}
-    Node(char _val, Node* _left, Node* _right) : val(_val), left(_left), right(_right), random(nullptr), next(nullptr) {}
-    Node(int _val, vector<Node*> _vec) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr), neighbors(_vec), children(_vec) {}
+    Node() : val(0), left(nullptr), right(nullptr), random(nullptr), next(nullptr), parent(nullptr) {}
+    Node(int _val) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr), parent(nullptr) {}
+    Node(char _val) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr), parent(nullptr) {}
+    Node(int _val, Node* _left, Node* _right) : val(_val), left(_left), right(_right), random(nullptr), next(nullptr), parent(nullptr) {}
+    Node(char _val, Node* _left, Node* _right) : val(_val), left(_left), right(_right), random(nullptr), next(nullptr), parent(nullptr) {}
+    Node(int _val, vector<Node*> _vec) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr), parent(nullptr), neighbors(_vec), children(_vec) {}
 };
 `;
     }
@@ -129,6 +130,19 @@ class FontInfo {
 public:
     int getWidth(int fontSize, char ch);
     int getHeight(int fontSize);
+};
+struct PolyNode {
+    int coefficient, power;
+    PolyNode *next;
+    PolyNode() : coefficient(0), power(0), next(nullptr) {};
+    PolyNode(int x, int y) : coefficient(x), power(y), next(nullptr) {};
+    PolyNode(int x, int y, PolyNode* next) : coefficient(x), power(y), next(next) {};
+};
+class GridMaster {
+public:
+    bool canMove(char direction);
+    void move(char direction);
+    bool isTarget();
 };
 
 

@@ -1,0 +1,71 @@
+{
+  "slug": "the-most-frequently-ordered-products-for-each-customer",
+  "number": 1596,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Calculating Order Frequency per Product",
+      "text": "Count orders grouped by customer_id and product_id to determine how many times each customer purchased each item."
+    },
+    {
+      "level": 2,
+      "title": "Ranking Frequencies with Ties",
+      "text": "use rank() over (partition by customer_id order by count(*) desc) so tied maximum frequencies all receive rank 1."
+    },
+    {
+      "level": 3,
+      "title": "Joining Product Catalog",
+      "text": "join the ranked CTE with Products on product_id and filter where rank is 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH ProductFreq AS (\n    SELECT customer_id,\n           product_id,\n           COUNT(*) AS cnt,\n           RANK() OVER (PARTITION BY customer_id ORDER BY COUNT(*) DESC) AS rnk\n    FROM Orders\n    GROUP BY customer_id, product_id\n)\nSELECT pf.customer_id, pf.product_id, p.product_name\nFROM ProductFreq pf\nJOIN Products p ON pf.product_id = p.product_id\nWHERE pf.rnk = 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(O log O)",
+    "space": "O(O)",
+    "variables": [
+      "O: number of orders"
+    ],
+    "notes": "Aggregates product frequencies per customer and computes partitioned ranks in O(O log O) time.",
+    "whyNaiveFails": "Row number discards tied most frequent products arbitrarily.",
+    "spaceTimeTradeoff": "Rank preserves all co-optimal frequent purchases.",
+    "interviewerExpectation": "Use of rank() over row_number() to retain all tied entries."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH ProductFreq AS (\n    SELECT customer_id,\n           product_id,\n           COUNT(*) AS cnt,\n           RANK() OVER (PARTITION BY customer_id ORDER BY COUNT(*) DESC) AS rnk\n    FROM Orders\n    GROUP BY customer_id, product_id\n)\nSELECT pf.customer_id, pf.product_id, p.product_name\nFROM ProductFreq pf\nJOIN Products p ON pf.product_id = p.product_id\nWHERE pf.rnk = 1;",
+      "approach": "Rank Window Function over Customer Product Frequencies",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH ProductFreq AS (\n    SELECT customer_id,\n           product_id,\n           COUNT(*) AS cnt,\n           RANK() OVER (PARTITION BY customer_id ORDER BY COUNT(*) DESC) AS rnk\n    FROM Orders\n    GROUP BY customer_id, product_id\n)\nSELECT pf.customer_id, pf.product_id, p.product_name\nFROM ProductFreq pf\nJOIN Products p ON pf.product_id = p.product_id\nWHERE pf.rnk = 1;",
+      "approach": "PostgreSQL Partitioned Rank CTE",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef most_frequently_ordered_products(customers: pd.DataFrame, orders: pd.DataFrame, products: pd.DataFrame) -> pd.DataFrame:\n    counts = orders.groupby(['customer_id', 'product_id']).size().reset_index(name='cnt')\n    counts['rnk'] = counts.groupby('customer_id')['cnt'].rank(method='min', ascending=False)\n    top = counts[counts['rnk'] == 1].merge(products, on='product_id')\n    return top[['customer_id', 'product_id', 'product_name']]",
+      "approach": "Pandas Min-Rank Groupby Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "slug": "hopper-company-queries-iii",
+  "number": 1651,
+  "category": "Database",
+  "patterns": [
+    "window-offset"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monthly Volume Pre-Aggregation",
+      "text": "Precompute monthly totals of ride_distance and ride_duration for all 12 calendar months of 2020, treating months with no rides as 0."
+    },
+    {
+      "level": 2,
+      "title": "Three-Month Forward Rolling Sum",
+      "text": "Use lead(val, 1) and lead(val, 2) over month order to access values for the next two consecutive calendar months."
+    },
+    {
+      "level": 3,
+      "title": "Rolling Average Calculation",
+      "text": "Divide the 3-month window sum by 3.0 and round to 2 decimal places. Filter for months 1 through 10."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RECURSIVE Months AS (\n    SELECT 1 AS month\n    UNION ALL\n    SELECT month + 1 FROM Months WHERE month < 12\n),\nMonthlyTotals AS (\n    SELECT m.month,\n           IFNULL(SUM(ar.ride_distance), 0) AS tot_dist,\n           IFNULL(SUM(ar.ride_duration), 0) AS tot_dur\n    FROM Months m\n    LEFT JOIN Rides r ON YEAR(r.requested_at) = 2020 AND MONTH(r.requested_at) = m.month\n    LEFT JOIN AcceptedRides ar ON r.ride_id = ar.ride_id\n    GROUP BY m.month\n)\nSELECT month,\n       ROUND((tot_dist + LEAD(tot_dist, 1) OVER (ORDER BY month) + LEAD(tot_dist, 2) OVER (ORDER BY month)) / 3.0, 2) AS average_ride_distance,\n       ROUND((tot_dur + LEAD(tot_dur, 1) OVER (ORDER BY month) + LEAD(tot_dur, 2) OVER (ORDER BY month)) / 3.0, 2) AS average_ride_duration\nFROM MonthlyTotals\nWHERE month <= 10\nORDER BY month;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(R + M log M)",
+    "space": "O(M)",
+    "variables": [
+      "R: rides rows",
+      "M: calendar months (12)"
+    ],
+    "notes": "Aggregates rides into 12 monthly totals and applies rolling 3-month window average using lead functions.",
+    "whyNaiveFails": "Joining overlapping 3-month ranges directly causes quadratic self-join explosion.",
+    "spaceTimeTradeoff": "Window lead expressions over pre-aggregated 12-month table compute rolling metrics in linear time.",
+    "interviewerExpectation": "Pre-aggregation into calendar months followed by window lead rolling average calculations."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RECURSIVE Months AS (\n    SELECT 1 AS month\n    UNION ALL\n    SELECT month + 1 FROM Months WHERE month < 12\n),\nMonthlyTotals AS (\n    SELECT m.month,\n           IFNULL(SUM(ar.ride_distance), 0) AS tot_dist,\n           IFNULL(SUM(ar.ride_duration), 0) AS tot_dur\n    FROM Months m\n    LEFT JOIN Rides r ON YEAR(r.requested_at) = 2020 AND MONTH(r.requested_at) = m.month\n    LEFT JOIN AcceptedRides ar ON r.ride_id = ar.ride_id\n    GROUP BY m.month\n)\nSELECT month,\n       ROUND((tot_dist + LEAD(tot_dist, 1) OVER (ORDER BY month) + LEAD(tot_dist, 2) OVER (ORDER BY month)) / 3.0, 2) AS average_ride_distance,\n       ROUND((tot_dur + LEAD(tot_dur, 1) OVER (ORDER BY month) + LEAD(tot_dur, 2) OVER (ORDER BY month)) / 3.0, 2) AS average_ride_duration\nFROM MonthlyTotals\nWHERE month <= 10\nORDER BY month;",
+      "approach": "Monthly Pre-aggregation with Lead Window Rolling Average",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RECURSIVE Months AS (\n    SELECT 1 AS month\n    UNION ALL\n    SELECT month + 1 FROM Months WHERE month < 12\n),\nMonthlyTotals AS (\n    SELECT m.month,\n           COALESCE(SUM(ar.ride_distance), 0) AS tot_dist,\n           COALESCE(SUM(ar.ride_duration), 0) AS tot_dur\n    FROM Months m\n    LEFT JOIN Rides r ON EXTRACT(YEAR FROM r.requested_at) = 2020 AND EXTRACT(MONTH FROM r.requested_at) = m.month\n    LEFT JOIN AcceptedRides ar ON r.ride_id = ar.ride_id\n    GROUP BY m.month\n)\nSELECT month,\n       ROUND((tot_dist + LEAD(tot_dist, 1) OVER (ORDER BY month) + LEAD(tot_dist, 2) OVER (ORDER BY month)) / 3.0, 2) AS average_ride_distance,\n       ROUND((tot_dur + LEAD(tot_dur, 1) OVER (ORDER BY month) + LEAD(tot_dur, 2) OVER (ORDER BY month)) / 3.0, 2) AS average_ride_duration\nFROM MonthlyTotals\nWHERE month <= 10\nORDER BY month;",
+      "approach": "PostgreSQL Window Lead Rolling Average",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef hopper_company_queries_iii(drivers: pd.DataFrame, rides: pd.DataFrame, accepted_rides: pd.DataFrame) -> pd.DataFrame:\n    months_df = pd.DataFrame({'month': list(range(1, 13))})\n    rides['requested_at'] = pd.to_datetime(rides['requested_at'])\n    merged = rides.merge(accepted_rides, on='ride_id')\n    rides_2020 = merged[merged['requested_at'].dt.year == 2020].copy()\n    rides_2020['month'] = rides_2020['requested_at'].dt.month\n    monthly = rides_2020.groupby('month')[['ride_distance', 'ride_duration']].sum().reset_index()\n    full = months_df.merge(monthly, on='month', how='left').fillna(0)\n    full['average_ride_distance'] = (\n        (full['ride_distance'] + full['ride_distance'].shift(-1) + full['ride_distance'].shift(-2)) / 3.0\n    ).round(2)\n    full['average_ride_duration'] = (\n        (full['ride_duration'] + full['ride_duration'].shift(-1) + full['ride_duration'].shift(-2)) / 3.0\n    ).round(2)\n    res = full[full['month'] <= 10][['month', 'average_ride_distance', 'average_ride_duration']]\n    return res",
+      "approach": "Pandas Shift Forward Rolling Averages",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

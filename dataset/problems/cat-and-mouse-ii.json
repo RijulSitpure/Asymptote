@@ -1,0 +1,79 @@
+{
+  "slug": "cat-and-mouse-ii",
+  "number": 1728,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Game State Space Formulation",
+      "text": "Represent state as (turn, mouse_r, mouse_c, cat_r, cat_c) where turn indicates whether mouse or cat is moving next."
+    },
+    {
+      "level": 2,
+      "title": "Terminal Base Conditions",
+      "text": "Mouse wins immediately upon reaching food. Cat wins immediately upon catching mouse or reaching food before mouse. Cat wins if turns exceed 128."
+    },
+    {
+      "level": 3,
+      "title": "Retrograde Analysis via Queue BFS",
+      "text": "Initialize terminal states in a queue and propagate victories backwards: winning predecessor state wins; all losing predecessor moves force a loss."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def canMouseWin(self, grid: list[str], catJump: int, mouseJump: int) -> bool:\n        R, C = len(grid), len(grid[0])\n        food = cat = mouse = None\n        for r in range(R):\n            for c in range(C):\n                if grid[r][c] == 'F': food = (r, c)\n                elif grid[r][c] == 'C': cat = (r, c)\n                elif grid[r][c] == 'M': mouse = (r, c)\n        MAX_TURNS = 128\n        memo = {}\n        dirs = [(-1,0), (1,0), (0,-1), (0,1)]\n        def dp(turn, m_pos, c_pos):\n            if turn >= MAX_TURNS: return False\n            if m_pos == c_pos: return False\n            if c_pos == food: return False\n            if m_pos == food: return True\n            state = (turn, m_pos, c_pos)\n            if state in memo: return memo[state]\n            mr, mc = m_pos\n            cr, cc = c_pos\n            if turn % 2 == 0:\n                for dr, dc in [(0,0)] + dirs:\n                    for j in range(1, mouseJump + 1 if dr or dc else 2):\n                        nr, nc = mr + dr * j, mc + dc * j\n                        if not (0 <= nr < R and 0 <= nc < C) or grid[nr][nc] == '#':\n                            break\n                        if dp(turn + 1, (nr, nc), c_pos):\n                            memo[state] = True\n                            return True\n                memo[state] = False\n                return False\n            else:\n                for dr, dc in [(0,0)] + dirs:\n                    for j in range(1, catJump + 1 if dr or dc else 2):\n                        nr, nc = cr + dr * j, cc + dc * j\n                        if not (0 <= nr < R and 0 <= nc < C) or grid[nr][nc] == '#':\n                            break\n                        if not dp(turn + 1, m_pos, (nr, nc)):\n                            memo[state] = False\n                            return False\n                memo[state] = True\n                return True\n        return dp(0, mouse, cat)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R^2 * C^2 * T)",
+    "space": "O(R^2 * C^2 * T)",
+    "variables": [
+      "R, C: grid dimensions",
+      "T: turn limit (128)"
+    ],
+    "notes": "State space bounded by turn count T and positions of cat and mouse.",
+    "whyNaiveFails": "Unbounded recursion enters infinite loops because moves can be undone and cycles exist.",
+    "spaceTimeTradeoff": "Turn bounding guarantees finite state graph termination.",
+    "interviewerExpectation": "Minimax game state formulation with cycle prevention and turn bounding."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def canMouseWin(self, grid: list[str], catJump: int, mouseJump: int) -> bool:\n        R, C = len(grid), len(grid[0])\n        food = cat = mouse = None\n        for r in range(R):\n            for c in range(C):\n                if grid[r][c] == 'F': food = (r, c)\n                elif grid[r][c] == 'C': cat = (r, c)\n                elif grid[r][c] == 'M': mouse = (r, c)\n        MAX_TURNS = 128\n        memo = {}\n        dirs = [(-1,0), (1,0), (0,-1), (0,1)]\n        def dp(turn, m_pos, c_pos):\n            if turn >= MAX_TURNS: return False\n            if m_pos == c_pos: return False\n            if c_pos == food: return False\n            if m_pos == food: return True\n            state = (turn, m_pos, c_pos)\n            if state in memo: return memo[state]\n            mr, mc = m_pos\n            cr, cc = c_pos\n            if turn % 2 == 0:\n                for dr, dc in [(0,0)] + dirs:\n                    for j in range(1, mouseJump + 1 if dr or dc else 2):\n                        nr, nc = mr + dr * j, mc + dc * j\n                        if not (0 <= nr < R and 0 <= nc < C) or grid[nr][nc] == '#':\n                            break\n                        if dp(turn + 1, (nr, nc), c_pos):\n                            memo[state] = True\n                            return True\n                memo[state] = False\n                return False\n            else:\n                for dr, dc in [(0,0)] + dirs:\n                    for j in range(1, catJump + 1 if dr or dc else 2):\n                        nr, nc = cr + dr * j, cc + dc * j\n                        if not (0 <= nr < R and 0 <= nc < C) or grid[nr][nc] == '#':\n                            break\n                        if not dp(turn + 1, m_pos, (nr, nc)):\n                            memo[state] = False\n                            return False\n                memo[state] = True\n                return True\n        return dp(0, mouse, cat)",
+      "approach": "Bounded Turn Minimax Search with Memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int memo[129][64][64];\n    int R, C, catJump, mouseJump;\n    int food, catPos, mousePos;\n    int dr[4] = {-1, 1, 0, 0};\n    int dc[4] = {0, 0, -1, 1};\n    vector<string> g;\n\n    bool dp(int turn, int m_pos, int c_pos) {\n        if (turn >= 128) return false;\n        if (m_pos == c_pos) return false;\n        if (c_pos == food) return false;\n        if (m_pos == food) return true;\n        if (memo[turn][m_pos][c_pos] != -1) return memo[turn][m_pos][c_pos];\n        int mr = m_pos / C, mc = m_pos % C;\n        int cr = c_pos / C, cc = c_pos % C;\n        if (turn % 2 == 0) {\n            if (dp(turn + 1, m_pos, c_pos)) return memo[turn][m_pos][c_pos] = 1;\n            for (int d = 0; d < 4; d++) {\n                for (int j = 1; j <= mouseJump; j++) {\n                    int nr = mr + dr[d] * j, nc = mc + dc[d] * j;\n                    if (nr < 0 || nr >= R || nc < 0 || nc >= C || g[nr][nc] == '#') break;\n                    if (dp(turn + 1, nr * C + nc, c_pos)) return memo[turn][m_pos][c_pos] = 1;\n                }\n            }\n            return memo[turn][m_pos][c_pos] = 0;\n        } else {\n            if (!dp(turn + 1, m_pos, c_pos)) return memo[turn][m_pos][c_pos] = 0;\n            for (int d = 0; d < 4; d++) {\n                for (int j = 1; j <= catJump; j++) {\n                    int nr = cr + dr[d] * j, nc = cc + dc[d] * j;\n                    if (nr < 0 || nr >= R || nc < 0 || nc >= C || g[nr][nc] == '#') break;\n                    if (!dp(turn + 1, m_pos, nr * C + nc)) return memo[turn][m_pos][c_pos] = 0;\n                }\n            }\n            return memo[turn][m_pos][c_pos] = 1;\n        }\n    }\n    bool canMouseWin(vector<string>& grid, int cj, int mj) {\n        g = grid;\n        R = grid.size(); C = grid[0].size();\n        catJump = cj; mouseJump = mj;\n        memset(memo, -1, sizeof(memo));\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                if (grid[r][c] == 'F') food = r * C + c;\n                else if (grid[r][c] == 'C') catPos = r * C + c;\n                else if (grid[r][c] == 'M') mousePos = r * C + c;\n            }\n        }\n        return dp(0, mousePos, catPos);\n    }\n};",
+      "approach": "C++ Array-Backed Minimax Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int[][][] memo;\n    private int R, C, catJump, mouseJump, food;\n    private int[] dr = {-1, 1, 0, 0};\n    private int[] dc = {0, 0, -1, 1};\n    private String[] g;\n\n    private boolean dp(int turn, int m_pos, int c_pos) {\n        if (turn >= 128) return false;\n        if (m_pos == c_pos) return false;\n        if (c_pos == food) return false;\n        if (m_pos == food) return true;\n        if (memo[turn][m_pos][c_pos] != -1) return memo[turn][m_pos][c_pos] == 1;\n        int mr = m_pos / C, mc = m_pos % C;\n        int cr = c_pos / C, cc = c_pos % C;\n        if (turn % 2 == 0) {\n            if (dp(turn + 1, m_pos, c_pos)) {\n                memo[turn][m_pos][c_pos] = 1;\n                return true;\n            }\n            for (int d = 0; d < 4; d++) {\n                for (int j = 1; j <= mouseJump; j++) {\n                    int nr = mr + dr[d] * j, nc = mc + dc[d] * j;\n                    if (nr < 0 || nr >= R || nc < 0 || nc >= C || g[nr].charAt(nc) == '#') break;\n                    if (dp(turn + 1, nr * C + nc, c_pos)) {\n                        memo[turn][m_pos][c_pos] = 1;\n                        return true;\n                    }\n                }\n            }\n            memo[turn][m_pos][c_pos] = 0;\n            return false;\n        } else {\n            if (!dp(turn + 1, m_pos, c_pos)) {\n                memo[turn][m_pos][c_pos] = 0;\n                return false;\n            }\n            for (int d = 0; d < 4; d++) {\n                for (int j = 1; j <= catJump; j++) {\n                    int nr = cr + dr[d] * j, nc = cc + dc[d] * j;\n                    if (nr < 0 || nr >= R || nc < 0 || nc >= C || g[nr].charAt(nc) == '#') break;\n                    if (!dp(turn + 1, m_pos, nr * C + nc)) {\n                        memo[turn][m_pos][c_pos] = 0;\n                        return false;\n                    }\n                }\n            }\n            memo[turn][m_pos][c_pos] = 1;\n            return true;\n        }\n    }\n    public boolean canMouseWin(String[] grid, int cj, int mj) {\n        g = grid;\n        R = grid.length; C = grid[0].length();\n        catJump = cj; mouseJump = mj;\n        memo = new int[129][64][64];\n        for (int i = 0; i < 129; i++) {\n            for (int j = 0; j < 64; j++) Arrays.fill(memo[i][j], -1);\n        }\n        int mousePos = 0, catPos = 0;\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                char ch = grid[r].charAt(c);\n                if (ch == 'F') food = r * C + c;\n                else if (ch == 'C') catPos = r * C + c;\n                else if (ch == 'M') mousePos = r * C + c;\n            }\n        }\n        return dp(0, mousePos, catPos);\n    }\n}",
+      "approach": "Java Minimax Game State Memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var canMouseWin = function(grid, catJump, mouseJump) {\n    const R = grid.length, C = grid[0].length;\n    let food = 0, catPos = 0, mousePos = 0;\n    for (let r = 0; r < R; r++) {\n        for (let c = 0; c < C; c++) {\n            const ch = grid[r][c];\n            if (ch === 'F') food = r * C + c;\n            else if (ch === 'C') catPos = r * C + c;\n            else if (ch === 'M') mousePos = r * C + c;\n        }\n    }\n    const memo = new Map();\n    const dr = [-1, 1, 0, 0], dc = [0, 0, -1, 1];\n    function dp(turn, m_pos, c_pos) {\n        if (turn >= 128) return false;\n        if (m_pos === c_pos) return false;\n        if (c_pos === food) return false;\n        if (m_pos === food) return true;\n        const key = (turn << 12) | (m_pos << 6) | c_pos;\n        if (memo.has(key)) return memo.get(key);\n        const mr = Math.floor(m_pos / C), mc = m_pos % C;\n        const cr = Math.floor(c_pos / C), cc = c_pos % C;\n        if (turn % 2 === 0) {\n            if (dp(turn + 1, m_pos, c_pos)) {\n                memo.set(key, true);\n                return true;\n            }\n            for (let d = 0; d < 4; d++) {\n                for (let j = 1; j <= mouseJump; j++) {\n                    const nr = mr + dr[d] * j, nc = mc + dc[d] * j;\n                    if (nr < 0 || nr >= R || nc < 0 || nc >= C || grid[nr][nc] === '#') break;\n                    if (dp(turn + 1, nr * C + nc, c_pos)) {\n                        memo.set(key, true);\n                        return true;\n                    }\n                }\n            }\n            memo.set(key, false);\n            return false;\n        } else {\n            if (!dp(turn + 1, m_pos, c_pos)) {\n                memo.set(key, false);\n                return false;\n            }\n            for (let d = 0; d < 4; d++) {\n                for (let j = 1; j <= catJump; j++) {\n                    const nr = cr + dr[d] * j, nc = cc + dc[d] * j;\n                    if (nr < 0 || nr >= R || nc < 0 || nc >= C || grid[nr][nc] === '#') break;\n                    if (!dp(turn + 1, m_pos, nr * C + nc)) {\n                        memo.set(key, false);\n                        return false;\n                    }\n                }\n            }\n            memo.set(key, true);\n            return true;\n        }\n    }\n    return dp(0, mousePos, catPos);\n};",
+      "approach": "JavaScript Bit-Packed Key Game Tree Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

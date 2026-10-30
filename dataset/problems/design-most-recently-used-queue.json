@@ -1,0 +1,78 @@
+{
+  "slug": "design-most-recently-used-queue",
+  "number": 1756,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Square Root Bucket Partitioning",
+      "text": "Partition the n initial numbers into buckets of size B = ceil(sqrt(n))."
+    },
+    {
+      "level": 2,
+      "title": "Locating the K-th Item",
+      "text": "Iterate across buckets subtracting bucket sizes until finding the bucket containing the target k-th element."
+    },
+    {
+      "level": 3,
+      "title": "Extraction and Tail Relocation",
+      "text": "Pop the element from its bucket and append it to the last bucket, shifting intermediate bucket boundaries if needed."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport math\n\nclass MRUQueue:\n    def __init__(self, n: int):\n        self.B = int(math.sqrt(n)) or 1\n        self.buckets = []\n        for i in range(1, n + 1):\n            if not self.buckets or len(self.buckets[-1]) == self.B:\n                self.buckets.append([])\n            self.buckets[-1].append(i)\n\n    def fetch(self, k: int) -> int:\n        idx = k - 1\n        b_idx = 0\n        while idx >= len(self.buckets[b_idx]):\n            idx -= len(self.buckets[b_idx])\n            b_idx += 1\n        val = self.buckets[b_idx].pop(idx)\n        self.buckets[-1].append(val)\n        for i in range(b_idx, len(self.buckets) - 1):\n            if len(self.buckets[i]) < self.B and self.buckets[i + 1]:\n                self.buckets[i].append(self.buckets[i + 1].pop(0))\n        return val\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(sqrt(N)) per fetch",
+    "space": "O(N)",
+    "variables": [
+      "N: capacity of the queue"
+    ],
+    "notes": "Square root decomposition maintains balanced block lengths, bounding each fetch to O(sqrt(N)) operations.",
+    "whyNaiveFails": "A standard array shifts up to O(N) items on every fetch, which times out under high query load.",
+    "spaceTimeTradeoff": "Block subdivision speeds index access and element relocation with minimal pointer overhead.",
+    "interviewerExpectation": "Square root decomposition or Fenwick indexed tree to execute updates in sublinear time."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import math\n\nclass MRUQueue:\n    def __init__(self, n: int):\n        self.B = int(math.sqrt(n)) or 1\n        self.buckets = []\n        for i in range(1, n + 1):\n            if not self.buckets or len(self.buckets[-1]) == self.B:\n                self.buckets.append([])\n            self.buckets[-1].append(i)\n\n    def fetch(self, k: int) -> int:\n        idx = k - 1\n        b_idx = 0\n        while idx >= len(self.buckets[b_idx]):\n            idx -= len(self.buckets[b_idx])\n            b_idx += 1\n        val = self.buckets[b_idx].pop(idx)\n        self.buckets[-1].append(val)\n        for i in range(b_idx, len(self.buckets) - 1):\n            if len(self.buckets[i]) < self.B and self.buckets[i + 1]:\n                self.buckets[i].append(self.buckets[i + 1].pop(0))\n        return val",
+      "approach": "Square Root Bucket Decomposition",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class MRUQueue {\npublic:\n    int B;\n    vector<vector<int>> buckets;\n    MRUQueue(int n) {\n        B = max(1, (int)sqrt(n));\n        for (int i = 1; i <= n; i++) {\n            if (buckets.empty() || buckets.back().size() == B) {\n                buckets.push_back({});\n            }\n            buckets.back().push_back(i);\n        }\n    }\n    int fetch(int k) {\n        int idx = k - 1;\n        int bIdx = 0;\n        while (idx >= buckets[bIdx].size()) {\n            idx -= buckets[bIdx].size();\n            bIdx++;\n        }\n        int val = buckets[bIdx][idx];\n        buckets[bIdx].erase(buckets[bIdx].begin() + idx);\n        buckets.back().push_back(val);\n        for (int i = bIdx; i < (int)buckets.size() - 1; i++) {\n            if (buckets[i].size() < B && !buckets[i + 1].empty()) {\n                buckets[i].push_back(buckets[i + 1].front());\n                buckets[i + 1].erase(buckets[i + 1].begin());\n            }\n        }\n        return val;\n    }\n};",
+      "approach": "C++ Sqrt Bucket Shifting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class MRUQueue {\n    private int B;\n    private List<List<Integer>> buckets = new ArrayList<>();\n    public MRUQueue(int n) {\n        B = Math.max(1, (int)Math.sqrt(n));\n        for (int i = 1; i <= n; i++) {\n            if (buckets.isEmpty() || buckets.get(buckets.size() - 1).size() == B) {\n                buckets.add(new ArrayList<>());\n            }\n            buckets.get(buckets.size() - 1).add(i);\n        }\n    }\n    public int fetch(int k) {\n        int idx = k - 1;\n        int bIdx = 0;\n        while (idx >= buckets.get(bIdx).size()) {\n            idx -= buckets.get(bIdx).size();\n            bIdx++;\n        }\n        int val = buckets.get(bIdx).remove(idx);\n        buckets.get(buckets.size() - 1).add(val);\n        for (int i = bIdx; i < buckets.size() - 1; i++) {\n            if (buckets.get(i).size() < B && !buckets.get(i + 1).isEmpty()) {\n                buckets.get(i).add(buckets.get(i + 1).remove(0));\n            }\n        }\n        return val;\n    }\n}",
+      "approach": "Java Sqrt Block Partitioning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var MRUQueue = function(n) {\n    this.B = Math.max(1, Math.floor(Math.sqrt(n)));\n    this.buckets = [];\n    for (let i = 1; i <= n; i++) {\n        if (this.buckets.length === 0 || this.buckets[this.buckets.length - 1].length === this.B) {\n            this.buckets.push([]);\n        }\n        this.buckets[this.buckets.length - 1].push(i);\n    }\n};\n\nMRUQueue.prototype.fetch = function(k) {\n    let idx = k - 1;\n    let bIdx = 0;\n    while (idx >= this.buckets[bIdx].length) {\n        idx -= this.buckets[bIdx].length;\n        bIdx++;\n    }\n    const val = this.buckets[bIdx].splice(idx, 1)[0];\n    this.buckets[this.buckets.length - 1].push(val);\n    for (let i = bIdx; i < this.buckets.length - 1; i++) {\n        if (this.buckets[i].length < this.B && this.buckets[i + 1].length > 0) {\n            this.buckets[i].push(this.buckets[i + 1].shift());\n        }\n    }\n    return val;\n};",
+      "approach": "JavaScript Array-of-Buckets Decomposition",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

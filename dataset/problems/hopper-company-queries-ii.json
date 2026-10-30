@@ -1,0 +1,73 @@
+{
+  "slug": "hopper-company-queries-ii",
+  "number": 1645,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Active and Working Drivers Definitions",
+      "text": "An active driver joined on or before the month end. A working driver accepted at least one ride during that specific month."
+    },
+    {
+      "level": 2,
+      "title": "Distinct Working Drivers Counting",
+      "text": "Count distinct accepted ride driver_id values in the month."
+    },
+    {
+      "level": 3,
+      "title": "Ratio Calculation and Zero Handling",
+      "text": "Calculate round(ifnull(working_count * 100.0 / nullif(active_count, 0), 0), 2) to prevent division by zero."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RECURSIVE Months AS (\n    SELECT 1 AS month\n    UNION ALL\n    SELECT month + 1 FROM Months WHERE month < 12\n),\nActiveDrivers AS (\n    SELECT m.month,\n           (SELECT COUNT(*) FROM Drivers d WHERE d.join_date <= LAST_DAY(CONCAT('2020-', LPAD(m.month, 2, '0'), '-01'))) AS active_count\n    FROM Months m\n),\nWorkingDrivers AS (\n    SELECT m.month,\n           (SELECT COUNT(DISTINCT ar.driver_id) FROM AcceptedRides ar JOIN Rides r ON ar.ride_id = r.ride_id WHERE YEAR(r.requested_at) = 2020 AND MONTH(r.requested_at) = m.month) AS working_count\n    FROM Months m\n)\nSELECT a.month,\n       ROUND(IFNULL(w.working_count * 100.0 / NULLIF(a.active_count, 0), 0), 2) AS working_percentage\nFROM ActiveDrivers a\nJOIN WorkingDrivers w ON a.month = w.month\nORDER BY a.month;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(M * (D + R))",
+    "space": "O(M)",
+    "variables": [
+      "M: calendar months (12)",
+      "D: drivers",
+      "R: rides"
+    ],
+    "notes": "Computes monthly active capacity and working utilization across all 12 calendar buckets.",
+    "whyNaiveFails": "Failing to wrap active count with nullif causes division by zero exceptions.",
+    "spaceTimeTradeoff": "Dual CTEs structure independent driver cohorts before computing utilization percentage.",
+    "interviewerExpectation": "Handling division by zero safely while tracking cumulative and non-cumulative monthly metrics."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RECURSIVE Months AS (\n    SELECT 1 AS month\n    UNION ALL\n    SELECT month + 1 FROM Months WHERE month < 12\n),\nActiveDrivers AS (\n    SELECT m.month,\n           (SELECT COUNT(*) FROM Drivers d WHERE d.join_date <= LAST_DAY(CONCAT('2020-', LPAD(m.month, 2, '0'), '-01'))) AS active_count\n    FROM Months m\n),\nWorkingDrivers AS (\n    SELECT m.month,\n           (SELECT COUNT(DISTINCT ar.driver_id) FROM AcceptedRides ar JOIN Rides r ON ar.ride_id = r.ride_id WHERE YEAR(r.requested_at) = 2020 AND MONTH(r.requested_at) = m.month) AS working_count\n    FROM Months m\n)\nSELECT a.month,\n       ROUND(IFNULL(w.working_count * 100.0 / NULLIF(a.active_count, 0), 0), 2) AS working_percentage\nFROM ActiveDrivers a\nJOIN WorkingDrivers w ON a.month = w.month\nORDER BY a.month;",
+      "approach": "Dual Monthly Aggregation CTE with Safe Division",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RECURSIVE Months AS (\n    SELECT 1 AS month\n    UNION ALL\n    SELECT month + 1 FROM Months WHERE month < 12\n),\nActiveDrivers AS (\n    SELECT m.month,\n           (SELECT COUNT(*) FROM Drivers d WHERE d.join_date <= (TO_DATE(CONCAT('2020-', LPAD(CAST(m.month AS TEXT), 2, '0'), '-01'), 'YYYY-MM-DD') + INTERVAL '1 month - 1 day')::date) AS active_count\n    FROM Months m\n),\nWorkingDrivers AS (\n    SELECT m.month,\n           (SELECT COUNT(DISTINCT ar.driver_id) FROM AcceptedRides ar JOIN Rides r ON ar.ride_id = r.ride_id WHERE EXTRACT(YEAR FROM r.requested_at) = 2020 AND EXTRACT(MONTH FROM r.requested_at) = m.month) AS working_count\n    FROM Months m\n)\nSELECT a.month,\n       ROUND(COALESCE(w.working_count * 100.0 / NULLIF(a.active_count, 0), 0), 2) AS working_percentage\nFROM ActiveDrivers a\nJOIN WorkingDrivers w ON a.month = w.month\nORDER BY a.month;",
+      "approach": "PostgreSQL Coalesce Nullif Ratio",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef hopper_company_queries_ii(drivers: pd.DataFrame, rides: pd.DataFrame, accepted_rides: pd.DataFrame) -> pd.DataFrame:\n    months_df = pd.DataFrame({'month': list(range(1, 13))})\n    drivers['join_date'] = pd.to_datetime(drivers['join_date'])\n    rides['requested_at'] = pd.to_datetime(rides['requested_at'])\n    merged = rides.merge(accepted_rides, on='ride_id')\n    rides_2020 = merged[merged['requested_at'].dt.year == 2020].copy()\n    rides_2020['month'] = rides_2020['requested_at'].dt.month\n    working_count = rides_2020.groupby('month')['driver_id'].nunique().to_dict()\n    percentages = []\n    for m in range(1, 13):\n        end_date = pd.Period(f'2020-{m:02d}', 'M').end_time.date()\n        act = len(drivers[drivers['join_date'].dt.date <= end_date])\n        work = working_count.get(m, 0)\n        pct = round(work * 100.0 / act, 2) if act > 0 else 0.0\n        percentages.append(pct)\n    months_df['working_percentage'] = percentages\n    return months_df",
+      "approach": "Pandas Monthly Working Ratio Computation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

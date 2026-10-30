@@ -1,0 +1,72 @@
+{
+  "slug": "find-the-missing-ids",
+  "number": 1613,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Recursive Sequence Generation",
+      "text": "Generate a continuous series of integers starting from 1 up to the maximum customer_id in Customers using a recursive CTE."
+    },
+    {
+      "level": 2,
+      "title": "Excluding Present Customers",
+      "text": "Filter the generated integer sequence for numbers not present in Customers using not in or left join."
+    },
+    {
+      "level": 3,
+      "title": "Sorting Output",
+      "text": "Project the column named ids and order by ids in ascending order."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RECURSIVE Sequence AS (\n    SELECT 1 AS ids\n    UNION ALL\n    SELECT ids + 1 FROM Sequence WHERE ids < (SELECT MAX(customer_id) FROM Customers)\n)\nSELECT ids\nFROM Sequence\nWHERE ids NOT IN (SELECT customer_id FROM Customers)\nORDER BY ids ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(M + C)",
+    "space": "O(M)",
+    "variables": [
+      "M: max customer_id",
+      "C: rows in Customers"
+    ],
+    "notes": "Recursively builds continuous sequence up to M and filters present IDs.",
+    "whyNaiveFails": "Static tables cannot generate arbitrary missing numbers without series generators.",
+    "spaceTimeTradeoff": "Recursive CTE materializes exactly M numbers in memory.",
+    "interviewerExpectation": "Recursive CTE sequence generation with anti-join predicate."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RECURSIVE Sequence AS (\n    SELECT 1 AS ids\n    UNION ALL\n    SELECT ids + 1 FROM Sequence WHERE ids < (SELECT MAX(customer_id) FROM Customers)\n)\nSELECT ids\nFROM Sequence\nWHERE ids NOT IN (SELECT customer_id FROM Customers)\nORDER BY ids ASC;",
+      "approach": "Recursive CTE Sequence with Anti-Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RECURSIVE Sequence AS (\n    SELECT 1 AS ids\n    UNION ALL\n    SELECT ids + 1 FROM Sequence WHERE ids < (SELECT MAX(customer_id) FROM Customers)\n)\nSELECT ids\nFROM Sequence\nWHERE ids NOT IN (SELECT customer_id FROM Customers)\nORDER BY ids ASC;",
+      "approach": "PostgreSQL Recursive Sequence Anti-Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_missing_ids(customers: pd.DataFrame) -> pd.DataFrame:\n    if customers.empty:\n        return pd.DataFrame({'ids': []})\n    max_id = customers['customer_id'].max()\n    full_seq = pd.DataFrame({'ids': list(range(1, max_id + 1))})\n    missing = full_seq[~full_seq['ids'].isin(customers['customer_id'])]\n    return missing.sort_values(by='ids')",
+      "approach": "Pandas Range Sequence Set Difference",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

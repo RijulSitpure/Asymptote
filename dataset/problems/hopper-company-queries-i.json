@@ -1,0 +1,73 @@
+{
+  "slug": "hopper-company-queries-i",
+  "number": 1635,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Generating 2020 Calendar Months",
+      "text": "Generate a recursive sequence for months 1 to 12 representing the calendar year 2020."
+    },
+    {
+      "level": 2,
+      "title": "Active Drivers Cumulative Count",
+      "text": "For month m, count all drivers whose join_date is on or before the last day of month m in 2020."
+    },
+    {
+      "level": 3,
+      "title": "Accepted Rides Monthly Count",
+      "text": "Count all accepted rides whose requested_at falls within month m of 2020."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RECURSIVE Months AS (\n    SELECT 1 AS month\n    UNION ALL\n    SELECT month + 1 FROM Months WHERE month < 12\n)\nSELECT m.month,\n       (SELECT COUNT(*) FROM Drivers d WHERE d.join_date <= LAST_DAY(CONCAT('2020-', LPAD(m.month, 2, '0'), '-01'))) AS active_drivers,\n       (SELECT COUNT(*) FROM AcceptedRides ar JOIN Rides r ON ar.ride_id = r.ride_id WHERE YEAR(r.requested_at) = 2020 AND MONTH(r.requested_at) = m.month) AS accepted_rides\nFROM Months m\nORDER BY m.month;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(M * (D + R))",
+    "space": "O(M)",
+    "variables": [
+      "M: calendar months (12)",
+      "D: drivers",
+      "R: rides"
+    ],
+    "notes": "Iterates through 12 calendar buckets computing cumulative driver availability and ride volume.",
+    "whyNaiveFails": "Missing months with zero active drivers or zero rides are dropped without a full calendar sequence.",
+    "spaceTimeTradeoff": "Recursive month series guarantees all 12 calendar buckets are represented.",
+    "interviewerExpectation": "Recursive CTE calendar generation combined with date range aggregation."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RECURSIVE Months AS (\n    SELECT 1 AS month\n    UNION ALL\n    SELECT month + 1 FROM Months WHERE month < 12\n)\nSELECT m.month,\n       (SELECT COUNT(*) FROM Drivers d WHERE d.join_date <= LAST_DAY(CONCAT('2020-', LPAD(m.month, 2, '0'), '-01'))) AS active_drivers,\n       (SELECT COUNT(*) FROM AcceptedRides ar JOIN Rides r ON ar.ride_id = r.ride_id WHERE YEAR(r.requested_at) = 2020 AND MONTH(r.requested_at) = m.month) AS accepted_rides\nFROM Months m\nORDER BY m.month;",
+      "approach": "Recursive Calendar Months with Correlated Subqueries",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RECURSIVE Months AS (\n    SELECT 1 AS month\n    UNION ALL\n    SELECT month + 1 FROM Months WHERE month < 12\n)\nSELECT m.month,\n       (SELECT COUNT(*) FROM Drivers d WHERE d.join_date <= (TO_DATE(CONCAT('2020-', LPAD(CAST(m.month AS TEXT), 2, '0'), '-01'), 'YYYY-MM-DD') + INTERVAL '1 month - 1 day')::date) AS active_drivers,\n       (SELECT COUNT(*) FROM AcceptedRides ar JOIN Rides r ON ar.ride_id = r.ride_id WHERE EXTRACT(YEAR FROM r.requested_at) = 2020 AND EXTRACT(MONTH FROM r.requested_at) = m.month) AS accepted_rides\nFROM Months m\nORDER BY m.month;",
+      "approach": "PostgreSQL Recursive Months and Interval Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef hopper_company_queries_i(drivers: pd.DataFrame, rides: pd.DataFrame, accepted_rides: pd.DataFrame) -> pd.DataFrame:\n    months_df = pd.DataFrame({'month': list(range(1, 13))})\n    drivers['join_date'] = pd.to_datetime(drivers['join_date'])\n    rides['requested_at'] = pd.to_datetime(rides['requested_at'])\n    merged_rides = rides.merge(accepted_rides, on='ride_id')\n    rides_2020 = merged_rides[merged_rides['requested_at'].dt.year == 2020].copy()\n    rides_2020['month'] = rides_2020['requested_at'].dt.month\n    rides_count = rides_2020.groupby('month').size().to_dict()\n    active_list = []\n    rides_list = []\n    for m in range(1, 13):\n        end_of_month = pd.Period(f'2020-{m:02d}', 'M').end_time.date()\n        act = len(drivers[drivers['join_date'].dt.date <= end_of_month])\n        active_list.append(act)\n        rides_list.append(rides_count.get(m, 0))\n    months_df['active_drivers'] = active_list\n    months_df['accepted_rides'] = rides_list\n    return months_df",
+      "approach": "Pandas Period Month Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

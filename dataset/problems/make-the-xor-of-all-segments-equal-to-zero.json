@@ -1,0 +1,79 @@
+{
+  "slug": "make-the-xor-of-all-segments-equal-to-zero",
+  "number": 1787,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Periodicity Invariant",
+      "text": "Every contiguous subarray of length k has equal xor sum if and only if nums[i] == nums[i + k] for all i."
+    },
+    {
+      "level": 2,
+      "title": "Grouped Frequency Counts",
+      "text": "Partition nums into k groups based on index modulo k. Count frequencies of existing numbers within each group."
+    },
+    {
+      "level": 3,
+      "title": "Dynamic Programming over Bitwise Prefix Sums",
+      "text": "Compute dp[i][val]: minimum changes across the first i groups to have cumulative bitwise prefix sum val. Either choose an existing element or rewrite the group to any arbitrary value."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def minChanges(self, nums: list[int], k: int) -> int:\n        LIMIT = 1024\n        groups = [{} for _ in range(k)]\n        size = [0] * k\n        for i, val in enumerate(nums):\n            groups[i % k][val] = groups[i % k].get(val, 0) + 1\n            size[i % k] += 1\n        dp = [float('inf')] * LIMIT\n        dp[0] = 0\n        for i in range(k):\n            new_dp = [min(dp) + size[i]] * LIMIT\n            for prev_val in range(LIMIT):\n                if dp[prev_val] == float('inf'):\n                    continue\n                for val, cnt in groups[i].items():\n                    new_val = prev_val ^ val\n                    cost = dp[prev_val] + size[i] - cnt\n                    if cost < new_dp[new_val]:\n                        new_dp[new_val] = cost\n            dp = new_dp\n        return dp[0]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(K * 1024 + N)",
+    "space": "O(1024)",
+    "variables": [
+      "N: length of nums",
+      "K: segment length"
+    ],
+    "notes": "Iterates through k groups over bitwise domain [0, 1024), maintaining rolling 1D cost arrays.",
+    "whyNaiveFails": "Testing all 1024^K combination assignments is computationally impossible.",
+    "spaceTimeTradeoff": "Group frequency grouping combined with default arbitrary replacement minimizes search space to 1024 states per group.",
+    "interviewerExpectation": "Periodicity deduction followed by bitwise DP with min-value fallback optimization."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minChanges(self, nums: list[int], k: int) -> int:\n        LIMIT = 1024\n        groups = [{} for _ in range(k)]\n        size = [0] * k\n        for i, val in enumerate(nums):\n            groups[i % k][val] = groups[i % k].get(val, 0) + 1\n            size[i % k] += 1\n        dp = [float('inf')] * LIMIT\n        dp[0] = 0\n        for i in range(k):\n            new_dp = [min(dp) + size[i]] * LIMIT\n            for prev_val in range(LIMIT):\n                if dp[prev_val] == float('inf'):\n                    continue\n                for val, cnt in groups[i].items():\n                    new_val = prev_val ^ val\n                    cost = dp[prev_val] + size[i] - cnt\n                    if cost < new_dp[new_val]:\n                        new_dp[new_val] = cost\n            dp = new_dp\n        return dp[0]",
+      "approach": "Periodicity Grouping with Bitwise Prefix DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minChanges(vector<int>& nums, int k) {\n        int LIMIT = 1024;\n        vector<unordered_map<int, int>> groups(k);\n        vector<int> size(k, 0);\n        for (int i = 0; i < nums.size(); i++) {\n            groups[i % k][nums[i]]++;\n            size[i % k]++;\n        }\n        vector<int> dp(LIMIT, 1e9);\n        dp[0] = 0;\n        for (int i = 0; i < k; i++) {\n            int minPrev = *min_element(dp.begin(), dp.end());\n            vector<int> next_dp(LIMIT, minPrev + size[i]);\n            for (int prevVal = 0; prevVal < LIMIT; prevVal++) {\n                if (dp[prevVal] == 1e9) continue;\n                for (const auto& [val, cnt] : groups[i]) {\n                    int newVal = prevVal ^ val;\n                    next_dp[newVal] = min(next_dp[newVal], dp[prevVal] + size[i] - cnt);\n                }\n            }\n            dp = std::move(next_dp);\n        }\n        return dp[0];\n    }\n};",
+      "approach": "C++ Modulo-k Frequency Bitwise DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int minChanges(int[] nums, int k) {\n        int LIMIT = 1024;\n        List<Map<Integer, Integer>> groups = new ArrayList<>();\n        int[] size = new int[k];\n        for (int i = 0; i < k; i++) groups.add(new HashMap<>());\n        for (int i = 0; i < nums.length; i++) {\n            groups.get(i % k).put(nums[i], groups.get(i % k).getOrDefault(nums[i], 0) + 1);\n            size[i % k]++;\n        }\n        int[] dp = new int[LIMIT];\n        Arrays.fill(dp, 1_000_000);\n        dp[0] = 0;\n        for (int i = 0; i < k; i++) {\n            int minPrev = Integer.MAX_VALUE;\n            for (int v : dp) minPrev = Math.min(minPrev, v);\n            int[] next = new int[LIMIT];\n            Arrays.fill(next, minPrev + size[i]);\n            for (int prevVal = 0; prevVal < LIMIT; prevVal++) {\n                if (dp[prevVal] == 1_000_000) continue;\n                for (var entry : groups.get(i).entrySet()) {\n                    int val = entry.getKey(), cnt = entry.getValue();\n                    int newVal = prevVal ^ val;\n                    next[newVal] = Math.min(next[newVal], dp[prevVal] + size[i] - cnt);\n                }\n            }\n            dp = next;\n        }\n        return dp[0];\n    }\n}",
+      "approach": "Java Bitwise DP with Fallback Min-Cost Optimization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minChanges = function(nums, k) {\n    const LIMIT = 1024;\n    const groups = Array.from({ length: k }, () => new Map());\n    const size = new Array(k).fill(0);\n    for (let i = 0; i < nums.length; i++) {\n        const grp = groups[i % k];\n        grp.set(nums[i], (grp.get(nums[i]) || 0) + 1);\n        size[i % k]++;\n    }\n    let dp = new Int32Array(LIMIT).fill(1e9);\n    dp[0] = 0;\n    for (let i = 0; i < k; i++) {\n        let minPrev = 1e9;\n        for (let v = 0; v < LIMIT; v++) {\n            if (dp[v] < minPrev) minPrev = dp[v];\n        }\n        const next = new Int32Array(LIMIT).fill(minPrev + size[i]);\n        for (let prevVal = 0; prevVal < LIMIT; prevVal++) {\n            if (dp[prevVal] === 1e9) continue;\n            for (const [val, cnt] of groups[i]) {\n                const newVal = prevVal ^ val;\n                const cost = dp[prevVal] + size[i] - cnt;\n                if (cost < next[newVal]) next[newVal] = cost;\n            }\n        }\n        dp = next;\n    }\n    return dp[0];\n};",
+      "approach": "JavaScript Int32Array Bitwise DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

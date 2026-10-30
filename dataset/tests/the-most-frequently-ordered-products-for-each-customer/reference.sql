@@ -1,0 +1,1 @@
+WITH ProductFreq AS (SELECT customer_id, product_id, COUNT(*) AS cnt, RANK() OVER (PARTITION BY customer_id ORDER BY COUNT(*) DESC) AS rnk FROM Orders GROUP BY customer_id, product_id) SELECT pf.customer_id, pf.product_id, p.product_name FROM ProductFreq pf JOIN Products p ON pf.product_id = p.product_id WHERE pf.rnk = 1;

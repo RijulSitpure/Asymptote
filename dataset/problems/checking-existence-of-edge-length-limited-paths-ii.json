@@ -1,0 +1,79 @@
+{
+  "slug": "checking-existence-of-edge-length-limited-paths-ii",
+  "number": 1724,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Reachability Tree Construction",
+      "text": "Build a Kruskal Reconstruction Tree by sorting edges and creating a new auxiliary node for each merged component with edge weight as value."
+    },
+    {
+      "level": 2,
+      "title": "Binary Lifting for Lowest Common Ancestor",
+      "text": "Precompute 2^k ancestor jumps up to the tree root using binary lifting."
+    },
+    {
+      "level": 3,
+      "title": "Bottleneck Path Query",
+      "text": "The minimum bottleneck weight between u and v equals the value of their lowest common ancestor in the reconstruction tree. Check if this value is strictly less than limit."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass DistanceLimitedPathsExist:\n    def __init__(self, n: int, edgeList: list[list[int]]):\n        edgeList.sort(key=lambda x: x[2])\n        parent = list(range(2 * n))\n        def find(i):\n            if parent[i] == i:\n                return i\n            parent[i] = find(parent[i])\n            return parent[i]\n        val = [0] * (2 * n)\n        node_count = n\n        adj = [[] for _ in range(2 * n)]\n        for u, v, w in edgeList:\n            ru, rv = find(u), find(v)\n            if ru != rv:\n                new_node = node_count\n                node_count += 1\n                val[new_node] = w\n                parent[ru] = new_node\n                parent[rv] = new_node\n                adj[new_node].append(ru)\n                adj[new_node].append(rv)\n        self.LOG = 18\n        self.up = [[0] * self.LOG for _ in range(node_count)]\n        self.depth = [0] * node_count\n        self.val = val\n        visited = [False] * node_count\n        for i in range(node_count - 1, -1, -1):\n            if find(i) == i and not visited[i]:\n                st = [i]\n                visited[i] = True\n                while st:\n                    curr = st.pop()\n                    for ch in adj[curr]:\n                        if not visited[ch]:\n                            visited[ch] = True\n                            self.depth[ch] = self.depth[curr] + 1\n                            self.up[ch][0] = curr\n                            for k in range(1, self.LOG):\n                                self.up[ch][k] = self.up[self.up[ch][k - 1]][k - 1]\n                            st.append(ch)\n        self.find_root = find\n\n    def query(self, p: int, q: int, limit: int) -> bool:\n        if self.find_root(p) != self.find_root(q):\n            return False\n        if self.depth[p] < self.depth[q]:\n            p, q = q, p\n        for k in range(self.LOG - 1, -1, -1):\n            if self.depth[p] - (1 << k) >= self.depth[q]:\n                p = self.up[p][k]\n        if p == q:\n            lca = p\n        else:\n            for k in range(self.LOG - 1, -1, -1):\n                if self.up[p][k] != self.up[q][k]:\n                    p = self.up[p][k]\n                    q = self.up[q][k]\n            lca = self.up[p][0]\n        return self.val[lca] < limit\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E log E + N log N) init, O(log N) per query",
+    "space": "O(N log N + E)",
+    "variables": [
+      "N: number of vertices",
+      "E: edges in graph"
+    ],
+    "notes": "Constructs Kruskal reconstruction tree and answers online bottleneck queries via binary lifting.",
+    "whyNaiveFails": "Running fresh BFS/DFS per query takes O(Q * (N + E)) time, which exceeds time limits for online queries.",
+    "spaceTimeTradeoff": "Binary lifting tables enable logarithmic online query response.",
+    "interviewerExpectation": "Kruskal Reconstruction Tree with binary lifting to query maximum edge weight along minimum bottleneck paths."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class DistanceLimitedPathsExist:\n    def __init__(self, n: int, edgeList: list[list[int]]):\n        edgeList.sort(key=lambda x: x[2])\n        parent = list(range(2 * n))\n        def find(i):\n            if parent[i] == i:\n                return i\n            parent[i] = find(parent[i])\n            return parent[i]\n        val = [0] * (2 * n)\n        node_count = n\n        adj = [[] for _ in range(2 * n)]\n        for u, v, w in edgeList:\n            ru, rv = find(u), find(v)\n            if ru != rv:\n                new_node = node_count\n                node_count += 1\n                val[new_node] = w\n                parent[ru] = new_node\n                parent[rv] = new_node\n                adj[new_node].append(ru)\n                adj[new_node].append(rv)\n        self.LOG = 18\n        self.up = [[0] * self.LOG for _ in range(node_count)]\n        self.depth = [0] * node_count\n        self.val = val\n        visited = [False] * node_count\n        for i in range(node_count - 1, -1, -1):\n            if find(i) == i and not visited[i]:\n                st = [i]\n                visited[i] = True\n                while st:\n                    curr = st.pop()\n                    for ch in adj[curr]:\n                        if not visited[ch]:\n                            visited[ch] = True\n                            self.depth[ch] = self.depth[curr] + 1\n                            self.up[ch][0] = curr\n                            for k in range(1, self.LOG):\n                                self.up[ch][k] = self.up[self.up[ch][k - 1]][k - 1]\n                            st.append(ch)\n        self.find_root = find\n\n    def query(self, p: int, q: int, limit: int) -> bool:\n        if self.find_root(p) != self.find_root(q):\n            return False\n        if self.depth[p] < self.depth[q]:\n            p, q = q, p\n        for k in range(self.LOG - 1, -1, -1):\n            if self.depth[p] - (1 << k) >= self.depth[q]:\n                p = self.up[p][k]\n        if p == q:\n            lca = p\n        else:\n            for k in range(self.LOG - 1, -1, -1):\n                if self.up[p][k] != self.up[q][k]:\n                    p = self.up[p][k]\n                    q = self.up[q][k]\n            lca = self.up[p][0]\n        return self.val[lca] < limit",
+      "approach": "Kruskal Reconstruction Tree with Binary Lifting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class DistanceLimitedPathsExist {\npublic:\n    int LOG = 18;\n    vector<vector<int>> up;\n    vector<int> depth;\n    vector<int> val;\n    vector<int> parent;\n    int find(int i) {\n        return parent[i] == i ? i : parent[i] = find(parent[i]);\n    }\n    DistanceLimitedPathsExist(int n, vector<vector<int>>& edgeList) {\n        sort(edgeList.begin(), edgeList.end(), [](const auto& a, const auto& b) {\n            return a[2] < b[2];\n        });\n        parent.resize(2 * n);\n        iota(parent.begin(), parent.end(), 0);\n        val.resize(2 * n, 0);\n        int nodeCount = n;\n        vector<vector<int>> adj(2 * n);\n        for (const auto& e : edgeList) {\n            int ru = find(e[0]), rv = find(e[1]);\n            if (ru != rv) {\n                int newNode = nodeCount++;\n                val[newNode] = e[2];\n                parent[ru] = newNode;\n                parent[rv] = newNode;\n                adj[newNode].push_back(ru);\n                adj[newNode].push_back(rv);\n            }\n        }\n        up.assign(nodeCount, vector<int>(LOG, 0));\n        depth.assign(nodeCount, 0);\n        vector<bool> visited(nodeCount, false);\n        for (int i = nodeCount - 1; i >= 0; i--) {\n            if (find(i) == i && !visited[i]) {\n                vector<int> st = {i};\n                visited[i] = true;\n                while (!st.empty()) {\n                    int curr = st.back(); st.pop_back();\n                    for (int ch : adj[curr]) {\n                        if (!visited[ch]) {\n                            visited[ch] = true;\n                            depth[ch] = depth[curr] + 1;\n                            up[ch][0] = curr;\n                            for (int k = 1; k < LOG; k++) {\n                                up[ch][k] = up[up[ch][k - 1]][k - 1];\n                            }\n                            st.push_back(ch);\n                        }\n                    }\n                }\n            }\n        }\n    }\n    bool query(int p, int q, int limit) {\n        if (find(p) != find(q)) return false;\n        if (depth[p] < depth[q]) swap(p, q);\n        for (int k = LOG - 1; k >= 0; k--) {\n            if (depth[p] - (1 << k) >= depth[q]) p = up[p][k];\n        }\n        if (p == q) return val[p] < limit;\n        for (int k = LOG - 1; k >= 0; k--) {\n            if (up[p][k] != up[q][k]) {\n                p = up[p][k];\n                q = up[q][k];\n            }\n        }\n        return val[up[p][0]] < limit;\n    }\n};",
+      "approach": "C++ Reachability Tree with LCA Binary Lifting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class DistanceLimitedPathsExist {\n    private int LOG = 18;\n    private int[][] up;\n    private int[] depth, val, parent;\n    private int find(int i) {\n        return parent[i] == i ? i : (parent[i] = find(parent[i]));\n    }\n    public DistanceLimitedPathsExist(int n, int[][] edgeList) {\n        Arrays.sort(edgeList, Comparator.comparingInt(a -> a[2]));\n        parent = new int[2 * n];\n        for (int i = 0; i < 2 * n; i++) parent[i] = i;\n        val = new int[2 * n];\n        int nodeCount = n;\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < 2 * n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edgeList) {\n            int ru = find(e[0]), rv = find(e[1]);\n            if (ru != rv) {\n                int newNode = nodeCount++;\n                val[newNode] = e[2];\n                parent[ru] = newNode;\n                parent[rv] = newNode;\n                adj.get(newNode).add(ru);\n                adj.get(newNode).add(rv);\n            }\n        }\n        up = new int[nodeCount][LOG];\n        depth = new int[nodeCount];\n        boolean[] visited = new boolean[nodeCount];\n        for (int i = nodeCount - 1; i >= 0; i--) {\n            if (find(i) == i && !visited[i]) {\n                Deque<Integer> st = new ArrayDeque<>();\n                st.push(i);\n                visited[i] = true;\n                while (!st.isEmpty()) {\n                    int curr = st.pop();\n                    for (int ch : adj.get(curr)) {\n                        if (!visited[ch]) {\n                            visited[ch] = true;\n                            depth[ch] = depth[curr] + 1;\n                            up[ch][0] = curr;\n                            for (int k = 1; k < LOG; k++) {\n                                up[ch][k] = up[up[ch][k - 1]][k - 1];\n                            }\n                            st.push(ch);\n                        }\n                    }\n                }\n            }\n        }\n    }\n    public boolean query(int p, int q, int limit) {\n        if (find(p) != find(q)) return false;\n        if (depth[p] < depth[q]) { int tmp = p; p = q; q = tmp; }\n        for (int k = LOG - 1; k >= 0; k--) {\n            if (depth[p] - (1 << k) >= depth[q]) p = up[p][k];\n        }\n        if (p == q) return val[p] < limit;\n        for (int k = LOG - 1; k >= 0; k--) {\n            if (up[p][k] != up[q][k]) {\n                p = up[p][k];\n                q = up[q][k];\n            }\n        }\n        return val[up[p][0]] < limit;\n    }\n}",
+      "approach": "Java Kruskal Reconstruction Tree Binary Lifting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var DistanceLimitedPathsExist = function(n, edgeList) {\n    edgeList.sort((a, b) => a[2] - b[2]);\n    const parent = Array.from({ length: 2 * n }, (_, i) => i);\n    function find(i) {\n        return parent[i] === i ? i : (parent[i] = find(parent[i]));\n    }\n    const val = new Array(2 * n).fill(0);\n    let nodeCount = n;\n    const adj = Array.from({ length: 2 * n }, () => []);\n    for (const [u, v, w] of edgeList) {\n        const ru = find(u), rv = find(v);\n        if (ru !== rv) {\n            const newNode = nodeCount++;\n            val[newNode] = w;\n            parent[ru] = newNode;\n            parent[rv] = newNode;\n            adj[newNode].push(ru);\n            adj[newNode].push(rv);\n        }\n    }\n    const LOG = 18;\n    const up = Array.from({ length: nodeCount }, () => new Int32Array(LOG));\n    const depth = new Int32Array(nodeCount);\n    const visited = new Uint8Array(nodeCount);\n    for (let i = nodeCount - 1; i >= 0; i--) {\n        if (find(i) === i && !visited[i]) {\n            const st = [i];\n            visited[i] = 1;\n            while (st.length > 0) {\n                const curr = st.pop();\n                for (const ch of adj[curr]) {\n                    if (!visited[ch]) {\n                        visited[ch] = 1;\n                        depth[ch] = depth[curr] + 1;\n                        up[ch][0] = curr;\n                        for (let k = 1; k < LOG; k++) {\n                            up[ch][k] = up[up[ch][k - 1]][k - 1];\n                        }\n                        st.push(ch);\n                    }\n                }\n            }\n        }\n    }\n    this.find = find;\n    this.up = up;\n    this.depth = depth;\n    this.val = val;\n    this.LOG = LOG;\n};\n\nDistanceLimitedPathsExist.prototype.query = function(p, q, limit) {\n    if (this.find(p) !== this.find(q)) return false;\n    if (this.depth[p] < this.depth[q]) { const t = p; p = q; q = t; }\n    for (let k = this.LOG - 1; k >= 0; k--) {\n        if (this.depth[p] - (1 << k) >= this.depth[q]) p = this.up[p][k];\n    }\n    if (p == q) return this.val[p] < limit;\n    for (let k = this.LOG - 1; k >= 0; k--) {\n        if (this.up[p][k] !== this.up[q][k]) {\n            p = this.up[p][k];\n            q = this.up[q][k];\n        }\n    }\n    return this.val[this.up[p][0]] < limit;\n};",
+      "approach": "JavaScript Kruskal Tree Binary Lifting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
