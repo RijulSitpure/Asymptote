@@ -1,0 +1,74 @@
+{
+  "slug": "finding-the-topic-of-each-post",
+  "number": 2199,
+  "category": "Database",
+  "patterns": [
+    "join-filter",
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Word Boundary Matching",
+      "text": "Join Posts with Keywords ensuring that keywords match complete words within post content."
+    },
+    {
+      "level": 2,
+      "title": "Padded Substring Check",
+      "text": "Padding post content and keywords with spaces allows standard matching with space-delimited patterns."
+    },
+    {
+      "level": 3,
+      "title": "String Aggregation and Defaulting",
+      "text": "Group by post_id and aggregate distinct topic_id values in ascending order. If no topic matches, return `the specified ambiguous label`."
+    },
+    {
+      "level": 4,
+      "title": "GROUP_CONCAT Query Formulation",
+      "text": "```sql\nSELECT\n    p.post_id,\n    COALESCE(GROUP_CONCAT(DISTINCT k.topic_id ORDER BY k.topic_id SEPARATOR ','), 'Ambiguous!') AS topic\nFROM Posts p\nLEFT JOIN Keywords k\n    ON CONCAT(' ', LOWER(p.content), ' ') LIKE CONCAT('% ', LOWER(k.word), ' %')\nGROUP BY p.post_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(P * K * W)",
+    "space": "O(P + K)",
+    "variables": [
+      "P: number of posts",
+      "K: number of keywords",
+      "W: average word length"
+    ],
+    "notes": "LEFT JOIN with like pattern matching checks all keywords against each post.",
+    "whyNaiveFails": "Simple substring matching flags words embedded inside larger words incorrectly.",
+    "spaceTimeTradeoff": "Grouping and sorting distinct topics uses temporary buffer proportional to matched topics.",
+    "interviewerExpectation": "Candidate handles word boundary delimiter padding and COALESCE fallback."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Left Join on Padded Keyword Match with Group Concat",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT\n    p.post_id,\n    COALESCE(GROUP_CONCAT(DISTINCT k.topic_id ORDER BY k.topic_id SEPARATOR ','), 'Ambiguous!') AS topic\nFROM Posts p\nLEFT JOIN Keywords k\n    ON CONCAT(' ', LOWER(p.content), ' ') LIKE CONCAT('% ', LOWER(k.word), ' %')\nGROUP BY p.post_id;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Left Join with String Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT\n    p.post_id,\n    COALESCE(STRING_AGG(DISTINCT k.topic_id::TEXT, ',' ORDER BY k.topic_id::TEXT), 'Ambiguous!') AS topic\nFROM Posts p\nLEFT JOIN Keywords k\n    ON CONCAT(' ', LOWER(p.content), ' ') LIKE CONCAT('% ', LOWER(k.word), ' %')\nGROUP BY p.post_id;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Iteration and Set-Based Word Matching",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef find_topic_of_each_post(keywords: pd.DataFrame, posts: pd.DataFrame) -> pd.DataFrame:\n    keywords['word_lower'] = keywords['word'].str.lower()\n    res = []\n    for _, post in posts.iterrows():\n        pid = post['post_id']\n        words = set(post['content'].lower().split())\n        matched_topics = set()\n        for _, kw in keywords.iterrows():\n            if kw['word_lower'] in words:\n                matched_topics.add(kw['topic_id'])\n        if matched_topics:\n            topic_str = \",\".join(str(t) for t in sorted(matched_topics))\n        else:\n            topic_str = \"Ambiguous!\"\n        res.append({'post_id': pid, 'topic': topic_str})\n    return pd.DataFrame(res)"
+    }
+  ]
+}

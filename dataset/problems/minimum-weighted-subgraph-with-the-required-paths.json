@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-weighted-subgraph-with-the-required-paths",
+  "number": 2203,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Meeting Node Decomposition",
+      "text": "The optimal subgraph consists of a path from src1 to an intermediate meeting vertex x, a path from src2 to x, and a path from x to dest."
+    },
+    {
+      "level": 2,
+      "title": "Reverse Graph for Destination",
+      "text": "Running shortest paths backwards from dest on the transposed graph yields the shortest distance from every vertex x to dest."
+    },
+    {
+      "level": 3,
+      "title": "Three Dijkstra Executions",
+      "text": "Compute d1 from src1, d2 from src2, and d_dest from dest on reversed edges using Dijkstra."
+    },
+    {
+      "level": 4,
+      "title": "Sum of Distances Minimization",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def minimumWeight(self, n: int, edges: list[list[int]], src1: int, src2: int, dest: int) -> int:\n        adj = [[] for _ in range(n)]\n        radj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            radj[v].append((u, w))\n\n        def dijkstra(start, graph):\n            dist = [float(\"inf\")] * n\n            dist[start] = 0\n            pq = [(0, start)]\n            while pq:\n                d, u = heapq.heappop(pq)\n                if d > dist[u]:\n                    continue\n                for v, w in graph[u]:\n                    if dist[u] + w < dist[v]:\n                        dist[v] = dist[u] + w\n                        heapq.heappush(pq, (dist[v], v))\n            return dist\n\n        d1 = dijkstra(src1, adj)\n        d2 = dijkstra(src2, adj)\n        d3 = dijkstra(dest, radj)\n        ans = float(\"inf\")\n        for i in range(n):\n            ans = min(ans, d1[i] + d2[i] + d3[i])\n        return ans if ans < float(\"inf\") else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((V + E) log V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes (n)",
+      "E: number of edges"
+    ],
+    "notes": "Three Dijkstra runs on graphs with n vertices and m edges.",
+    "whyNaiveFails": "Searching paths from src1 and src2 independently without a common meeting vertex fails to share common edges.",
+    "spaceTimeTradeoff": "Adjacency lists and distance vectors use linear O(V + E) memory.",
+    "interviewerExpectation": "Candidate formulates common meeting node x and runs backward Dijkstra from dest."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Three-Way Dijkstra with Reverse Graph",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import heapq\n\nclass Solution:\n    def minimumWeight(self, n: int, edges: list[list[int]], src1: int, src2: int, dest: int) -> int:\n        adj = [[] for _ in range(n)]\n        radj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            radj[v].append((u, w))\n\n        def dijkstra(start, graph):\n            dist = [float(\"inf\")] * n\n            dist[start] = 0\n            pq = [(0, start)]\n            while pq:\n                d, u = heapq.heappop(pq)\n                if d > dist[u]:\n                    continue\n                for v, w in graph[u]:\n                    if dist[u] + w < dist[v]:\n                        dist[v] = dist[u] + w\n                        heapq.heappush(pq, (dist[v], v))\n            return dist\n\n        d1 = dijkstra(src1, adj)\n        d2 = dijkstra(src2, adj)\n        d3 = dijkstra(dest, radj)\n        ans = float(\"inf\")\n        for i in range(n):\n            ans = min(ans, d1[i] + d2[i] + d3[i])\n        return ans if ans < float(\"inf\") else -1"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Three-Way Dijkstra with Reverse Graph",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    long long minimumWeight(int n, vector<vector<int>>& edges, int src1, int src2, int dest) {\n        vector<vector<pair<int, int>>> adj(n), radj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            radj[e[1]].push_back({e[0], e[2]});\n        }\n\n        auto dijkstra = [&](int start, const vector<vector<pair<int, int>>>& graph) {\n            vector<long long> dist(n, LLONG_MAX);\n            dist[start] = 0;\n            priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<>> pq;\n            pq.push({0, start});\n            while (!pq.empty()) {\n                auto [d, u] = pq.top();\n                pq.pop();\n                if (d > dist[u]) continue;\n                for (const auto& [v, w] : graph[u]) {\n                    if (dist[u] + w < dist[v]) {\n                        dist[v] = dist[u] + w;\n                        pq.push({dist[v], v});\n                    }\n                }\n            }\n            return dist;\n        };\n\n        auto d1 = dijkstra(src1, adj);\n        auto d2 = dijkstra(src2, adj);\n        auto d3 = dijkstra(dest, radj);\n\n        long long ans = LLONG_MAX;\n        for (int i = 0; i < n; i++) {\n            if (d1[i] != LLONG_MAX && d2[i] != LLONG_MAX && d3[i] != LLONG_MAX) {\n                ans = min(ans, d1[i] + d2[i] + d3[i]);\n            }\n        }\n        return ans == LLONG_MAX ? -1 : ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Three-Way Dijkstra with Reverse Graph",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public long minimumWeight(int n, int[][] edges, int src1, int src2, int dest) {\n        List<List<int[]>> adj = new ArrayList<>();\n        List<List<int[]>> radj = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            adj.add(new ArrayList<>());\n            radj.add(new ArrayList<>());\n        }\n        for (int[] e : edges) {\n            adj.get(e[0]).add(new int[]{e[1], e[2]});\n            radj.get(e[1]).add(new int[]{e[0], e[2]});\n        }\n\n        long[] d1 = dijkstra(n, src1, adj);\n        long[] d2 = dijkstra(n, src2, adj);\n        long[] d3 = dijkstra(n, dest, radj);\n\n        long ans = Long.MAX_VALUE;\n        for (int i = 0; i < n; i++) {\n            if (d1[i] != Long.MAX_VALUE && d2[i] != Long.MAX_VALUE && d3[i] != Long.MAX_VALUE) {\n                ans = Math.min(ans, d1[i] + d2[i] + d3[i]);\n            }\n        }\n        return ans == Long.MAX_VALUE ? -1 : ans;\n    }\n\n    private long[] dijkstra(int n, int start, List<List<int[]>> graph) {\n        long[] dist = new long[n];\n        Arrays.fill(dist, Long.MAX_VALUE);\n        dist[start] = 0;\n        PriorityQueue<long[]> pq = new PriorityQueue<>(Comparator.comparingLong(a -> a[0]));\n        pq.add(new long[]{0, start});\n        while (!pq.isEmpty()) {\n            long[] cur = pq.poll();\n            long d = cur[0];\n            int u = (int) cur[1];\n            if (d > dist[u]) continue;\n            for (int[] edge : graph.get(u)) {\n                int v = edge[0], w = edge[1];\n                if (dist[u] + w < dist[v]) {\n                    dist[v] = dist[u] + w;\n                    pq.add(new long[]{dist[v], v});\n                }\n            }\n        }\n        return dist;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Three-Way Dijkstra with Reverse Graph",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number} src1\n * @param {number} src2\n * @param {number} dest\n * @return {number}\n */\nvar minimumWeight = function(n, edges, src1, src2, dest) {\n    const adj = Array.from({ length: n }, () => []);\n    const radj = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        adj[u].push([v, w]);\n        radj[v].push([u, w]);\n    }\n\n    function dijkstra(start, graph) {\n        const dist = new Array(n).fill(Infinity);\n        dist[start] = 0;\n        const pq = [[0, start]];\n        while (pq.length > 0) {\n            pq.sort((a, b) => a[0] - b[0]);\n            const [d, u] = pq.shift();\n            if (d > dist[u]) continue;\n            for (const [v, w] of graph[u]) {\n                if (dist[u] + w < dist[v]) {\n                    dist[v] = dist[u] + w;\n                    pq.push([dist[v], v]);\n                }\n            }\n        }\n        return dist;\n    }\n\n    const d1 = dijkstra(src1, adj);\n    const d2 = dijkstra(src2, adj);\n    const d3 = dijkstra(dest, radj);\n\n    let ans = Infinity;\n    for (let i = 0; i < n; i++) {\n        if (d1[i] < Infinity && d2[i] < Infinity && d3[i] < Infinity) {\n            ans = Math.min(ans, d1[i] + d2[i] + d3[i]);\n        }\n    }\n    return ans === Infinity ? -1 : ans;\n};"
+    }
+  ]
+}

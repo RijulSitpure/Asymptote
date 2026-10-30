@@ -1,0 +1,79 @@
+{
+  "slug": "longest-substring-of-one-repeating-character",
+  "number": 2213,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Segment Tree Maintenance",
+      "text": "Each segment tree node represents an interval and stores the length of the longest repeating substring."
+    },
+    {
+      "level": 2,
+      "title": "Node Attributes",
+      "text": "Store total length, left prefix char and length, right suffix char and length, and overall maximum repeating length."
+    },
+    {
+      "level": 3,
+      "title": "Merging Subtrees",
+      "text": "When merging left child L and right child R, if L.suf_char == R.pre_char, a new contiguous repeating block spans across their boundary."
+    },
+    {
+      "level": 4,
+      "title": "Segment Tree Point Update Implementation",
+      "text": "```python\nclass Solution:\n    def longestRepeating(self, s: str, queryCharacters: str, queryIndices: list[int]) -> list[int]:\n        n = len(s)\n        tree = [None] * (4 * n)\n\n        def merge(l, r):\n            t_len = l[0] + r[0]\n            pre_c, pre_l = l[1], l[2]\n            if l[2] == l[0] and l[1] == r[1]:\n                pre_l += r[2]\n            suf_c, suf_l = r[3], r[4]\n            if r[4] == r[0] and r[3] == l[3]:\n                suf_l += l[4]\n            mx = max(l[5], r[5])\n            if l[3] == r[1]:\n                mx = max(mx, l[4] + r[2])\n            return (t_len, pre_c, pre_l, suf_c, suf_l, mx)\n\n        def build(node, l, r):\n            if l == r:\n                c = s[l]\n                tree[node] = (1, c, 1, c, 1, 1)\n                return\n            mid = (l + r) // 2\n            build(2 * node, l, mid)\n            build(2 * node + 1, mid + 1, r)\n            tree[node] = merge(tree[2 * node], tree[2 * node + 1])\n\n        def update(node, l, r, idx, ch):\n            if l == r:\n                tree[node] = (1, ch, 1, ch, 1, 1)\n                return\n            mid = (l + r) // 2\n            if idx <= mid:\n                update(2 * node, l, mid, idx, ch)\n            else:\n                update(2 * node + 1, mid + 1, r, idx, ch)\n            tree[node] = merge(tree[2 * node], tree[2 * node + 1])\n\n        build(1, 0, n - 1)\n        ans = []\n        for ch, idx in zip(queryCharacters, queryIndices):\n            update(1, 0, n - 1, idx, ch)\n            ans.append(tree[1][5])\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((n + q) log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of string s",
+      "q: number of queries"
+    ],
+    "notes": "Tree initialization takes O(n) and each query takes O(log n).",
+    "whyNaiveFails": "Recomputing longest repeating substring after each update is O(q * n) and TLEs.",
+    "spaceTimeTradeoff": "Segment tree takes 4 * n node space.",
+    "interviewerExpectation": "Candidate implements interval segment tree merging prefix, suffix, and internal maxima."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Segment Tree with Boundary Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def longestRepeating(self, s: str, queryCharacters: str, queryIndices: list[int]) -> list[int]:\n        n = len(s)\n        tree = [None] * (4 * n)\n\n        def merge(l, r):\n            t_len = l[0] + r[0]\n            pre_c, pre_l = l[1], l[2]\n            if l[2] == l[0] and l[1] == r[1]:\n                pre_l += r[2]\n            suf_c, suf_l = r[3], r[4]\n            if r[4] == r[0] and r[3] == l[3]:\n                suf_l += l[4]\n            mx = max(l[5], r[5])\n            if l[3] == r[1]:\n                mx = max(mx, l[4] + r[2])\n            return (t_len, pre_c, pre_l, suf_c, suf_l, mx)\n\n        def build(node, l, r):\n            if l == r:\n                c = s[l]\n                tree[node] = (1, c, 1, c, 1, 1)\n                return\n            mid = (l + r) // 2\n            build(2 * node, l, mid)\n            build(2 * node + 1, mid + 1, r)\n            tree[node] = merge(tree[2 * node], tree[2 * node + 1])\n\n        def update(node, l, r, idx, ch):\n            if l == r:\n                tree[node] = (1, ch, 1, ch, 1, 1)\n                return\n            mid = (l + r) // 2\n            if idx <= mid:\n                update(2 * node, l, mid, idx, ch)\n            else:\n                update(2 * node + 1, mid + 1, r, idx, ch)\n            tree[node] = merge(tree[2 * node], tree[2 * node + 1])\n\n        build(1, 0, n - 1)\n        ans = []\n        for ch, idx in zip(queryCharacters, queryIndices):\n            update(1, 0, n - 1, idx, ch)\n            ans.append(tree[1][5])\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Segment Tree with Boundary Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    struct Node {\n        int len;\n        char pre_c, suf_c;\n        int pre_len, suf_len, max_len;\n    };\n\n    vector<Node> tree;\n\n    Node merge(const Node& l, const Node& r) {\n        Node res;\n        res.len = l.len + r.len;\n        res.pre_c = l.pre_c;\n        res.pre_len = l.pre_len + (l.pre_len == l.len && l.pre_c == r.pre_c ? r.pre_len : 0);\n        res.suf_c = r.suf_c;\n        res.suf_len = r.suf_len + (r.suf_len == r.len && r.suf_c == l.suf_c ? l.suf_len : 0);\n        res.max_len = max(l.max_len, r.max_len);\n        if (l.suf_c == r.pre_c) {\n            res.max_len = max(res.max_len, l.suf_len + r.pre_len);\n        }\n        return res;\n    }\n\n    void build(int node, int l, int r, const string& s) {\n        if (l == r) {\n            tree[node] = {1, s[l], s[l], 1, 1, 1};\n            return;\n        }\n        int mid = (l + r) / 2;\n        build(2 * node, l, mid, s);\n        build(2 * node + 1, mid + 1, r, s);\n        tree[node] = merge(tree[2 * node], tree[2 * node + 1]);\n    }\n\n    void update(int node, int l, int r, int idx, char ch) {\n        if (l == r) {\n            tree[node] = {1, ch, ch, 1, 1, 1};\n            return;\n        }\n        int mid = (l + r) / 2;\n        if (idx <= mid) update(2 * node, l, mid, idx, ch);\n        else update(2 * node + 1, mid + 1, r, idx, ch);\n        tree[node] = merge(tree[2 * node], tree[2 * node + 1]);\n    }\n\npublic:\n    vector<int> longestRepeating(string s, string queryCharacters, vector<int>& queryIndices) {\n        int n = s.size();\n        tree.resize(4 * n);\n        build(1, 0, n - 1, s);\n        vector<int> ans;\n        for (int i = 0; i < (int)queryCharacters.size(); i++) {\n            update(1, 0, n - 1, queryIndices[i], queryCharacters[i]);\n            ans.push_back(tree[1].max_len);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Segment Tree with Boundary Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    static class Node {\n        int len;\n        char pre_c, suf_c;\n        int pre_len, suf_len, max_len;\n    }\n\n    private Node[] tree;\n\n    private Node merge(Node l, Node r) {\n        Node res = new Node();\n        res.len = l.len + r.len;\n        res.pre_c = l.pre_c;\n        res.pre_len = l.pre_len + (l.pre_len == l.len && l.pre_c == r.pre_c ? r.pre_len : 0);\n        res.suf_c = r.suf_c;\n        res.suf_len = r.suf_len + (r.suf_len == r.len && r.suf_c == l.suf_c ? l.suf_len : 0);\n        res.max_len = Math.max(l.max_len, r.max_len);\n        if (l.suf_c == r.pre_c) {\n            res.max_len = Math.max(res.max_len, l.suf_len + r.pre_len);\n        }\n        return res;\n    }\n\n    private void build(int node, int l, int r, String s) {\n        if (l == r) {\n            tree[node] = new Node();\n            char c = s.charAt(l);\n            tree[node].len = 1;\n            tree[node].pre_c = c;\n            tree[node].suf_c = c;\n            tree[node].pre_len = 1;\n            tree[node].suf_len = 1;\n            tree[node].max_len = 1;\n            return;\n        }\n        int mid = (l + r) / 2;\n        build(2 * node, l, mid, s);\n        build(2 * node + 1, mid + 1, r, s);\n        tree[node] = merge(tree[2 * node], tree[2 * node + 1]);\n    }\n\n    private void update(int node, int l, int r, int idx, char ch) {\n        if (l == r) {\n            tree[node].pre_c = ch;\n            tree[node].suf_c = ch;\n            return;\n        }\n        int mid = (l + r) / 2;\n        if (idx <= mid) update(2 * node, l, mid, idx, ch);\n        else update(2 * node + 1, mid + 1, r, idx, ch);\n        tree[node] = merge(tree[2 * node], tree[2 * node + 1]);\n    }\n\n    public int[] longestRepeating(String s, String queryCharacters, int[] queryIndices) {\n        int n = s.length();\n        tree = new Node[4 * n];\n        build(1, 0, n - 1, s);\n        int[] ans = new int[queryCharacters.length()];\n        for (int i = 0; i < queryCharacters.length(); i++) {\n            update(1, 0, n - 1, queryIndices[i], queryCharacters.charAt(i));\n            ans[i] = tree[1].max_len;\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Segment Tree with Boundary Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "/**\n * @param {string} s\n * @param {string} queryCharacters\n * @param {number[]} queryIndices\n * @return {number[]}\n */\nvar longestRepeating = function(s, queryCharacters, queryIndices) {\n    const n = s.length;\n    const tree = new Array(4 * n);\n\n    function merge(l, r) {\n        const len = l.len + r.len;\n        const pre_c = l.pre_c;\n        const pre_len = l.pre_len + (l.pre_len === l.len && l.pre_c === r.pre_c ? r.pre_len : 0);\n        const suf_c = r.suf_c;\n        const suf_len = r.suf_len + (r.suf_len === r.len && r.suf_c === l.suf_c ? l.suf_len : 0);\n        let max_len = Math.max(l.max_len, r.max_len);\n        if (l.suf_c === r.pre_c) {\n            max_len = Math.max(max_len, l.suf_len + r.pre_len);\n        }\n        return { len, pre_c, pre_len, suf_c, suf_len, max_len };\n    }\n\n    function build(node, l, r) {\n        if (l === r) {\n            const ch = s[l];\n            tree[node] = { len: 1, pre_c: ch, suf_c: ch, pre_len: 1, suf_len: 1, max_len: 1 };\n            return;\n        }\n        const mid = (l + r) >> 1;\n        build(node * 2, l, mid);\n        build(node * 2 + 1, mid + 1, r);\n        tree[node] = merge(tree[node * 2], tree[node * 2 + 1]);\n    }\n\n    function update(node, l, r, idx, ch) {\n        if (l === r) {\n            tree[node] = { len: 1, pre_c: ch, suf_c: ch, pre_len: 1, suf_len: 1, max_len: 1 };\n            return;\n        }\n        const mid = (l + r) >> 1;\n        if (idx <= mid) update(node * 2, l, mid, idx, ch);\n        else update(node * 2 + 1, mid + 1, r, idx, ch);\n        tree[node] = merge(tree[node * 2], tree[node * 2 + 1]);\n    }\n\n    build(1, 0, n - 1);\n    const ans = [];\n    for (let i = 0; i < queryCharacters.length; i++) {\n        update(1, 0, n - 1, queryIndices[i], queryCharacters[i]);\n        ans.push(tree[1].max_len);\n    }\n    return ans;\n};"
+    }
+  ]
+}

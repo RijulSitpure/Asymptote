@@ -1,0 +1,72 @@
+{
+  "slug": "the-number-of-users-that-are-eligible-for-discount",
+  "number": 2205,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Date Range and Amount Filters",
+      "text": "Filter Purchases to include records where time_stamp falls within [startDate, endDate] inclusive and amount is at least minAmount."
+    },
+    {
+      "level": 2,
+      "title": "Distinct User Deduplication",
+      "text": "Multiple qualifying transactions by the same user should only count once using distinct user deduplication."
+    },
+    {
+      "level": 3,
+      "title": "Stored Function Return",
+      "text": "Enclose the aggregate query in the scalar subquery returned by the stored function."
+    },
+    {
+      "level": 4,
+      "title": "MySQL Stored Function Definition",
+      "text": "```sql\nCREATE FUNCTION getUserIDs(startDate DATE, endDate DATE, minAmount INT) RETURNS INT\nBEGIN\n  RETURN (\n      SELECT COUNT(DISTINCT user_id)\n      FROM Purchases\n      WHERE time_stamp BETWEEN startDate AND endDate\n        AND amount >= minAmount\n  );\nEND\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N)",
+    "space": "O(U)",
+    "variables": [
+      "N: total number of purchases",
+      "U: number of distinct qualifying users"
+    ],
+    "notes": "Filtering and aggregating user IDs scales linearly with purchase rows.",
+    "whyNaiveFails": "Failing to deduplicate user_id with DISTINCT overcounts users with multiple eligible transactions.",
+    "spaceTimeTradeoff": "Distinct hash set uses temporary memory proportional to distinct eligible users.",
+    "interviewerExpectation": "Candidate correctly formulates BETWEEN boundary filter and COUNT(DISTINCT user_id)."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Scalar Function with Filtered Count Distinct",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "CREATE FUNCTION getUserIDs(startDate DATE, endDate DATE, minAmount INT) RETURNS INT\nBEGIN\n  RETURN (\n      SELECT COUNT(DISTINCT user_id)\n      FROM Purchases\n      WHERE time_stamp BETWEEN startDate AND endDate\n        AND amount >= minAmount\n  );\nEND"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "PostgreSQL Stored Function with Filtered Count Distinct",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "CREATE OR REPLACE FUNCTION getUserIDs(startDate DATE, endDate DATE, minAmount INT) RETURNS INT AS $$\nBEGIN\n  RETURN (\n    SELECT COUNT(DISTINCT user_id)\n    FROM Purchases\n    WHERE time_stamp BETWEEN startDate AND endDate\n      AND amount >= minAmount\n  );\nEND;\n$$ LANGUAGE plpgsql;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Boolean Mask Filtering with Nunique",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef count_eligible_users(purchases: pd.DataFrame, startDate: str, endDate: str, minAmount: int) -> pd.DataFrame:\n    filtered = purchases[(purchases['time_stamp'] >= startDate) & \n                         (purchases['time_stamp'] <= endDate) & \n                         (purchases['amount'] >= minAmount)]\n    user_count = filtered['user_id'].nunique()\n    return pd.DataFrame({'user_cnt': [user_count]})"
+    }
+  ]
+}
