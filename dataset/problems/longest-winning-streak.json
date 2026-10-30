@@ -1,0 +1,71 @@
+{
+  "slug": "longest-winning-streak",
+  "number": 2173,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Track Consecutive Match Order",
+      "text": "Assign row numbers to all matches for each player ordered chronologically by match day."
+    },
+    {
+      "level": 2,
+      "title": "Isolate Winning Matches",
+      "text": "Filter winning matches and assign a second row number partitioned by player."
+    },
+    {
+      "level": 3,
+      "title": "Gaps and Islands Difference",
+      "text": "Subtract the winning row number from the overall row number to create a grouping key for consecutive wins."
+    },
+    {
+      "level": 4,
+      "title": "Complete SQL Query",
+      "text": "```sql\nWITH RankedMatches AS (\n    SELECT \n        player_id,\n        match_day,\n        result,\n        ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY match_day) AS overall_rn\n    FROM Matches\n),\nWinMatches AS (\n    SELECT \n        player_id,\n        overall_rn,\n        ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY match_day) AS win_rn\n    FROM RankedMatches\n    WHERE result = 'Win'\n),\nStreaks AS (\n    SELECT \n        player_id,\n        COUNT(*) AS streak\n    FROM WinMatches\n    GROUP BY player_id, (overall_rn - win_rn)\n),\nMaxStreaks AS (\n    SELECT \n        player_id,\n        MAX(streak) AS longest_streak\n    FROM Streaks\n    GROUP BY player_id\n)\nSELECT \n    p.player_id,\n    COALESCE(m.longest_streak, 0) AS longest_streak\nFROM (SELECT DISTINCT player_id FROM Matches) p\nLEFT JOIN MaxStreaks m ON p.player_id = m.player_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) window function sorting over match dates",
+    "space": "O(N) temporary row number allocations",
+    "variables": [
+      "N: number of matches in Matches table"
+    ],
+    "notes": "Gaps-and-islands grouping via row number differences.",
+    "whyNaiveFails": "Self-joins over unbounded streaks produce exponential Cartesian products.",
+    "spaceTimeTradeoff": "Row number differences group contiguous matches in a single window pass.",
+    "interviewerExpectation": "Apply the standard gaps-and-islands row number difference technique."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RankedMatches AS (\n    SELECT \n        player_id,\n        match_day,\n        result,\n        ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY match_day) AS overall_rn\n    FROM Matches\n),\nWinMatches AS (\n    SELECT \n        player_id,\n        overall_rn,\n        ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY match_day) AS win_rn\n    FROM RankedMatches\n    WHERE result = 'Win'\n),\nStreaks AS (\n    SELECT \n        player_id,\n        COUNT(*) AS streak\n    FROM WinMatches\n    GROUP BY player_id, (overall_rn - win_rn)\n),\nMaxStreaks AS (\n    SELECT \n        player_id,\n        MAX(streak) AS longest_streak\n    FROM Streaks\n    GROUP BY player_id\n)\nSELECT \n    p.player_id,\n    COALESCE(m.longest_streak, 0) AS longest_streak\nFROM (SELECT DISTINCT player_id FROM Matches) p\nLEFT JOIN MaxStreaks m ON p.player_id = m.player_id;",
+      "approach": "MySQL gaps and islands window function solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RankedMatches AS (\n    SELECT \n        player_id,\n        match_day,\n        result,\n        ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY match_day) AS overall_rn\n    FROM Matches\n),\nWinMatches AS (\n    SELECT \n        player_id,\n        overall_rn,\n        ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY match_day) AS win_rn\n    FROM RankedMatches\n    WHERE result = 'Win'\n),\nStreaks AS (\n    SELECT \n        player_id,\n        COUNT(*) AS streak\n    FROM WinMatches\n    GROUP BY player_id, (overall_rn - win_rn)\n),\nMaxStreaks AS (\n    SELECT \n        player_id,\n        MAX(streak) AS longest_streak\n    FROM Streaks\n    GROUP BY player_id\n)\nSELECT \n    p.player_id,\n    COALESCE(m.longest_streak, 0) AS longest_streak\nFROM (SELECT DISTINCT player_id FROM Matches) p\nLEFT JOIN MaxStreaks m ON p.player_id = m.player_id;",
+      "approach": "PostgreSQL gaps and islands window function solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef longest_winning_streak(matches: pd.DataFrame) -> pd.DataFrame:\n    if matches.empty:\n        return pd.DataFrame({'player_id': [], 'longest_streak': []})\n    matches = matches.sort_values(['player_id', 'match_day']).copy()\n    matches['overall_rn'] = matches.groupby('player_id').cumcount() + 1\n    wins = matches[matches['result'] == 'Win'].copy()\n    if wins.empty:\n        res = pd.DataFrame({'player_id': matches['player_id'].unique()})\n        res['longest_streak'] = 0\n        return res\n    wins['win_rn'] = wins.groupby('player_id').cumcount() + 1\n    wins['grp'] = wins['overall_rn'] - wins['win_rn']\n    streaks = wins.groupby(['player_id', 'grp']).size().reset_index(name='streak')\n    max_streaks = streaks.groupby('player_id')['streak'].max().reset_index(name='longest_streak')\n    all_players = pd.DataFrame({'player_id': matches['player_id'].unique()})\n    res = all_players.merge(max_streaks, on='player_id', how='left')\n    res['longest_streak'] = res['longest_streak'].fillna(0).astype(int)\n    return res",
+      "approach": "Pandas cumulative counts and groupby solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

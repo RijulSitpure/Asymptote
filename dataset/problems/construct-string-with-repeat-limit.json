@@ -1,0 +1,78 @@
+{
+  "slug": "construct-string-with-repeat-limit",
+  "number": 2182,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Greedy Character Selection",
+      "text": "Always pick the largest available character to make the string lexicographically as large as possible."
+    },
+    {
+      "level": 2,
+      "title": "Observe Repeat Limit",
+      "text": "Take at most repeatLimit copies of the largest character."
+    },
+    {
+      "level": 3,
+      "title": "Insert Single Separator",
+      "text": "If copies of the largest character remain, insert a single copy of the next largest available character to break the repetition."
+    },
+    {
+      "level": 4,
+      "title": "Complete Python Solution",
+      "text": "```python\nclass Solution:\n    def repeatLimitedString(self, s: str, repeatLimit: int) -> str:\n        count = collections.Counter(s)\n        max_h = [(-ord(c), c, cnt) for c, cnt in count.items()]\n        heapq.heapify(max_h)\n        res = []\n        while max_h:\n            neg_ord, ch, cnt = heapq.heappop(max_h)\n            use = min(cnt, repeatLimit)\n            res.append(ch * use)\n            cnt -= use\n            if cnt > 0:\n                if not max_h:\n                    break\n                n_neg, n_ch, n_cnt = heapq.heappop(max_h)\n                res.append(n_ch)\n                n_cnt -= 1\n                if n_cnt > 0:\n                    heapq.heappush(max_h, (n_neg, n_ch, n_cnt))\n                heapq.heappush(max_h, (neg_ord, ch, cnt))\n        return \"\".join(res)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log 26) heap operations over characters",
+    "space": "O(26) heap and alphabet counts",
+    "variables": [
+      "N: string length"
+    ],
+    "notes": "Greedy max heap with frequency limit.",
+    "whyNaiveFails": "Sorting without constraint tracking creates illegal consecutive streaks.",
+    "spaceTimeTradeoff": "Heap over 26 characters executes in constant heap time per step.",
+    "interviewerExpectation": "Greedy construction with alternating delimiter character insertion."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def repeatLimitedString(self, s: str, repeatLimit: int) -> str:\n        count = collections.Counter(s)\n        max_h = [(-ord(c), c, cnt) for c, cnt in count.items()]\n        heapq.heapify(max_h)\n        res = []\n        while max_h:\n            neg_ord, ch, cnt = heapq.heappop(max_h)\n            use = min(cnt, repeatLimit)\n            res.append(ch * use)\n            cnt -= use\n            if cnt > 0:\n                if not max_h:\n                    break\n                n_neg, n_ch, n_cnt = heapq.heappop(max_h)\n                res.append(n_ch)\n                n_cnt -= 1\n                if n_cnt > 0:\n                    heapq.heappush(max_h, (n_neg, n_ch, n_cnt))\n                heapq.heappush(max_h, (neg_ord, ch, cnt))\n        return \"\".join(res)",
+      "approach": "Python heapq greedy selection and separator injection.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    string repeatLimitedString(string s, int repeatLimit) {\n        vector<int> count(26, 0);\n        for (char ch : s) count[ch - 'a']++;\n        priority_queue<pair<char, int>> pq;\n        for (int i = 0; i < 26; i++) {\n            if (count[i] > 0) pq.push({'a' + i, count[i]});\n        }\n        string res = \"\";\n        while (!pq.empty()) {\n            auto [ch, cnt] = pq.top();\n            pq.pop();\n            int use = min(cnt, repeatLimit);\n            res.append(use, ch);\n            cnt -= use;\n            if (cnt > 0) {\n                if (pq.empty()) break;\n                auto [nCh, nCnt] = pq.top();\n                pq.pop();\n                res.push_back(nCh);\n                nCnt--;\n                if (nCnt > 0) pq.push({nCh, nCnt});\n                pq.push({ch, cnt});\n            }\n        }\n        return res;\n    }\n};",
+      "approach": "C++ priority_queue max-character greedy accumulation.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public String repeatLimitedString(String s, int repeatLimit) {\n        int[] count = new int[26];\n        for (char ch : s.toCharArray()) count[ch - 'a']++;\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> b[0] - a[0]);\n        for (int i = 0; i < 26; i++) {\n            if (count[i] > 0) pq.offer(new int[]{i, count[i]});\n        }\n        StringBuilder sb = new StringBuilder();\n        while (!pq.isEmpty()) {\n            int[] cur = pq.poll();\n            int ch = cur[0], cnt = cur[1];\n            int use = Math.min(cnt, repeatLimit);\n            for (int i = 0; i < use; i++) sb.append((char) ('a' + ch));\n            cnt -= use;\n            if (cnt > 0) {\n                if (pq.isEmpty()) break;\n                int[] next = pq.poll();\n                sb.append((char) ('a' + next[0]));\n                next[1]--;\n                if (next[1] > 0) pq.offer(next);\n                pq.offer(new int[]{ch, cnt});\n            }\n        }\n        return sb.toString();\n    }\n}",
+      "approach": "Java PriorityQueue greedy builder.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "var repeatLimitedString = function(s, repeatLimit) {\n    const count = new Int32Array(26);\n    for (let i = 0; i < s.length; i++) count[s.charCodeAt(i) - 97]++;\n    let res = [];\n    let i = 25;\n    while (i >= 0) {\n        if (count[i] === 0) {\n            i--;\n            continue;\n        }\n        const ch = String.fromCharCode(97 + i);\n        const use = Math.min(count[i], repeatLimit);\n        res.push(ch.repeat(use));\n        count[i] -= use;\n        if (count[i] > 0) {\n            let j = i - 1;\n            while (j >= 0 && count[j] === 0) j--;\n            if (j < 0) break;\n            res.push(String.fromCharCode(97 + j));\n            count[j]--;\n        }\n    }\n    return res.join('');\n};",
+      "approach": "JavaScript frequency array dual-pointer greedy simulation.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

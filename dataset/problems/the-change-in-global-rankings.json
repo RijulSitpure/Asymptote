@@ -1,0 +1,71 @@
+{
+  "slug": "the-change-in-global-rankings",
+  "number": 2175,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Compute Initial Rankings",
+      "text": "Rank teams by points descending and name ascending using ROW_NUMBER."
+    },
+    {
+      "level": 2,
+      "title": "Compute Updated Rankings",
+      "text": "Join PointsChange, compute the new points sum, and rank teams using the same ordering criteria."
+    },
+    {
+      "level": 3,
+      "title": "Compute Difference in Position",
+      "text": "Subtract the new rank from the old rank. A positive difference indicates an improved position."
+    },
+    {
+      "level": 4,
+      "title": "Complete SQL Query",
+      "text": "```sql\nWITH BeforeRank AS (\n    SELECT \n        team_id,\n        name,\n        points,\n        ROW_NUMBER() OVER (ORDER BY points DESC, name ASC) AS old_rank\n    FROM TeamPoints\n),\nAfterRank AS (\n    SELECT \n        tp.team_id,\n        tp.name,\n        ROW_NUMBER() OVER (ORDER BY (tp.points + pc.points_change) DESC, tp.name ASC) AS new_rank\n    FROM TeamPoints tp\n    JOIN PointsChange pc ON tp.team_id = pc.team_id\n)\nSELECT \n    b.team_id,\n    b.name,\n    (CAST(b.old_rank AS SIGNED) - CAST(a.new_rank AS SIGNED)) AS rank_diff\nFROM BeforeRank b\nJOIN AfterRank a ON b.team_id = a.team_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) sorting twice for initial and updated team points",
+    "space": "O(N) joined temporary relation",
+    "variables": [
+      "N: number of teams in TeamPoints table"
+    ],
+    "notes": "Deterministic ranking with secondary name tiebreaker.",
+    "whyNaiveFails": "Updating tables destructively without maintaining before/after snapshots prevents atomic diffing.",
+    "spaceTimeTradeoff": "Dual window passes calculate rank shifts in linear-logarithmic time.",
+    "interviewerExpectation": "Handle signed rank difference and secondary string ordering cleanly."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH BeforeRank AS (\n    SELECT \n        team_id,\n        name,\n        points,\n        ROW_NUMBER() OVER (ORDER BY points DESC, name ASC) AS old_rank\n    FROM TeamPoints\n),\nAfterRank AS (\n    SELECT \n        tp.team_id,\n        tp.name,\n        ROW_NUMBER() OVER (ORDER BY (tp.points + pc.points_change) DESC, tp.name ASC) AS new_rank\n    FROM TeamPoints tp\n    JOIN PointsChange pc ON tp.team_id = pc.team_id\n)\nSELECT \n    b.team_id,\n    b.name,\n    (CAST(b.old_rank AS SIGNED) - CAST(a.new_rank AS SIGNED)) AS rank_diff\nFROM BeforeRank b\nJOIN AfterRank a ON b.team_id = a.team_id;",
+      "approach": "MySQL dual row_number window CTE comparison.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH BeforeRank AS (\n    SELECT \n        team_id,\n        name,\n        points,\n        ROW_NUMBER() OVER (ORDER BY points DESC, name ASC) AS old_rank\n    FROM TeamPoints\n),\nAfterRank AS (\n    SELECT \n        tp.team_id,\n        tp.name,\n        ROW_NUMBER() OVER (ORDER BY (tp.points + pc.points_change) DESC, tp.name ASC) AS new_rank\n    FROM TeamPoints tp\n    JOIN PointsChange pc ON tp.team_id = pc.team_id\n)\nSELECT \n    b.team_id,\n    b.name,\n    (CAST(b.old_rank AS INT) - CAST(a.new_rank AS INT)) AS rank_diff\nFROM BeforeRank b\nJOIN AfterRank a ON b.team_id = a.team_id;",
+      "approach": "PostgreSQL dual row_number window CTE comparison.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef global_ratings_change(team_points: pd.DataFrame, points_change: pd.DataFrame) -> pd.DataFrame:\n    tp = team_points.sort_values(by=['points', 'name'], ascending=[False, True]).reset_index(drop=True)\n    tp['old_rank'] = tp.index + 1\n    merged = team_points.merge(points_change, on='team_id')\n    merged['new_points'] = merged['points'] + merged['points_change']\n    merged = merged.sort_values(by=['new_points', 'name'], ascending=[False, True]).reset_index(drop=True)\n    merged['new_rank'] = merged.index + 1\n    res = tp[['team_id', 'name', 'old_rank']].merge(merged[['team_id', 'new_rank']], on='team_id')\n    res['rank_diff'] = res['old_rank'] - res['new_rank']\n    return res[['team_id', 'name', 'rank_diff']]",
+      "approach": "Pandas sorting and rank diffing solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

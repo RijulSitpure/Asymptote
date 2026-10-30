@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-ways-to-build-sturdy-brick-wall",
+  "number": 2184,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Enumerate Valid Single Rows",
+      "text": "Use backtracking to find all combinations of bricks summing to width, representing internal seam positions as bitmasks."
+    },
+    {
+      "level": 2,
+      "title": "Define Seam Compatibility",
+      "text": "Two row configurations can be stacked if they share no common interior seams (mask1 & mask2 == 0)."
+    },
+    {
+      "level": 3,
+      "title": "Transition Over Wall Height",
+      "text": "Iterate height minus one times, transferring the number of valid paths between compatible configurations modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "Complete Python Solution",
+      "text": "```python\nclass Solution:\n    def buildWall(self, height: int, width: int, bricks: List[int]) -> int:\n        MOD = 10**9 + 7\n        rows = []\n        def dfs(w, mask):\n            if w == width:\n                rows.append(mask)\n                return\n            for b in bricks:\n                if w + b <= width:\n                    next_mask = mask if w + b == width else mask | (1 << (w + b))\n                    dfs(w + b, next_mask)\n        dfs(0, 0)\n        \n        adj = [[] for _ in range(len(rows))]\n        for i in range(len(rows)):\n            for j in range(len(rows)):\n                if not (rows[i] & rows[j]):\n                    adj[i].append(j)\n                    \n        dp = [1] * len(rows)\n        for _ in range(height - 1):\n            next_dp = [0] * len(rows)\n            for i in range(len(rows)):\n                for j in adj[i]:\n                    next_dp[j] = (next_dp[j] + dp[i]) % MOD\n            dp = next_dp\n        return sum(dp) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R^2 * height) where R is count of valid rows (R <= 100)",
+    "space": "O(R^2) row adjacency list",
+    "variables": [
+      "height: wall height",
+      "width: wall width (<= 10)"
+    ],
+    "notes": "Bitmask seam compatibility dynamic programming.",
+    "whyNaiveFails": "Recursive building row-by-row without seam compression yields combinatorial explosion.",
+    "spaceTimeTradeoff": "Precomputing valid seam masks limits the graph to at most ~100 vertices.",
+    "interviewerExpectation": "Precompute row seam masks and propagate state transitions vertically."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def buildWall(self, height: int, width: int, bricks: List[int]) -> int:\n        MOD = 10**9 + 7\n        rows = []\n        def dfs(w, mask):\n            if w == width:\n                rows.append(mask)\n                return\n            for b in bricks:\n                if w + b <= width:\n                    next_mask = mask if w + b == width else mask | (1 << (w + b))\n                    dfs(w + b, next_mask)\n        dfs(0, 0)\n        \n        adj = [[] for _ in range(len(rows))]\n        for i in range(len(rows)):\n            for j in range(len(rows)):\n                if not (rows[i] & rows[j]):\n                    adj[i].append(j)\n                    \n        dp = [1] * len(rows)\n        for _ in range(height - 1):\n            next_dp = [0] * len(rows)\n            for i in range(len(rows)):\n                for j in adj[i]:\n                    next_dp[j] = (next_dp[j] + dp[i]) % MOD\n            dp = next_dp\n        return sum(dp) % MOD",
+      "approach": "Python seam bitmask DFS and adjacency transition DP.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int buildWall(int height, int width, vector<int>& bricks) {\n        const int MOD = 1e9 + 7;\n        vector<int> rows;\n        function<void(int, int)> dfs = [&](int w, int mask) {\n            if (w == width) {\n                rows.push_back(mask);\n                return;\n            }\n            for (int b : bricks) {\n                if (w + b <= width) {\n                    int nextMask = (w + b == width) ? mask : (mask | (1 << (w + b)));\n                    dfs(w + b, nextMask);\n                }\n            }\n        };\n        dfs(0, 0);\n        int r = rows.size();\n        vector<vector<int>> adj(r);\n        for (int i = 0; i < r; i++) {\n            for (int j = 0; j < r; j++) {\n                if (!(rows[i] & rows[j])) adj[i].push_back(j);\n            }\n        }\n        vector<long long> dp(r, 1);\n        for (int h = 1; h < height; h++) {\n            vector<long long> nextDp(r, 0);\n            for (int i = 0; i < r; i++) {\n                for (int j : adj[i]) {\n                    nextDp[j] = (nextDp[j] + dp[i]) % MOD;\n                }\n            }\n            dp = move(nextDp);\n        }\n        long long ans = 0;\n        for (long long v : dp) ans = (ans + v) % MOD;\n        return ans;\n    }\n};",
+      "approach": "C++ seam bitmask adjacency list and DP vector transitions.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int buildWall(int height, int width, int[] bricks) {\n        final int MOD = 1_000_000_007;\n        List<Integer> rows = new ArrayList<>();\n        dfs(0, 0, width, bricks, rows);\n        int r = rows.size();\n        List<Integer>[] adj = new ArrayList[r];\n        for (int i = 0; i < r; i++) adj[i] = new ArrayList<>();\n        for (int i = 0; i < r; i++) {\n            for (int j = 0; j < r; j++) {\n                if ((rows.get(i) & rows.get(j)) == 0) adj[i].add(j);\n            }\n        }\n        long[] dp = new long[r];\n        Arrays.fill(dp, 1);\n        for (int h = 1; h < height; h++) {\n            long[] nextDp = new long[r];\n            for (int i = 0; i < r; i++) {\n                for (int j : adj[i]) {\n                    nextDp[j] = (nextDp[j] + dp[i]) % MOD;\n                }\n            }\n            dp = nextDp;\n        }\n        long ans = 0;\n        for (long v : dp) ans = (ans + v) % MOD;\n        return (int) ans;\n    }\n    private void dfs(int w, int mask, int width, int[] bricks, List<Integer> rows) {\n        if (w == width) {\n            rows.add(mask);\n            return;\n        }\n        for (int b : bricks) {\n            if (w + b <= width) {\n                int nextMask = (w + b == width) ? mask : (mask | (1 << (w + b)));\n                dfs(w + b, nextMask, width, bricks, rows);\n            }\n        }\n    }\n}",
+      "approach": "Java adjacency array of lists and DP array iteration.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "var buildWall = function(height, width, bricks) {\n    const MOD = 1000000007;\n    const rows = [];\n    function dfs(w, mask) {\n        if (w === width) {\n            rows.push(mask);\n            return;\n        }\n        for (const b of bricks) {\n            if (w + b <= width) {\n                const nextMask = (w + b === width) ? mask : (mask | (1 << (w + b)));\n                dfs(w + b, nextMask);\n            }\n        }\n    }\n    dfs(0, 0);\n    const r = rows.length;\n    const adj = Array.from({ length: r }, () => []);\n    for (let i = 0; i < r; i++) {\n        for (let j = 0; j < r; j++) {\n            if (!(rows[i] & rows[j])) adj[i].push(j);\n        }\n    }\n    let dp = new Array(r).fill(1);\n    for (let h = 1; h < height; h++) {\n        const nextDp = new Array(r).fill(0);\n        for (let i = 0; i < r; i++) {\n            for (const j of adj[i]) {\n                nextDp[j] = (nextDp[j] + dp[i]) % MOD;\n            }\n        }\n        dp = nextDp;\n    }\n    return dp.reduce((a, b) => (a + b) % MOD, 0);\n};",
+      "approach": "JavaScript DFS seam collection and iterative modulo DP.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

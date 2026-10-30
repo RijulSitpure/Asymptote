@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-time-to-finish-the-race",
+  "number": 2188,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bound Consecutive Laps on One Tire",
+      "text": "Because r >= 2, the time for lap x grows exponentially. Running more than 17 consecutive laps on any single tire is never optimal compared to changing tires."
+    },
+    {
+      "level": 2,
+      "title": "Precompute Best Tire Times",
+      "text": "Calculate min_tire[x], the minimum time to complete x consecutive laps without changing tires across all available tires."
+    },
+    {
+      "level": 3,
+      "title": "1D Dynamic Programming Over Laps",
+      "text": "Let dp[i] be the minimum time to finish i laps. Try all possible lengths j (1 to 17) for the final tire run."
+    },
+    {
+      "level": 4,
+      "title": "Complete Python Solution",
+      "text": "```python\nclass Solution:\n    def minimumFinishTime(self, tires: List[List[int]], changeTime: int, numLaps: int) -> int:\n        min_tire = [float('inf')] * 18\n        for f, r in tires:\n            cur = f\n            total = f\n            lap = 1\n            while lap <= 17 and cur < changeTime + f:\n                min_tire[lap] = min(min_tire[lap], total)\n                cur *= r\n                total += cur\n                lap += 1\n                \n        dp = [float('inf')] * (numLaps + 1)\n        dp[0] = -changeTime\n        for i in range(1, numLaps + 1):\n            for j in range(1, min(i, 17) + 1):\n                dp[i] = min(dp[i], dp[i - j] + changeTime + min_tire[j])\n        return dp[numLaps]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(T * 17 + numLaps * 17) dynamic programming",
+    "space": "O(numLaps) DP table",
+    "variables": [
+      "T: number of tires",
+      "numLaps: total race laps (<= 1000)"
+    ],
+    "notes": "Exponential tire degradation with bounded consecutive laps.",
+    "whyNaiveFails": "Testing permutations of tire swaps over 1000 laps is doubly exponential.",
+    "spaceTimeTradeoff": "Bounding single-tire runs to 17 laps limits the inner DP loop to a small constant.",
+    "interviewerExpectation": "Prove the ~17 lap upper bound before setting up 1D dynamic programming."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minimumFinishTime(self, tires: List[List[int]], changeTime: int, numLaps: int) -> int:\n        min_tire = [float('inf')] * 18\n        for f, r in tires:\n            cur = f\n            total = f\n            lap = 1\n            while lap <= 17 and cur < changeTime + f:\n                min_tire[lap] = min(min_tire[lap], total)\n                cur *= r\n                total += cur\n                lap += 1\n                \n        dp = [float('inf')] * (numLaps + 1)\n        dp[0] = -changeTime\n        for i in range(1, numLaps + 1):\n            for j in range(1, min(i, 17) + 1):\n                dp[i] = min(dp[i], dp[i - j] + changeTime + min_tire[j])\n        return dp[numLaps]",
+      "approach": "Python bounded consecutive lap precomputation and 1D DP.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minimumFinishTime(vector<vector<int>>& tires, int changeTime, int numLaps) {\n        vector<long long> minTire(18, 1e18);\n        for (auto& t : tires) {\n            long long f = t[0], r = t[1];\n            long long cur = f, total = f;\n            for (int lap = 1; lap <= 17 && cur < changeTime + f; lap++) {\n                minTire[lap] = min(minTire[lap], total);\n                cur *= r;\n                total += cur;\n            }\n        }\n        vector<long long> dp(numLaps + 1, 1e18);\n        dp[0] = -changeTime;\n        for (int i = 1; i <= numLaps; i++) {\n            for (int j = 1; j <= min(i, 17); j++) {\n                dp[i] = min(dp[i], dp[i - j] + changeTime + minTire[j]);\n            }\n        }\n        return dp[numLaps];\n    }\n};",
+      "approach": "C++ 18-element precomputation and linear DP.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int minimumFinishTime(int[][] tires, int changeTime, int numLaps) {\n        long[] minTire = new long[18];\n        Arrays.fill(minTire, Long.MAX_VALUE / 2);\n        for (int[] t : tires) {\n            long f = t[0], r = t[1];\n            long cur = f, total = f;\n            for (int lap = 1; lap <= 17 && cur < changeTime + f; lap++) {\n                minTire[lap] = Math.min(minTire[lap], total);\n                cur *= r;\n                total += cur;\n            }\n        }\n        long[] dp = new long[numLaps + 1];\n        Arrays.fill(dp, Long.MAX_VALUE / 2);\n        dp[0] = -changeTime;\n        for (int i = 1; i <= numLaps; i++) {\n            for (int j = 1; j <= Math.min(i, 17); j++) {\n                dp[i] = Math.min(dp[i], dp[i - j] + changeTime + minTire[j]);\n            }\n        }\n        return (int) dp[numLaps];\n    }\n}",
+      "approach": "Java bounded array dynamic programming.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minimumFinishTime = function(tires, changeTime, numLaps) {\n    const minTire = new Array(18).fill(Infinity);\n    for (const [f, r] of tires) {\n        let cur = f, total = f;\n        for (let lap = 1; lap <= 17 && cur < changeTime + f; lap++) {\n            if (total < minTire[lap]) minTire[lap] = total;\n            cur *= r;\n            total += cur;\n        }\n    }\n    const dp = new Array(numLaps + 1).fill(Infinity);\n    dp[0] = -changeTime;\n    for (let i = 1; i <= numLaps; i++) {\n        const limit = Math.min(i, 17);\n        for (let j = 1; j <= limit; j++) {\n            const cand = dp[i - j] + changeTime + minTire[j];\n            if (cand < dp[i]) dp[i] = cand;\n        }\n    }\n    return dp[numLaps];\n};",
+      "approach": "JavaScript array precomputation and loop DP.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

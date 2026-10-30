@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-difference-in-sums-after-removal-of-elements",
+  "number": 2163,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Partition Around Split Boundary",
+      "text": "For a split boundary index, select the n smallest elements from the left prefix and the n largest from the right suffix."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Minimums via Max-Heap",
+      "text": "Maintain a max-heap of size n to track the running sum of the n smallest elements from left to right."
+    },
+    {
+      "level": 3,
+      "title": "Suffix Maximums via Min-Heap",
+      "text": "Maintain a min-heap of size n to track the running sum of the n largest elements from right to left."
+    },
+    {
+      "level": 4,
+      "title": "Complete Python Solution",
+      "text": "```python\nclass Solution:\n    def minimumDifference(self, nums: List[int]) -> int:\n        n = len(nums) // 3\n        left = [0] * (len(nums))\n        max_h = []\n        cur_sum = 0\n        for i in range(len(nums)):\n            heapq.heappush(max_h, -nums[i])\n            cur_sum += nums[i]\n            if len(max_h) > n:\n                cur_sum += heapq.heappop(max_h)\n            if len(max_h) == n:\n                left[i] = cur_sum\n                \n        right = [0] * (len(nums))\n        min_h = []\n        cur_sum = 0\n        for i in range(len(nums) - 1, -1, -1):\n            heapq.heappush(min_h, nums[i])\n            cur_sum += nums[i]\n            if len(min_h) > n:\n                cur_sum -= heapq.heappop(min_h)\n            if len(min_h) == n:\n                right[i] = cur_sum\n                \n        ans = float('inf')\n        for i in range(n - 1, 2 * n):\n            ans = min(ans, left[i] - right[i + 1])\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N) dual heap prefix and suffix sweeps",
+    "space": "O(N) prefix and suffix sum arrays",
+    "variables": [
+      "N: array length (3n)"
+    ],
+    "notes": "Prefix min heap and suffix max heap combination.",
+    "whyNaiveFails": "Testing all combinations of element removals takes exponential O(3N choose N) time.",
+    "spaceTimeTradeoff": "Prefix/suffix priority queues compute optimal sums at every cut point in linearithmic time.",
+    "interviewerExpectation": "Combine forward and backward heap passes to evaluate all split points in O(N log N)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minimumDifference(self, nums: List[int]) -> int:\n        n = len(nums) // 3\n        left = [0] * (len(nums))\n        max_h = []\n        cur_sum = 0\n        for i in range(len(nums)):\n            heapq.heappush(max_h, -nums[i])\n            cur_sum += nums[i]\n            if len(max_h) > n:\n                cur_sum += heapq.heappop(max_h)\n            if len(max_h) == n:\n                left[i] = cur_sum\n                \n        right = [0] * (len(nums))\n        min_h = []\n        cur_sum = 0\n        for i in range(len(nums) - 1, -1, -1):\n            heapq.heappush(min_h, nums[i])\n            cur_sum += nums[i]\n            if len(min_h) > n:\n                cur_sum -= heapq.heappop(min_h)\n            if len(min_h) == n:\n                right[i] = cur_sum\n                \n        ans = float('inf')\n        for i in range(n - 1, 2 * n):\n            ans = min(ans, left[i] - right[i + 1])\n        return ans",
+      "approach": "Python dual heapq prefix and suffix pass.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    long long minimumDifference(vector<int>& nums) {\n        int n = nums.size() / 3;\n        int m = nums.size();\n        vector<long long> left(m, 0);\n        priority_queue<int> maxH;\n        long long curSum = 0;\n        for (int i = 0; i < m; i++) {\n            maxH.push(nums[i]);\n            curSum += nums[i];\n            if ((int)maxH.size() > n) {\n                curSum -= maxH.top();\n                maxH.pop();\n            }\n            if ((int)maxH.size() == n) left[i] = curSum;\n        }\n        vector<long long> right(m, 0);\n        priority_queue<int, vector<int>, greater<int>> minH;\n        curSum = 0;\n        for (int i = m - 1; i >= 0; i--) {\n            minH.push(nums[i]);\n            curSum += nums[i];\n            if ((int)minH.size() > n) {\n                curSum -= minH.top();\n                minH.pop();\n            }\n            if ((int)minH.size() == n) right[i] = curSum;\n        }\n        long long ans = LLONG_MAX;\n        for (int i = n - 1; i < 2 * n; i++) {\n            ans = min(ans, left[i] - right[i + 1]);\n        }\n        return ans;\n    }\n};",
+      "approach": "C++ dual priority_queue prefix and suffix sweeps.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public long minimumDifference(int[] nums) {\n        int n = nums.length / 3;\n        int m = nums.length;\n        long[] left = new long[m];\n        PriorityQueue<Integer> maxH = new PriorityQueue<>(Collections.reverseOrder());\n        long curSum = 0;\n        for (int i = 0; i < m; i++) {\n            maxH.offer(nums[i]);\n            curSum += nums[i];\n            if (maxH.size() > n) {\n                curSum -= maxH.poll();\n            }\n            if (maxH.size() == n) left[i] = curSum;\n        }\n        long[] right = new long[m];\n        PriorityQueue<Integer> minH = new PriorityQueue<>();\n        curSum = 0;\n        for (int i = m - 1; i >= 0; i--) {\n            minH.offer(nums[i]);\n            curSum += nums[i];\n            if (minH.size() > n) {\n                curSum -= minH.poll();\n            }\n            if (minH.size() == n) right[i] = curSum;\n        }\n        long ans = Long.MAX_VALUE;\n        for (int i = n - 1; i < 2 * n; i++) {\n            ans = Math.min(ans, left[i] - right[i + 1]);\n        }\n        return ans;\n    }\n}",
+      "approach": "Java dual PriorityQueue accumulation.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minimumDifference = function(nums) {\n    const n = nums.length / 3;\n    const m = nums.length;\n    // Simple array sorted binary insertion heap for JS\n    const left = new Array(m);\n    let leftH = [];\n    let sum = 0;\n    for (let i = 0; i < m; i++) {\n        const val = nums[i];\n        // binary insert into sorted leftH (ascending)\n        let l = 0, r = leftH.length;\n        while (l < r) {\n            const mid = (l + r) >> 1;\n            if (leftH[mid] < val) l = mid + 1;\n            else r = mid;\n        }\n        leftH.splice(l, 0, val);\n        sum += val;\n        if (leftH.length > n) {\n            sum -= leftH.pop(); // remove largest\n        }\n        if (leftH.length === n) left[i] = sum;\n    }\n    const right = new Array(m);\n    let rightH = [];\n    sum = 0;\n    for (let i = m - 1; i >= 0; i--) {\n        const val = nums[i];\n        let l = 0, r = rightH.length;\n        while (l < r) {\n            const mid = (l + r) >> 1;\n            if (rightH[mid] < val) l = mid + 1;\n            else r = mid;\n        }\n        rightH.splice(l, 0, val);\n        sum += val;\n        if (rightH.length > n) {\n            sum -= rightH.shift(); // remove smallest\n        }\n        if (rightH.length === n) right[i] = sum;\n    }\n    let ans = Infinity;\n    for (let i = n - 1; i < 2 * n; i++) {\n        ans = Math.min(ans, left[i] - right[i + 1]);\n    }\n    return ans;\n};",
+      "approach": "JavaScript binary search insertion list simulation.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

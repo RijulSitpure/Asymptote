@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-and-sum-of-array",
+  "number": 2172,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Ternary Slot Representation",
+      "text": "Each slot can hold up to 2 numbers, represented as a state with values 0, 1, or 2 for each slot."
+    },
+    {
+      "level": 2,
+      "title": "Base 3 Mask",
+      "text": "Represent the distribution of numbers into slots using a base 3 integer mask (at most 3^9 = 19,683 states)."
+    },
+    {
+      "level": 3,
+      "title": "Dynamic Programming Transition",
+      "text": "The count of allocated numbers equals the sum of slot counts in the mask, allowing direct DP over the sequence of numbers."
+    },
+    {
+      "level": 4,
+      "title": "Complete Python Solution",
+      "text": "```python\nclass Solution:\n    def maximumANDSum(self, nums: List[int], numSlots: int) -> int:\n        memo = {}\n        def dp(i, mask):\n            if i == len(nums):\n                return 0\n            if (i, mask) in memo:\n                return memo[(i, mask)]\n            ans = 0\n            cur_mask = mask\n            for slot in range(1, numSlots + 1):\n                cnt = cur_mask % 3\n                cur_mask //= 3\n                if cnt < 2:\n                    val = (nums[i] & slot) + dp(i + 1, mask + (3 ** (slot - 1)))\n                    if val > ans:\n                        ans = val\n            memo[(i, mask)] = ans\n            return ans\n        return dp(0, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * numSlots * 3^numSlots) base 3 memoization",
+    "space": "O(3^numSlots) memoization table",
+    "variables": [
+      "N: array length (<= 18)",
+      "numSlots: slots count (<= 9)"
+    ],
+    "notes": "Base-3 bitmask DP with memoization.",
+    "whyNaiveFails": "Testing permutations of assigning 18 numbers into 9 slots of capacity 2 yields 9^18 combinations.",
+    "spaceTimeTradeoff": "Base 3 mask compresses slot capacities to 3^9 = 19683 states.",
+    "interviewerExpectation": "Model multi-capacity slots using base-3 ternary states."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maximumANDSum(self, nums: List[int], numSlots: int) -> int:\n        memo = {}\n        def dp(i, mask):\n            if i == len(nums):\n                return 0\n            if (i, mask) in memo:\n                return memo[(i, mask)]\n            ans = 0\n            cur_mask = mask\n            for slot in range(1, numSlots + 1):\n                cnt = cur_mask % 3\n                cur_mask //= 3\n                if cnt < 2:\n                    val = (nums[i] & slot) + dp(i + 1, mask + (3 ** (slot - 1)))\n                    if val > ans:\n                        ans = val\n            memo[(i, mask)] = ans\n            return ans\n        return dp(0, 0)",
+      "approach": "Python base-3 memoized recursive DP.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int maximumANDSum(vector<int>& nums, int numSlots) {\n        int maxMask = 1;\n        for (int i = 0; i < numSlots; i++) maxMask *= 3;\n        vector<int> dp(maxMask, 0);\n        for (int x : nums) {\n            for (int mask = maxMask - 1; mask >= 0; mask--) {\n                int temp = mask, p = 1;\n                for (int slot = 1; slot <= numSlots; slot++, p *= 3) {\n                    if (temp % 3 > 0) {\n                        dp[mask] = max(dp[mask], dp[mask - p] + (x & slot));\n                    }\n                    temp /= 3;\n                }\n            }\n        }\n        return *max_element(dp.begin(), dp.end());\n    }\n};",
+      "approach": "C++ iterative base-3 knapsack-style dynamic programming.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int maximumANDSum(int[] nums, int numSlots) {\n        int maxMask = 1;\n        for (int i = 0; i < numSlots; i++) maxMask *= 3;\n        int[] dp = new int[maxMask];\n        for (int x : nums) {\n            for (int mask = maxMask - 1; mask >= 0; mask--) {\n                int temp = mask, p = 1;\n                for (int slot = 1; slot <= numSlots; slot++, p *= 3) {\n                    if (temp % 3 > 0) {\n                        dp[mask] = Math.max(dp[mask], dp[mask - p] + (x & slot));\n                    }\n                    temp /= 3;\n                }\n            }\n        }\n        int max = 0;\n        for (int v : dp) if (v > max) max = v;\n        return max;\n    }\n}",
+      "approach": "Java iterative ternary DP array.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maximumANDSum = function(nums, numSlots) {\n    let maxMask = 1;\n    for (let i = 0; i < numSlots; i++) maxMask *= 3;\n    const dp = new Int32Array(maxMask);\n    for (const x of nums) {\n        for (let mask = maxMask - 1; mask >= 0; mask--) {\n            let temp = mask, p = 1;\n            for (let slot = 1; slot <= numSlots; slot++, p *= 3) {\n                if (temp % 3 > 0) {\n                    const cand = dp[mask - p] + (x & slot);\n                    if (cand > dp[mask]) dp[mask] = cand;\n                }\n                temp = Math.floor(temp / 3);\n            }\n        }\n    }\n    let max = 0;\n    for (let i = 0; i < maxMask; i++) if (dp[i] > max) max = dp[i];\n    return max;\n};",
+      "approach": "JavaScript Int32Array iterative base-3 DP.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}
