@@ -1,0 +1,78 @@
+{
+  "slug": "move-sub-tree-of-n-ary-tree",
+  "number": 1516,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Trivial Adjacency Case",
+      "text": "If p is already a direct child of q, the tree structure remains completely unchanged."
+    },
+    {
+      "level": 2,
+      "title": "Ancestor Relationship Check",
+      "text": "Determine whether q lies within the subtree of p by running a depth-first traversal starting from p."
+    },
+    {
+      "level": 3,
+      "title": "Subtree Reparenting Transitions",
+      "text": "If q is in the subtree of p, promote q to replace p in the parent children list before attaching p as a child of q."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def moveSubTree(self, root: 'Node', p: 'Node', q: 'Node') -> 'Node':\n        if p in q.children:\n            return root\n        dummy = Node(0, [root])\n        parents = {}\n        def find_parents(node):\n            for child in node.children:\n                parents[child] = node\n                find_parents(child)\n        find_parents(dummy)\n        def is_descendant(anc, desc):\n            curr = desc\n            while curr in parents:\n                curr = parents[curr]\n                if curr == anc:\n                    return True\n            return False\n        p_parent = parents[p]\n        q_parent = parents[q]\n        if is_descendant(p, q):\n            q_parent.children.remove(q)\n            idx = p_parent.children.index(p)\n            p_parent.children[idx] = q\n            q.children.append(p)\n        else:\n            p_parent.children.remove(p)\n            q.children.append(p)\n        return dummy.children[0]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in tree"
+    ],
+    "notes": "Parent map generation and path traversal inspect each tree edge in linear time.",
+    "whyNaiveFails": "Moving subtree p under its own descendant creates disconnected cycles if parent reassignments are missed.",
+    "spaceTimeTradeoff": "Parent mapping enables ancestor checks and child deletion in linear time.",
+    "interviewerExpectation": "Handling the cycle hazard when target q is inside subtree p."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def moveSubTree(self, root: 'Node', p: 'Node', q: 'Node') -> 'Node':\n        if p in q.children:\n            return root\n        dummy = Node(0, [root])\n        parents = {}\n        def find_parents(node):\n            for child in node.children:\n                parents[child] = node\n                find_parents(child)\n        find_parents(dummy)\n        def is_descendant(anc, desc):\n            curr = desc\n            while curr in parents:\n                curr = parents[curr]\n                if curr == anc:\n                    return True\n            return False\n        p_parent = parents[p]\n        q_parent = parents[q]\n        if is_descendant(p, q):\n            q_parent.children.remove(q)\n            idx = p_parent.children.index(p)\n            p_parent.children[idx] = q\n            q.children.append(p)\n        else:\n            p_parent.children.remove(p)\n            q.children.append(p)\n        return dummy.children[0]",
+      "approach": "Parent Map with Subtree Cycle Handling",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    unordered_map<Node*, Node*> parent;\n    void getParents(Node* u) {\n        for (Node* v : u->children) {\n            parent[v] = u;\n            getParents(v);\n        }\n    }\n    bool isDescendant(Node* anc, Node* desc) {\n        Node* curr = desc;\n        while (parent.count(curr)) {\n            curr = parent[curr];\n            if (curr == anc) return true;\n        }\n        return false;\n    }\npublic:\n    Node* moveSubTree(Node* root, Node* p, Node* q) {\n        for (Node* c : q->children) {\n            if (c == p) return root;\n        }\n        Node* dummy = new Node(0, {root});\n        getParents(dummy);\n        Node* pParent = parent[p];\n        Node* qParent = parent[q];\n        if (isDescendant(p, q)) {\n            auto& qSib = qParent->children;\n            qSib.erase(remove(qSib.begin(), qSib.end(), q), qSib.end());\n            for (size_t i = 0; i < pParent->children.size(); i++) {\n                if (pParent->children[i] == p) {\n                    pParent->children[i] = q;\n                    break;\n                }\n            }\n            q->children.push_back(p);\n        } else {\n            auto& pSib = pParent->children;\n            pSib.erase(remove(pSib.begin(), pSib.end(), p), pSib.end());\n            q->children.push_back(p);\n        }\n        return dummy->children[0];\n    }\n};",
+      "approach": "C++ Dummy Root Reparenting",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private Map<Node, Node> parent = new HashMap<>();\n    private void getParents(Node u) {\n        for (Node v : u.children) {\n            parent.put(v, u);\n            getParents(v);\n        }\n    }\n    private boolean isDescendant(Node anc, Node desc) {\n        Node curr = desc;\n        while (parent.containsKey(curr)) {\n            curr = parent.get(curr);\n            if (curr == anc) return true;\n        }\n        return false;\n    }\n    public Node moveSubTree(Node root, Node p, Node q) {\n        if (q.children.contains(p)) return root;\n        Node dummy = new Node(0, new ArrayList<>(List.of(root)));\n        getParents(dummy);\n        Node pParent = parent.get(p);\n        Node qParent = parent.get(q);\n        if (isDescendant(p, q)) {\n            qParent.children.remove(q);\n            int idx = pParent.children.indexOf(p);\n            pParent.children.set(idx, q);\n            q.children.add(p);\n        } else {\n            pParent.children.remove(p);\n            q.children.add(p);\n        }\n        return dummy.children.get(0);\n    }\n}",
+      "approach": "Java Parent Tracking and Index Replacement",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var moveSubTree = function(root, p, q) {\n    if (q.children.includes(p)) return root;\n    const dummy = new Node(0, [root]);\n    const parent = new Map();\n    function getParents(u) {\n        for (const v of u.children) {\n            parent.set(v, u);\n            getParents(v);\n        }\n    }\n    getParents(dummy);\n    function isDescendant(anc, desc) {\n        let curr = desc;\n        while (parent.has(curr)) {\n            curr = parent.get(curr);\n            if (curr === anc) return true;\n        }\n        return false;\n    }\n    const pParent = parent.get(p);\n    const qParent = parent.get(q);\n    if (isDescendant(p, q)) {\n        qParent.children = qParent.children.filter(x => x !== q);\n        const idx = pParent.children.indexOf(p);\n        pParent.children[idx] = q;\n        q.children.push(p);\n    } else {\n        pParent.children = pParent.children.filter(x => x !== p);\n        q.children.push(p);\n    }\n    return dummy.children[0];\n};",
+      "approach": "JavaScript Subtree Reparenting with Cycle Prevention",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

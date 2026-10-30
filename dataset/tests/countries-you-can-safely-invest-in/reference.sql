@@ -1,0 +1,1 @@
+SELECT c.name AS country FROM Person p JOIN Country c ON SUBSTRING(p.phone_number, 1, 3) = c.country_code JOIN (SELECT caller_id AS person_id, duration FROM Calls UNION ALL SELECT callee_id AS person_id, duration FROM Calls) call_records ON p.id = call_records.person_id GROUP BY c.name HAVING AVG(call_records.duration) > (SELECT AVG(duration) FROM Calls);

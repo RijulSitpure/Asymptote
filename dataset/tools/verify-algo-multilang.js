@@ -67,8 +67,13 @@ public:
     Node* next;
     vector<Node*> neighbors;
     vector<Node*> children;
+    virtual ~Node() {}
+    virtual int evaluate() { return 0; }
     Node() : val(0), left(nullptr), right(nullptr), random(nullptr), next(nullptr) {}
     Node(int _val) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr) {}
+    Node(char _val) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr) {}
+    Node(int _val, Node* _left, Node* _right) : val(_val), left(_left), right(_right), random(nullptr), next(nullptr) {}
+    Node(char _val, Node* _left, Node* _right) : val(_val), left(_left), right(_right), random(nullptr), next(nullptr) {}
     Node(int _val, vector<Node*> _vec) : val(_val), left(nullptr), right(nullptr), random(nullptr), next(nullptr), neighbors(_vec), children(_vec) {}
 };
 `;
@@ -113,6 +118,19 @@ public:
     NodeCopy() : val(0), left(nullptr), right(nullptr), random(nullptr) {}
     NodeCopy(int _val) : val(_val), left(nullptr), right(nullptr), random(nullptr) {}
 };
+class ArrayReader {
+public:
+    int compareSub(int l, int r, int x, int y);
+    int query(int a, int b, int c, int d);
+    int length();
+    int get(int index);
+};
+class FontInfo {
+public:
+    int getWidth(int fontSize, char ch);
+    int getHeight(int fontSize);
+};
+
 
 
 `;

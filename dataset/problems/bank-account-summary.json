@@ -1,0 +1,72 @@
+{
+  "slug": "bank-account-summary",
+  "number": 1555,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Distinguishing Cash Inflows and Outflows",
+      "text": "A user spends money when appearing as paid_by and receives money when appearing as paid_to."
+    },
+    {
+      "level": 2,
+      "title": "Aggregating Transactions Separately",
+      "text": "aggregate total debits grouped by paid_by and total credits grouped by paid_to in separate subqueries or CTEs."
+    },
+    {
+      "level": 3,
+      "title": "Net Credit Balance and Breach Check",
+      "text": "join users with the aggregated flows using left join, treating nulls as 0. check if net credit is strictly negative."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT u.user_id,\n       u.user_name,\n       u.credit - IFNULL(outflow.total_out, 0) + IFNULL(inflow.total_in, 0) AS credit,\n       CASE\n           WHEN u.credit - IFNULL(outflow.total_out, 0) + IFNULL(inflow.total_in, 0) < 0 THEN 'Yes'\n           ELSE 'No'\n       END AS credit_limit_breached\nFROM Users u\nLEFT JOIN (\n    SELECT paid_by, SUM(amount) AS total_out\n    FROM Transactions\n    GROUP BY paid_by\n) outflow ON u.user_id = outflow.paid_by\nLEFT JOIN (\n    SELECT paid_to, SUM(amount) AS total_in\n    FROM Transactions\n    GROUP BY paid_to\n) inflow ON u.user_id = inflow.paid_to;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(U + T)",
+    "space": "O(U)",
+    "variables": [
+      "U: number of users",
+      "T: transactions"
+    ],
+    "notes": "Computes sum of inflows and outflows across transactions and joins with user profiles.",
+    "whyNaiveFails": "Joining transactions directly on both fields in a single join multiplies rows and produces incorrect balances.",
+    "spaceTimeTradeoff": "Independent pre-aggregations by sender and receiver prevent cross-product multiplication.",
+    "interviewerExpectation": "Pre-aggregating inflows and outflows separately before joining with users table."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT u.user_id,\n       u.user_name,\n       u.credit - IFNULL(outflow.total_out, 0) + IFNULL(inflow.total_in, 0) AS credit,\n       CASE\n           WHEN u.credit - IFNULL(outflow.total_out, 0) + IFNULL(inflow.total_in, 0) < 0 THEN 'Yes'\n           ELSE 'No'\n       END AS credit_limit_breached\nFROM Users u\nLEFT JOIN (\n    SELECT paid_by, SUM(amount) AS total_out\n    FROM Transactions\n    GROUP BY paid_by\n) outflow ON u.user_id = outflow.paid_by\nLEFT JOIN (\n    SELECT paid_to, SUM(amount) AS total_in\n    FROM Transactions\n    GROUP BY paid_to\n) inflow ON u.user_id = inflow.paid_to;",
+      "approach": "Left Join Pre-aggregated Cash Inflow and Outflow",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT u.user_id,\n       u.user_name,\n       u.credit - COALESCE(outflow.total_out, 0) + COALESCE(inflow.total_in, 0) AS credit,\n       CASE\n           WHEN u.credit - COALESCE(outflow.total_out, 0) + COALESCE(inflow.total_in, 0) < 0 THEN 'Yes'\n           ELSE 'No'\n       END AS credit_limit_breached\nFROM Users u\nLEFT JOIN (\n    SELECT paid_by, SUM(amount) AS total_out\n    FROM Transactions\n    GROUP BY paid_by\n) outflow ON u.user_id = outflow.paid_by\nLEFT JOIN (\n    SELECT paid_to, SUM(amount) AS total_in\n    FROM Transactions\n    GROUP BY paid_to\n) inflow ON u.user_id = inflow.paid_to;",
+      "approach": "PostgreSQL Coalesce Inflow and Outflow Join",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef bank_account_summary(users: pd.DataFrame, transactions: pd.DataFrame) -> pd.DataFrame:\n    spent = transactions.groupby('paid_by')['amount'].sum().reset_index().rename(columns={'paid_by': 'user_id', 'amount': 'out'})\n    rcvd = transactions.groupby('paid_to')['amount'].sum().reset_index().rename(columns={'paid_to': 'user_id', 'amount': 'in'})\n    df = users.merge(spent, on='user_id', how='left').merge(rcvd, on='user_id', how='left')\n    df['out'] = df['out'].fillna(0)\n    df['in'] = df['in'].fillna(0)\n    df['credit'] = df['credit'] - df['out'] + df['in']\n    df['credit_limit_breached'] = df['credit'].apply(lambda c: 'Yes' if c < 0 else 'No')\n    return df[['user_id', 'user_name', 'credit', 'credit_limit_breached']]",
+      "approach": "Pandas Multi-merge Inflow/Outflow Balance",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

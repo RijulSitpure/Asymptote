@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-number-of-days-to-disconnect-island",
+  "number": 1568,
+  "category": "Algorithms",
+  "patterns": [
+    "grid-flood-fill"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Small Upper Bound Principle",
+      "text": "Any connected island on a 2D grid can always be disconnected in at most 2 days by isolating an articulation or corner cell."
+    },
+    {
+      "level": 2,
+      "title": "Zero Days Check",
+      "text": "Count connected components initially. If the count does not equal 1, the grid is already disconnected (return 0)."
+    },
+    {
+      "level": 3,
+      "title": "One Day Articulation Check",
+      "text": "Temporarily convert each land cell to water and test if the component count is no longer 1. If so, return 1; otherwise return 2."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def minDays(self, grid: list[list[int]]) -> int:\n        R, C = len(grid), len(grid[0])\n        def count_islands():\n            vis = set()\n            count = 0\n            for r in range(R):\n                for c in range(C):\n                    if grid[r][c] == 1 and (r, c) not in vis:\n                        count += 1\n                        q = [(r, c)]\n                        vis.add((r, c))\n                        while q:\n                            cr, cc = q.pop()\n                            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                                nr, nc = cr + dr, cc + dc\n                                if 0 <= nr < R and 0 <= nc < C and grid[nr][nc] == 1 and (nr, nc) not in vis:\n                                    vis.add((nr, nc))\n                                    q.append((nr, nc))\n            return count\n        if count_islands() != 1:\n            return 0\n        for r in range(R):\n            for c in range(C):\n                if grid[r][c] == 1:\n                    grid[r][c] = 0\n                    if count_islands() != 1:\n                        return 1\n                    grid[r][c] = 1\n        return 2\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((R * C)^2)",
+    "space": "O(R * C)",
+    "variables": [
+      "R: grid rows",
+      "C: grid columns"
+    ],
+    "notes": "Component counting executes in O(R * C) time, repeated at most R * C times for each candidate removal.",
+    "whyNaiveFails": "General graph cut algorithms are unnecessary given the tight mathematical bound of at most 2 removals.",
+    "spaceTimeTradeoff": "Simulating cell removals sequentially bounds extra space to a single visited set.",
+    "interviewerExpectation": "Deducing the answer is in {0, 1, 2} and verifying 0 and 1 via flood-fill."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minDays(self, grid: list[list[int]]) -> int:\n        R, C = len(grid), len(grid[0])\n        def count_islands():\n            vis = set()\n            count = 0\n            for r in range(R):\n                for c in range(C):\n                    if grid[r][c] == 1 and (r, c) not in vis:\n                        count += 1\n                        q = [(r, c)]\n                        vis.add((r, c))\n                        while q:\n                            cr, cc = q.pop()\n                            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                                nr, nc = cr + dr, cc + dc\n                                if 0 <= nr < R and 0 <= nc < C and grid[nr][nc] == 1 and (nr, nc) not in vis:\n                                    vis.add((nr, nc))\n                                    q.append((nr, nc))\n            return count\n        if count_islands() != 1:\n            return 0\n        for r in range(R):\n            for c in range(C):\n                if grid[r][c] == 1:\n                    grid[r][c] = 0\n                    if count_islands() != 1:\n                        return 1\n                    grid[r][c] = 1\n        return 2",
+      "approach": "Bounded Component Disconnection Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int R, C;\n    int countIslands(vector<vector<int>>& grid) {\n        vector<vector<bool>> vis(R, vector<bool>(C, false));\n        int count = 0;\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                if (grid[r][c] == 1 && !vis[r][c]) {\n                    count++;\n                    queue<pair<int, int>> q;\n                    q.push({r, c});\n                    vis[r][c] = true;\n                    while (!q.empty()) {\n                        auto [cr, cc] = q.front(); q.pop();\n                        for (int i = 0; i < 4; i++) {\n                            int nr = cr + dirs[i][0], nc = cc + dirs[i][1];\n                            if (nr >= 0 && nr < R && nc >= 0 && nc < C && grid[nr][nc] == 1 && !vis[nr][nc]) {\n                                vis[nr][nc] = true;\n                                q.push({nr, nc});\n                            }\n                        }\n                    }\n                }\n            }\n        }\n        return count;\n    }\npublic:\n    int minDays(vector<vector<int>>& grid) {\n        R = grid.size();\n        C = grid[0].size();\n        if (countIslands(grid) != 1) return 0;\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                if (grid[r][c] == 1) {\n                    grid[r][c] = 0;\n                    if (countIslands(grid) != 1) return 1;\n                    grid[r][c] = 1;\n                }\n            }\n        }\n        return 2;\n    }\n};",
+      "approach": "C++ Island Flood Fill Disconnection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private int R, C;\n    private int countIslands(int[][] grid) {\n        boolean[][] vis = new boolean[R][C];\n        int count = 0;\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                if (grid[r][c] == 1 && !vis[r][c]) {\n                    count++;\n                    Queue<int[]> q = new LinkedList<>();\n                    q.offer(new int[]{r, c});\n                    vis[r][c] = true;\n                    while (!q.isEmpty()) {\n                        int[] cur = q.poll();\n                        for (int[] d : dirs) {\n                            int nr = cur[0] + d[0], nc = cur[1] + d[1];\n                            if (nr >= 0 && nr < R && nc >= 0 && nc < C && grid[nr][nc] == 1 && !vis[nr][nc]) {\n                                vis[nr][nc] = true;\n                                q.offer(new int[]{nr, nc});\n                            }\n                        }\n                    }\n                }\n            }\n        }\n        return count;\n    }\n    public int minDays(int[][] grid) {\n        R = grid.length;\n        C = grid[0].length;\n        if (countIslands(grid) != 1) return 0;\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                if (grid[r][c] == 1) {\n                    grid[r][c] = 0;\n                    if (countIslands(grid) != 1) return 1;\n                    grid[r][c] = 1;\n                }\n            }\n        }\n        return 2;\n    }\n}",
+      "approach": "Java Disconnection Upper Bound Simulation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minDays = function(grid) {\n    const R = grid.length, C = grid[0].length;\n    function countIslands() {\n        const vis = Array.from({ length: R }, () => Array(C).fill(false));\n        let count = 0;\n        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n        for (let r = 0; r < R; r++) {\n            for (let c = 0; c < C; c++) {\n                if (grid[r][c] === 1 && !vis[r][c]) {\n                    count++;\n                    const q = [[r, c]];\n                    vis[r][c] = true;\n                    while (q.length > 0) {\n                        const [cr, cc] = q.pop();\n                        for (const [dr, dc] of dirs) {\n                            const nr = cr + dr, nc = cc + dc;\n                            if (nr >= 0 && nr < R && nc >= 0 && nc < C && grid[nr][nc] === 1 && !vis[nr][nc]) {\n                                vis[nr][nc] = true;\n                                q.push([nr, nc]);\n                            }\n                        }\n                    }\n                }\n            }\n        }\n        return count;\n    }\n    if (countIslands() !== 1) return 0;\n    for (let r = 0; r < R; r++) {\n        for (let c = 0; c < C; c++) {\n            if (grid[r][c] === 1) {\n                grid[r][c] = 0;\n                if (countIslands() !== 1) return 1;\n                grid[r][c] = 1;\n            }\n        }\n    }\n    return 2;\n};",
+      "approach": "JavaScript BFS Articulation Disconnect Test",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "slug": "customer-order-frequency",
+  "number": 1511,
+  "category": "Database",
+  "patterns": [
+    "having-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Joining Orders with Products and Customers",
+      "text": "Join Orders with Product to compute the spent revenue for each purchased quantity, and link with Customers."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Monthly Spending Aggregation",
+      "text": "use conditional case statements inside sum to aggregate spend separately for June 2020 and July 2020."
+    },
+    {
+      "level": 3,
+      "title": "Filtering Customer Cohorts",
+      "text": "group by customer_id and name. filter in having where both June spend is at least 100 and July spend is at least 100."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT c.customer_id, c.name\nFROM Customers c\nJOIN Orders o ON c.customer_id = o.customer_id\nJOIN Product p ON o.product_id = p.product_id\nGROUP BY c.customer_id, c.name\nHAVING SUM(CASE WHEN o.order_date >= '2020-06-01' AND o.order_date <= '2020-06-30' THEN o.quantity * p.price ELSE 0 END) >= 100\n   AND SUM(CASE WHEN o.order_date >= '2020-07-01' AND o.order_date <= '2020-07-31' THEN o.quantity * p.price ELSE 0 END) >= 100;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(O + C + P)",
+    "space": "O(C)",
+    "variables": [
+      "O: number of orders",
+      "C: customers",
+      "P: products"
+    ],
+    "notes": "Single pass join and group by aggregation over orders evaluating conditional sums.",
+    "whyNaiveFails": "Separate queries for June and July require subquery joins or intersections when conditional aggregation resolves in one pass.",
+    "spaceTimeTradeoff": "Conditional summation inside having avoids materializing intermediate tables.",
+    "interviewerExpectation": "Conditional summation inside having clause over calendar intervals."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT c.customer_id, c.name\nFROM Customers c\nJOIN Orders o ON c.customer_id = o.customer_id\nJOIN Product p ON o.product_id = p.product_id\nGROUP BY c.customer_id, c.name\nHAVING SUM(CASE WHEN o.order_date >= '2020-06-01' AND o.order_date <= '2020-06-30' THEN o.quantity * p.price ELSE 0 END) >= 100\n   AND SUM(CASE WHEN o.order_date >= '2020-07-01' AND o.order_date <= '2020-07-31' THEN o.quantity * p.price ELSE 0 END) >= 100;",
+      "approach": "Conditional Summation in Having Clause",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT c.customer_id, c.name\nFROM Customers c\nJOIN Orders o ON c.customer_id = o.customer_id\nJOIN Product p ON o.product_id = p.product_id\nGROUP BY c.customer_id, c.name\nHAVING SUM(CASE WHEN o.order_date >= '2020-06-01' AND o.order_date <= '2020-06-30' THEN o.quantity * p.price ELSE 0 END) >= 100\n   AND SUM(CASE WHEN o.order_date >= '2020-07-01' AND o.order_date <= '2020-07-31' THEN o.quantity * p.price ELSE 0 END) >= 100;",
+      "approach": "PostgreSQL Conditional Having Aggregate",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef customer_order_frequency(customers: pd.DataFrame, product: pd.DataFrame, orders: pd.DataFrame) -> pd.DataFrame:\n    df = orders.merge(product, on='product_id').merge(customers, on='customer_id')\n    df['spend'] = df['quantity'] * df['price']\n    df['order_date'] = df['order_date'].astype(str)\n    june = df[df['order_date'].str.startswith('2020-06')].groupby(['customer_id', 'name'])['spend'].sum().reset_index()\n    june_qualified = june[june['spend'] >= 100]['customer_id']\n    july = df[df['order_date'].str.startswith('2020-07')].groupby(['customer_id', 'name'])['spend'].sum().reset_index()\n    july_qualified = july[july['spend'] >= 100]['customer_id']\n    common = set(june_qualified).intersection(set(july_qualified))\n    res = customers[customers['customer_id'].isin(common)][['customer_id', 'name']]\n    return res",
+      "approach": "Pandas Multi-month Intersection",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

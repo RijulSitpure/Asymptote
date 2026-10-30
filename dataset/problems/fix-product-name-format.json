@@ -1,0 +1,71 @@
+{
+  "slug": "fix-product-name-format",
+  "number": 1543,
+  "category": "Database",
+  "patterns": [
+    "string-handling"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Trimming Whitespace and Normalizing Case",
+      "text": "Trim both leading and trailing whitespace and convert the product name to lowercase."
+    },
+    {
+      "level": 2,
+      "title": "Extracting Year and Month Date Format",
+      "text": "format the sale date to year-month format using date_format or string slicing."
+    },
+    {
+      "level": 3,
+      "title": "Group Aggregation by Cleaned Attributes",
+      "text": "group by the cleaned product name and month format, counting occurrences with count(*)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT LOWER(TRIM(product_name)) AS product_name,\n       DATE_FORMAT(sale_date, '%Y-%m') AS sale_date,\n       COUNT(*) AS total\nFROM Sales\nGROUP BY LOWER(TRIM(product_name)), DATE_FORMAT(sale_date, '%Y-%m')\nORDER BY product_name ASC, sale_date ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S log S)",
+    "space": "O(S)",
+    "variables": [
+      "S: number of sales rows"
+    ],
+    "notes": "Cleans string attributes and groups sales rows by normalized product and year-month.",
+    "whyNaiveFails": "Grouping on raw product names fails to consolidate entries differing only by casing or trailing padding.",
+    "spaceTimeTradeoff": "Deterministic normalization enables grouping across noisy text records.",
+    "interviewerExpectation": "String trimming, lowercasing, and date formatting grouped with sorting."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT LOWER(TRIM(product_name)) AS product_name,\n       DATE_FORMAT(sale_date, '%Y-%m') AS sale_date,\n       COUNT(*) AS total\nFROM Sales\nGROUP BY LOWER(TRIM(product_name)), DATE_FORMAT(sale_date, '%Y-%m')\nORDER BY product_name ASC, sale_date ASC;",
+      "approach": "String Cleaning and Date Formatting Group By",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT LOWER(TRIM(product_name)) AS product_name,\n       TO_CHAR(sale_date, 'YYYY-MM') AS sale_date,\n       COUNT(*) AS total\nFROM Sales\nGROUP BY LOWER(TRIM(product_name)), TO_CHAR(sale_date, 'YYYY-MM')\nORDER BY product_name ASC, sale_date ASC;",
+      "approach": "PostgreSQL To Char Date Format and Lower Trim",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef fix_name_format(sales: pd.DataFrame) -> pd.DataFrame:\n    if sales.empty:\n        return pd.DataFrame({'product_name': [], 'sale_date': [], 'total': []})\n    sales['product_name'] = sales['product_name'].astype(str).str.strip().str.lower()\n    sales['sale_date'] = sales['sale_date'].astype(str).str.slice(0, 7)\n    res = sales.groupby(['product_name', 'sale_date']).size().reset_index(name='total')\n    return res.sort_values(by=['product_name', 'sale_date'])",
+      "approach": "Pandas Strip Lower and Substring Grouping",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

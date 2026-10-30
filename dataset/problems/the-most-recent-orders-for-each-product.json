@@ -1,0 +1,71 @@
+{
+  "slug": "the-most-recent-orders-for-each-product",
+  "number": 1549,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Preserving Ties on Latest Dates",
+      "text": "Multiple orders can occur on the same latest date for a single product. Rank must preserve all tied orders."
+    },
+    {
+      "level": 2,
+      "title": "Partitioning by Product ID",
+      "text": "use rank() over (partition by product_id order by order_date desc) to assign rank 1 to all orders on the maximum date."
+    },
+    {
+      "level": 3,
+      "title": "Joining Products and Ordering Output",
+      "text": "join with Products to include product_name. filter for rank = 1 and order by product_name, product_id, and order_id."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RankedOrders AS (\n    SELECT p.product_name,\n           p.product_id,\n           o.order_id,\n           o.order_date,\n           RANK() OVER (PARTITION BY o.product_id ORDER BY o.order_date DESC) AS rnk\n    FROM Orders o\n    JOIN Products p ON o.product_id = p.product_id\n)\nSELECT product_name, product_id, order_id, order_date\nFROM RankedOrders\nWHERE rnk = 1\nORDER BY product_name ASC, product_id ASC, order_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(O log O)",
+    "space": "O(O)",
+    "variables": [
+      "O: number of orders"
+    ],
+    "notes": "Computes ranks across partitions of products and filters top tier entries with tie handling.",
+    "whyNaiveFails": "Row number breaks ties arbitrarily, returning only one order rather than all orders from the latest date.",
+    "spaceTimeTradeoff": "Rank window function handles simultaneous orders on the same day without subqueries.",
+    "interviewerExpectation": "Use of rank() over row_number() to retain all tied entries on the most recent date."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RankedOrders AS (\n    SELECT p.product_name,\n           p.product_id,\n           o.order_id,\n           o.order_date,\n           RANK() OVER (PARTITION BY o.product_id ORDER BY o.order_date DESC) AS rnk\n    FROM Orders o\n    JOIN Products p ON o.product_id = p.product_id\n)\nSELECT product_name, product_id, order_id, order_date\nFROM RankedOrders\nWHERE rnk = 1\nORDER BY product_name ASC, product_id ASC, order_id ASC;",
+      "approach": "Rank Window Function with Partition by Product",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RankedOrders AS (\n    SELECT p.product_name,\n           p.product_id,\n           o.order_id,\n           o.order_date,\n           RANK() OVER (PARTITION BY o.product_id ORDER BY o.order_date DESC) AS rnk\n    FROM Orders o\n    JOIN Products p ON o.product_id = p.product_id\n)\nSELECT product_name, product_id, order_id, order_date\nFROM RankedOrders\nWHERE rnk = 1\nORDER BY product_name ASC, product_id ASC, order_id ASC;",
+      "approach": "PostgreSQL Partitioned Rank CTE",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef most_recent_orders(customers: pd.DataFrame, orders: pd.DataFrame, products: pd.DataFrame) -> pd.DataFrame:\n    df = orders.merge(products, on='product_id')\n    if df.empty:\n        return pd.DataFrame({'product_name': [], 'product_id': [], 'order_id': [], 'order_date': []})\n    df['rnk'] = df.groupby('product_id')['order_date'].rank(method='dense', ascending=False)\n    res = df[df['rnk'] == 1].sort_values(by=['product_name', 'product_id', 'order_id'])\n    return res[['product_name', 'product_id', 'order_id', 'order_date']]",
+      "approach": "Pandas Dense Rank by Product",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

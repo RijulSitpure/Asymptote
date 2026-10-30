@@ -1,0 +1,71 @@
+{
+  "slug": "the-most-recent-three-orders",
+  "number": 1532,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Partitioning Orders per Customer",
+      "text": "Assign consecutive ranks to orders for each customer sorted by order_date in descending order."
+    },
+    {
+      "level": 2,
+      "title": "Applying Row Number Window Function",
+      "text": "use row_number() over (partition by customer_id order by order_date desc) to number orders."
+    },
+    {
+      "level": 3,
+      "title": "Filtering Top Three and Sorting Output",
+      "text": "filter in cte or outer query where rank is at most 3. order by customer name asc, customer_id asc, and order_date desc."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH RankedOrders AS (\n    SELECT o.order_id,\n           o.order_date,\n           o.customer_id,\n           c.name AS customer_name,\n           ROW_NUMBER() OVER (PARTITION BY o.customer_id ORDER BY o.order_date DESC) AS rn\n    FROM Orders o\n    JOIN Customers c ON o.customer_id = c.customer_id\n)\nSELECT customer_name, customer_id, order_id, order_date\nFROM RankedOrders\nWHERE rn <= 3\nORDER BY customer_name ASC, customer_id ASC, order_date DESC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(O log O)",
+    "space": "O(O)",
+    "variables": [
+      "O: number of orders"
+    ],
+    "notes": "Partitions orders by customer and sorts each partition chronologically.",
+    "whyNaiveFails": "Correlated subquery limit approaches scale quadratically with order volume.",
+    "spaceTimeTradeoff": "Window ranking computes exact row ordinals in a single partitioned sort step.",
+    "interviewerExpectation": "Row number window function partitioned by customer with secondary multi-column sorting."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RankedOrders AS (\n    SELECT o.order_id,\n           o.order_date,\n           o.customer_id,\n           c.name AS customer_name,\n           ROW_NUMBER() OVER (PARTITION BY o.customer_id ORDER BY o.order_date DESC) AS rn\n    FROM Orders o\n    JOIN Customers c ON o.customer_id = c.customer_id\n)\nSELECT customer_name, customer_id, order_id, order_date\nFROM RankedOrders\nWHERE rn <= 3\nORDER BY customer_name ASC, customer_id ASC, order_date DESC;",
+      "approach": "Row Number Window Function in CTE",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RankedOrders AS (\n    SELECT o.order_id,\n           o.order_date,\n           o.customer_id,\n           c.name AS customer_name,\n           ROW_NUMBER() OVER (PARTITION BY o.customer_id ORDER BY o.order_date DESC) AS rn\n    FROM Orders o\n    JOIN Customers c ON o.customer_id = c.customer_id\n)\nSELECT customer_name, customer_id, order_id, order_date\nFROM RankedOrders\nWHERE rn <= 3\nORDER BY customer_name ASC, customer_id ASC, order_date DESC;",
+      "approach": "PostgreSQL Partitioned Row Number CTE",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef top_three_orders(customers: pd.DataFrame, orders: pd.DataFrame) -> pd.DataFrame:\n    merged = orders.merge(customers, on='customer_id')\n    merged = merged.rename(columns={'name': 'customer_name'})\n    merged = merged.sort_values(by=['customer_id', 'order_date'], ascending=[True, False])\n    merged['rn'] = merged.groupby('customer_id').cumcount() + 1\n    res = merged[merged['rn'] <= 3]\n    res = res.sort_values(by=['customer_name', 'customer_id', 'order_date'], ascending=[True, True, False])\n    return res[['customer_name', 'customer_id', 'order_id', 'order_date']]",
+      "approach": "Pandas Cumcount Ranking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

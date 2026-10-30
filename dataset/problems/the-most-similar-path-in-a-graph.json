@@ -1,0 +1,80 @@
+{
+  "slug": "the-most-similar-path-in-a-graph",
+  "number": 1548,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dp-dag"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Stepwise Edit Cost Formulation",
+      "text": "The cost of being at node u at step t is 0 if names[u] == targetPath[t], else 1."
+    },
+    {
+      "level": 2,
+      "title": "Dynamic Programming State",
+      "text": "dp[t][u] represents the minimum edit distance for a valid path of length t ending at node u."
+    },
+    {
+      "level": 3,
+      "title": "Parent State Reconstruction",
+      "text": "Track parent pointers parent[t][u] to reconstruct the optimal path from step m - 1 down to step 0."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def mostSimilar(self, n: int, roads: list[list[int]], names: list[str], targetPath: list[str]) -> list[int]:\n        m = len(targetPath)\n        adj = [[] for _ in range(n)]\n        for u, v in roads:\n            adj[u].append(v)\n            adj[v].append(u)\n        dp = [[float('inf')] * n for _ in range(m)]\n        parent = [[-1] * n for _ in range(m)]\n        for u in range(n):\n            dp[0][u] = 0 if names[u] == targetPath[0] else 1\n        for t in range(1, m):\n            for u in range(n):\n                cost = 0 if names[u] == targetPath[t] else 1\n                for v in adj[u]:\n                    if dp[t - 1][v] + cost < dp[t][u]:\n                        dp[t][u] = dp[t - 1][v] + cost\n                        parent[t][u] = v\n        best_end = min(range(n), key=lambda u: dp[m - 1][u])\n        path = []\n        curr = best_end\n        for t in range(m - 1, -1, -1):\n            path.append(curr)\n            curr = parent[t][curr]\n        return path[::-1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * (V + E))",
+    "space": "O(M * V)",
+    "variables": [
+      "M: length of target path",
+      "V: number of cities",
+      "E: number of roads"
+    ],
+    "notes": "Iterates through M steps, relaxing all edges across adjacent cities at each step.",
+    "whyNaiveFails": "DFS over all graph paths has exponential branching factor.",
+    "spaceTimeTradeoff": "DP table of size M * V memoizes optimal sub-paths while recording parent transitions.",
+    "interviewerExpectation": "2D dynamic programming over path steps and nodes with path reconstruction."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def mostSimilar(self, n: int, roads: list[list[int]], names: list[str], targetPath: list[str]) -> list[int]:\n        m = len(targetPath)\n        adj = [[] for _ in range(n)]\n        for u, v in roads:\n            adj[u].append(v)\n            adj[v].append(u)\n        dp = [[float('inf')] * n for _ in range(m)]\n        parent = [[-1] * n for _ in range(m)]\n        for u in range(n):\n            dp[0][u] = 0 if names[u] == targetPath[0] else 1\n        for t in range(1, m):\n            for u in range(n):\n                cost = 0 if names[u] == targetPath[t] else 1\n                for v in adj[u]:\n                    if dp[t - 1][v] + cost < dp[t][u]:\n                        dp[t][u] = dp[t - 1][v] + cost\n                        parent[t][u] = v\n        best_end = min(range(n), key=lambda u: dp[m - 1][u])\n        path = []\n        curr = best_end\n        for t in range(m - 1, -1, -1):\n            path.append(curr)\n            curr = parent[t][curr]\n        return path[::-1]",
+      "approach": "Stepwise Graph DP with Parent Backtracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> mostSimilar(int n, vector<vector<int>>& roads, vector<string>& names, vector<string>& targetPath) {\n        int m = targetPath.size();\n        vector<vector<int>> adj(n);\n        for (const auto& r : roads) {\n            adj[r[0]].push_back(r[1]);\n            adj[r[1]].push_back(r[0]);\n        }\n        vector<vector<int>> dp(m, vector<int>(n, 1e9));\n        vector<vector<int>> parent(m, vector<int>(n, -1));\n        for (int u = 0; u < n; u++) {\n            dp[0][u] = (names[u] == targetPath[0]) ? 0 : 1;\n        }\n        for (int t = 1; t < m; t++) {\n            for (int u = 0; u < n; u++) {\n                int cost = (names[u] == targetPath[t]) ? 0 : 1;\n                for (int v : adj[u]) {\n                    if (dp[t - 1][v] + cost < dp[t][u]) {\n                        dp[t][u] = dp[t - 1][v] + cost;\n                        parent[t][u] = v;\n                    }\n                }\n            }\n        }\n        int bestEnd = 0;\n        for (int u = 1; u < n; u++) {\n            if (dp[m - 1][u] < dp[m - 1][bestEnd]) bestEnd = u;\n        }\n        vector<int> path;\n        int curr = bestEnd;\n        for (int t = m - 1; t >= 0; t--) {\n            path.push_back(curr);\n            curr = parent[t][curr];\n        }\n        reverse(path.begin(), path.end());\n        return path;\n    }\n};",
+      "approach": "C++ Dynamic Programming Matrix with Backtracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public List<Integer> mostSimilar(int n, int[][] roads, String[] names, String[] targetPath) {\n        int m = targetPath.length;\n        List<Integer>[] adj = new ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new ArrayList<>();\n        for (int[] r : roads) {\n            adj[r[0]].add(r[1]);\n            adj[r[1]].add(r[0]);\n        }\n        int[][] dp = new int[m][n];\n        int[][] parent = new int[m][n];\n        for (int[] row : dp) Arrays.fill(row, 1_000_000_000);\n        for (int u = 0; u < n; u++) {\n            dp[0][u] = names[u].equals(targetPath[0]) ? 0 : 1;\n        }\n        for (int t = 1; t < m; t++) {\n            for (int u = 0; u < n; u++) {\n                int cost = names[u].equals(targetPath[t]) ? 0 : 1;\n                for (int v : adj[u]) {\n                    if (dp[t - 1][v] + cost < dp[t][u]) {\n                        dp[t][u] = dp[t - 1][v] + cost;\n                        parent[t][u] = v;\n                    }\n                }\n            }\n        }\n        int bestEnd = 0;\n        for (int u = 1; u < n; u++) {\n            if (dp[m - 1][u] < dp[m - 1][bestEnd]) bestEnd = u;\n        }\n        List<Integer> path = new ArrayList<>();\n        int curr = bestEnd;\n        for (int t = m - 1; t >= 0; t--) {\n            path.add(curr);\n            curr = parent[t][curr];\n        }\n        Collections.reverse(path);\n        return path;\n    }\n}",
+      "approach": "Java Dynamic Programming Array with Reconstruction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var mostSimilar = function(n, roads, names, targetPath) {\n    const m = targetPath.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of roads) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const dp = Array.from({ length: m }, () => Array(n).fill(Infinity));\n    const parent = Array.from({ length: m }, () => Array(n).fill(-1));\n    for (let u = 0; u < n; u++) {\n        dp[0][u] = names[u] === targetPath[0] ? 0 : 1;\n    }\n    for (let t = 1; t < m; t++) {\n        for (let u = 0; u < n; u++) {\n            const cost = names[u] === targetPath[t] ? 0 : 1;\n            for (const v of adj[u]) {\n                if (dp[t - 1][v] + cost < dp[t][u]) {\n                    dp[t][u] = dp[t - 1][v] + cost;\n                    parent[t][u] = v;\n                }\n            }\n        }\n    }\n    let bestEnd = 0;\n    for (let u = 1; u < n; u++) {\n        if (dp[m - 1][u] < dp[m - 1][bestEnd]) bestEnd = u;\n    }\n    const path = [];\n    let curr = bestEnd;\n    for (let t = m - 1; t >= 0; t--) {\n        path.push(curr);\n        curr = parent[t][curr];\n    }\n    return path.reverse();\n};",
+      "approach": "JavaScript 2D Dynamic Programming with Path Reconstruction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "slug": "unique-orders-and-customers-per-month",
+  "number": 1565,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Filtering Orders by Invoice Threshold",
+      "text": "Only orders with invoice strictly greater than 20 should be counted."
+    },
+    {
+      "level": 2,
+      "title": "Extracting Year-Month Format",
+      "text": "format the order_date to year-month format using date_format."
+    },
+    {
+      "level": 3,
+      "title": "Counting Distinct Entities",
+      "text": "group by the formatted month and calculate count(distinct order_id) and count(distinct customer_id)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT DATE_FORMAT(order_date, '%Y-%m') AS month,\n       COUNT(DISTINCT order_id) AS order_count,\n       COUNT(DISTINCT customer_id) AS customer_count\nFROM Orders\nWHERE invoice > 20\nGROUP BY DATE_FORMAT(order_date, '%Y-%m');\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(O log O)",
+    "space": "O(O)",
+    "variables": [
+      "O: number of orders"
+    ],
+    "notes": "Filters rows on invoice value and performs group aggregation with distinct tracking.",
+    "whyNaiveFails": "Counting without distinct counts duplicate orders or duplicate customers within the same month.",
+    "spaceTimeTradeoff": "Distinct hash sets track unique entities per calendar bucket.",
+    "interviewerExpectation": "Distinct counts over date formatted grouping with predicate filtering."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT DATE_FORMAT(order_date, '%Y-%m') AS month,\n       COUNT(DISTINCT order_id) AS order_count,\n       COUNT(DISTINCT customer_id) AS customer_count\nFROM Orders\nWHERE invoice > 20\nGROUP BY DATE_FORMAT(order_date, '%Y-%m');",
+      "approach": "Date Formatting and Distinct Group Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT TO_CHAR(order_date, 'YYYY-MM') AS month,\n       COUNT(DISTINCT order_id) AS order_count,\n       COUNT(DISTINCT customer_id) AS customer_count\nFROM Orders\nWHERE invoice > 20\nGROUP BY TO_CHAR(order_date, 'YYYY-MM');",
+      "approach": "PostgreSQL To Char Distinct Counts",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef unique_orders_and_customers(orders: pd.DataFrame) -> pd.DataFrame:\n    filtered = orders[orders['invoice'] > 20].copy()\n    if filtered.empty:\n        return pd.DataFrame({'month': [], 'order_count': [], 'customer_count': []})\n    filtered['month'] = filtered['order_date'].astype(str).str.slice(0, 7)\n    res = filtered.groupby('month').agg(\n        order_count=('order_id', 'nunique'),\n        customer_count=('customer_id', 'nunique')\n    ).reset_index()\n    return res",
+      "approach": "Pandas Substring Slicing and Nunique Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
