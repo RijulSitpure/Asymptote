@@ -1,0 +1,73 @@
+{
+  "slug": "users-with-two-purchases-within-seven-days",
+  "number": 2228,
+  "category": "Database",
+  "patterns": [
+    "date-time",
+    "self-join"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Self-Join on Same User",
+      "text": "Join Purchases with itself matching the same user_id but different purchase_id."
+    },
+    {
+      "level": 2,
+      "title": "Day Difference Filtering",
+      "text": "Filter pairs of purchases where purchase_date of p2 is after or equal to p1 and within 7 days."
+    },
+    {
+      "level": 3,
+      "title": "Distinct User Sorting",
+      "text": "Select distinct user_id ordered ascending."
+    },
+    {
+      "level": 4,
+      "title": "Self-Join DATEDIFF Query",
+      "text": "```sql\nSELECT DISTINCT p1.user_id\nFROM Purchases p1\nJOIN Purchases p2\n  ON p1.user_id = p2.user_id\n AND p1.purchase_id != p2.purchase_id\n AND p2.purchase_date >= p1.purchase_date\n AND DATEDIFF(p2.purchase_date, p1.purchase_date) <= 7\nORDER BY p1.user_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N^2) worst case per user, O(N log N) with index on (user_id, purchase_date)",
+    "space": "O(U)",
+    "variables": [
+      "N: number of purchases",
+      "U: number of qualifying distinct users"
+    ],
+    "notes": "Filtering pairs on user_id and purchase_date bounds.",
+    "whyNaiveFails": "LAG window function alone can miss pairs separated by intermediate intervening purchases.",
+    "spaceTimeTradeoff": "Deduplicated user output stored in O(U) memory.",
+    "interviewerExpectation": "Candidate handles cases where multiple purchases occur within 7 days cleanly."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Self-Join with DATEDIFF Bounding",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT DISTINCT p1.user_id\nFROM Purchases p1\nJOIN Purchases p2\n  ON p1.user_id = p2.user_id\n AND p1.purchase_id != p2.purchase_id\n AND p2.purchase_date >= p1.purchase_date\n AND DATEDIFF(p2.purchase_date, p1.purchase_date) <= 7\nORDER BY p1.user_id;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Self-Join with Date Subtraction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT DISTINCT p1.user_id\nFROM Purchases p1\nJOIN Purchases p2\n  ON p1.user_id = p2.user_id\n AND p1.purchase_id != p2.purchase_id\n AND p2.purchase_date >= p1.purchase_date\n AND (p2.purchase_date - p1.purchase_date) <= 7\nORDER BY p1.user_id;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Merge and Date Difference Filter",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef find_valid_users(purchases: pd.DataFrame) -> pd.DataFrame:\n    purchases['purchase_date'] = pd.to_datetime(purchases['purchase_date'])\n    merged = purchases.merge(purchases, on='user_id', suffixes=('_1', '_2'))\n    filtered = merged[(merged['purchase_id_1'] != merged['purchase_id_2']) &\n                      (merged['purchase_date_2'] >= merged['purchase_date_1']) &\n                      ((merged['purchase_date_2'] - merged['purchase_date_1']).dt.days <= 7)]\n    unique_users = filtered[['user_id']].drop_duplicates().sort_values('user_id')\n    return unique_users"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+from solution import Solution
+s = Solution()
+assert s.maximumCost(5, [[0,1,4],[2,1,3],[1,4,11],[3,2,3],[0,3,1]], 2) == 15
+assert s.maximumCost(4, [[0,1,3],[2,3,2]], 2) == -1
+print("All tests passed for maximum-cost-of-trip-with-k-highways!")

@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-score-of-a-node-sequence",
+  "number": 2242,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Middle Edge Centric Perspective",
+      "text": "A sequence of 4 distinct connected nodes has the form (a - u - v - b), where (u, v) is the middle edge."
+    },
+    {
+      "level": 2,
+      "title": "Top-3 Neighbors Precomputation",
+      "text": "For each node, only its top 3 highest-scoring neighbors can ever be part of the optimal sequence."
+    },
+    {
+      "level": 3,
+      "title": "Iterating Middle Edges",
+      "text": "For each directed edge (u, v), test all combinations of a in top3(u) and b in top3(v) such that a, u, v, b are all distinct."
+    },
+    {
+      "level": 4,
+      "title": "Edge Candidate Search Implementation",
+      "text": "```python\nclass Solution:\n    def maximumScore(self, scores: list[int], edges: list[list[int]]) -> int:\n        n = len(scores)\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        top3 = []\n        for i in range(n):\n            top3.append(sorted(adj[i], key=lambda x: scores[x], reverse=True)[:3])\n        ans = -1\n        for u, v in edges:\n            for a in top3[u]:\n                for b in top3[v]:\n                    if a != v and b != u and a != b:\n                        score = scores[a] + scores[u] + scores[v] + scores[b]\n                        if score > ans:\n                            ans = score\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E + V log(deg))",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes",
+      "E: number of edges"
+    ],
+    "notes": "For each edge (u, v), at most 3 x 3 = 9 candidate pairs are tested.",
+    "whyNaiveFails": "Enumerating all 4-node paths by DFS takes O(V^4) or O(deg^3) which TLEs.",
+    "spaceTimeTradeoff": "Top-3 neighbor lists take O(V) space.",
+    "interviewerExpectation": "Candidate centers sequence on middle edge (u, v) and restricts endpoints to top 3 neighbors."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Middle Edge Anchoring with Top-3 Neighbor Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def maximumScore(self, scores: list[int], edges: list[list[int]]) -> int:\n        n = len(scores)\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        top3 = []\n        for i in range(n):\n            top3.append(sorted(adj[i], key=lambda x: scores[x], reverse=True)[:3])\n        ans = -1\n        for u, v in edges:\n            for a in top3[u]:\n                for b in top3[v]:\n                    if a != v and b != u and a != b:\n                        score = scores[a] + scores[u] + scores[v] + scores[b]\n                        if score > ans:\n                            ans = score\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Middle Edge Anchoring with Top-3 Neighbor Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int maximumScore(vector<int>& scores, vector<vector<int>>& edges) {\n        int n = scores.size();\n        vector<vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        vector<vector<int>> top3(n);\n        for (int i = 0; i < n; i++) {\n            sort(adj[i].begin(), adj[i].end(), [&](int a, int b) {\n                return scores[a] > scores[b];\n            });\n            if (adj[i].size() > 3) adj[i].resize(3);\n            top3[i] = adj[i];\n        }\n        int ans = -1;\n        for (const auto& e : edges) {\n            int u = e[0], v = e[1];\n            for (int a : top3[u]) {\n                for (int b : top3[v]) {\n                    if (a != v && b != u && a != b) {\n                        ans = max(ans, scores[a] + scores[u] + scores[v] + scores[b]);\n                    }\n                }\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Middle Edge Anchoring with Top-3 Neighbor Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int maximumScore(int[] scores, int[][] edges) {\n        int n = scores.length;\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        List<List<Integer>> top3 = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            List<Integer> neighbors = adj.get(i);\n            neighbors.sort((a, b) -> Integer.compare(scores[b], scores[a]));\n            if (neighbors.size() > 3) {\n                neighbors = new ArrayList<>(neighbors.subList(0, 3));\n            }\n            top3.add(neighbors);\n        }\n        int ans = -1;\n        for (int[] e : edges) {\n            int u = e[0], v = e[1];\n            for (int a : top3.get(u)) {\n                for (int b : top3.get(v)) {\n                    if (a != v && b != u && a != b) {\n                        ans = Math.max(ans, scores[a] + scores[u] + scores[v] + scores[b]);\n                    }\n                }\n            }\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Middle Edge Anchoring with Top-3 Neighbor Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "/**\n * @param {number[]} scores\n * @param {number[][]} edges\n * @return {number}\n */\nvar maximumScore = function(scores, edges) {\n    const n = scores.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const top3 = [];\n    for (let i = 0; i < n; i++) {\n        adj[i].sort((a, b) => scores[b] - scores[a]);\n        top3.push(adj[i].slice(0, 3));\n    }\n    let ans = -1;\n    for (const [u, v] of edges) {\n        for (const a of top3[u]) {\n            for (const b of top3[v]) {\n                if (a !== v && b !== u && a !== b) {\n                    const score = scores[a] + scores[u] + scores[v] + scores[b];\n                    if (score > ans) ans = score;\n                }\n            }\n        }\n    }\n    return ans;\n};"
+    }
+  ]
+}

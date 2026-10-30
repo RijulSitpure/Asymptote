@@ -1,0 +1,79 @@
+{
+  "slug": "design-video-sharing-platform",
+  "number": 2254,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Smallest Available ID Reuse",
+      "text": "Maintain an incremental counter for new identifiers and a pool of released identifiers from deleted videos."
+    },
+    {
+      "level": 2,
+      "title": "Video Record Storage",
+      "text": "Store video string content, views, likes, and dislikes in a lookup dictionary keyed by videoId."
+    },
+    {
+      "level": 3,
+      "title": "View Increment Substring",
+      "text": "Watching a video increments its view count and returns video[startMinute:min(len, endMinute + 1)]."
+    },
+    {
+      "level": 4,
+      "title": "Video Platform Implementation",
+      "text": "```python\nimport heapq\n\nclass VideoSharingPlatform:\n    def __init__(self):\n        self.reused = []\n        self.next_id = 0\n        self.videos = {}\n\n    def upload(self, video: str) -> int:\n        if self.reused:\n            vid = heapq.heappop(self.reused)\n        else:\n            vid = self.next_id\n            self.next_id += 1\n        self.videos[vid] = {\"content\": video, \"views\": 0, \"likes\": 0, \"dislikes\": 0}\n        return vid\n\n    def remove(self, videoId: int) -> None:\n        if videoId in self.videos:\n            del self.videos[videoId]\n            heapq.heappush(self.reused, videoId)\n\n    def watch(self, videoId: int, startMinute: int, endMinute: int) -> str:\n        if videoId not in self.videos:\n            return \"-1\"\n        rec = self.videos[videoId]\n        rec[\"views\"] += 1\n        return rec[\"content\"][startMinute:endMinute + 1]\n\n    def like(self, videoId: int) -> None:\n        if videoId in self.videos:\n            self.videos[videoId][\"likes\"] += 1\n\n    def dislike(self, videoId: int) -> None:\n        if videoId in self.videos:\n            self.videos[videoId][\"dislikes\"] += 1\n\n    def getLikesAndDislikes(self, videoId: int) -> list[int]:\n        if videoId not in self.videos:\n            return [-1]\n        rec = self.videos[videoId]\n        return [rec[\"likes\"], rec[\"dislikes\"]]\n\n    def getViews(self, videoId: int) -> int:\n        if videoId not in self.videos:\n            return -1\n        return self.videos[videoId][\"views\"]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log V) for upload and remove, O(L) for watch substring, O(1) for like, dislike, getViews",
+    "space": "O(V * L)",
+    "variables": [
+      "V: number of active videos",
+      "L: length of video content string"
+    ],
+    "notes": "Min-heap manages smallest available ID in logarithmic time.",
+    "whyNaiveFails": "Scanning linearly for the smallest unused ID takes O(V) per upload.",
+    "spaceTimeTradeoff": "Dictionary stores metadata and video strings.",
+    "interviewerExpectation": "Candidate efficiently allocates smallest available ID using heap and handles missing video IDs."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Min-Heap ID Recycling with Metadata Dictionary",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import heapq\n\nclass VideoSharingPlatform:\n    def __init__(self):\n        self.reused = []\n        self.next_id = 0\n        self.videos = {}\n\n    def upload(self, video: str) -> int:\n        if self.reused:\n            vid = heapq.heappop(self.reused)\n        else:\n            vid = self.next_id\n            self.next_id += 1\n        self.videos[vid] = {\"content\": video, \"views\": 0, \"likes\": 0, \"dislikes\": 0}\n        return vid\n\n    def remove(self, videoId: int) -> None:\n        if videoId in self.videos:\n            del self.videos[videoId]\n            heapq.heappush(self.reused, videoId)\n\n    def watch(self, videoId: int, startMinute: int, endMinute: int) -> str:\n        if videoId not in self.videos:\n            return \"-1\"\n        rec = self.videos[videoId]\n        rec[\"views\"] += 1\n        return rec[\"content\"][startMinute:endMinute + 1]\n\n    def like(self, videoId: int) -> None:\n        if videoId in self.videos:\n            self.videos[videoId][\"likes\"] += 1\n\n    def dislike(self, videoId: int) -> None:\n        if videoId in self.videos:\n            self.videos[videoId][\"dislikes\"] += 1\n\n    def getLikesAndDislikes(self, videoId: int) -> list[int]:\n        if videoId not in self.videos:\n            return [-1]\n        rec = self.videos[videoId]\n        return [rec[\"likes\"], rec[\"dislikes\"]]\n\n    def getViews(self, videoId: int) -> int:\n        if videoId not in self.videos:\n            return -1\n        return self.videos[videoId][\"views\"]"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Min-Heap ID Recycling with Metadata Dictionary",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class VideoSharingPlatform {\n    struct Video {\n        string content;\n        int views = 0;\n        int likes = 0;\n        int dislikes = 0;\n    };\n    priority_queue<int, vector<int>, greater<int>> reused;\n    int nextId = 0;\n    unordered_map<int, Video> videos;\n\npublic:\n    VideoSharingPlatform() {}\n\n    int upload(string video) {\n        int vid;\n        if (!reused.empty()) {\n            vid = reused.top();\n            reused.pop();\n        } else {\n            vid = nextId++;\n        }\n        videos[vid] = {video, 0, 0, 0};\n        return vid;\n    }\n\n    void remove(int videoId) {\n        if (videos.count(videoId)) {\n            videos.erase(videoId);\n            reused.push(videoId);\n        }\n    }\n\n    string watch(int videoId, int startMinute, int endMinute) {\n        if (!videos.count(videoId)) return \"-1\";\n        auto& v = videos[videoId];\n        v.views++;\n        int start = min(startMinute, (int)v.content.size());\n        int len = max(0, min(endMinute + 1, (int)v.content.size()) - start);\n        return v.content.substr(start, len);\n    }\n\n    void like(int videoId) {\n        if (videos.count(videoId)) videos[videoId].likes++;\n    }\n\n    void dislike(int videoId) {\n        if (videos.count(videoId)) videos[videoId].dislikes++;\n    }\n\n    vector<int> getLikesAndDislikes(int videoId) {\n        if (!videos.count(videoId)) return {-1};\n        return {videos[videoId].likes, videos[videoId].dislikes};\n    }\n\n    int getViews(int videoId) {\n        if (!videos.count(videoId)) return -1;\n        return videos[videoId].views;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Min-Heap ID Recycling with Metadata Dictionary",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class VideoSharingPlatform {\n    static class Video {\n        String content;\n        int views = 0;\n        int likes = 0;\n        int dislikes = 0;\n        Video(String c) { this.content = c; }\n    }\n    private PriorityQueue<Integer> reused = new PriorityQueue<>();\n    private int nextId = 0;\n    private Map<Integer, Video> videos = new HashMap<>();\n\n    public VideoSharingPlatform() {}\n\n    public int upload(String video) {\n        int vid = reused.isEmpty() ? nextId++ : reused.poll();\n        videos.put(vid, new Video(video));\n        return vid;\n    }\n\n    public void remove(int videoId) {\n        if (videos.containsKey(videoId)) {\n            videos.remove(videoId);\n            reused.add(videoId);\n        }\n    }\n\n    public String watch(int videoId, int startMinute, int endMinute) {\n        if (!videos.containsKey(videoId)) return \"-1\";\n        Video v = videos.get(videoId);\n        v.views++;\n        int start = Math.min(startMinute, v.content.length());\n        int end = Math.min(endMinute + 1, v.content.length());\n        return v.content.substring(start, end);\n    }\n\n    public void like(int videoId) {\n        if (videos.containsKey(videoId)) videos.get(videoId).likes++;\n    }\n\n    public void dislike(int videoId) {\n        if (videos.containsKey(videoId)) videos.get(videoId).dislikes++;\n    }\n\n    public int[] getLikesAndDislikes(int videoId) {\n        if (!videos.containsKey(videoId)) return new int[]{-1};\n        Video v = videos.get(videoId);\n        return new int[]{v.likes, v.dislikes};\n    }\n\n    public int getViews(int videoId) {\n        if (!videos.containsKey(videoId)) return -1;\n        return videos.get(videoId).views;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Min-Heap ID Recycling with Metadata Dictionary",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var VideoSharingPlatform = function() {\n    this.reused = [];\n    this.nextId = 0;\n    this.videos = new Map();\n};\n\n/** \n * @param {string} video\n * @return {number}\n */\nVideoSharingPlatform.prototype.upload = function(video) {\n    let vid;\n    if (this.reused.length > 0) {\n        this.reused.sort((a, b) => a - b);\n        vid = this.reused.shift();\n    } else {\n        vid = this.nextId++;\n    }\n    this.videos.set(vid, { content: video, views: 0, likes: 0, dislikes: 0 });\n    return vid;\n};\n\n/** \n * @param {number} videoId\n * @return {void}\n */\nVideoSharingPlatform.prototype.remove = function(videoId) {\n    if (this.videos.has(videoId)) {\n        this.videos.delete(videoId);\n        this.reused.push(videoId);\n    }\n};\n\n/** \n * @param {number} videoId \n * @param {number} startMinute \n * @param {number} endMinute\n * @return {string}\n */\nVideoSharingPlatform.prototype.watch = function(videoId, startMinute, endMinute) {\n    if (!this.videos.has(videoId)) return \"-1\";\n    const v = this.videos.get(videoId);\n    v.views++;\n    return v.content.slice(startMinute, endMinute + 1);\n};\n\n/** \n * @param {number} videoId\n * @return {void}\n */\nVideoSharingPlatform.prototype.like = function(videoId) {\n    if (this.videos.has(videoId)) this.videos.get(videoId).likes++;\n};\n\n/** \n * @param {number} videoId\n * @return {void}\n */\nVideoSharingPlatform.prototype.dislike = function(videoId) {\n    if (this.videos.has(videoId)) this.videos.get(videoId).dislikes++;\n};\n\n/** \n * @param {number} videoId\n * @return {number[]}\n */\nVideoSharingPlatform.prototype.getLikesAndDislikes = function(videoId) {\n    if (!this.videos.has(videoId)) return [-1];\n    const v = this.videos.get(videoId);\n    return [v.likes, v.dislikes];\n};\n\n/** \n * @param {number} videoId\n * @return {number}\n */\nVideoSharingPlatform.prototype.getViews = function(videoId) {\n    if (!this.videos.has(videoId)) return -1;\n    return this.videos.get(videoId).views;\n};"
+    }
+  ]
+}

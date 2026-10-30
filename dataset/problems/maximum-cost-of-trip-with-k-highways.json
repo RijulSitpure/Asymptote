@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-cost-of-trip-with-k-highways",
+  "number": 2247,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Small City Count",
+      "text": "The number of cities n is at most 15, which makes bitmask state representation practical."
+    },
+    {
+      "level": 2,
+      "title": "Exact Hop Target",
+      "text": "The trip requires exactly k highways, meaning exactly k + 1 distinct cities must be visited without repeating."
+    },
+    {
+      "level": 3,
+      "title": "Memoized Search State",
+      "text": "State (mask, current_city, hops_remaining) uniquely characterizes the optimal remaining highway cost."
+    },
+    {
+      "level": 4,
+      "title": "Bitmask Memoized DFS Implementation",
+      "text": "```python\nclass Solution:\n    def maximumCost(self, n: int, highways: list[list[int]], k: int) -> int:\n        if k >= n:\n            return -1\n        adj = [[] for _ in range(n)]\n        for u, v, w in highways:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n        memo = {}\n\n        def dfs(mask, u, hops):\n            if hops == 0:\n                return 0\n            state = (mask, u, hops)\n            if state in memo:\n                return memo[state]\n            res = -float(\"inf\")\n            for v, w in adj[u]:\n                if not ((mask >> v) & 1):\n                    res = max(res, w + dfs(mask | (1 << v), v, hops - 1))\n            memo[state] = res\n            return res\n\n        ans = -1\n        for start in range(n):\n            val = dfs(1 << start, start, k)\n            if val > ans:\n                ans = val\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(k * n * 2^n)",
+    "space": "O(k * n * 2^n)",
+    "variables": [
+      "n: number of cities (<= 15)",
+      "k: number of highways (<= n - 1)"
+    ],
+    "notes": "State space bounded by 15 * 15 * 2^15 with transitions over vertex degrees.",
+    "whyNaiveFails": "Unmemoized path backtracking explores all permutations leading to TLE.",
+    "spaceTimeTradeoff": "Memoization table stores visited bitmask states.",
+    "interviewerExpectation": "Candidate leverages n <= 15 for bitmask dynamic programming."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Bitmask Memoized Depth-First Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def maximumCost(self, n: int, highways: list[list[int]], k: int) -> int:\n        if k >= n:\n            return -1\n        adj = [[] for _ in range(n)]\n        for u, v, w in highways:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n        memo = {}\n\n        def dfs(mask, u, hops):\n            if hops == 0:\n                return 0\n            state = (mask, u, hops)\n            if state in memo:\n                return memo[state]\n            res = -float(\"inf\")\n            for v, w in adj[u]:\n                if not ((mask >> v) & 1):\n                    res = max(res, w + dfs(mask | (1 << v), v, hops - 1))\n            memo[state] = res\n            return res\n\n        ans = -1\n        for start in range(n):\n            val = dfs(1 << start, start, k)\n            if val > ans:\n                ans = val\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Bitmask Memoized Depth-First Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    int memo[1 << 15][15];\n\npublic:\n    int maximumCost(int n, vector<vector<int>>& highways, int k) {\n        if (k >= n) return -1;\n        vector<vector<pair<int, int>>> adj(n);\n        for (const auto& h : highways) {\n            adj[h[0]].push_back({h[1], h[2]});\n            adj[h[1]].push_back({h[0], h[2]});\n        }\n        memset(memo, -1, sizeof(memo));\n\n        auto dfs = [&](auto& self, int mask, int u, int hops) -> int {\n            if (hops == 0) return 0;\n            if (memo[mask][u] != -1) return memo[mask][u];\n            int res = -2;\n            for (const auto& [v, w] : adj[u]) {\n                if (!((mask >> v) & 1)) {\n                    int sub = self(self, mask | (1 << v), v, hops - 1);\n                    if (sub != -2) {\n                        res = max(res, w + sub);\n                    }\n                }\n            }\n            return memo[mask][u] = res;\n        };\n\n        int ans = -1;\n        for (int i = 0; i < n; i++) {\n            memset(memo, -1, sizeof(memo));\n            int val = dfs(dfs, 1 << i, i, k);\n            if (val > ans) ans = val;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Bitmask Memoized Depth-First Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int[][] memo;\n\n    public int maximumCost(int n, int[][] highways, int k) {\n        if (k >= n) return -1;\n        List<List<int[]>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] h : highways) {\n            adj.get(h[0]).add(new int[]{h[1], h[2]});\n            adj.get(h[1]).add(new int[]{h[0], h[2]});\n        }\n\n        int ans = -1;\n        for (int i = 0; i < n; i++) {\n            memo = new int[1 << n][n];\n            for (int[] row : memo) Arrays.fill(row, -1);\n            int val = dfs(1 << i, i, k, adj);\n            if (val > ans) ans = val;\n        }\n        return ans;\n    }\n\n    private int dfs(int mask, int u, int hops, List<List<int[]>> adj) {\n        if (hops == 0) return 0;\n        if (memo[mask][u] != -1) return memo[mask][u];\n        int res = -2;\n        for (int[] edge : adj.get(u)) {\n            int v = edge[0], w = edge[1];\n            if (((mask >> v) & 1) == 0) {\n                int sub = dfs(mask | (1 << v), v, hops - 1, adj);\n                if (sub != -2) {\n                    res = Math.max(res, w + sub);\n                }\n            }\n        }\n        return memo[mask][u] = res;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Bitmask Memoized Depth-First Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} highways\n * @param {number} k\n * @return {number}\n */\nvar maximumCost = function(n, highways, k) {\n    if (k >= n) return -1;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of highways) {\n        adj[u].push([v, w]);\n        adj[v].push([u, w]);\n    }\n    const memo = new Map();\n    function dfs(mask, u, hops) {\n        if (hops === 0) return 0;\n        const key = (mask * 16 + u) * 16 + hops;\n        if (memo.has(key)) return memo.get(key);\n        let res = -Infinity;\n        for (const [v, w] of adj[u]) {\n            if (!((mask >> v) & 1)) {\n                res = Math.max(res, w + dfs(mask | (1 << v), v, hops - 1));\n            }\n        }\n        memo.set(key, res);\n        return res;\n    }\n    let ans = -1;\n    for (let i = 0; i < n; i++) {\n        const val = dfs(1 << i, i, k);\n        if (val > ans) ans = val;\n    }\n    return ans;\n};"
+    }
+  ]
+}

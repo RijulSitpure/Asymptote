@@ -1,0 +1,79 @@
+{
+  "slug": "count-number-of-rectangles-containing-each-point",
+  "number": 2250,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Height Range Constraint",
+      "text": "Notice that rectangle heights are bounded by 1 <= h <= 100, which is extremely small."
+    },
+    {
+      "level": 2,
+      "title": "Bucketing by Height",
+      "text": "Group rectangle lengths into 100 buckets based on their heights: by_h[h] = list of lengths, then sort each bucket."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search Over Lengths",
+      "text": "For a query point (px, py), iterate through all heights h from py to 100 and use binary search to count lengths >= px."
+    },
+    {
+      "level": 4,
+      "title": "Height-Bucketed Binary Search Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def countRectangles(self, rectangles: list[list[int]], points: list[list[int]]) -> list[int]:\n        by_h = [[] for _ in range(101)]\n        for l, h in rectangles:\n            by_h[h].append(l)\n        for h in range(101):\n            by_h[h].sort()\n        ans = []\n        for px, py in points:\n            cnt = 0\n            for h in range(py, 101):\n                bucket = by_h[h]\n                idx = bisect.bisect_left(bucket, px)\n                cnt += len(bucket) - idx\n            ans.append(cnt)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R log R + P * 100 * log R)",
+    "space": "O(R)",
+    "variables": [
+      "R: number of rectangles",
+      "P: number of points"
+    ],
+    "notes": "Iterates at most 100 height buckets per point, binary searching lengths.",
+    "whyNaiveFails": "Comparing all pairs of rectangles and points takes O(R * P) and TLEs for R, P up to 5 * 10^4.",
+    "spaceTimeTradeoff": "Height buckets store lengths in O(R) memory.",
+    "interviewerExpectation": "Candidate identifies small height bound (h <= 100) and applies binary search per bucket."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Height Bucket Partitioning with Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import bisect\n\nclass Solution:\n    def countRectangles(self, rectangles: list[list[int]], points: list[list[int]]) -> list[int]:\n        by_h = [[] for _ in range(101)]\n        for l, h in rectangles:\n            by_h[h].append(l)\n        for h in range(101):\n            by_h[h].sort()\n        ans = []\n        for px, py in points:\n            cnt = 0\n            for h in range(py, 101):\n                bucket = by_h[h]\n                idx = bisect.bisect_left(bucket, px)\n                cnt += len(bucket) - idx\n            ans.append(cnt)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Height Bucket Partitioning with Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    vector<int> countRectangles(vector<vector<int>>& rectangles, vector<vector<int>>& points) {\n        vector<vector<int>> by_h(101);\n        for (const auto& r : rectangles) {\n            by_h[r[1]].push_back(r[0]);\n        }\n        for (int h = 1; h <= 100; h++) {\n            sort(by_h[h].begin(), by_h[h].end());\n        }\n        vector<int> ans;\n        for (const auto& p : points) {\n            int px = p[0], py = p[1];\n            int cnt = 0;\n            for (int h = py; h <= 100; h++) {\n                const auto& bucket = by_h[h];\n                auto it = lower_bound(bucket.begin(), bucket.end(), px);\n                cnt += bucket.end() - it;\n            }\n            ans.push_back(cnt);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Height Bucket Partitioning with Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int[] countRectangles(int[][] rectangles, int[][] points) {\n        List<List<Integer>> by_h = new ArrayList<>();\n        for (int i = 0; i <= 100; i++) by_h.add(new ArrayList<>());\n        for (int[] r : rectangles) {\n            by_h.get(r[1]).add(r[0]);\n        }\n        for (int h = 1; h <= 100; h++) {\n            Collections.sort(by_h.get(h));\n        }\n        int[] ans = new int[points.length];\n        for (int i = 0; i < points.length; i++) {\n            int px = points[i][0], py = points[i][1];\n            int cnt = 0;\n            for (int h = py; h <= 100; h++) {\n                List<Integer> bucket = by_h.get(h);\n                int l = 0, r = bucket.size();\n                while (l < r) {\n                    int mid = (l + r) / 2;\n                    if (bucket.get(mid) >= px) r = mid;\n                    else l = mid + 1;\n                }\n                cnt += bucket.size() - l;\n            }\n            ans[i] = cnt;\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Height Bucket Partitioning with Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "/**\n * @param {number[][]} rectangles\n * @param {number[][]} points\n * @return {number[]}\n */\nvar countRectangles = function(rectangles, points) {\n    const by_h = Array.from({ length: 101 }, () => []);\n    for (const [l, h] of rectangles) {\n        by_h[h].push(l);\n    }\n    for (let h = 1; h <= 100; h++) {\n        by_h[h].sort((a, b) => a - b);\n    }\n    const ans = [];\n    for (const [px, py] of points) {\n        let cnt = 0;\n        for (let h = py; h <= 100; h++) {\n            const bucket = by_h[h];\n            let l = 0, r = bucket.length;\n            while (l < r) {\n                const mid = (l + r) >> 1;\n                if (bucket[mid] >= px) r = mid;\n                else l = mid + 1;\n            }\n            cnt += bucket.length - l;\n        }\n        ans.push(cnt);\n    }\n    return ans;\n};"
+    }
+  ]
+}

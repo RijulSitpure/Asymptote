@@ -1,0 +1,73 @@
+{
+  "slug": "number-of-times-a-driver-was-a-passenger",
+  "number": 2238,
+  "category": "Database",
+  "patterns": [
+    "join-filter",
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Distinct Drivers Base Table",
+      "text": "Extract the distinct driver_id list from Rides to form the base population."
+    },
+    {
+      "level": 2,
+      "title": "Left Join on Passenger Occurrences",
+      "text": "Left join distinct drivers with Rides matching driver_id to passenger_id."
+    },
+    {
+      "level": 3,
+      "title": "Count Aggregation",
+      "text": "Group by driver_id and count matching ride_id values (which counts 0 when null)."
+    },
+    {
+      "level": 4,
+      "title": "Left Join Aggregation Query",
+      "text": "```sql\nSELECT\n    d.driver_id,\n    COUNT(r.ride_id) AS cnt\nFROM (SELECT DISTINCT driver_id FROM Rides) d\nLEFT JOIN Rides r\n    ON d.driver_id = r.passenger_id\nGROUP BY d.driver_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(R log D)",
+    "space": "O(D)",
+    "variables": [
+      "R: number of rides",
+      "D: number of distinct drivers"
+    ],
+    "notes": "Distinct driver scan and left join with group by aggregation.",
+    "whyNaiveFails": "An inner join drops drivers who were never passengers, omitting them from the result instead of showing 0.",
+    "spaceTimeTradeoff": "Temporary grouping buffer stores distinct driver aggregates.",
+    "interviewerExpectation": "Candidate utilizes LEFT JOIN and COUNT(r.ride_id) to correctly yield 0 for non-passenger drivers."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Distinct Driver Subquery Left Joined to Passenger Rides",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT\n    d.driver_id,\n    COUNT(r.ride_id) AS cnt\nFROM (SELECT DISTINCT driver_id FROM Rides) d\nLEFT JOIN Rides r\n    ON d.driver_id = r.passenger_id\nGROUP BY d.driver_id;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Distinct Driver Subquery Left Joined to Passenger Rides",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT\n    d.driver_id,\n    COUNT(r.ride_id) AS cnt\nFROM (SELECT DISTINCT driver_id FROM Rides) d\nLEFT JOIN Rides r\n    ON d.driver_id = r.passenger_id\nGROUP BY d.driver_id;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Left Merge and Groupby Count",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef count_driver_as_passenger(rides: pd.DataFrame) -> pd.DataFrame:\n    drivers = pd.DataFrame({'driver_id': rides['driver_id'].unique()})\n    passenger_counts = rides['passenger_id'].value_counts().reset_index()\n    passenger_counts.columns = ['driver_id', 'cnt']\n    merged = drivers.merge(passenger_counts, on='driver_id', how='left')\n    merged['cnt'] = merged['cnt'].fillna(0).astype(int)\n    return merged"
+    }
+  ]
+}

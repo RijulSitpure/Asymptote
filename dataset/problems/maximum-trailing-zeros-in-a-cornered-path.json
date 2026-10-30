@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-trailing-zeros-in-a-cornered-path",
+  "number": 2245,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prime Factors 2 and 5",
+      "text": "The number of trailing zeros in a product is determined by min(count(2), count(5))."
+    },
+    {
+      "level": 2,
+      "title": "Cornered Path Structure",
+      "text": "A cornered path consists of an L-shape turning at some cell (r, c), combining one horizontal segment and one vertical segment meeting at (r, c)."
+    },
+    {
+      "level": 3,
+      "title": "2D Prefix Sums of Factor Pairs",
+      "text": "Precompute row prefix sums and column prefix sums for both factors 2 and 5."
+    },
+    {
+      "level": 4,
+      "title": "Four Corner Combinations Evaluation",
+      "text": "```python\nclass Solution:\n    def maxTrailingZeros(self, grid: list[list[int]]) -> int:\n        R, C = len(grid), len(grid[0])\n        def get_factors(x):\n            c2, c5 = 0, 0\n            while x > 0 and x % 2 == 0:\n                c2 += 1\n                x //= 2\n            while x > 0 and x % 5 == 0:\n                c5 += 1\n                x //= 5\n            return (c2, c5)\n\n        fgrid = [[get_factors(grid[r][c]) for c in range(C)] for r in range(R)]\n\n        row_pref = [[[0, 0] for _ in range(C + 1)] for _ in range(R)]\n        for r in range(R):\n            for c in range(C):\n                row_pref[r][c + 1][0] = row_pref[r][c][0] + fgrid[r][c][0]\n                row_pref[r][c + 1][1] = row_pref[r][c][1] + fgrid[r][c][1]\n\n        col_pref = [[[0, 0] for _ in range(C)] for _ in range(R + 1)]\n        for c in range(C):\n            for r in range(R):\n                col_pref[r + 1][c][0] = col_pref[r][c][0] + fgrid[r][c][0]\n                col_pref[r + 1][c][1] = col_pref[r][c][1] + fgrid[r][c][1]\n\n        ans = 0\n        for r in range(R):\n            for c in range(C):\n                c2, c5 = fgrid[r][c]\n                up2, up5 = col_pref[r + 1][c][0], col_pref[r + 1][c][1]\n                dn2, dn5 = col_pref[R][c][0] - col_pref[r][c][0], col_pref[R][c][1] - col_pref[r][c][1]\n                lt2, lt5 = row_pref[r][c + 1][0], row_pref[r][c + 1][1]\n                rt2, rt5 = row_pref[r][C][0] - row_pref[r][c][0], row_pref[r][C][1] - row_pref[r][c][1]\n\n                ans = max(ans, min(up2 + lt2 - c2, up5 + lt5 - c5))\n                ans = max(ans, min(up2 + rt2 - c2, up5 + rt5 - c5))\n                ans = max(ans, min(dn2 + lt2 - c2, dn5 + lt5 - c5))\n                ans = max(ans, min(dn2 + rt2 - c2, dn5 + rt5 - c5))\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R * C)",
+    "space": "O(R * C)",
+    "variables": [
+      "R: grid row count",
+      "C: grid column count"
+    ],
+    "notes": "Factoring and prefix sums take O(R * C), and checking 4 corners per cell takes O(1).",
+    "whyNaiveFails": "Multiplying large path products exceeds precision and re-summing takes O(R * C * (R + C)).",
+    "spaceTimeTradeoff": "Prefix factor tables require O(R * C) memory.",
+    "interviewerExpectation": "Candidate abstracts product to factors of 2 and 5 and checks all 4 L-corners."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Factor Prefix Sums with 4-Way Corner Evaluation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def maxTrailingZeros(self, grid: list[list[int]]) -> int:\n        R, C = len(grid), len(grid[0])\n        def get_factors(x):\n            c2, c5 = 0, 0\n            while x > 0 and x % 2 == 0:\n                c2 += 1\n                x //= 2\n            while x > 0 and x % 5 == 0:\n                c5 += 1\n                x //= 5\n            return (c2, c5)\n\n        fgrid = [[get_factors(grid[r][c]) for c in range(C)] for r in range(R)]\n\n        row_pref = [[[0, 0] for _ in range(C + 1)] for _ in range(R)]\n        for r in range(R):\n            for c in range(C):\n                row_pref[r][c + 1][0] = row_pref[r][c][0] + fgrid[r][c][0]\n                row_pref[r][c + 1][1] = row_pref[r][c][1] + fgrid[r][c][1]\n\n        col_pref = [[[0, 0] for _ in range(C)] for _ in range(R + 1)]\n        for c in range(C):\n            for r in range(R):\n                col_pref[r + 1][c][0] = col_pref[r][c][0] + fgrid[r][c][0]\n                col_pref[r + 1][c][1] = col_pref[r][c][1] + fgrid[r][c][1]\n\n        ans = 0\n        for r in range(R):\n            for c in range(C):\n                c2, c5 = fgrid[r][c]\n                up2, up5 = col_pref[r + 1][c][0], col_pref[r + 1][c][1]\n                dn2, dn5 = col_pref[R][c][0] - col_pref[r][c][0], col_pref[R][c][1] - col_pref[r][c][1]\n                lt2, lt5 = row_pref[r][c + 1][0], row_pref[r][c + 1][1]\n                rt2, rt5 = row_pref[r][C][0] - row_pref[r][c][0], row_pref[r][C][1] - row_pref[r][c][1]\n\n                ans = max(ans, min(up2 + lt2 - c2, up5 + lt5 - c5))\n                ans = max(ans, min(up2 + rt2 - c2, up5 + rt5 - c5))\n                ans = max(ans, min(dn2 + lt2 - c2, dn5 + lt5 - c5))\n                ans = max(ans, min(dn2 + rt2 - c2, dn5 + rt5 - c5))\n\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Factor Prefix Sums with 4-Way Corner Evaluation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int maxTrailingZeros(vector<vector<int>>& grid) {\n        int R = grid.size(), C = grid[0].size();\n        auto get_f = [](int x) -> pair<int, int> {\n            int c2 = 0, c5 = 0;\n            while (x > 0 && x % 2 == 0) { c2++; x /= 2; }\n            while (x > 0 && x % 5 == 0) { c5++; x /= 5; }\n            return {c2, c5};\n        };\n\n        vector<vector<pair<int, int>>> f(R, vector<pair<int, int>>(C));\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                f[r][c] = get_f(grid[r][c]);\n            }\n        }\n\n        vector<vector<pair<int, int>>> row_pref(R, vector<pair<int, int>>(C + 1, {0, 0}));\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                row_pref[r][c + 1].first = row_pref[r][c].first + f[r][c].first;\n                row_pref[r][c + 1].second = row_pref[r][c].second + f[r][c].second;\n            }\n        }\n\n        vector<vector<pair<int, int>>> col_pref(R + 1, vector<pair<int, int>>(C, {0, 0}));\n        for (int c = 0; c < C; c++) {\n            for (int r = 0; r < R; r++) {\n                col_pref[r + 1][c].first = col_pref[r][c].first + f[r][c].first;\n                col_pref[r + 1][c].second = col_pref[r][c].second + f[r][c].second;\n            }\n        }\n\n        int ans = 0;\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                auto [c2, c5] = f[r][c];\n                int up2 = col_pref[r + 1][c].first, up5 = col_pref[r + 1][c].second;\n                int dn2 = col_pref[R][c].first - col_pref[r][c].first, dn5 = col_pref[R][c].second - col_pref[r][c].second;\n                int lt2 = row_pref[r][c + 1].first, lt5 = row_pref[r][c + 1].second;\n                int rt2 = row_pref[r][C].first - row_pref[r][c].first, rt5 = row_pref[r][C].second - row_pref[r][c].second;\n\n                ans = max(ans, min(up2 + lt2 - c2, up5 + lt5 - c5));\n                ans = max(ans, min(up2 + rt2 - c2, up5 + rt5 - c5));\n                ans = max(ans, min(dn2 + lt2 - c2, dn5 + lt5 - c5));\n                ans = max(ans, min(dn2 + rt2 - c2, dn5 + rt5 - c5));\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Factor Prefix Sums with 4-Way Corner Evaluation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int maxTrailingZeros(int[][] grid) {\n        int R = grid.length, C = grid[0].length;\n        int[][][] f = new int[R][C][2];\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                int x = grid[r][c];\n                while (x > 0 && x % 2 == 0) { f[r][c][0]++; x /= 2; }\n                while (x > 0 && x % 5 == 0) { f[r][c][1]++; x /= 5; }\n            }\n        }\n\n        int[][][] rowPref = new int[R][C + 1][2];\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                rowPref[r][c + 1][0] = rowPref[r][c][0] + f[r][c][0];\n                rowPref[r][c + 1][1] = rowPref[r][c][1] + f[r][c][1];\n            }\n        }\n\n        int[][][] colPref = new int[R + 1][C][2];\n        for (int c = 0; c < C; c++) {\n            for (int r = 0; r < R; r++) {\n                colPref[r + 1][c][0] = colPref[r][c][0] + f[r][c][0];\n                colPref[r + 1][c][1] = colPref[r][c][1] + f[r][c][1];\n            }\n        }\n\n        int ans = 0;\n        for (int r = 0; r < R; r++) {\n            for (int c = 0; c < C; c++) {\n                int c2 = f[r][c][0], c5 = f[r][c][1];\n                int up2 = colPref[r + 1][c][0], up5 = colPref[r + 1][c][1];\n                int dn2 = colPref[R][c][0] - colPref[r][c][0], dn5 = colPref[R][c][1] - colPref[r][c][1];\n                int lt2 = rowPref[r][c + 1][0], lt5 = rowPref[r][c + 1][1];\n                int rt2 = rowPref[r][C][0] - rowPref[r][c][0], rt5 = rowPref[r][C][1] - rowPref[r][c][1];\n\n                ans = Math.max(ans, Math.min(up2 + lt2 - c2, up5 + lt5 - c5));\n                ans = Math.max(ans, Math.min(up2 + rt2 - c2, up5 + rt5 - c5));\n                ans = Math.max(ans, Math.min(dn2 + lt2 - c2, dn5 + lt5 - c5));\n                ans = Math.max(ans, Math.min(dn2 + rt2 - c2, dn5 + rt5 - c5));\n            }\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Factor Prefix Sums with 4-Way Corner Evaluation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "/**\n * @param {number[][]} grid\n * @return {number}\n */\nvar maxTrailingZeros = function(grid) {\n    const R = grid.length, C = grid[0].length;\n    const f = Array.from({ length: R }, () => Array.from({ length: C }, () => [0, 0]));\n    for (let r = 0; r < R; r++) {\n        for (let c = 0; c < C; c++) {\n            let x = grid[r][c];\n            let c2 = 0, c5 = 0;\n            while (x > 0 && x % 2 === 0) { c2++; x /= 2; }\n            while (x > 0 && x % 5 === 0) { c5++; x /= 5; }\n            f[r][c] = [c2, c5];\n        }\n    }\n\n    const rowPref = Array.from({ length: R }, () => Array.from({ length: C + 1 }, () => [0, 0]));\n    for (let r = 0; r < R; r++) {\n        for (let c = 0; c < C; c++) {\n            rowPref[r][c + 1][0] = rowPref[r][c][0] + f[r][c][0];\n            rowPref[r][c + 1][1] = rowPref[r][c][1] + f[r][c][1];\n        }\n    }\n\n    const colPref = Array.from({ length: R + 1 }, () => Array.from({ length: C }, () => [0, 0]));\n    for (let c = 0; c < C; c++) {\n        for (let r = 0; r < R; r++) {\n            colPref[r + 1][c][0] = colPref[r][c][0] + f[r][c][0];\n            colPref[r + 1][c][1] = colPref[r][c][1] + f[r][c][1];\n        }\n    }\n\n    let ans = 0;\n    for (let r = 0; r < R; r++) {\n        for (let c = 0; c < C; c++) {\n            const [c2, c5] = f[r][c];\n            const up2 = colPref[r + 1][c][0], up5 = colPref[r + 1][c][1];\n            const dn2 = colPref[R][c][0] - colPref[r][c][0], dn5 = colPref[R][c][1] - colPref[r][c][1];\n            const lt2 = rowPref[r][c + 1][0], lt5 = rowPref[r][c + 1][1];\n            const rt2 = rowPref[r][C][0] - rowPref[r][c][0], rt5 = rowPref[r][C][1] - rowPref[r][c][1];\n\n            ans = Math.max(ans, Math.min(up2 + lt2 - c2, up5 + lt5 - c5));\n            ans = Math.max(ans, Math.min(up2 + rt2 - c2, up5 + rt5 - c5));\n            ans = Math.max(ans, Math.min(dn2 + lt2 - c2, dn5 + lt5 - c5));\n            ans = Math.max(ans, Math.min(dn2 + rt2 - c2, dn5 + rt5 - c5));\n        }\n    }\n    return ans;\n};"
+    }
+  ]
+}

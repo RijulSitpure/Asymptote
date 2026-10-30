@@ -1,0 +1,80 @@
+{
+  "slug": "encrypt-and-decrypt-strings",
+  "number": 2227,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Encryption Determinism",
+      "text": "Each character keys[i] maps directly to values[i]. If any character in word1 is not in keys, encrypt returns empty string."
+    },
+    {
+      "level": 2,
+      "title": "Decryption Inversion",
+      "text": "Decrypting a string word2 requires finding how many words in dictionary encrypt into word2."
+    },
+    {
+      "level": 3,
+      "title": "Precomputed Encrypted Dictionary",
+      "text": "Instead of backtracking on ambiguous decryption tokens, encrypt all valid dictionary words during initialization and count their frequencies."
+    },
+    {
+      "level": 4,
+      "title": "Encrypted Dictionary Precomputation",
+      "text": "```python\nclass Encrypter:\n    def __init__(self, keys: list[str], values: list[str], dictionary: list[str]):\n        self.enc = {k: v for k, v in zip(keys, values)}\n        self.counts = {}\n        for word in dictionary:\n            encrypted = self.encrypt(word)\n            if encrypted:\n                self.counts[encrypted] = self.counts.get(encrypted, 0) + 1\n\n    def encrypt(self, word1: str) -> str:\n        res = []\n        for c in word1:\n            if c not in self.enc:\n                return \"\"\n            res.append(self.enc[c])\n        return \"\".join(res)\n\n    def decrypt(self, word2: str) -> int:\n        return self.counts.get(word2, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(D * L + Q)",
+    "space": "O(D * L)",
+    "variables": [
+      "D: number of dictionary words",
+      "L: average word length",
+      "Q: number of queries"
+    ],
+    "notes": "Preprocessing encrypts all dictionary words once; subsequent decrypt calls take O(1) hash lookup.",
+    "whyNaiveFails": "Backtracking branching for each 2-letter value in word2 leads to exponential decryption time.",
+    "spaceTimeTradeoff": "Dictionary lookup table stores encrypted representations in O(D * L) memory.",
+    "interviewerExpectation": "Candidate inverts the decryption perspective by preprocessing valid dictionary encryptions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Precomputed Encrypted Dictionary Frequencies",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Encrypter:\n    def __init__(self, keys: list[str], values: list[str], dictionary: list[str]):\n        self.enc = {k: v for k, v in zip(keys, values)}\n        self.counts = {}\n        for word in dictionary:\n            encrypted = self.encrypt(word)\n            if encrypted:\n                self.counts[encrypted] = self.counts.get(encrypted, 0) + 1\n\n    def encrypt(self, word1: str) -> str:\n        res = []\n        for c in word1:\n            if c not in self.enc:\n                return \"\"\n            res.append(self.enc[c])\n        return \"\".join(res)\n\n    def decrypt(self, word2: str) -> int:\n        return self.counts.get(word2, 0)"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Precomputed Encrypted Dictionary Frequencies",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Encrypter {\n    unordered_map<char, string> enc;\n    unordered_map<string, int> counts;\n\npublic:\n    Encrypter(vector<char>& keys, vector<string>& values, vector<string>& dictionary) {\n        for (int i = 0; i < (int)keys.size(); i++) {\n            enc[keys[i]] = values[i];\n        }\n        for (const string& w : dictionary) {\n            string e = encrypt(w);\n            if (!e.empty()) {\n                counts[e]++;\n            }\n        }\n    }\n\n    string encrypt(string word1) {\n        string res = \"\";\n        for (char c : word1) {\n            if (!enc.count(c)) return \"\";\n            res += enc[c];\n        }\n        return res;\n    }\n\n    int decrypt(string word2) {\n        auto it = counts.find(word2);\n        return it != counts.end() ? it->second : 0;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Precomputed Encrypted Dictionary Frequencies",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Encrypter {\n    private Map<Character, String> enc = new HashMap<>();\n    private Map<String, Integer> counts = new HashMap<>();\n\n    public Encrypter(char[] keys, String[] values, String[] dictionary) {\n        for (int i = 0; i < keys.length; i++) {\n            enc.put(keys[i], values[i]);\n        }\n        for (String w : dictionary) {\n            String e = encrypt(w);\n            if (!e.isEmpty()) {\n                counts.put(e, counts.getOrDefault(e, 0) + 1);\n            }\n        }\n    }\n\n    public String encrypt(String word1) {\n        StringBuilder sb = new StringBuilder();\n        for (char c : word1.toCharArray()) {\n            if (!enc.containsKey(c)) return \"\";\n            sb.append(enc.get(c));\n        }\n        return sb.toString();\n    }\n\n    public int decrypt(String word2) {\n        return counts.getOrDefault(word2, 0);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Precomputed Encrypted Dictionary Frequencies",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "/**\n * @param {character[]} keys\n * @param {string[]} values\n * @param {string[]} dictionary\n */\nvar Encrypter = function(keys, values, dictionary) {\n    this.enc = new Map();\n    for (let i = 0; i < keys.length; i++) {\n        this.enc.set(keys[i], values[i]);\n    }\n    this.counts = new Map();\n    for (const w of dictionary) {\n        const e = this.encrypt(w);\n        if (e.length > 0) {\n            this.counts.set(e, (this.counts.get(e) || 0) + 1);\n        }\n    }\n};\n\n/** \n * @param {string} word1\n * @return {string}\n */\nEncrypter.prototype.encrypt = function(word1) {\n    let res = '';\n    for (const c of word1) {\n        if (!this.enc.has(c)) return '';\n        res += this.enc.get(c);\n    }\n    return res;\n};\n\n/** \n * @param {string} word2\n * @return {number}\n */\nEncrypter.prototype.decrypt = function(word2) {\n    return this.counts.get(word2) || 0;\n};"
+    }
+  ]
+}

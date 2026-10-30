@@ -1,0 +1,73 @@
+{
+  "slug": "dynamic-pivoting-of-a-table",
+  "number": 2252,
+  "category": "Database",
+  "patterns": [
+    "conditional-pivot"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dynamic Column Formulation",
+      "text": "The distinct store names in Products are unknown at authoring time and must be aggregated into dynamic column expressions."
+    },
+    {
+      "level": 2,
+      "title": "Group Concat Case Statements",
+      "text": "Construct comma-separated conditional sum expressions for each store."
+    },
+    {
+      "level": 3,
+      "title": "Dynamic SQL Execution",
+      "text": "Assemble the final query string and execute it via dynamic statement preparation."
+    },
+    {
+      "level": 4,
+      "title": "MySQL Stored Procedure Dynamic Pivot",
+      "text": "```sql\nCREATE PROCEDURE PivotProducts()\nBEGIN\n    SET group_concat_max_len = 1000000;\n    SET @sql = NULL;\n    SELECT\n        GROUP_CONCAT(DISTINCT\n            CONCAT('SUM(CASE WHEN store = \"', store, '\" THEN price ELSE NULL END) AS ', store)\n            ORDER BY store\n        ) INTO @sql\n    FROM Products;\n    \n    SET @sql = CONCAT('SELECT product_id, ', @sql, ' FROM Products GROUP BY product_id');\n    PREPARE stmt FROM @sql;\n    EXECUTE stmt;\n    DEALLOCATE PREPARE stmt;\nEND\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log S) where N is product rows and S is unique stores",
+    "space": "O(P * S)",
+    "variables": [
+      "N: number of rows in Products",
+      "S: distinct store count",
+      "P: distinct product count"
+    ],
+    "notes": "Dynamic column extraction followed by prepared group by aggregation.",
+    "whyNaiveFails": "Static SQL cannot pivot when columns vary per test case.",
+    "spaceTimeTradeoff": "Output matrix occupies O(P * S) memory.",
+    "interviewerExpectation": "Candidate utilizes MySQL dynamic SQL preparation and string concatenation."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Dynamic SQL Pivot with Group Concat and Statement Prepare",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "CREATE PROCEDURE PivotProducts()\nBEGIN\n    SET group_concat_max_len = 1000000;\n    SET @sql = NULL;\n    SELECT\n        GROUP_CONCAT(DISTINCT\n            CONCAT('SUM(CASE WHEN store = \"', store, '\" THEN price ELSE NULL END) AS ', store)\n            ORDER BY store\n        ) INTO @sql\n    FROM Products;\n    \n    SET @sql = CONCAT('SELECT product_id, ', @sql, ' FROM Products GROUP BY product_id');\n    PREPARE stmt FROM @sql;\n    EXECUTE stmt;\n    DEALLOCATE PREPARE stmt;\nEND"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Dynamic SQL Pivot with String Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "CREATE OR REPLACE PROCEDURE PivotProducts()\nLANGUAGE plpgsql AS $$\nDECLARE\n    sql_query TEXT;\nBEGIN\n    SELECT 'SELECT product_id, ' ||\n           STRING_AGG(DISTINCT 'MAX(CASE WHEN store = ''' || store || ''' THEN price END) AS ' || quote_ident(store), ', ' ORDER BY store) ||\n           ' FROM Products GROUP BY product_id'\n    INTO sql_query\n    FROM Products;\n    EXECUTE sql_query;\nEND;\n$$;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Pivot Method",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef pivot_products(products: pd.DataFrame) -> pd.DataFrame:\n    pivoted = products.pivot(index='product_id', columns='store', values='price').reset_index()\n    pivoted.columns.name = None\n    return pivoted"
+    }
+  ]
+}

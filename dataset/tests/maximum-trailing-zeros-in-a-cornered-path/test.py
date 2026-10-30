@@ -1,0 +1,5 @@
+from solution import Solution
+s = Solution()
+assert s.maxTrailingZeros([[23,17,15,3,20],[8,1,20,27,11],[9,4,6,2,21],[40,9,1,10,6],[22,7,4,5,3]]) == 3
+assert s.maxTrailingZeros([[4,3,2],[7,6,1],[8,8,8]]) == 0
+print("All tests passed for maximum-trailing-zeros-in-a-cornered-path!")

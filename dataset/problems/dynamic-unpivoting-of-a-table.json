@@ -1,0 +1,72 @@
+{
+  "slug": "dynamic-unpivoting-of-a-table",
+  "number": 2253,
+  "category": "Database",
+  "patterns": [
+    "conditional-pivot"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Information Schema Introspection",
+      "text": "Query information_schema.columns to inspect the table schema and discover all store columns other than product_id."
+    },
+    {
+      "level": 2,
+      "title": "UNION ALL Query Formulation",
+      "text": "Construct dynamic queries extracting product_id, store name, and price for each store column where price is not null."
+    },
+    {
+      "level": 3,
+      "title": "Concatenate and Execute",
+      "text": "Combine the queries using union set operations and run them via dynamic statement preparation."
+    },
+    {
+      "level": 4,
+      "title": "MySQL Stored Procedure Dynamic Unpivot",
+      "text": "```sql\nCREATE PROCEDURE UnpivotProducts()\nBEGIN\n    SET group_concat_max_len = 1000000;\n    SET @sql = NULL;\n    SELECT GROUP_CONCAT(\n        CONCAT('SELECT product_id, \"', column_name, '\" AS store, `', column_name, '` AS price FROM Products WHERE `', column_name, '` IS NOT NULL')\n        SEPARATOR ' UNION ALL '\n    ) INTO @sql\n    FROM information_schema.columns\n    WHERE table_schema = DATABASE()\n      AND table_name = 'Products'\n      AND column_name != 'product_id';\n    \n    PREPARE stmt FROM @sql;\n    EXECUTE stmt;\n    DEALLOCATE PREPARE stmt;\nEND\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S * P) where S is column count and P is product count",
+    "space": "O(S * P)",
+    "variables": [
+      "S: dynamic store columns",
+      "P: product rows"
+    ],
+    "notes": "Information schema column introspection and union all execution.",
+    "whyNaiveFails": "Columns are dynamic and cannot be referenced with static SQL select clauses.",
+    "spaceTimeTradeoff": "Temporary result set holds non-null store prices.",
+    "interviewerExpectation": "Candidate accesses information_schema to construct dynamic UNION ALL statements."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Information Schema Inspection and Dynamic Union All Preparation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "CREATE PROCEDURE UnpivotProducts()\nBEGIN\n    SET group_concat_max_len = 1000000;\n    SET @sql = NULL;\n    SELECT GROUP_CONCAT(\n        CONCAT('SELECT product_id, \"', column_name, '\" AS store, `', column_name, '` AS price FROM Products WHERE `', column_name, '` IS NOT NULL')\n        SEPARATOR ' UNION ALL '\n    ) INTO @sql\n    FROM information_schema.columns\n    WHERE table_schema = DATABASE()\n      AND table_name = 'Products'\n      AND column_name != 'product_id';\n    \n    PREPARE stmt FROM @sql;\n    EXECUTE stmt;\n    DEALLOCATE PREPARE stmt;\nEND"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "PostgreSQL Information Schema Inspection and Dynamic Union All",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "CREATE OR REPLACE PROCEDURE UnpivotProducts()\nLANGUAGE plpgsql AS $$\nDECLARE\n    sql_query TEXT;\nBEGIN\n    SELECT STRING_AGG(\n        'SELECT product_id, ''' || column_name || ''' AS store, ' || quote_ident(column_name) || ' AS price FROM Products WHERE ' || quote_ident(column_name) || ' IS NOT NULL',\n        ' UNION ALL '\n    )\n    INTO sql_query\n    FROM information_schema.columns\n    WHERE table_name = 'products'\n      AND column_name != 'product_id';\n    EXECUTE sql_query;\nEND;\n$$;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Melt Method",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef unpivot_products(products: pd.DataFrame) -> pd.DataFrame:\n    melted = products.melt(id_vars=['product_id'], var_name='store', value_name='price')\n    return melted.dropna(subset=['price']).sort_values(['product_id', 'store'])"
+    }
+  ]
+}
