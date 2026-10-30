@@ -1,0 +1,79 @@
+{
+  "slug": "most-popular-video-creator",
+  "number": 2456,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Aggregated Metrics",
+      "text": "Track two attributes per creator: their cumulative view count, and their highest-viewed video."
+    },
+    {
+      "level": 2,
+      "title": "Tie-Breaking Invariant",
+      "text": "For individual videos of the same creator, break ties by selecting the lexicographically smaller video id."
+    },
+    {
+      "level": 3,
+      "title": "Maximal Filter",
+      "text": "Find the maximum cumulative view count among all creators, then collect all creators attaining this maximum."
+    },
+    {
+      "level": 4,
+      "title": "Cumulative Tracking Implementation",
+      "text": "```python\nclass Solution:\n    def mostPopularCreator(self, creators: list[str], ids: list[str], views: list[int]) -> list[list[str]]:\n        total_views = {}\n        best_video = {}\n        for c, vid, v in zip(creators, ids, views):\n            total_views[c] = total_views.get(c, 0) + v\n            if c not in best_video:\n                best_video[c] = (v, vid)\n            else:\n                cur_v, cur_vid = best_video[c]\n                if v > cur_v or (v == cur_v and vid < cur_vid):\n                    best_video[c] = (v, vid)\n        max_views = max(total_views.values())\n        ans = []\n        for c, tot in total_views.items():\n            if tot == max_views:\n                ans.append([c, best_video[c][1]])\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * l)",
+    "space": "O(n * l)",
+    "variables": [
+      "n: number of videos",
+      "l: average length of creator and video strings"
+    ],
+    "notes": "Single pass iteration with dictionary accumulation and tie breaking.",
+    "whyNaiveFails": "Sorting the entire list of videos lexicographically and by views repeatedly is needlessly slow.",
+    "spaceTimeTradeoff": "O(n * l) storage for creator totals and best video references.",
+    "interviewerExpectation": "Carefully handles lexicographical tie-breaking alongside cumulative sums."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Cumulative View Hash and Best Video Tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def mostPopularCreator(self, creators: list[str], ids: list[str], views: list[int]) -> list[list[str]]:\n        total_views = {}\n        best_video = {}\n        for c, vid, v in zip(creators, ids, views):\n            total_views[c] = total_views.get(c, 0) + v\n            if c not in best_video:\n                best_video[c] = (v, vid)\n            else:\n                cur_v, cur_vid = best_video[c]\n                if v > cur_v or (v == cur_v and vid < cur_vid):\n                    best_video[c] = (v, vid)\n        max_views = max(total_views.values())\n        ans = []\n        for c, tot in total_views.items():\n            if tot == max_views:\n                ans.append([c, best_video[c][1]])\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Cumulative View Hash and Best Video Tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    std::vector<std::vector<std::string>> mostPopularCreator(std::vector<std::string>& creators, std::vector<std::string>& ids, std::vector<int>& views) {\n        std::unordered_map<std::string, long long> total_views;\n        std::unordered_map<std::string, std::pair<int, std::string>> best_video;\n        for (size_t i = 0; i < creators.size(); ++i) {\n            const auto& c = creators[i];\n            const auto& vid = ids[i];\n            int v = views[i];\n            total_views[c] += v;\n            if (best_video.find(c) == best_video.end()) {\n                best_video[c] = {v, vid};\n            } else {\n                int cv = best_video[c].first;\n                const auto& cvid = best_video[c].second;\n                if (v > cv || (v == cv && vid < cvid)) {\n                    best_video[c] = {v, vid};\n                }\n            }\n        }\n        long long max_views = -1;\n        for (const auto& pair : total_views) {\n            if (pair.second > max_views) max_views = pair.second;\n        }\n        std::vector<std::vector<std::string>> ans;\n        for (const auto& pair : total_views) {\n            if (pair.second == max_views) {\n                ans.push_back({pair.first, best_video[pair.first].second});\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Cumulative View Hash and Best Video Tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public java.util.List<java.util.List<String>> mostPopularCreator(String[] creators, String[] ids, int[] views) {\n        java.util.Map<String, Long> totalViews = new java.util.HashMap<>();\n        java.util.Map<String, int[]> bestViews = new java.util.HashMap<>();\n        java.util.Map<String, String> bestIds = new java.util.HashMap<>();\n        for (int i = 0; i < creators.length; i++) {\n            String c = creators[i];\n            String vid = ids[i];\n            int v = views[i];\n            totalViews.put(c, totalViews.getOrDefault(c, 0L) + v);\n            if (!bestViews.containsKey(c)) {\n                bestViews.put(c, new int[]{v});\n                bestIds.put(c, vid);\n            } else {\n                int cv = bestViews.get(c)[0];\n                String cvid = bestIds.get(c);\n                if (v > cv || (v == cv && vid.compareTo(cvid) < 0)) {\n                    bestViews.get(c)[0] = v;\n                    bestIds.put(c, vid);\n                }\n            }\n        }\n        long maxViews = -1;\n        for (long tot : totalViews.values()) {\n            if (tot > maxViews) maxViews = tot;\n        }\n        java.util.List<java.util.List<String>> ans = new java.util.ArrayList<>();\n        for (java.util.Map.Entry<String, Long> entry : totalViews.entrySet()) {\n            if (entry.getValue() == maxViews) {\n                ans.add(java.util.Arrays.asList(entry.getKey(), bestIds.get(entry.getKey())));\n            }\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Cumulative View Hash and Best Video Tracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var mostPopularCreator = function(creators, ids, views) {\n    const totalViews = new Map();\n    const bestVideo = new Map();\n    for (let i = 0; i < creators.length; i++) {\n        const c = creators[i];\n        const vid = ids[i];\n        const v = views[i];\n        totalViews.set(c, (totalViews.get(c) || 0) + v);\n        if (!bestVideo.has(c)) {\n            bestVideo.set(c, { v, vid });\n        } else {\n            const cur = bestVideo.get(c);\n            if (v > cur.v || (v === cur.v && vid < cur.vid)) {\n                bestVideo.set(c, { v, vid });\n            }\n        }\n    }\n    let maxViews = -1;\n    for (const tot of totalViews.values()) {\n        if (tot > maxViews) maxViews = tot;\n    }\n    const ans = [];\n    for (const [c, tot] of totalViews.entries()) {\n        if (tot === maxViews) {\n            ans.push([c, bestVideo.get(c).vid]);\n        }\n    }\n    return ans;\n};"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "most-profitable-path-in-a-tree",
+  "number": 2467,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bfs-level-order"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Deterministic Path Identification",
+      "text": "Notice that in a tree, there is exactly one simple path between any pair of nodes. Trace the path from Bob's start node to root node 0 to find his exact arrival timestamp at each node on his trajectory."
+    },
+    {
+      "level": 2,
+      "title": "Alice Arrival Comparison",
+      "text": "When Alice reaches node u at time t, compare t with Bob's arrival time at u. If Alice arrives earlier, she collects the full reward; if simultaneously, half; if later, zero."
+    },
+    {
+      "level": 3,
+      "title": "Leaf Reward Maximization",
+      "text": "Perform a recursive traversal for Alice starting at node 0 and moving down towards leaf nodes, taking the maximum net profit among all reachable leaves."
+    },
+    {
+      "level": 4,
+      "title": "Timestamp Comparison Traversal Implementation",
+      "text": "```python\nclass Solution:\n    def mostProfitablePath(self, edges: list[list[int]], bob: int, amount: list[int]) -> int:\n        n = len(amount)\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        bob_time = {}\n        def find_bob(u, p, t):\n            if u == 0:\n                bob_time[u] = t\n                return True\n            for v in adj[u]:\n                if v != p and find_bob(v, u, t + 1):\n                    bob_time[u] = t\n                    return True\n            return False\n        find_bob(bob, -1, 0)\n        ans = float('-inf')\n        def dfs_alice(u, p, t, current_sum):\n            nonlocal ans\n            if u not in bob_time or t < bob_time[u]:\n                current_sum += amount[u]\n            elif t == bob_time[u]:\n                current_sum += amount[u] // 2\n            is_leaf = True\n            for v in adj[u]:\n                if v != p:\n                    is_leaf = False\n                    dfs_alice(v, u, t + 1, current_sum)\n            if is_leaf:\n                ans = max(ans, current_sum)\n        dfs_alice(0, -1, 0, 0)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes in tree"
+    ],
+    "notes": "Two depth traversals visit each vertex and edge a constant number of times.",
+    "whyNaiveFails": "Simulating all combinations of Alice and Bob movements on every possible leaf path repeats shared prefix calculations.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for adjacency lists, Bob arrival map, and recursion stack.",
+    "interviewerExpectation": "Precomputes Bob unique path timestamps before traversing Alice leaf paths."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Bob Path Precomputation and Alice Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def mostProfitablePath(self, edges: list[list[int]], bob: int, amount: list[int]) -> int:\n        n = len(amount)\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        bob_time = {}\n        def find_bob(u, p, t):\n            if u == 0:\n                bob_time[u] = t\n                return True\n            for v in adj[u]:\n                if v != p and find_bob(v, u, t + 1):\n                    bob_time[u] = t\n                    return True\n            return False\n        find_bob(bob, -1, 0)\n        ans = float('-inf')\n        def dfs_alice(u, p, t, current_sum):\n            nonlocal ans\n            if u not in bob_time or t < bob_time[u]:\n                current_sum += amount[u]\n            elif t == bob_time[u]:\n                current_sum += amount[u] // 2\n            is_leaf = True\n            for v in adj[u]:\n                if v != p:\n                    is_leaf = False\n                    dfs_alice(v, u, t + 1, current_sum)\n            if is_leaf:\n                ans = max(ans, current_sum)\n        dfs_alice(0, -1, 0, 0)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Bob Path Precomputation and Alice Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int mostProfitablePath(std::vector<std::vector<int>>& edges, int bob, std::vector<int>& amount) {\n        int n = amount.size();\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        std::vector<int> bob_time(n, -1);\n        std::vector<int> path;\n        auto find_bob = [&](auto& self, int u, int p) -> bool {\n            path.push_back(u);\n            if (u == 0) return true;\n            for (int v : adj[u]) {\n                if (v != p && self(self, v, u)) return true;\n            }\n            path.pop_back();\n            return false;\n        };\n        find_bob(find_bob, bob, -1);\n        for (size_t t = 0; t < path.size(); ++t) bob_time[path[t]] = t;\n        int ans = -1e9;\n        auto dfs_alice = [&](auto& self, int u, int p, int t, int current_sum) -> void {\n            if (bob_time[u] == -1 || t < bob_time[u]) current_sum += amount[u];\n            else if (t == bob_time[u]) current_sum += amount[u] / 2;\n            bool is_leaf = true;\n            for (int v : adj[u]) {\n                if (v != p) {\n                    is_leaf = false;\n                    self(self, v, u, t + 1, current_sum);\n                }\n            }\n            if (is_leaf) ans = std::max(ans, current_sum);\n        };\n        dfs_alice(dfs_alice, 0, -1, 0, 0);\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Bob Path Precomputation and Alice Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int maxProfit = Integer.MIN_VALUE;\n    public int mostProfitablePath(int[][] edges, int bob, int[] amount) {\n        int n = amount.length;\n        java.util.List<Integer>[] adj = new java.util.ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new java.util.ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(e[1]);\n            adj[e[1]].add(e[0]);\n        }\n        int[] bobTime = new int[n];\n        java.util.Arrays.fill(bobTime, -1);\n        java.util.List<Integer> path = new java.util.ArrayList<>();\n        findBob(bob, -1, adj, path);\n        for (int t = 0; t < path.size(); t++) bobTime[path.get(t)] = t;\n        maxProfit = Integer.MIN_VALUE;\n        dfsAlice(0, -1, 0, 0, adj, bobTime, amount);\n        return maxProfit;\n    }\n    private boolean findBob(int u, int p, java.util.List<Integer>[] adj, java.util.List<Integer> path) {\n        path.add(u);\n        if (u == 0) return true;\n        for (int v : adj[u]) {\n            if (v != p && findBob(v, u, adj, path)) return true;\n        }\n        path.remove(path.size() - 1);\n        return false;\n    }\n    private void dfsAlice(int u, int p, int t, int sum, java.util.List<Integer>[] adj, int[] bobTime, int[] amount) {\n        if (bobTime[u] == -1 || t < bobTime[u]) sum += amount[u];\n        else if (t == bobTime[u]) sum += amount[u] / 2;\n        boolean isLeaf = true;\n        for (int v : adj[u]) {\n            if (v != p) {\n                isLeaf = false;\n                dfsAlice(v, u, t + 1, sum, adj, bobTime, amount);\n            }\n        }\n        if (isLeaf) maxProfit = Math.max(maxProfit, sum);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Bob Path Precomputation and Alice Traversal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var mostProfitablePath = function(edges, bob, amount) {\n    const n = amount.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const bobTime = new Array(n).fill(-1);\n    const path = [];\n    const findBob = (u, p) => {\n        path.push(u);\n        if (u === 0) return true;\n        for (const v of adj[u]) {\n            if (v !== p && findBob(v, u)) return true;\n        }\n        path.pop();\n        return false;\n    };\n    findBob(bob, -1);\n    for (let t = 0; t < path.length; t++) bobTime[path[t]] = t;\n    let ans = -Infinity;\n    const dfsAlice = (u, p, t, sum) => {\n        if (bobTime[u] === -1 || t < bobTime[u]) sum += amount[u];\n        else if (t === bobTime[u]) sum += Math.floor(amount[u] / 2);\n        let isLeaf = true;\n        for (const v of adj[u]) {\n            if (v !== p) {\n                isLeaf = false;\n                dfsAlice(v, u, t + 1, sum);\n            }\n        }\n        if (isLeaf) ans = Math.max(ans, sum);\n    };\n    dfsAlice(0, -1, 0, 0);\n    return ans;\n};"
+    }
+  ]
+}

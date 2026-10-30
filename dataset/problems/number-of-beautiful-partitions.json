@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-beautiful-partitions",
+  "number": 2478,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prime Boundary Conditions",
+      "text": "Every beautiful partition segment must start with a prime digit (2, 3, 5, 7) and end with a non-prime digit."
+    },
+    {
+      "level": 2,
+      "title": "Valid Cut Indices",
+      "text": "A valid cut after index j exists only if s[j] is non-prime and s[j + 1] is prime. Furthermore, s[0] must be prime and s[n-1] must be non-prime."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Sum DP Acceleration",
+      "text": "Let dp[p][i] represent partitions into p parts up to length i. Maintain a running sum of dp[p - 1][j] for valid split points j <= i - minLength."
+    },
+    {
+      "level": 4,
+      "title": "Running Prefix Dynamic Programming Implementation",
+      "text": "```python\nclass Solution:\n    def beautifulPartitions(self, s: str, k: int, minLength: int) -> int:\n        MOD = 1_000_000_007\n        primes = {'2', '3', '5', '7'}\n        n = len(s)\n        if s[0] not in primes or s[-1] in primes:\n            return 0\n        if k * minLength > n:\n            return 0\n        dp = [0] * (n + 1)\n        dp[0] = 1\n        for p in range(1, k + 1):\n            next_dp = [0] * (n + 1)\n            running_sum = 0\n            for i in range(1, n + 1):\n                j = i - minLength\n                if j >= 0:\n                    if j == 0:\n                        running_sum = (running_sum + dp[0]) % MOD\n                    elif s[j - 1] not in primes and s[j] in primes:\n                        running_sum = (running_sum + dp[j]) % MOD\n                if i == n:\n                    if p == k:\n                        next_dp[i] = running_sum\n                elif s[i - 1] not in primes and s[i] in primes:\n                    next_dp[i] = running_sum\n            dp = next_dp\n        return dp[n]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(k * n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of string s",
+      "k: number of partitions"
+    ],
+    "notes": "Maintaining running prefix sum reduces transition from quadratic to O(1) per step.",
+    "whyNaiveFails": "Inner loop over all valid preceding cuts causes cubic O(k * n^2) runtime.",
+    "spaceTimeTradeoff": "O(n) memory using rolling DP arrays.",
+    "interviewerExpectation": "Optimizes DP state transitions from O(k * n^2) to O(k * n) using sliding prefix sums."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Prefix Sum Accelerated Dynamic Programming",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def beautifulPartitions(self, s: str, k: int, minLength: int) -> int:\n        MOD = 1_000_000_007\n        primes = {'2', '3', '5', '7'}\n        n = len(s)\n        if s[0] not in primes or s[-1] in primes:\n            return 0\n        if k * minLength > n:\n            return 0\n        dp = [0] * (n + 1)\n        dp[0] = 1\n        for p in range(1, k + 1):\n            next_dp = [0] * (n + 1)\n            running_sum = 0\n            for i in range(1, n + 1):\n                j = i - minLength\n                if j >= 0:\n                    if j == 0:\n                        running_sum = (running_sum + dp[0]) % MOD\n                    elif s[j - 1] not in primes and s[j] in primes:\n                        running_sum = (running_sum + dp[j]) % MOD\n                if i == n:\n                    if p == k:\n                        next_dp[i] = running_sum\n                elif s[i - 1] not in primes and s[i] in primes:\n                    next_dp[i] = running_sum\n            dp = next_dp\n        return dp[n]"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Prefix Sum Accelerated Dynamic Programming",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int beautifulPartitions(std::string s, int k, int minLength) {\n        auto is_prime = [](char c) {\n            return c == '2' || c == '3' || c == '5' || c == '7';\n        };\n        int n = s.length();\n        if (!is_prime(s[0]) || is_prime(s[n - 1])) return 0;\n        if (k * minLength > n) return 0;\n        const int MOD = 1000000007;\n        std::vector<int> dp(n + 1, 0);\n        dp[0] = 1;\n        for (int p = 1; p <= k; ++p) {\n            std::vector<int> next_dp(n + 1, 0);\n            int running_sum = 0;\n            for (int i = 1; i <= n; ++i) {\n                int j = i - minLength;\n                if (j >= 0) {\n                    if (j == 0) running_sum = (running_sum + dp[0]) % MOD;\n                    else if (!is_prime(s[j - 1]) && is_prime(s[j])) running_sum = (running_sum + dp[j]) % MOD;\n                }\n                if (i == n) {\n                    if (p == k) next_dp[i] = running_sum;\n                } else if (!is_prime(s[i - 1]) && is_prime(s[i])) {\n                    next_dp[i] = running_sum;\n                }\n            }\n            dp = std::move(next_dp);\n        }\n        return dp[n];\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Prefix Sum Accelerated Dynamic Programming",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int beautifulPartitions(String s, int k, int minLength) {\n        int n = s.length();\n        if (!isPrime(s.charAt(0)) || isPrime(s.charAt(n - 1))) return 0;\n        if (k * minLength > n) return 0;\n        int MOD = 1_000_000_007;\n        int[] dp = new int[n + 1];\n        dp[0] = 1;\n        for (int p = 1; p <= k; p++) {\n            int[] nextDp = new int[n + 1];\n            int runningSum = 0;\n            for (int i = 1; i <= n; i++) {\n                int j = i - minLength;\n                if (j >= 0) {\n                    if (j == 0) runningSum = (runningSum + dp[0]) % MOD;\n                    else if (!isPrime(s.charAt(j - 1)) && isPrime(s.charAt(j))) runningSum = (runningSum + dp[j]) % MOD;\n                }\n                if (i == n) {\n                    if (p == k) nextDp[i] = runningSum;\n                } else if (!isPrime(s.charAt(i - 1)) && isPrime(s.charAt(i))) {\n                    nextDp[i] = runningSum;\n                }\n            }\n            dp = nextDp;\n        }\n        return dp[n];\n    }\n    private boolean isPrime(char c) {\n        return c == '2' || c == '3' || c == '5' || c == '7';\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Prefix Sum Accelerated Dynamic Programming",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var beautifulPartitions = function(s, k, minLength) {\n    const isPrime = (c) => c === '2' || c === '3' || c === '5' || c === '7';\n    const n = s.length;\n    if (!isPrime(s[0]) || isPrime(s[n - 1])) return 0;\n    if (k * minLength > n) return 0;\n    const MOD = 1000000007;\n    let dp = new Array(n + 1).fill(0);\n    dp[0] = 1;\n    for (let p = 1; p <= k; p++) {\n        const nextDp = new Array(n + 1).fill(0);\n        let runningSum = 0;\n        for (let i = 1; i <= n; i++) {\n            const j = i - minLength;\n            if (j >= 0) {\n                if (j === 0) runningSum = (runningSum + dp[0]) % MOD;\n                else if (!isPrime(s[j - 1]) && isPrime(s[j])) runningSum = (runningSum + dp[j]) % MOD;\n            }\n            if (i === n) {\n                if (p === k) nextDp[i] = runningSum;\n            } else if (!isPrime(s[i - 1]) && isPrime(s[i])) {\n                nextDp[i] = runningSum;\n            }\n        }\n        dp = nextDp;\n    }\n    return dp[n];\n};"
+    }
+  ]
+}

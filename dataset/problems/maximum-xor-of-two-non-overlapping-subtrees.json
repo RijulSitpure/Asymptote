@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-xor-of-two-non-overlapping-subtrees",
+  "number": 2479,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subtree Sum Aggregation",
+      "text": "Calculate the sum of node values for every subtree using a post-order depth traversal."
+    },
+    {
+      "level": 2,
+      "title": "Non-Overlapping Disjoint Property",
+      "text": "Two subtrees are non-overlapping if neither is an ancestor of the other. In a second depth traversal, previously completed subtrees outside the current branch are valid pairing candidates."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Bit Structure Queries",
+      "text": "Query a bitwise prefix structure with the current subtree sum to extract the maximum bitwise difference pairing. Insert the current subtree sum into the structure only after exiting its branch."
+    },
+    {
+      "level": 4,
+      "title": "Bitwise Prefix Tree Traversal Implementation",
+      "text": "```python\nclass Trie:\n    def __init__(self, max_bit=48):\n        self.root = {}\n        self.max_bit = max_bit\n    def insert(self, num):\n        node = self.root\n        for bit in range(self.max_bit, -1, -1):\n            b = (num >> bit) & 1\n            if b not in node:\n                node[b] = {}\n            node = node[b]\n    def get_max_xor(self, num):\n        if not self.root:\n            return 0\n        node = self.root\n        res = 0\n        for bit in range(self.max_bit, -1, -1):\n            b = (num >> bit) & 1\n            toggle = b ^ 1\n            if toggle in node:\n                res |= (1 << bit)\n                node = node[toggle]\n            elif b in node:\n                node = node[b]\n            else:\n                break\n        return res\n\nclass Solution:\n    def maxXor(self, n: int, edges: list[list[int]], values: list[int]) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        subtree_sum = [0] * n\n        def get_sums(u, p):\n            s = values[u]\n            for v in adj[u]:\n                if v != p:\n                    s += get_sums(v, u)\n            subtree_sum[u] = s\n            return s\n        get_sums(0, -1)\n        total_sum = subtree_sum[0]\n        max_bit = max(total_sum.bit_length(), 1)\n        trie = Trie(max_bit)\n        ans = 0\n        def dfs(u, p):\n            nonlocal ans\n            if trie.root:\n                ans = max(ans, trie.get_max_xor(subtree_sum[u]))\n            for v in adj[u]:\n                if v != p:\n                    dfs(v, u)\n            trie.insert(subtree_sum[u])\n        dfs(0, -1)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * B)",
+    "space": "O(n * B)",
+    "variables": [
+      "n: number of nodes in tree",
+      "B: bit length of maximum subtree sum"
+    ],
+    "notes": "Each node sum is queried and inserted into the bit trie in O(B) bit steps.",
+    "whyNaiveFails": "Testing all non-overlapping pairs directly takes quadratic O(n^2) time.",
+    "spaceTimeTradeoff": "O(n * B) space for trie nodes and adjacency lists.",
+    "interviewerExpectation": "Post-order insertion into bitwise trie guarantees only disjoint subtrees are queried."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Post-Order Bitwise Prefix Tree Querying",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Trie:\n    def __init__(self, max_bit=48):\n        self.root = {}\n        self.max_bit = max_bit\n    def insert(self, num):\n        node = self.root\n        for bit in range(self.max_bit, -1, -1):\n            b = (num >> bit) & 1\n            if b not in node:\n                node[b] = {}\n            node = node[b]\n    def get_max_xor(self, num):\n        if not self.root:\n            return 0\n        node = self.root\n        res = 0\n        for bit in range(self.max_bit, -1, -1):\n            b = (num >> bit) & 1\n            toggle = b ^ 1\n            if toggle in node:\n                res |= (1 << bit)\n                node = node[toggle]\n            elif b in node:\n                node = node[b]\n            else:\n                break\n        return res\n\nclass Solution:\n    def maxXor(self, n: int, edges: list[list[int]], values: list[int]) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        subtree_sum = [0] * n\n        def get_sums(u, p):\n            s = values[u]\n            for v in adj[u]:\n                if v != p:\n                    s += get_sums(v, u)\n            subtree_sum[u] = s\n            return s\n        get_sums(0, -1)\n        total_sum = subtree_sum[0]\n        max_bit = max(total_sum.bit_length(), 1)\n        trie = Trie(max_bit)\n        ans = 0\n        def dfs(u, p):\n            nonlocal ans\n            if trie.root:\n                ans = max(ans, trie.get_max_xor(subtree_sum[u]))\n            for v in adj[u]:\n                if v != p:\n                    dfs(v, u)\n            trie.insert(subtree_sum[u])\n        dfs(0, -1)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Post-Order Bitwise Prefix Tree Querying",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    struct Node {\n        int next[2] = {-1, -1};\n    };\n    std::vector<Node> trie;\n    void insert(long long val) {\n        int curr = 0;\n        for (int i = 48; i >= 0; --i) {\n            int b = (val >> i) & 1;\n            if (trie[curr].next[b] == -1) {\n                trie[curr].next[b] = trie.size();\n                trie.emplace_back();\n            }\n            curr = trie[curr].next[b];\n        }\n    }\n    long long query(long long val) {\n        int curr = 0;\n        long long ans = 0;\n        for (int i = 48; i >= 0; --i) {\n            int b = (val >> i) & 1;\n            int toggle = b ^ 1;\n            if (trie[curr].next[toggle] != -1) {\n                ans |= (1LL << i);\n                curr = trie[curr].next[toggle];\n            } else if (trie[curr].next[b] != -1) {\n                curr = trie[curr].next[b];\n            } else break;\n        }\n        return ans;\n    }\npublic:\n    long long maxXor(int n, std::vector<std::vector<int>>& edges, std::vector<int>& values) {\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        std::vector<long long> subtree_sum(n, 0);\n        auto get_sums = [&](auto& self, int u, int p) -> long long {\n            long long s = values[u];\n            for (int v : adj[u]) {\n                if (v != p) s += self(self, v, u);\n            }\n            subtree_sum[u] = s;\n            return s;\n        };\n        get_sums(get_sums, 0, -1);\n        trie.emplace_back();\n        long long ans = 0;\n        bool has_inserted = false;\n        auto dfs = [&](auto& self, int u, int p) -> void {\n            if (has_inserted) ans = std::max(ans, query(subtree_sum[u]));\n            for (int v : adj[u]) {\n                if (v != p) self(self, v, u);\n            }\n            insert(subtree_sum[u]);\n            has_inserted = true;\n        };\n        dfs(dfs, 0, -1);\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Post-Order Bitwise Prefix Tree Querying",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    static class TrieNode {\n        TrieNode[] child = new TrieNode[2];\n    }\n    private TrieNode root = new TrieNode();\n    private boolean hasInserted = false;\n    private void insert(long val) {\n        TrieNode curr = root;\n        for (int i = 48; i >= 0; i--) {\n            int b = (int)((val >> i) & 1);\n            if (curr.child[b] == null) curr.child[b] = new TrieNode();\n            curr = curr.child[b];\n        }\n    }\n    private long query(long val) {\n        TrieNode curr = root;\n        long ans = 0;\n        for (int i = 48; i >= 0; i--) {\n            int b = (int)((val >> i) & 1);\n            int toggle = b ^ 1;\n            if (curr.child[toggle] != null) {\n                ans |= (1L << i);\n                curr = curr.child[toggle];\n            } else if (curr.child[b] != null) {\n                curr = curr.child[b];\n            } else break;\n        }\n        return ans;\n    }\n    private long maxAns = 0;\n    public long maxXor(int n, int[][] edges, int[] values) {\n        java.util.List<Integer>[] adj = new java.util.ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new java.util.ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(e[1]);\n            adj[e[1]].add(e[0]);\n        }\n        long[] subtreeSum = new long[n];\n        getSums(0, -1, adj, values, subtreeSum);\n        maxAns = 0;\n        hasInserted = false;\n        root = new TrieNode();\n        dfs(0, -1, adj, subtreeSum);\n        return maxAns;\n    }\n    private long getSums(int u, int p, java.util.List<Integer>[] adj, int[] values, long[] subtreeSum) {\n        long s = values[u];\n        for (int v : adj[u]) {\n            if (v != p) s += getSums(v, u, adj, values, subtreeSum);\n        }\n        subtreeSum[u] = s;\n        return s;\n    }\n    private void dfs(int u, int p, java.util.List<Integer>[] adj, long[] subtreeSum) {\n        if (hasInserted) maxAns = Math.max(maxAns, query(subtreeSum[u]));\n        for (int v : adj[u]) {\n            if (v != p) dfs(v, u, adj, subtreeSum);\n        }\n        insert(subtreeSum[u]);\n        hasInserted = true;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Post-Order Bitwise Prefix Tree Querying",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var maxXor = function(n, edges, values) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const subtreeSum = new Array(n).fill(0n);\n    const getSums = (u, p) => {\n        let s = BigInt(values[u]);\n        for (const v of adj[u]) {\n            if (v !== p) s += getSums(v, u);\n        }\n        subtreeSum[u] = s;\n        return s;\n    };\n    getSums(0, -1);\n    const root = {};\n    let hasInserted = false;\n    const insert = (val) => {\n        let curr = root;\n        for (let i = 48n; i >= 0n; i--) {\n            const b = Number((val >> i) & 1n);\n            if (!curr[b]) curr[b] = {};\n            curr = curr[b];\n        }\n    };\n    const query = (val) => {\n        let curr = root;\n        let ans = 0n;\n        for (let i = 48n; i >= 0n; i--) {\n            const b = Number((val >> i) & 1n);\n            const toggle = b ^ 1;\n            if (curr[toggle]) {\n                ans |= (1n << i);\n                curr = curr[toggle];\n            } else if (curr[b]) {\n                curr = curr[b];\n            } else break;\n        }\n        return ans;\n    };\n    let ans = 0n;\n    const dfs = (u, p) => {\n        if (hasInserted) {\n            const candidate = query(subtreeSum[u]);\n            if (candidate > ans) ans = candidate;\n        }\n        for (const v of adj[u]) {\n            if (v !== p) dfs(v, u);\n        }\n        insert(subtreeSum[u]);\n        hasInserted = true;\n    };\n    dfs(0, -1);\n    return Number(ans);\n};"
+    }
+  ]
+}

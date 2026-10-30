@@ -1,0 +1,79 @@
+{
+  "slug": "height-of-binary-tree-after-subtree-removal-queries",
+  "number": 2458,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bfs-level-order"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Depth and Height Association",
+      "text": "Every node belongs to a specific depth level from the root and has a subtree height."
+    },
+    {
+      "level": 2,
+      "title": "Top Heights per Depth Level",
+      "text": "Removing a subtree at depth d only reduces the overall tree height if that subtree achieved the maximum height among all nodes at depth d."
+    },
+    {
+      "level": 3,
+      "title": "Backup Height Selection",
+      "text": "For each depth level, store the two largest subtree heights. When the top node is deleted, the second largest takes its place."
+    },
+    {
+      "level": 4,
+      "title": "Precomputed Level Heights Implementation",
+      "text": "```python\nclass Solution:\n    def treeQueries(self, root, queries: list[int]) -> list[int]:\n        heights = {}\n        depths = {}\n        def get_height(node, d):\n            if not node:\n                return -1\n            depths[node.val] = d\n            h = 1 + max(get_height(node.left, d + 1), get_height(node.right, d + 1))\n            heights[node.val] = h\n            return h\n        get_height(root, 0)\n        \n        from collections import defaultdict\n        depth_to_nodes = defaultdict(list)\n        for val, d in depths.items():\n            h = heights[val]\n            depth_to_nodes[d].append((h, val))\n        \n        top2 = {}\n        for d, nodes in depth_to_nodes.items():\n            nodes.sort(reverse=True)\n            top2[d] = nodes[:2]\n        \n        ans = []\n        for q in queries:\n            d = depths[q]\n            candidates = top2[d]\n            if len(candidates) == 1:\n                ans.append(d - 1)\n            elif candidates[0][1] == q:\n                ans.append(d + candidates[1][0])\n            else:\n                ans.append(d + candidates[0][0])\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + q)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes in tree",
+      "q: number of queries"
+    ],
+    "notes": "Linear time traversal precalculates depths and heights, allowing O(1) answering per query.",
+    "whyNaiveFails": "Re-traversing the tree to find height for each query results in O(n * q) time.",
+    "spaceTimeTradeoff": "O(n) memory to cache heights and top candidates per depth level.",
+    "interviewerExpectation": "Stores top two subtree heights per depth level to achieve O(1) query response time."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Precomputed Level-Wise Top Two Heights",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def treeQueries(self, root, queries: list[int]) -> list[int]:\n        heights = {}\n        depths = {}\n        def get_height(node, d):\n            if not node:\n                return -1\n            depths[node.val] = d\n            h = 1 + max(get_height(node.left, d + 1), get_height(node.right, d + 1))\n            heights[node.val] = h\n            return h\n        get_height(root, 0)\n        \n        from collections import defaultdict\n        depth_to_nodes = defaultdict(list)\n        for val, d in depths.items():\n            h = heights[val]\n            depth_to_nodes[d].append((h, val))\n        \n        top2 = {}\n        for d, nodes in depth_to_nodes.items():\n            nodes.sort(reverse=True)\n            top2[d] = nodes[:2]\n        \n        ans = []\n        for q in queries:\n            d = depths[q]\n            candidates = top2[d]\n            if len(candidates) == 1:\n                ans.append(d - 1)\n            elif candidates[0][1] == q:\n                ans.append(d + candidates[1][0])\n            else:\n                ans.append(d + candidates[0][0])\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Precomputed Level-Wise Top Two Heights",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    int heights[100005];\n    int depths[100005];\n    std::vector<std::pair<int, int>> top2[100005];\n\n    int getHeight(TreeNode* node, int d) {\n        if (!node) return -1;\n        depths[node->val] = d;\n        int h = 1 + std::max(getHeight(node->left, d + 1), getHeight(node->right, d + 1));\n        heights[node->val] = h;\n        auto& v = top2[d];\n        v.push_back({h, node->val});\n        std::sort(v.rbegin(), v.rend());\n        if (v.size() > 2) v.pop_back();\n        return h;\n    }\npublic:\n    std::vector<int> treeQueries(TreeNode* root, std::vector<int>& queries) {\n        getHeight(root, 0);\n        std::vector<int> ans;\n        for (int q : queries) {\n            int d = depths[q];\n            const auto& cand = top2[d];\n            if (cand.size() == 1) {\n                ans.push_back(d - 1);\n            } else if (cand[0].second == q) {\n                ans.push_back(d + cand[1].first);\n            } else {\n                ans.push_back(d + cand[0].first);\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Precomputed Level-Wise Top Two Heights",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    int[] heights = new int[100005];\n    int[] depths = new int[100005];\n    int[][] top1 = new int[100005][2];\n    int[][] top2 = new int[100005][2];\n\n    int getHeight(TreeNode node, int d) {\n        if (node == null) return -1;\n        depths[node.val] = d;\n        int h = 1 + Math.max(getHeight(node.left, d + 1), getHeight(node.right, d + 1));\n        heights[node.val] = h;\n        if (h > top1[d][0]) {\n            top2[d][0] = top1[d][0];\n            top2[d][1] = top1[d][1];\n            top1[d][0] = h;\n            top1[d][1] = node.val;\n        } else if (h > top2[d][0]) {\n            top2[d][0] = h;\n            top2[d][1] = node.val;\n        }\n        return h;\n    }\n\n    public int[] treeQueries(TreeNode root, int[] queries) {\n        for (int i = 0; i < 100005; i++) {\n            top1[i][0] = -1;\n            top2[i][0] = -1;\n        }\n        getHeight(root, 0);\n        int[] ans = new int[queries.length];\n        for (int i = 0; i < queries.length; i++) {\n            int q = queries[i];\n            int d = depths[q];\n            if (top1[d][1] == q) {\n                ans[i] = top2[d][0] == -1 ? d - 1 : d + top2[d][0];\n            } else {\n                ans[i] = d + top1[d][0];\n            }\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Precomputed Level-Wise Top Two Heights",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var treeQueries = function(root, queries) {\n    const heights = new Map();\n    const depths = new Map();\n    const depthToNodes = new Map();\n    \n    const getHeight = (node, d) => {\n        if (!node) return -1;\n        depths.set(node.val, d);\n        const h = 1 + Math.max(getHeight(node.left, d + 1), getHeight(node.right, d + 1));\n        heights.set(node.val, h);\n        if (!depthToNodes.has(d)) depthToNodes.set(d, []);\n        depthToNodes.get(d).push({ h, val: node.val });\n        return h;\n    };\n    getHeight(root, 0);\n    \n    const top2 = new Map();\n    for (const [d, nodes] of depthToNodes.entries()) {\n        nodes.sort((a, b) => b.h - a.h);\n        top2.set(d, nodes.slice(0, 2));\n    }\n    \n    const ans = [];\n    for (const q of queries) {\n        const d = depths.get(q);\n        const cand = top2.get(d);\n        if (cand.length === 1) {\n            ans.push(d - 1);\n        } else if (cand[0].val === q) {\n            ans.push(d + cand[1].h);\n        } else {\n            ans.push(d + cand[0].h);\n        }\n    }\n    return ans;\n};"
+    }
+  ]
+}
