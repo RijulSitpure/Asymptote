@@ -1,0 +1,79 @@
+{
+  "slug": "minimize-the-total-price-of-the-trips",
+  "number": 2646,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Path Frequency Accumulation",
+      "text": "For each trip, trace the unique simple path between start and destination and count how many times each vertex is visited."
+    },
+    {
+      "level": 2,
+      "title": "Weighted Cost Calculation",
+      "text": "Each vertex contributes its visit count multiplied by its price to the total trip cost."
+    },
+    {
+      "level": 3,
+      "title": "Independent Set Tree Reduction",
+      "text": "Since no two adjacent vertices can be halved, solve with tree subproblems: halving a node forces all its children to keep full cost."
+    },
+    {
+      "level": 4,
+      "title": "Tree Dynamic Optimization Implementation",
+      "text": "```python\nclass Solution:\n    def minimumTotalPrice(self, n: int, edges: list[list[int]], price: list[int], trips: list[list[int]]) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        count = [0] * n\n        for start, end in trips:\n            path = []\n            def find_path(curr, parent):\n                path.append(curr)\n                if curr == end:\n                    return True\n                for nxt in adj[curr]:\n                    if nxt != parent and find_path(nxt, curr):\n                        return True\n                path.pop()\n                return False\n            find_path(start, -1)\n            for node in path:\n                count[node] += 1\n        def dfs(u, p):\n            no_half = count[u] * price[u]\n            half = count[u] * (price[u] // 2)\n            for v in adj[u]:\n                if v != p:\n                    child_no_half, child_half = dfs(v, u)\n                    no_half += min(child_no_half, child_half)\n                    half += child_no_half\n            return no_half, half\n        r1, r2 = dfs(0, -1)\n        return min(r1, r2)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(t * n + n)",
+    "space": "O(n)",
+    "variables": [
+      "t: number of trips",
+      "n: number of nodes in tree"
+    ],
+    "notes": "Paths computed per trip followed by a single tree subproblem pass.",
+    "whyNaiveFails": "Evaluating 2^n halving combinations TLEs.",
+    "spaceTimeTradeoff": "O(n) auxiliary space for tree recursion and node visit counts.",
+    "interviewerExpectation": "Aggregates trip frequency first, then recognizes independent set tree optimization."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Path Count with Tree DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def minimumTotalPrice(self, n: int, edges: list[list[int]], price: list[int], trips: list[list[int]]) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        count = [0] * n\n        for start, end in trips:\n            path = []\n            def find_path(curr, parent):\n                path.append(curr)\n                if curr == end:\n                    return True\n                for nxt in adj[curr]:\n                    if nxt != parent and find_path(nxt, curr):\n                        return True\n                path.pop()\n                return False\n            find_path(start, -1)\n            for node in path:\n                count[node] += 1\n        def dfs(u, p):\n            no_half = count[u] * price[u]\n            half = count[u] * (price[u] // 2)\n            for v in adj[u]:\n                if v != p:\n                    child_no_half, child_half = dfs(v, u)\n                    no_half += min(child_no_half, child_half)\n                    half += child_no_half\n            return no_half, half\n        r1, r2 = dfs(0, -1)\n        return min(r1, r2)"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Path Count with Tree DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int minimumTotalPrice(int n, std::vector<std::vector<int>>& edges, std::vector<int>& price, std::vector<std::vector<int>>& trips) {\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        std::vector<int> count(n, 0);\n        for (const auto& t : trips) {\n            std::vector<int> path;\n            auto find_path = [&](auto& self, int curr, int parent, int target) -> bool {\n                path.push_back(curr);\n                if (curr == target) return true;\n                for (int nxt : adj[curr]) {\n                    if (nxt != parent && self(self, nxt, curr, target)) return true;\n                }\n                path.pop_back();\n                return false;\n            };\n            find_path(find_path, t[0], -1, t[1]);\n            for (int u : path) count[u]++;\n        }\n        auto dfs = [&](auto& self, int u, int p) -> std::pair<int, int> {\n            int no_half = count[u] * price[u];\n            int half = count[u] * (price[u] / 2);\n            for (int v : adj[u]) {\n                if (v != p) {\n                    auto [c_no_half, c_half] = self(self, v, u);\n                    no_half += std::min(c_no_half, c_half);\n                    half += c_no_half;\n                }\n            }\n            return {no_half, half};\n        };\n        auto [r1, r2] = dfs(dfs, 0, -1);\n        return std::min(r1, r2);\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Path Count with Tree DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int minimumTotalPrice(int n, int[][] edges, int[] price, int[][] trips) {\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        int[] count = new int[n];\n        for (int[] t : trips) {\n            List<Integer> path = new ArrayList<>();\n            findPath(t[0], -1, t[1], adj, path);\n            for (int u : path) count[u]++;\n        }\n        int[] res = dfs(0, -1, adj, price, count);\n        return Math.min(res[0], res[1]);\n    }\n\n    private boolean findPath(int curr, int p, int target, List<List<Integer>> adj, List<Integer> path) {\n        path.add(curr);\n        if (curr == target) return true;\n        for (int nxt : adj.get(curr)) {\n            if (nxt != p && findPath(nxt, curr, target, adj, path)) return true;\n        }\n        path.remove(path.size() - 1);\n        return false;\n    }\n\n    private int[] dfs(int u, int p, List<List<Integer>> adj, int[] price, int[] count) {\n        int noHalf = count[u] * price[u];\n        int half = count[u] * (price[u] / 2);\n        for (int v : adj.get(u)) {\n            if (v != p) {\n                int[] child = dfs(v, u, adj, price, count);\n                noHalf += Math.min(child[0], child[1]);\n                half += child[0];\n            }\n        }\n        return new int[]{noHalf, half};\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Path Count with Tree DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var minimumTotalPrice = function(n, edges, price, trips) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const count = new Array(n).fill(0);\n    for (const [start, end] of trips) {\n        const path = [];\n        function findPath(curr, parent) {\n            path.push(curr);\n            if (curr === end) return true;\n            for (const nxt of adj[curr]) {\n                if (nxt !== parent && findPath(nxt, curr)) return true;\n            }\n            path.pop();\n            return false;\n        }\n        findPath(start, -1);\n        for (const node of path) count[node]++;\n    }\n    function dfs(u, p) {\n        let noHalf = count[u] * price[u];\n        let half = count[u] * Math.floor(price[u] / 2);\n        for (const v of adj[u]) {\n            if (v !== p) {\n                const [cNoHalf, cHalf] = dfs(v, u);\n                noHalf += Math.min(cNoHalf, cHalf);\n                half += cNoHalf;\n            }\n        }\n        return [noHalf, half];\n    }\n    const [r1, r2] = dfs(0, -1);\n    return Math.min(r1, r2);\n};"
+    }
+  ]
+}

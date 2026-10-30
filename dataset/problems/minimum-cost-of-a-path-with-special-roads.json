@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-cost-of-a-path-with-special-roads",
+  "number": 2662,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Nodes of Interest",
+      "text": "The only necessary transit locations are start, target, and the endpoints of all special roads."
+    },
+    {
+      "level": 2,
+      "title": "Direct Manhattan Edge Costs",
+      "text": "Between any two points (x1, y1) and (x2, y2), the standard cost is abs(x1 - x2) + abs(y1 - y2)."
+    },
+    {
+      "level": 3,
+      "title": "Shortest Path Across Critical Points",
+      "text": "Explore paths from start using priority distances, jumping directly to target or through special road shortcuts."
+    },
+    {
+      "level": 4,
+      "title": "Dijkstra Over Waypoints Implementation",
+      "text": "```python\nclass Solution:\n    def minimumCost(self, start: list[int], target: list[int], specialRoads: list[list[int]]) -> int:\n        import heapq\n        filtered = []\n        for x1, y1, x2, y2, cost in specialRoads:\n            if cost < abs(x1 - x2) + abs(y1 - y2):\n                filtered.append((x1, y1, x2, y2, cost))\n        nodes = [(start[0], start[1]), (target[0], target[1])]\n        for x1, y1, x2, y2, _ in filtered:\n            nodes.append((x1, y1))\n            nodes.append((x2, y2))\n        nodes = list(set(nodes))\n        dist = {pt: float('inf') for pt in nodes}\n        start_pt = (start[0], start[1])\n        target_pt = (target[0], target[1])\n        dist[start_pt] = 0\n        pq = [(0, start_pt[0], start_pt[1])]\n        while pq:\n            d, x, y = heapq.heappop(pq)\n            if d > dist[(x, y)]:\n                continue\n            if (x, y) == target_pt:\n                return d\n            # Direct Manhattan to target\n            d_target = d + abs(x - target_pt[0]) + abs(y - target_pt[1])\n            if d_target < dist[target_pt]:\n                dist[target_pt] = d_target\n                heapq.heappush(pq, (d_target, target_pt[0], target_pt[1]))\n            # Step through each special road\n            for x1, y1, x2, y2, cost in filtered:\n                d_road = d + abs(x - x1) + abs(y - y1) + cost\n                if d_road < dist[(x2, y2)]:\n                    dist[(x2, y2)] = d_road\n                    heapq.heappush(pq, (d_road, x2, y2))\n        return dist[target_pt]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R^2 log R)",
+    "space": "O(R)",
+    "variables": [
+      "R: number of special roads (up to 200)"
+    ],
+    "notes": "Shortest path over endpoint waypoints.",
+    "whyNaiveFails": "Continuous coordinate search is intractable over a 10^5 x 10^5 plane.",
+    "spaceTimeTradeoff": "O(R) auxiliary space for filtered endpoints and distance map.",
+    "interviewerExpectation": "Reduces infinite coordinate grid to a finite graph of special road endpoints."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Waypoint Reduction with Dijkstra",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def minimumCost(self, start: list[int], target: list[int], specialRoads: list[list[int]]) -> int:\n        import heapq\n        filtered = []\n        for x1, y1, x2, y2, cost in specialRoads:\n            if cost < abs(x1 - x2) + abs(y1 - y2):\n                filtered.append((x1, y1, x2, y2, cost))\n        nodes = [(start[0], start[1]), (target[0], target[1])]\n        for x1, y1, x2, y2, _ in filtered:\n            nodes.append((x1, y1))\n            nodes.append((x2, y2))\n        nodes = list(set(nodes))\n        dist = {pt: float('inf') for pt in nodes}\n        start_pt = (start[0], start[1])\n        target_pt = (target[0], target[1])\n        dist[start_pt] = 0\n        pq = [(0, start_pt[0], start_pt[1])]\n        while pq:\n            d, x, y = heapq.heappop(pq)\n            if d > dist[(x, y)]:\n                continue\n            if (x, y) == target_pt:\n                return d\n            # Direct Manhattan to target\n            d_target = d + abs(x - target_pt[0]) + abs(y - target_pt[1])\n            if d_target < dist[target_pt]:\n                dist[target_pt] = d_target\n                heapq.heappush(pq, (d_target, target_pt[0], target_pt[1]))\n            # Step through each special road\n            for x1, y1, x2, y2, cost in filtered:\n                d_road = d + abs(x - x1) + abs(y - y1) + cost\n                if d_road < dist[(x2, y2)]:\n                    dist[(x2, y2)] = d_road\n                    heapq.heappush(pq, (d_road, x2, y2))\n        return dist[target_pt]"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Waypoint Reduction with Dijkstra",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int minimumCost(std::vector<int>& start, std::vector<int>& target, std::vector<std::vector<int>>& specialRoads) {\n        std::vector<std::vector<int>> filtered;\n        for (const auto& r : specialRoads) {\n            if (r[4] < std::abs(r[0] - r[2]) + std::abs(r[1] - r[3])) {\n                filtered.push_back(r);\n            }\n        }\n        int n = filtered.size();\n        std::vector<int> dist(n, 1e9);\n        std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<>> pq;\n        int ans = std::abs(start[0] - target[0]) + std::abs(start[1] - target[1]);\n        for (int i = 0; i < n; i++) {\n            dist[i] = std::abs(start[0] - filtered[i][0]) + std::abs(start[1] - filtered[i][1]) + filtered[i][4];\n            pq.push({dist[i], i});\n        }\n        while (!pq.empty()) {\n            auto [d, u] = pq.top();\n            pq.pop();\n            if (d > dist[u]) continue;\n            ans = std::min(ans, d + std::abs(target[0] - filtered[u][2]) + std::abs(target[1] - filtered[u][3]));\n            for (int v = 0; v < n; v++) {\n                int cost = d + std::abs(filtered[u][2] - filtered[v][0]) + std::abs(filtered[u][3] - filtered[v][1]) + filtered[v][4];\n                if (cost < dist[v]) {\n                    dist[v] = cost;\n                    pq.push({dist[v], v});\n                }\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Waypoint Reduction with Dijkstra",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int minimumCost(int[] start, int[] target, int[][] specialRoads) {\n        List<int[]> filtered = new ArrayList<>();\n        for (int[] r : specialRoads) {\n            if (r[4] < Math.abs(r[0] - r[2]) + Math.abs(r[1] - r[3])) {\n                filtered.add(r);\n            }\n        }\n        int n = filtered.size();\n        int[] dist = new int[n];\n        PriorityQueue<int[]> pq = new PriorityQueue<>(Comparator.comparingInt(a -> a[0]));\n        int ans = Math.abs(start[0] - target[0]) + Math.abs(start[1] - target[1]);\n        for (int i = 0; i < n; i++) {\n            int[] r = filtered.get(i);\n            dist[i] = Math.abs(start[0] - r[0]) + Math.abs(start[1] - r[1]) + r[4];\n            pq.offer(new int[]{dist[i], i});\n        }\n        while (!pq.isEmpty()) {\n            int[] cur = pq.poll();\n            int d = cur[0], u = cur[1];\n            if (d > dist[u]) continue;\n            int[] rU = filtered.get(u);\n            ans = Math.min(ans, d + Math.abs(target[0] - rU[2]) + Math.abs(target[1] - rU[3]));\n            for (int v = 0; v < n; v++) {\n                int[] rV = filtered.get(v);\n                int cost = d + Math.abs(rU[2] - rV[0]) + Math.abs(rU[3] - rV[1]) + rV[4];\n                if (cost < dist[v]) {\n                    dist[v] = cost;\n                    pq.offer(new int[]{dist[v], v});\n                }\n            }\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Waypoint Reduction with Dijkstra",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var minimumCost = function(start, target, specialRoads) {\n    const filtered = specialRoads.filter(r => r[4] < Math.abs(r[0] - r[2]) + Math.abs(r[1] - r[3]));\n    const n = filtered.length;\n    const dist = new Array(n);\n    let ans = Math.abs(start[0] - target[0]) + Math.abs(start[1] - target[1]);\n    for (let i = 0; i < n; i++) {\n        const r = filtered[i];\n        dist[i] = Math.abs(start[0] - r[0]) + Math.abs(start[1] - r[1]) + r[4];\n    }\n    const visited = new Set();\n    for (let iter = 0; iter < n; iter++) {\n        let u = -1;\n        for (let i = 0; i < n; i++) {\n            if (!visited.has(i) && (u === -1 || dist[i] < dist[u])) {\n                u = i;\n            }\n        }\n        if (u === -1 || dist[u] === Infinity) break;\n        visited.add(u);\n        const rU = filtered[u];\n        ans = Math.min(ans, dist[u] + Math.abs(target[0] - rU[2]) + Math.abs(target[1] - rU[3]));\n        for (let v = 0; v < n; v++) {\n            const rV = filtered[v];\n            const cost = dist[u] + Math.abs(rU[2] - rV[0]) + Math.abs(rU[3] - rV[1]) + rV[4];\n            if (cost < dist[v]) {\n                dist[v] = cost;\n            }\n        }\n    }\n    return ans;\n};"
+    }
+  ]
+}

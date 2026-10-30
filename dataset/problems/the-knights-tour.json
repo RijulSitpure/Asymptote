@@ -1,0 +1,79 @@
+{
+  "slug": "the-knights-tour",
+  "number": 2664,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-grid-dfs"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Knight Move Geometry",
+      "text": "The knight can move to at most 8 positions with offsets (+-1, +-2) and (+-2, +-1)."
+    },
+    {
+      "level": 2,
+      "title": "Warnsdorff Degree Heuristic",
+      "text": "Always move the knight to the adjacent unvisited cell that has the fewest onward unvisited moves."
+    },
+    {
+      "level": 3,
+      "title": "Grid State Initialization",
+      "text": "Initialize an m x n board with -1, place move 0 at (r, c), and recursively explore next moves in degree order."
+    },
+    {
+      "level": 4,
+      "title": "Warnsdorff Knight Tour Implementation",
+      "text": "```python\nclass Solution:\n    def checkValidGrid(self, m: int, n: int, r: int, c: int) -> list[list[int]]:\n        board = [[-1] * n for _ in range(m)]\n        board[r][c] = 0\n        moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]\n        def get_degree(cr, cc):\n            cnt = 0\n            for dr, dc in moves:\n                nr, nc = cr + dr, cc + dc\n                if 0 <= nr < m and 0 <= nc < n and board[nr][nc] == -1:\n                    cnt += 1\n            return cnt\n        def dfs(curr_r, curr_c, step):\n            if step == m * n:\n                return True\n            candidates = []\n            for dr, dc in moves:\n                nr, nc = curr_r + dr, curr_c + dc\n                if 0 <= nr < m and 0 <= nc < n and board[nr][nc] == -1:\n                    candidates.append((get_degree(nr, nc), nr, nc))\n            candidates.sort(key=lambda x: x[0])\n            for _, nr, nc in candidates:\n                board[nr][nc] = step\n                if dfs(nr, nc, step + 1):\n                    return True\n                board[nr][nc] = -1\n            return False\n        dfs(r, c, 1)\n        return board\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n)",
+    "space": "O(m * n)",
+    "variables": [
+      "m: board rows count",
+      "n: board columns count"
+    ],
+    "notes": "Warnsdorff heuristic achieves virtually linear completion for knight tours on small boards.",
+    "whyNaiveFails": "Unordered exploration results in factorial branching and rapid timeout.",
+    "spaceTimeTradeoff": "O(m * n) board space and recursion stack.",
+    "interviewerExpectation": "Applies Warnsdorff heuristic to pick candidate with minimum onward degrees."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Warnsdorff Heuristic Backtracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def checkValidGrid(self, m: int, n: int, r: int, c: int) -> list[list[int]]:\n        board = [[-1] * n for _ in range(m)]\n        board[r][c] = 0\n        moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]\n        def get_degree(cr, cc):\n            cnt = 0\n            for dr, dc in moves:\n                nr, nc = cr + dr, cc + dc\n                if 0 <= nr < m and 0 <= nc < n and board[nr][nc] == -1:\n                    cnt += 1\n            return cnt\n        def dfs(curr_r, curr_c, step):\n            if step == m * n:\n                return True\n            candidates = []\n            for dr, dc in moves:\n                nr, nc = curr_r + dr, curr_c + dc\n                if 0 <= nr < m and 0 <= nc < n and board[nr][nc] == -1:\n                    candidates.append((get_degree(nr, nc), nr, nc))\n            candidates.sort(key=lambda x: x[0])\n            for _, nr, nc in candidates:\n                board[nr][nc] = step\n                if dfs(nr, nc, step + 1):\n                    return True\n                board[nr][nc] = -1\n            return False\n        dfs(r, c, 1)\n        return board"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Warnsdorff Heuristic Backtracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    int moves[8][2] = {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}};\npublic:\n    std::vector<std::vector<int>> checkValidGrid(int m, int n, int r, int c) {\n        std::vector<std::vector<int>> board(m, std::vector<int>(n, -1));\n        board[r][c] = 0;\n        auto get_deg = [&](int cr, int cc) {\n            int cnt = 0;\n            for (auto& mv : moves) {\n                int nr = cr + mv[0], nc = cc + mv[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && board[nr][nc] == -1) cnt++;\n            }\n            return cnt;\n        };\n        auto dfs = [&](auto& self, int cr, int cc, int step) -> bool {\n            if (step == m * n) return true;\n            std::vector<std::tuple<int, int, int>> cands;\n            for (auto& mv : moves) {\n                int nr = cr + mv[0], nc = cc + mv[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && board[nr][nc] == -1) {\n                    cands.push_back({get_deg(nr, nc), nr, nc});\n                }\n            }\n            std::sort(cands.begin(), cands.end());\n            for (auto& [_, nr, nc] : cands) {\n                board[nr][nc] = step;\n                if (self(self, nr, nc, step + 1)) return true;\n                board[nr][nc] = -1;\n            }\n            return false;\n        };\n        dfs(dfs, r, c, 1);\n        return board;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Warnsdorff Heuristic Backtracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private final int[][] moves = {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}};\n\n    public int[][] checkValidGrid(int m, int n, int r, int c) {\n        int[][] board = new int[m][n];\n        for (int[] row : board) Arrays.fill(row, -1);\n        board[r][c] = 0;\n        dfs(board, m, n, r, c, 1);\n        return board;\n    }\n\n    private int getDeg(int[][] board, int m, int n, int cr, int cc) {\n        int cnt = 0;\n        for (int[] mv : moves) {\n            int nr = cr + mv[0], nc = cc + mv[1];\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && board[nr][nc] == -1) cnt++;\n        }\n        return cnt;\n    }\n\n    private boolean dfs(int[][] board, int m, int n, int cr, int cc, int step) {\n        if (step == m * n) return true;\n        List<int[]> cands = new ArrayList<>();\n        for (int[] mv : moves) {\n            int nr = cr + mv[0], nc = cc + mv[1];\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && board[nr][nc] == -1) {\n                cands.add(new int[]{getDeg(board, m, n, nr, nc), nr, nc});\n            }\n        }\n        cands.sort(Comparator.comparingInt(a -> a[0]));\n        for (int[] cand : cands) {\n            int nr = cand[1], nc = cand[2];\n            board[nr][nc] = step;\n            if (dfs(board, m, n, nr, nc, step + 1)) return true;\n            board[nr][nc] = -1;\n        }\n        return false;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Warnsdorff Heuristic Backtracking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var checkValidGrid = function(m, n, r, c) {\n    const board = Array.from({ length: m }, () => new Array(n).fill(-1));\n    board[r][c] = 0;\n    const moves = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];\n    function getDegree(cr, cc) {\n        let cnt = 0;\n        for (const [dr, dc] of moves) {\n            const nr = cr + dr, nc = cc + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && board[nr][nc] === -1) cnt++;\n        }\n        return cnt;\n    }\n    function dfs(cr, cc, step) {\n        if (step === m * n) return true;\n        const cands = [];\n        for (const [dr, dc] of moves) {\n            const nr = cr + dr, nc = cc + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && board[nr][nc] === -1) {\n                cands.push([getDegree(nr, nc), nr, nc]);\n            }\n        }\n        cands.sort((a, b) => a[0] - b[0]);\n        for (const [_, nr, nc] of cands) {\n            board[nr][nc] = step;\n            if (dfs(nr, nc, step + 1)) return true;\n            board[nr][nc] = -1;\n        }\n        return false;\n    }\n    dfs(r, c, 1);\n    return board;\n};"
+    }
+  ]
+}
