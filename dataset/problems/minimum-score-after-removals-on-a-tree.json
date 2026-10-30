@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-score-after-removals-on-a-tree",
+  "number": 2322,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subtree Partition Structure",
+      "text": "Removing two edges partitions the tree into three components determined by subtree relationships."
+    },
+    {
+      "level": 2,
+      "title": "Subtree xor Precomputation",
+      "text": "Compute entry and exit traversal timestamps to determine if one removed edge is an ancestor of the other in O(1)."
+    },
+    {
+      "level": 3,
+      "title": "Component xor Computation",
+      "text": "If edge 1 is an ancestor of edge 2, components have values xor2, xor1 xor xor2, and total xor xor1. If independent, components have xor1, xor2, and total xor xor1 xor xor2."
+    },
+    {
+      "level": 4,
+      "title": "Subtree Timestamps Implementation",
+      "text": "```python\nclass Solution:\n    def minimumScore(self, nums: list[int], edges: list[list[int]]) -> int:\n        from collections import defaultdict\n        n = len(nums)\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        sub_xor = [0] * n\n        tin = [0] * n\n        tout = [0] * n\n        timer = 0\n        def dfs(u, p):\n            nonlocal timer\n            tin[u] = timer\n            timer += 1\n            sub_xor[u] = nums[u]\n            for v in adj[u]:\n                if v != p:\n                    dfs(v, u)\n                    sub_xor[u] ^= sub_xor[v]\n            tout[u] = timer\n        dfs(0, -1)\n        def is_ancestor(u, v):\n            return tin[u] <= tin[v] and tout[v] <= tout[u]\n        total = sub_xor[0]\n        ans = float('inf')\n        m = len(edges)\n        directed_edges = []\n        for u, v in edges:\n            directed_edges.append(v if is_ancestor(u, v) else u)\n        for i in range(m):\n            for j in range(i + 1, m):\n                u, v = directed_edges[i], directed_edges[j]\n                if is_ancestor(u, v):\n                    c1 = sub_xor[v]\n                    c2 = sub_xor[u] ^ sub_xor[v]\n                    c3 = total ^ sub_xor[u]\n                elif is_ancestor(v, u):\n                    c1 = sub_xor[u]\n                    c2 = sub_xor[v] ^ sub_xor[u]\n                    c3 = total ^ sub_xor[v]\n                else:\n                    c1 = sub_xor[u]\n                    c2 = sub_xor[v]\n                    c3 = total ^ sub_xor[u] ^ sub_xor[v]\n                ans = min(ans, max(c1, c2, c3) - min(c1, c2, c3))\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes in tree"
+    ],
+    "notes": "Precomputes subtree xors and in/out timestamps in O(n), then evaluates all pairs of edges in O(n^2).",
+    "whyNaiveFails": "Re-traversing tree components for each edge pair takes O(n^3) time.",
+    "spaceTimeTradeoff": "Ancestorship table or timestamps allow O(1) component xor evaluation.",
+    "interviewerExpectation": "Applies tree DFS traversal timestamps and subtree xor properties to evaluate splits efficiently."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Subtree xor Precomputation and Ancestor Timestamps",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def minimumScore(self, nums: list[int], edges: list[list[int]]) -> int:\n        from collections import defaultdict\n        n = len(nums)\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        sub_xor = [0] * n\n        tin = [0] * n\n        tout = [0] * n\n        timer = 0\n        def dfs(u, p):\n            nonlocal timer\n            tin[u] = timer\n            timer += 1\n            sub_xor[u] = nums[u]\n            for v in adj[u]:\n                if v != p:\n                    dfs(v, u)\n                    sub_xor[u] ^= sub_xor[v]\n            tout[u] = timer\n        dfs(0, -1)\n        def is_ancestor(u, v):\n            return tin[u] <= tin[v] and tout[v] <= tout[u]\n        total = sub_xor[0]\n        ans = float('inf')\n        m = len(edges)\n        directed_edges = []\n        for u, v in edges:\n            directed_edges.append(v if is_ancestor(u, v) else u)\n        for i in range(m):\n            for j in range(i + 1, m):\n                u, v = directed_edges[i], directed_edges[j]\n                if is_ancestor(u, v):\n                    c1 = sub_xor[v]\n                    c2 = sub_xor[u] ^ sub_xor[v]\n                    c3 = total ^ sub_xor[u]\n                elif is_ancestor(v, u):\n                    c1 = sub_xor[u]\n                    c2 = sub_xor[v] ^ sub_xor[u]\n                    c3 = total ^ sub_xor[v]\n                else:\n                    c1 = sub_xor[u]\n                    c2 = sub_xor[v]\n                    c3 = total ^ sub_xor[u] ^ sub_xor[v]\n                ans = min(ans, max(c1, c2, c3) - min(c1, c2, c3))\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Subtree xor Precomputation and Ancestor Timestamps",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int minimumScore(std::vector<int>& nums, std::vector<std::vector<int>>& edges) {\n        int n = nums.size();\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        std::vector<int> sub_xor(n, 0), tin(n, 0), tout(n, 0);\n        int timer = 0;\n        auto dfs = [&](auto& self, int u, int p) -> void {\n            tin[u] = timer++;\n            sub_xor[u] = nums[u];\n            for (int v : adj[u]) {\n                if (v != p) {\n                    self(self, v, u);\n                    sub_xor[u] ^= sub_xor[v];\n                }\n            }\n            tout[u] = timer;\n        };\n        dfs(dfs, 0, -1);\n        auto is_ancestor = [&](int u, int v) {\n            return tin[u] <= tin[v] && tout[v] <= tout[u];\n        };\n        int total = sub_xor[0];\n        int ans = 1e9;\n        int m = edges.size();\n        std::vector<int> directed_edges(m);\n        for (int i = 0; i < m; ++i) {\n            directed_edges[i] = is_ancestor(edges[i][0], edges[i][1]) ? edges[i][1] : edges[i][0];\n        }\n        for (int i = 0; i < m; ++i) {\n            for (int j = i + 1; j < m; ++j) {\n                int u = directed_edges[i], v = directed_edges[j];\n                int c1, c2, c3;\n                if (is_ancestor(u, v)) {\n                    c1 = sub_xor[v];\n                    c2 = sub_xor[u] ^ sub_xor[v];\n                    c3 = total ^ sub_xor[u];\n                } else if (is_ancestor(v, u)) {\n                    c1 = sub_xor[u];\n                    c2 = sub_xor[v] ^ sub_xor[u];\n                    c3 = total ^ sub_xor[v];\n                } else {\n                    c1 = sub_xor[u];\n                    c2 = sub_xor[v];\n                    c3 = total ^ sub_xor[u] ^ sub_xor[v];\n                }\n                int hi = std::max({c1, c2, c3}), lo = std::min({c1, c2, c3});\n                ans = std::min(ans, hi - lo);\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Subtree xor Precomputation and Ancestor Timestamps",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int timer = 0;\n    public int minimumScore(int[] nums, int[][] edges) {\n        int n = nums.length;\n        java.util.List<Integer>[] adj = new java.util.ArrayList[n];\n        for (int i = 0; i < n; ++i) adj[i] = new java.util.ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(e[1]);\n            adj[e[1]].add(e[0]);\n        }\n        int[] subXor = new int[n], tin = new int[n], tout = new int[n];\n        timer = 0;\n        dfs(0, -1, nums, adj, subXor, tin, tout);\n        int total = subXor[0], ans = Integer.MAX_VALUE, m = edges.length;\n        int[] childNode = new int[m];\n        for (int i = 0; i < m; ++i) {\n            childNode[i] = isAncestor(edges[i][0], edges[i][1], tin, tout) ? edges[i][1] : edges[i][0];\n        }\n        for (int i = 0; i < m; ++i) {\n            for (int j = i + 1; j < m; ++j) {\n                int u = childNode[i], v = childNode[j];\n                int c1, c2, c3;\n                if (isAncestor(u, v, tin, tout)) {\n                    c1 = subXor[v];\n                    c2 = subXor[u] ^ subXor[v];\n                    c3 = total ^ subXor[u];\n                } else if (isAncestor(v, u, tin, tout)) {\n                    c1 = subXor[u];\n                    c2 = subXor[v] ^ subXor[u];\n                    c3 = total ^ subXor[v];\n                } else {\n                    c1 = subXor[u];\n                    c2 = subXor[v];\n                    c3 = total ^ subXor[u] ^ subXor[v];\n                }\n                int hi = Math.max(c1, Math.max(c2, c3)), lo = Math.min(c1, Math.min(c2, c3));\n                ans = Math.min(ans, hi - lo);\n            }\n        }\n        return ans;\n    }\n    private void dfs(int u, int p, int[] nums, java.util.List<Integer>[] adj, int[] subXor, int[] tin, int[] tout) {\n        tin[u] = timer++;\n        subXor[u] = nums[u];\n        for (int v : adj[u]) {\n            if (v != p) {\n                dfs(v, u, nums, adj, subXor, tin, tout);\n                subXor[u] ^= subXor[v];\n            }\n        }\n        tout[u] = timer;\n    }\n    private boolean isAncestor(int u, int v, int[] tin, int[] tout) {\n        return tin[u] <= tin[v] && tout[v] <= tout[u];\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Subtree xor Precomputation and Ancestor Timestamps",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var minimumScore = function(nums, edges) {\n    const n = nums.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const subXor = new Array(n).fill(0);\n    const tin = new Array(n).fill(0);\n    const tout = new Array(n).fill(0);\n    let timer = 0;\n    function dfs(u, p) {\n        tin[u] = timer++;\n        subXor[u] = nums[u];\n        for (const v of adj[u]) {\n            if (v !== p) {\n                dfs(v, u);\n                subXor[u] ^= subXor[v];\n            }\n        }\n        tout[u] = timer;\n    }\n    dfs(0, -1);\n    function isAncestor(u, v) {\n        return tin[u] <= tin[v] && tout[v] <= tout[u];\n    }\n    const total = subXor[0];\n    let ans = Infinity;\n    const m = edges.length;\n    const childNode = new Array(m);\n    for (let i = 0; i < m; ++i) {\n        childNode[i] = isAncestor(edges[i][0], edges[i][1]) ? edges[i][1] : edges[i][0];\n    }\n    for (let i = 0; i < m; ++i) {\n        for (let j = i + 1; j < m; ++j) {\n            const u = childNode[i], v = childNode[j];\n            let c1, c2, c3;\n            if (isAncestor(u, v)) {\n                c1 = subXor[v];\n                c2 = subXor[u] ^ subXor[v];\n                c3 = total ^ subXor[u];\n            } else if (isAncestor(v, u)) {\n                c1 = subXor[u];\n                c2 = subXor[v] ^ subXor[u];\n                c3 = total ^ subXor[v];\n            } else {\n                c1 = subXor[u];\n                c2 = subXor[v];\n                c3 = total ^ subXor[u] ^ subXor[v];\n            }\n            const hi = Math.max(c1, c2, c3), lo = Math.min(c1, c2, c3);\n            ans = Math.min(ans, hi - lo);\n        }\n    }\n    return ans;\n};"
+    }
+  ]
+}

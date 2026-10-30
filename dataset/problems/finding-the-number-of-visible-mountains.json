@@ -1,0 +1,78 @@
+{
+  "slug": "finding-the-number-of-visible-mountains",
+  "number": 2345,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-monotonic-next-greater"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Mountain Footprint Intervals",
+      "text": "A triangular mountain with peak (x, y) covers the base interval [x - y, x + y]."
+    },
+    {
+      "level": 2,
+      "title": "Subsumption Condition",
+      "text": "Mountain A is hidden by mountain B if left(B) <= left(A) and right(A) <= right(B). Duplicate identical mountains hide each other."
+    },
+    {
+      "level": 3,
+      "title": "Interval Sorting",
+      "text": "Group identical peaks and sort distinct intervals by left boundary ascending, and right boundary descending for ties."
+    },
+    {
+      "level": 4,
+      "title": "Sorted Interval Sweep Implementation",
+      "text": "```python\nfrom collections import Counter\n\nclass Solution:\n    def visibleMountains(self, peaks: list[list[int]]) -> int:\n        counts = Counter((x, y) for x, y in peaks)\n        intervals = [(x - y, x + y, count) for (x, y), count in counts.items()]\n        intervals.sort(key=lambda item: (item[0], -item[1]))\n        ans = 0\n        max_r = -float('inf')\n        for l, r, count in intervals:\n            if r > max_r:\n                if count == 1:\n                    ans += 1\n                max_r = r\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of peaks"
+    ],
+    "notes": "Grouping duplicate peaks and sorting intervals.",
+    "whyNaiveFails": "Pairwise comparison of all mountain intervals costs O(n^2).",
+    "spaceTimeTradeoff": "Counter and intervals list take linear auxiliary space.",
+    "interviewerExpectation": "Maps 2D isosceles mountain triangles to 1D interval containment and sweeps sorted boundaries."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "1D Interval Mapping and Sorted Greedy Sweep",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "from collections import Counter\n\nclass Solution:\n    def visibleMountains(self, peaks: list[list[int]]) -> int:\n        counts = Counter((x, y) for x, y in peaks)\n        intervals = [(x - y, x + y, count) for (x, y), count in counts.items()]\n        intervals.sort(key=lambda item: (item[0], -item[1]))\n        ans = 0\n        max_r = -float('inf')\n        for l, r, count in intervals:\n            if r > max_r:\n                if count == 1:\n                    ans += 1\n                max_r = r\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "1D Interval Mapping and Sorted Greedy Sweep",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int visibleMountains(std::vector<std::vector<int>>& peaks) {\n        std::map<std::pair<int, int>, int> counts;\n        for (const auto& p : peaks) counts[{p[0], p[1]}]++;\n        struct Interval {\n            int l, r, count;\n        };\n        std::vector<Interval> intervals;\n        for (auto& [pt, c] : counts) {\n            intervals.push_back({pt.first - pt.second, pt.first + pt.second, c});\n        }\n        std::sort(intervals.begin(), intervals.end(), [](const Interval& a, const Interval& b) {\n            if (a.l != b.l) return a.l < b.l;\n            return a.r > b.r;\n        });\n        int ans = 0, max_r = -2e9;\n        for (const auto& iv : intervals) {\n            if (iv.r > max_r) {\n                if (iv.count == 1) ans++;\n                max_r = iv.r;\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "1D Interval Mapping and Sorted Greedy Sweep",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int visibleMountains(int[][] peaks) {\n        java.util.Map<String, Integer> counts = new java.util.HashMap<>();\n        for (int[] p : peaks) {\n            String key = p[0] + \",\" + p[1];\n            counts.put(key, counts.getOrDefault(key, 0) + 1);\n        }\n        int[][] intervals = new int[counts.size()][3];\n        int idx = 0;\n        for (var entry : counts.entrySet()) {\n            String[] parts = entry.getKey().split(\",\");\n            int x = Integer.parseInt(parts[0]), y = Integer.parseInt(parts[1]);\n            intervals[idx][0] = x - y;\n            intervals[idx][1] = x + y;\n            intervals[idx][2] = entry.getValue();\n            idx++;\n        }\n        java.util.Arrays.sort(intervals, (a, b) -> {\n            if (a[0] != b[0]) return Integer.compare(a[0], b[0]);\n            return Integer.compare(b[1], a[1]);\n        });\n        int ans = 0, maxR = Integer.MIN_VALUE;\n        for (int[] iv : intervals) {\n            if (iv[1] > maxR) {\n                if (iv[2] == 1) ans++;\n                maxR = iv[1];\n            }\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "1D Interval Mapping and Sorted Greedy Sweep",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var visibleMountains = function(peaks) {\n    const counts = new Map();\n    for (const [x, y] of peaks) {\n        const key = `${x},${y}`;\n        counts.set(key, (counts.get(key) || 0) + 1);\n    }\n    const intervals = [];\n    for (const [key, count] of counts.entries()) {\n        const [x, y] = key.split(',').map(Number);\n        intervals.push([x - y, x + y, count]);\n    }\n    intervals.sort((a, b) => {\n        if (a[0] !== b[0]) return a[0] - b[0];\n        return b[1] - a[1];\n    });\n    let ans = 0, maxR = -Infinity;\n    for (const [l, r, count] of intervals) {\n        if (r > maxR) {\n            if (count === 1) ans++;\n            maxR = r;\n        }\n    }\n    return ans;\n};"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "design-a-number-container-system",
+  "number": 2349,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bi-directional Mapping",
+      "text": "Map index to current number, and map number to a collection of its assigned indices."
+    },
+    {
+      "level": 2,
+      "title": "Lazy Deletion in Min Heap",
+      "text": "When changing the number at an index, update the index map. Add the index to the new number's min heap, and lazily discard outdated indices upon finding."
+    },
+    {
+      "level": 3,
+      "title": "Clean Minimum Retrieval",
+      "text": "When calling find, pop invalid top indices from the min heap until the top index actually maps to that number, or the heap empties."
+    },
+    {
+      "level": 4,
+      "title": "Min Heap with Lazy Pruning Implementation",
+      "text": "```python\nimport heapq\n\nclass NumberContainers:\n    def __init__(self):\n        self.idx_to_num = {}\n        self.num_to_heap = {}\n\n    def change(self, index: int, number: int) -> None:\n        self.idx_to_num[index] = number\n        if number not in self.num_to_heap:\n            self.num_to_heap[number] = []\n        heapq.heappush(self.num_to_heap[number], index)\n\n    def find(self, number: int) -> int:\n        if number not in self.num_to_heap:\n            return -1\n        h = self.num_to_heap[number]\n        while h:\n            idx = h[0]\n            if self.idx_to_num.get(idx) == number:\n                return idx\n            heapq.heappop(h)\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log n) for change, amortized O(log n) for find",
+    "space": "O(n)",
+    "variables": [
+      "n: number of change operations"
+    ],
+    "notes": "Each change inserts into heap; lazy popping discards stale entries once.",
+    "whyNaiveFails": "Scanning all indices on each find takes O(n) per query.",
+    "spaceTimeTradeoff": "Dual hash map and min heaps balance update and query speeds.",
+    "interviewerExpectation": "Employs lazy deletion with min heaps or ordered sets to achieve logarithmic operations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Hash Map with Lazy Deletion Min-Heaps",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import heapq\n\nclass NumberContainers:\n    def __init__(self):\n        self.idx_to_num = {}\n        self.num_to_heap = {}\n\n    def change(self, index: int, number: int) -> None:\n        self.idx_to_num[index] = number\n        if number not in self.num_to_heap:\n            self.num_to_heap[number] = []\n        heapq.heappush(self.num_to_heap[number], index)\n\n    def find(self, number: int) -> int:\n        if number not in self.num_to_heap:\n            return -1\n        h = self.num_to_heap[number]\n        while h:\n            idx = h[0]\n            if self.idx_to_num.get(idx) == number:\n                return idx\n            heapq.heappop(h)\n        return -1"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Hash Map with Ordered Sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class NumberContainers {\nprivate:\n    std::unordered_map<int, int> idx_to_num;\n    std::unordered_map<int, std::set<int>> num_to_indices;\npublic:\n    NumberContainers() {}\n    \n    void change(int index, int number) {\n        if (idx_to_num.count(index)) {\n            int old_num = idx_to_num[index];\n            num_to_indices[old_num].erase(index);\n        }\n        idx_to_num[index] = number;\n        num_to_indices[number].insert(index);\n    }\n    \n    int find(int number) {\n        if (!num_to_indices.count(number) || num_to_indices[number].empty()) return -1;\n        return *num_to_indices[number].begin();\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Hash Map with Ordered Sets",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class NumberContainers {\n    private java.util.Map<Integer, Integer> idxToNum;\n    private java.util.Map<Integer, java.util.TreeSet<Integer>> numToIndices;\n    public NumberContainers() {\n        idxToNum = new java.util.HashMap<>();\n        numToIndices = new java.util.HashMap<>();\n    }\n    public void change(int index, int number) {\n        if (idxToNum.containsKey(index)) {\n            int oldNum = idxToNum.get(index);\n            numToIndices.get(oldNum).remove(index);\n        }\n        idxToNum.put(index, number);\n        numToIndices.computeIfAbsent(number, k -> new java.util.TreeSet<>()).add(index);\n    }\n    public int find(int number) {\n        if (!numToIndices.containsKey(number) || numToIndices.get(number).isEmpty()) return -1;\n        return numToIndices.get(number).first();\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Hash Map with Min-Heaps and Lazy Deletion",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var NumberContainers = function() {\n    this.idxToNum = new Map();\n    this.numToIndices = new Map();\n};\n\nNumberContainers.prototype.change = function(index, number) {\n    this.idxToNum.set(index, number);\n    if (!this.numToIndices.has(number)) {\n        this.numToIndices.set(number, []);\n    }\n    this.numToIndices.get(number).push(index);\n};\n\nNumberContainers.prototype.find = function(number) {\n    if (!this.numToIndices.has(number)) return -1;\n    const arr = this.numToIndices.get(number);\n    arr.sort((a, b) => a - b);\n    while (arr.length > 0) {\n        const idx = arr[0];\n        if (this.idxToNum.get(idx) === number) return idx;\n        arr.shift();\n    }\n    return -1;\n};"
+    }
+  ]
+}

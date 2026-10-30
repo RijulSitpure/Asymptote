@@ -1,0 +1,71 @@
+{
+  "slug": "product-sales-analysis-iv",
+  "number": 2324,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Aggregated Spending per Product",
+      "text": "Join sales records with products and sum the total amount spent by each user on each product."
+    },
+    {
+      "level": 2,
+      "title": "Partitioned Ranking",
+      "text": "Rank products for each user by descending total spend using a window ranking function."
+    },
+    {
+      "level": 3,
+      "title": "Filter Top Ranks",
+      "text": "In a common table expression, assign rank 1 to the highest spenders and select rows with rank equal to 1."
+    },
+    {
+      "level": 4,
+      "title": "Window Rank Query Implementation",
+      "text": "```sql\nwith user_spend as (\n    select\n        s.user_id,\n        s.product_id,\n        rank() over (\n            partition by s.user_id\n            order by sum(s.quantity * p.price) desc\n        ) as rnk\n    from Sales s\n    join Product p on s.product_id = p.product_id\n    group by s.user_id, s.product_id\n)\nselect user_id, product_id\nfrom user_spend\nwhere rnk = 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m log m)",
+    "space": "O(m)",
+    "variables": [
+      "m: number of unique user-product sales pairs"
+    ],
+    "notes": "Hash join followed by aggregation and partition sorting.",
+    "whyNaiveFails": "Correlated subqueries scanning the sales table per user incur O(u * n) overhead.",
+    "spaceTimeTradeoff": "CTE materializes user-product totals to rank in a single pass.",
+    "interviewerExpectation": "Employs window ranking functions over aggregated grouped records cleanly."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Common Table Expression with Window Ranking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "with user_spend as (\n    select\n        s.user_id,\n        s.product_id,\n        rank() over (\n            partition by s.user_id\n            order by sum(s.quantity * p.price) desc\n        ) as rnk\n    from Sales s\n    join Product p on s.product_id = p.product_id\n    group by s.user_id, s.product_id\n)\nselect user_id, product_id\nfrom user_spend\nwhere rnk = 1;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Common Table Expression with Window Ranking",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "with user_spend as (\n    select\n        s.user_id,\n        s.product_id,\n        rank() over (\n            partition by s.user_id\n            order by sum(s.quantity * p.price) desc\n        ) as rnk\n    from Sales s\n    join Product p on s.product_id = p.product_id\n    group by s.user_id, s.product_id\n)\nselect user_id, product_id\nfrom user_spend\nwhere rnk = 1;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Merge, Groupby Aggregation, and Rank Filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef product_sales_analysis(sales: pd.DataFrame, product: pd.DataFrame) -> pd.DataFrame:\n    df = sales.merge(product, on='product_id')\n    df['spending'] = df['quantity'] * df['price']\n    agg = df.groupby(['user_id', 'product_id'], as_index=False)['spending'].sum()\n    agg['rnk'] = agg.groupby('user_id')['spending'].rank(method='min', ascending=False)\n    return agg[agg['rnk'] == 1][['user_id', 'product_id']]"
+    }
+  ]
+}

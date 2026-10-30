@@ -1,0 +1,24 @@
+class Solution:
+    def validSubarraySize(self, nums: list[int], threshold: int) -> int:
+        n = len(nums)
+        left = [-1] * n
+        right = [n] * n
+        stk = []
+        for i in range(n):
+            while stk and nums[stk[-1]] >= nums[i]:
+                stk.pop()
+            if stk:
+                left[i] = stk[-1]
+            stk.append(i)
+        stk = []
+        for i in range(n - 1, -1, -1):
+            while stk and nums[stk[-1]] >= nums[i]:
+                stk.pop()
+            if stk:
+                right[i] = stk[-1]
+            stk.append(i)
+        for i in range(n):
+            k = right[i] - left[i] - 1
+            if nums[i] * k > threshold:
+                return k
+        return -1

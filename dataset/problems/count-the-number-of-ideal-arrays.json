@@ -1,0 +1,79 @@
+{
+  "slug": "count-the-number-of-ideal-arrays",
+  "number": 2338,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Strictly Increasing Chain Length",
+      "text": "Because each value must strictly divide the next when changing values, a sequence of distinct elements has length at most 14 since 2^14 exceeds 10000."
+    },
+    {
+      "level": 2,
+      "title": "Dynamic Programming over Divisor Sequences",
+      "text": "Compute the number of strictly increasing sequences of length k ending at each value using dynamic programming over multiples."
+    },
+    {
+      "level": 3,
+      "title": "Combinatorial Placement",
+      "text": "A sequence with k distinct elements can be expanded into an array of length n in comb(n - 1, k - 1) ways using stars and bars."
+    },
+    {
+      "level": 4,
+      "title": "Chains and Combinations Implementation",
+      "text": "```python\nimport math\n\nclass Solution:\n    def idealArrays(self, n: int, maxValue: int) -> int:\n        MOD = 10**9 + 7\n        max_len = min(n, 14)\n        dp = [{} for _ in range(max_len + 1)]\n        for v in range(1, maxValue + 1):\n            dp[1][v] = 1\n        for l in range(1, max_len):\n            for v, cnt in dp[l].items():\n                for mul in range(2 * v, maxValue + 1, v):\n                    dp[l + 1][mul] = (dp[l + 1].get(mul, 0) + cnt) % MOD\n        ans = 0\n        for l in range(1, max_len + 1):\n            total_chains = sum(dp[l].values()) % MOD\n            ways = math.comb(n - 1, l - 1) % MOD\n            ans = (ans + total_chains * ways) % MOD\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(maxValue * log(maxValue) * 14)",
+    "space": "O(maxValue * 14)",
+    "variables": [
+      "maxValue: upper bound on array values",
+      "n: length of the ideal array"
+    ],
+    "notes": "Harmonic series sum over multiples bounded by maxValue log maxValue.",
+    "whyNaiveFails": "Standard O(n * maxValue) DP state transitions are too slow for n up to 10^4.",
+    "spaceTimeTradeoff": "Stores chain counts up to max chain length 14.",
+    "interviewerExpectation": "Combines harmonic divisor sieve dynamic programming with stars and bars combinatorics."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Divisor Chain DP with Stars and Bars",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import math\n\nclass Solution:\n    def idealArrays(self, n: int, maxValue: int) -> int:\n        MOD = 10**9 + 7\n        max_len = min(n, 14)\n        dp = [{} for _ in range(max_len + 1)]\n        for v in range(1, maxValue + 1):\n            dp[1][v] = 1\n        for l in range(1, max_len):\n            for v, cnt in dp[l].items():\n                for mul in range(2 * v, maxValue + 1, v):\n                    dp[l + 1][mul] = (dp[l + 1].get(mul, 0) + cnt) % MOD\n        ans = 0\n        for l in range(1, max_len + 1):\n            total_chains = sum(dp[l].values()) % MOD\n            ways = math.comb(n - 1, l - 1) % MOD\n            ans = (ans + total_chains * ways) % MOD\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Divisor Chain DP with Stars and Bars",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int idealArrays(int n, int maxValue) {\n        long long MOD = 1e9 + 7;\n        int max_len = std::min(n, 14);\n        std::vector<std::vector<long long>> dp(max_len + 1, std::vector<long long>(maxValue + 1, 0));\n        for (int v = 1; v <= maxValue; ++v) dp[1][v] = 1;\n        for (int l = 1; l < max_len; ++l) {\n            for (int v = 1; v <= maxValue; ++v) {\n                if (dp[l][v] == 0) continue;\n                long long cnt = dp[l][v];\n                for (int mul = 2 * v; mul <= maxValue; mul += v) {\n                    dp[l + 1][mul] = (dp[l + 1][mul] + cnt) % MOD;\n                }\n            }\n        }\n        auto comb = [&](int N, int K) -> long long {\n            if (K < 0 || K > N) return 0;\n            long long num = 1, den = 1;\n            for (int i = 1; i <= K; ++i) {\n                num = (num * (N - i + 1)) % MOD;\n                den = (den * i) % MOD;\n            }\n            auto power = [&](long long base, long long exp) {\n                long long res = 1;\n                base %= MOD;\n                while (exp > 0) {\n                    if (exp % 2 == 1) res = (res * base) % MOD;\n                    base = (base * base) % MOD;\n                    exp /= 2;\n                }\n                return res;\n            };\n            return (num * power(den, MOD - 2)) % MOD;\n        };\n        long long ans = 0;\n        for (int l = 1; l <= max_len; ++l) {\n            long long total = 0;\n            for (int v = 1; v <= maxValue; ++v) total = (total + dp[l][v]) % MOD;\n            ans = (ans + total * comb(n - 1, l - 1)) % MOD;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Divisor Chain DP with Stars and Bars",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private static final long MOD = 1_000_000_007;\n    public int idealArrays(int n, int maxValue) {\n        int maxLen = Math.min(n, 14);\n        long[][] dp = new long[maxLen + 1][maxValue + 1];\n        for (int v = 1; v <= maxValue; ++v) dp[1][v] = 1;\n        for (int l = 1; l < maxLen; ++l) {\n            for (int v = 1; v <= maxValue; ++v) {\n                if (dp[l][v] == 0) continue;\n                long cnt = dp[l][v];\n                for (int mul = 2 * v; mul <= maxValue; mul += v) {\n                    dp[l + 1][mul] = (dp[l + 1][mul] + cnt) % MOD;\n                }\n            }\n        }\n        long ans = 0;\n        for (int l = 1; l <= maxLen; ++l) {\n            long total = 0;\n            for (int v = 1; v <= maxValue; ++v) total = (total + dp[l][v]) % MOD;\n            ans = (ans + total * comb(n - 1, l - 1)) % MOD;\n        }\n        return (int) ans;\n    }\n    private long comb(int N, int K) {\n        if (K < 0 || K > N) return 0;\n        long num = 1, den = 1;\n        for (int i = 1; i <= K; ++i) {\n            num = (num * (N - i + 1)) % MOD;\n            den = (den * i) % MOD;\n        }\n        return (num * power(den, MOD - 2)) % MOD;\n    }\n    private long power(long base, long exp) {\n        long res = 1;\n        base %= MOD;\n        while (exp > 0) {\n            if (exp % 2 == 1) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp /= 2;\n        }\n        return res;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Divisor Chain DP with Stars and Bars",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var idealArrays = function(n, maxValue) {\n    const MOD = 1000000007n;\n    const maxLen = Math.min(n, 14);\n    const dp = Array.from({ length: maxLen + 1 }, () => new Array(maxValue + 1).fill(0n));\n    for (let v = 1; v <= maxValue; ++v) dp[1][v] = 1n;\n    for (let l = 1; l < maxLen; ++l) {\n        for (let v = 1; v <= maxValue; ++v) {\n            if (dp[l][v] === 0n) continue;\n            const cnt = dp[l][v];\n            for (let mul = 2 * v; mul <= maxValue; mul += v) {\n                dp[l + 1][mul] = (dp[l + 1][mul] + cnt) % MOD;\n            }\n        }\n    }\n    function power(base, exp) {\n        let res = 1n;\n        base %= MOD;\n        while (exp > 0n) {\n            if (exp % 2n === 1n) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp /= 2n;\n        }\n        return res;\n    }\n    function comb(N, K) {\n        if (K < 0 || K > N) return 0n;\n        let num = 1n, den = 1n;\n        for (let i = 1; i <= K; ++i) {\n            num = (num * BigInt(N - i + 1)) % MOD;\n            den = (den * BigInt(i)) % MOD;\n        }\n        return (num * power(den, MOD - 2n)) % MOD;\n    }\n    let ans = 0n;\n    for (let l = 1; l <= maxLen; ++l) {\n        let total = 0n;\n        for (let v = 1; v <= maxValue; ++v) total = (total + dp[l][v]) % MOD;\n        ans = (ans + total * comb(n - 1, l - 1)) % MOD;\n    }\n    return Number(ans);\n};"
+    }
+  ]
+}
