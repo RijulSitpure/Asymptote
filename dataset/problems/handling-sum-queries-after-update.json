@@ -1,0 +1,79 @@
+{
+  "slug": "handling-sum-queries-after-update",
+  "number": 2569,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sum Modification Invariant",
+      "text": "Notice that type 2 queries add p to nums2[i] whenever nums1[i] == 1, increasing the total sum of nums2 by count of ones in nums1 times p."
+    },
+    {
+      "level": 2,
+      "title": "Maintaining nums1 Ones",
+      "text": "Type 1 flips bits in a range of nums1. Flipping a range [l, r] transforms the number of ones to (r - l + 1) - current_ones."
+    },
+    {
+      "level": 3,
+      "title": "Lazy Segment Tree Structure",
+      "text": "Use a segment tree over nums1 with boolean lazy flip flags to support range updates and retrieve total set bits."
+    },
+    {
+      "level": 4,
+      "title": "Lazy Segment Tree Query Implementation",
+      "text": "```python\nclass Solution:\n    def handleQuery(self, nums1: list[int], nums2: list[int], queries: list[list[int]]) -> list[int]:\n        n = len(nums1)\n        tree = [0] * (4 * n)\n        lazy = [False] * (4 * n)\n        def build(node, l, r):\n            if l == r:\n                tree[node] = nums1[l]\n                return\n            mid = (l + r) // 2\n            build(2 * node, l, mid)\n            build(2 * node + 1, mid + 1, r)\n            tree[node] = tree[2 * node] + tree[2 * node + 1]\n        def update(node, l, r, ql, qr):\n            if ql <= l and r <= qr:\n                tree[node] = (r - l + 1) - tree[node]\n                lazy[node] = not lazy[node]\n                return\n            mid = (l + r) // 2\n            if lazy[node]:\n                lazy[node] = False\n                tree[2 * node] = (mid - l + 1) - tree[2 * node]\n                lazy[2 * node] = not lazy[2 * node]\n                tree[2 * node + 1] = (r - mid) - tree[2 * node + 1]\n                lazy[2 * node + 1] = not lazy[2 * node + 1]\n            if ql <= mid:\n                update(2 * node, l, mid, ql, qr)\n            if qr > mid:\n                update(2 * node + 1, mid + 1, r, ql, qr)\n            tree[node] = tree[2 * node] + tree[2 * node + 1]\n        build(1, 0, n - 1)\n        total_sum = sum(nums2)\n        ans = []\n        for q in queries:\n            if q[0] == 1:\n                update(1, 0, n - 1, q[1], q[2])\n            elif q[0] == 2:\n                total_sum += tree[1] * q[1]\n            else:\n                ans.append(total_sum)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + q log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums1 and nums2",
+      "q: number of queries"
+    ],
+    "notes": "Building segment tree takes O(n); each range flip takes O(log n); sum updates and queries are O(1).",
+    "whyNaiveFails": "Directly updating array ranges takes O(q * n) time.",
+    "spaceTimeTradeoff": "O(n) tree and lazy arrays.",
+    "interviewerExpectation": "Models range flips with a segment tree and handles nums2 additions globally."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Lazy Segment Tree with Global Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def handleQuery(self, nums1: list[int], nums2: list[int], queries: list[list[int]]) -> list[int]:\n        n = len(nums1)\n        tree = [0] * (4 * n)\n        lazy = [False] * (4 * n)\n        def build(node, l, r):\n            if l == r:\n                tree[node] = nums1[l]\n                return\n            mid = (l + r) // 2\n            build(2 * node, l, mid)\n            build(2 * node + 1, mid + 1, r)\n            tree[node] = tree[2 * node] + tree[2 * node + 1]\n        def update(node, l, r, ql, qr):\n            if ql <= l and r <= qr:\n                tree[node] = (r - l + 1) - tree[node]\n                lazy[node] = not lazy[node]\n                return\n            mid = (l + r) // 2\n            if lazy[node]:\n                lazy[node] = False\n                tree[2 * node] = (mid - l + 1) - tree[2 * node]\n                lazy[2 * node] = not lazy[2 * node]\n                tree[2 * node + 1] = (r - mid) - tree[2 * node + 1]\n                lazy[2 * node + 1] = not lazy[2 * node + 1]\n            if ql <= mid:\n                update(2 * node, l, mid, ql, qr)\n            if qr > mid:\n                update(2 * node + 1, mid + 1, r, ql, qr)\n            tree[node] = tree[2 * node] + tree[2 * node + 1]\n        build(1, 0, n - 1)\n        total_sum = sum(nums2)\n        ans = []\n        for q in queries:\n            if q[0] == 1:\n                update(1, 0, n - 1, q[1], q[2])\n            elif q[0] == 2:\n                total_sum += tree[1] * q[1]\n            else:\n                ans.append(total_sum)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Lazy Segment Tree with Global Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    std::vector<int> tree;\n    std::vector<bool> lazy;\n\n    void build(int node, int l, int r, const std::vector<int>& nums1) {\n        if (l == r) {\n            tree[node] = nums1[l];\n            return;\n        }\n        int mid = (l + r) / 2;\n        build(2 * node, l, mid, nums1);\n        build(2 * node + 1, mid + 1, r, nums1);\n        tree[node] = tree[2 * node] + tree[2 * node + 1];\n    }\n\n    void update(int node, int l, int r, int ql, int qr) {\n        if (ql <= l && r <= qr) {\n            tree[node] = (r - l + 1) - tree[node];\n            lazy[node] = !lazy[node];\n            return;\n        }\n        int mid = (l + r) / 2;\n        if (lazy[node]) {\n            lazy[node] = false;\n            tree[2 * node] = (mid - l + 1) - tree[2 * node];\n            lazy[2 * node] = !lazy[2 * node];\n            tree[2 * node + 1] = (r - mid) - tree[2 * node + 1];\n            lazy[2 * node + 1] = !lazy[2 * node + 1];\n        }\n        if (ql <= mid) update(2 * node, l, mid, ql, qr);\n        if (qr > mid) update(2 * node + 1, mid + 1, r, ql, qr);\n        tree[node] = tree[2 * node] + tree[2 * node + 1];\n    }\n\npublic:\n    std::vector<long long> handleQuery(std::vector<int>& nums1, std::vector<int>& nums2, std::vector<std::vector<int>>& queries) {\n        int n = nums1.size();\n        tree.assign(4 * n, 0);\n        lazy.assign(4 * n, false);\n        build(1, 0, n - 1, nums1);\n\n        long long total_sum = 0;\n        for (int x : nums2) total_sum += x;\n\n        std::vector<long long> ans;\n        for (const auto& q : queries) {\n            if (q[0] == 1) {\n                update(1, 0, n - 1, q[1], q[2]);\n            } else if (q[0] == 2) {\n                total_sum += (long long)tree[1] * q[1];\n            } else {\n                ans.push_back(total_sum);\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Lazy Segment Tree with Global Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int[] tree;\n    private boolean[] lazy;\n\n    private void build(int node, int l, int r, int[] nums1) {\n        if (l == r) {\n            tree[node] = nums1[l];\n            return;\n        }\n        int mid = (l + r) / 2;\n        build(2 * node, l, mid, nums1);\n        build(2 * node + 1, mid + 1, r, nums1);\n        tree[node] = tree[2 * node] + tree[2 * node + 1];\n    }\n\n    private void update(int node, int l, int r, int ql, int qr) {\n        if (ql <= l && r <= qr) {\n            tree[node] = (r - l + 1) - tree[node];\n            lazy[node] = !lazy[node];\n            return;\n        }\n        int mid = (l + r) / 2;\n        if (lazy[node]) {\n            lazy[node] = false;\n            tree[2 * node] = (mid - l + 1) - tree[2 * node];\n            lazy[2 * node] = !lazy[2 * node];\n            tree[2 * node + 1] = (r - mid) - tree[2 * node + 1];\n            lazy[2 * node + 1] = !lazy[2 * node + 1];\n        }\n        if (ql <= mid) update(2 * node, l, mid, ql, qr);\n        if (qr > mid) update(2 * node + 1, mid + 1, r, ql, qr);\n        tree[node] = tree[2 * node] + tree[2 * node + 1];\n    }\n\n    public long[] handleQuery(int[] nums1, int[] nums2, int[][] queries) {\n        int n = nums1.length;\n        tree = new int[4 * n];\n        lazy = new boolean[4 * n];\n        build(1, 0, n - 1, nums1);\n\n        long totalSum = 0;\n        for (int x : nums2) totalSum += x;\n\n        java.util.List<Long> ansList = new java.util.ArrayList<>();\n        for (int[] q : queries) {\n            if (q[0] == 1) {\n                update(1, 0, n - 1, q[1], q[2]);\n            } else if (q[0] == 2) {\n                totalSum += (long) tree[1] * q[1];\n            } else {\n                ansList.add(totalSum);\n            }\n        }\n        long[] ans = new long[ansList.size()];\n        for (int i = 0; i < ans.length; i++) ans[i] = ansList.get(i);\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Lazy Segment Tree with Global Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var handleQuery = function(nums1, nums2, queries) {\n    const n = nums1.length;\n    const tree = new Int32Array(4 * n);\n    const lazy = new Uint8Array(4 * n);\n\n    function build(node, l, r) {\n        if (l === r) {\n            tree[node] = nums1[l];\n            return;\n        }\n        const mid = (l + r) >> 1;\n        build(2 * node, l, mid);\n        build(2 * node + 1, mid + 1, r);\n        tree[node] = tree[2 * node] + tree[2 * node + 1];\n    }\n\n    function update(node, l, r, ql, qr) {\n        if (ql <= l && r <= qr) {\n            tree[node] = (r - l + 1) - tree[node];\n            lazy[node] = lazy[node] ? 0 : 1;\n            return;\n        }\n        const mid = (l + r) >> 1;\n        if (lazy[node]) {\n            lazy[node] = 0;\n            tree[2 * node] = (mid - l + 1) - tree[2 * node];\n            lazy[2 * node] = lazy[2 * node] ? 0 : 1;\n            tree[2 * node + 1] = (r - mid) - tree[2 * node + 1];\n            lazy[2 * node + 1] = lazy[2 * node + 1] ? 0 : 1;\n        }\n        if (ql <= mid) update(2 * node, l, mid, ql, qr);\n        if (qr > mid) update(2 * node + 1, mid + 1, r, ql, qr);\n        tree[node] = tree[2 * node] + tree[2 * node + 1];\n    }\n\n    build(1, 0, n - 1);\n    let totalSum = 0;\n    for (let i = 0; i < n; i++) totalSum += nums2[i];\n\n    const ans = [];\n    for (let i = 0; i < queries.length; i++) {\n        const q = queries[i];\n        if (q[0] === 1) {\n            update(1, 0, n - 1, q[1], q[2]);\n        } else if (q[0] === 2) {\n            totalSum += tree[1] * q[1];\n        } else {\n            ans.push(totalSum);\n        }\n    }\n    return ans;\n};"
+    }
+  ]
+}

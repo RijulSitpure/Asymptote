@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-number-of-integers-to-choose-from-a-range-ii",
+  "number": 2557,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monotonic Sum of Smallest Elements",
+      "text": "The sum of the smallest non-banned integers increases monotonically as the upper bound M increases."
+    },
+    {
+      "level": 2,
+      "title": "Analytical Prefix Sum Calculation",
+      "text": "The sum of all integers up to M is M * (M + 1) // 2. Subtract the prefix sum of banned integers less than or equal to M."
+    },
+    {
+      "level": 3,
+      "title": "Search for Maximum Upper Bound",
+      "text": "Binary search for the largest M in [1, n] whose net sum does not exceed maxSum, then count valid elements up to M."
+    },
+    {
+      "level": 4,
+      "title": "Binary Search on Upper Bound Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def maxCount(self, banned: list[int], n: int, maxSum: int) -> int:\n        banned = sorted(list(set(x for x in banned if x <= n)))\n        pref = [0] * (len(banned) + 1)\n        for i in range(len(banned)):\n            pref[i + 1] = pref[i] + banned[i]\n            \n        def check(M: int) -> bool:\n            idx = bisect.bisect_right(banned, M)\n            sum_total = M * (M + 1) // 2 - pref[idx]\n            return sum_total <= maxSum\n\n        lo, hi = 0, n\n        while lo < hi:\n            mid = (lo + hi + 1) // 2\n            if check(mid):\n                lo = mid\n            else:\n                hi = mid - 1\n        idx = bisect.bisect_right(banned, lo)\n        return lo - idx\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(B log B + log n * log B)",
+    "space": "O(B)",
+    "variables": [
+      "B: unique elements in banned",
+      "n: range upper bound up to 10^9"
+    ],
+    "notes": "Sorting banned elements followed by binary search on M using bisection queries.",
+    "whyNaiveFails": "Iterating through n = 10^9 takes several seconds and exceeds time limit.",
+    "spaceTimeTradeoff": "O(B) memory for banned prefix sums.",
+    "interviewerExpectation": "Applies binary search on answer with analytical arithmetic series and prefix banned deduction."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Binary Search on Monotonic Threshold with Banned Prefix Deductions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import bisect\n\nclass Solution:\n    def maxCount(self, banned: list[int], n: int, maxSum: int) -> int:\n        banned = sorted(list(set(x for x in banned if x <= n)))\n        pref = [0] * (len(banned) + 1)\n        for i in range(len(banned)):\n            pref[i + 1] = pref[i] + banned[i]\n            \n        def check(M: int) -> bool:\n            idx = bisect.bisect_right(banned, M)\n            sum_total = M * (M + 1) // 2 - pref[idx]\n            return sum_total <= maxSum\n\n        lo, hi = 0, n\n        while lo < hi:\n            mid = (lo + hi + 1) // 2\n            if check(mid):\n                lo = mid\n            else:\n                hi = mid - 1\n        idx = bisect.bisect_right(banned, lo)\n        return lo - idx"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Binary Search on Monotonic Threshold with Banned Prefix Deductions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int maxCount(std::vector<int>& banned, int n, long long maxSum) {\n        std::sort(banned.begin(), banned.end());\n        std::vector<long long> b;\n        for (int x : banned) {\n            if (x <= n && (b.empty() || b.back() != x)) b.push_back(x);\n        }\n        int m = b.size();\n        std::vector<long long> pref(m + 1, 0);\n        for (int i = 0; i < m; ++i) pref[i + 1] = pref[i] + b[i];\n        \n        auto check = [&](long long M) {\n            int idx = std::upper_bound(b.begin(), b.end(), M) - b.begin();\n            long long sum_total = M * (M + 1) / 2 - pref[idx];\n            return sum_total <= maxSum;\n        };\n        \n        long long lo = 0, hi = n;\n        while (lo < hi) {\n            long long mid = lo + (hi - lo + 1) / 2;\n            if (check(mid)) lo = mid;\n            else hi = mid - 1;\n        }\n        int idx = std::upper_bound(b.begin(), b.end(), lo) - b.begin();\n        return (int)(lo - idx);\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Binary Search on Monotonic Threshold with Banned Prefix Deductions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int maxCount(int[] banned, int n, long maxSum) {\n        java.util.Arrays.sort(banned);\n        java.util.List<Long> b = new java.util.ArrayList<>();\n        for (int x : banned) {\n            if (x <= n && (b.isEmpty() || b.get(b.size() - 1) != x)) {\n                b.add((long)x);\n            }\n        }\n        int m = b.size();\n        long[] pref = new long[m + 1];\n        for (int i = 0; i < m; i++) pref[i + 1] = pref[i] + b.get(i);\n        \n        long lo = 0, hi = n;\n        while (lo < hi) {\n            long mid = lo + (hi - lo + 1) / 2;\n            int idx = upperSearch(b, mid);\n            long sumTotal = mid * (mid + 1) / 2 - pref[idx];\n            if (sumTotal <= maxSum) lo = mid;\n            else hi = mid - 1;\n        }\n        int idx = upperSearch(b, lo);\n        return (int)(lo - idx);\n    }\n    private int upperSearch(java.util.List<Long> b, long target) {\n        int l = 0, r = b.size();\n        while (l < r) {\n            int mid = l + (r - l) / 2;\n            if (b.get(mid) <= target) l = mid + 1;\n            else r = mid;\n        }\n        return l;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Binary Search on Monotonic Threshold with Banned Prefix Deductions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var maxCount = function(banned, n, maxSum) {\n    const b = Array.from(new Set(banned.filter(x => x <= n))).sort((x, y) => x - y);\n    const m = b.length;\n    const pref = new Array(m + 1).fill(0n);\n    for (let i = 0; i < m; i++) pref[i + 1] = pref[i] + BigInt(b[i]);\n    \n    const upperSearch = (target) => {\n        let l = 0, r = m;\n        while (l < r) {\n            const mid = (l + r) >> 1;\n            if (BigInt(b[mid]) <= target) l = mid + 1;\n            else r = mid;\n        }\n        return l;\n    };\n    \n    const bMaxSum = BigInt(maxSum);\n    let lo = 0n, hi = BigInt(n);\n    while (lo < hi) {\n        const mid = (lo + hi + 1n) / 2n;\n        const idx = upperSearch(mid);\n        const sumTotal = mid * (mid + 1n) / 2n - pref[idx];\n        if (sumTotal <= bMaxSum) lo = mid;\n        else hi = mid - 1n;\n    }\n    const idx = upperSearch(lo);\n    return Number(lo - BigInt(idx));\n};"
+    }
+  ]
+}
