@@ -1,0 +1,79 @@
+{
+  "slug": "maximize-the-minimum-powered-city",
+  "number": 2528,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Initial City Power Calculation",
+      "text": "Precompute the initial power delivered to each city using a sliding window or prefix sum array."
+    },
+    {
+      "level": 2,
+      "title": "Monotonic Target Search",
+      "text": "If a target minimum power T is achievable using at most k additional stations, any target smaller than T is also achievable."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Difference Array Coverage",
+      "text": "When scanning city i whose power is below target, place needed stations at min(n - 1, i + r) to maximize forward reach."
+    },
+    {
+      "level": 4,
+      "title": "Binary Search and Difference Greedy Implementation",
+      "text": "```python\nclass Solution:\n    def maxPower(self, stations: list[int], r: int, k: int) -> int:\n        n = len(stations)\n        power = [0] * n\n        cur = sum(stations[:r + 1])\n        power[0] = cur\n        for i in range(1, n):\n            if i + r < n:\n                cur += stations[i + r]\n            if i - r - 1 >= 0:\n                cur -= stations[i - r - 1]\n            power[i] = cur\n            \n        def check(target):\n            diff = [0] * (n + 1)\n            add = 0\n            used = 0\n            for i in range(n):\n                add += diff[i]\n                cur_p = power[i] + add\n                if cur_p < target:\n                    need = target - cur_p\n                    used += need\n                    if used > k:\n                        return False\n                    add += need\n                    pos = min(n - 1, i + r)\n                    end = min(n, pos + r + 1)\n                    diff[end] -= need\n            return True\n\n        lo = min(power)\n        hi = lo + k\n        ans = lo\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if check(mid):\n                ans = mid\n                lo = mid + 1\n            else:\n                hi = mid - 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log(max_power))",
+    "space": "O(n)",
+    "variables": [
+      "n: number of cities",
+      "k: additional power stations"
+    ],
+    "notes": "Binary search on target power with O(n) difference array validation.",
+    "whyNaiveFails": "Simulating all combinations of station placements is combinatorial.",
+    "spaceTimeTradeoff": "O(n) auxiliary space stores city power and difference array.",
+    "interviewerExpectation": "Combines binary search on monotonic target answer with greedy difference array updates."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Binary Search on Power with Greedy Difference Array",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def maxPower(self, stations: list[int], r: int, k: int) -> int:\n        n = len(stations)\n        power = [0] * n\n        cur = sum(stations[:r + 1])\n        power[0] = cur\n        for i in range(1, n):\n            if i + r < n:\n                cur += stations[i + r]\n            if i - r - 1 >= 0:\n                cur -= stations[i - r - 1]\n            power[i] = cur\n            \n        def check(target):\n            diff = [0] * (n + 1)\n            add = 0\n            used = 0\n            for i in range(n):\n                add += diff[i]\n                cur_p = power[i] + add\n                if cur_p < target:\n                    need = target - cur_p\n                    used += need\n                    if used > k:\n                        return False\n                    add += need\n                    pos = min(n - 1, i + r)\n                    end = min(n, pos + r + 1)\n                    diff[end] -= need\n            return True\n\n        lo = min(power)\n        hi = lo + k\n        ans = lo\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if check(mid):\n                ans = mid\n                lo = mid + 1\n            else:\n                hi = mid - 1\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Binary Search on Power with Greedy Difference Array",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    long long maxPower(std::vector<int>& stations, int r, int k) {\n        int n = stations.size();\n        std::vector<long long> power(n, 0);\n        long long cur = 0;\n        int init_r = std::min(n - 1, r);\n        for (int i = 0; i <= init_r; ++i) cur += stations[i];\n        power[0] = cur;\n        for (int i = 1; i < n; ++i) {\n            if (i + r < n) cur += stations[i + r];\n            if (i - r - 1 >= 0) cur -= stations[i - r - 1];\n            power[i] = cur;\n        }\n        \n        auto check = [&](long long target) {\n            std::vector<long long> diff(n + 1, 0);\n            long long add = 0, used = 0;\n            for (int i = 0; i < n; ++i) {\n                add += diff[i];\n                long long cur_p = power[i] + add;\n                if (cur_p < target) {\n                    long long need = target - cur_p;\n                    used += need;\n                    if (used > k) return false;\n                    add += need;\n                    int pos = std::min(n - 1, i + r);\n                    int end = std::min(n, pos + r + 1);\n                    diff[end] -= need;\n                }\n            }\n            return true;\n        };\n        \n        long long lo = *std::min_element(power.begin(), power.end());\n        long long hi = lo + k;\n        long long ans = lo;\n        while (lo <= hi) {\n            long long mid = lo + (hi - lo) / 2;\n            if (check(mid)) {\n                ans = mid;\n                lo = mid + 1;\n            } else {\n                hi = mid - 1;\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Binary Search on Power with Greedy Difference Array",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public long maxPower(int[] stations, int r, int k) {\n        int n = stations.length;\n        long[] power = new long[n];\n        long cur = 0;\n        int initR = Math.min(n - 1, r);\n        for (int i = 0; i <= initR; i++) cur += stations[i];\n        power[0] = cur;\n        for (int i = 1; i < n; i++) {\n            if (i + r < n) cur += stations[i + r];\n            if (i - r - 1 >= 0) cur -= stations[i - r - 1];\n            power[i] = cur;\n        }\n        \n        long lo = power[0];\n        for (long p : power) lo = Math.min(lo, p);\n        long hi = lo + k;\n        long ans = lo;\n        while (lo <= hi) {\n            long mid = lo + (hi - lo) / 2;\n            if (check(mid, power, r, k, n)) {\n                ans = mid;\n                lo = mid + 1;\n            } else {\n                hi = mid - 1;\n            }\n        }\n        return ans;\n    }\n    private boolean check(long target, long[] power, int r, int k, int n) {\n        long[] diff = new long[n + 1];\n        long add = 0, used = 0;\n        for (int i = 0; i < n; i++) {\n            add += diff[i];\n            long curP = power[i] + add;\n            if (curP < target) {\n                long need = target - curP;\n                used += need;\n                if (used > k) return false;\n                add += need;\n                int pos = Math.min(n - 1, i + r);\n                int end = Math.min(n, pos + r + 1);\n                diff[end] -= need;\n            }\n        }\n        return true;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Binary Search on Power with Greedy Difference Array",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var maxPower = function(stations, r, k) {\n    const n = stations.length;\n    const power = new Array(n).fill(0n);\n    let cur = 0n;\n    const initR = Math.min(n - 1, r);\n    for (let i = 0; i <= initR; i++) cur += BigInt(stations[i]);\n    power[0] = cur;\n    for (let i = 1; i < n; i++) {\n        if (i + r < n) cur += BigInt(stations[i + r]);\n        if (i - r - 1 >= 0) cur -= BigInt(stations[i - r - 1]);\n        power[i] = cur;\n    }\n    \n    const check = (target) => {\n        const diff = new Array(n + 1).fill(0n);\n        let add = 0n, used = 0n;\n        const bk = BigInt(k);\n        for (let i = 0; i < n; i++) {\n            add += diff[i];\n            const curP = power[i] + add;\n            if (curP < target) {\n                const need = target - curP;\n                used += need;\n                if (used > bk) return false;\n                add += need;\n                const pos = Math.min(n - 1, i + r);\n                const end = Math.min(n, pos + r + 1);\n                diff[end] -= need;\n            }\n        }\n        return true;\n    };\n    \n    let lo = power[0];\n    for (const p of power) if (p < lo) lo = p;\n    let hi = lo + BigInt(k);\n    let ans = lo;\n    while (lo <= hi) {\n        const mid = (lo + hi) / 2n;\n        if (check(mid)) {\n            ans = mid;\n            lo = mid + 1n;\n        } else {\n            hi = mid - 1n;\n        }\n    }\n    return Number(ans);\n};"
+    }
+  ]
+}

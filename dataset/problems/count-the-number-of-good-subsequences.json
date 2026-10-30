@@ -1,0 +1,80 @@
+{
+  "slug": "count-the-number-of-good-subsequences",
+  "number": 2539,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subsequence Frequency Uniformity",
+      "text": "In a good subsequence, every distinct character appears with the exact same positive frequency f."
+    },
+    {
+      "level": 2,
+      "title": "Combinatorial Choices per Character",
+      "text": "For a character appearing C times total, if C >= f, we can either omit it or choose f of its occurrences in C choose f ways."
+    },
+    {
+      "level": 3,
+      "title": "Aggregating Over Target Frequencies",
+      "text": "For each possible frequency f from 1 to max_count, multiply (1 + C choose f) over all eligible characters and subtract 1 for the empty set."
+    },
+    {
+      "level": 4,
+      "title": "Combinatorial Good Subsequence Counting Implementation",
+      "text": "```python\nfrom collections import Counter\n\nclass Solution:\n    def countGoodSubsequences(self, s: str) -> int:\n        MOD = 10**9 + 7\n        counts = Counter(s)\n        max_c = max(counts.values())\n        \n        fact = [1] * (max_c + 1)\n        inv = [1] * (max_c + 1)\n        for i in range(1, max_c + 1):\n            fact[i] = (fact[i - 1] * i) % MOD\n        inv[max_c] = pow(fact[max_c], MOD - 2, MOD)\n        for i in range(max_c - 1, -1, -1):\n            inv[i] = (inv[i + 1] * (i + 1)) % MOD\n            \n        def nCr(n: int, r: int) -> int:\n            if r < 0 or r > n:\n                return 0\n            return (fact[n] * inv[r] % MOD) * inv[n - r] % MOD\n\n        ans = 0\n        for f in range(1, max_c + 1):\n            ways = 1\n            for c in counts.values():\n                if c >= f:\n                    ways = (ways * (1 + nCr(c, f))) % MOD\n            ans = (ans + ways - 1 + MOD) % MOD\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N + Sigma * max_c)",
+    "space": "O(max_c)",
+    "variables": [
+      "N: length of string s",
+      "Sigma: alphabet size 26",
+      "max_c: maximum character frequency"
+    ],
+    "notes": "Factorial table precomputation followed by evaluating 26 character choices across max_c frequencies.",
+    "whyNaiveFails": "Examining all 2^N subsequences directly causes exponential blowup.",
+    "spaceTimeTradeoff": "O(max_c) memory stores factorials and modular inverse lookup tables.",
+    "interviewerExpectation": "Groups subsequences by uniform character frequency f and applies combinations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Uniform Frequency Grouping and Combinations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "from collections import Counter\n\nclass Solution:\n    def countGoodSubsequences(self, s: str) -> int:\n        MOD = 10**9 + 7\n        counts = Counter(s)\n        max_c = max(counts.values())\n        \n        fact = [1] * (max_c + 1)\n        inv = [1] * (max_c + 1)\n        for i in range(1, max_c + 1):\n            fact[i] = (fact[i - 1] * i) % MOD\n        inv[max_c] = pow(fact[max_c], MOD - 2, MOD)\n        for i in range(max_c - 1, -1, -1):\n            inv[i] = (inv[i + 1] * (i + 1)) % MOD\n            \n        def nCr(n: int, r: int) -> int:\n            if r < 0 or r > n:\n                return 0\n            return (fact[n] * inv[r] % MOD) * inv[n - r] % MOD\n\n        ans = 0\n        for f in range(1, max_c + 1):\n            ways = 1\n            for c in counts.values():\n                if c >= f:\n                    ways = (ways * (1 + nCr(c, f))) % MOD\n            ans = (ans + ways - 1 + MOD) % MOD\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Uniform Frequency Grouping and Combinations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int countGoodSubsequences(std::string s) {\n        long long MOD = 1e9 + 7;\n        std::vector<int> counts(26, 0);\n        for (char ch : s) counts[ch - 'a']++;\n        int max_c = *std::max_element(counts.begin(), counts.end());\n        \n        std::vector<long long> fact(max_c + 1, 1), inv(max_c + 1, 1);\n        auto modpow = [&](long long base, long long exp) {\n            long long res = 1;\n            base %= MOD;\n            while (exp > 0) {\n                if (exp % 2 == 1) res = (res * base) % MOD;\n                base = (base * base) % MOD;\n                exp /= 2;\n            }\n            return res;\n        };\n        for (int i = 1; i <= max_c; ++i) fact[i] = (fact[i - 1] * i) % MOD;\n        inv[max_c] = modpow(fact[max_c], MOD - 2);\n        for (int i = max_c - 1; i >= 0; --i) inv[i] = (inv[i + 1] * (i + 1)) % MOD;\n        \n        auto nCr = [&](int n, int r) -> long long {\n            if (r < 0 || r > n) return 0;\n            return fact[n] * inv[r] % MOD * inv[n - r] % MOD;\n        };\n        \n        long long ans = 0;\n        for (int f = 1; f <= max_c; ++f) {\n            long long ways = 1;\n            for (int c : counts) {\n                if (c >= f) ways = (ways * (1 + nCr(c, f))) % MOD;\n            }\n            ans = (ans + ways - 1 + MOD) % MOD;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Uniform Frequency Grouping and Combinations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private long MOD = 1_000_000_007L;\n    public int countGoodSubsequences(String s) {\n        int[] counts = new int[26];\n        for (int i = 0; i < s.length(); i++) counts[s.charAt(i) - 'a']++;\n        int maxC = 0;\n        for (int c : counts) maxC = Math.max(maxC, c);\n        \n        long[] fact = new long[maxC + 1];\n        long[] inv = new long[maxC + 1];\n        fact[0] = 1;\n        for (int i = 1; i <= maxC; i++) fact[i] = (fact[i - 1] * i) % MOD;\n        inv[maxC] = modPow(fact[maxC], MOD - 2);\n        for (int i = maxC - 1; i >= 0; i--) inv[i] = (inv[i + 1] * (i + 1)) % MOD;\n        \n        long ans = 0;\n        for (int f = 1; f <= maxC; f++) {\n            long ways = 1;\n            for (int c : counts) {\n                if (c >= f) {\n                    long comb = fact[c] * inv[f] % MOD * inv[c - f] % MOD;\n                    ways = (ways * (1 + comb)) % MOD;\n                }\n            }\n            ans = (ans + ways - 1 + MOD) % MOD;\n        }\n        return (int)ans;\n    }\n    private long modPow(long base, long exp) {\n        long res = 1;\n        base %= MOD;\n        while (exp > 0) {\n            if ((exp & 1) == 1) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp >>= 1;\n        }\n        return res;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Uniform Frequency Grouping and Combinations",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var countGoodSubsequences = function(s) {\n    const MOD = 1000000007n;\n    const counts = new Array(26).fill(0);\n    for (let i = 0; i < s.length; i++) counts[s.charCodeAt(i) - 97]++;\n    let maxC = 0;\n    for (const c of counts) if (c > maxC) maxC = c;\n    \n    const fact = new Array(maxC + 1);\n    fact[0] = 1n;\n    for (let i = 1; i <= maxC; i++) fact[i] = (fact[i - 1] * BigInt(i)) % MOD;\n    \n    const modPow = (base, exp) => {\n        let res = 1n;\n        base %= MOD;\n        while (exp > 0n) {\n            if (exp % 2n === 1n) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp /= 2n;\n        }\n        return res;\n    };\n    \n    const inv = new Array(maxC + 1);\n    inv[maxC] = modPow(fact[maxC], MOD - 2n);\n    for (let i = maxC - 1; i >= 0; i--) inv[i] = (inv[i + 1] * BigInt(i + 1)) % MOD;\n    \n    const nCr = (n, r) => {\n        if (r < 0 || r > n) return 0n;\n        return (fact[n] * inv[r] % MOD) * inv[n - r] % MOD;\n    };\n    \n    let ans = 0n;\n    for (let f = 1; f <= maxC; f++) {\n        let ways = 1n;\n        for (const c of counts) {\n            if (c >= f) ways = (ways * (1n + nCr(c, f))) % MOD;\n        }\n        ans = (ans + ways - 1n + MOD) % MOD;\n    }\n    return Number(ans);\n};"
+    }
+  ]
+}

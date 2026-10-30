@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-frequency-score-of-a-subarray",
+  "number": 2524,
+  "category": "Algorithms",
+  "patterns": [
+    "two-pointers-window-dynamic"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sliding Window of Fixed Size",
+      "text": "Every candidate subarray has exactly length k, making a fixed-size sliding window suitable."
+    },
+    {
+      "level": 2,
+      "title": "Frequency Contribution Delta",
+      "text": "When the frequency of an element increases from c to c + 1, subtract x^c and add x^(c + 1) to the running score modulo 10^9 + 7."
+    },
+    {
+      "level": 3,
+      "title": "Sliding Window Element Eviction",
+      "text": "When an element exits the window, adjust its power contribution similarly and update the maximum frequency score."
+    },
+    {
+      "level": 4,
+      "title": "Sliding Window Power Contribution Implementation",
+      "text": "```python\nfrom collections import Counter\n\nclass Solution:\n    def maxFrequencyScore(self, nums: list[int], k: int) -> int:\n        MOD = 10**9 + 7\n        counts = Counter()\n        cur_score = 0\n        \n        def add_val(x):\n            nonlocal cur_score\n            c = counts[x]\n            if c > 0:\n                cur_score = (cur_score - pow(x, c, MOD) + MOD) % MOD\n            counts[x] += 1\n            cur_score = (cur_score + pow(x, c + 1, MOD)) % MOD\n            \n        def remove_val(x):\n            nonlocal cur_score\n            c = counts[x]\n            cur_score = (cur_score - pow(x, c, MOD) + MOD) % MOD\n            counts[x] -= 1\n            if counts[x] > 0:\n                cur_score = (cur_score + pow(x, c - 1, MOD)) % MOD\n                \n        for i in range(k):\n            add_val(nums[i])\n        ans = cur_score\n        for i in range(k, len(nums)):\n            add_val(nums[i])\n            remove_val(nums[i - k])\n            ans = max(ans, cur_score)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log(max_c))",
+    "space": "O(k)",
+    "variables": [
+      "n: length of nums",
+      "k: window size",
+      "max_c: maximum element frequency bounded by k"
+    ],
+    "notes": "Fixed window updates modular powers in logarithmic exponentiation time.",
+    "whyNaiveFails": "Recomputing powers from scratch for each window position takes O(n * k * log k).",
+    "spaceTimeTradeoff": "O(k) memory stores window frequency counts.",
+    "interviewerExpectation": "Maintains incremental delta updates to the running modular sum as elements slide."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Sliding Window Incremental Power Delta Updates",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "from collections import Counter\n\nclass Solution:\n    def maxFrequencyScore(self, nums: list[int], k: int) -> int:\n        MOD = 10**9 + 7\n        counts = Counter()\n        cur_score = 0\n        \n        def add_val(x):\n            nonlocal cur_score\n            c = counts[x]\n            if c > 0:\n                cur_score = (cur_score - pow(x, c, MOD) + MOD) % MOD\n            counts[x] += 1\n            cur_score = (cur_score + pow(x, c + 1, MOD)) % MOD\n            \n        def remove_val(x):\n            nonlocal cur_score\n            c = counts[x]\n            cur_score = (cur_score - pow(x, c, MOD) + MOD) % MOD\n            counts[x] -= 1\n            if counts[x] > 0:\n                cur_score = (cur_score + pow(x, c - 1, MOD)) % MOD\n                \n        for i in range(k):\n            add_val(nums[i])\n        ans = cur_score\n        for i in range(k, len(nums)):\n            add_val(nums[i])\n            remove_val(nums[i - k])\n            ans = max(ans, cur_score)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Sliding Window Incremental Power Delta Updates",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int maxFrequencyScore(std::vector<int>& nums, int k) {\n        long long MOD = 1e9 + 7;\n        auto modpow = [&](long long base, long long exp) {\n            long long res = 1;\n            base %= MOD;\n            while (exp > 0) {\n                if (exp % 2 == 1) res = (res * base) % MOD;\n                base = (base * base) % MOD;\n                exp /= 2;\n            }\n            return res;\n        };\n        \n        std::unordered_map<int, int> counts;\n        long long cur_score = 0;\n        \n        auto add_val = [&](int x) {\n            int c = counts[x];\n            if (c > 0) cur_score = (cur_score - modpow(x, c) + MOD) % MOD;\n            counts[x]++;\n            cur_score = (cur_score + modpow(x, c + 1)) % MOD;\n        };\n        \n        auto remove_val = [&](int x) {\n            int c = counts[x];\n            cur_score = (cur_score - modpow(x, c) + MOD) % MOD;\n            counts[x]--;\n            if (counts[x] > 0) cur_score = (cur_score + modpow(x, c - 1)) % MOD;\n        };\n        \n        for (int i = 0; i < k; ++i) add_val(nums[i]);\n        long long ans = cur_score;\n        for (size_t i = k; i < nums.size(); ++i) {\n            add_val(nums[i]);\n            remove_val(nums[i - k]);\n            ans = std::max(ans, cur_score);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Sliding Window Incremental Power Delta Updates",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private long MOD = 1_000_000_007L;\n    public int maxFrequencyScore(int[] nums, int k) {\n        java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();\n        long curScore = 0;\n        for (int i = 0; i < k; i++) {\n            int x = nums[i];\n            int c = counts.getOrDefault(x, 0);\n            if (c > 0) curScore = (curScore - modPow(x, c) + MOD) % MOD;\n            counts.put(x, c + 1);\n            curScore = (curScore + modPow(x, c + 1)) % MOD;\n        }\n        long ans = curScore;\n        for (int i = k; i < nums.length; i++) {\n            int inVal = nums[i];\n            int inC = counts.getOrDefault(inVal, 0);\n            if (inC > 0) curScore = (curScore - modPow(inVal, inC) + MOD) % MOD;\n            counts.put(inVal, inC + 1);\n            curScore = (curScore + modPow(inVal, inC + 1)) % MOD;\n            \n            int outVal = nums[i - k];\n            int outC = counts.get(outVal);\n            curScore = (curScore - modPow(outVal, outC) + MOD) % MOD;\n            if (outC == 1) {\n                counts.remove(outVal);\n            } else {\n                counts.put(outVal, outC - 1);\n                curScore = (curScore + modPow(outVal, outC - 1)) % MOD;\n            }\n            ans = Math.max(ans, curScore);\n        }\n        return (int)ans;\n    }\n    private long modPow(long base, long exp) {\n        long res = 1;\n        base %= MOD;\n        while (exp > 0) {\n            if ((exp & 1) == 1) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp >>= 1;\n        }\n        return res;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Sliding Window Incremental Power Delta Updates",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var maxFrequencyScore = function(nums, k) {\n    const MOD = 1000000007n;\n    const modPow = (base, exp) => {\n        let res = 1n;\n        base = BigInt(base) % MOD;\n        exp = BigInt(exp);\n        while (exp > 0n) {\n            if (exp % 2n === 1n) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp /= 2n;\n        }\n        return res;\n    };\n    \n    const counts = new Map();\n    let curScore = 0n;\n    \n    const addVal = (x) => {\n        const c = counts.get(x) || 0;\n        if (c > 0) curScore = (curScore - modPow(x, c) + MOD) % MOD;\n        counts.set(x, c + 1);\n        curScore = (curScore + modPow(x, c + 1)) % MOD;\n    };\n    \n    const removeVal = (x) => {\n        const c = counts.get(x);\n        curScore = (curScore - modPow(x, c) + MOD) % MOD;\n        if (c === 1) counts.delete(x);\n        else {\n            counts.set(x, c - 1);\n            curScore = (curScore + modPow(x, c - 1)) % MOD;\n        }\n    };\n    \n    for (let i = 0; i < k; i++) addVal(nums[i]);\n    let ans = curScore;\n    for (let i = k; i < nums.length; i++) {\n        addVal(nums[i]);\n        removeVal(nums[i - k]);\n        if (curScore > ans) ans = curScore;\n    }\n    return Number(ans);\n};"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "time-to-cross-a-bridge",
+  "number": 2532,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bridge Priority Hierarchy",
+      "text": "Right-side workers always take precedence over left-side workers when the bridge becomes free."
+    },
+    {
+      "level": 2,
+      "title": "Worker Efficiency Comparison",
+      "text": "Workers with greater crossing sum leftToRight + rightToLeft have higher priority, breaking ties with larger worker index."
+    },
+    {
+      "level": 3,
+      "title": "Four Priority State Queues",
+      "text": "Maintain separate state pools: waiting left, working left, waiting right, and working right, advancing time event-by-event."
+    },
+    {
+      "level": 4,
+      "title": "Bridge Simulation Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def findCrossingTime(self, n: int, k: int, time: list[list[int]]) -> int:\n        left_wait = []\n        right_wait = []\n        left_work = []\n        right_work = []\n        \n        for i in range(k):\n            p = time[i][0] + time[i][2]\n            heapq.heappush(left_wait, (-p, -i))\n            \n        cur_time = 0\n        rem_boxes = n\n        \n        while rem_boxes > 0 or right_wait or right_work:\n            while left_work and left_work[0][0] <= cur_time:\n                t, neg_p, neg_i = heapq.heappop(left_work)\n                heapq.heappush(left_wait, (neg_p, neg_i))\n                \n            while right_work and right_work[0][0] <= cur_time:\n                t, neg_p, neg_i = heapq.heappop(right_work)\n                heapq.heappush(right_wait, (neg_p, neg_i))\n                \n            if right_wait:\n                neg_p, neg_i = heapq.heappop(right_wait)\n                i = -neg_i\n                cur_time += time[i][2]\n                heapq.heappush(left_work, (cur_time + time[i][3], neg_p, neg_i))\n            elif rem_boxes > 0 and left_wait:\n                neg_p, neg_i = heapq.heappop(left_wait)\n                i = -neg_i\n                cur_time += time[i][0]\n                rem_boxes -= 1\n                heapq.heappush(right_work, (cur_time + time[i][1], neg_p, neg_i))\n            else:\n                next_t = float('inf')\n                if left_work: next_t = min(next_t, left_work[0][0])\n                if right_work: next_t = min(next_t, right_work[0][0])\n                cur_time = next_t\n                \n        return cur_time\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((n + k) log k)",
+    "space": "O(k)",
+    "variables": [
+      "n: number of boxes",
+      "k: number of workers"
+    ],
+    "notes": "Event-driven simulation advancing time across at most 2 * n bridge crossing events.",
+    "whyNaiveFails": "Second-by-second increment wastes time when workers are busy working for long periods.",
+    "spaceTimeTradeoff": "O(k) memory for four priority queues.",
+    "interviewerExpectation": "Models bridge concurrency with 4 priority queues and skips idle time to the earliest completion event."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Event-Driven Four Priority Queue Simulation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import heapq\n\nclass Solution:\n    def findCrossingTime(self, n: int, k: int, time: list[list[int]]) -> int:\n        left_wait = []\n        right_wait = []\n        left_work = []\n        right_work = []\n        \n        for i in range(k):\n            p = time[i][0] + time[i][2]\n            heapq.heappush(left_wait, (-p, -i))\n            \n        cur_time = 0\n        rem_boxes = n\n        \n        while rem_boxes > 0 or right_wait or right_work:\n            while left_work and left_work[0][0] <= cur_time:\n                t, neg_p, neg_i = heapq.heappop(left_work)\n                heapq.heappush(left_wait, (neg_p, neg_i))\n                \n            while right_work and right_work[0][0] <= cur_time:\n                t, neg_p, neg_i = heapq.heappop(right_work)\n                heapq.heappush(right_wait, (neg_p, neg_i))\n                \n            if right_wait:\n                neg_p, neg_i = heapq.heappop(right_wait)\n                i = -neg_i\n                cur_time += time[i][2]\n                heapq.heappush(left_work, (cur_time + time[i][3], neg_p, neg_i))\n            elif rem_boxes > 0 and left_wait:\n                neg_p, neg_i = heapq.heappop(left_wait)\n                i = -neg_i\n                cur_time += time[i][0]\n                rem_boxes -= 1\n                heapq.heappush(right_work, (cur_time + time[i][1], neg_p, neg_i))\n            else:\n                next_t = float('inf')\n                if left_work: next_t = min(next_t, left_work[0][0])\n                if right_work: next_t = min(next_t, right_work[0][0])\n                cur_time = next_t\n                \n        return cur_time"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Event-Driven Four Priority Queue Simulation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int findCrossingTime(int n, int k, std::vector<std::vector<int>>& time) {\n        auto comp_wait = [](const std::pair<int, int>& a, const std::pair<int, int>& b) {\n            if (a.first != b.first) return a.first < b.first;\n            return a.second < b.second;\n        };\n        std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, decltype(comp_wait)> left_wait(comp_wait), right_wait(comp_wait);\n        \n        auto comp_work = [](const std::vector<int>& a, const std::vector<int>& b) {\n            return a[0] > b[0];\n        };\n        std::priority_queue<std::vector<int>, std::vector<std::vector<int>>, decltype(comp_work)> left_work(comp_work), right_work(comp_work);\n        \n        for (int i = 0; i < k; ++i) {\n            int p = time[i][0] + time[i][2];\n            left_wait.push({p, i});\n        }\n        \n        int cur_time = 0;\n        int rem_boxes = n;\n        \n        while (rem_boxes > 0 || !right_wait.empty() || !right_work.empty()) {\n            while (!left_work.empty() && left_work.top()[0] <= cur_time) {\n                auto w = left_work.top(); left_work.pop();\n                left_wait.push({w[1], w[2]});\n            }\n            while (!right_work.empty() && right_work.top()[0] <= cur_time) {\n                auto w = right_work.top(); right_work.pop();\n                right_wait.push({w[1], w[2]});\n            }\n            \n            if (!right_wait.empty()) {\n                auto w = right_wait.top(); right_wait.pop();\n                int i = w.second;\n                cur_time += time[i][2];\n                left_work.push({cur_time + time[i][3], w.first, i});\n            } else if (rem_boxes > 0 && !left_wait.empty()) {\n                auto w = left_wait.top(); left_wait.pop();\n                int i = w.second;\n                cur_time += time[i][0];\n                rem_boxes--;\n                right_work.push({cur_time + time[i][1], w.first, i});\n            } else {\n                int next_t = 2e9;\n                if (!left_work.empty()) next_t = std::min(next_t, left_work.top()[0]);\n                if (!right_work.empty()) next_t = std::min(next_t, right_work.top()[0]);\n                cur_time = next_t;\n            }\n        }\n        return cur_time;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Event-Driven Four Priority Queue Simulation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int findCrossingTime(int n, int k, int[][] time) {\n        java.util.PriorityQueue<int[]> leftWait = new java.util.PriorityQueue<>((a, b) -> a[0] != b[0] ? Integer.compare(b[0], a[0]) : Integer.compare(b[1], a[1]));\n        java.util.PriorityQueue<int[]> rightWait = new java.util.PriorityQueue<>((a, b) -> a[0] != b[0] ? Integer.compare(b[0], a[0]) : Integer.compare(b[1], a[1]));\n        java.util.PriorityQueue<int[]> leftWork = new java.util.PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        java.util.PriorityQueue<int[]> rightWork = new java.util.PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        \n        for (int i = 0; i < k; i++) {\n            int p = time[i][0] + time[i][2];\n            leftWait.offer(new int[]{p, i});\n        }\n        \n        int curTime = 0;\n        int remBoxes = n;\n        \n        while (remBoxes > 0 || !rightWait.isEmpty() || !rightWork.isEmpty()) {\n            while (!leftWork.isEmpty() && leftWork.peek()[0] <= curTime) {\n                int[] w = leftWork.poll();\n                leftWait.offer(new int[]{w[1], w[2]});\n            }\n            while (!rightWork.isEmpty() && rightWork.peek()[0] <= curTime) {\n                int[] w = rightWork.poll();\n                rightWait.offer(new int[]{w[1], w[2]});\n            }\n            \n            if (!rightWait.isEmpty()) {\n                int[] w = rightWait.poll();\n                int i = w[1];\n                curTime += time[i][2];\n                leftWork.offer(new int[]{curTime + time[i][3], w[0], i});\n            } else if (remBoxes > 0 && !leftWait.isEmpty()) {\n                int[] w = leftWait.poll();\n                int i = w[1];\n                curTime += time[i][0];\n                remBoxes--;\n                rightWork.offer(new int[]{curTime + time[i][1], w[0], i});\n            } else {\n                int nextT = Integer.MAX_VALUE;\n                if (!leftWork.isEmpty()) nextT = Math.min(nextT, leftWork.peek()[0]);\n                if (!rightWork.isEmpty()) nextT = Math.min(nextT, rightWork.peek()[0]);\n                curTime = nextT;\n            }\n        }\n        return curTime;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Event-Driven Four Priority Queue Simulation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var findCrossingTime = function(n, k, time) {\n    class Heap {\n        constructor(comparator) {\n            this.data = [];\n            this.comp = comparator;\n        }\n        push(val) {\n            this.data.push(val);\n            this.up(this.data.length - 1);\n        }\n        pop() {\n            const top = this.data[0];\n            const bottom = this.data.pop();\n            if (this.data.length > 0) {\n                this.data[0] = bottom;\n                this.down(0);\n            }\n            return top;\n        }\n        peek() { return this.data[0]; }\n        size() { return this.data.length; }\n        up(i) {\n            while (i > 0) {\n                const p = (i - 1) >> 1;\n                if (this.comp(this.data[i], this.data[p]) < 0) {\n                    [this.data[i], this.data[p]] = [this.data[p], this.data[i]];\n                    i = p;\n                } else break;\n            }\n        }\n        down(i) {\n            const len = this.data.length;\n            while ((i << 1) + 1 < len) {\n                let left = (i << 1) + 1, right = left + 1, best = i;\n                if (left < len && this.comp(this.data[left], this.data[best]) < 0) best = left;\n                if (right < len && this.comp(this.data[right], this.data[best]) < 0) best = right;\n                if (best !== i) {\n                    [this.data[i], this.data[best]] = [this.data[best], this.data[i]];\n                    i = best;\n                } else break;\n            }\n        }\n    }\n    \n    const compWait = (a, b) => a[0] !== b[0] ? b[0] - a[0] : b[1] - a[1];\n    const compWork = (a, b) => a[0] - b[0];\n    \n    const leftWait = new Heap(compWait);\n    const rightWait = new Heap(compWait);\n    const leftWork = new Heap(compWork);\n    const rightWork = new Heap(compWork);\n    \n    for (let i = 0; i < k; i++) {\n        const p = time[i][0] + time[i][2];\n        leftWait.push([p, i]);\n    }\n    \n    let curTime = 0;\n    let remBoxes = n;\n    \n    while (remBoxes > 0 || rightWait.size() > 0 || rightWork.size() > 0) {\n        while (leftWork.size() > 0 && leftWork.peek()[0] <= curTime) {\n            const w = leftWork.pop();\n            leftWait.push([w[1], w[2]]);\n        }\n        while (rightWork.size() > 0 && rightWork.peek()[0] <= curTime) {\n            const w = rightWork.pop();\n            rightWait.push([w[1], w[2]]);\n        }\n        \n        if (rightWait.size() > 0) {\n            const w = rightWait.pop();\n            const i = w[1];\n            curTime += time[i][2];\n            leftWork.push([curTime + time[i][3], w[0], i]);\n        } else if (remBoxes > 0 && leftWait.size() > 0) {\n            const w = leftWait.pop();\n            const i = w[1];\n            curTime += time[i][0];\n            remBoxes--;\n            rightWork.push([curTime + time[i][1], w[0], i]);\n        } else {\n            let nextT = Infinity;\n            if (leftWork.size() > 0) nextT = Math.min(nextT, leftWork.peek()[0]);\n            if (rightWork.size() > 0) nextT = Math.min(nextT, rightWork.peek()[0]);\n            curTime = nextT;\n        }\n    }\n    return curTime;\n};"
+    }
+  ]
+}
