@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-reverse-operations",
+  "number": 2612,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Reverse Destination Range",
+      "text": "Reversing any subarray of length k covering index i moves index i to 2 * l + k - 1 - i for valid start positions l."
+    },
+    {
+      "level": 2,
+      "title": "Parity Invariance",
+      "text": "Every reachable position in one step has the exact same parity: (i + k - 1) % 2."
+    },
+    {
+      "level": 3,
+      "title": "Skipping Visited Nodes with Disjoint Sets",
+      "text": "Maintain unvisited positions using two disjoint set structures (even and odd). Once a position is queued, union it with pos + 2 to skip revisited indices in O(1)."
+    },
+    {
+      "level": 4,
+      "title": "DSU-Accelerated Range BFS Implementation",
+      "text": "```python\nclass Solution:\n    def minReverseOperations(self, n: int, p: int, banned: list[int], k: int) -> list[int]:\n        from collections import deque\n        ans = [-1] * n\n        parent = list(range(n + 2))\n        def find(i):\n            path = []\n            while parent[i] != i:\n                path.append(i)\n                i = parent[i]\n            for node in path:\n                parent[node] = i\n            return i\n        for b in banned:\n            parent[b] = find(b + 2)\n        parent[p] = find(p + 2)\n        ans[p] = 0\n        q = deque([p])\n        while q:\n            u = q.popleft()\n            min_l = max(0, u - k + 1)\n            max_l = min(n - k, u)\n            left = 2 * min_l + k - 1 - u\n            right = 2 * max_l + k - 1 - u\n            curr = find(left)\n            while curr <= right:\n                ans[curr] = ans[u] + 1\n                q.append(curr)\n                parent[curr] = find(curr + 2)\n                curr = find(curr)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * alpha(n))",
+    "space": "O(n)",
+    "variables": [
+      "n: size of the array",
+      "k: reversal length"
+    ],
+    "notes": "Each node is visited and unioned at most once via DSU parity jumping.",
+    "whyNaiveFails": "Visiting all neighbors directly takes O(n * k) which TLEs for n = 10^5.",
+    "spaceTimeTradeoff": "O(n) DSU parent arrays and answer vector.",
+    "interviewerExpectation": "Recognizes interval reach and parity constraints, skipping visited elements in O(1)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "DSU Range Step BFS",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def minReverseOperations(self, n: int, p: int, banned: list[int], k: int) -> list[int]:\n        from collections import deque\n        ans = [-1] * n\n        parent = list(range(n + 2))\n        def find(i):\n            path = []\n            while parent[i] != i:\n                path.append(i)\n                i = parent[i]\n            for node in path:\n                parent[node] = i\n            return i\n        for b in banned:\n            parent[b] = find(b + 2)\n        parent[p] = find(p + 2)\n        ans[p] = 0\n        q = deque([p])\n        while q:\n            u = q.popleft()\n            min_l = max(0, u - k + 1)\n            max_l = min(n - k, u)\n            left = 2 * min_l + k - 1 - u\n            right = 2 * max_l + k - 1 - u\n            curr = find(left)\n            while curr <= right:\n                ans[curr] = ans[u] + 1\n                q.append(curr)\n                parent[curr] = find(curr + 2)\n                curr = find(curr)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "DSU Range Step BFS",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    std::vector<int> minReverseOperations(int n, int p, std::vector<int>& banned, int k) {\n        std::vector<int> ans(n, -1);\n        std::vector<int> parent(n + 2);\n        for (int i = 0; i < n + 2; ++i) parent[i] = i;\n        auto find = [&](auto& self, int i) -> int {\n            return parent[i] == i ? i : (parent[i] = self(self, parent[i]));\n        };\n        for (int b : banned) parent[b] = find(find, b + 2);\n        parent[p] = find(find, p + 2);\n        ans[p] = 0;\n        std::queue<int> q;\n        q.push(p);\n        while (!q.empty()) {\n            int u = q.front();\n            q.pop();\n            int min_l = std::max(0, u - k + 1);\n            int max_l = std::min(n - k, u);\n            int left = 2 * min_l + k - 1 - u;\n            int right = 2 * max_l + k - 1 - u;\n            int curr = find(find, left);\n            while (curr <= right) {\n                ans[curr] = ans[u] + 1;\n                q.push(curr);\n                parent[curr] = find(find, curr + 2);\n                curr = find(find, curr);\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "DSU Range Step BFS",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    private int[] parent;\n    private int find(int i) {\n        if (parent[i] == i) return i;\n        return parent[i] = find(parent[i]);\n    }\n    public int[] minReverseOperations(int n, int p, int[] banned, int k) {\n        int[] ans = new int[n];\n        java.util.Arrays.fill(ans, -1);\n        parent = new int[n + 2];\n        for (int i = 0; i < n + 2; i++) parent[i] = i;\n        for (int b : banned) parent[b] = find(b + 2);\n        parent[p] = find(p + 2);\n        ans[p] = 0;\n        java.util.Queue<Integer> q = new java.util.LinkedList<>();\n        q.offer(p);\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            int minL = Math.max(0, u - k + 1);\n            int maxL = Math.min(n - k, u);\n            int left = 2 * minL + k - 1 - u;\n            int right = 2 * maxL + k - 1 - u;\n            int curr = find(left);\n            while (curr <= right) {\n                ans[curr] = ans[u] + 1;\n                q.offer(curr);\n                parent[curr] = find(curr + 2);\n                curr = find(curr);\n            }\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "DSU Range Step BFS",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var minReverseOperations = function(n, p, banned, k) {\n    const ans = new Int32Array(n).fill(-1);\n    const parent = new Int32Array(n + 2);\n    for (let i = 0; i < n + 2; i++) parent[i] = i;\n    function find(i) {\n        if (parent[i] === i) return i;\n        return parent[i] = find(parent[i]);\n    }\n    for (const b of banned) parent[b] = find(b + 2);\n    parent[p] = find(p + 2);\n    ans[p] = 0;\n    const q = [p];\n    let head = 0;\n    while (head < q.length) {\n        const u = q[head++];\n        const minL = Math.max(0, u - k + 1);\n        const maxL = Math.min(n - k, u);\n        const left = 2 * minL + k - 1 - u;\n        const right = 2 * maxL + k - 1 - u;\n        let curr = find(left);\n        while (curr <= right) {\n            ans[curr] = ans[u] + 1;\n            q.push(curr);\n            parent[curr] = find(curr + 2);\n            curr = find(curr);\n        }\n    }\n    return Array.from(ans);\n};"
+    }
+  ]
+}

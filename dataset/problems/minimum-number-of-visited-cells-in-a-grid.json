@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-number-of-visited-cells-in-a-grid",
+  "number": 2617,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Grid Jump Transitions",
+      "text": "From cell (i, j), you can transition to any (i, k) for j < k <= j + grid[i][j], or any (k, j) for i < k <= i + grid[i][j]."
+    },
+    {
+      "level": 2,
+      "title": "Per-Row and Per-Column Envelopes",
+      "text": "Maintain min-heaps for each row and each column recording (dist, max_reach) of previously reached cells."
+    },
+    {
+      "level": 3,
+      "title": "Stale Reach Pruning",
+      "text": "When visiting (i, j), discard entries from row i's heap whose reach is less than j, and from column j's heap whose reach is less than i."
+    },
+    {
+      "level": 4,
+      "title": "Row-Column Heap DP Implementation",
+      "text": "```python\nclass Solution:\n    def minimumVisitedCells(self, grid: list[list[int]]) -> int:\n        import heapq\n        m, n = len(grid), len(grid[0])\n        if m == 1 and n == 1:\n            return 1\n        row_heaps = [[] for _ in range(m)]\n        col_heaps = [[] for _ in range(n)]\n        dist = [[float('inf')] * n for _ in range(m)]\n        dist[0][0] = 1\n        heapq.heappush(row_heaps[0], (1, grid[0][0]))\n        heapq.heappush(col_heaps[0], (1, grid[0][0]))\n        for i in range(m):\n            for j in range(n):\n                if i == 0 and j == 0:\n                    continue\n                while row_heaps[i] and row_heaps[i][0][1] < j:\n                    heapq.heappop(row_heaps[i])\n                while col_heaps[j] and col_heaps[j][0][1] < i:\n                    heapq.heappop(col_heaps[j])\n                d = float('inf')\n                if row_heaps[i]:\n                    d = min(d, row_heaps[i][0][0] + 1)\n                if col_heaps[j]:\n                    d = min(d, col_heaps[j][0][0] + 1)\n                if d != float('inf'):\n                    dist[i][j] = d\n                    if grid[i][j] > 0:\n                        heapq.heappush(row_heaps[i], (d, j + grid[i][j]))\n                        heapq.heappush(col_heaps[j], (d, i + grid[i][j]))\n        return dist[m - 1][n - 1] if dist[m - 1][n - 1] != float('inf') else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n * (log m + log n))",
+    "space": "O(m * n)",
+    "variables": [
+      "m: rows in grid",
+      "n: columns in grid"
+    ],
+    "notes": "Each cell is pushed and popped at most once per row and column heap.",
+    "whyNaiveFails": "Iterating through all jump steps takes O(m * n * (m + n)).",
+    "spaceTimeTradeoff": "O(m * n) heap and distance storage.",
+    "interviewerExpectation": "Maintains minimal distances per row/column using priority queues or segment trees."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Row and Column Priority Queue DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def minimumVisitedCells(self, grid: list[list[int]]) -> int:\n        import heapq\n        m, n = len(grid), len(grid[0])\n        if m == 1 and n == 1:\n            return 1\n        row_heaps = [[] for _ in range(m)]\n        col_heaps = [[] for _ in range(n)]\n        dist = [[float('inf')] * n for _ in range(m)]\n        dist[0][0] = 1\n        heapq.heappush(row_heaps[0], (1, grid[0][0]))\n        heapq.heappush(col_heaps[0], (1, grid[0][0]))\n        for i in range(m):\n            for j in range(n):\n                if i == 0 and j == 0:\n                    continue\n                while row_heaps[i] and row_heaps[i][0][1] < j:\n                    heapq.heappop(row_heaps[i])\n                while col_heaps[j] and col_heaps[j][0][1] < i:\n                    heapq.heappop(col_heaps[j])\n                d = float('inf')\n                if row_heaps[i]:\n                    d = min(d, row_heaps[i][0][0] + 1)\n                if col_heaps[j]:\n                    d = min(d, col_heaps[j][0][0] + 1)\n                if d != float('inf'):\n                    dist[i][j] = d\n                    if grid[i][j] > 0:\n                        heapq.heappush(row_heaps[i], (d, j + grid[i][j]))\n                        heapq.heappush(col_heaps[j], (d, i + grid[i][j]))\n        return dist[m - 1][n - 1] if dist[m - 1][n - 1] != float('inf') else -1"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Row and Column Priority Queue DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int minimumVisitedCells(std::vector<std::vector<int>>& grid) {\n        int m = grid.size(), n = grid[0].size();\n        if (m == 1 && n == 1) return 1;\n        using P = std::pair<int, int>;\n        std::vector<std::priority_queue<P, std::vector<P>, std::greater<P>>> row_heaps(m);\n        std::vector<std::priority_queue<P, std::vector<P>, std::greater<P>>> col_heaps(n);\n        row_heaps[0].push({1, grid[0][0]});\n        col_heaps[0].push({1, grid[0][0]});\n        int ans = -1;\n        for (int i = 0; i < m; ++i) {\n            for (int j = 0; j < n; ++j) {\n                if (i == 0 && j == 0) continue;\n                while (!row_heaps[i].empty() && row_heaps[i].top().second < j) {\n                    row_heaps[i].pop();\n                }\n                while (!col_heaps[j].empty() && col_heaps[j].top().second < i) {\n                    col_heaps[j].pop();\n                }\n                int d = INT_MAX;\n                if (!row_heaps[i].empty()) d = std::min(d, row_heaps[i].top().first + 1);\n                if (!col_heaps[j].empty()) d = std::min(d, col_heaps[j].top().first + 1);\n                if (i == m - 1 && j == n - 1 && d != INT_MAX) return d;\n                if (d != INT_MAX && grid[i][j] > 0) {\n                    row_heaps[i].push({d, j + grid[i][j]});\n                    col_heaps[j].push({d, i + grid[i][j]});\n                }\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Row and Column Priority Queue DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int minimumVisitedCells(int[][] grid) {\n        int m = grid.length, n = grid[0].length;\n        if (m == 1 && n == 1) return 1;\n        java.util.PriorityQueue<int[]>[] rowHeaps = new java.util.PriorityQueue[m];\n        java.util.PriorityQueue<int[]>[] colHeaps = new java.util.PriorityQueue[n];\n        for (int i = 0; i < m; i++) rowHeaps[i] = new java.util.PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        for (int j = 0; j < n; j++) colHeaps[j] = new java.util.PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        rowHeaps[0].offer(new int[]{1, grid[0][0]});\n        colHeaps[0].offer(new int[]{1, grid[0][0]});\n        for (int i = 0; i < m; i++) {\n            for (int j = 0; j < n; j++) {\n                if (i == 0 && j == 0) continue;\n                while (!rowHeaps[i].isEmpty() && rowHeaps[i].peek()[1] < j) rowHeaps[i].poll();\n                while (!colHeaps[j].isEmpty() && colHeaps[j].peek()[1] < i) colHeaps[j].poll();\n                int d = Integer.MAX_VALUE;\n                if (!rowHeaps[i].isEmpty()) d = Math.min(d, rowHeaps[i].peek()[0] + 1);\n                if (!colHeaps[j].isEmpty()) d = Math.min(d, colHeaps[j].peek()[0] + 1);\n                if (i == m - 1 && j == n - 1 && d != Integer.MAX_VALUE) return d;\n                if (d != Integer.MAX_VALUE && grid[i][j] > 0) {\n                    rowHeaps[i].offer(new int[]{d, j + grid[i][j]});\n                    colHeaps[j].offer(new int[]{d, i + grid[i][j]});\n                }\n            }\n        }\n        return -1;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Row and Column Priority Queue DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var minimumVisitedCells = function(grid) {\n    const m = grid.length, n = grid[0].length;\n    if (m === 1 && n === 1) return 1;\n    // Simple min heap for pair [dist, max_reach]\n    function createHeap() {\n        const h = [];\n        return {\n            push: (val) => {\n                h.push(val);\n                let idx = h.length - 1;\n                while (idx > 0) {\n                    let p = (idx - 1) >> 1;\n                    if (h[p][0] > h[idx][0]) {\n                        let tmp = h[p]; h[p] = h[idx]; h[idx] = tmp;\n                        idx = p;\n                    } else break;\n                }\n            },\n            pop: () => {\n                const top = h[0];\n                const end = h.pop();\n                if (h.length > 0) {\n                    h[0] = end;\n                    let idx = 0;\n                    while ((idx << 1) + 1 < h.length) {\n                        let left = (idx << 1) + 1, right = left + 1;\n                        let best = (right < h.length && h[right][0] < h[left][0]) ? right : left;\n                        if (h[best][0] < h[idx][0]) {\n                            let tmp = h[best]; h[best] = h[idx]; h[idx] = tmp;\n                            idx = best;\n                        } else break;\n                    }\n                }\n                return top;\n            },\n            peek: () => h[0],\n            size: () => h.length\n        };\n    }\n    const rowHeaps = Array.from({ length: m }, createHeap);\n    const colHeaps = Array.from({ length: n }, createHeap);\n    rowHeaps[0].push([1, grid[0][0]]);\n    colHeaps[0].push([1, grid[0][0]]);\n    for (let i = 0; i < m; i++) {\n        for (let j = 0; j < n; j++) {\n            if (i === 0 && j === 0) continue;\n            while (rowHeaps[i].size() > 0 && rowHeaps[i].peek()[1] < j) rowHeaps[i].pop();\n            while (colHeaps[j].size() > 0 && colHeaps[j].peek()[1] < i) colHeaps[j].pop();\n            let d = Infinity;\n            if (rowHeaps[i].size() > 0) d = Math.min(d, rowHeaps[i].peek()[0] + 1);\n            if (colHeaps[j].size() > 0) d = Math.min(d, colHeaps[j].peek()[0] + 1);\n            if (i === m - 1 && j === n - 1 && d !== Infinity) return d;\n            if (d !== Infinity && grid[i][j] > 0) {\n                rowHeaps[i].push([d, j + grid[i][j]]);\n                colHeaps[j].push([d, i + grid[i][j]]);\n            }\n        }\n    }\n    return -1;\n};"
+    }
+  ]
+}
