@@ -1,0 +1,78 @@
+{
+  "slug": "count-subarrays-with-more-ones-than-zeros",
+  "number": 2031,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Balance Transformation",
+      "text": "Replace zero with negative one. A subarray has more ones than zeros if its prefix sum difference is strictly positive."
+    },
+    {
+      "level": 2,
+      "title": "Inversion Counting Formulation",
+      "text": "We need to count pairs of indices j less than i such that prefix sum at j is strictly less than prefix sum at i."
+    },
+    {
+      "level": 3,
+      "title": "Offset Binary Indexed Tree",
+      "text": "Because prefix sums range from minus N to plus N, shift prefix sums by N plus one and query smaller prefix frequencies using a Fenwick tree."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def subarraysWithMoreZerosThanOnes(self, nums: list[int]) -> int:\n        mod = 10**9 + 7\n        n = len(nums)\n        offset = n + 1\n        tree = [0] * (2 * n + 5)\n        \n        def query(idx: int) -> int:\n            s = 0\n            while idx > 0:\n                s += tree[idx]\n                idx -= idx & (-idx)\n            return s\n            \n        def update(idx: int, val: int) -> None:\n            while idx < len(tree):\n                tree[idx] += val\n                idx += idx & (-idx)\n                \n        update(offset, 1)\n        curr_pref = 0\n        ans = 0\n        for x in nums:\n            curr_pref += (1 if x == 1 else -1)\n            ans = (ans + query(curr_pref + offset - 1)) % mod\n            update(curr_pref + offset, 1)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N) using a Fenwick tree over shifted prefix range of size 2N",
+    "space": "O(N) for Binary Indexed Tree storage",
+    "variables": [
+      "N: number of elements in nums"
+    ],
+    "notes": "BIT operations take logarithmic time per array element.",
+    "whyNaiveFails": "Pairwise double loop yields quadratic running time.",
+    "spaceTimeTradeoff": "Binary indexed tree counts strictly smaller prefix sums in O(log N).",
+    "interviewerExpectation": "Candidate should convert 0/1 subarray balance into prefix inversion counting via Fenwick tree."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def subarraysWithMoreZerosThanOnes(self, nums: list[int]) -> int:\n        mod = 10**9 + 7\n        n = len(nums)\n        offset = n + 1\n        tree = [0] * (2 * n + 5)\n        \n        def query(idx: int) -> int:\n            s = 0\n            while idx > 0:\n                s += tree[idx]\n                idx -= idx & (-idx)\n            return s\n            \n        def update(idx: int, val: int) -> None:\n            while idx < len(tree):\n                tree[idx] += val\n                idx += idx & (-idx)\n                \n        update(offset, 1)\n        curr_pref = 0\n        ans = 0\n        for x in nums:\n            curr_pref += (1 if x == 1 else -1)\n            ans = (ans + query(curr_pref + offset - 1)) % mod\n            update(curr_pref + offset, 1)\n        return ans",
+      "approach": "Shifted Fenwick tree inversion counting in Python",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int subarraysWithMoreZerosThanOnes(vector<int>& nums) {\n        long long mod = 1000000007;\n        int n = nums.size();\n        int offset = n + 1;\n        vector<int> tree(2 * n + 5, 0);\n\n        auto query = [&](int idx) -> int {\n            int s = 0;\n            while (idx > 0) {\n                s = (s + tree[idx]) % mod;\n                idx -= idx & (-idx);\n            }\n            return s;\n        };\n\n        auto update = [&](int idx, int val) {\n            while (idx < (int)tree.size()) {\n                tree[idx] = (tree[idx] + val) % mod;\n                idx += idx & (-idx);\n            }\n        };\n\n        update(offset, 1);\n        int curr_pref = 0;\n        long long ans = 0;\n        for (int x : nums) {\n            curr_pref += (x == 1 ? 1 : -1);\n            ans = (ans + query(curr_pref + offset - 1)) % mod;\n            update(curr_pref + offset, 1);\n        }\n        return ans;\n    }\n};",
+      "approach": "Binary indexed tree with offset coordinate range in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int subarraysWithMoreZerosThanOnes(int[] nums) {\n        long mod = 1000000007L;\n        int n = nums.length;\n        int offset = n + 1;\n        long[] tree = new long[2 * n + 5];\n\n        java.util.function.IntFunction<Long> query = (idx) -> {\n            long s = 0;\n            while (idx > 0) {\n                s = (s + tree[idx]) % mod;\n                idx -= idx & (-idx);\n            }\n            return s;\n        };\n\n        java.util.function.BiConsumer<Integer, Long> update = (idx, val) -> {\n            while (idx < tree.length) {\n                tree[idx] = (tree[idx] + val) % mod;\n                idx += idx & (-idx);\n            }\n        };\n\n        update.accept(offset, 1L);\n        int currPref = 0;\n        long ans = 0;\n        for (int x : nums) {\n            currPref += (x == 1 ? 1 : -1);\n            ans = (ans + query.apply(currPref + offset - 1)) % mod;\n            update.accept(currPref + offset, 1L);\n        }\n        return (int)ans;\n    }\n}",
+      "approach": "Fenwick tree with offset coordinate range in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var subarraysWithMoreZerosThanOnes = function(nums) {\n  const mod = 1000000007;\n  const n = nums.length;\n  const offset = n + 1;\n  const tree = new Array(2 * n + 5).fill(0);\n\n  function query(idx) {\n    let s = 0;\n    while (idx > 0) {\n      s = (s + tree[idx]) % mod;\n      idx -= idx & (-idx);\n    }\n    return s;\n  }\n\n  function update(idx, val) {\n    while (idx < tree.length) {\n      tree[idx] = (tree[idx] + val) % mod;\n      idx += idx & (-idx);\n    }\n  }\n\n  update(offset, 1);\n  let currPref = 0;\n  let ans = 0;\n  for (const x of nums) {\n    currPref += x === 1 ? 1 : -1;\n    ans = (ans + query(currPref + offset - 1)) % mod;\n    update(currPref + offset, 1);\n  }\n  return ans;\n};",
+      "approach": "Fenwick tree prefix sum counting in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

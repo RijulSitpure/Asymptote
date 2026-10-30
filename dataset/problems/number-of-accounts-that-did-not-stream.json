@@ -1,0 +1,73 @@
+{
+  "slug": "number-of-accounts-that-did-not-stream",
+  "number": 2020,
+  "category": "Database",
+  "patterns": [
+    "anti-join"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Active Subscriptions in 2021",
+      "text": "Identify all accounts whose subscriptions overlapped the calendar year twenty twenty-one."
+    },
+    {
+      "level": 2,
+      "title": "Subquery for Active Streamers",
+      "text": "Extract distinct account identifiers that initiated any stream session during twenty twenty-one."
+    },
+    {
+      "level": 3,
+      "title": "Anti-Join Filtering",
+      "text": "Exclude active streamer accounts from active subscriber accounts using anti-join or subquery exclusion."
+    },
+    {
+      "level": 4,
+      "title": "Complete Query",
+      "text": "```mysql\nSELECT\n    COUNT(DISTINCT s.account_id) AS accounts_count\nFROM Subscriptions s\nWHERE (s.start_date <= '2021-12-31' AND s.end_date >= '2021-01-01')\n  AND s.account_id NOT IN (\n      SELECT account_id\n      FROM Streams\n      WHERE stream_date >= '2021-01-01' AND stream_date <= '2021-12-31'\n  );\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(S + T) where S is subscriptions and T is streams count",
+    "space": "O(U) for unique streamer account set",
+    "variables": [
+      "S: subscriptions count",
+      "T: streams count",
+      "U: unique streaming accounts"
+    ],
+    "notes": "Filters 2021 subscription window and excludes accounts present in 2021 streams.",
+    "whyNaiveFails": "Checking year on start_date alone ignores subscriptions that started in 2020 and carried into 2021.",
+    "spaceTimeTradeoff": "Hash anti-join via NOT IN subquery gives linear scan performance.",
+    "interviewerExpectation": "Candidate should carefully handle date overlap conditions and null handling in NOT IN."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT\n    COUNT(DISTINCT s.account_id) AS accounts_count\nFROM Subscriptions s\nWHERE (s.start_date <= '2021-12-31' AND s.end_date >= '2021-01-01')\n  AND s.account_id NOT IN (\n      SELECT account_id\n      FROM Streams\n      WHERE stream_date >= '2021-01-01' AND stream_date <= '2021-12-31'\n  );",
+      "approach": "Subquery anti-join filtering in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT\n    COUNT(DISTINCT s.account_id) AS accounts_count\nFROM Subscriptions s\nWHERE (s.start_date <= '2021-12-31' AND s.end_date >= '2021-01-01')\n  AND s.account_id NOT IN (\n      SELECT account_id\n      FROM Streams\n      WHERE stream_date >= '2021-01-01' AND stream_date <= '2021-12-31'\n  );",
+      "approach": "Subquery anti-join filtering in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_target_accounts(subscriptions: pd.DataFrame, streams: pd.DataFrame) -> pd.DataFrame:\n    sub_2021 = subscriptions[(subscriptions['start_date'] <= '2021-12-31') & (subscriptions['end_date'] >= '2021-01-01')]\n    stream_2021 = streams[(streams['stream_date'] >= '2021-01-01') & (streams['stream_date'] <= '2021-12-31')]\n    streamers = set(stream_2021['account_id'].dropna().unique())\n    non_streamers = sub_2021[~sub_2021['account_id'].isin(streamers)]\n    cnt = non_streamers['account_id'].nunique()\n    return pd.DataFrame({'accounts_count': [cnt]})",
+      "approach": "Pandas date filtering and set difference",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

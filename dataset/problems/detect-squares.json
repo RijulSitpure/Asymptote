@@ -1,0 +1,78 @@
+{
+  "slug": "detect-squares",
+  "number": 2013,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Coordinate Frequency Tracking",
+      "text": "Store coordinates in a frequency table mapping each coordinate pair to its insertion count."
+    },
+    {
+      "level": 2,
+      "title": "Diagonal Partner Search",
+      "text": "For a query point (qx, qy), iterate over all stored points (x, y) that form a valid non-degenerate square diagonal."
+    },
+    {
+      "level": 3,
+      "title": "Side Length and Corner Multiplicity",
+      "text": "A valid square requires absolute differences in x and y to be non-zero and equal. Multiply corner counts (qx, y) and (x, qy)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass DetectSquares:\n    def __init__(self):\n        self.points = defaultdict(int)\n\n    def add(self, point: list[int]) -> None:\n        self.points[(point[0], point[1])] += 1\n\n    def count(self, point: list[int]) -> int:\n        qx, qy = point\n        ans = 0\n        for (x, y), cnt in self.points.items():\n            if abs(qx - x) == abs(qy - y) and abs(qx - x) > 0:\n                ans += cnt * self.points[(qx, y)] * self.points[(x, qy)]\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(1) for add and O(P) for count where P is the number of distinct inserted points",
+    "space": "O(P) storing point frequencies",
+    "variables": [
+      "P: number of unique stored points"
+    ],
+    "notes": "Checking diagonal corners via hash table lookups is O(1) per distinct point.",
+    "whyNaiveFails": "Scanning all inserted points instead of distinct points repeats work for duplicate coordinates.",
+    "spaceTimeTradeoff": "Hash table lookup replaces quadratic corner search with linear diagonal verification.",
+    "interviewerExpectation": "Candidate should recognize axis-aligned square geometry from diagonal points and multiply frequencies."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass DetectSquares:\n    def __init__(self):\n        self.points = defaultdict(int)\n\n    def add(self, point: list[int]) -> None:\n        self.points[(point[0], point[1])] += 1\n\n    def count(self, point: list[int]) -> int:\n        qx, qy = point\n        ans = 0\n        for (x, y), cnt in self.points.items():\n            if abs(qx - x) == abs(qy - y) and abs(qx - x) > 0:\n                ans += cnt * self.points[(qx, y)] * self.points[(x, qy)]\n        return ans",
+      "approach": "Point frequency map and diagonal search in Python",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class DetectSquares {\n    map<pair<int, int>, int> points;\npublic:\n    DetectSquares() {}\n\n    void add(vector<int> point) {\n        points[{point[0], point[1]}]++;\n    }\n\n    int count(vector<int> point) {\n        int qx = point[0], qy = point[1];\n        int ans = 0;\n        for (const auto& [p, cnt] : points) {\n            int x = p.first, y = p.second;\n            if (abs(qx - x) == abs(qy - y) && abs(qx - x) > 0) {\n                if (points.count({qx, y}) && points.count({x, qy})) {\n                    ans += cnt * points[{qx, y}] * points[{x, qy}];\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "Map coordinate counting with diagonal verification in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class DetectSquares {\n    private Map<String, Integer> points;\n    public DetectSquares() {\n        points = new HashMap<>();\n    }\n    public void add(int[] point) {\n        String key = point[0] + \",\" + point[1];\n        points.put(key, points.getOrDefault(key, 0) + 1);\n    }\n    public int count(int[] point) {\n        int qx = point[0], qy = point[1];\n        int ans = 0;\n        for (Map.Entry<String, Integer> entry : points.entrySet()) {\n            String[] parts = entry.getKey().split(\",\");\n            int x = Integer.parseInt(parts[0]);\n            int y = Integer.parseInt(parts[1]);\n            int cnt = entry.getValue();\n            if (Math.abs(qx - x) == Math.abs(qy - y) && Math.abs(qx - x) > 0) {\n                int c1 = points.getOrDefault(qx + \",\" + y, 0);\n                int c2 = points.getOrDefault(x + \",\" + qy, 0);\n                ans += cnt * c1 * c2;\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "Coordinate hash map with diagonal corner multiplication in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var DetectSquares = function() {\n  this.points = new Map();\n};\n\nDetectSquares.prototype.add = function(point) {\n  const key = `${point[0]},${point[1]}`;\n  this.points.set(key, (this.points.get(key) || 0) + 1);\n};\n\nDetectSquares.prototype.count = function(point) {\n  const [qx, qy] = point;\n  let ans = 0;\n  for (const [key, cnt] of this.points.entries()) {\n    const [x, y] = key.split(',').map(Number);\n    if (Math.abs(qx - x) === Math.abs(qy - y) && Math.abs(qx - x) > 0) {\n      const c1 = this.points.get(`${qx},${y}`) || 0;\n      const c2 = this.points.get(`${x},${qy}`) || 0;\n      ans += cnt * c1 * c2;\n    }\n  }\n  return ans;\n};",
+      "approach": "Map data structure with string-keyed coordinates in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

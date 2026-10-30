@@ -450,7 +450,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
       asymptote_user_problems: {
         '1': { is_solved: 1, title: 'Two Sum' },
         '15': { is_solved: 1, title: '3Sum' },
-        '2001': { is_solved: 1, title: 'Number of Pairs of Interchangeable Rectangles' }
+        '2033': { is_solved: 1, title: 'Minimum Operations to Make a Uni-Value Grid' }
       }
     });
 
@@ -478,13 +478,13 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(threeSum.pattern_id).toBe('two-pointers-opposite');
     expect(threeSum.pattern_title).toBe('Opposite Ends Two Pointers');
 
-    // Number of Pairs of Interchangeable Rectangles (#2001) - uncurated catalog problem keyed by numeric string "2001"
-    const rectPairs = solved.find(p => p.number === 2001);
-    expect(rectPairs).toBeDefined();
-    expect(rectPairs.slug).toBe('number-of-pairs-of-interchangeable-rectangles');
-    expect(rectPairs.verified).toBe(0);
-    expect(rectPairs.pattern_id).toBe('math-number-theory');
-    expect(rectPairs.pattern_title).toBe('Number Theory, GCD & Fast Exponentiation');
+    // Minimum Operations to Make a Uni-Value Grid (#2033) - uncurated catalog problem keyed by numeric string "2033"
+    const uniVal = solved.find(p => p.number === 2033);
+    expect(uniVal).toBeDefined();
+    expect(uniVal.slug).toBe('minimum-operations-to-make-a-uni-value-grid');
+    expect(uniVal.verified).toBe(0);
+    expect(uniVal.pattern_id).toBe('math-number-theory');
+    expect(uniVal.pattern_title).toBe('Number Theory, GCD & Fast Exponentiation');
 
     // Verify stats calculation includes solved problems properly
     const stats = await testEngine.getStats();

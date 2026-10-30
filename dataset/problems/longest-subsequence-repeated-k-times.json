@@ -1,0 +1,79 @@
+{
+  "slug": "longest-subsequence-repeated-k-times",
+  "number": 2014,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bfs-level-order"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Short Answer Bound",
+      "text": "Because string length is bounded and repeated k times, maximum answer length cannot exceed seven."
+    },
+    {
+      "level": 2,
+      "title": "Frequency Pruning",
+      "text": "Only characters with frequency at least k can ever appear in the target subsequence. Sort them in descending alphabetical order."
+    },
+    {
+      "level": 3,
+      "title": "Breadth-First Generation",
+      "text": "Perform breadth-first search from empty string, extending valid candidates by adding each candidate character and verifying subsequence validity."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import Counter, deque\n\nclass Solution:\n    def longestSubsequenceRepeatedK(self, s: str, k: int) -> str:\n        freq = Counter(s)\n        valid_chars = sorted([c for c, cnt in freq.items() if cnt >= k], reverse=True)\n        \n        def is_subseq(sub: str) -> bool:\n            it = iter(s)\n            target = sub * k\n            return all(c in it for c in target)\n            \n        q = deque([\"\"])\n        ans = \"\"\n        while q:\n            curr = q.popleft()\n            for c in valid_chars:\n                nxt = curr + c\n                if is_subseq(nxt):\n                    if len(nxt) > len(ans) or (len(nxt) == len(ans) and nxt > ans):\n                        ans = nxt\n                    q.append(nxt)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(|s| * sum(|valid|^L)) where L is at most 7",
+    "space": "O(queue width) to store candidate strings",
+    "variables": [
+      "|s|: length of string s",
+      "k: repetition threshold"
+    ],
+    "notes": "Subsequence verification takes linear scan over s.",
+    "whyNaiveFails": "Trying all subsequences of s directly is exponentially intractable.",
+    "spaceTimeTradeoff": "Building candidates from short to long with BFS prunes branches as soon as they fail subsequence check.",
+    "interviewerExpectation": "Candidate should realize answer length <= 7 and prune search tree via BFS."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import Counter, deque\n\nclass Solution:\n    def longestSubsequenceRepeatedK(self, s: str, k: int) -> str:\n        freq = Counter(s)\n        valid_chars = sorted([c for c, cnt in freq.items() if cnt >= k], reverse=True)\n        \n        def is_subseq(sub: str) -> bool:\n            it = iter(s)\n            target = sub * k\n            return all(c in it for c in target)\n            \n        q = deque([\"\"])\n        ans = \"\"\n        while q:\n            curr = q.popleft()\n            for c in valid_chars:\n                nxt = curr + c\n                if is_subseq(nxt):\n                    if len(nxt) > len(ans) or (len(nxt) == len(ans) and nxt > ans):\n                        ans = nxt\n                    q.append(nxt)\n        return ans",
+      "approach": "Breadth-first search candidate search in Python",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    bool isSubseq(const string& sub, int k, const string& s) {\n        int targetLen = sub.size() * k;\n        int i = 0, j = 0;\n        int sLen = s.size();\n        while (i < targetLen && j < sLen) {\n            if (sub[i % sub.size()] == s[j]) {\n                i++;\n            }\n            j++;\n        }\n        return i == targetLen;\n    }\npublic:\n    string longestSubsequenceRepeatedK(string s, int k) {\n        vector<int> freq(26, 0);\n        for (char c : s) freq[c - 'a']++;\n        string valid = \"\";\n        for (int i = 25; i >= 0; --i) {\n            if (freq[i] >= k) valid += (char)('a' + i);\n        }\n        queue<string> q;\n        q.push(\"\");\n        string ans = \"\";\n        while (!q.empty()) {\n            string curr = q.front();\n            q.pop();\n            for (char c : valid) {\n                string nxt = curr + c;\n                if (isSubseq(nxt, k, s)) {\n                    if (nxt.size() > ans.size() || (nxt.size() == ans.size() && nxt > ans)) {\n                        ans = nxt;\n                    }\n                    q.push(nxt);\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "BFS candidate tree expansion in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private boolean isSubseq(String sub, int k, String s) {\n        int targetLen = sub.length() * k;\n        int i = 0, j = 0;\n        int sLen = s.length();\n        while (i < targetLen && j < sLen) {\n            if (sub.charAt(i % sub.length()) == s.charAt(j)) {\n                i++;\n            }\n            j++;\n        }\n        return i == targetLen;\n    }\n    public String longestSubsequenceRepeatedK(String s, int k) {\n        int[] freq = new int[26];\n        for (char c : s.toCharArray()) freq[c - 'a']++;\n        List<Character> valid = new ArrayList<>();\n        for (int i = 25; i >= 0; i--) {\n            if (freq[i] >= k) valid.add((char)('a' + i));\n        }\n        Queue<String> q = new LinkedList<>();\n        q.offer(\"\");\n        String ans = \"\";\n        while (!q.isEmpty()) {\n            String curr = q.poll();\n            for (char c : valid) {\n                String nxt = curr + c;\n                if (isSubseq(nxt, k, s)) {\n                    if (nxt.length() > ans.length() || (nxt.length() == ans.length() && nxt.compareTo(ans) > 0)) {\n                        ans = nxt;\n                    }\n                    q.offer(nxt);\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "BFS queue candidate generation in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var longestSubsequenceRepeatedK = function(s, k) {\n  const freq = {};\n  for (const c of s) freq[c] = (freq[c] || 0) + 1;\n  const valid = Object.keys(freq).filter(c => freq[c] >= k).sort().reverse();\n\n  function isSubseq(sub) {\n    let i = 0;\n    const targetLen = sub.length * k;\n    for (let j = 0; j < s.length && i < targetLen; j++) {\n      if (s[j] === sub[i % sub.length]) i++;\n    }\n    return i === targetLen;\n  }\n\n  const q = [''];\n  let ans = '';\n  while (q.length > 0) {\n    const curr = q.shift();\n    for (const c of valid) {\n      const nxt = curr + c;\n      if (isSubseq(nxt)) {\n        if (nxt.length > ans.length || (nxt.length === ans.length && nxt > ans)) {\n          ans = nxt;\n        }\n        q.push(nxt);\n      }\n    }\n  }\n  return ans;\n};",
+      "approach": "Queue-based candidate string expansion in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "slug": "the-number-of-seniors-and-juniors-to-join-the-company",
+  "number": 2004,
+  "category": "Database",
+  "patterns": [
+    "running-total"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Cumulative Salary Budgeting",
+      "text": "Candidates must be hired by ordering candidates within each experience tier by lowest salary first."
+    },
+    {
+      "level": 2,
+      "title": "Window Running Total",
+      "text": "Compute a running total of salary for seniors ordered by salary and employee identifier."
+    },
+    {
+      "level": 3,
+      "title": "Deduct Senior Expenditure",
+      "text": "Filter seniors whose cumulative sum is under seventy thousand, determine the remaining budget, and filter juniors similarly."
+    },
+    {
+      "level": 4,
+      "title": "Complete Query",
+      "text": "```mysql\nWITH RankedCandidates AS (\n    SELECT\n        employee_id,\n        experience,\n        salary,\n        SUM(salary) OVER(PARTITION BY experience ORDER BY salary, employee_id) AS running_salary\n    FROM Candidates\n),\nSeniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Senior' AND running_salary <= 70000\n),\nJuniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Junior'\n      AND running_salary <= (70000 - COALESCE((SELECT MAX(running_salary) FROM Seniors), 0))\n)\nSELECT 'Senior' AS experience, COUNT(*) AS accepted_candidates FROM Seniors\nUNION ALL\nSELECT 'Junior' AS experience, COUNT(*) AS accepted_candidates FROM Juniors;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) sorting candidates by salary for cumulative sum",
+    "space": "O(N) for ranked candidate window partition",
+    "variables": [
+      "N: number of candidates"
+    ],
+    "notes": "Window running total computes exact candidate hiring tiers.",
+    "whyNaiveFails": "Hiring seniors greedily without running total requires quadratic subqueries.",
+    "spaceTimeTradeoff": "Window aggregation sorts rows once per partition.",
+    "interviewerExpectation": "Candidate should partition by experience, compute running salary, and handle empty senior pool gracefully."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RankedCandidates AS (\n    SELECT\n        employee_id,\n        experience,\n        salary,\n        SUM(salary) OVER(PARTITION BY experience ORDER BY salary, employee_id) AS running_salary\n    FROM Candidates\n),\nSeniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Senior' AND running_salary <= 70000\n),\nJuniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Junior'\n      AND running_salary <= (70000 - COALESCE((SELECT MAX(running_salary) FROM Seniors), 0))\n)\nSELECT 'Senior' AS experience, COUNT(*) AS accepted_candidates FROM Seniors\nUNION ALL\nSELECT 'Junior' AS experience, COUNT(*) AS accepted_candidates FROM Juniors;",
+      "approach": "Window cumulative sum with common table expressions in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RankedCandidates AS (\n    SELECT\n        employee_id,\n        experience,\n        salary,\n        SUM(salary) OVER(PARTITION BY experience ORDER BY salary, employee_id) AS running_salary\n    FROM Candidates\n),\nSeniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Senior' AND running_salary <= 70000\n),\nJuniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Junior'\n      AND running_salary <= (70000 - COALESCE((SELECT MAX(running_salary) FROM Seniors), 0))\n)\nSELECT 'Senior' AS experience, COUNT(*) AS accepted_candidates FROM Seniors\nUNION ALL\nSELECT 'Junior' AS experience, COUNT(*) AS accepted_candidates FROM Juniors;",
+      "approach": "Window cumulative sum with common table expressions in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef count_candidates(candidates: pd.DataFrame) -> pd.DataFrame:\n    seniors = candidates[candidates['experience'] == 'Senior'].sort_values(by=['salary', 'employee_id'])\n    seniors['running'] = seniors['salary'].cumsum()\n    accepted_seniors = seniors[seniors['running'] <= 70000]\n    spent = accepted_seniors['running'].max() if not accepted_seniors.empty else 0\n    \n    juniors = candidates[candidates['experience'] == 'Junior'].sort_values(by=['salary', 'employee_id'])\n    juniors['running'] = juniors['salary'].cumsum()\n    accepted_juniors = juniors[juniors['running'] <= (70000 - spent)]\n    \n    return pd.DataFrame({\n        'experience': ['Senior', 'Junior'],\n        'accepted_candidates': [len(accepted_seniors), len(accepted_juniors)]\n    })",
+      "approach": "Pandas cumsum and greedy filtering",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

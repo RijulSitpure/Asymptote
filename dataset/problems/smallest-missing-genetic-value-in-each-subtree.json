@@ -1,0 +1,78 @@
+{
+  "slug": "smallest-missing-genetic-value-in-each-subtree",
+  "number": 2003,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Value One Invariant",
+      "text": "The smallest missing positive integer is one unless the number one is present in that node subtree."
+    },
+    {
+      "level": 2,
+      "title": "Restricted Path of Interest",
+      "text": "Only nodes on the direct ancestor path from the node containing value one to the tree root can have answers strictly greater than one."
+    },
+    {
+      "level": 3,
+      "title": "Climbing Ancestors with Monotonic Search",
+      "text": "Ascend along the parent path from node one, expanding the visited subtree nodes and incrementing missing candidate integer until not found."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def smallestMissingValueSubtree(self, parents: list[int], nums: list[int]) -> list[int]:\n        n = len(parents)\n        ans = [1] * n\n        if 1 not in nums:\n            return ans\n        \n        children = [[] for _ in range(n)]\n        for i in range(1, n):\n            children[parents[i]].append(i)\n            \n        visited_nodes = [False] * n\n        seen_vals = set()\n        \n        def dfs(node):\n            if visited_nodes[node]:\n                return\n            visited_nodes[node] = True\n            seen_vals.add(nums[node])\n            for child in children[node]:\n                dfs(child)\n                \n        curr = nums.index(1)\n        mex = 1\n        while curr != -1:\n            dfs(curr)\n            while mex in seen_vals:\n                mex += 1\n            ans[curr] = mex\n            curr = parents[curr]\n            \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) because each node and each genetic value is visited at most once during ancestor ascent",
+    "space": "O(N) for tree adjacency list, visited tracking, and seen value hash set",
+    "variables": [
+      "N: number of nodes in tree"
+    ],
+    "notes": "Monotonic missing integer pointer guarantees linear overall time complexity.",
+    "whyNaiveFails": "Running a full search per node yields quadratic time for skewed tree topologies.",
+    "spaceTimeTradeoff": "Maintaining global seen set allows single traversal across ancestor climb.",
+    "interviewerExpectation": "Candidate should recognize that only ancestor path of value one needs processing, yielding linear time."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def smallestMissingValueSubtree(self, parents: list[int], nums: list[int]) -> list[int]:\n        n = len(parents)\n        ans = [1] * n\n        if 1 not in nums:\n            return ans\n        \n        children = [[] for _ in range(n)]\n        for i in range(1, n):\n            children[parents[i]].append(i)\n            \n        visited_nodes = [False] * n\n        seen_vals = set()\n        \n        def dfs(node):\n            if visited_nodes[node]:\n                return\n            visited_nodes[node] = True\n            seen_vals.add(nums[node])\n            for child in children[node]:\n                dfs(child)\n                \n        curr = nums.index(1)\n        mex = 1\n        while curr != -1:\n            dfs(curr)\n            while mex in seen_vals:\n                mex += 1\n            ans[curr] = mex\n            curr = parents[curr]\n            \n        return ans",
+      "approach": "Ancestor path climb with monotonic missing integer pointer in Python",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> smallestMissingValueSubtree(vector<int>& parents, vector<int>& nums) {\n        int n = parents.size();\n        vector<int> ans(n, 1);\n        int node1 = -1;\n        for (int i = 0; i < n; ++i) {\n            if (nums[i] == 1) {\n                node1 = i;\n                break;\n            }\n        }\n        if (node1 == -1) return ans;\n\n        vector<vector<int>> children(n);\n        for (int i = 1; i < n; ++i) {\n            children[parents[i]].push_back(i);\n        }\n\n        vector<bool> visited(n, false);\n        unordered_set<int> seen;\n\n        auto dfs = [&](auto& self, int u) -> void {\n            if (visited[u]) return;\n            visited[u] = true;\n            seen.insert(nums[u]);\n            for (int v : children[u]) {\n                self(self, v);\n            }\n        };\n\n        int curr = node1;\n        int mex = 1;\n        while (curr != -1) {\n            dfs(dfs, curr);\n            while (seen.count(mex)) mex++;\n            ans[curr] = mex;\n            curr = parents[curr];\n        }\n        return ans;\n    }\n};",
+      "approach": "Ancestor path traversal with visited caching in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private void dfs(int u, List<List<Integer>> children, int[] nums, boolean[] visited, Set<Integer> seen) {\n        if (visited[u]) return;\n        visited[u] = true;\n        seen.add(nums[u]);\n        for (int v : children.get(u)) {\n            dfs(v, children, nums, visited, seen);\n        }\n    }\n    public int[] smallestMissingValueSubtree(int[] parents, int[] nums) {\n        int n = parents.length;\n        int[] ans = new int[n];\n        Arrays.fill(ans, 1);\n        int node1 = -1;\n        for (int i = 0; i < n; i++) {\n            if (nums[i] == 1) {\n                node1 = i;\n                break;\n            }\n        }\n        if (node1 == -1) return ans;\n\n        List<List<Integer>> children = new ArrayList<>();\n        for (int i = 0; i < n; i++) children.add(new ArrayList<>());\n        for (int i = 1; i < n; i++) children.get(parents[i]).add(i);\n\n        boolean[] visited = new boolean[n];\n        Set<Integer> seen = new HashSet<>();\n        int curr = node1;\n        int mex = 1;\n        while (curr != -1) {\n            dfs(curr, children, nums, visited, seen);\n            while (seen.contains(mex)) mex++;\n            ans[curr] = mex;\n            curr = parents[curr];\n        }\n        return ans;\n    }\n}",
+      "approach": "Ancestor path ascent with depth-first subtree expansion in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var smallestMissingValueSubtree = function(parents, nums) {\n  const n = parents.length;\n  const ans = new Array(n).fill(1);\n  const node1 = nums.indexOf(1);\n  if (node1 === -1) return ans;\n\n  const children = Array.from({ length: n }, () => []);\n  for (let i = 1; i < n; i++) {\n    children[parents[i]].push(i);\n  }\n\n  const visited = new Array(n).fill(false);\n  const seen = new Set();\n\n  function dfs(u) {\n    if (visited[u]) return;\n    visited[u] = true;\n    seen.add(nums[u]);\n    for (const v of children[u]) dfs(v);\n  }\n\n  let curr = node1;\n  let mex = 1;\n  while (curr !== -1) {\n    dfs(curr);\n    while (seen.has(mex)) mex++;\n    ans[curr] = mex;\n    curr = parents[curr];\n  }\n  return ans;\n};",
+      "approach": "Ancestor ascent with depth-first subtree expansion in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

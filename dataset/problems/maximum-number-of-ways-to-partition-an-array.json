@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-number-of-ways-to-partition-an-array",
+  "number": 2025,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Partition Condition Difference",
+      "text": "A valid pivot split at index p requires prefix sum equal to suffix sum, meaning sum left minus sum right equals zero."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Delta Formulation",
+      "text": "Let total be the array sum and pref[p] be prefix sum up to p. Valid pivot requires two times pref[p] minus total equals zero."
+    },
+    {
+      "level": 3,
+      "title": "Replacing Single Element at Index i",
+      "text": "Replacing nums[i] with k shifts total by delta. Pivots to the left of i shift delta from right to left, while pivots at or to the right of i shift delta directly."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import Counter\n\nclass Solution:\n    def waysToPartition(self, nums: list[int], k: int) -> int:\n        n = len(nums)\n        total = sum(nums)\n        pref = [0] * n\n        pref[0] = nums[0]\n        for i in range(1, n):\n            pref[i] = pref[i - 1] + nums[i]\n        diffs = [2 * pref[i] - total for i in range(n - 1)]\n        right_count = Counter(diffs)\n        left_count = Counter()\n        ans = right_count[0]\n        for i in range(n):\n            d = k - nums[i]\n            curr = left_count[d] + right_count[-d]\n            ans = max(ans, curr)\n            if i < n - 1:\n                diff = diffs[i]\n                right_count[diff] -= 1\n                left_count[diff] += 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) linear scan maintaining left and right difference frequency maps",
+    "space": "O(N) to store prefix differences and hash counters",
+    "variables": [
+      "N: number of elements in nums"
+    ],
+    "notes": "Transferring difference keys between left and right maps runs in O(1) per index.",
+    "whyNaiveFails": "Recomputing partition validity for every element replacement requires quadratic O(N^2) time.",
+    "spaceTimeTradeoff": "Dual frequency maps dynamically maintain relative difference transitions.",
+    "interviewerExpectation": "Candidate should express partition balance as prefix difference and slide across pivot changes."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import Counter\n\nclass Solution:\n    def waysToPartition(self, nums: list[int], k: int) -> int:\n        n = len(nums)\n        total = sum(nums)\n        pref = [0] * n\n        pref[0] = nums[0]\n        for i in range(1, n):\n            pref[i] = pref[i - 1] + nums[i]\n        diffs = [2 * pref[i] - total for i in range(n - 1)]\n        right_count = Counter(diffs)\n        left_count = Counter()\n        ans = right_count[0]\n        for i in range(n):\n            d = k - nums[i]\n            curr = left_count[d] + right_count[-d]\n            ans = max(ans, curr)\n            if i < n - 1:\n                diff = diffs[i]\n                right_count[diff] -= 1\n                left_count[diff] += 1\n        return ans",
+      "approach": "Left and right difference counters in Python",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int waysToPartition(vector<int>& nums, int k) {\n        int n = nums.size();\n        long long total = 0;\n        for (int x : nums) total += x;\n        vector<long long> pref(n);\n        pref[0] = nums[0];\n        for (int i = 1; i < n; ++i) pref[i] = pref[i - 1] + nums[i];\n        vector<long long> diffs(n - 1);\n        unordered_map<long long, int> right_count, left_count;\n        for (int i = 0; i < n - 1; ++i) {\n            diffs[i] = 2 * pref[i] - total;\n            right_count[diffs[i]]++;\n        }\n        int ans = right_count[0];\n        for (int i = 0; i < n; ++i) {\n            long long d = (long long)k - nums[i];\n            int curr = left_count[d] + right_count[-d];\n            ans = max(ans, curr);\n            if (i < n - 1) {\n                long long diff = diffs[i];\n                right_count[diff]--;\n                left_count[diff]++;\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "Dynamic dual hash map partition tracking in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int waysToPartition(int[] nums, int k) {\n        int n = nums.length;\n        long total = 0;\n        for (int x : nums) total += x;\n        long[] pref = new long[n];\n        pref[0] = nums[0];\n        for (int i = 1; i < n; i++) pref[i] = pref[i - 1] + nums[i];\n\n        long[] diffs = new long[n - 1];\n        Map<Long, Integer> rightCount = new HashMap<>();\n        Map<Long, Integer> leftCount = new HashMap<>();\n        for (int i = 0; i < n - 1; i++) {\n            diffs[i] = 2 * pref[i] - total;\n            rightCount.put(diffs[i], rightCount.getOrDefault(diffs[i], 0) + 1);\n        }\n        int ans = rightCount.getOrDefault(0L, 0);\n        for (int i = 0; i < n; i++) {\n            long d = (long)k - nums[i];\n            int curr = leftCount.getOrDefault(d, 0) + rightCount.getOrDefault(-d, 0);\n            ans = Math.max(ans, curr);\n            if (i < n - 1) {\n                long diff = diffs[i];\n                rightCount.put(diff, rightCount.get(diff) - 1);\n                leftCount.put(diff, leftCount.getOrDefault(diff, 0) + 1);\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "Prefix difference frequency tracking in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var waysToPartition = function(nums, k) {\n  const n = nums.length;\n  let total = 0;\n  for (const x of nums) total += x;\n  const pref = new Array(n);\n  pref[0] = nums[0];\n  for (let i = 1; i < n; i++) pref[i] = pref[i - 1] + nums[i];\n  const diffs = new Array(n - 1);\n  const rightCount = new Map();\n  const leftCount = new Map();\n  for (let i = 0; i < n - 1; i++) {\n    diffs[i] = 2 * pref[i] - total;\n    rightCount.set(diffs[i], (rightCount.get(diffs[i]) || 0) + 1);\n  }\n  let ans = rightCount.get(0) || 0;\n  for (let i = 0; i < n; i++) {\n    const d = k - nums[i];\n    const curr = (leftCount.get(d) || 0) + (rightCount.get(-d) || 0);\n    ans = Math.max(ans, curr);\n    if (i < n - 1) {\n      const diff = diffs[i];\n      rightCount.set(diff, rightCount.get(diff) - 1);\n      leftCount.set(diff, (leftCount.get(diff) || 0) + 1);\n    }\n  }\n  return ans;\n};",
+      "approach": "Map difference migration in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

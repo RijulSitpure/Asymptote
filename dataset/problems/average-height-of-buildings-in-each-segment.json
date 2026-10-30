@@ -1,0 +1,78 @@
+{
+  "slug": "average-height-of-buildings-in-each-segment",
+  "number": 2015,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Coordinate Sweep-Line Events",
+      "text": "Model building starts and ends as coordinate events with delta height and delta count additions."
+    },
+    {
+      "level": 2,
+      "title": "Track Cumulative Height and Count",
+      "text": "Process sorted event positions, maintaining active building count and current sum of heights."
+    },
+    {
+      "level": 3,
+      "title": "Merge Consecutive Homogeneous Intervals",
+      "text": "Compute integer average height in each interval. Merge with the previous segment if contiguous and average heights match."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def averageHeightOfBuildings(self, buildings: list[list[int]]) -> list[list[int]]:\n        events = defaultdict(lambda: [0, 0])\n        for s, e, h in buildings:\n            events[s][0] += h\n            events[s][1] += 1\n            events[e][0] -= h\n            events[e][1] -= 1\n            \n        pts = sorted(events.keys())\n        res = []\n        curr_h = 0\n        curr_cnt = 0\n        prev_pos = None\n        \n        for p in pts:\n            if prev_pos is not None and curr_cnt > 0:\n                avg = curr_h // curr_cnt\n                if res and res[-1][1] == prev_pos and res[-1][2] == avg:\n                    res[-1][1] = p\n                else:\n                    res.append([prev_pos, p, avg])\n            curr_h += events[p][0]\n            curr_cnt += events[p][1]\n            prev_pos = p\n            \n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(B log B) where B is the number of buildings to sort endpoints",
+    "space": "O(B) storing coordinate event points",
+    "variables": [
+      "B: number of building entries"
+    ],
+    "notes": "Line sweep discretizes overlapping intervals into distinct segments.",
+    "whyNaiveFails": "Plotting every coordinate point on a grid exhausts memory for large coordinate values up to 10^9.",
+    "spaceTimeTradeoff": "Event-driven line sweep processes only critical transition boundaries.",
+    "interviewerExpectation": "Candidate should implement line sweep and handle consecutive equal-average segment merging."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def averageHeightOfBuildings(self, buildings: list[list[int]]) -> list[list[int]]:\n        events = defaultdict(lambda: [0, 0])\n        for s, e, h in buildings:\n            events[s][0] += h\n            events[s][1] += 1\n            events[e][0] -= h\n            events[e][1] -= 1\n            \n        pts = sorted(events.keys())\n        res = []\n        curr_h = 0\n        curr_cnt = 0\n        prev_pos = None\n        \n        for p in pts:\n            if prev_pos is not None and curr_cnt > 0:\n                avg = curr_h // curr_cnt\n                if res and res[-1][1] == prev_pos and res[-1][2] == avg:\n                    res[-1][1] = p\n                else:\n                    res.append([prev_pos, p, avg])\n            curr_h += events[p][0]\n            curr_cnt += events[p][1]\n            prev_pos = p\n            \n        return res",
+      "approach": "Coordinate event line sweep in Python",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<vector<int>> averageHeightOfBuildings(vector<vector<int>>& buildings) {\n        map<int, pair<long long, int>> events;\n        for (const auto& b : buildings) {\n            events[b[0]].first += b[2];\n            events[b[0]].second += 1;\n            events[b[1]].first -= b[2];\n            events[b[1]].second -= 1;\n        }\n        vector<vector<int>> res;\n        long long curr_h = 0;\n        int curr_cnt = 0;\n        int prev_pos = -1;\n        for (const auto& [p, delta] : events) {\n            if (prev_pos != -1 && curr_cnt > 0) {\n                int avg = curr_h / curr_cnt;\n                if (!res.empty() && res.back()[1] == prev_pos && res.back()[2] == avg) {\n                    res.back()[1] = p;\n                } else {\n                    res.push_back({prev_pos, p, avg});\n                }\n            }\n            curr_h += delta.first;\n            curr_cnt += delta.second;\n            prev_pos = p;\n        }\n        return res;\n    }\n};",
+      "approach": "Ordered map line sweep in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[][] averageHeightOfBuildings(int[][] buildings) {\n        TreeMap<Integer, long[]> events = new TreeMap<>();\n        for (int[] b : buildings) {\n            events.computeIfAbsent(b[0], k -> new long[2])[0] += b[2];\n            events.get(b[0])[1] += 1;\n            events.computeIfAbsent(b[1], k -> new long[2])[0] -= b[2];\n            events.get(b[1])[1] -= 1;\n        }\n        List<int[]> res = new ArrayList<>();\n        long currH = 0;\n        int currCnt = 0;\n        int prevPos = -1;\n        for (Map.Entry<Integer, long[]> entry : events.entrySet()) {\n            int p = entry.getKey();\n            if (prevPos != -1 && currCnt > 0) {\n                int avg = (int)(currH / currCnt);\n                if (!res.isEmpty() && res.get(res.size() - 1)[1] == prevPos && res.get(res.size() - 1)[2] == avg) {\n                    res.get(res.size() - 1)[1] = p;\n                } else {\n                    res.add(new int[]{prevPos, p, avg});\n                }\n            }\n            currH += entry.getValue()[0];\n            currCnt += (int)entry.getValue()[1];\n            prevPos = p;\n        }\n        return res.toArray(new int[res.size()][]);\n    }\n}",
+      "approach": "TreeMap event sweep-line in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var averageHeightOfBuildings = function(buildings) {\n  const events = new Map();\n  for (const [s, e, h] of buildings) {\n    if (!events.has(s)) events.set(s, [0, 0]);\n    if (!events.has(e)) events.set(e, [0, 0]);\n    events.get(s)[0] += h;\n    events.get(s)[1] += 1;\n    events.get(e)[0] -= h;\n    events.get(e)[1] -= 1;\n  }\n  const pts = Array.from(events.keys()).sort((a, b) => a - b);\n  const res = [];\n  let currH = 0;\n  let currCnt = 0;\n  let prevPos = null;\n\n  for (const p of pts) {\n    if (prevPos !== null && currCnt > 0) {\n      const avg = Math.floor(currH / currCnt);\n      if (res.length > 0 && res[res.length - 1][1] === prevPos && res[res.length - 1][2] === avg) {\n        res[res.length - 1][1] = p;\n      } else {\n        res.push([prevPos, p, avg]);\n      }\n    }\n    const [dh, dc] = events.get(p);\n    currH += dh;\n    currCnt += dc;\n    prevPos = p;\n  }\n  return res;\n};",
+      "approach": "Map event sort and interval merge in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

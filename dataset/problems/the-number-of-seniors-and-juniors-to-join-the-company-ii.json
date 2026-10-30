@@ -1,0 +1,71 @@
+{
+  "slug": "the-number-of-seniors-and-juniors-to-join-the-company-ii",
+  "number": 2010,
+  "category": "Database",
+  "patterns": [
+    "running-total"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Identify Accepted Candidate Identifiers",
+      "text": "Determine candidate identifiers accepted under the priority hiring policy rather than aggregated row counts."
+    },
+    {
+      "level": 2,
+      "title": "Compute Running Sums by Experience",
+      "text": "Use a window cumulative sum over candidates partitioned by experience and ordered by salary ascending."
+    },
+    {
+      "level": 3,
+      "title": "Filter and Union Candidate IDs",
+      "text": "Select employee identifiers from seniors within seventy thousand and juniors within remaining leftover budget."
+    },
+    {
+      "level": 4,
+      "title": "Complete Query",
+      "text": "```mysql\nWITH RankedCandidates AS (\n    SELECT\n        employee_id,\n        experience,\n        salary,\n        SUM(salary) OVER(PARTITION BY experience ORDER BY salary, employee_id) AS running_salary\n    FROM Candidates\n),\nSeniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Senior' AND running_salary <= 70000\n),\nJuniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Junior'\n      AND running_salary <= (70000 - COALESCE((SELECT MAX(running_salary) FROM Seniors), 0))\n)\nSELECT employee_id FROM Seniors\nUNION ALL\nSELECT employee_id FROM Juniors;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) sorting candidates within each tier",
+    "space": "O(N) for ranked candidate common table expressions",
+    "variables": [
+      "N: candidate count"
+    ],
+    "notes": "Filters candidates by running salary thresholds and outputs individual ids.",
+    "whyNaiveFails": "Recomputing sums without analytic functions triggers multiple table scans.",
+    "spaceTimeTradeoff": "Window functions offer single-pass cumulative budgeting.",
+    "interviewerExpectation": "Candidate should output exact employee identifiers in any order using UNION ALL."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RankedCandidates AS (\n    SELECT\n        employee_id,\n        experience,\n        salary,\n        SUM(salary) OVER(PARTITION BY experience ORDER BY salary, employee_id) AS running_salary\n    FROM Candidates\n),\nSeniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Senior' AND running_salary <= 70000\n),\nJuniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Junior'\n      AND running_salary <= (70000 - COALESCE((SELECT MAX(running_salary) FROM Seniors), 0))\n)\nSELECT employee_id FROM Seniors\nUNION ALL\nSELECT employee_id FROM Juniors;",
+      "approach": "Window cumulative budget filtering in MySQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RankedCandidates AS (\n    SELECT\n        employee_id,\n        experience,\n        salary,\n        SUM(salary) OVER(PARTITION BY experience ORDER BY salary, employee_id) AS running_salary\n    FROM Candidates\n),\nSeniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Senior' AND running_salary <= 70000\n),\nJuniors AS (\n    SELECT employee_id, running_salary\n    FROM RankedCandidates\n    WHERE experience = 'Junior'\n      AND running_salary <= (70000 - COALESCE((SELECT MAX(running_salary) FROM Seniors), 0))\n)\nSELECT employee_id FROM Seniors\nUNION ALL\nSELECT employee_id FROM Juniors;",
+      "approach": "Window cumulative budget filtering in PostgreSQL",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef number_of_seniors_and_juniors_to_join_the_company_ii(candidates: pd.DataFrame) -> pd.DataFrame:\n    seniors = candidates[candidates['experience'] == 'Senior'].sort_values(by=['salary', 'employee_id'])\n    seniors['running'] = seniors['salary'].cumsum()\n    accepted_seniors = seniors[seniors['running'] <= 70000]\n    spent = accepted_seniors['running'].max() if not accepted_seniors.empty else 0\n    \n    juniors = candidates[candidates['experience'] == 'Junior'].sort_values(by=['salary', 'employee_id'])\n    juniors['running'] = juniors['salary'].cumsum()\n    accepted_juniors = juniors[juniors['running'] <= (70000 - spent)]\n    \n    return pd.concat([accepted_seniors[['employee_id']], accepted_juniors[['employee_id']]], ignore_index=True)",
+      "approach": "Pandas candidate filtering by cumulative budget",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

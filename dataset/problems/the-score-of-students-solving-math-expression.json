@@ -1,0 +1,79 @@
+{
+  "slug": "the-score-of-students-solving-math-expression",
+  "number": 2019,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-interval"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Exact Precedence Value",
+      "text": "Compute the standard correct mathematical answer by evaluating all multiplications before additions."
+    },
+    {
+      "level": 2,
+      "title": "Interval Dynamic Programming for Arbitrary Bracketings",
+      "text": "Any evaluation order corresponds to some parenthesization. Use interval dynamic programming over subexpressions dp[i][j]."
+    },
+    {
+      "level": 3,
+      "title": "Prune Values Above One Thousand",
+      "text": "Because student answers never exceed one thousand, drop any intermediate arithmetic results strictly greater than one thousand."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def scoreOfStudents(self, s: str, answers: list[int]) -> int:\n        correct = eval(s)\n        nums = [int(s[i]) for i in range(0, len(s), 2)]\n        ops = [s[i] for i in range(1, len(s), 2)]\n        n = len(nums)\n        dp = [[set() for _ in range(n)] for _ in range(n)]\n        for i in range(n):\n            dp[i][i].add(nums[i])\n        for length in range(2, n + 1):\n            for i in range(n - length + 1):\n                j = i + length - 1\n                for k in range(i, j):\n                    op = ops[k]\n                    for left in dp[i][k]:\n                        for right in dp[k + 1][j]:\n                            val = left * right if op == '*' else left + right\n                            if val <= 1000:\n                                dp[i][j].add(val)\n        possible = dp[0][n - 1]\n        score = 0\n        for ans in answers:\n            if ans == correct:\n                score += 5\n            elif ans in possible:\n                score += 2\n        return score\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^3 * V^2 + A) where N is number of operands, V is intermediate value set size, and A is answer count",
+    "space": "O(N^2 * V) to store intermediate arithmetic sets",
+    "variables": [
+      "N: number of operands (at most 16)",
+      "A: number of student answers"
+    ],
+    "notes": "Pruning values above 1000 keeps intermediate sets small and prevents combinatorial explosion.",
+    "whyNaiveFails": "Recursion without interval memoization generates Catalan number of operations.",
+    "spaceTimeTradeoff": "Interval dynamic programming caches all feasible subexpression outcomes.",
+    "interviewerExpectation": "Candidate should compute correct precedence value first and use interval DP with value cap for bracketings."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def scoreOfStudents(self, s: str, answers: list[int]) -> int:\n        correct = eval(s)\n        nums = [int(s[i]) for i in range(0, len(s), 2)]\n        ops = [s[i] for i in range(1, len(s), 2)]\n        n = len(nums)\n        dp = [[set() for _ in range(n)] for _ in range(n)]\n        for i in range(n):\n            dp[i][i].add(nums[i])\n        for length in range(2, n + 1):\n            for i in range(n - length + 1):\n                j = i + length - 1\n                for k in range(i, j):\n                    op = ops[k]\n                    for left in dp[i][k]:\n                        for right in dp[k + 1][j]:\n                            val = left * right if op == '*' else left + right\n                            if val <= 1000:\n                                dp[i][j].add(val)\n        possible = dp[0][n - 1]\n        score = 0\n        for ans in answers:\n            if ans == correct:\n                score += 5\n            elif ans in possible:\n                score += 2\n        return score",
+      "approach": "Interval dynamic programming with thousand-bound pruning in Python",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int scoreOfStudents(string s, vector<int>& answers) {\n        vector<int> nums;\n        vector<char> ops;\n        for (size_t i = 0; i < s.size(); ++i) {\n            if (i % 2 == 0) nums.push_back(s[i] - '0');\n            else ops.push_back(s[i]);\n        }\n        vector<int> mulStack;\n        mulStack.push_back(nums[0]);\n        for (size_t i = 0; i < ops.size(); ++i) {\n            if (ops[i] == '*') mulStack.back() *= nums[i + 1];\n            else mulStack.push_back(nums[i + 1]);\n        }\n        int correct = 0;\n        for (int x : mulStack) correct += x;\n\n        int n = nums.size();\n        vector<vector<unordered_set<int>>> dp(n, vector<unordered_set<int>>(n));\n        for (int i = 0; i < n; ++i) dp[i][i].insert(nums[i]);\n\n        for (int len = 2; len <= n; ++len) {\n            for (int i = 0; i <= n - len; ++i) {\n                int j = i + len - 1;\n                for (int k = i; k < j; ++k) {\n                    char op = ops[k];\n                    for (int left : dp[i][k]) {\n                        for (int right : dp[k + 1][j]) {\n                            int val = (op == '*') ? (left * right) : (left + right);\n                            if (val <= 1000) dp[i][j].insert(val);\n                        }\n                    }\n                }\n            }\n        }\n        int score = 0;\n        const auto& possible = dp[0][n - 1];\n        for (int ans : answers) {\n            if (ans == correct) score += 5;\n            else if (possible.count(ans)) score += 2;\n        }\n        return score;\n    }\n};",
+      "approach": "Interval DP with stack precedence evaluation in C++",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int scoreOfStudents(String s, int[] answers) {\n        List<Integer> nums = new ArrayList<>();\n        List<Character> ops = new ArrayList<>();\n        for (int i = 0; i < s.length(); i++) {\n            if (i % 2 == 0) nums.add(s.charAt(i) - '0');\n            else ops.add(s.charAt(i));\n        }\n        Deque<Integer> stack = new ArrayDeque<>();\n        stack.push(nums.get(0));\n        for (int i = 0; i < ops.size(); i++) {\n            if (ops.get(i) == '*') stack.push(stack.pop() * nums.get(i + 1));\n            else stack.push(nums.get(i + 1));\n        }\n        int correct = 0;\n        for (int x : stack) correct += x;\n\n        int n = nums.size();\n        Set<Integer>[][] dp = new HashSet[n][n];\n        for (int i = 0; i < n; i++) {\n            for (int j = 0; j < n; j++) dp[i][j] = new HashSet<>();\n            dp[i][i].add(nums.get(i));\n        }\n        for (int len = 2; len <= n; len++) {\n            for (int i = 0; i <= n - len; i++) {\n                int j = i + len - 1;\n                for (int k = i; k < j; k++) {\n                    char op = ops.get(k);\n                    for (int left : dp[i][k]) {\n                        for (int right : dp[k + 1][j]) {\n                            int val = (op == '*') ? (left * right) : (left + right);\n                            if (val <= 1000) dp[i][j].add(val);\n                        }\n                    }\n                }\n            }\n        }\n        Set<Integer> possible = dp[0][n - 1];\n        int score = 0;\n        for (int ans : answers) {\n            if (ans == correct) score += 5;\n            else if (possible.contains(ans)) score += 2;\n        }\n        return score;\n    }\n}",
+      "approach": "Interval DP with value bounding in Java",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var scoreOfStudents = function(s, answers) {\n  const nums = [];\n  const ops = [];\n  for (let i = 0; i < s.length; i++) {\n    if (i % 2 === 0) nums.push(Number(s[i]));\n    else ops.push(s[i]);\n  }\n  const mulStack = [nums[0]];\n  for (let i = 0; i < ops.length; i++) {\n    if (ops[i] === '*') mulStack[mulStack.length - 1] *= nums[i + 1];\n    else mulStack.push(nums[i + 1]);\n  }\n  const correct = mulStack.reduce((a, b) => a + b, 0);\n\n  const n = nums.length;\n  const dp = Array.from({ length: n }, () => Array.from({ length: n }, () => new Set()));\n  for (let i = 0; i < n; i++) dp[i][i].add(nums[i]);\n\n  for (let len = 2; len <= n; len++) {\n    for (let i = 0; i <= n - len; i++) {\n      const j = i + len - 1;\n      for (let k = i; k < j; k++) {\n        const op = ops[k];\n        for (const left of dp[i][k]) {\n          for (const right of dp[k + 1][j]) {\n            const val = op === '*' ? left * right : left + right;\n            if (val <= 1000) dp[i][j].add(val);\n          }\n        }\n      }\n    }\n  }\n  const possible = dp[0][n - 1];\n  let score = 0;\n  for (const ans of answers) {\n    if (ans === correct) score += 5;\n    else if (possible.has(ans)) score += 2;\n  }\n  return score;\n};",
+      "approach": "Interval set evaluation in JavaScript",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
