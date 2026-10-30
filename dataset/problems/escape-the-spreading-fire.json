@@ -1,0 +1,79 @@
+{
+  "slug": "escape-the-spreading-fire",
+  "number": 2258,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monotonic Feasibility",
+      "text": "If you can safely reach the safehouse after waiting t minutes, you can also reach it after waiting any time less than t."
+    },
+    {
+      "level": 2,
+      "title": "Fire Spread Precomputation",
+      "text": "Precompute the earliest arrival time of fire at every cell in the grid using multi-source breadth traversal."
+    },
+    {
+      "level": 3,
+      "title": "Simulating Escape with Fire Arrival",
+      "text": "For a fixed wait time, simulate movement. A cell (r, c) is valid at person arrival time if person reaches it strictly before fire, except at the safehouse where simultaneous arrival is allowed."
+    },
+    {
+      "level": 4,
+      "title": "Binary Search on Wait Time Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def maximumMinutes(self, grid: list[list[int]]) -> int:\n        m, n = len(grid), len(grid[0])\n        fire = [[float(\"inf\")] * n for _ in range(m)]\n        q = deque()\n        for r in range(m):\n            for c in range(n):\n                if grid[r][c] == 1:\n                    fire[r][c] = 0\n                    q.append((r, c))\n\n        while q:\n            r, c = q.popleft()\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == 0:\n                    if fire[nr][nc] > fire[r][c] + 1:\n                        fire[nr][nc] = fire[r][c] + 1\n                        q.append((nr, nc))\n\n        def can_escape(wait: int) -> bool:\n            if fire[0][0] <= wait:\n                return False\n            visited = [[False] * n for _ in range(m)]\n            visited[0][0] = True\n            q_person = deque([(0, 0, wait)])\n            while q_person:\n                r, c, t = q_person.popleft()\n                if r == m - 1 and c == n - 1:\n                    return True\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == 0 and not visited[nr][nc]:\n                        arrival = t + 1\n                        if nr == m - 1 and nc == n - 1:\n                            if arrival <= fire[nr][nc]:\n                                visited[nr][nc] = True\n                                q_person.append((nr, nc, arrival))\n                        else:\n                            if arrival < fire[nr][nc]:\n                                visited[nr][nc] = True\n                                q_person.append((nr, nc, arrival))\n            return False\n\n        lo, hi = 0, m * n\n        ans = -1\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if can_escape(mid):\n                ans = mid\n                lo = mid + 1\n            else:\n                hi = mid - 1\n\n        if ans == -1:\n            return -1\n        if can_escape(10**9):\n            return 10**9\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n * log(m * n))",
+    "space": "O(m * n)",
+    "variables": [
+      "m: rows",
+      "n: columns"
+    ],
+    "notes": "Fire times are computed once in O(m * n). BFS check runs in O(m * n) during binary search.",
+    "whyNaiveFails": "Linear search on wait time from 0 to 10^9 times out.",
+    "spaceTimeTradeoff": "O(m * n) distance matrix caches fire propagation times.",
+    "interviewerExpectation": "Candidate spots safehouse boundary exception where simultaneous arrival with fire is permitted."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Binary Search with Multi-source BFS Fire Precomputation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "from collections import deque\n\nclass Solution:\n    def maximumMinutes(self, grid: list[list[int]]) -> int:\n        m, n = len(grid), len(grid[0])\n        fire = [[float(\"inf\")] * n for _ in range(m)]\n        q = deque()\n        for r in range(m):\n            for c in range(n):\n                if grid[r][c] == 1:\n                    fire[r][c] = 0\n                    q.append((r, c))\n\n        while q:\n            r, c = q.popleft()\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == 0:\n                    if fire[nr][nc] > fire[r][c] + 1:\n                        fire[nr][nc] = fire[r][c] + 1\n                        q.append((nr, nc))\n\n        def can_escape(wait: int) -> bool:\n            if fire[0][0] <= wait:\n                return False\n            visited = [[False] * n for _ in range(m)]\n            visited[0][0] = True\n            q_person = deque([(0, 0, wait)])\n            while q_person:\n                r, c, t = q_person.popleft()\n                if r == m - 1 and c == n - 1:\n                    return True\n                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == 0 and not visited[nr][nc]:\n                        arrival = t + 1\n                        if nr == m - 1 and nc == n - 1:\n                            if arrival <= fire[nr][nc]:\n                                visited[nr][nc] = True\n                                q_person.append((nr, nc, arrival))\n                        else:\n                            if arrival < fire[nr][nc]:\n                                visited[nr][nc] = True\n                                q_person.append((nr, nc, arrival))\n            return False\n\n        lo, hi = 0, m * n\n        ans = -1\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if can_escape(mid):\n                ans = mid\n                lo = mid + 1\n            else:\n                hi = mid - 1\n\n        if ans == -1:\n            return -1\n        if can_escape(10**9):\n            return 10**9\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Binary Search with Multi-source BFS Fire Precomputation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int maximumMinutes(std::vector<std::vector<int>>& grid) {\n        int m = grid.size(), n = grid[0].size();\n        std::vector<std::vector<int>> fire(m, std::vector<int>(n, 1e9));\n        std::queue<std::pair<int, int>> q;\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (grid[r][c] == 1) {\n                    fire[r][c] = 0;\n                    q.push({r, c});\n                }\n            }\n        }\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!q.empty()) {\n            auto [r, c] = q.front(); q.pop();\n            for (auto& d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == 0) {\n                    if (fire[nr][nc] > fire[r][c] + 1) {\n                        fire[nr][nc] = fire[r][c] + 1;\n                        q.push({nr, nc});\n                    }\n                }\n            }\n        }\n        auto canEscape = [&](int wait) {\n            if (fire[0][0] <= wait) return false;\n            std::vector<std::vector<bool>> vis(m, std::vector<bool>(n, false));\n            vis[0][0] = true;\n            std::queue<std::tuple<int, int, int>> pq;\n            pq.push({0, 0, wait});\n            while (!pq.empty()) {\n                auto [r, c, t] = pq.front(); pq.pop();\n                if (r == m - 1 && c == n - 1) return true;\n                for (auto& d : dirs) {\n                    int nr = r + d[0], nc = c + d[1];\n                    if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == 0 && !vis[nr][nc]) {\n                        int arrival = t + 1;\n                        if (nr == m - 1 && nc == n - 1) {\n                            if (arrival <= fire[nr][nc]) {\n                                vis[nr][nc] = true;\n                                pq.push({nr, nc, arrival});\n                            }\n                        } else {\n                            if (arrival < fire[nr][nc]) {\n                                vis[nr][nc] = true;\n                                pq.push({nr, nc, arrival});\n                            }\n                        }\n                    }\n                }\n            }\n            return false;\n        };\n        int lo = 0, hi = m * n, ans = -1;\n        while (lo <= hi) {\n            int mid = lo + (hi - lo) / 2;\n            if (canEscape(mid)) {\n                ans = mid;\n                lo = mid + 1;\n            } else {\n                hi = mid - 1;\n            }\n        }\n        if (ans == -1) return -1;\n        if (canEscape(1e9)) return 1e9;\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Binary Search with Multi-source BFS Fire Precomputation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int maximumMinutes(int[][] grid) {\n        int m = grid.length, n = grid[0].length;\n        int[][] fire = new int[m][n];\n        for (int[] row : fire) java.util.Arrays.fill(row, (int) 1e9);\n        java.util.Queue<int[]> q = new java.util.LinkedList<>();\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 1) {\n                    fire[r][c] = 0;\n                    q.offer(new int[]{r, c});\n                }\n            }\n        }\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!q.isEmpty()) {\n            int[] cell = q.poll();\n            int r = cell[0], c = cell[1];\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == 0) {\n                    if (fire[nr][nc] > fire[r][c] + 1) {\n                        fire[nr][nc] = fire[r][c] + 1;\n                        q.offer(new int[]{nr, nc});\n                    }\n                }\n            }\n        }\n        int lo = 0, hi = m * n, ans = -1;\n        while (lo <= hi) {\n            int mid = lo + (hi - lo) / 2;\n            if (canEscape(grid, fire, m, n, mid, dirs)) {\n                ans = mid;\n                lo = mid + 1;\n            } else {\n                hi = mid - 1;\n            }\n        }\n        if (ans == -1) return -1;\n        if (canEscape(grid, fire, m, n, (int) 1e9, dirs)) return (int) 1e9;\n        return ans;\n    }\n\n    private boolean canEscape(int[][] grid, int[][] fire, int m, int n, int wait, int[][] dirs) {\n        if (fire[0][0] <= wait) return false;\n        boolean[][] vis = new boolean[m][n];\n        vis[0][0] = true;\n        java.util.Queue<int[]> q = new java.util.LinkedList<>();\n        q.offer(new int[]{0, 0, wait});\n        while (!q.isEmpty()) {\n            int[] cur = q.poll();\n            int r = cur[0], c = cur[1], t = cur[2];\n            if (r == m - 1 && c == n - 1) return true;\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == 0 && !vis[nr][nc]) {\n                    int arrival = t + 1;\n                    if (nr == m - 1 && nc == n - 1) {\n                        if (arrival <= fire[nr][nc]) {\n                            vis[nr][nc] = true;\n                            q.offer(new int[]{nr, nc, arrival});\n                        }\n                    } else {\n                        if (arrival < fire[nr][nc]) {\n                            vis[nr][nc] = true;\n                            q.offer(new int[]{nr, nc, arrival});\n                        }\n                    }\n                }\n            }\n        }\n        return false;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Binary Search with Multi-source BFS Fire Precomputation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var maximumMinutes = function(grid) {\n    const m = grid.length, n = grid[0].length;\n    const fire = Array.from({ length: m }, () => new Int32Array(n).fill(1e9));\n    const q = [];\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            if (grid[r][c] === 1) {\n                fire[r][c] = 0;\n                q.push([r, c]);\n            }\n        }\n    }\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    let head = 0;\n    while (head < q.length) {\n        const [r, c] = q[head++];\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] === 0) {\n                if (fire[nr][nc] > fire[r][c] + 1) {\n                    fire[nr][nc] = fire[r][c] + 1;\n                    q.push([nr, nc]);\n                }\n            }\n        }\n    }\n    const canEscape = (wait) => {\n        if (fire[0][0] <= wait) return false;\n        const vis = Array.from({ length: m }, () => new Uint8Array(n));\n        vis[0][0] = 1;\n        const pq = [[0, 0, wait]];\n        let phead = 0;\n        while (phead < pq.length) {\n            const [r, c, t] = pq[phead++];\n            if (r === m - 1 && c === n - 1) return true;\n            for (const [dr, dc] of dirs) {\n                const nr = r + dr, nc = c + dc;\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] === 0 && !vis[nr][nc]) {\n                    const arrival = t + 1;\n                    if (nr === m - 1 && nc === n - 1) {\n                        if (arrival <= fire[nr][nc]) {\n                            vis[nr][nc] = 1;\n                            pq.push([nr, nc, arrival]);\n                        }\n                    } else {\n                        if (arrival < fire[nr][nc]) {\n                            vis[nr][nc] = 1;\n                            pq.push([nr, nc, arrival]);\n                        }\n                    }\n                }\n            }\n        }\n        return false;\n    };\n    let lo = 0, hi = m * n, ans = -1;\n    while (lo <= hi) {\n        const mid = (lo + hi) >> 1;\n        if (canEscape(mid)) {\n            ans = mid;\n            lo = mid + 1;\n        } else {\n            hi = mid - 1;\n        }\n    }\n    if (ans === -1) return -1;\n    if (canEscape(1e9)) return 1e9;\n    return ans;\n};"
+    }
+  ]
+}

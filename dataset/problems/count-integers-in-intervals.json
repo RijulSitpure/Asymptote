@@ -1,0 +1,78 @@
+{
+  "slug": "count-integers-in-intervals",
+  "number": 2276,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Disjoint Interval Maintenance",
+      "text": "Represent all added numbers as a collection of non-overlapping, sorted intervals."
+    },
+    {
+      "level": 2,
+      "title": "Merging Overlapping Segments",
+      "text": "When adding [left, right], locate all existing intervals that intersect with it, subtract their lengths from total, and merge them into a single interval [new_left, new_right]."
+    },
+    {
+      "level": 3,
+      "title": "Direct Count Tracking",
+      "text": "Add the length new_right - new_left + 1 to total and insert the merged interval."
+    },
+    {
+      "level": 4,
+      "title": "Interval Merging Structure Implementation",
+      "text": "```python\nimport bisect\n\nclass CountIntervals:\n    def __init__(self):\n        self.intervals = []\n        self.total = 0\n\n    def add(self, left: int, right: int) -> None:\n        new_left, new_right = left, right\n        idx = bisect.bisect_left(self.intervals, (left, -1))\n        if idx > 0 and self.intervals[idx - 1][1] >= left:\n            idx -= 1\n        \n        delete_count = 0\n        i = idx\n        while i < len(self.intervals) and self.intervals[i][0] <= right:\n            new_left = min(new_left, self.intervals[i][0])\n            new_right = max(new_right, self.intervals[i][1])\n            self.total -= (self.intervals[i][1] - self.intervals[i][0] + 1)\n            delete_count += 1\n            i += 1\n        \n        self.intervals[idx:idx + delete_count] = [(new_left, new_right)]\n        self.total += (new_right - new_left + 1)\n\n    def count(self) -> int:\n        return self.total\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log n) amortized per add, O(1) for count",
+    "space": "O(n)",
+    "variables": [
+      "n: number of disjoint intervals stored"
+    ],
+    "notes": "Each interval is inserted once and deleted at most once over its lifetime.",
+    "whyNaiveFails": "Checking individual numbers up to 10^9 in a set exceeds memory and time limits.",
+    "spaceTimeTradeoff": "Disjoint interval list stores compact ranges.",
+    "interviewerExpectation": "Candidate maintains running total count across additions with amortized segment merges."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Disjoint Interval Amortized Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import bisect\n\nclass CountIntervals:\n    def __init__(self):\n        self.intervals = []\n        self.total = 0\n\n    def add(self, left: int, right: int) -> None:\n        new_left, new_right = left, right\n        idx = bisect.bisect_left(self.intervals, (left, -1))\n        if idx > 0 and self.intervals[idx - 1][1] >= left:\n            idx -= 1\n        \n        delete_count = 0\n        i = idx\n        while i < len(self.intervals) and self.intervals[i][0] <= right:\n            new_left = min(new_left, self.intervals[i][0])\n            new_right = max(new_right, self.intervals[i][1])\n            self.total -= (self.intervals[i][1] - self.intervals[i][0] + 1)\n            delete_count += 1\n            i += 1\n        \n        self.intervals[idx:idx + delete_count] = [(new_left, new_right)]\n        self.total += (new_right - new_left + 1)\n\n    def count(self) -> int:\n        return self.total"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Disjoint Interval Map Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class CountIntervals {\n    std::map<int, int> intervals;\n    int total;\npublic:\n    CountIntervals() : total(0) {}\n    \n    void add(int left, int right) {\n        auto it = intervals.upper_bound(right);\n        int l = left, r = right;\n        while (it != intervals.begin()) {\n            auto prev = std::prev(it);\n            if (prev->second < left) break;\n            l = std::min(l, prev->first);\n            r = std::max(r, prev->second);\n            total -= (prev->second - prev->first + 1);\n            intervals.erase(prev);\n        }\n        intervals[l] = r;\n        total += (r - l + 1);\n    }\n    \n    int count() {\n        return total;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Disjoint Interval TreeMap Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class CountIntervals {\n    private java.util.TreeMap<Integer, Integer> map;\n    private int total;\n\n    public CountIntervals() {\n        map = new java.util.TreeMap<>();\n        total = 0;\n    }\n    \n    public void add(int left, int right) {\n        Integer l = map.floorKey(right);\n        int curL = left, curR = right;\n        while (l != null && map.get(l) >= left) {\n            int r = map.get(l);\n            curL = Math.min(curL, l);\n            curR = Math.max(curR, r);\n            total -= (r - l + 1);\n            map.remove(l);\n            l = map.floorKey(right);\n        }\n        map.put(curL, curR);\n        total += (curR - curL + 1);\n    }\n    \n    public int count() {\n        return total;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Disjoint Interval Array Merge",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var CountIntervals = function() {\n    this.intervals = [];\n    this.total = 0;\n};\n\nCountIntervals.prototype.add = function(left, right) {\n    let newL = left, newR = right;\n    let idx = 0;\n    while (idx < this.intervals.length && this.intervals[idx][1] < left) {\n        idx++;\n    }\n    let deleteCount = 0;\n    let i = idx;\n    while (i < this.intervals.length && this.intervals[i][0] <= right) {\n        newL = Math.min(newL, this.intervals[i][0]);\n        newR = Math.max(newR, this.intervals[i][1]);\n        this.total -= (this.intervals[i][1] - this.intervals[i][0] + 1);\n        deleteCount++;\n        i++;\n    }\n    this.intervals.splice(idx, deleteCount, [newL, newR]);\n    this.total += (newR - newL + 1);\n};\n\nCountIntervals.prototype.count = function() {\n    return this.total;\n};"
+    }
+  ]
+}

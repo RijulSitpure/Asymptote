@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-white-tiles-covered-by-a-carpet",
+  "number": 2271,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Alignment Optimality",
+      "text": "The optimal placement always aligns the left edge of the carpet with the start of some tile interval."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Sums over Tile Lengths",
+      "text": "Sort the intervals by their start coordinate and precompute prefix sums of tile counts across intervals."
+    },
+    {
+      "level": 3,
+      "title": "Locating Covered Endpoints",
+      "text": "For each interval start, locate the rightmost interval touched by the carpet end using binary search, and add the partial overlap."
+    },
+    {
+      "level": 4,
+      "title": "Interval Prefix Binary Search Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def maximumWhiteTiles(self, tiles: list[list[int]], carpetLen: int) -> int:\n        tiles.sort(key=lambda x: x[0])\n        n = len(tiles)\n        starts = [t[0] for t in tiles]\n        prefix = [0] * (n + 1)\n        for i in range(n):\n            prefix[i + 1] = prefix[i] + (tiles[i][1] - tiles[i][0] + 1)\n\n        ans = 0\n        for i in range(n):\n            carpet_end = tiles[i][0] + carpetLen - 1\n            idx = bisect.bisect_right(starts, carpet_end) - 1\n            total = prefix[idx] - prefix[i]\n            if tiles[idx][1] <= carpet_end:\n                total += (tiles[idx][1] - tiles[idx][0] + 1)\n            else:\n                total += (carpet_end - tiles[idx][0] + 1)\n            ans = max(ans, total)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of tile intervals"
+    ],
+    "notes": "Sorting intervals takes O(n log n); binary searching for each takes O(log n).",
+    "whyNaiveFails": "Testing all possible discrete coordinate placements is impossible with coordinates up to 10^9.",
+    "spaceTimeTradeoff": "Prefix sum array of size n + 1 stores cumulative tile counts.",
+    "interviewerExpectation": "Candidate proves that shifting the carpet left until it touches an interval start never decreases covered count."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Interval Start Alignment with Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import bisect\n\nclass Solution:\n    def maximumWhiteTiles(self, tiles: list[list[int]], carpetLen: int) -> int:\n        tiles.sort(key=lambda x: x[0])\n        n = len(tiles)\n        starts = [t[0] for t in tiles]\n        prefix = [0] * (n + 1)\n        for i in range(n):\n            prefix[i + 1] = prefix[i] + (tiles[i][1] - tiles[i][0] + 1)\n\n        ans = 0\n        for i in range(n):\n            carpet_end = tiles[i][0] + carpetLen - 1\n            idx = bisect.bisect_right(starts, carpet_end) - 1\n            total = prefix[idx] - prefix[i]\n            if tiles[idx][1] <= carpet_end:\n                total += (tiles[idx][1] - tiles[idx][0] + 1)\n            else:\n                total += (carpet_end - tiles[idx][0] + 1)\n            ans = max(ans, total)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Interval Start Alignment with Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int maximumWhiteTiles(std::vector<std::vector<int>>& tiles, int carpetLen) {\n        std::sort(tiles.begin(), tiles.end(), [](const auto& a, const auto& b) { return a[0] < b[0]; });\n        int n = tiles.size();\n        std::vector<int> starts(n);\n        std::vector<long long> prefix(n + 1, 0);\n        for (int i = 0; i < n; ++i) {\n            starts[i] = tiles[i][0];\n            prefix[i + 1] = prefix[i] + (tiles[i][1] - tiles[i][0] + 1);\n        }\n        long long ans = 0;\n        for (int i = 0; i < n; ++i) {\n            int carpet_end = tiles[i][0] + carpetLen - 1;\n            int idx = std::upper_bound(starts.begin(), starts.end(), carpet_end) - starts.begin() - 1;\n            long long total = prefix[idx] - prefix[i];\n            if (tiles[idx][1] <= carpet_end) {\n                total += (tiles[idx][1] - tiles[idx][0] + 1);\n            } else {\n                total += (carpet_end - tiles[idx][0] + 1);\n            }\n            ans = std::max(ans, total);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Interval Start Alignment with Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int maximumWhiteTiles(int[][] tiles, int carpetLen) {\n        java.util.Arrays.sort(tiles, (a, b) -> Integer.compare(a[0], b[0]));\n        int n = tiles.length;\n        int[] starts = new int[n];\n        long[] prefix = new long[n + 1];\n        for (int i = 0; i < n; i++) {\n            starts[i] = tiles[i][0];\n            prefix[i + 1] = prefix[i] + (tiles[i][1] - tiles[i][0] + 1);\n        }\n        long ans = 0;\n        for (int i = 0; i < n; i++) {\n            int carpetEnd = tiles[i][0] + carpetLen - 1;\n            int lo = 0, hi = n - 1, idx = i;\n            while (lo <= hi) {\n                int mid = (lo + hi) >>> 1;\n                if (starts[mid] <= carpetEnd) {\n                    idx = mid;\n                    lo = mid + 1;\n                } else {\n                    hi = mid - 1;\n                }\n            }\n            long total = prefix[idx] - prefix[i];\n            if (tiles[idx][1] <= carpetEnd) {\n                total += (tiles[idx][1] - tiles[idx][0] + 1);\n            } else {\n                total += (carpetEnd - tiles[idx][0] + 1);\n            }\n            ans = Math.max(ans, total);\n        }\n        return (int) ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Interval Start Alignment with Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var maximumWhiteTiles = function(tiles, carpetLen) {\n    tiles.sort((a, b) => a[0] - b[0]);\n    const n = tiles.length;\n    const starts = new Int32Array(n);\n    const prefix = new Float64Array(n + 1);\n    for (let i = 0; i < n; i++) {\n        starts[i] = tiles[i][0];\n        prefix[i + 1] = prefix[i] + (tiles[i][1] - tiles[i][0] + 1);\n    }\n    let ans = 0;\n    for (let i = 0; i < n; i++) {\n        const carpetEnd = tiles[i][0] + carpetLen - 1;\n        let lo = 0, hi = n - 1, idx = i;\n        while (lo <= hi) {\n            const mid = (lo + hi) >> 1;\n            if (starts[mid] <= carpetEnd) {\n                idx = mid;\n                lo = mid + 1;\n            } else {\n                hi = mid - 1;\n            }\n        }\n        let total = prefix[idx] - prefix[i];\n        if (tiles[idx][1] <= carpetEnd) {\n            total += (tiles[idx][1] - tiles[idx][0] + 1);\n        } else {\n            total += (carpetEnd - tiles[idx][0] + 1);\n        }\n        if (total > ans) ans = total;\n    }\n    return ans;\n};"
+    }
+  ]
+}

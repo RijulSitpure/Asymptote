@@ -1,0 +1,78 @@
+{
+  "slug": "make-array-non-decreasing-or-non-increasing",
+  "number": 2263,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two Independent Cases",
+      "text": "Solve making the array non-decreasing first, then reverse the array to solve making it non-increasing."
+    },
+    {
+      "level": 2,
+      "title": "Slope Trick Formulation",
+      "text": "For the non-decreasing case, track the inflection points of the convex cost function using a max collection."
+    },
+    {
+      "level": 3,
+      "title": "Adjusting Peaks with Priority Elements",
+      "text": "When the current element is smaller than the largest seen inflection point, pay the difference and adjust the peak."
+    },
+    {
+      "level": 4,
+      "title": "Slope Trick Heap Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def convertArray(self, nums: list[int]) -> int:\n        def solve(arr: list[int]) -> int:\n            h = []\n            cost = 0\n            for x in arr:\n                if h and -h[0] > x:\n                    cost += (-h[0] - x)\n                    heapq.heappop(h)\n                    heapq.heappush(h, -x)\n                heapq.heappush(h, -x)\n            return cost\n        return min(solve(nums), solve(nums[::-1]))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums array"
+    ],
+    "notes": "Slope trick maintains optimal convex breakpoint structure.",
+    "whyNaiveFails": "Standard O(n * range) state DP is too slow for values up to 10^3 or larger constraints.",
+    "spaceTimeTradeoff": "Heap of size up to 2n inflection points.",
+    "interviewerExpectation": "Candidate solves both directions and applies slope trick or coordinate compression."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Slope Trick with Max-Heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import heapq\n\nclass Solution:\n    def convertArray(self, nums: list[int]) -> int:\n        def solve(arr: list[int]) -> int:\n            h = []\n            cost = 0\n            for x in arr:\n                if h and -h[0] > x:\n                    cost += (-h[0] - x)\n                    heapq.heappop(h)\n                    heapq.heappush(h, -x)\n                heapq.heappush(h, -x)\n            return cost\n        return min(solve(nums), solve(nums[::-1]))"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Slope Trick with Max-Heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int convertArray(std::vector<int>& nums) {\n        auto solve = [](const std::vector<int>& arr) {\n            std::priority_queue<int> pq;\n            int cost = 0;\n            for (int x : arr) {\n                if (!pq.empty() && pq.top() > x) {\n                    cost += (pq.top() - x);\n                    pq.pop();\n                    pq.push(x);\n                }\n                pq.push(x);\n            }\n            return cost;\n        };\n        std::vector<int> rev = nums;\n        std::reverse(rev.begin(), rev.end());\n        return std::min(solve(nums), solve(rev));\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Slope Trick with Max-Heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int convertArray(int[] nums) {\n        return Math.min(solve(nums), solveRev(nums));\n    }\n\n    private int solve(int[] arr) {\n        java.util.PriorityQueue<Integer> pq = new java.util.PriorityQueue<>(java.util.Collections.reverseOrder());\n        int cost = 0;\n        for (int x : arr) {\n            if (!pq.isEmpty() && pq.peek() > x) {\n                cost += (pq.poll() - x);\n                pq.offer(x);\n            }\n            pq.offer(x);\n        }\n        return cost;\n    }\n\n    private int solveRev(int[] arr) {\n        int n = arr.length;\n        int[] rev = new int[n];\n        for (int i = 0; i < n; i++) rev[i] = arr[n - 1 - i];\n        return solve(rev);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Slope Trick with Max-Heap",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class MaxHeap {\n    constructor() { this.heap = []; }\n    push(val) {\n        this.heap.push(val);\n        this._up(this.heap.length - 1);\n    }\n    pop() {\n        const top = this.heap[0];\n        const bottom = this.heap.pop();\n        if (this.heap.length > 0) {\n            this.heap[0] = bottom;\n            this._down(0);\n        }\n        return top;\n    }\n    peek() { return this.heap[0]; }\n    size() { return this.heap.length; }\n    _up(i) {\n        while (i > 0) {\n            const p = (i - 1) >> 1;\n            if (this.heap[p] < this.heap[i]) {\n                [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];\n                i = p;\n            } else break;\n        }\n    }\n    _down(i) {\n        const len = this.heap.length;\n        while ((i << 1) + 1 < len) {\n            let best = (i << 1) + 1;\n            const r = best + 1;\n            if (r < len && this.heap[r] > this.heap[best]) best = r;\n            if (this.heap[best] > this.heap[i]) {\n                [this.heap[best], this.heap[i]] = [this.heap[i], this.heap[best]];\n                i = best;\n            } else break;\n        }\n    }\n}\n\nvar convertArray = function(nums) {\n    const solve = (arr) => {\n        const pq = new MaxHeap();\n        let cost = 0;\n        for (const x of arr) {\n            if (pq.size() > 0 && pq.peek() > x) {\n                cost += (pq.pop() - x);\n                pq.push(x);\n            }\n            pq.push(x);\n        }\n        return cost;\n    };\n    const rev = [...nums].reverse();\n    return Math.min(solve(nums), solve(rev));\n};"
+    }
+  ]
+}

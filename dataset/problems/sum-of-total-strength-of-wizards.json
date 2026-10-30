@@ -1,0 +1,78 @@
+{
+  "slug": "sum-of-total-strength-of-wizards",
+  "number": 2281,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-monotonic-next-greater"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Minimum Contribution Boundaries",
+      "text": "For each wizard i with value strength[i], determine the maximal subarray where strength[i] is strictly minimal."
+    },
+    {
+      "level": 2,
+      "title": "Next and Previous Smaller Elements",
+      "text": "Using left and right scans, locate previous smaller element index L and next strictly smaller element index R."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Sum of Prefix Sums",
+      "text": "The sum of all subarrays in [L + 1, R - 1] passing through i can be evaluated in constant time using prefix sums of prefix sums modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "Monotonic Stack Double Prefix Sum Implementation",
+      "text": "```python\nclass Solution:\n    def totalStrength(self, strength: list[int]) -> int:\n        MOD = 1_000_000_007\n        n = len(strength)\n        \n        left = [-1] * n\n        stk = []\n        for i in range(n):\n            while stk and strength[stk[-1]] >= strength[i]:\n                stk.pop()\n            left[i] = stk[-1] if stk else -1\n            stk.append(i)\n            \n        right = [n] * n\n        stk = []\n        for i in range(n - 1, -1, -1):\n            while stk and strength[stk[-1]] > strength[i]:\n                stk.pop()\n            right[i] = stk[-1] if stk else n\n            stk.append(i)\n            \n        pref = [0] * (n + 1)\n        for i in range(n):\n            pref[i + 1] = (pref[i] + strength[i]) % MOD\n            \n        pref_pref = [0] * (n + 2)\n        for i in range(n + 1):\n            pref_pref[i + 1] = (pref_pref[i] + pref[i]) % MOD\n            \n        ans = 0\n        for i in range(n):\n            L = left[i] + 1\n            R = right[i] - 1\n            left_count = i - L + 1\n            right_count = R - i + 1\n            \n            pos_part = (pref_pref[R + 2] - pref_pref[i + 1]) * left_count\n            neg_part = (pref_pref[i + 1] - pref_pref[L]) * right_count\n            total_sum = (pos_part - neg_part) % MOD\n            ans = (ans + strength[i] * total_sum) % MOD\n            \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of strength array"
+    ],
+    "notes": "Monotonic stack and prefix sum arrays each take linear time.",
+    "whyNaiveFails": "Evaluating all O(n^2) subarrays takes quadratic time, which fails for n up to 10^5.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for prefix sum of prefix sums array.",
+    "interviewerExpectation": "Candidate avoids duplicate attribution on identical minimum values by using strict inequality on one side."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Monotonic Stack Boundaries with Double Prefix Sums",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def totalStrength(self, strength: list[int]) -> int:\n        MOD = 1_000_000_007\n        n = len(strength)\n        \n        left = [-1] * n\n        stk = []\n        for i in range(n):\n            while stk and strength[stk[-1]] >= strength[i]:\n                stk.pop()\n            left[i] = stk[-1] if stk else -1\n            stk.append(i)\n            \n        right = [n] * n\n        stk = []\n        for i in range(n - 1, -1, -1):\n            while stk and strength[stk[-1]] > strength[i]:\n                stk.pop()\n            right[i] = stk[-1] if stk else n\n            stk.append(i)\n            \n        pref = [0] * (n + 1)\n        for i in range(n):\n            pref[i + 1] = (pref[i] + strength[i]) % MOD\n            \n        pref_pref = [0] * (n + 2)\n        for i in range(n + 1):\n            pref_pref[i + 1] = (pref_pref[i] + pref[i]) % MOD\n            \n        ans = 0\n        for i in range(n):\n            L = left[i] + 1\n            R = right[i] - 1\n            left_count = i - L + 1\n            right_count = R - i + 1\n            \n            pos_part = (pref_pref[R + 2] - pref_pref[i + 1]) * left_count\n            neg_part = (pref_pref[i + 1] - pref_pref[L]) * right_count\n            total_sum = (pos_part - neg_part) % MOD\n            ans = (ans + strength[i] * total_sum) % MOD\n            \n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Monotonic Stack Boundaries with Double Prefix Sums",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int totalStrength(std::vector<int>& strength) {\n        long long MOD = 1e9 + 7;\n        int n = strength.size();\n        std::vector<int> left(n, -1), right(n, n);\n        std::vector<int> stk;\n        for (int i = 0; i < n; ++i) {\n            while (!stk.empty() && strength[stk.back()] >= strength[i]) stk.pop_back();\n            left[i] = stk.empty() ? -1 : stk.back();\n            stk.push_back(i);\n        }\n        stk.clear();\n        for (int i = n - 1; i >= 0; --i) {\n            while (!stk.empty() && strength[stk.back()] > strength[i]) stk.pop_back();\n            right[i] = stk.empty() ? n : stk.back();\n            stk.push_back(i);\n        }\n        std::vector<long long> pref(n + 1, 0), pref_pref(n + 2, 0);\n        for (int i = 0; i < n; ++i) pref[i + 1] = (pref[i] + strength[i]) % MOD;\n        for (int i = 0; i <= n; ++i) pref_pref[i + 1] = (pref_pref[i] + pref[i]) % MOD;\n        long long ans = 0;\n        for (int i = 0; i < n; ++i) {\n            int L = left[i] + 1, R = right[i] - 1;\n            long long left_count = i - L + 1, right_count = R - i + 1;\n            long long pos_part = (pref_pref[R + 2] - pref_pref[i + 1] + MOD) % MOD * left_count % MOD;\n            long long neg_part = (pref_pref[i + 1] - pref_pref[L] + MOD) % MOD * right_count % MOD;\n            long long total_sum = (pos_part - neg_part + MOD) % MOD;\n            ans = (ans + strength[i] * total_sum) % MOD;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Monotonic Stack Boundaries with Double Prefix Sums",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int totalStrength(int[] strength) {\n        long MOD = 1_000_000_007L;\n        int n = strength.length;\n        int[] left = new int[n];\n        int[] right = new int[n];\n        int[] stk = new int[n];\n        int top = -1;\n        for (int i = 0; i < n; i++) {\n            while (top >= 0 && strength[stk[top]] >= strength[i]) top--;\n            left[i] = top >= 0 ? stk[top] : -1;\n            stk[++top] = i;\n        }\n        top = -1;\n        for (int i = n - 1; i >= 0; i--) {\n            while (top >= 0 && strength[stk[top]] > strength[i]) top--;\n            right[i] = top >= 0 ? stk[top] : n;\n            stk[++top] = i;\n        }\n        long[] pref = new long[n + 1];\n        for (int i = 0; i < n; i++) pref[i + 1] = (pref[i] + strength[i]) % MOD;\n        long[] prefPref = new long[n + 2];\n        for (int i = 0; i <= n; i++) prefPref[i + 1] = (prefPref[i] + pref[i]) % MOD;\n        long ans = 0;\n        for (int i = 0; i < n; i++) {\n            int L = left[i] + 1, R = right[i] - 1;\n            long leftCount = i - L + 1, rightCount = R - i + 1;\n            long posPart = (prefPref[R + 2] - prefPref[i + 1] + MOD) % MOD * leftCount % MOD;\n            long negPart = (prefPref[i + 1] - prefPref[L] + MOD) % MOD * rightCount % MOD;\n            long totalSum = (posPart - negPart + MOD) % MOD;\n            ans = (ans + (long) strength[i] * totalSum) % MOD;\n        }\n        return (int) ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Monotonic Stack Boundaries with Double Prefix Sums",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var totalStrength = function(strength) {\n    const MOD = 1000000007n;\n    const n = strength.length;\n    const left = new Int32Array(n).fill(-1);\n    const right = new Int32Array(n).fill(n);\n    const stk = [];\n    for (let i = 0; i < n; i++) {\n        while (stk.length > 0 && strength[stk[stk.length - 1]] >= strength[i]) stk.pop();\n        left[i] = stk.length > 0 ? stk[stk.length - 1] : -1;\n        stk.push(i);\n    }\n    stk.length = 0;\n    for (let i = n - 1; i >= 0; i--) {\n        while (stk.length > 0 && strength[stk[stk.length - 1]] > strength[i]) stk.pop();\n        right[i] = stk.length > 0 ? stk[stk.length - 1] : n;\n        stk.push(i);\n    }\n    const pref = new BigInt64Array(n + 1);\n    for (let i = 0; i < n; i++) pref[i + 1] = (pref[i] + BigInt(strength[i])) % MOD;\n    const prefPref = new BigInt64Array(n + 2);\n    for (let i = 0; i <= n; i++) prefPref[i + 1] = (prefPref[i] + pref[i]) % MOD;\n    let ans = 0n;\n    for (let i = 0; i < n; i++) {\n        const L = left[i] + 1, R = right[i] - 1;\n        const leftCount = BigInt(i - L + 1), rightCount = BigInt(R - i + 1);\n        const posPart = ((prefPref[R + 2] - prefPref[i + 1] + MOD) % MOD * leftCount) % MOD;\n        const negPart = ((prefPref[i + 1] - prefPref[L] + MOD) % MOD * rightCount) % MOD;\n        const totalSum = (posPart - negPart + MOD) % MOD;\n        ans = (ans + BigInt(strength[i]) * totalSum) % MOD;\n    }\n    return Number(ans);\n};"
+    }
+  ]
+}
