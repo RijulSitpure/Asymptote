@@ -1,0 +1,72 @@
+{
+  "slug": "the-number-of-employees-which-report-to-each-employee",
+  "number": 1731,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Manager Subordinate Reporting Hierarchy",
+      "text": "Each employee has an optional reports_to field referencing their manager employee_id."
+    },
+    {
+      "level": 2,
+      "title": "Self-Joining on Manager Key",
+      "text": "join the employees table with itself where the manager employee_id equals the subordinate reports_to."
+    },
+    {
+      "level": 3,
+      "title": "Counting Reports and Rounding Average Age",
+      "text": "group by manager employee_id and name, aggregate with count for reports and round(avg(age)) for average age, and order by employee_id."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT m.employee_id, m.name,\n       COUNT(e.employee_id) AS reports_count,\n       ROUND(AVG(e.age)) AS average_age\nFROM Employees m\nJOIN Employees e ON m.employee_id = e.reports_to\nGROUP BY m.employee_id, m.name\nORDER BY m.employee_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(E log M)",
+    "space": "O(M)",
+    "variables": [
+      "E: total employees",
+      "M: distinct managers"
+    ],
+    "notes": "Self-join on reports_to aggregates direct reports count and average age per manager.",
+    "whyNaiveFails": "Selecting all employees without joining only to reports_to produces individual subordinate profiles instead of manager summaries.",
+    "spaceTimeTradeoff": "Joining manager and subordinate on indexed reports_to runs in linear O(N) time with bounded grouping state.",
+    "interviewerExpectation": "Candidate should handle self-joins for hierarchical reporting structures and rounding average age."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT m.employee_id, m.name,\n       COUNT(e.employee_id) AS reports_count,\n       ROUND(AVG(e.age)) AS average_age\nFROM Employees m\nJOIN Employees e ON m.employee_id = e.reports_to\nGROUP BY m.employee_id, m.name\nORDER BY m.employee_id;",
+      "approach": "The Number of Employees Which Report to Each Employee MySQL Query",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT m.employee_id, m.name,\n       COUNT(e.employee_id) AS reports_count,\n       ROUND(AVG(e.age)) AS average_age\nFROM Employees m\nJOIN Employees e ON m.employee_id = e.reports_to\nGROUP BY m.employee_id, m.name\nORDER BY m.employee_id;",
+      "approach": "The Number of Employees Which Report to Each Employee PostgreSQL Query",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef count_employees(employees: pd.DataFrame) -> pd.DataFrame:\n    merged = employees.merge(employees, left_on='employee_id', right_on='reports_to', suffixes=('_mgr', '_emp'))\n    res = merged.groupby(['employee_id_mgr', 'name_mgr']).agg(\n        reports_count=('employee_id_emp', 'count'),\n        average_age=('age_emp', lambda x: int(round(x.mean() + 1e-9)))\n    ).reset_index()\n    res.rename(columns={'employee_id_mgr': 'employee_id', 'name_mgr': 'name'}, inplace=True)\n    return res.sort_values(by='employee_id')",
+      "approach": "The Number of Employees Which Report to Each Employee pandas Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

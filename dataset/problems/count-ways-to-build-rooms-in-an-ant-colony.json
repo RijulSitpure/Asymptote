@@ -1,0 +1,79 @@
+{
+  "slug": "count-ways-to-build-rooms-in-an-ant-colony",
+  "number": 1916,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tree Poset Extension Formulation",
+      "text": "The construction constraints define a rooted tree where each child requires its parent to be built first."
+    },
+    {
+      "level": 2,
+      "title": "Subtree Size Hook Formula",
+      "text": "the number of linear extensions of a tree poset is given by n factorial divided by the product of all subtree sizes."
+    },
+    {
+      "level": 3,
+      "title": "Fermat Modular Inverses",
+      "text": "compute subtree sizes using postorder traversal, then calculate n factorial multiplied by the modular inverse of the product of subtree sizes using Fermat Little Theorem."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def waysToBuildRooms(self, prevRoom: list[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(prevRoom)\n        adj = [[] for _ in range(n)]\n        for i in range(1, n):\n            adj[prevRoom[i]].append(i)\n\n        size = [1] * n\n        order = []\n        q = [0]\n        while q:\n            u = q.pop()\n            order.append(u)\n            for v in adj[u]:\n                q.append(v)\n\n        for u in reversed(order):\n            for v in adj[u]:\n                size[u] += size[v]\n\n        fact = 1\n        for i in range(1, n + 1):\n            fact = (fact * i) % MOD\n\n        denom = 1\n        for s in size:\n            denom = (denom * s) % MOD\n\n        return (fact * pow(denom, MOD - 2, MOD)) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log MOD)",
+    "space": "O(N)",
+    "variables": [
+      "N: total rooms",
+      "MOD: modulo prime 10^9 + 7"
+    ],
+    "notes": "Subtree sizes calculated in post-order; denominator inverted via modular exponentiation.",
+    "whyNaiveFails": "Generating all topological permutations of tree nodes takes factorial time and memory.",
+    "spaceTimeTradeoff": "Subtree size counting and modular inverse factorial runs in O(N log MOD) time with O(N) memory.",
+    "interviewerExpectation": "Candidate should know the hook-length theorem or tree topological sort formula N! / prod(subtree_size)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def waysToBuildRooms(self, prevRoom: list[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(prevRoom)\n        adj = [[] for _ in range(n)]\n        for i in range(1, n):\n            adj[prevRoom[i]].append(i)\n\n        size = [1] * n\n        order = []\n        q = [0]\n        while q:\n            u = q.pop()\n            order.append(u)\n            for v in adj[u]:\n                q.append(v)\n\n        for u in reversed(order):\n            for v in adj[u]:\n                size[u] += size[v]\n\n        fact = 1\n        for i in range(1, n + 1):\n            fact = (fact * i) % MOD\n\n        denom = 1\n        for s in size:\n            denom = (denom * s) % MOD\n\n        return (fact * pow(denom, MOD - 2, MOD)) % MOD",
+      "approach": "Count Ways to Build Rooms in an Ant Colony Python 3 Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\nprivate:\n    long long modPow(long long base, long long exp, long long mod) {\n        long long res = 1;\n        base %= mod;\n        while (exp > 0) {\n            if (exp % 2 == 1) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp /= 2;\n        }\n        return res;\n    }\npublic:\n    int waysToBuildRooms(vector<int>& prevRoom) {\n        const long long MOD = 1000000007;\n        int n = prevRoom.size();\n        vector<vector<int>> adj(n);\n        for (int i = 1; i < n; i++) adj[prevRoom[i]].push_back(i);\n\n        vector<int> size(n, 1);\n        vector<int> order;\n        vector<int> st = {0};\n        while (!st.empty()) {\n            int u = st.back();\n            st.pop_back();\n            order.push_back(u);\n            for (int v : adj[u]) st.push_back(v);\n        }\n\n        for (int i = n - 1; i >= 0; i--) {\n            int u = order[i];\n            for (int v : adj[u]) size[u] += size[v];\n        }\n\n        long long fact = 1;\n        for (int i = 1; i <= n; i++) fact = (fact * i) % MOD;\n\n        long long denom = 1;\n        for (int s : size) denom = (denom * s) % MOD;\n\n        return (fact * modPow(denom, MOD - 2, MOD)) % MOD;\n    }\n};",
+      "approach": "Count Ways to Build Rooms in an Ant Colony C++ Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private long modPow(long base, long exp, long mod) {\n        long res = 1;\n        base %= mod;\n        while (exp > 0) {\n            if (exp % 2 == 1) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp /= 2;\n        }\n        return res;\n    }\n\n    public int waysToBuildRooms(int[] prevRoom) {\n        long MOD = 1000000007;\n        int n = prevRoom.length;\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int i = 1; i < n; i++) adj.get(prevRoom[i]).add(i);\n\n        int[] size = new int[n];\n        Arrays.fill(size, 1);\n        List<Integer> order = new ArrayList<>();\n        Deque<Integer> st = new ArrayDeque<>();\n        st.push(0);\n        while (!st.isEmpty()) {\n            int u = st.pop();\n            order.add(u);\n            for (int v : adj.get(u)) st.push(v);\n        }\n\n        for (int i = n - 1; i >= 0; i--) {\n            int u = order.get(i);\n            for (int v : adj.get(u)) size[u] += size[v];\n        }\n\n        long fact = 1;\n        for (int i = 1; i <= n; i++) fact = (fact * i) % MOD;\n\n        long denom = 1;\n        for (int s : size) denom = (denom * s) % MOD;\n\n        return (int)((fact * modPow(denom, MOD - 2, MOD)) % MOD);\n    }\n}",
+      "approach": "Count Ways to Build Rooms in an Ant Colony Java Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var waysToBuildRooms = function(prevRoom) {\n  const MOD = 1000000007n;\n  const n = prevRoom.length;\n  const adj = Array.from({ length: n }, () => []);\n  for (let i = 1; i < n; i++) adj[prevRoom[i]].push(i);\n\n  const size = new Int32Array(n).fill(1);\n  const order = [];\n  const st = [0];\n  while (st.length > 0) {\n    const u = st.pop();\n    order.push(u);\n    for (const v of adj[u]) st.push(v);\n  }\n\n  for (let i = n - 1; i >= 0; i--) {\n    const u = order[i];\n    for (const v of adj[u]) size[u] += size[v];\n  }\n\n  function modPow(base, exp) {\n    let res = 1n;\n    base %= MOD;\n    while (exp > 0n) {\n      if (exp % 2n === 1n) res = (res * base) % MOD;\n      base = (base * base) % MOD;\n      exp /= 2n;\n    }\n    return res;\n  }\n\n  let fact = 1n;\n  for (let i = 1n; i <= BigInt(n); i++) fact = (fact * i) % MOD;\n\n  let denom = 1n;\n  for (let i = 0; i < n; i++) denom = (denom * BigInt(size[i])) % MOD;\n\n  return Number((fact * modPow(denom, MOD - 2n)) % MOD);\n};",
+      "approach": "Count Ways to Build Rooms in an Ant Colony JavaScript Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

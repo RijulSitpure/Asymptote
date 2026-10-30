@@ -30,6 +30,7 @@ export function verifyAlgoMultiLang(slug, prob, slugTestDir, runtimes) {
 #include <numeric>
 #include <utility>
 #include <sstream>
+#include <random>
 
 using namespace std;
 `;
@@ -141,7 +142,7 @@ struct PolyNode {
 class GridMaster {
 public:
     bool canMove(char direction);
-    void move(char direction);
+    int move(char direction);
     bool isTarget();
 };
 

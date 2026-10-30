@@ -1,0 +1,71 @@
+{
+  "slug": "biggest-window-between-visits",
+  "number": 1709,
+  "category": "Database",
+  "patterns": [
+    "window-offset"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Ordering Chronological Visits",
+      "text": "Sort each user visits chronologically to find consecutive visit intervals."
+    },
+    {
+      "level": 2,
+      "title": "Lead Window Offset with Boundary Fallback",
+      "text": "use the lead window function partitioned by user_id and ordered by visit_date, providing '2021-01-01' as the default value when there is no subsequent visit."
+    },
+    {
+      "level": 3,
+      "title": "Taking Maximum Window per User",
+      "text": "compute the difference between the next visit date and current visit date with datediff, then take max grouped by user_id."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nWITH Ranked AS (\n    SELECT user_id,\n           visit_date,\n           LEAD(visit_date, 1, '2021-01-01') OVER (PARTITION BY user_id ORDER BY visit_date) AS next_visit\n    FROM UserVisits\n)\nSELECT user_id,\n       MAX(DATEDIFF(next_visit, visit_date)) AS biggest_window\nFROM Ranked\nGROUP BY user_id\nORDER BY user_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: user visits records"
+    ],
+    "notes": "LEAD window function partitions and sorts visits per user, taking maximum date difference.",
+    "whyNaiveFails": "Correlated subqueries to find the next visit require scanning the user's visit history repeatedly.",
+    "spaceTimeTradeoff": "Window partitioning and sorting takes O(N log N) time and computes adjacent date deltas in linear time.",
+    "interviewerExpectation": "Candidate should leverage LEAD with default fallback parameter to compute the boundary window cleanly."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Ranked AS (\n    SELECT user_id,\n           visit_date,\n           LEAD(visit_date, 1, '2021-01-01') OVER (PARTITION BY user_id ORDER BY visit_date) AS next_visit\n    FROM UserVisits\n)\nSELECT user_id,\n       MAX(DATEDIFF(next_visit, visit_date)) AS biggest_window\nFROM Ranked\nGROUP BY user_id\nORDER BY user_id;",
+      "approach": "Biggest Window Between Visits MySQL Query",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Ranked AS (\n    SELECT user_id,\n           visit_date,\n           LEAD(visit_date, 1, '2021-01-01'::date) OVER (PARTITION BY user_id ORDER BY visit_date) AS next_visit\n    FROM UserVisits\n)\nSELECT user_id,\n       MAX(next_visit - visit_date) AS biggest_window\nFROM Ranked\nGROUP BY user_id\nORDER BY user_id;",
+      "approach": "Biggest Window Between Visits PostgreSQL Query",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef biggest_window(user_visits: pd.DataFrame) -> pd.DataFrame:\n    user_visits = user_visits.sort_values(by=['user_id', 'visit_date'])\n    user_visits['visit_date'] = pd.to_datetime(user_visits['visit_date'])\n    user_visits['next_visit'] = user_visits.groupby('user_id')['visit_date'].shift(-1).fillna(pd.to_datetime('2021-01-01'))\n    user_visits['diff'] = (user_visits['next_visit'] - user_visits['visit_date']).dt.days\n    res = user_visits.groupby('user_id')['diff'].max().reset_index()\n    res.rename(columns={'diff': 'biggest_window'}, inplace=True)\n    return res.sort_values(by='user_id')",
+      "approach": "Biggest Window Between Visits pandas Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

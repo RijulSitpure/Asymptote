@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-path-cost-in-a-hidden-grid",
+  "number": 1810,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Exploration via Backtracking DFS",
+      "text": "The robot has no access to the full grid initially. You must explore all reachable cells using depth-first search while recording cell costs."
+    },
+    {
+      "level": 2,
+      "title": "Backtracking Reverse Move",
+      "text": "whenever the robot moves to an adjacent cell, record the movement cost and backtrack by moving in the opposite direction."
+    },
+    {
+      "level": 3,
+      "title": "Dijkstra on Explored Graph",
+      "text": "after building the graph of reachable cells and locating the target, execute Dijkstra algorithm from the starting cell (0, 0) to find the minimum cost path."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def findShortestPath(self, master: 'GridMaster') -> int:\n        grid = {}\n        target = None\n        dirs = [('U', 'D', -1, 0), ('D', 'U', 1, 0), ('L', 'R', 0, -1), ('R', 'L', 0, 1)]\n\n        def dfs(r, c):\n            nonlocal target\n            if master.isTarget():\n                target = (r, c)\n            for fwd, bwd, dr, dc in dirs:\n                nr, nc = r + dr, c + dc\n                if (nr, nc) not in grid and master.canMove(fwd):\n                    cost = master.move(fwd)\n                    grid[(nr, nc)] = cost\n                    dfs(nr, nc)\n                    master.move(bwd)\n\n        grid[(0, 0)] = 0\n        dfs(0, 0)\n        if not target:\n            return -1\n\n        pq = [(0, 0, 0)]\n        dist = {(0, 0): 0}\n        while pq:\n            d, r, c = heapq.heappop(pq)\n            if (r, c) == target:\n                return d\n            if d > dist.get((r, c), float('inf')):\n                continue\n            for _, _, dr, dc in dirs:\n                nr, nc = r + dr, c + dc\n                if (nr, nc) in grid:\n                    w = grid[(nr, nc)]\n                    if d + w < dist.get((nr, nc), float('inf')):\n                        dist[(nr, nc)] = d + w\n                        heapq.heappush(pq, (d + w, nr, nc))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V log V + E)",
+    "space": "O(V)",
+    "variables": [
+      "V: reachable grid cells",
+      "E: cell transitions"
+    ],
+    "notes": "Backtracking DFS explores reachable cells, followed by min-heap Dijkstra shortest path.",
+    "whyNaiveFails": "Attempting to find the shortest path without full exploration risks greedy dead-ends or sub-optimal paths.",
+    "spaceTimeTradeoff": "DFS explores at most 400 cells in O(V + E) time, and Dijkstra priority queue executes in O(V log V) time.",
+    "interviewerExpectation": "Candidate should decompose the interactive problem into graph exploration (DFS) followed by shortest path (Dijkstra)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass Solution:\n    def findShortestPath(self, master: 'GridMaster') -> int:\n        grid = {}\n        target = None\n        dirs = [('U', 'D', -1, 0), ('D', 'U', 1, 0), ('L', 'R', 0, -1), ('R', 'L', 0, 1)]\n\n        def dfs(r, c):\n            nonlocal target\n            if master.isTarget():\n                target = (r, c)\n            for fwd, bwd, dr, dc in dirs:\n                nr, nc = r + dr, c + dc\n                if (nr, nc) not in grid and master.canMove(fwd):\n                    cost = master.move(fwd)\n                    grid[(nr, nc)] = cost\n                    dfs(nr, nc)\n                    master.move(bwd)\n\n        grid[(0, 0)] = 0\n        dfs(0, 0)\n        if not target:\n            return -1\n\n        pq = [(0, 0, 0)]\n        dist = {(0, 0): 0}\n        while pq:\n            d, r, c = heapq.heappop(pq)\n            if (r, c) == target:\n                return d\n            if d > dist.get((r, c), float('inf')):\n                continue\n            for _, _, dr, dc in dirs:\n                nr, nc = r + dr, c + dc\n                if (nr, nc) in grid:\n                    w = grid[(nr, nc)]\n                    if d + w < dist.get((nr, nc), float('inf')):\n                        dist[(nr, nc)] = d + w\n                        heapq.heappush(pq, (d + w, nr, nc))\n        return -1",
+      "approach": "Minimum Path Cost in a Hidden Grid Python 3 Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\nprivate:\n    struct Cell {\n        int r, c;\n        bool operator==(const Cell& o) const { return r == o.r && c == o.c; }\n    };\n    struct CellHash {\n        size_t operator()(const Cell& p) const { return hash<int>()(p.r) ^ (hash<int>()(p.c) << 16); }\n    };\npublic:\n    int findShortestPath(GridMaster &master) {\n        unordered_map<Cell, int, CellHash> grid;\n        Cell target = {100000, 100000};\n        vector<tuple<char, char, int, int>> dirs = {\n            {'U', 'D', -1, 0}, {'D', 'U', 1, 0}, {'L', 'R', 0, -1}, {'R', 'L', 0, 1}\n        };\n\n        function<void(int, int)> dfs = [&](int r, int c) {\n            if (master.isTarget()) {\n                target = {r, c};\n            }\n            for (auto& [fwd, bwd, dr, dc] : dirs) {\n                int nr = r + dr, nc = c + dc;\n                Cell nextCell = {nr, nc};\n                if (grid.find(nextCell) == grid.end() && master.canMove(fwd)) {\n                    int cost = master.move(fwd);\n                    grid[nextCell] = cost;\n                    dfs(nr, nc);\n                    master.move(bwd);\n                }\n            }\n        };\n\n        grid[{0, 0}] = 0;\n        dfs(0, 0);\n        if (target.r == 100000) return -1;\n\n        priority_queue<tuple<int, int, int>, vector<tuple<int, int, int>>, greater<>> pq;\n        unordered_map<Cell, int, CellHash> dist;\n        pq.push({0, 0, 0});\n        dist[{0, 0}] = 0;\n\n        while (!pq.empty()) {\n            auto [d, r, c] = pq.top();\n            pq.pop();\n            if (r == target.r && c == target.c) return d;\n            if (d > dist[{r, c}]) continue;\n            for (auto& [fwd, bwd, dr, dc] : dirs) {\n                int nr = r + dr, nc = c + dc;\n                Cell nxt = {nr, nc};\n                if (grid.find(nxt) != grid.end()) {\n                    int w = grid[nxt];\n                    if (dist.find(nxt) == dist.end() || d + w < dist[nxt]) {\n                        dist[nxt] = d + w;\n                        pq.push({d + w, nr, nc});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "Minimum Path Cost in a Hidden Grid C++ Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int findShortestPath(GridMaster master) {\n        Map<String, Integer> grid = new HashMap<>();\n        int[] target = null;\n        char[] fwd = {'U', 'D', 'L', 'R'};\n        char[] bwd = {'D', 'U', 'R', 'L'};\n        int[] dr = {-1, 1, 0, 0};\n        int[] dc = {0, 0, -1, 1};\n\n        grid.put(\"0,0\", 0);\n        dfs(master, 0, 0, grid, fwd, bwd, dr, dc);\n        for (String k : grid.keySet()) {\n            if (k.startsWith(\"T:\")) {\n                String[] parts = k.substring(2).split(\",\");\n                target = new int[]{Integer.parseInt(parts[0]), Integer.parseInt(parts[1])};\n                break;\n            }\n        }\n        if (target == null) return -1;\n\n        PriorityQueue<int[]> pq = new PriorityQueue<>(Comparator.comparingInt(a -> a[0]));\n        Map<String, Integer> dist = new HashMap<>();\n        pq.offer(new int[]{0, 0, 0});\n        dist.put(\"0,0\", 0);\n\n        while (!pq.isEmpty()) {\n            int[] top = pq.poll();\n            int d = top[0], r = top[1], c = top[2];\n            if (r == target[0] && c == target[1]) return d;\n            String key = r + \",\" + c;\n            if (d > dist.getOrDefault(key, Integer.MAX_VALUE)) continue;\n\n            for (int i = 0; i < 4; i++) {\n                int nr = r + dr[i], nc = c + dc[i];\n                String nkey = nr + \",\" + nc;\n                if (grid.containsKey(nkey)) {\n                    int w = grid.get(nkey);\n                    if (d + w < dist.getOrDefault(nkey, Integer.MAX_VALUE)) {\n                        dist.put(nkey, d + w);\n                        pq.offer(new int[]{d + w, nr, nc});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n\n    private void dfs(GridMaster master, int r, int c, Map<String, Integer> grid, char[] fwd, char[] bwd, int[] dr, int[] dc) {\n        if (master.isTarget()) {\n            grid.put(\"T:\" + r + \",\" + c, 0);\n        }\n        for (int i = 0; i < 4; i++) {\n            int nr = r + dr[i], nc = c + dc[i];\n            String nkey = nr + \",\" + nc;\n            if (!grid.containsKey(nkey) && master.canMove(fwd[i])) {\n                int cost = master.move(fwd[i]);\n                grid.put(nkey, cost);\n                dfs(master, nr, nc, grid, fwd, bwd, dr, dc);\n                master.move(bwd[i]);\n            }\n        }\n    }\n}",
+      "approach": "Minimum Path Cost in a Hidden Grid Java Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findShortestPath = function(master) {\n  const grid = new Map();\n  let target = null;\n  const dirs = [\n    { fwd: 'U', bwd: 'D', dr: -1, dc: 0 },\n    { fwd: 'D', bwd: 'U', dr: 1, dc: 0 },\n    { fwd: 'L', bwd: 'R', dr: 0, dc: -1 },\n    { fwd: 'R', bwd: 'L', dr: 0, dc: 1 }\n  ];\n\n  function dfs(r, c) {\n    if (master.isTarget()) {\n      target = [r, c];\n    }\n    for (const { fwd, bwd, dr, dc } of dirs) {\n      const nr = r + dr, nc = c + dc;\n      const key = `${nr},${nc}`;\n      if (!grid.has(key) && master.canMove(fwd)) {\n        const cost = master.move(fwd);\n        grid.set(key, cost);\n        dfs(nr, nc);\n        master.move(bwd);\n      }\n    }\n  }\n\n  grid.set('0,0', 0);\n  dfs(0, 0);\n  if (!target) return -1;\n\n  const pq = [[0, 0, 0]];\n  const dist = new Map([['0,0', 0]]);\n\n  while (pq.length > 0) {\n    pq.sort((a, b) => a[0] - b[0]);\n    const [d, r, c] = pq.shift();\n    if (r === target[0] && c === target[1]) return d;\n    const key = `${r},${c}`;\n    if (d > (dist.get(key) ?? Infinity)) continue;\n\n    for (const { dr, dc } of dirs) {\n      const nr = r + dr, nc = c + dc;\n      const nkey = `${nr},${nc}`;\n      if (grid.has(nkey)) {\n        const w = grid.get(nkey);\n        if (d + w < (dist.get(nkey) ?? Infinity)) {\n          dist.set(nkey, d + w);\n          pq.push([d + w, nr, nc]);\n        }\n      }\n    }\n  }\n  return -1;\n};",
+      "approach": "Minimum Path Cost in a Hidden Grid JavaScript Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

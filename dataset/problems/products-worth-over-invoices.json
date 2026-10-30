@@ -1,0 +1,72 @@
+{
+  "slug": "products-worth-over-invoices",
+  "number": 1677,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Preserving All Products",
+      "text": "A product may have zero, one, or multiple associated invoices in the invoice table."
+    },
+    {
+      "level": 2,
+      "title": "Left Outer Join",
+      "text": "use a left join from product to invoice so products with no invoices are preserved."
+    },
+    {
+      "level": 3,
+      "title": "Aggregating Amounts with Null Coalescing",
+      "text": "aggregate with sum on each numerical field and handle null values with ifnull or coalesce defaulting to 0, ordering by name."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT p.name,\n       IFNULL(SUM(i.rest), 0) AS rest,\n       IFNULL(SUM(i.paid), 0) AS paid,\n       IFNULL(SUM(i.canceled), 0) AS canceled,\n       IFNULL(SUM(i.refunded), 0) AS refunded\nFROM Product p\nLEFT JOIN Invoice i ON p.product_id = i.product_id\nGROUP BY p.product_id, p.name\nORDER BY p.name;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(P + I)",
+    "space": "O(P)",
+    "variables": [
+      "P: products count",
+      "I: invoices count"
+    ],
+    "notes": "Left outer join preserves zero-invoice products, aggregating amounts with IFNULL.",
+    "whyNaiveFails": "An inner join inadvertently drops products that have not yet had any invoices generated.",
+    "spaceTimeTradeoff": "A left join with group by product_id runs in O(N + M) time and aggregates amounts with bounded memory.",
+    "interviewerExpectation": "Candidate should properly use LEFT JOIN and wrap SUM in IFNULL or COALESCE to avoid NULL outputs."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT p.name,\n       IFNULL(SUM(i.rest), 0) AS rest,\n       IFNULL(SUM(i.paid), 0) AS paid,\n       IFNULL(SUM(i.canceled), 0) AS canceled,\n       IFNULL(SUM(i.refunded), 0) AS refunded\nFROM Product p\nLEFT JOIN Invoice i ON p.product_id = i.product_id\nGROUP BY p.product_id, p.name\nORDER BY p.name;",
+      "approach": "Products Worth Over Invoices MySQL Query",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT p.name,\n       COALESCE(SUM(i.rest), 0) AS rest,\n       COALESCE(SUM(i.paid), 0) AS paid,\n       COALESCE(SUM(i.canceled), 0) AS canceled,\n       COALESCE(SUM(i.refunded), 0) AS refunded\nFROM Product p\nLEFT JOIN Invoice i ON p.product_id = i.product_id\nGROUP BY p.product_id, p.name\nORDER BY p.name;",
+      "approach": "Products Worth Over Invoices PostgreSQL Query",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef analyze_products(product: pd.DataFrame, invoice: pd.DataFrame) -> pd.DataFrame:\n    merged = product.merge(invoice, on='product_id', how='left')\n    res = merged.groupby(['product_id', 'name'])[['rest', 'paid', 'canceled', 'refunded']].sum().reset_index()\n    res = res.sort_values(by='name')[['name', 'rest', 'paid', 'canceled', 'refunded']]\n    return res",
+      "approach": "Products Worth Over Invoices pandas Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

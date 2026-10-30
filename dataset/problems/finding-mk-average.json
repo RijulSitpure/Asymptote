@@ -1,0 +1,79 @@
+{
+  "slug": "finding-mk-average",
+  "number": 1825,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sliding Window Stream Buffer",
+      "text": "Maintain the sliding window of the last m elements using a sequential buffer."
+    },
+    {
+      "level": 2,
+      "title": "Maintaining Distribution and Partial Sums",
+      "text": "maintain the distribution of elements in the window using binary indexed trees or balanced search trees."
+    },
+    {
+      "level": 3,
+      "title": "Binary Lifting for Rank Queries",
+      "text": "with two Fenwick trees (one for frequencies, one for values sum), find the k-th smallest element and (m-k)-th smallest element in O(log max_val) time, subtract both k-element tails, and divide by m - 2k."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Fenwick:\n    def __init__(self, size):\n        self.tree = [0] * (size + 1)\n\n    def update(self, i, delta):\n        while i < len(self.tree):\n            self.tree[i] += delta\n            i += i & (-i)\n\n    def query(self, i):\n        res = 0\n        while i > 0:\n            res += self.tree[i]\n            i -= i & (-i)\n        return res\n\n    def find_by_rank(self, rank):\n        idx = 0\n        for step in [65536, 32768, 16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]:\n            nxt = idx + step\n            if nxt < len(self.tree) and self.tree[nxt] < rank:\n                rank -= self.tree[nxt]\n                idx = nxt\n        return idx + 1\n\nclass MKAverage:\n    def __init__(self, m: int, k: int):\n        self.m = m\n        self.k = k\n        self.q = deque()\n        self.MAX_VAL = 100000\n        self.bit_count = Fenwick(self.MAX_VAL)\n        self.bit_sum = Fenwick(self.MAX_VAL)\n\n    def addElement(self, num: int) -> None:\n        self.q.append(num)\n        self.bit_count.update(num, 1)\n        self.bit_sum.update(num, num)\n        if len(self.q) > self.m:\n            old = self.q.popleft()\n            self.bit_count.update(old, -1)\n            self.bit_sum.update(old, -old)\n\n    def _get_smallest_k_sum(self, count: int) -> int:\n        if count == 0:\n            return 0\n        val = self.bit_count.find_by_rank(count)\n        cnt_before = self.bit_count.query(val - 1)\n        sum_before = self.bit_sum.query(val - 1)\n        return sum_before + (count - cnt_before) * val\n\n    def calculateMKAverage(self) -> int:\n        if len(self.q) < self.m:\n            return -1\n        total_sum = self.bit_sum.query(self.MAX_VAL)\n        smallest_k = self._get_smallest_k_sum(self.k)\n        largest_k = total_sum - self._get_smallest_k_sum(self.m - self.k)\n        mid_sum = total_sum - smallest_k - largest_k\n        return mid_sum // (self.m - 2 * self.k)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log C) per add and calculate",
+    "space": "O(m + C)",
+    "variables": [
+      "m: sliding window size",
+      "C: maximum numerical value (100,000)"
+    ],
+    "notes": "Fenwick trees maintain frequency counts and prefix sums with rank binary lifting.",
+    "whyNaiveFails": "Sorting the last m elements on each query takes O(m log m) time, resulting in time limit exceeded with frequent queries.",
+    "spaceTimeTradeoff": "Dual Fenwick trees track frequencies and partial sums in O(log C) per add and calculate, where C = 100,000.",
+    "interviewerExpectation": "Candidate should maintain sliding window order and efficiently balance partitions or use binary indexed tree rank lifting."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Fenwick:\n    def __init__(self, size):\n        self.tree = [0] * (size + 1)\n\n    def update(self, i, delta):\n        while i < len(self.tree):\n            self.tree[i] += delta\n            i += i & (-i)\n\n    def query(self, i):\n        res = 0\n        while i > 0:\n            res += self.tree[i]\n            i -= i & (-i)\n        return res\n\n    def find_by_rank(self, rank):\n        idx = 0\n        for step in [65536, 32768, 16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1]:\n            nxt = idx + step\n            if nxt < len(self.tree) and self.tree[nxt] < rank:\n                rank -= self.tree[nxt]\n                idx = nxt\n        return idx + 1\n\nclass MKAverage:\n    def __init__(self, m: int, k: int):\n        self.m = m\n        self.k = k\n        self.q = deque()\n        self.MAX_VAL = 100000\n        self.bit_count = Fenwick(self.MAX_VAL)\n        self.bit_sum = Fenwick(self.MAX_VAL)\n\n    def addElement(self, num: int) -> None:\n        self.q.append(num)\n        self.bit_count.update(num, 1)\n        self.bit_sum.update(num, num)\n        if len(self.q) > self.m:\n            old = self.q.popleft()\n            self.bit_count.update(old, -1)\n            self.bit_sum.update(old, -old)\n\n    def _get_smallest_k_sum(self, count: int) -> int:\n        if count == 0:\n            return 0\n        val = self.bit_count.find_by_rank(count)\n        cnt_before = self.bit_count.query(val - 1)\n        sum_before = self.bit_sum.query(val - 1)\n        return sum_before + (count - cnt_before) * val\n\n    def calculateMKAverage(self) -> int:\n        if len(self.q) < self.m:\n            return -1\n        total_sum = self.bit_sum.query(self.MAX_VAL)\n        smallest_k = self._get_smallest_k_sum(self.k)\n        largest_k = total_sum - self._get_smallest_k_sum(self.m - self.k)\n        mid_sum = total_sum - smallest_k - largest_k\n        return mid_sum // (self.m - 2 * self.k)",
+      "approach": "Finding MK Average Python 3 Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class MKAverage {\nprivate:\n    int m, k;\n    queue<int> q;\n    static const int MAX_VAL = 100000;\n    long long bitCount[MAX_VAL + 1];\n    long long bitSum[MAX_VAL + 1];\n\n    void update(long long bit[], int i, long long delta) {\n        for (; i <= MAX_VAL; i += i & (-i)) bit[i] += delta;\n    }\n\n    long long query(long long bit[], int i) {\n        long long res = 0;\n        for (; i > 0; i -= i & (-i)) res += bit[i];\n        return res;\n    }\n\n    int findByRank(long long rank) {\n        int idx = 0;\n        for (int step = 65536; step > 0; step >>= 1) {\n            int nxt = idx + step;\n            if (nxt <= MAX_VAL && bitCount[nxt] < rank) {\n                rank -= bitCount[nxt];\n                idx = nxt;\n            }\n        }\n        return idx + 1;\n    }\n\n    long long getSmallestKSum(int count) {\n        if (count == 0) return 0;\n        int val = findByRank(count);\n        long long cntBefore = query(bitCount, val - 1);\n        long long sumBefore = query(bitSum, val - 1);\n        return sumBefore + (count - cntBefore) * val;\n    }\n\npublic:\n    MKAverage(int m, int k) : m(m), k(k) {\n        memset(bitCount, 0, sizeof(bitCount));\n        memset(bitSum, 0, sizeof(bitSum));\n    }\n    \n    void addElement(int num) {\n        q.push(num);\n        update(bitCount, num, 1);\n        update(bitSum, num, num);\n        if (q.size() > m) {\n            int old = q.front();\n            q.pop();\n            update(bitCount, old, -1);\n            update(bitSum, old, -old);\n        }\n    }\n    \n    int calculateMKAverage() {\n        if (q.size() < m) return -1;\n        long long totalSum = query(bitSum, MAX_VAL);\n        long long smallestK = getSmallestKSum(k);\n        long long largestK = totalSum - getSmallestKSum(m - k);\n        long long midSum = totalSum - smallestK - largestK;\n        return midSum / (m - 2 * k);\n    }\n};",
+      "approach": "Finding MK Average C++ Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class MKAverage {\n    private int m, k;\n    private Queue<Integer> q = new ArrayDeque<>();\n    private static final int MAX_VAL = 100000;\n    private long[] bitCount = new long[MAX_VAL + 1];\n    private long[] bitSum = new long[MAX_VAL + 1];\n\n    private void update(long[] bit, int i, long delta) {\n        for (; i <= MAX_VAL; i += i & (-i)) bit[i] += delta;\n    }\n\n    private long query(long[] bit, int i) {\n        long res = 0;\n        for (; i > 0; i -= i & (-i)) res += bit[i];\n        return res;\n    }\n\n    private int findByRank(long rank) {\n        int idx = 0;\n        for (int step = 65536; step > 0; step >>= 1) {\n            int nxt = idx + step;\n            if (nxt <= MAX_VAL && bitCount[nxt] < rank) {\n                rank -= bitCount[nxt];\n                idx = nxt;\n            }\n        }\n        return idx + 1;\n    }\n\n    private long getSmallestKSum(int count) {\n        if (count == 0) return 0;\n        int val = findByRank(count);\n        long cntBefore = query(bitCount, val - 1);\n        long sumBefore = query(bitSum, val - 1);\n        return sumBefore + (count - cntBefore) * val;\n    }\n\n    public MKAverage(int m, int k) {\n        this.m = m;\n        this.k = k;\n    }\n    \n    public void addElement(int num) {\n        q.offer(num);\n        update(bitCount, num, 1);\n        update(bitSum, num, num);\n        if (q.size() > m) {\n            int old = q.poll();\n            update(bitCount, old, -1);\n            update(bitSum, old, -old);\n        }\n    }\n    \n    public int calculateMKAverage() {\n        if (q.size() < m) return -1;\n        long totalSum = query(bitSum, MAX_VAL);\n        long smallestK = getSmallestKSum(k);\n        long largestK = totalSum - getSmallestKSum(m - k);\n        long midSum = totalSum - smallestK - largestK;\n        return (int)(midSum / (m - 2 * k));\n    }\n}",
+      "approach": "Finding MK Average Java Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class MKAverage {\n  constructor(m, k) {\n    this.m = m;\n    this.k = k;\n    this.q = [];\n    this.head = 0;\n    this.MAX_VAL = 100000;\n    this.bitCount = new Float64Array(this.MAX_VAL + 1);\n    this.bitSum = new Float64Array(this.MAX_VAL + 1);\n  }\n\n  update(bit, i, delta) {\n    for (; i <= this.MAX_VAL; i += i & -i) bit[i] += delta;\n  }\n\n  query(bit, i) {\n    let res = 0;\n    for (; i > 0; i -= i & -i) res += bit[i];\n    return res;\n  }\n\n  findByRank(rank) {\n    let idx = 0;\n    for (let step = 65536; step > 0; step >>= 1) {\n      const nxt = idx + step;\n      if (nxt <= this.MAX_VAL && this.bitCount[nxt] < rank) {\n        rank -= this.bitCount[nxt];\n        idx = nxt;\n      }\n    }\n    return idx + 1;\n  }\n\n  getSmallestKSum(count) {\n    if (count === 0) return 0;\n    const val = this.findByRank(count);\n    const cntBefore = this.query(this.bitCount, val - 1);\n    const sumBefore = this.query(this.bitSum, val - 1);\n    return sumBefore + (count - cntBefore) * val;\n  }\n\n  addElement(num) {\n    this.q.push(num);\n    this.update(this.bitCount, num, 1);\n    this.update(this.bitSum, num, num);\n    if (this.q.length - this.head > this.m) {\n      const old = this.q[this.head++];\n      this.update(this.bitCount, old, -1);\n      this.update(this.bitSum, old, -old);\n    }\n  }\n\n  calculateMKAverage() {\n    if (this.q.length - this.head < this.m) return -1;\n    const totalSum = this.query(this.bitSum, this.MAX_VAL);\n    const smallestK = this.getSmallestKSum(this.k);\n    const largestK = totalSum - this.getSmallestKSum(this.m - this.k);\n    const midSum = totalSum - smallestK - largestK;\n    return Math.floor(midSum / (this.m - 2 * this.k));\n  }\n}",
+      "approach": "Finding MK Average JavaScript Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

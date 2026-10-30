@@ -1,0 +1,72 @@
+{
+  "slug": "average-time-of-process-per-machine",
+  "number": 1661,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Correlating Start and End Activity Records",
+      "text": "Each machine runs processes where each process has a start record and an end record."
+    },
+    {
+      "level": 2,
+      "title": "Joining Start and End Records",
+      "text": "join the activity table with itself on machine_id and process_id to align the start and end timestamps side by side."
+    },
+    {
+      "level": 3,
+      "title": "Averaging Processing Times",
+      "text": "filter for start activity on the left and end activity on the right, compute their difference, and aggregate with avg rounded to 3 decimal places grouped by machine_id."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```mysql\nSELECT a.machine_id, ROUND(AVG(b.timestamp - a.timestamp), 3) AS processing_time\nFROM Activity a\nJOIN Activity b ON a.machine_id = b.machine_id AND a.process_id = b.process_id AND a.activity_type = 'start' AND b.activity_type = 'end'\nGROUP BY a.machine_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N)",
+    "space": "O(M)",
+    "variables": [
+      "N: activity events",
+      "M: distinct machines"
+    ],
+    "notes": "Self-join on composite machine and process key groups event pairs in linear time.",
+    "whyNaiveFails": "Correlated subqueries for every row require scanning the activity table repeatedly in quadratic time.",
+    "spaceTimeTradeoff": "A self-join on machine and process ID runs in linear time with indexed lookups and minimal temporary space.",
+    "interviewerExpectation": "Candidate should demonstrate self-joining start and end events or using conditional aggregation with CASE WHEN."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT a.machine_id, ROUND(AVG(b.timestamp - a.timestamp), 3) AS processing_time\nFROM Activity a\nJOIN Activity b ON a.machine_id = b.machine_id AND a.process_id = b.process_id AND a.activity_type = 'start' AND b.activity_type = 'end'\nGROUP BY a.machine_id;",
+      "approach": "Average Time of Process per Machine MySQL Query",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT a.machine_id, ROUND(AVG(b.timestamp - a.timestamp)::numeric, 3) AS processing_time\nFROM Activity a\nJOIN Activity b ON a.machine_id = b.machine_id AND a.process_id = b.process_id AND a.activity_type = 'start' AND b.activity_type = 'end'\nGROUP BY a.machine_id;",
+      "approach": "Average Time of Process per Machine PostgreSQL Query",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef get_average_time(activity: pd.DataFrame) -> pd.DataFrame:\n    start = activity[activity['activity_type'] == 'start']\n    end = activity[activity['activity_type'] == 'end']\n    merged = start.merge(end, on=['machine_id', 'process_id'], suffixes=('_start', '_end'))\n    merged['diff'] = merged['timestamp_end'] - merged['timestamp_start']\n    res = merged.groupby('machine_id')['diff'].mean().round(3).reset_index()\n    res.rename(columns={'diff': 'processing_time'}, inplace=True)\n    return res",
+      "approach": "Average Time of Process per Machine pandas Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

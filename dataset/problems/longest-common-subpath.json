@@ -1,0 +1,80 @@
+{
+  "slug": "longest-common-subpath",
+  "number": 1923,
+  "category": "Algorithms",
+  "patterns": [
+    "string-matching"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Binary Search on Subpath Length",
+      "text": "The problem asks for the maximum length L such that a subpath of length L appears in all friends paths."
+    },
+    {
+      "level": 2,
+      "title": "Feasibility Search Interval",
+      "text": "binary search on the subpath length L in the range [1, min(len(path))]."
+    },
+    {
+      "level": 3,
+      "title": "Double Rolling Hash Intersection",
+      "text": "for a candidate length L, use rolling hash (Rabin-Karp) with double hashing to collect subpath hashes for each friend, taking the intersection across all friends."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def longestCommonSubpath(self, n: int, paths: list[list[int]]) -> int:\n        low = 1\n        high = min(len(p) for p in paths)\n        BASE1, MOD1 = 100003, 10**9 + 7\n        BASE2, MOD2 = 100019, 10**9 + 9\n\n        def check(L):\n            b1_pow = pow(BASE1, L, MOD1)\n            b2_pow = pow(BASE2, L, MOD2)\n\n            common = None\n            for p in paths:\n                h1, h2 = 0, 0\n                for i in range(L):\n                    h1 = (h1 * BASE1 + p[i]) % MOD1\n                    h2 = (h2 * BASE2 + p[i]) % MOD2\n                seen = {(h1, h2)}\n                for i in range(L, len(p)):\n                    h1 = (h1 * BASE1 + p[i] - p[i - L] * b1_pow) % MOD1\n                    h2 = (h2 * BASE2 + p[i] - p[i - L] * b2_pow) % MOD2\n                    seen.add((h1, h2))\n                if common is None:\n                    common = seen\n                else:\n                    common &= seen\n                if not common:\n                    return False\n            return len(common) > 0\n\n        ans = 0\n        while low <= high:\n            mid = (low + high) // 2\n            if check(mid):\n                ans = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N * log(min_len))",
+    "space": "O(min_len)",
+    "variables": [
+      "M: number of friends paths",
+      "N: average path length",
+      "min_len: minimum path length"
+    ],
+    "notes": "Double rolling hash (Rabin-Karp) verifies common candidate length L without hash collisions.",
+    "whyNaiveFails": "Suffix tree construction across multiple large paths is memory intensive and prone to quadratic worst-case behaviors.",
+    "spaceTimeTradeoff": "Binary search on length L with double rolling hash takes O(M * N * log(min_len)) time with O(min_len) memory.",
+    "interviewerExpectation": "Candidate should recognize binary search on length combined with Rabin-Karp rolling hash and collision prevention."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def longestCommonSubpath(self, n: int, paths: list[list[int]]) -> int:\n        low = 1\n        high = min(len(p) for p in paths)\n        BASE1, MOD1 = 100003, 10**9 + 7\n        BASE2, MOD2 = 100019, 10**9 + 9\n\n        def check(L):\n            b1_pow = pow(BASE1, L, MOD1)\n            b2_pow = pow(BASE2, L, MOD2)\n\n            common = None\n            for p in paths:\n                h1, h2 = 0, 0\n                for i in range(L):\n                    h1 = (h1 * BASE1 + p[i]) % MOD1\n                    h2 = (h2 * BASE2 + p[i]) % MOD2\n                seen = {(h1, h2)}\n                for i in range(L, len(p)):\n                    h1 = (h1 * BASE1 + p[i] - p[i - L] * b1_pow) % MOD1\n                    h2 = (h2 * BASE2 + p[i] - p[i - L] * b2_pow) % MOD2\n                    seen.add((h1, h2))\n                if common is None:\n                    common = seen\n                else:\n                    common &= seen\n                if not common:\n                    return False\n            return len(common) > 0\n\n        ans = 0\n        while low <= high:\n            mid = (low + high) // 2\n            if check(mid):\n                ans = mid\n                low = mid + 1\n            else:\n                high = mid - 1\n        return ans",
+      "approach": "Longest Common Subpath Python 3 Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\nprivate:\n    struct HashPair {\n        long long h1, h2;\n        bool operator==(const HashPair& o) const { return h1 == o.h1 && h2 == o.h2; }\n    };\n    struct HashPairOp {\n        size_t operator()(const HashPair& p) const { return hash<long long>()(p.h1) ^ (hash<long long>()(p.h2) << 16); }\n    };\n\n    long long modPow(long long base, long long exp, long long mod) {\n        long long res = 1;\n        base %= mod;\n        while (exp > 0) {\n            if (exp % 2 == 1) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp /= 2;\n        }\n        return res;\n    }\n\n    bool check(int L, const vector<vector<int>>& paths) {\n        const long long BASE1 = 100003, MOD1 = 1000000007;\n        const long long BASE2 = 100019, MOD2 = 1000000009;\n        long long b1Pow = modPow(BASE1, L, MOD1);\n        long long b2Pow = modPow(BASE2, L, MOD2);\n\n        unordered_set<HashPair, HashPairOp> common;\n        bool isFirst = true;\n\n        for (const auto& p : paths) {\n            long long h1 = 0, h2 = 0;\n            for (int i = 0; i < L; i++) {\n                h1 = (h1 * BASE1 + p[i]) % MOD1;\n                h2 = (h2 * BASE2 + p[i]) % MOD2;\n            }\n            unordered_set<HashPair, HashPairOp> seen;\n            seen.insert({h1, h2});\n            for (int i = L; i < p.size(); i++) {\n                h1 = (h1 * BASE1 + p[i] - p[i - L] * b1Pow) % MOD1;\n                if (h1 < 0) h1 += MOD1;\n                h2 = (h2 * BASE2 + p[i] - p[i - L] * b2Pow) % MOD2;\n                if (h2 < 0) h2 += MOD2;\n                seen.insert({h1, h2});\n            }\n\n            if (isFirst) {\n                common = std::move(seen);\n                isFirst = false;\n            } else {\n                unordered_set<HashPair, HashPairOp> nextCommon;\n                for (const auto& item : seen) {\n                    if (common.find(item) != common.end()) nextCommon.insert(item);\n                }\n                common = std::move(nextCommon);\n            }\n            if (common.empty()) return false;\n        }\n        return !common.empty();\n    }\n\npublic:\n    int longestCommonSubpath(int n, vector<vector<int>>& paths) {\n        int low = 1, high = paths[0].size();\n        for (const auto& p : paths) high = min(high, (int)p.size());\n        int ans = 0;\n\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (check(mid, paths)) {\n                ans = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "Longest Common Subpath C++ Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    private long modPow(long base, long exp, long mod) {\n        long res = 1;\n        base %= mod;\n        while (exp > 0) {\n            if (exp % 2 == 1) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp /= 2;\n        }\n        return res;\n    }\n\n    private boolean check(int L, int[][] paths) {\n        long BASE1 = 100003, MOD1 = 1000000007;\n        long BASE2 = 100019, MOD2 = 1000000009;\n        long b1Pow = modPow(BASE1, L, MOD1);\n        long b2Pow = modPow(BASE2, L, MOD2);\n\n        Set<Long> common = null;\n        for (int[] p : paths) {\n            long h1 = 0, h2 = 0;\n            for (int i = 0; i < L; i++) {\n                h1 = (h1 * BASE1 + p[i]) % MOD1;\n                h2 = (h2 * BASE2 + p[i]) % MOD2;\n            }\n            Set<Long> seen = new HashSet<>();\n            seen.add((h1 << 32) | (h2 & 0xFFFFFFFFL));\n            for (int i = L; i < p.length; i++) {\n                h1 = (h1 * BASE1 + p[i] - p[i - L] * b1Pow) % MOD1;\n                if (h1 < 0) h1 += MOD1;\n                h2 = (h2 * BASE2 + p[i] - p[i - L] * b2Pow) % MOD2;\n                if (h2 < 0) h2 += MOD2;\n                seen.add((h1 << 32) | (h2 & 0xFFFFFFFFL));\n            }\n\n            if (common == null) {\n                common = seen;\n            } else {\n                common.retainAll(seen);\n            }\n            if (common.isEmpty()) return false;\n        }\n        return common != null && !common.isEmpty();\n    }\n\n    public int longestCommonSubpath(int n, int[][] paths) {\n        int low = 1, high = paths[0].length;\n        for (int[] p : paths) high = Math.min(high, p.length);\n        int ans = 0;\n\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (check(mid, paths)) {\n                ans = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "Longest Common Subpath Java Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "var longestCommonSubpath = function(n, paths) {\n  let low = 1, high = paths[0].length;\n  for (const p of paths) high = Math.min(high, p.length);\n\n  const MOD1 = 1000000007n;\n  const MOD2 = 1000000009n;\n  const BASE1 = 100003n;\n  const BASE2 = 100019n;\n\n  function modPow(base, exp, mod) {\n    let res = 1n;\n    base %= mod;\n    while (exp > 0n) {\n      if (exp % 2n === 1n) res = (res * base) % mod;\n      base = (base * base) % mod;\n      exp /= 2n;\n    }\n    return res;\n  }\n\n  function check(L) {\n    const b1Pow = modPow(BASE1, BigInt(L), MOD1);\n    const b2Pow = modPow(BASE2, BigInt(L), MOD2);\n    let common = null;\n\n    for (const p of paths) {\n      let h1 = 0n, h2 = 0n;\n      for (let i = 0; i < L; i++) {\n        h1 = (h1 * BASE1 + BigInt(p[i])) % MOD1;\n        h2 = (h2 * BASE2 + BigInt(p[i])) % MOD2;\n      }\n      const seen = new Set();\n      seen.add(`${h1},${h2}`);\n      for (let i = L; i < p.length; i++) {\n        h1 = (h1 * BASE1 + BigInt(p[i]) - BigInt(p[i - L]) * b1Pow) % MOD1;\n        if (h1 < 0n) h1 += MOD1;\n        h2 = (h2 * BASE2 + BigInt(p[i]) - BigInt(p[i - L]) * b2Pow) % MOD2;\n        if (h2 < 0n) h2 += MOD2;\n        seen.add(`${h1},${h2}`);\n      }\n\n      if (common === null) {\n        common = seen;\n      } else {\n        const nextCommon = new Set();\n        for (const item of seen) {\n          if (common.has(item)) nextCommon.add(item);\n        }\n        common = nextCommon;\n      }\n      if (common.size === 0) return false;\n    }\n    return common && common.size > 0;\n  }\n\n  let ans = 0;\n  while (low <= high) {\n    const mid = Math.floor((low + high) / 2);\n    if (check(mid)) {\n      ans = mid;\n      low = mid + 1;\n    } else {\n      high = mid - 1;\n    }\n  }\n  return ans;\n};",
+      "approach": "Longest Common Subpath JavaScript Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}

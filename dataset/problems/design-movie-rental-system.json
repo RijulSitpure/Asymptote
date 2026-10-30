@@ -1,0 +1,78 @@
+{
+  "slug": "design-movie-rental-system",
+  "number": 1912,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-30T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Price Map for Movie Copies",
+      "text": "Record each copy price using an associative table mapping (shop, movie) pairs to price."
+    },
+    {
+      "level": 2,
+      "title": "Ordered Set of Available Copies",
+      "text": "use balanced binary search trees or ordered sets per movie for unrented copies, sorted by price ascending, then shop ascending."
+    },
+    {
+      "level": 3,
+      "title": "Global Ordered Set of Rented Copies",
+      "text": "maintain a global ordered set for all currently rented copies, sorted by price ascending, then shop ascending, then movie ascending."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\n\nclass MovieRentingSystem:\n    def __init__(self, n: int, entries: list[list[int]]):\n        self.price = {}\n        self.unrented = {}\n        self.rented = []\n        for shop, movie, p in entries:\n            self.price[(shop, movie)] = p\n            if movie not in self.unrented:\n                self.unrented[movie] = []\n            bisect.insort(self.unrented[movie], (p, shop))\n\n    def search(self, movie: int) -> list[int]:\n        if movie not in self.unrented:\n            return []\n        return [shop for p, shop in self.unrented[movie][:5]]\n\n    def rent(self, shop: int, movie: int) -> None:\n        p = self.price[(shop, movie)]\n        idx = bisect.bisect_left(self.unrented[movie], (p, shop))\n        if idx < len(self.unrented[movie]) and self.unrented[movie][idx] == (p, shop):\n            del self.unrented[movie][idx]\n        bisect.insort(self.rented, (p, shop, movie))\n\n    def drop(self, shop: int, movie: int) -> None:\n        p = self.price[(shop, movie)]\n        idx = bisect.bisect_left(self.rented, (p, shop, movie))\n        if idx < len(self.rented) and self.rented[idx] == (p, shop, movie):\n            del self.rented[idx]\n        bisect.insort(self.unrented[movie], (p, shop))\n\n    def report(self) -> list[list[int]]:\n        return [[shop, movie] for p, shop, movie in self.rented[:5]]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log N) rent/drop, O(1) search/report",
+    "space": "O(N)",
+    "variables": [
+      "N: total movie inventory entries"
+    ],
+    "notes": "Balanced binary search sets maintain unrented and rented copies sorted by price and shop.",
+    "whyNaiveFails": "Linear scanning through all movies and shops on search or report takes O(N) per query, leading to timeout.",
+    "spaceTimeTradeoff": "Ordered sets yield O(log N) for rent and drop, and O(1) for top-5 search and report queries.",
+    "interviewerExpectation": "Candidate should organize multiple balanced trees / ordered sets with composite sorting keys."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass MovieRentingSystem:\n    def __init__(self, n: int, entries: list[list[int]]):\n        self.price = {}\n        self.unrented = {}\n        self.rented = []\n        for shop, movie, p in entries:\n            self.price[(shop, movie)] = p\n            if movie not in self.unrented:\n                self.unrented[movie] = []\n            bisect.insort(self.unrented[movie], (p, shop))\n\n    def search(self, movie: int) -> list[int]:\n        if movie not in self.unrented:\n            return []\n        return [shop for p, shop in self.unrented[movie][:5]]\n\n    def rent(self, shop: int, movie: int) -> None:\n        p = self.price[(shop, movie)]\n        idx = bisect.bisect_left(self.unrented[movie], (p, shop))\n        if idx < len(self.unrented[movie]) and self.unrented[movie][idx] == (p, shop):\n            del self.unrented[movie][idx]\n        bisect.insort(self.rented, (p, shop, movie))\n\n    def drop(self, shop: int, movie: int) -> None:\n        p = self.price[(shop, movie)]\n        idx = bisect.bisect_left(self.rented, (p, shop, movie))\n        if idx < len(self.rented) and self.rented[idx] == (p, shop, movie):\n            del self.rented[idx]\n        bisect.insort(self.unrented[movie], (p, shop))\n\n    def report(self) -> list[list[int]]:\n        return [[shop, movie] for p, shop, movie in self.rented[:5]]",
+      "approach": "Design Movie Rental System Python 3 Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "cpp",
+      "code": "class MovieRentingSystem {\nprivate:\n    struct ShopMovie {\n        int shop, movie;\n        bool operator==(const ShopMovie& o) const { return shop == o.shop && movie == o.movie; }\n    };\n    struct ShopMovieHash {\n        size_t operator()(const ShopMovie& sm) const { return hash<int>()(sm.shop) ^ (hash<int>()(sm.movie) << 16); }\n    };\n    unordered_map<ShopMovie, int, ShopMovieHash> priceMap;\n    unordered_map<int, set<pair<int, int>>> unrented;\n    set<tuple<int, int, int>> rented;\npublic:\n    MovieRentingSystem(int n, vector<vector<int>>& entries) {\n        for (const auto& e : entries) {\n            int shop = e[0], movie = e[1], price = e[2];\n            priceMap[{shop, movie}] = price;\n            unrented[movie].insert({price, shop});\n        }\n    }\n    \n    vector<int> search(int movie) {\n        vector<int> res;\n        auto it = unrented.find(movie);\n        if (it == unrented.end()) return res;\n        int count = 0;\n        for (const auto& p : it->second) {\n            res.push_back(p.second);\n            if (++count == 5) break;\n        }\n        return res;\n    }\n    \n    void rent(int shop, int movie) {\n        int price = priceMap[{shop, movie}];\n        unrented[movie].erase({price, shop});\n        rented.insert({price, shop, movie});\n    }\n    \n    void drop(int shop, int movie) {\n        int price = priceMap[{shop, movie}];\n        rented.erase({price, shop, movie});\n        unrented[movie].insert({price, shop});\n    }\n    \n    vector<vector<int>> report() {\n        vector<vector<int>> res;\n        int count = 0;\n        for (const auto& t : rented) {\n            res.push_back({get<1>(t), get<2>(t)});\n            if (++count == 5) break;\n        }\n        return res;\n    }\n};",
+      "approach": "Design Movie Rental System C++ Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "java",
+      "code": "class MovieRentingSystem {\n    private Map<String, Integer> priceMap = new HashMap<>();\n    private Map<Integer, TreeSet<int[]>> unrented = new HashMap<>();\n    private TreeSet<int[]> rented = new TreeSet<>((a, b) -> {\n        if (a[0] != b[0]) return Integer.compare(a[0], b[0]);\n        if (a[1] != b[1]) return Integer.compare(a[1], b[1]);\n        return Integer.compare(a[2], b[2]);\n    });\n\n    public MovieRentingSystem(int n, int[][] entries) {\n        for (int[] e : entries) {\n            int shop = e[0], movie = e[1], price = e[2];\n            priceMap.put(shop + \",\" + movie, price);\n            unrented.computeIfAbsent(movie, k -> new TreeSet<>((a, b) -> {\n                if (a[0] != b[0]) return Integer.compare(a[0], b[0]);\n                return Integer.compare(a[1], b[1]);\n            })).add(new int[]{price, shop});\n        }\n    }\n    \n    public List<Integer> search(int movie) {\n        List<Integer> res = new ArrayList<>();\n        TreeSet<int[]> set = unrented.get(movie);\n        if (set == null) return res;\n        int count = 0;\n        for (int[] p : set) {\n            res.add(p[1]);\n            if (++count == 5) break;\n        }\n        return res;\n    }\n    \n    public void rent(int shop, int movie) {\n        int price = priceMap.get(shop + \",\" + movie);\n        unrented.get(movie).remove(new int[]{price, shop});\n        rented.add(new int[]{price, shop, movie});\n    }\n    \n    public void drop(int shop, int movie) {\n        int price = priceMap.get(shop + \",\" + movie);\n        rented.remove(new int[]{price, shop, movie});\n        unrented.get(movie).add(new int[]{price, shop});\n    }\n    \n    public List<List<Integer>> report() {\n        List<List<Integer>> res = new ArrayList<>();\n        int count = 0;\n        for (int[] item : rented) {\n            res.add(Arrays.asList(item[1], item[2]));\n            if (++count == 5) break;\n        }\n        return res;\n    }\n}",
+      "approach": "Design Movie Rental System Java Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    },
+    {
+      "lang": "javascript",
+      "code": "class MovieRentingSystem {\n  constructor(n, entries) {\n    this.priceMap = new Map();\n    this.unrented = new Map();\n    this.rented = [];\n    for (const [shop, movie, price] of entries) {\n      this.priceMap.set(`${shop},${movie}`, price);\n      if (!this.unrented.has(movie)) {\n        this.unrented.set(movie, []);\n      }\n      this.unrented.get(movie).push({ price, shop });\n    }\n    for (const list of this.unrented.values()) {\n      list.sort((a, b) => a.price - b.price || a.shop - b.shop);\n    }\n  }\n\n  search(movie) {\n    const list = this.unrented.get(movie);\n    if (!list) return [];\n    return list.slice(0, 5).map(x => x.shop);\n  }\n\n  rent(shop, movie) {\n    const price = this.priceMap.get(`${shop},${movie}`);\n    const list = this.unrented.get(movie);\n    const idx = list.findIndex(x => x.shop === shop && x.price === price);\n    if (idx !== -1) list.splice(idx, 1);\n    this.rented.push({ price, shop, movie });\n    this.rented.sort((a, b) => a.price - b.price || a.shop - b.shop || a.movie - b.movie);\n  }\n\n  drop(shop, movie) {\n    const price = this.priceMap.get(`${shop},${movie}`);\n    const idx = this.rented.findIndex(x => x.shop === shop && x.movie === movie);\n    if (idx !== -1) this.rented.splice(idx, 1);\n    const list = this.unrented.get(movie);\n    list.push({ price, shop });\n    list.sort((a, b) => a.price - b.price || a.shop - b.shop);\n  }\n\n  report() {\n    return this.rented.slice(0, 5).map(x => [x.shop, x.movie]);\n  }\n}",
+      "approach": "Design Movie Rental System JavaScript Solution",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-30"
+    }
+  ]
+}
