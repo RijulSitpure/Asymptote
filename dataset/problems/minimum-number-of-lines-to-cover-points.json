@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-number-of-lines-to-cover-points",
+  "number": 2152,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Precompute Collinear Point Sets",
+      "text": "For every pair of points, compute the bitmask of all points lying on the line connecting them."
+    },
+    {
+      "level": 2,
+      "title": "Bitmask Dynamic Programming",
+      "text": "Let dp[mask] be the minimum number of lines needed to cover the subset of points represented by mask."
+    },
+    {
+      "level": 3,
+      "title": "Pick First Uncovered Point",
+      "text": "At each state, focus on the first uncovered point and transition by choosing any precomputed line covering that point."
+    },
+    {
+      "level": 4,
+      "title": "Complete Python Solution",
+      "text": "```python\nclass Solution:\n    def minimumLines(self, points: List[List[int]]) -> int:\n        n = len(points)\n        if n <= 2:\n            return 1\n        lines = []\n        for i in range(n):\n            for j in range(i + 1, n):\n                mask = (1 << i) | (1 << j)\n                dx = points[j][0] - points[i][0]\n                dy = points[j][1] - points[i][1]\n                for k in range(n):\n                    if (points[k][1] - points[i][1]) * dx == (points[k][0] - points[i][0]) * dy:\n                        mask |= 1 << k\n                lines.append(mask)\n        lines = list(set(lines))\n        \n        dp = [float('inf')] * (1 << n)\n        dp[0] = 0\n        for mask in range(1 << n):\n            if dp[mask] == float('inf'):\n                continue\n            first = -1\n            for i in range(n):\n                if not ((mask >> i) & 1):\n                    first = i\n                    break\n            if first == -1:\n                continue\n            dp[mask | (1 << first)] = min(dp[mask | (1 << first)], dp[mask] + 1)\n            for line_mask in lines:\n                if (line_mask >> first) & 1:\n                    next_mask = mask | line_mask\n                    if dp[mask] + 1 < dp[next_mask]:\n                        dp[next_mask] = dp[mask] + 1\n        return dp[(1 << n) - 1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) single pass or optimal algorithmic traversal",
+    "space": "O(1) auxiliary working space",
+    "variables": [
+      "N: input size or row count"
+    ],
+    "notes": "Optimal language implementation.",
+    "whyNaiveFails": "Unconstrained backtracking without bitmask pruning repeats subset computations factorially.",
+    "spaceTimeTradeoff": "Precomputing lines takes O(N^3) time; bitmask DP takes O(2^N * N) time with O(2^N) memory.",
+    "interviewerExpectation": "Cross multiplication to avoid float slopes and bitmask DP transitions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minimumLines(self, points: List[List[int]]) -> int:\n        n = len(points)\n        if n <= 2:\n            return 1\n        lines = []\n        for i in range(n):\n            for j in range(i + 1, n):\n                mask = (1 << i) | (1 << j)\n                dx = points[j][0] - points[i][0]\n                dy = points[j][1] - points[i][1]\n                for k in range(n):\n                    if (points[k][1] - points[i][1]) * dx == (points[k][0] - points[i][0]) * dy:\n                        mask |= 1 << k\n                lines.append(mask)\n        lines = list(set(lines))\n        \n        dp = [float('inf')] * (1 << n)\n        dp[0] = 0\n        for mask in range(1 << n):\n            if dp[mask] == float('inf'):\n                continue\n            first = -1\n            for i in range(n):\n                if not ((mask >> i) & 1):\n                    first = i\n                    break\n            if first == -1:\n                continue\n            dp[mask | (1 << first)] = min(dp[mask | (1 << first)], dp[mask] + 1)\n            for line_mask in lines:\n                if (line_mask >> first) & 1:\n                    next_mask = mask | line_mask\n                    if dp[mask] + 1 < dp[next_mask]:\n                        dp[next_mask] = dp[mask] + 1\n        return dp[(1 << n) - 1]",
+      "approach": "PYTHON3 optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minimumLines(vector<vector<int>>& points) {\n        int n = points.size();\n        if (n <= 2) return 1;\n        vector<int> lines;\n        for (int i = 0; i < n; i++) {\n            for (int j = i + 1; j < n; j++) {\n                int mask = (1 << i) | (1 << j);\n                int dx = points[j][0] - points[i][0];\n                int dy = points[j][1] - points[i][1];\n                for (int k = 0; k < n; k++) {\n                    if ((points[k][1] - points[i][1]) * dx == (points[k][0] - points[i][0]) * dy) {\n                        mask |= (1 << k);\n                    }\n                }\n                lines.push_back(mask);\n            }\n        }\n        sort(lines.begin(), lines.end());\n        lines.erase(unique(lines.begin(), lines.end()), lines.end());\n        int total = 1 << n;\n        vector<int> dp(total, 1e9);\n        dp[0] = 0;\n        for (int mask = 0; mask < total; mask++) {\n            if (dp[mask] == 1e9) continue;\n            int first = -1;\n            for (int i = 0; i < n; i++) {\n                if (!((mask >> i) & 1)) {\n                    first = i;\n                    break;\n                }\n            }\n            if (first == -1) continue;\n            dp[mask | (1 << first)] = min(dp[mask | (1 << first)], dp[mask] + 1);\n            for (int lm : lines) {\n                if ((lm >> first) & 1) {\n                    dp[mask | lm] = min(dp[mask | lm], dp[mask] + 1);\n                }\n            }\n        }\n        return dp[total - 1];\n    }\n};",
+      "approach": "CPP optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int minimumLines(int[][] points) {\n        int n = points.length;\n        if (n <= 2) return 1;\n        Set<Integer> lineSet = new HashSet<>();\n        for (int i = 0; i < n; i++) {\n            for (int j = i + 1; j < n; j++) {\n                int mask = (1 << i) | (1 << j);\n                int dx = points[j][0] - points[i][0];\n                int dy = points[j][1] - points[i][1];\n                for (int k = 0; k < n; k++) {\n                    if ((points[k][1] - points[i][1]) * dx == (points[k][0] - points[i][0]) * dy) {\n                        mask |= (1 << k);\n                    }\n                }\n                lineSet.add(mask);\n            }\n        }\n        List<Integer> lines = new ArrayList<>(lineSet);\n        int total = 1 << n;\n        int[] dp = new int[total];\n        Arrays.fill(dp, 1000000);\n        dp[0] = 0;\n        for (int mask = 0; mask < total; mask++) {\n            if (dp[mask] == 1000000) continue;\n            int first = -1;\n            for (int i = 0; i < n; i++) {\n                if (((mask >> i) & 1) == 0) {\n                    first = i;\n                    break;\n                }\n            }\n            if (first == -1) continue;\n            dp[mask | (1 << first)] = Math.min(dp[mask | (1 << first)], dp[mask] + 1);\n            for (int lm : lines) {\n                if (((lm >> first) & 1) == 1) {\n                    dp[mask | lm] = Math.min(dp[mask | lm], dp[mask] + 1);\n                }\n            }\n        }\n        return dp[total - 1];\n    }\n}",
+      "approach": "JAVA optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minimumLines = function(points) {\n    const n = points.length;\n    if (n <= 2) return 1;\n    const lineSet = new Set();\n    for (let i = 0; i < n; i++) {\n        for (let j = i + 1; j < n; j++) {\n            let mask = (1 << i) | (1 << j);\n            const dx = points[j][0] - points[i][0];\n            const dy = points[j][1] - points[i][1];\n            for (let k = 0; k < n; k++) {\n                if ((points[k][1] - points[i][1]) * dx === (points[k][0] - points[i][0]) * dy) {\n                    mask |= (1 << k);\n                }\n            }\n            lineSet.add(mask);\n        }\n    }\n    const lines = Array.from(lineSet);\n    const total = 1 << n;\n    const dp = new Int32Array(total).fill(1e9);\n    dp[0] = 0;\n    for (let mask = 0; mask < total; mask++) {\n        if (dp[mask] === 1e9) continue;\n        let first = -1;\n        for (let i = 0; i < n; i++) {\n            if (!((mask >> i) & 1)) {\n                first = i;\n                break;\n            }\n        }\n        if (first === -1) continue;\n        dp[mask | (1 << first)] = Math.min(dp[mask | (1 << first)], dp[mask] + 1);\n        for (const lm of lines) {\n            if ((lm >> first) & 1) {\n                dp[mask | lm] = Math.min(dp[mask | lm], dp[mask] + 1);\n            }\n        }\n    }\n    return dp[total - 1];\n};",
+      "approach": "JAVASCRIPT optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

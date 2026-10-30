@@ -1,0 +1,71 @@
+{
+  "slug": "the-number-of-passengers-in-each-bus-ii",
+  "number": 2153,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Track Passenger Queues Chronologically",
+      "text": "Buses arrive in order of arrival time, and passengers board in chronological order up to bus capacity."
+    },
+    {
+      "level": 2,
+      "title": "Compute Cumulative Waiting Counts",
+      "text": "Rank the buses by arrival time and compute the count of arriving passengers who arrived before or at each bus arrival time."
+    },
+    {
+      "level": 3,
+      "title": "Use Recursive State Tracking",
+      "text": "Simulate boarding using a recursive common table expression where each bus boards up to its capacity from remaining waiting passengers."
+    },
+    {
+      "level": 4,
+      "title": "Complete SQL Query",
+      "text": "```sql\nWITH RECURSIVE BusRank AS (\n    SELECT \n        bus_id,\n        arrival_time,\n        capacity,\n        ROW_NUMBER() OVER (ORDER BY arrival_time) AS rn\n    FROM Buses\n),\nBusPassengers AS (\n    SELECT \n        b.rn,\n        b.bus_id,\n        b.capacity,\n        COUNT(p.passenger_id) AS total_arrived\n    FROM BusRank b\n    LEFT JOIN Passengers p ON p.arrival_time <= b.arrival_time\n    GROUP BY b.rn, b.bus_id, b.capacity\n),\nBusNew AS (\n    SELECT \n        rn,\n        bus_id,\n        capacity,\n        total_arrived - COALESCE(LAG(total_arrived) OVER (ORDER BY rn), 0) AS new_passengers\n    FROM BusPassengers\n),\nSim AS (\n    SELECT \n        rn,\n        bus_id,\n        CASE WHEN new_passengers < capacity THEN new_passengers ELSE capacity END AS boarded,\n        CASE WHEN new_passengers > capacity THEN new_passengers - capacity ELSE 0 END AS waiting\n    FROM BusNew\n    WHERE rn = 1\n    UNION ALL\n    SELECT \n        b.rn,\n        b.bus_id,\n        CASE WHEN (s.waiting + b.new_passengers) < b.capacity THEN (s.waiting + b.new_passengers) ELSE b.capacity END AS boarded,\n        CASE WHEN (s.waiting + b.new_passengers) > b.capacity THEN (s.waiting + b.new_passengers) - b.capacity ELSE 0 END AS waiting\n    FROM Sim s\n    JOIN BusNew b ON b.rn = s.rn + 1\n)\nSELECT bus_id, boarded AS passengers_cnt\nFROM Sim\nORDER BY bus_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) query execution and joins",
+    "space": "O(N) intermediate table storage",
+    "variables": [
+      "N: input size or row count"
+    ],
+    "notes": "Standard SQL windowing and joins.",
+    "whyNaiveFails": "A single non-recursive join cannot track stateful passenger spillovers where unboarded passengers roll over to consecutive future buses.",
+    "spaceTimeTradeoff": "Recursive evaluation takes O(B + P) time and requires O(B) memory for recursion depth matching bus count.",
+    "interviewerExpectation": "Demonstrate recursive CTE proficiency or procedural simulation to track rolling stateful inventory/capacity."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RECURSIVE BusRank AS (\n    SELECT \n        bus_id,\n        arrival_time,\n        capacity,\n        ROW_NUMBER() OVER (ORDER BY arrival_time) AS rn\n    FROM Buses\n),\nBusPassengers AS (\n    SELECT \n        b.rn,\n        b.bus_id,\n        b.capacity,\n        COUNT(p.passenger_id) AS total_arrived\n    FROM BusRank b\n    LEFT JOIN Passengers p ON p.arrival_time <= b.arrival_time\n    GROUP BY b.rn, b.bus_id, b.capacity\n),\nBusNew AS (\n    SELECT \n        rn,\n        bus_id,\n        capacity,\n        total_arrived - COALESCE(LAG(total_arrived) OVER (ORDER BY rn), 0) AS new_passengers\n    FROM BusPassengers\n),\nSim AS (\n    SELECT \n        rn,\n        bus_id,\n        CASE WHEN new_passengers < capacity THEN new_passengers ELSE capacity END AS boarded,\n        CASE WHEN new_passengers > capacity THEN new_passengers - capacity ELSE 0 END AS waiting\n    FROM BusNew\n    WHERE rn = 1\n    UNION ALL\n    SELECT \n        b.rn,\n        b.bus_id,\n        CASE WHEN (s.waiting + b.new_passengers) < b.capacity THEN (s.waiting + b.new_passengers) ELSE b.capacity END AS boarded,\n        CASE WHEN (s.waiting + b.new_passengers) > b.capacity THEN (s.waiting + b.new_passengers) - b.capacity ELSE 0 END AS waiting\n    FROM Sim s\n    JOIN BusNew b ON b.rn = s.rn + 1\n)\nSELECT bus_id, boarded AS passengers_cnt\nFROM Sim\nORDER BY bus_id ASC;",
+      "approach": "MYSQL optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RECURSIVE BusRank AS (\n    SELECT \n        bus_id,\n        arrival_time,\n        capacity,\n        ROW_NUMBER() OVER (ORDER BY arrival_time) AS rn\n    FROM Buses\n),\nBusPassengers AS (\n    SELECT \n        b.rn,\n        b.bus_id,\n        b.capacity,\n        COUNT(p.passenger_id) AS total_arrived\n    FROM BusRank b\n    LEFT JOIN Passengers p ON p.arrival_time <= b.arrival_time\n    GROUP BY b.rn, b.bus_id, b.capacity\n),\nBusNew AS (\n    SELECT \n        rn,\n        bus_id,\n        capacity,\n        total_arrived - COALESCE(LAG(total_arrived) OVER (ORDER BY rn), 0) AS new_passengers\n    FROM BusPassengers\n),\nSim AS (\n    SELECT \n        rn,\n        bus_id,\n        CASE WHEN new_passengers < capacity THEN new_passengers ELSE capacity END AS boarded,\n        CASE WHEN new_passengers > capacity THEN new_passengers - capacity ELSE 0 END AS waiting\n    FROM BusNew\n    WHERE rn = 1\n    UNION ALL\n    SELECT \n        b.rn,\n        b.bus_id,\n        CASE WHEN (s.waiting + b.new_passengers) < b.capacity THEN (s.waiting + b.new_passengers) ELSE b.capacity END AS boarded,\n        CASE WHEN (s.waiting + b.new_passengers) > b.capacity THEN (s.waiting + b.new_passengers) - b.capacity ELSE 0 END AS waiting\n    FROM Sim s\n    JOIN BusNew b ON b.rn = s.rn + 1\n)\nSELECT bus_id, boarded AS passengers_cnt\nFROM Sim\nORDER BY bus_id ASC;",
+      "approach": "POSTGRESQL optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef count_passengers_in_bus(buses: pd.DataFrame, passengers: pd.DataFrame) -> pd.DataFrame:\n    if buses.empty:\n        return pd.DataFrame({'bus_id': [], 'passengers_cnt': []})\n    b_sorted = buses.sort_values('arrival_time').reset_index(drop=True)\n    p_sorted = passengers.sort_values('arrival_time')['arrival_time'].tolist()\n    boarded_counts = []\n    p_idx = 0\n    n_p = len(p_sorted)\n    for _, bus in b_sorted.iterrows():\n        cap = bus['capacity']\n        arr = bus['arrival_time']\n        eligible = 0\n        temp_idx = p_idx\n        while temp_idx < n_p and p_sorted[temp_idx] <= arr:\n            eligible += 1\n            temp_idx += 1\n        boarded = min(cap, eligible)\n        boarded_counts.append(boarded)\n        p_idx += boarded\n    b_sorted['passengers_cnt'] = boarded_counts\n    return b_sorted[['bus_id', 'passengers_cnt']].sort_values('bus_id')",
+      "approach": "PYTHONDATA optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

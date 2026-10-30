@@ -1,0 +1,78 @@
+{
+  "slug": "stamping-the-grid",
+  "number": 2132,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Identify Valid Stamp Placements",
+      "text": "A stamp can be placed at top-left coordinate (r, c) if and only if the rectangle of size stampHeight by stampWidth contains no occupied cells."
+    },
+    {
+      "level": 2,
+      "title": "2D Prefix Sums for Rapid Region Checks",
+      "text": "Precompute 2D prefix sums of the occupied cells to check any subgrid occupancy sum in constant time."
+    },
+    {
+      "level": 3,
+      "title": "2D Difference Array for Stamp Coverage",
+      "text": "For every valid stamp top-left coordinate, apply a 2D difference array update. Prefix sum the difference array to check whether every empty cell received coverage."
+    },
+    {
+      "level": 4,
+      "title": "Complete Python Solution",
+      "text": "```python\nclass Solution:\n    def possibleToStamp(self, grid: List[List[int]], stampHeight: int, stampWidth: int) -> bool:\n        m, n = len(grid), len(grid[0])\n        pref = [[0] * (n + 1) for _ in range(m + 1)]\n        for r in range(m):\n            for c in range(n):\n                pref[r + 1][c + 1] = pref[r][c + 1] + pref[r + 1][c] - pref[r][c] + grid[r][c]\n        \n        def query(r1, c1, r2, c2):\n            return pref[r2 + 1][c2 + 1] - pref[r1][c2 + 1] - pref[r2 + 1][c1] + pref[r1][c1]\n        \n        diff = [[0] * (n + 2) for _ in range(m + 2)]\n        for r in range(m - stampHeight + 1):\n            for c in range(n - stampWidth + 1):\n                if query(r, c, r + stampHeight - 1, c + stampWidth - 1) == 0:\n                    diff[r + 1][c + 1] += 1\n                    diff[r + stampHeight + 1][c + 1] -= 1\n                    diff[r + 1][c + stampWidth + 1] -= 1\n                    diff[r + stampHeight + 1][c + stampWidth + 1] += 1\n        \n        covered = [[0] * (n + 2) for _ in range(m + 2)]\n        for r in range(1, m + 1):\n            for c in range(1, n + 1):\n                covered[r][c] = covered[r - 1][c] + covered[r][c - 1] - covered[r - 1][c - 1] + diff[r][c]\n                if grid[r - 1][c - 1] == 0 and covered[r][c] == 0:\n                    return False\n        return True\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) single pass or optimal algorithmic traversal",
+    "space": "O(1) auxiliary working space",
+    "variables": [
+      "N: input size or row count"
+    ],
+    "notes": "Optimal language implementation.",
+    "whyNaiveFails": "Iteratively painting the grid cells for each valid stamp position takes O(M * N * stampHeight * stampWidth) time, causing time limits to exceed.",
+    "spaceTimeTradeoff": "2D prefix sums and 2D difference arrays execute in O(M * N) time with O(M * N) auxiliary memory.",
+    "interviewerExpectation": "Leverage 2D difference arrays to mark range additions in constant time."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def possibleToStamp(self, grid: List[List[int]], stampHeight: int, stampWidth: int) -> bool:\n        m, n = len(grid), len(grid[0])\n        pref = [[0] * (n + 1) for _ in range(m + 1)]\n        for r in range(m):\n            for c in range(n):\n                pref[r + 1][c + 1] = pref[r][c + 1] + pref[r + 1][c] - pref[r][c] + grid[r][c]\n        \n        def query(r1, c1, r2, c2):\n            return pref[r2 + 1][c2 + 1] - pref[r1][c2 + 1] - pref[r2 + 1][c1] + pref[r1][c1]\n        \n        diff = [[0] * (n + 2) for _ in range(m + 2)]\n        for r in range(m - stampHeight + 1):\n            for c in range(n - stampWidth + 1):\n                if query(r, c, r + stampHeight - 1, c + stampWidth - 1) == 0:\n                    diff[r + 1][c + 1] += 1\n                    diff[r + stampHeight + 1][c + 1] -= 1\n                    diff[r + 1][c + stampWidth + 1] -= 1\n                    diff[r + stampHeight + 1][c + stampWidth + 1] += 1\n        \n        covered = [[0] * (n + 2) for _ in range(m + 2)]\n        for r in range(1, m + 1):\n            for c in range(1, n + 1):\n                covered[r][c] = covered[r - 1][c] + covered[r][c - 1] - covered[r - 1][c - 1] + diff[r][c]\n                if grid[r - 1][c - 1] == 0 and covered[r][c] == 0:\n                    return False\n        return True",
+      "approach": "PYTHON3 optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    bool possibleToStamp(vector<vector<int>>& grid, int stampHeight, int stampWidth) {\n        int m = grid.size(), n = grid[0].size();\n        vector<vector<int>> pref(m + 1, vector<int>(n + 1, 0));\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                pref[r + 1][c + 1] = pref[r][c + 1] + pref[r + 1][c] - pref[r][c] + grid[r][c];\n            }\n        }\n        auto query = [&](int r1, int c1, int r2, int c2) {\n            return pref[r2 + 1][c2 + 1] - pref[r1][c2 + 1] - pref[r2 + 1][c1] + pref[r1][c1];\n        };\n        vector<vector<int>> diff(m + 2, vector<int>(n + 2, 0));\n        for (int r = 0; r <= m - stampHeight; r++) {\n            for (int c = 0; c <= n - stampWidth; c++) {\n                if (query(r, c, r + stampHeight - 1, c + stampWidth - 1) == 0) {\n                    diff[r + 1][c + 1]++;\n                    diff[r + stampHeight + 1][c + 1]--;\n                    diff[r + 1][c + stampWidth + 1]--;\n                    diff[r + stampHeight + 1][c + stampWidth + 1]++;\n                }\n            }\n        }\n        vector<vector<int>> covered(m + 2, vector<int>(n + 2, 0));\n        for (int r = 1; r <= m; r++) {\n            for (int c = 1; c <= n; c++) {\n                covered[r][c] = covered[r - 1][c] + covered[r][c - 1] - covered[r - 1][c - 1] + diff[r][c];\n                if (grid[r - 1][c - 1] == 0 && covered[r][c] == 0) return false;\n            }\n        }\n        return true;\n    }\n};",
+      "approach": "CPP optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public boolean possibleToStamp(int[][] grid, int stampHeight, int stampWidth) {\n        int m = grid.length, n = grid[0].length;\n        int[][] pref = new int[m + 1][n + 1];\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                pref[r + 1][c + 1] = pref[r][c + 1] + pref[r + 1][c] - pref[r][c] + grid[r][c];\n            }\n        }\n        int[][] diff = new int[m + 2][n + 2];\n        for (int r = 0; r <= m - stampHeight; r++) {\n            for (int c = 0; c <= n - stampWidth; c++) {\n                int sum = pref[r + stampHeight][c + stampWidth] - pref[r][c + stampWidth] - pref[r + stampHeight][c] + pref[r][c];\n                if (sum == 0) {\n                    diff[r + 1][c + 1]++;\n                    diff[r + stampHeight + 1][c + 1]--;\n                    diff[r + 1][c + stampWidth + 1]--;\n                    diff[r + stampHeight + 1][c + stampWidth + 1]++;\n                }\n            }\n        }\n        int[][] covered = new int[m + 2][n + 2];\n        for (int r = 1; r <= m; r++) {\n            for (int c = 1; c <= n; c++) {\n                covered[r][c] = covered[r - 1][c] + covered[r][c - 1] - covered[r - 1][c - 1] + diff[r][c];\n                if (grid[r - 1][c - 1] == 0 && covered[r][c] == 0) return false;\n            }\n        }\n        return true;\n    }\n}",
+      "approach": "JAVA optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "var possibleToStamp = function(grid, stampHeight, stampWidth) {\n    const m = grid.length, n = grid[0].length;\n    const pref = Array.from({ length: m + 1 }, () => new Int32Array(n + 1));\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            pref[r + 1][c + 1] = pref[r][c + 1] + pref[r + 1][c] - pref[r][c] + grid[r][c];\n        }\n    }\n    const diff = Array.from({ length: m + 2 }, () => new Int32Array(n + 2));\n    for (let r = 0; r <= m - stampHeight; r++) {\n        for (let c = 0; c <= n - stampWidth; c++) {\n            const sum = pref[r + stampHeight][c + stampWidth] - pref[r][c + stampWidth] - pref[r + stampHeight][c] + pref[r][c];\n            if (sum === 0) {\n                diff[r + 1][c + 1]++;\n                diff[r + stampHeight + 1][c + 1]--;\n                diff[r + 1][c + stampWidth + 1]--;\n                diff[r + stampHeight + 1][c + stampWidth + 1]++;\n            }\n        }\n    }\n    const covered = Array.from({ length: m + 2 }, () => new Int32Array(n + 2));\n    for (let r = 1; r <= m; r++) {\n        for (let c = 1; c <= n; c++) {\n            covered[r][c] = covered[r - 1][c] + covered[r][c - 1] - covered[r - 1][c - 1] + diff[r][c];\n            if (grid[r - 1][c - 1] === 0 && covered[r][c] === 0) return false;\n        }\n    }\n    return true;\n};",
+      "approach": "JAVASCRIPT optimal solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}
