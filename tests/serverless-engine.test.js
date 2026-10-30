@@ -450,7 +450,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
       asymptote_user_problems: {
         '1': { is_solved: 1, title: 'Two Sum' },
         '15': { is_solved: 1, title: '3Sum' },
-        '2097': { is_solved: 1, title: 'Valid Arrangement of Pairs' }
+        '3500': { is_solved: 1, title: 'Minimum Cost to Divide Array Into Subarrays' }
       }
     });
 
@@ -478,13 +478,13 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(threeSum.pattern_id).toBe('two-pointers-opposite');
     expect(threeSum.pattern_title).toBe('Opposite Ends Two Pointers');
 
-    // Valid Arrangement of Pairs (#2097) - uncurated catalog problem keyed by numeric string "2097"
-    const validPairs = solved.find(p => p.number === 2097);
-    expect(validPairs).toBeDefined();
-    expect(validPairs.slug).toBe('valid-arrangement-of-pairs');
-    expect(validPairs.verified).toBe(0);
-    expect(validPairs.pattern_id).toBe('tree-dfs-subproblem');
-    expect(validPairs.pattern_title).toBe('Tree DFS / Subtree Divide & Conquer');
+    // Minimum Cost to Divide Array Into Subarrays (#3500) - uncurated catalog problem keyed by numeric string "3500"
+    const minCost = solved.find(p => p.number === 3500);
+    expect(minCost).toBeDefined();
+    expect(minCost.slug).toBe('minimum-cost-to-divide-array-into-subarrays');
+    expect(minCost.verified).toBe(0);
+    expect(minCost.pattern_id).toBe('prefix-sum-hashmap');
+    expect(minCost.pattern_title).toBe('Prefix Sum + Hash Map (Zero/Target Subarray Sum)');
 
     // Verify stats calculation includes solved problems properly
     const stats = await testEngine.getStats();

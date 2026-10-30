@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-employees-to-be-invited-to-a-meeting",
+  "number": 2127,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Functional Graph Structure",
+      "text": "Each person has exactly one outgoing edge, decomposing the graph into cycles with directed inbound trees."
+    },
+    {
+      "level": 2,
+      "title": "Cycle Length Disparity",
+      "text": "A cycle of length 3 or more must stand alone, while multiple cycles of length 2 can seat guests with their incoming chains."
+    },
+    {
+      "level": 3,
+      "title": "Dual Case Maximization",
+      "text": "Return the maximum of the largest isolated cycle length and the aggregate sum across all 2-cycle arm configurations."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def maximumInvitations(self, favorite: list[int]) -> int:\n        n = len(favorite)\n        in_degree = [0] * n\n        for f in favorite:\n            in_degree[f] += 1\n\n        queue = deque([i for i in range(n) if in_degree[i] == 0])\n        max_depth = [1] * n\n\n        while queue:\n            curr = queue.popleft()\n            nxt = favorite[curr]\n            max_depth[nxt] = max(max_depth[nxt], max_depth[curr] + 1)\n            in_degree[nxt] -= 1\n            if in_degree[nxt] == 0:\n                queue.append(nxt)\n\n        max_cycle_ge_3 = 0\n        sum_2_cycles = 0\n\n        visited = [False] * n\n        for i in range(n):\n            if in_degree[i] > 0 and not visited[i]:\n                cycle_len = 0\n                curr = i\n                while not visited[curr]:\n                    visited[curr] = True\n                    curr = favorite[curr]\n                    cycle_len += 1\n\n                if cycle_len == 2:\n                    u = i\n                    v = favorite[i]\n                    sum_2_cycles += max_depth[u] + max_depth[v]\n                else:\n                    max_cycle_ge_3 = max(max_cycle_ge_3, cycle_len)\n\n        return max(max_cycle_ge_3, sum_2_cycles)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) functional graph cycle detection and arm tracking",
+    "space": "O(N) in-degree and max chain depth arrays",
+    "variables": [
+      "N: number of employees"
+    ],
+    "notes": "Compare the largest cycle of length >= 3 against the sum of all 2-cycles with their longest inbound arms.",
+    "whyNaiveFails": "Assuming a single cycle must seat all guests ignores that multiple 2-cycles with arms can coexist.",
+    "spaceTimeTradeoff": "Kahn topological reduction prunes chains and calculates max depth before cycle inspection.",
+    "interviewerExpectation": "Candidate should separate the problem into length >= 3 cycles and sum of length 2 cycles with arms."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import deque\n\nclass Solution:\n    def maximumInvitations(self, favorite: list[int]) -> int:\n        n = len(favorite)\n        in_degree = [0] * n\n        for f in favorite:\n            in_degree[f] += 1\n\n        queue = deque([i for i in range(n) if in_degree[i] == 0])\n        max_depth = [1] * n\n\n        while queue:\n            curr = queue.popleft()\n            nxt = favorite[curr]\n            max_depth[nxt] = max(max_depth[nxt], max_depth[curr] + 1)\n            in_degree[nxt] -= 1\n            if in_degree[nxt] == 0:\n                queue.append(nxt)\n\n        max_cycle_ge_3 = 0\n        sum_2_cycles = 0\n\n        visited = [False] * n\n        for i in range(n):\n            if in_degree[i] > 0 and not visited[i]:\n                cycle_len = 0\n                curr = i\n                while not visited[curr]:\n                    visited[curr] = True\n                    curr = favorite[curr]\n                    cycle_len += 1\n\n                if cycle_len == 2:\n                    u = i\n                    v = favorite[i]\n                    sum_2_cycles += max_depth[u] + max_depth[v]\n                else:\n                    max_cycle_ge_3 = max(max_cycle_ge_3, cycle_len)\n\n        return max(max_cycle_ge_3, sum_2_cycles)",
+      "approach": "Python standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maximumInvitations(std::vector<int>& favorite) {\n        int n = favorite.size();\n        std::vector<int> inDegree(n, 0);\n        for (int f : favorite) inDegree[f]++;\n\n        std::queue<int> q;\n        for (int i = 0; i < n; ++i) {\n            if (inDegree[i] == 0) q.push(i);\n        }\n\n        std::vector<int> maxDepth(n, 1);\n        while (!q.empty()) {\n            int curr = q.front();\n            q.pop();\n            int nxt = favorite[curr];\n            maxDepth[nxt] = std::max(maxDepth[nxt], maxDepth[curr] + 1);\n            if (--inDegree[nxt] == 0) q.push(nxt);\n        }\n\n        int maxCycleGe3 = 0;\n        int sum2Cycles = 0;\n        std::vector<bool> visited(n, false);\n\n        for (int i = 0; i < n; ++i) {\n            if (inDegree[i] > 0 && !visited[i]) {\n                int cycleLen = 0;\n                int curr = i;\n                while (!visited[curr]) {\n                    visited[curr] = true;\n                    curr = favorite[curr];\n                    cycleLen++;\n                }\n\n                if (cycleLen == 2) {\n                    int u = i;\n                    int v = favorite[i];\n                    sum2Cycles += maxDepth[u] + maxDepth[v];\n                } else {\n                    maxCycleGe3 = std::max(maxCycleGe3, cycleLen);\n                }\n            }\n        }\n\n        return std::max(maxCycleGe3, sum2Cycles);\n    }\n};",
+      "approach": "C++ STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maximumInvitations(int[] favorite) {\n        int n = favorite.length;\n        int[] inDegree = new int[n];\n        for (int f : favorite) inDegree[f]++;\n\n        Deque<Integer> q = new ArrayDeque<>();\n        for (int i = 0; i < n; i++) {\n            if (inDegree[i] == 0) q.offer(i);\n        }\n\n        int[] maxDepth = new int[n];\n        Arrays.fill(maxDepth, 1);\n\n        while (!q.isEmpty()) {\n            int curr = q.poll();\n            int nxt = favorite[curr];\n            maxDepth[nxt] = Math.max(maxDepth[nxt], maxDepth[curr] + 1);\n            if (--inDegree[nxt] == 0) q.offer(nxt);\n        }\n\n        int maxCycleGe3 = 0;\n        int sum2Cycles = 0;\n        boolean[] visited = new boolean[n];\n\n        for (int i = 0; i < n; i++) {\n            if (inDegree[i] > 0 && !visited[i]) {\n                int cycleLen = 0;\n                int curr = i;\n                while (!visited[curr]) {\n                    visited[curr] = true;\n                    curr = favorite[curr];\n                    cycleLen++;\n                }\n\n                if (cycleLen == 2) {\n                    int u = i;\n                    int v = favorite[i];\n                    sum2Cycles += maxDepth[u] + maxDepth[v];\n                } else {\n                    maxCycleGe3 = Math.max(maxCycleGe3, cycleLen);\n                }\n            }\n        }\n\n        return Math.max(maxCycleGe3, sum2Cycles);\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} favorite\n * @return {number}\n */\nvar maximumInvitations = function(favorite) {\n    const n = favorite.length;\n    const inDegree = new Array(n).fill(0);\n    for (const f of favorite) inDegree[f]++;\n\n    const queue = [];\n    for (let i = 0; i < n; i++) {\n        if (inDegree[i] === 0) queue.push(i);\n    }\n\n    const maxDepth = new Array(n).fill(1);\n    let head = 0;\n\n    while (head < queue.length) {\n        const curr = queue[head++];\n        const nxt = favorite[curr];\n        maxDepth[nxt] = Math.max(maxDepth[nxt], maxDepth[curr] + 1);\n        inDegree[nxt]--;\n        if (inDegree[nxt] === 0) queue.push(nxt);\n    }\n\n    let maxCycleGe3 = 0;\n    let sum2Cycles = 0;\n    const visited = new Array(n).fill(false);\n\n    for (let i = 0; i < n; i++) {\n        if (inDegree[i] > 0 && !visited[i]) {\n            let cycleLen = 0;\n            let curr = i;\n            while (!visited[curr]) {\n                visited[curr] = true;\n                curr = favorite[curr];\n                cycleLen++;\n            }\n\n            if (cycleLen === 2) {\n                const u = i;\n                const v = favorite[i];\n                sum2Cycles += maxDepth[u] + maxDepth[v];\n            } else {\n                maxCycleGe3 = Math.max(maxCycleGe3, cycleLen);\n            }\n        }\n    }\n\n    return Math.max(maxCycleGe3, sum2Cycles);\n};",
+      "approach": "JavaScript solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

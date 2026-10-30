@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-operations-to-remove-adjacent-ones-in-matrix",
+  "number": 2123,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bipartite Grid Structure",
+      "text": "A grid graph is bipartite with partition defined by whether row plus column coordinate is even or odd."
+    },
+    {
+      "level": 2,
+      "title": "Vertex Cover Equivalence",
+      "text": "Removing an adjacent pair of ones requires choosing at least one endpoint to flip to zero."
+    },
+    {
+      "level": 3,
+      "title": "Konig Maximum Matching",
+      "text": "By Konig theorem, the minimum vertex cover equals the maximum cardinality bipartite matching."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def minimumOperations(self, grid: list[list[int]]) -> int:\n        m, n = len(grid), len(grid[0])\n        adj = {}\n        even_nodes = []\n\n        for r in range(m):\n            for c in range(n):\n                if grid[r][c] == 1:\n                    u = r * n + c\n                    if (r + c) % 2 == 0:\n                        even_nodes.append(u)\n                        adj[u] = []\n                        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                            nr, nc = r + dr, c + dc\n                            if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == 1:\n                                adj[u].append(nr * n + nc)\n\n        match = {}\n\n        def dfs(u: int, visited: set) -> bool:\n            for v in adj.get(u, []):\n                if v not in visited:\n                    visited.add(v)\n                    if v not in match or dfs(match[v], visited):\n                        match[v] = u\n                        return True\n            return False\n\n        matching = 0\n        for u in even_nodes:\n            if dfs(u, set()):\n                matching += 1\n\n        return matching\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V * E) bipartite matching via Kuhn algorithm",
+    "space": "O(V + E) bipartite graph adjacency table",
+    "variables": [
+      "V: number of one cells in grid",
+      "E: adjacent one pairs"
+    ],
+    "notes": "By Konig theorem, the minimum vertex cover in a bipartite graph equals its maximum matching.",
+    "whyNaiveFails": "Greedy flipping or branch and bound leads to exponential states.",
+    "spaceTimeTradeoff": "Grid adjacency naturally forms a bipartite graph by cell parity (r + c) % 2.",
+    "interviewerExpectation": "Candidate should recognize this as minimum vertex cover on a bipartite grid and apply maximum matching."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minimumOperations(self, grid: list[list[int]]) -> int:\n        m, n = len(grid), len(grid[0])\n        adj = {}\n        even_nodes = []\n\n        for r in range(m):\n            for c in range(n):\n                if grid[r][c] == 1:\n                    u = r * n + c\n                    if (r + c) % 2 == 0:\n                        even_nodes.append(u)\n                        adj[u] = []\n                        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                            nr, nc = r + dr, c + dc\n                            if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == 1:\n                                adj[u].append(nr * n + nc)\n\n        match = {}\n\n        def dfs(u: int, visited: set) -> bool:\n            for v in adj.get(u, []):\n                if v not in visited:\n                    visited.add(v)\n                    if v not in match or dfs(match[v], visited):\n                        match[v] = u\n                        return True\n            return False\n\n        matching = 0\n        for u in even_nodes:\n            if dfs(u, set()):\n                matching += 1\n\n        return matching",
+      "approach": "Python standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <unordered_set>\n\nclass Solution {\npublic:\n    int minimumOperations(std::vector<std::vector<int>>& grid) {\n        int m = grid.size(), n = grid[0].size();\n        std::unordered_map<int, std::vector<int>> adj;\n        std::vector<int> evenNodes;\n\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (grid[r][c] == 1) {\n                    int u = r * n + c;\n                    if ((r + c) % 2 == 0) {\n                        evenNodes.push_back(u);\n                        for (auto& d : dirs) {\n                            int nr = r + d[0], nc = c + d[1];\n                            if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == 1) {\n                                adj[u].push_back(nr * n + nc);\n                            }\n                        }\n                    }\n                }\n            }\n        }\n\n        std::unordered_map<int, int> match;\n\n        auto dfs = [&](auto& self, int u, std::unordered_set<int>& visited) -> bool {\n            for (int v : adj[u]) {\n                if (!visited.count(v)) {\n                    visited.insert(v);\n                    if (!match.count(v) || self(self, match[v], visited)) {\n                        match[v] = u;\n                        return true;\n                    }\n                }\n            }\n            return false;\n        };\n\n        int matching = 0;\n        for (int u : evenNodes) {\n            std::unordered_set<int> visited;\n            if (dfs(dfs, u, visited)) matching++;\n        }\n        return matching;\n    }\n};",
+      "approach": "C++ STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minimumOperations(int[][] grid) {\n        int m = grid.length, n = grid[0].length;\n        Map<Integer, List<Integer>> adj = new HashMap<>();\n        List<Integer> evenNodes = new ArrayList<>();\n\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 1) {\n                    int u = r * n + c;\n                    if ((r + c) % 2 == 0) {\n                        evenNodes.add(u);\n                        List<Integer> neighbors = new ArrayList<>();\n                        for (int[] d : dirs) {\n                            int nr = r + d[0], nc = c + d[1];\n                            if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == 1) {\n                                neighbors.add(nr * n + nc);\n                            }\n                        }\n                        adj.put(u, neighbors);\n                    }\n                }\n            }\n        }\n\n        Map<Integer, Integer> match = new HashMap<>();\n        int matching = 0;\n\n        for (int u : evenNodes) {\n            Set<Integer> visited = new HashSet<>();\n            if (dfs(u, adj, match, visited)) {\n                matching++;\n            }\n        }\n        return matching;\n    }\n\n    private boolean dfs(int u, Map<Integer, List<Integer>> adj, Map<Integer, Integer> match, Set<Integer> visited) {\n        List<Integer> neighbors = adj.get(u);\n        if (neighbors == null) return false;\n\n        for (int v : neighbors) {\n            if (!visited.contains(v)) {\n                visited.add(v);\n                if (!match.containsKey(v) || dfs(match.get(v), adj, match, visited)) {\n                    match.put(v, u);\n                    return true;\n                }\n            }\n        }\n        return false;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} grid\n * @return {number}\n */\nvar minimumOperations = function(grid) {\n    const m = grid.length, n = grid[0].length;\n    const adj = new Map();\n    const evenNodes = [];\n\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            if (grid[r][c] === 1) {\n                const u = r * n + c;\n                if ((r + c) % 2 === 0) {\n                    evenNodes.push(u);\n                    const neighbors = [];\n                    for (const [dr, dc] of dirs) {\n                        const nr = r + dr, nc = c + dc;\n                        if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] === 1) {\n                            neighbors.push(nr * n + nc);\n                        }\n                    }\n                    adj.set(u, neighbors);\n                }\n            }\n        }\n    }\n\n    const match = new Map();\n\n    const dfs = (u, visited) => {\n        const neighbors = adj.get(u) || [];\n        for (const v of neighbors) {\n            if (!visited.has(v)) {\n                visited.add(v);\n                if (!match.has(v) || dfs(match.get(v), visited)) {\n                    match.set(v, u);\n                    return true;\n                }\n            }\n        }\n        return false;\n    };\n\n    let matching = 0;\n    for (const u of evenNodes) {\n        if (dfs(u, new Set())) matching++;\n    }\n    return matching;\n};",
+      "approach": "JavaScript solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

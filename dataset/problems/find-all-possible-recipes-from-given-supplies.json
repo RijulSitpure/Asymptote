@@ -1,0 +1,79 @@
+{
+  "slug": "find-all-possible-recipes-from-given-supplies",
+  "number": 2115,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dependency Graph Formulation",
+      "text": "A recipe can be prepared only when all of its ingredient dependencies are met."
+    },
+    {
+      "level": 2,
+      "title": "In-Degree Initialization",
+      "text": "Count prerequisites for each recipe that are not already present in the initial supply set."
+    },
+    {
+      "level": 3,
+      "title": "Kahn Propagation",
+      "text": "Whenever all ingredients for a recipe become available, add it to the ready queue and unlock dependent recipes."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import defaultdict, deque\n\nclass Solution:\n    def findAllRecipes(self, recipes: list[str], ingredients: list[list[str]], supplies: list[str]) -> list[str]:\n        supply_set = set(supplies)\n        adj = defaultdict(list)\n        in_degree = defaultdict(int)\n        recipe_set = set(recipes)\n\n        for r, ing_list in zip(recipes, ingredients):\n            for ing in ing_list:\n                if ing not in supply_set:\n                    adj[ing].append(r)\n                    in_degree[r] += 1\n\n        queue = deque([r for r in recipes if in_degree[r] == 0])\n        created = []\n\n        while queue:\n            curr = queue.popleft()\n            created.append(curr)\n\n            for dependent in adj[curr]:\n                in_degree[dependent] -= 1\n                if in_degree[dependent] == 0:\n                    queue.append(dependent)\n\n        return created\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E) topological sort with Kahn algorithm",
+    "space": "O(V + E) dependency graph and in-degree table",
+    "variables": [
+      "V: recipes and supplies count",
+      "E: total ingredients across all recipes"
+    ],
+    "notes": "Kahn algorithm decrements prerequisite in-degrees as available supplies and cooked recipes expand.",
+    "whyNaiveFails": "Recursively expanding ingredient dependencies can repeat work or cycle endlessly.",
+    "spaceTimeTradeoff": "Topological sorting processes each dependency edge in amortized linear time.",
+    "interviewerExpectation": "Candidate should model recipes as graph nodes and resolve dependencies topologically."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict, deque\n\nclass Solution:\n    def findAllRecipes(self, recipes: list[str], ingredients: list[list[str]], supplies: list[str]) -> list[str]:\n        supply_set = set(supplies)\n        adj = defaultdict(list)\n        in_degree = defaultdict(int)\n        recipe_set = set(recipes)\n\n        for r, ing_list in zip(recipes, ingredients):\n            for ing in ing_list:\n                if ing not in supply_set:\n                    adj[ing].append(r)\n                    in_degree[r] += 1\n\n        queue = deque([r for r in recipes if in_degree[r] == 0])\n        created = []\n\n        while queue:\n            curr = queue.popleft()\n            created.append(curr)\n\n            for dependent in adj[curr]:\n                in_degree[dependent] -= 1\n                if in_degree[dependent] == 0:\n                    queue.append(dependent)\n\n        return created",
+      "approach": "Python standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <string>\n#include <unordered_set>\n#include <unordered_map>\n#include <queue>\n\nclass Solution {\npublic:\n    std::vector<std::string> findAllRecipes(std::vector<std::string>& recipes, std::vector<std::vector<std::string>>& ingredients, std::vector<std::string>& supplies) {\n        std::unordered_set<std::string> supplySet(supplies.begin(), supplies.end());\n        std::unordered_map<std::string, std::vector<std::string>> adj;\n        std::unordered_map<std::string, int> inDegree;\n\n        for (int i = 0; i < (int)recipes.size(); ++i) {\n            const std::string& r = recipes[i];\n            for (const auto& ing : ingredients[i]) {\n                if (!supplySet.count(ing)) {\n                    adj[ing].push_back(r);\n                    inDegree[r]++;\n                }\n            }\n        }\n\n        std::queue<std::string> q;\n        for (const auto& r : recipes) {\n            if (inDegree[r] == 0) q.push(r);\n        }\n\n        std::vector<std::string> ans;\n        while (!q.empty()) {\n            std::string curr = q.front();\n            q.pop();\n            ans.push_back(curr);\n\n            for (const auto& nxt : adj[curr]) {\n                if (--inDegree[nxt] == 0) {\n                    q.push(nxt);\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "C++ STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public List<String> findAllRecipes(String[] recipes, List<List<String>> ingredients, String[] supplies) {\n        Set<String> supplySet = new HashSet<>(Arrays.asList(supplies));\n        Map<String, List<String>> adj = new HashMap<>();\n        Map<String, Integer> inDegree = new HashMap<>();\n\n        for (int i = 0; i < recipes.length; i++) {\n            String r = recipes[i];\n            for (String ing : ingredients.get(i)) {\n                if (!supplySet.contains(ing)) {\n                    adj.computeIfAbsent(ing, k -> new ArrayList<>()).add(r);\n                    inDegree.put(r, inDegree.getOrDefault(r, 0) + 1);\n                }\n            }\n        }\n\n        Deque<String> queue = new ArrayDeque<>();\n        for (String r : recipes) {\n            if (inDegree.getOrDefault(r, 0) == 0) {\n                queue.offer(r);\n            }\n        }\n\n        List<String> ans = new ArrayList<>();\n        while (!queue.isEmpty()) {\n            String curr = queue.poll();\n            ans.add(curr);\n\n            if (adj.containsKey(curr)) {\n                for (String dep : adj.get(curr)) {\n                    int deg = inDegree.get(dep) - 1;\n                    inDegree.put(dep, deg);\n                    if (deg == 0) queue.offer(dep);\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string[]} recipes\n * @param {string[][]} ingredients\n * @param {string[]} supplies\n * @return {string[]}\n */\nvar findAllRecipes = function(recipes, ingredients, supplies) {\n    const supplySet = new Set(supplies);\n    const adj = new Map();\n    const inDegree = new Map();\n\n    for (let i = 0; i < recipes.length; i++) {\n        const r = recipes[i];\n        for (const ing of ingredients[i]) {\n            if (!supplySet.has(ing)) {\n                if (!adj.has(ing)) adj.set(ing, []);\n                adj.get(ing).push(r);\n                inDegree.set(r, (inDegree.get(r) || 0) + 1);\n            }\n        }\n    }\n\n    const queue = [];\n    for (const r of recipes) {\n        if (!inDegree.has(r) || inDegree.get(r) === 0) {\n            queue.push(r);\n        }\n    }\n\n    const ans = [];\n    let head = 0;\n    while (head < queue.length) {\n        const curr = queue[head++];\n        ans.push(curr);\n\n        const deps = adj.get(curr) || [];\n        for (const dep of deps) {\n            const deg = inDegree.get(dep) - 1;\n            inDegree.set(dep, deg);\n            if (deg === 0) queue.push(dep);\n        }\n    }\n    return ans;\n};",
+      "approach": "JavaScript solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "slug": "the-airport-with-the-most-traffic",
+  "number": 2112,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bidirectional Traffic Aggregation",
+      "text": "Every scheduled flight adds to both the departure and arrival airport traffic counts."
+    },
+    {
+      "level": 2,
+      "title": "Union of Flight Legs",
+      "text": "Use union all to normalize departure and arrival columns into a single airport_id and traffic stream."
+    },
+    {
+      "level": 3,
+      "title": "Dense Rank Filtering",
+      "text": "Group by airport_id, compute total traffic, and filter for records matching the maximum traffic rank."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```sql\nWITH Traffic AS (\n    SELECT departure_airport AS airport_id, flights_count FROM Flights\n    UNION ALL\n    SELECT arrival_airport AS airport_id, flights_count FROM Flights\n),\nAgg AS (\n    SELECT airport_id, SUM(flights_count) AS total_traffic,\n           DENSE_RANK() OVER (ORDER BY SUM(flights_count) DESC) AS rnk\n    FROM Traffic\n    GROUP BY airport_id\n)\nSELECT airport_id\nFROM Agg\nWHERE rnk = 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) aggregation and ranking across airport appearances",
+    "space": "O(N) traffic accumulation table",
+    "variables": [
+      "N: number of flight records in Flights table"
+    ],
+    "notes": "Flights contribute traffic to both departure and arrival airports.",
+    "whyNaiveFails": "Evaluating departure and arrival airports separately without combining traffic undercounts dual-role hubs.",
+    "spaceTimeTradeoff": "Union all merges bidirectional flight legs into a single airport aggregation stream.",
+    "interviewerExpectation": "Candidate should combine departure and arrival traffic before finding the maximum traffic."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH Traffic AS (\n    SELECT departure_airport AS airport_id, flights_count FROM Flights\n    UNION ALL\n    SELECT arrival_airport AS airport_id, flights_count FROM Flights\n),\nAgg AS (\n    SELECT airport_id, SUM(flights_count) AS total_traffic,\n           DENSE_RANK() OVER (ORDER BY SUM(flights_count) DESC) AS rnk\n    FROM Traffic\n    GROUP BY airport_id\n)\nSELECT airport_id\nFROM Agg\nWHERE rnk = 1;",
+      "approach": "MySQL window ranking and aggregation solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH Traffic AS (\n    SELECT departure_airport AS airport_id, flights_count FROM Flights\n    UNION ALL\n    SELECT arrival_airport AS airport_id, flights_count FROM Flights\n),\nAgg AS (\n    SELECT airport_id, SUM(flights_count) AS total_traffic,\n           DENSE_RANK() OVER (ORDER BY SUM(flights_count) DESC) AS rnk\n    FROM Traffic\n    GROUP BY airport_id\n)\nSELECT airport_id\nFROM Agg\nWHERE rnk = 1;",
+      "approach": "PostgreSQL window ranking and aggregation solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef airport_with_most_traffic(flights: pd.DataFrame) -> pd.DataFrame:\n    dep = flights[['departure_airport', 'flights_count']].rename(columns={'departure_airport': 'airport_id'})\n    arr = flights[['arrival_airport', 'flights_count']].rename(columns={'arrival_airport': 'airport_id'})\n    comb = pd.concat([dep, arr], ignore_index=True)\n    grouped = comb.groupby('airport_id', as_index=False)['flights_count'].sum()\n    max_traffic = grouped['flights_count'].max()\n    res = grouped[grouped['flights_count'] == max_traffic][['airport_id']]\n    return res",
+      "approach": "Pandas data frame solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

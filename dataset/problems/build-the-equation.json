@@ -1,0 +1,71 @@
+{
+  "slug": "build-the-equation",
+  "number": 2118,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Polynomial Term Formatting Rules",
+      "text": "Each term requires an explicit leading sign, absolute coefficient, and conditional exponent notation."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Exponent Syntax",
+      "text": "Power zero renders as constant, power one renders with X without caret, and powers above one render with caret."
+    },
+    {
+      "level": 3,
+      "title": "Descending Degree Concatenation",
+      "text": "Order terms by power descending and concatenate the resulting strings followed by equals zero."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```sql\nWITH FormattedTerms AS (\n    SELECT \n        power,\n        CONCAT(\n            CASE WHEN factor > 0 THEN '+' ELSE '-' END,\n            ABS(factor),\n            CASE \n                WHEN power = 0 THEN ''\n                WHEN power = 1 THEN 'X'\n                ELSE CONCAT('X^', power)\n            END\n        ) AS term_str\n    FROM Terms\n)\nSELECT \n    CONCAT(GROUP_CONCAT(term_str ORDER BY power DESC SEPARATOR ''), '=0') AS equation\nFROM FormattedTerms;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) sorting terms by descending power and string concatenation",
+    "space": "O(N) terms storage",
+    "variables": [
+      "N: number of terms in polynomial"
+    ],
+    "notes": "Signs (+ or -) must be explicitly formatted for every term, and power 0 or 1 have special abbreviations.",
+    "whyNaiveFails": "Standard numeric concatenation misses explicit plus signs on positive terms or incorrect carets on power one.",
+    "spaceTimeTradeoff": "Ordering terms by power descending before group concatenation formats the polynomial in standard mathematical order.",
+    "interviewerExpectation": "Candidate should apply conditional string formatting and concatenate terms in descending power order."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH FormattedTerms AS (\n    SELECT \n        power,\n        CONCAT(\n            CASE WHEN factor > 0 THEN '+' ELSE '-' END,\n            ABS(factor),\n            CASE \n                WHEN power = 0 THEN ''\n                WHEN power = 1 THEN 'X'\n                ELSE CONCAT('X^', power)\n            END\n        ) AS term_str\n    FROM Terms\n)\nSELECT \n    CONCAT(GROUP_CONCAT(term_str ORDER BY power DESC SEPARATOR ''), '=0') AS equation\nFROM FormattedTerms;",
+      "approach": "MySQL window ranking and aggregation solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH FormattedTerms AS (\n    SELECT \n        power,\n        (CASE WHEN factor > 0 THEN '+' ELSE '-' END) ||\n        CAST(ABS(factor) AS TEXT) ||\n        (CASE \n            WHEN power = 0 THEN ''\n            WHEN power = 1 THEN 'X'\n            ELSE 'X^' || CAST(power AS TEXT)\n        END) AS term_str\n    FROM Terms\n)\nSELECT \n    STRING_AGG(term_str, '' ORDER BY power DESC) || '=0' AS equation\nFROM FormattedTerms;",
+      "approach": "PostgreSQL window ranking and aggregation solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef build_the_equation(terms: pd.DataFrame) -> pd.DataFrame:\n    terms = terms.sort_values(by='power', ascending=False)\n    parts = []\n    for _, row in terms.iterrows():\n        p = int(row['power'])\n        f = int(row['factor'])\n        sign = '+' if f > 0 else '-'\n        coeff = abs(f)\n        if p == 0:\n            term_str = f\"{sign}{coeff}\"\n        elif p == 1:\n            term_str = f\"{sign}{coeff}X\"\n        else:\n            term_str = f\"{sign}{coeff}X^{p}\"\n        parts.append(term_str)\n    \n    equation = \"\".join(parts) + \"=0\"\n    return pd.DataFrame([{'equation': equation}])",
+      "approach": "Pandas data frame solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

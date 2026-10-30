@@ -1,0 +1,78 @@
+{
+  "slug": "sequentially-ordinal-rank-tracker",
+  "number": 2102,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dynamic Rank Invariant",
+      "text": "Consecutive get calls request the first, second, third, and higher ranked items sequentially."
+    },
+    {
+      "level": 2,
+      "title": "Lexicographical Rank Key",
+      "text": "Represent each entry by score negated and name natural to sort higher scores first and smaller names earlier."
+    },
+    {
+      "level": 3,
+      "title": "Sequential Cursor Advancement",
+      "text": "Maintain an incremental query cursor into a sorted list or balanced heap partition."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\n\nclass SORTracker:\n    def __init__(self):\n        self.locations = []\n        self.query_index = 0\n\n    def add(self, name: str, score: int) -> None:\n        key = (-score, name)\n        bisect.insort(self.locations, key)\n\n    def get(self) -> str:\n        name = self.locations[self.query_index][1]\n        self.query_index += 1\n        return name\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log N) insertion and constant rank advancement",
+    "space": "O(N) storage of registered locations",
+    "variables": [
+      "N: total location entries added"
+    ],
+    "notes": "Dual heaps or sorted list maintaining the current query index i.",
+    "whyNaiveFails": "Re-sorting the entire collection on each query yields quadratic time.",
+    "spaceTimeTradeoff": "Bisecting on a custom-sorted list enables logarithmic insertion and constant rank lookup.",
+    "interviewerExpectation": "Candidate should design a dynamic rank tracking data structure with sublinear operations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import bisect\n\nclass SORTracker:\n    def __init__(self):\n        self.locations = []\n        self.query_index = 0\n\n    def add(self, name: str, score: int) -> None:\n        key = (-score, name)\n        bisect.insort(self.locations, key)\n\n    def get(self) -> str:\n        name = self.locations[self.query_index][1]\n        self.query_index += 1\n        return name",
+      "approach": "Python standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <string>\n#include <set>\n\nclass SORTracker {\n    struct Item {\n        int score;\n        std::string name;\n        bool operator<(const Item& other) const {\n            if (score != other.score) return score > other.score;\n            return name < other.name;\n        }\n    };\n\n    std::set<Item> items;\n    std::set<Item>::iterator cursor;\n\npublic:\n    SORTracker() {\n        cursor = items.end();\n    }\n\n    void add(std::string name, int score) {\n        Item itm = {score, name};\n        auto it = items.insert(itm).first;\n        if (cursor == items.end() || *it < *cursor) {\n            if (cursor != items.end()) cursor--;\n        }\n    }\n\n    std::string get() {\n        if (cursor == items.end()) cursor = items.begin();\n        else cursor++;\n        return cursor->name;\n    }\n};",
+      "approach": "C++ STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass SORTracker {\n    static class Item implements Comparable<Item> {\n        int score;\n        String name;\n\n        Item(String name, int score) {\n            this.name = name;\n            this.score = score;\n        }\n\n        @Override\n        public int compareTo(Item o) {\n            if (this.score != o.score) {\n                return Integer.compare(o.score, this.score);\n            }\n            return this.name.compareTo(o.name);\n        }\n    }\n\n    private final List<Item> list = new ArrayList<>();\n    private int cursor = 0;\n\n    public SORTracker() {}\n\n    public void add(String name, int score) {\n        Item item = new Item(name, score);\n        int idx = Collections.binarySearch(list, item);\n        if (idx < 0) idx = -(idx + 1);\n        list.add(idx, item);\n    }\n\n    public String get() {\n        String res = list.get(cursor).name;\n        cursor++;\n        return res;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "var SORTracker = function() {\n    this.locations = [];\n    this.cursor = 0;\n};\n\n/** \n * @param {string} name \n * @param {number} score\n * @return {void}\n */\nSORTracker.prototype.add = function(name, score) {\n    let low = 0, high = this.locations.length;\n    while (low < high) {\n        const mid = (low + high) >> 1;\n        const other = this.locations[mid];\n        let cmp = other.score - score;\n        if (cmp === 0) cmp = name < other.name ? -1 : 1;\n        if (cmp > 0) low = mid + 1;\n        else high = mid;\n    }\n    this.locations.splice(low, 0, { name, score });\n};\n\n/**\n * @return {string}\n */\nSORTracker.prototype.get = function() {\n    const res = this.locations[this.cursor].name;\n    this.cursor++;\n    return res;\n};",
+      "approach": "JavaScript solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

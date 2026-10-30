@@ -1,0 +1,79 @@
+{
+  "slug": "valid-arrangement-of-pairs",
+  "number": 2097,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Eulerian Trail Structure",
+      "text": "A continuous route chaining end-to-start pairs forms an Eulerian path on a directed multigraph."
+    },
+    {
+      "level": 2,
+      "title": "Degree Balance Start Node",
+      "text": "The start node must have out_degree minus in_degree equal to one, or any node with outgoing edges if all degrees balance."
+    },
+    {
+      "level": 3,
+      "title": "Hierholzer Path Construction",
+      "text": "Traverse edges exhaustively using a stack, appending exhausted vertices to the route and reversing at completion."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def validArrangement(self, pairs: list[list[int]]) -> list[list[int]]:\n        adj = defaultdict(list)\n        in_degree = defaultdict(int)\n        out_degree = defaultdict(int)\n\n        for u, v in pairs:\n            adj[u].append(v)\n            out_degree[u] += 1\n            in_degree[v] += 1\n\n        start = pairs[0][0]\n        for node in out_degree:\n            if out_degree[node] - in_degree[node] == 1:\n                start = node\n                break\n\n        route = []\n        stack = [start]\n        while stack:\n            while adj[stack[-1]]:\n                stack.append(adj[stack[-1]].pop())\n            route.append(stack.pop())\n\n        route.reverse()\n        return [[route[i], route[i + 1]] for i in range(len(route) - 1)]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E) Hierholzer algorithm for Eulerian path",
+    "space": "O(V + E) adjacency graph and path stack",
+    "variables": [
+      "V: distinct endpoint nodes",
+      "E: number of pairs"
+    ],
+    "notes": "Find Eulerian path by locating node with out_degree - in_degree == 1, then post-order reconstruct edges.",
+    "whyNaiveFails": "Simple backtracking takes exponential time when traversing cyclic graph branches.",
+    "spaceTimeTradeoff": "Hierholzer algorithm visits each edge exactly once in linear time.",
+    "interviewerExpectation": "Candidate should recognize this as an Eulerian path problem and apply degree counting."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def validArrangement(self, pairs: list[list[int]]) -> list[list[int]]:\n        adj = defaultdict(list)\n        in_degree = defaultdict(int)\n        out_degree = defaultdict(int)\n\n        for u, v in pairs:\n            adj[u].append(v)\n            out_degree[u] += 1\n            in_degree[v] += 1\n\n        start = pairs[0][0]\n        for node in out_degree:\n            if out_degree[node] - in_degree[node] == 1:\n                start = node\n                break\n\n        route = []\n        stack = [start]\n        while stack:\n            while adj[stack[-1]]:\n                stack.append(adj[stack[-1]].pop())\n            route.append(stack.pop())\n\n        route.reverse()\n        return [[route[i], route[i + 1]] for i in range(len(route) - 1)]",
+      "approach": "Python standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<std::vector<int>> validArrangement(std::vector<std::vector<int>>& pairs) {\n        std::unordered_map<int, std::vector<int>> adj;\n        std::unordered_map<int, int> inDegree, outDegree;\n\n        for (const auto& p : pairs) {\n            adj[p[0]].push_back(p[1]);\n            outDegree[p[0]]++;\n            inDegree[p[1]]++;\n        }\n\n        int start = pairs[0][0];\n        for (const auto& [node, out] : outDegree) {\n            if (out - inDegree[node] == 1) {\n                start = node;\n                break;\n            }\n        }\n\n        std::vector<int> route;\n        std::vector<int> stack = {start};\n\n        while (!stack.empty()) {\n            int u = stack.back();\n            if (!adj[u].empty()) {\n                int v = adj[u].back();\n                adj[u].pop_back();\n                stack.push_back(v);\n            } else {\n                route.push_back(u);\n                stack.pop_back();\n            }\n        }\n\n        std::reverse(route.begin(), route.end());\n        std::vector<std::vector<int>> ans;\n        for (int i = 0; i < (int)route.size() - 1; ++i) {\n            ans.push_back({route[i], route[i + 1]});\n        }\n        return ans;\n    }\n};",
+      "approach": "C++ STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[][] validArrangement(int[][] pairs) {\n        Map<Integer, Deque<Integer>> adj = new HashMap<>();\n        Map<Integer, Integer> inDegree = new HashMap<>();\n        Map<Integer, Integer> outDegree = new HashMap<>();\n\n        for (int[] p : pairs) {\n            adj.computeIfAbsent(p[0], k -> new ArrayDeque<>()).push(p[1]);\n            outDegree.put(p[0], outDegree.getOrDefault(p[0], 0) + 1);\n            inDegree.put(p[1], inDegree.getOrDefault(p[1], 0) + 1);\n        }\n\n        int start = pairs[0][0];\n        for (int node : outDegree.keySet()) {\n            if (outDegree.get(node) - inDegree.getOrDefault(node, 0) == 1) {\n                start = node;\n                break;\n            }\n        }\n\n        List<Integer> route = new ArrayList<>();\n        Deque<Integer> stack = new ArrayDeque<>();\n        stack.push(start);\n\n        while (!stack.isEmpty()) {\n            int u = stack.peek();\n            Deque<Integer> neighbors = adj.get(u);\n            if (neighbors != null && !neighbors.isEmpty()) {\n                stack.push(neighbors.pop());\n            } else {\n                route.add(stack.pop());\n            }\n        }\n\n        Collections.reverse(route);\n        int[][] ans = new int[pairs.length][2];\n        for (int i = 0; i < route.size() - 1; i++) {\n            ans[i][0] = route.get(i);\n            ans[i][1] = route.get(i + 1);\n        }\n        return ans;\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} pairs\n * @return {number[][]}\n */\nvar validArrangement = function(pairs) {\n    const adj = new Map();\n    const inDegree = new Map();\n    const outDegree = new Map();\n\n    for (const [u, v] of pairs) {\n        if (!adj.has(u)) adj.set(u, []);\n        adj.get(u).push(v);\n        outDegree.set(u, (outDegree.get(u) || 0) + 1);\n        inDegree.set(v, (inDegree.get(v) || 0) + 1);\n    }\n\n    let start = pairs[0][0];\n    for (const [node, out] of outDegree.entries()) {\n        if (out - (inDegree.get(node) || 0) === 1) {\n            start = node;\n            break;\n        }\n    }\n\n    const route = [];\n    const stack = [start];\n\n    while (stack.length > 0) {\n        const u = stack[stack.length - 1];\n        const neighbors = adj.get(u);\n        if (neighbors && neighbors.length > 0) {\n            stack.push(neighbors.pop());\n        } else {\n            route.push(stack.pop());\n        }\n    }\n\n    route.reverse();\n    const ans = [];\n    for (let i = 0; i < route.length - 1; i++) {\n        ans.push([route[i], route[i + 1]]);\n    }\n    return ans;\n};",
+      "approach": "JavaScript solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}

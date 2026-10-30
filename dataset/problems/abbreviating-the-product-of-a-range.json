@@ -1,0 +1,78 @@
+{
+  "slug": "abbreviating-the-product-of-a-range",
+  "number": 2117,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Trailing Zero Factorization",
+      "text": "Count factors of two and five across the range. The minimum of these counts gives the number of trailing zeros C."
+    },
+    {
+      "level": 2,
+      "title": "Logarithmic Leading Digits",
+      "text": "Accumulate math.log10(x) for each number and subtract C to derive the fractional logarithm and leading digits."
+    },
+    {
+      "level": 3,
+      "title": "Modular Trailing Digits",
+      "text": "Maintain suffix digits modulo 10^10 while removing common factors of two and five to prevent zero artifacts."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport math\n\nclass Solution:\n    def abbreviateProduct(self, left: int, right: int) -> str:\n        cnt2 = 0\n        cnt5 = 0\n        for x in range(left, right + 1):\n            temp = x\n            while temp % 2 == 0:\n                cnt2 += 1\n                temp //= 2\n            while temp % 5 == 0:\n                cnt5 += 1\n                temp //= 5\n\n        zeros = min(cnt2, cnt5)\n\n        # Total digits calculation via log10\n        total_log = sum(math.log10(x) for x in range(left, right + 1)) - zeros\n        num_digits = int(total_log) + 1\n\n        # Suffix calculation\n        rem2 = zeros\n        rem5 = zeros\n        suff = 1\n        is_large = False\n\n        for x in range(left, right + 1):\n            temp = x\n            while rem2 > 0 and temp % 2 == 0:\n                rem2 -= 1\n                temp //= 2\n            while rem5 > 0 and temp % 5 == 0:\n                rem5 -= 1\n                temp //= 5\n\n            suff *= temp\n            if suff >= 10 ** 10:\n                is_large = True\n                suff %= 10 ** 10\n\n        if not is_large and suff < 10 ** 10:\n            return f\"{suff}e{zeros}\"\n\n        # Prefix from fractional part of log10\n        frac = total_log - int(total_log)\n        pref = int(10 ** (frac + 4))\n\n        last_five = suff % (10 ** 5)\n        return f\"{pref}...{last_five:05d}e{zeros}\"\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N) arithmetic range sweep with logarithm and modular arithmetic",
+    "space": "O(1) constant tracking variables",
+    "variables": [
+      "N: range span right - left + 1"
+    ],
+    "notes": "Count factors of 2 and 5 for trailing zeros; use logarithm sum for prefix and modulo 10^5 for suffix.",
+    "whyNaiveFails": "Multiplying large ranges directly causes numeric overflow and immense time complexity.",
+    "spaceTimeTradeoff": "Decomposing into logarithmic prefix, modular suffix, and factor counting enables O(N) execution.",
+    "interviewerExpectation": "Candidate should compute trailing zeros via factor counts and isolate prefix via floating-point logarithms."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import math\n\nclass Solution:\n    def abbreviateProduct(self, left: int, right: int) -> str:\n        cnt2 = 0\n        cnt5 = 0\n        for x in range(left, right + 1):\n            temp = x\n            while temp % 2 == 0:\n                cnt2 += 1\n                temp //= 2\n            while temp % 5 == 0:\n                cnt5 += 1\n                temp //= 5\n\n        zeros = min(cnt2, cnt5)\n\n        # Total digits calculation via log10\n        total_log = sum(math.log10(x) for x in range(left, right + 1)) - zeros\n        num_digits = int(total_log) + 1\n\n        # Suffix calculation\n        rem2 = zeros\n        rem5 = zeros\n        suff = 1\n        is_large = False\n\n        for x in range(left, right + 1):\n            temp = x\n            while rem2 > 0 and temp % 2 == 0:\n                rem2 -= 1\n                temp //= 2\n            while rem5 > 0 and temp % 5 == 0:\n                rem5 -= 1\n                temp //= 5\n\n            suff *= temp\n            if suff >= 10 ** 10:\n                is_large = True\n                suff %= 10 ** 10\n\n        if not is_large and suff < 10 ** 10:\n            return f\"{suff}e{zeros}\"\n\n        # Prefix from fractional part of log10\n        frac = total_log - int(total_log)\n        pref = int(10 ** (frac + 4))\n\n        last_five = suff % (10 ** 5)\n        return f\"{pref}...{last_five:05d}e{zeros}\"",
+      "approach": "Python standard solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "code": "#include <string>\n#include <cmath>\n#include <algorithm>\n#include <iomanip>\n#include <sstream>\n\nclass Solution {\npublic:\n    std::string abbreviateProduct(int left, int right) {\n        int cnt2 = 0, cnt5 = 0;\n        for (int i = left; i <= right; ++i) {\n            int temp = i;\n            while (temp % 2 == 0) { cnt2++; temp /= 2; }\n            while (temp % 5 == 0) { cnt5++; temp /= 5; }\n        }\n        int zeros = std::min(cnt2, cnt5);\n\n        double totalLog = 0;\n        for (int i = left; i <= right; ++i) {\n            totalLog += std::log10(i);\n        }\n        totalLog -= zeros;\n\n        int rem2 = zeros, rem5 = zeros;\n        long long suff = 1;\n        bool isLarge = false;\n\n        for (int i = left; i <= right; ++i) {\n            int temp = i;\n            while (rem2 > 0 && temp % 2 == 0) { rem2--; temp /= 2; }\n            while (rem5 > 0 && temp % 5 == 0) { rem5--; temp /= 5; }\n\n            suff *= temp;\n            if (suff >= 10000000000LL) {\n                isLarge = true;\n                suff %= 10000000000LL;\n            }\n        }\n\n        if (!isLarge && suff < 10000000000LL) {\n            return std::to_string(suff) + \"e\" + std::to_string(zeros);\n        }\n\n        double frac = totalLog - std::floor(totalLog);\n        int pref = (int)std::pow(10, frac + 4);\n\n        int lastFive = suff % 100000;\n        std::ostringstream oss;\n        oss << pref << \"...\" << std::setfill('0') << std::setw(5) << lastFive << \"e\" << zeros;\n        return oss.str();\n    }\n};",
+      "approach": "C++ STL solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public String abbreviateProduct(int left, int right) {\n        int cnt2 = 0, cnt5 = 0;\n        for (int i = left; i <= right; i++) {\n            int temp = i;\n            while (temp % 2 == 0) { cnt2++; temp /= 2; }\n            while (temp % 5 == 0) { cnt5++; temp /= 5; }\n        }\n        int zeros = Math.min(cnt2, cnt5);\n\n        double totalLog = 0;\n        for (int i = left; i <= right; i++) {\n            totalLog += Math.log10(i);\n        }\n        totalLog -= zeros;\n\n        int rem2 = zeros, rem5 = zeros;\n        long suff = 1;\n        boolean isLarge = false;\n\n        for (int i = left; i <= right; i++) {\n            int temp = i;\n            while (rem2 > 0 && temp % 2 == 0) { rem2--; temp /= 2; }\n            while (rem5 > 0 && temp % 5 == 0) { rem5--; temp /= 5; }\n\n            suff *= temp;\n            if (suff >= 10000000000L) {\n                isLarge = true;\n                suff %= 10000000000L;\n            }\n        }\n\n        if (!isLarge && suff < 10000000000L) {\n            return suff + \"e\" + zeros;\n        }\n\n        double frac = totalLog - Math.floor(totalLog);\n        int pref = (int) Math.pow(10, frac + 4);\n        int lastFive = (int) (suff % 100000);\n\n        return String.format(\"%d...%05de%d\", pref, lastFive, zeros);\n    }\n}",
+      "approach": "Java solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} left\n * @param {number} right\n * @return {string}\n */\nvar abbreviateProduct = function(left, right) {\n    let cnt2 = 0, cnt5 = 0;\n    for (let i = left; i <= right; i++) {\n        let temp = i;\n        while (temp % 2 === 0) { cnt2++; temp /= 2; }\n        while (temp % 5 === 0) { cnt5++; temp /= 5; }\n    }\n    const zeros = Math.min(cnt2, cnt5);\n\n    let totalLog = 0;\n    for (let i = left; i <= right; i++) {\n        totalLog += Math.log10(i);\n    }\n    totalLog -= zeros;\n\n    let rem2 = zeros, rem5 = zeros;\n    let suff = 1n;\n    let isLarge = false;\n\n    for (let i = left; i <= right; i++) {\n        let temp = i;\n        while (rem2 > 0 && temp % 2 === 0) { rem2--; temp /= 2; }\n        while (rem5 > 0 && temp % 5 === 0) { rem5--; temp /= 5; }\n\n        suff *= BigInt(temp);\n        if (suff >= 10000000000n) {\n            isLarge = true;\n            suff %= 10000000000n;\n        }\n    }\n\n    if (!isLarge && suff < 10000000000n) {\n        return `${suff}e${zeros}`;\n    }\n\n    const frac = totalLog - Math.floor(totalLog);\n    const pref = Math.floor(10 ** (frac + 4));\n    const lastFive = Number(suff % 100000n).toString().padStart(5, '0');\n\n    return `${pref}...${lastFive}e${zeros}`;\n};",
+      "approach": "JavaScript solution.",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ]
+}
