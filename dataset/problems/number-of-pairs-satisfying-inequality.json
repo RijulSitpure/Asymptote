@@ -1,0 +1,78 @@
+{
+  "slug": "number-of-pairs-satisfying-inequality",
+  "number": 2426,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Inequality Rearrangement",
+      "text": "Rearrange nums1[i] - nums1[j] <= nums2[i] - nums2[j] + diff into (nums1[i] - nums2[i]) <= (nums1[j] - nums2[j]) + diff."
+    },
+    {
+      "level": 2,
+      "title": "Difference Array Formulation",
+      "text": "Let diff_arr[i] = nums1[i] - nums2[i]. The problem becomes finding pairs i < j such that diff_arr[i] <= diff_arr[j] + diff."
+    },
+    {
+      "level": 3,
+      "title": "Coordinate Compressed Range Queries",
+      "text": "Coordinate compress all possible values diff_arr[i] and diff_arr[i] + diff, and query prefix counts using a Fenwick tree as you iterate."
+    },
+    {
+      "level": 4,
+      "title": "Fenwick Tree Pair Inequality Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def numberOfPairs(self, nums1: list[int], nums2: list[int], diff: int) -> int:\n        n = len(nums1)\n        d = [nums1[i] - nums2[i] for i in range(n)]\n        all_vals = sorted(set(d + [x + diff for x in d]))\n        val_map = {val: i + 1 for i, val in enumerate(all_vals)}\n        \n        bit = [0] * (len(all_vals) + 2)\n        def add(idx, val):\n            while idx < len(bit):\n                bit[idx] += val\n                idx += idx & (-idx)\n        def query(idx):\n            s = 0\n            while idx > 0:\n                s += bit[idx]\n                idx -= idx & (-idx)\n            return s\n        \n        ans = 0\n        for x in d:\n            target = x + diff\n            ans += query(val_map[target])\n            add(val_map[x], 1)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums1"
+    ],
+    "notes": "Coordinate compression takes O(n log n); each element performs O(log n) Fenwick updates and queries.",
+    "whyNaiveFails": "Pairwise nested loops take O(n^2) time.",
+    "spaceTimeTradeoff": "Fenwick tree and coordinate map use O(n) memory.",
+    "interviewerExpectation": "Transforms two-array inequality into single difference array with Fenwick tree or merge sort count."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Coordinate Compressed Binary Indexed Tree",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import bisect\n\nclass Solution:\n    def numberOfPairs(self, nums1: list[int], nums2: list[int], diff: int) -> int:\n        n = len(nums1)\n        d = [nums1[i] - nums2[i] for i in range(n)]\n        all_vals = sorted(set(d + [x + diff for x in d]))\n        val_map = {val: i + 1 for i, val in enumerate(all_vals)}\n        \n        bit = [0] * (len(all_vals) + 2)\n        def add(idx, val):\n            while idx < len(bit):\n                bit[idx] += val\n                idx += idx & (-idx)\n        def query(idx):\n            s = 0\n            while idx > 0:\n                s += bit[idx]\n                idx -= idx & (-idx)\n            return s\n        \n        ans = 0\n        for x in d:\n            target = x + diff\n            ans += query(val_map[target])\n            add(val_map[x], 1)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Coordinate Compressed Binary Indexed Tree",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    long long numberOfPairs(std::vector<int>& nums1, std::vector<int>& nums2, int diff) {\n        int n = nums1.size();\n        std::vector<int> d(n);\n        std::vector<int> all_vals;\n        all_vals.reserve(2 * n);\n        for (int i = 0; i < n; i++) {\n            d[i] = nums1[i] - nums2[i];\n            all_vals.push_back(d[i]);\n            all_vals.push_back(d[i] + diff);\n        }\n        std::sort(all_vals.begin(), all_vals.end());\n        all_vals.erase(std::unique(all_vals.begin(), all_vals.end()), all_vals.end());\n        \n        int m = all_vals.size();\n        std::vector<int> bit(m + 2, 0);\n        auto add = [&](int idx, int val) {\n            for (; idx < (int)bit.size(); idx += idx & (-idx)) bit[idx] += val;\n        };\n        auto query = [&](int idx) {\n            int s = 0;\n            for (; idx > 0; idx -= idx & (-idx)) s += bit[idx];\n            return s;\n        };\n        \n        auto getIdx = [&](int v) {\n            return std::lower_bound(all_vals.begin(), all_vals.end(), v) - all_vals.begin() + 1;\n        };\n        \n        long long ans = 0;\n        for (int x : d) {\n            ans += query(getIdx(x + diff));\n            add(getIdx(x), 1);\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Coordinate Compressed Binary Indexed Tree",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public long numberOfPairs(int[] nums1, int[] nums2, int diff) {\n        int n = nums1.length;\n        int[] d = new int[n];\n        int[] all = new int[2 * n];\n        for (int i = 0; i < n; i++) {\n            d[i] = nums1[i] - nums2[i];\n            all[2 * i] = d[i];\n            all[2 * i + 1] = d[i] + diff;\n        }\n        java.util.Arrays.sort(all);\n        int[] unique = java.util.Arrays.stream(all).distinct().toArray();\n        \n        int m = unique.length;\n        int[] bit = new int[m + 2];\n        long ans = 0;\n        \n        for (int x : d) {\n            int targetIdx = java.util.Arrays.binarySearch(unique, x + diff) + 1;\n            ans += query(bit, targetIdx);\n            int xIdx = java.util.Arrays.binarySearch(unique, x) + 1;\n            add(bit, xIdx, 1);\n        }\n        return ans;\n    }\n    \n    private void add(int[] bit, int idx, int val) {\n        for (; idx < bit.length; idx += idx & (-idx)) bit[idx] += val;\n    }\n    \n    private int query(int[] bit, int idx) {\n        int s = 0;\n        for (; idx > 0; idx -= idx & (-idx)) s += bit[idx];\n        return s;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Coordinate Compressed Binary Indexed Tree",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var numberOfPairs = function(nums1, nums2, diff) {\n    const n = nums1.length;\n    const d = new Array(n);\n    const all = [];\n    for (let i = 0; i < n; i++) {\n        d[i] = nums1[i] - nums2[i];\n        all.push(d[i], d[i] + diff);\n    }\n    all.sort((a, b) => a - b);\n    const unique = Array.from(new Set(all));\n    \n    const m = unique.length;\n    const bit = new Array(m + 2).fill(0);\n    function add(idx, val) {\n        for (; idx < bit.length; idx += idx & (-idx)) bit[idx] += val;\n    }\n    function query(idx) {\n        let s = 0;\n        for (; idx > 0; idx -= idx & (-idx)) s += bit[idx];\n        return s;\n    }\n    \n    function bsearch(v) {\n        let l = 0, r = unique.length - 1;\n        while (l <= r) {\n            const mid = (l + r) >> 1;\n            if (unique[mid] === v) return mid + 1;\n            if (unique[mid] < v) l = mid + 1;\n            else r = mid - 1;\n        }\n        return l + 1;\n    }\n    \n    let ans = 0;\n    for (const x of d) {\n        ans += query(bsearch(x + diff));\n        add(bsearch(x), 1);\n    }\n    return ans;\n};"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "slug": "create-components-with-same-value",
+  "number": 2440,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Total Sum Divisibility",
+      "text": "Let total_sum be the sum of all node values. Any valid component sum target must be a divisor of total_sum and at least max(nums)."
+    },
+    {
+      "level": 2,
+      "title": "Subtree Sum Check",
+      "text": "For a candidate target, traverse the tree with a depth-first traversal. Each node sums its own value and returned child sums."
+    },
+    {
+      "level": 3,
+      "title": "Edge Cutting Condition",
+      "text": "If a subtree sum equals target, cut the incoming edge to that subtree and return 0 upward. If a subtree sum exceeds target, this target is impossible."
+    },
+    {
+      "level": 4,
+      "title": "Tree Partition Divisor Validation Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def componentValue(self, nums: list[int], edges: list[list[int]]) -> int:\n        total_sum = sum(nums)\n        max_val = max(nums)\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        \n        def check(target):\n            valid = True\n            def dfs(node, parent):\n                nonlocal valid\n                if not valid:\n                    return 0\n                s = nums[node]\n                for nxt in adj[node]:\n                    if nxt != parent:\n                        s += dfs(nxt, node)\n                if s > target:\n                    valid = False\n                return 0 if s == target else s\n            \n            res = dfs(0, -1)\n            return valid and res == 0\n        \n        for parts in range(len(nums), 1, -1):\n            if total_sum % parts == 0:\n                target = total_sum // parts\n                if target >= max_val and check(target):\n                    return parts - 1\n        return 0\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(d(total_sum) * n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes",
+      "total_sum: sum of node values",
+      "d(total_sum): number of divisors"
+    ],
+    "notes": "Testing each valid divisor requires a linear depth-first traversal.",
+    "whyNaiveFails": "Evaluating all 2^(n-1) edge removal combinations causes exponential explosion.",
+    "spaceTimeTradeoff": "Adjacency list and call stack require linear O(n) space.",
+    "interviewerExpectation": "Recognizes that equal component sums must divide total sum and verifies via bottom-up subtree pruning."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Total Sum Divisor Testing with Bottom-Up Subtree Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def componentValue(self, nums: list[int], edges: list[list[int]]) -> int:\n        total_sum = sum(nums)\n        max_val = max(nums)\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        \n        def check(target):\n            valid = True\n            def dfs(node, parent):\n                nonlocal valid\n                if not valid:\n                    return 0\n                s = nums[node]\n                for nxt in adj[node]:\n                    if nxt != parent:\n                        s += dfs(nxt, node)\n                if s > target:\n                    valid = False\n                return 0 if s == target else s\n            \n            res = dfs(0, -1)\n            return valid and res == 0\n        \n        for parts in range(len(nums), 1, -1):\n            if total_sum % parts == 0:\n                target = total_sum // parts\n                if target >= max_val and check(target):\n                    return parts - 1\n        return 0"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Total Sum Divisor Testing with Bottom-Up Subtree Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int componentValue(std::vector<int>& nums, std::vector<std::vector<int>>& edges) {\n        int total_sum = std::accumulate(nums.begin(), nums.end(), 0);\n        int max_val = *std::max_element(nums.begin(), nums.end());\n        int n = nums.size();\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        \n        auto check = [&](int target) {\n            bool valid = true;\n            std::function<int(int, int)> dfs = [&](int u, int p) {\n                if (!valid) return 0;\n                int s = nums[u];\n                for (int v : adj[u]) {\n                    if (v != p) s += dfs(v, u);\n                }\n                if (s > target) valid = false;\n                return s == target ? 0 : s;\n            };\n            int rem = dfs(0, -1);\n            return valid && rem == 0;\n        };\n        \n        for (int parts = n; parts > 1; parts--) {\n            if (total_sum % parts == 0) {\n                int target = total_sum / parts;\n                if (target >= max_val && check(target)) {\n                    return parts - 1;\n                }\n            }\n        }\n        return 0;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Total Sum Divisor Testing with Bottom-Up Subtree Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int componentValue(int[] nums, int[][] edges) {\n        int totalSum = 0, maxVal = 0;\n        for (int x : nums) {\n            totalSum += x;\n            if (x > maxVal) maxVal = x;\n        }\n        int n = nums.length;\n        java.util.List<java.util.List<Integer>> adj = new java.util.ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new java.util.ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        \n        for (int parts = n; parts > 1; parts--) {\n            if (totalSum % parts == 0) {\n                int target = totalSum / parts;\n                if (target >= maxVal && check(nums, adj, target)) {\n                    return parts - 1;\n                }\n            }\n        }\n        return 0;\n    }\n    \n    private boolean check(int[] nums, java.util.List<java.util.List<Integer>> adj, int target) {\n        boolean[] valid = new boolean[]{true};\n        int rem = dfs(0, -1, nums, adj, target, valid);\n        return valid[0] && rem == 0;\n    }\n    \n    private int dfs(int u, int p, int[] nums, java.util.List<java.util.List<Integer>> adj, int target, boolean[] valid) {\n        if (!valid[0]) return 0;\n        int s = nums[u];\n        for (int v : adj.get(u)) {\n            if (v != p) s += dfs(v, u, nums, adj, target, valid);\n        }\n        if (s > target) valid[0] = false;\n        return s == target ? 0 : s;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Total Sum Divisor Testing with Bottom-Up Subtree Pruning",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var componentValue = function(nums, edges) {\n    const totalSum = nums.reduce((a, b) => a + b, 0);\n    const maxVal = Math.max(...nums);\n    const n = nums.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    \n    function check(target) {\n        let valid = true;\n        function dfs(u, p) {\n            if (!valid) return 0;\n            let s = nums[u];\n            for (const v of adj[u]) {\n                if (v !== p) s += dfs(v, u);\n            }\n            if (s > target) valid = false;\n            return s === target ? 0 : s;\n        }\n        const rem = dfs(0, -1);\n        return valid && rem === 0;\n    }\n    \n    for (let parts = n; parts > 1; parts--) {\n        if (totalSum % parts === 0) {\n            const target = totalSum / parts;\n            if (target >= maxVal && check(target)) {\n                return parts - 1;\n            }\n        }\n    }\n    return 0;\n};"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "number-of-good-paths",
+  "number": 2421,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Non-Decreasing Edge Processing",
+      "text": "Sort the tree edges in ascending order of the maximum node value between the two endpoints."
+    },
+    {
+      "level": 2,
+      "title": "Disjoint Component Tracking",
+      "text": "Merge components incrementally using disjoint set union. Each component tracks its maximum value and how many nodes in the component attain that maximum value."
+    },
+    {
+      "level": 3,
+      "title": "Good Path Combination",
+      "text": "When uniting two components that share the same maximum value, the product of their maximum-value node counts gives the number of newly formed good paths."
+    },
+    {
+      "level": 4,
+      "title": "Disjoint Set Good Path Union Implementation",
+      "text": "```python\nclass Solution:\n    def numberOfGoodPaths(self, vals: list[int], edges: list[list[int]]) -> int:\n        n = len(vals)\n        parent = list(range(n))\n        max_val = list(vals)\n        count = [1] * n\n        \n        def find(i):\n            if parent[i] != i:\n                parent[i] = find(parent[i])\n            return parent[i]\n        \n        edges.sort(key=lambda e: max(vals[e[0]], vals[e[1]]))\n        ans = n\n        \n        for u, v in edges:\n            ru, rv = find(u), find(v)\n            if ru != rv:\n                if max_val[ru] == max_val[rv]:\n                    ans += count[ru] * count[rv]\n                    parent[rv] = ru\n                    count[ru] += count[rv]\n                elif max_val[ru] > max_val[rv]:\n                    parent[rv] = ru\n                else:\n                    parent[ru] = rv\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of tree nodes"
+    ],
+    "notes": "Sorting edges takes O(n log n); DSU operations with path compression run in near-linear O(n alpha(n)).",
+    "whyNaiveFails": "Running breadth-first search from each node takes O(n^2) time.",
+    "spaceTimeTradeoff": "Component arrays maintain maximum values and occurrences per representative.",
+    "interviewerExpectation": "Sorts edges by max value and connects components with disjoint set union to count paths."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Disjoint Set Union on Edges Sorted by Endpoint Maximum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def numberOfGoodPaths(self, vals: list[int], edges: list[list[int]]) -> int:\n        n = len(vals)\n        parent = list(range(n))\n        max_val = list(vals)\n        count = [1] * n\n        \n        def find(i):\n            if parent[i] != i:\n                parent[i] = find(parent[i])\n            return parent[i]\n        \n        edges.sort(key=lambda e: max(vals[e[0]], vals[e[1]]))\n        ans = n\n        \n        for u, v in edges:\n            ru, rv = find(u), find(v)\n            if ru != rv:\n                if max_val[ru] == max_val[rv]:\n                    ans += count[ru] * count[rv]\n                    parent[rv] = ru\n                    count[ru] += count[rv]\n                elif max_val[ru] > max_val[rv]:\n                    parent[rv] = ru\n                else:\n                    parent[ru] = rv\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Disjoint Set Union on Edges Sorted by Endpoint Maximum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int numberOfGoodPaths(std::vector<int>& vals, std::vector<std::vector<int>>& edges) {\n        int n = vals.size();\n        std::vector<int> parent(n), max_val = vals, count(n, 1);\n        std::iota(parent.begin(), parent.end(), 0);\n        \n        std::function<int(int)> find = [&](int i) {\n            return parent[i] == i ? i : (parent[i] = find(parent[i]));\n        };\n        \n        std::sort(edges.begin(), edges.end(), [&](const auto& a, const auto& b) {\n            return std::max(vals[a[0]], vals[a[1]]) < std::max(vals[b[0]], vals[b[1]]);\n        });\n        \n        int ans = n;\n        for (const auto& e : edges) {\n            int ru = find(e[0]), rv = find(e[1]);\n            if (ru != rv) {\n                if (max_val[ru] == max_val[rv]) {\n                    ans += count[ru] * count[rv];\n                    parent[rv] = ru;\n                    count[ru] += count[rv];\n                } else if (max_val[ru] > max_val[rv]) {\n                    parent[rv] = ru;\n                } else {\n                    parent[ru] = rv;\n                }\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Disjoint Set Union on Edges Sorted by Endpoint Maximum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int numberOfGoodPaths(int[] vals, int[][] edges) {\n        int n = vals.length;\n        int[] parent = new int[n];\n        int[] maxVal = new int[n];\n        int[] count = new int[n];\n        for (int i = 0; i < n; i++) {\n            parent[i] = i;\n            maxVal[i] = vals[i];\n            count[i] = 1;\n        }\n        \n        java.util.Arrays.sort(edges, (a, b) -> {\n            int maxA = Math.max(vals[a[0]], vals[a[1]]);\n            int maxB = Math.max(vals[b[0]], vals[b[1]]);\n            return Integer.compare(maxA, maxB);\n        });\n        \n        int ans = n;\n        for (int[] e : edges) {\n            int ru = find(parent, e[0]), rv = find(parent, e[1]);\n            if (ru != rv) {\n                if (maxVal[ru] == maxVal[rv]) {\n                    ans += count[ru] * count[rv];\n                    parent[rv] = ru;\n                    count[ru] += count[rv];\n                } else if (maxVal[ru] > maxVal[rv]) {\n                    parent[rv] = ru;\n                } else {\n                    parent[ru] = rv;\n                }\n            }\n        }\n        return ans;\n    }\n    \n    private int find(int[] parent, int i) {\n        if (parent[i] != i) parent[i] = find(parent, parent[i]);\n        return parent[i];\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Disjoint Set Union on Edges Sorted by Endpoint Maximum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var numberOfGoodPaths = function(vals, edges) {\n    const n = vals.length;\n    const parent = Array.from({ length: n }, (_, i) => i);\n    const maxVal = [...vals];\n    const count = new Array(n).fill(1);\n    \n    function find(i) {\n        if (parent[i] !== i) parent[i] = find(parent[i]);\n        return parent[i];\n    }\n    \n    edges.sort((a, b) => {\n        const maxA = Math.max(vals[a[0]], vals[a[1]]);\n        const maxB = Math.max(vals[b[0]], vals[b[1]]);\n        return maxA - maxB;\n    });\n    \n    let ans = n;\n    for (const [u, v] of edges) {\n        const ru = find(u), rv = find(v);\n        if (ru !== rv) {\n            if (maxVal[ru] === maxVal[rv]) {\n                ans += count[ru] * count[rv];\n                parent[rv] = ru;\n                count[ru] += count[rv];\n            } else if (maxVal[ru] > maxVal[rv]) {\n                parent[rv] = ru;\n            } else {\n                parent[ru] = rv;\n            }\n        }\n    }\n    return ans;\n};"
+    }
+  ]
+}
