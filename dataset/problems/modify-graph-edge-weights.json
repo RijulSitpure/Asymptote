@@ -1,0 +1,79 @@
+{
+  "slug": "modify-graph-edge-weights",
+  "number": 2699,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Baseline Shortest Path Inspection",
+      "text": "First calculate the shortest distance when all modifiable -1 edges are set to weight 1, and also when they are set to a very large weight."
+    },
+    {
+      "level": 2,
+      "title": "Impossibility Thresholds",
+      "text": "If the shortest distance with all -1 edges set to 1 exceeds target, or with all -1 edges set to infinity is less than target, achieving target is impossible."
+    },
+    {
+      "level": 3,
+      "title": "Iterative Edge Tuning",
+      "text": "Run a shortest path search from destination to all nodes, then adjust each -1 edge along the source-destination path so the cumulative distance equals target."
+    },
+    {
+      "level": 4,
+      "title": "Two-Pass Dijkstra Modification Implementation",
+      "text": "```python\nclass Solution:\n    def modifiedGraphEdges(self, n: int, edges: list[list[int]], source: int, destination: int, target: int) -> list[list[int]]:\n        import heapq\n        def run_dijkstra():\n            adj = [[] for _ in range(n)]\n            for u, v, w in edges:\n                if w != -1:\n                    adj[u].append((v, w))\n                    adj[v].append((u, w))\n            dist = [float('inf')] * n\n            dist[source] = 0\n            pq = [(0, source)]\n            while pq:\n                d, u = heapq.heappop(pq)\n                if d > dist[u]:\n                    continue\n                for v, w in adj[u]:\n                    if dist[u] + w < dist[v]:\n                        dist[v] = dist[u] + w\n                        heapq.heappush(pq, (dist[v], v))\n            return dist[destination]\n        cur_dist = run_dijkstra()\n        if cur_dist < target:\n            return []\n        matched = (cur_dist == target)\n        for edge in edges:\n            if edge[2] != -1:\n                continue\n            if matched:\n                edge[2] = 2000000000\n            else:\n                edge[2] = 1\n                cur_dist = run_dijkstra()\n                if cur_dist <= target:\n                    matched = True\n                    edge[2] += target - cur_dist\n        return edges if matched else []\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E * (V + E) log V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes (n)",
+      "E: number of edges"
+    ],
+    "notes": "Shortest path re-evaluation after adjusting each modifiable edge.",
+    "whyNaiveFails": "Continuous optimization across multi-dimensional weight space is intractable without shortest path duality.",
+    "spaceTimeTradeoff": "O(V + E) adjacency graph storage.",
+    "interviewerExpectation": "Recognizes that setting -1 edges to 1 gives the lower bound and uses Dijkstra to tune weights sequentially."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Iterative Edge Tuning with Dijkstra",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def modifiedGraphEdges(self, n: int, edges: list[list[int]], source: int, destination: int, target: int) -> list[list[int]]:\n        import heapq\n        def run_dijkstra():\n            adj = [[] for _ in range(n)]\n            for u, v, w in edges:\n                if w != -1:\n                    adj[u].append((v, w))\n                    adj[v].append((u, w))\n            dist = [float('inf')] * n\n            dist[source] = 0\n            pq = [(0, source)]\n            while pq:\n                d, u = heapq.heappop(pq)\n                if d > dist[u]:\n                    continue\n                for v, w in adj[u]:\n                    if dist[u] + w < dist[v]:\n                        dist[v] = dist[u] + w\n                        heapq.heappush(pq, (dist[v], v))\n            return dist[destination]\n        cur_dist = run_dijkstra()\n        if cur_dist < target:\n            return []\n        matched = (cur_dist == target)\n        for edge in edges:\n            if edge[2] != -1:\n                continue\n            if matched:\n                edge[2] = 2000000000\n            else:\n                edge[2] = 1\n                cur_dist = run_dijkstra()\n                if cur_dist <= target:\n                    matched = True\n                    edge[2] += target - cur_dist\n        return edges if matched else []"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Iterative Edge Tuning with Dijkstra",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    std::vector<std::vector<int>> modifiedGraphEdges(int n, std::vector<std::vector<int>>& edges, int source, int destination, int target) {\n        auto run_dijkstra = [&]() -> long long {\n            std::vector<std::vector<std::pair<int, int>>> adj(n);\n            for (const auto& e : edges) {\n                if (e[2] != -1) {\n                    adj[e[0]].push_back({e[1], e[2]});\n                    adj[e[1]].push_back({e[0], e[2]});\n                }\n            }\n            std::vector<long long> dist(n, 1e18);\n            dist[source] = 0;\n            std::priority_queue<std::pair<long long, int>, std::vector<std::pair<long long, int>>, std::greater<>> pq;\n            pq.push({0, source});\n            while (!pq.empty()) {\n                auto [d, u] = pq.top();\n                pq.pop();\n                if (d > dist[u]) continue;\n                for (auto& [v, w] : adj[u]) {\n                    if (dist[u] + w < dist[v]) {\n                        dist[v] = dist[u] + w;\n                        pq.push({dist[v], v});\n                    }\n                }\n            }\n            return dist[destination];\n        };\n        long long cur_dist = run_dijkstra();\n        if (cur_dist < target) return {};\n        bool matched = (cur_dist == target);\n        for (auto& edge : edges) {\n            if (edge[2] != -1) continue;\n            if (matched) {\n                edge[2] = 2000000000;\n            } else {\n                edge[2] = 1;\n                cur_dist = run_dijkstra();\n                if (cur_dist <= target) {\n                    matched = true;\n                    edge[2] += target - cur_dist;\n                }\n            }\n        }\n        return matched ? edges : std::vector<std::vector<int>>{};\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Iterative Edge Tuning with Dijkstra",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\n    public int[][] modifiedGraphEdges(int n, int[][] edges, int source, int destination, int target) {\n        long curDist = runDijkstra(n, edges, source, destination);\n        if (curDist < target) return new int[0][];\n        boolean matched = (curDist == target);\n        for (int[] edge : edges) {\n            if (edge[2] != -1) continue;\n            if (matched) {\n                edge[2] = 2000000000;\n            } else {\n                edge[2] = 1;\n                curDist = runDijkstra(n, edges, source, destination);\n                if (curDist <= target) {\n                    matched = true;\n                    edge[2] += (int)(target - curDist);\n                }\n            }\n        }\n        return matched ? edges : new int[0][];\n    }\n\n    private long runDijkstra(int n, int[][] edges, int source, int destination) {\n        List<List<int[]>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            if (e[2] != -1) {\n                adj.get(e[0]).add(new int[]{e[1], e[2]});\n                adj.get(e[1]).add(new int[]{e[0], e[2]});\n            }\n        }\n        long[] dist = new long[n];\n        Arrays.fill(dist, (long)1e18);\n        dist[source] = 0;\n        PriorityQueue<long[]> pq = new PriorityQueue<>(Comparator.comparingLong(a -> a[0]));\n        pq.offer(new long[]{0, source});\n        while (!pq.isEmpty()) {\n            long[] cur = pq.poll();\n            long d = cur[0];\n            int u = (int)cur[1];\n            if (d > dist[u]) continue;\n            for (int[] edge : adj.get(u)) {\n                int v = edge[0], w = edge[1];\n                if (dist[u] + w < dist[v]) {\n                    dist[v] = dist[u] + w;\n                    pq.offer(new long[]{dist[v], v});\n                }\n            }\n        }\n        return dist[destination];\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Iterative Edge Tuning with Dijkstra",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var modifiedGraphEdges = function(n, edges, source, destination, target) {\n    function runDijkstra() {\n        const adj = Array.from({ length: n }, () => []);\n        for (const [u, v, w] of edges) {\n            if (w !== -1) {\n                adj[u].push([v, w]);\n                adj[v].push([u, w]);\n            }\n        }\n        const dist = new Array(n).fill(Infinity);\n        dist[source] = 0;\n        const visited = new Set();\n        for (let iter = 0; iter < n; iter++) {\n            let u = -1;\n            for (let i = 0; i < n; i++) {\n                if (!visited.has(i) && (u === -1 || dist[i] < dist[u])) {\n                    u = i;\n                }\n            }\n            if (u === -1 || dist[u] === Infinity) break;\n            visited.add(u);\n            for (const [v, w] of adj[u]) {\n                if (dist[u] + w < dist[v]) {\n                    dist[v] = dist[u] + w;\n                }\n            }\n        }\n        return dist[destination];\n    }\n    let curDist = runDijkstra();\n    if (curDist < target) return [];\n    let matched = (curDist === target);\n    for (const edge of edges) {\n        if (edge[2] !== -1) continue;\n        if (matched) {\n            edge[2] = 2000000000;\n        } else {\n            edge[2] = 1;\n            curDist = runDijkstra();\n            if (curDist <= target) {\n                matched = true;\n                edge[2] += target - curDist;\n            }\n        }\n    }\n    return matched ? edges : [];\n};"
+    }
+  ]
+}

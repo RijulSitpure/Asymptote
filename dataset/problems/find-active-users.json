@@ -1,0 +1,72 @@
+{
+  "slug": "find-active-users",
+  "number": 2688,
+  "category": "Database",
+  "patterns": [
+    "self-join",
+    "date-time"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Seven-Day Consecutive Purchases",
+      "text": "An active user is one who made a second purchase at most seven days after another purchase."
+    },
+    {
+      "level": 2,
+      "title": "Self-Join on Same User",
+      "text": "Join the Users table to itself on matching user_id where the second transaction occurs after the first within seven days."
+    },
+    {
+      "level": 3,
+      "title": "Distinct Output",
+      "text": "Select unique user_id values ordered in ascending order."
+    },
+    {
+      "level": 4,
+      "title": "Self-Join Date Window Query Implementation",
+      "text": "```mysql\nSELECT DISTINCT\n    u1.user_id\nFROM Users u1\nJOIN Users u2\n  ON u1.user_id = u2.user_id\n AND u1.created_at < u2.created_at\n AND DATEDIFF(u2.created_at, u1.created_at) <= 7\nORDER BY u1.user_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) sorting purchase timestamps per user",
+    "space": "O(N) for join intermediate table",
+    "variables": [
+      "N: number of user purchases"
+    ],
+    "notes": "Self-join on date interval <= 7 days.",
+    "whyNaiveFails": "Full Cartesian join without user partitioning is quadratic.",
+    "spaceTimeTradeoff": "O(N) memory for matched active user IDs.",
+    "interviewerExpectation": "Joins table with itself on user_id and filters DATEDIFF <= 7."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Self-Join DATEDIFF",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT DISTINCT\n    u1.user_id\nFROM Users u1\nJOIN Users u2\n  ON u1.user_id = u2.user_id\n AND u1.created_at < u2.created_at\n AND DATEDIFF(u2.created_at, u1.created_at) <= 7\nORDER BY u1.user_id ASC;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Self-Join Date Difference",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT DISTINCT\n    u1.user_id\nFROM Users u1\nJOIN Users u2\n  ON u1.user_id = u2.user_id\n AND u1.created_at < u2.created_at\n AND (u2.created_at::date - u1.created_at::date) <= 7\nORDER BY u1.user_id ASC;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Merge Date Diff",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef find_active_users(users: pd.DataFrame) -> pd.DataFrame:\n    users['created_at'] = pd.to_datetime(users['created_at'])\n    m = users.merge(users, on='user_id', suffixes=('_1', '_2'))\n    cond = (m['created_at_2'] > m['created_at_1']) & ((m['created_at_2'] - m['created_at_1']).dt.days <= 7)\n    active = m[cond][['user_id']].drop_duplicates().sort_values(by='user_id')\n    return active"
+    }
+  ]
+}

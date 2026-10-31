@@ -1,0 +1,71 @@
+{
+  "slug": "consecutive-transactions-with-increasing-amounts",
+  "number": 2701,
+  "category": "Database",
+  "patterns": [
+    "gaps-and-islands"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Streak Interruption Conditions",
+      "text": "A consecutive increasing streak breaks whenever the transaction date is not exactly one day after the previous date or the amount does not strictly increase."
+    },
+    {
+      "level": 2,
+      "title": "Window Streak Identification",
+      "text": "Use lag window functions to examine the preceding transaction date and amount for each customer, flagging break points to assign unique streak group IDs."
+    },
+    {
+      "level": 3,
+      "title": "Streak Length Filter",
+      "text": "Group by customer and streak identifier, filter for groups with at least three transactions, and compute the earliest and latest dates."
+    },
+    {
+      "level": 4,
+      "title": "Gaps and Islands Window Query Implementation",
+      "text": "```mysql\nWITH Flagged AS (\n    SELECT\n        customer_id,\n        transaction_date,\n        amount,\n        LAG(transaction_date, 1) OVER (PARTITION BY customer_id ORDER BY transaction_date) AS prev_date,\n        LAG(amount, 1) OVER (PARTITION BY customer_id ORDER BY transaction_date) AS prev_amount\n    FROM Transactions\n),\nGraded AS (\n    SELECT\n        customer_id,\n        transaction_date,\n        amount,\n        SUM(\n            CASE\n                WHEN prev_date IS NULL OR DATEDIFF(transaction_date, prev_date) > 1 OR amount <= prev_amount THEN 1\n                ELSE 0\n            END\n        ) OVER (PARTITION BY customer_id ORDER BY transaction_date) AS streak_id\n    FROM Flagged\n)\nSELECT\n    customer_id,\n    MIN(transaction_date) AS consecutive_start,\n    MAX(transaction_date) AS consecutive_end\nFROM Graded\nGROUP BY customer_id, streak_id\nHAVING COUNT(*) >= 3\nORDER BY customer_id ASC, consecutive_start ASC, consecutive_end ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) for partitioned window sort",
+    "space": "O(N) for window state buffer",
+    "variables": [
+      "N: number of transactions"
+    ],
+    "notes": "Gaps and islands grouping using LAG and cumulative sum of streak breaks.",
+    "whyNaiveFails": "Multi-day self-joins fail to handle arbitrarily long variable-length streaks.",
+    "spaceTimeTradeoff": "O(N) memory for streak partitioning buffer.",
+    "interviewerExpectation": "Formulates gaps and islands with window functions and filters streaks of length >= 3."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Gaps and Islands Streak ID",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH Flagged AS (\n    SELECT\n        customer_id,\n        transaction_date,\n        amount,\n        LAG(transaction_date, 1) OVER (PARTITION BY customer_id ORDER BY transaction_date) AS prev_date,\n        LAG(amount, 1) OVER (PARTITION BY customer_id ORDER BY transaction_date) AS prev_amount\n    FROM Transactions\n),\nGraded AS (\n    SELECT\n        customer_id,\n        transaction_date,\n        amount,\n        SUM(\n            CASE\n                WHEN prev_date IS NULL OR DATEDIFF(transaction_date, prev_date) > 1 OR amount <= prev_amount THEN 1\n                ELSE 0\n            END\n        ) OVER (PARTITION BY customer_id ORDER BY transaction_date) AS streak_id\n    FROM Flagged\n)\nSELECT\n    customer_id,\n    MIN(transaction_date) AS consecutive_start,\n    MAX(transaction_date) AS consecutive_end\nFROM Graded\nGROUP BY customer_id, streak_id\nHAVING COUNT(*) >= 3\nORDER BY customer_id ASC, consecutive_start ASC, consecutive_end ASC;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Gaps and Islands Streak ID",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH Flagged AS (\n    SELECT\n        customer_id,\n        transaction_date,\n        amount,\n        LAG(transaction_date, 1) OVER (PARTITION BY customer_id ORDER BY transaction_date) AS prev_date,\n        LAG(amount, 1) OVER (PARTITION BY customer_id ORDER BY transaction_date) AS prev_amount\n    FROM Transactions\n),\nGraded AS (\n    SELECT\n        customer_id,\n        transaction_date,\n        amount,\n        SUM(\n            CASE\n                WHEN prev_date IS NULL OR (transaction_date::date - prev_date::date) > 1 OR amount <= prev_amount THEN 1\n                ELSE 0\n            END\n        ) OVER (PARTITION BY customer_id ORDER BY transaction_date) AS streak_id\n    FROM Flagged\n)\nSELECT\n    customer_id,\n    MIN(transaction_date) AS consecutive_start,\n    MAX(transaction_date) AS consecutive_end\nFROM Graded\nGROUP BY customer_id, streak_id\nHAVING COUNT(*) >= 3\nORDER BY customer_id ASC, consecutive_start ASC, consecutive_end ASC;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Gaps and Islands",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef consecutive_increasing_transactions(transactions: pd.DataFrame) -> pd.DataFrame:\n    transactions['transaction_date'] = pd.to_datetime(transactions['transaction_date'])\n    transactions = transactions.sort_values(by=['customer_id', 'transaction_date']).reset_index(drop=True)\n    prev_date = transactions.groupby('customer_id')['transaction_date'].shift(1)\n    prev_amount = transactions.groupby('customer_id')['amount'].shift(1)\n    break_streak = prev_date.isna() | ((transactions['transaction_date'] - prev_date).dt.days > 1) | (transactions['amount'] <= prev_amount)\n    transactions['streak_id'] = break_streak.cumsum()\n    grouped = transactions.groupby(['customer_id', 'streak_id']).agg(\n        consecutive_start=('transaction_date', 'min'),\n        consecutive_end=('transaction_date', 'max'),\n        cnt=('transaction_date', 'count')\n    ).reset_index()\n    res = grouped[grouped['cnt'] >= 3][['customer_id', 'consecutive_start', 'consecutive_end']]\n    return res.sort_values(by=['customer_id', 'consecutive_start', 'consecutive_end'])"
+    }
+  ]
+}

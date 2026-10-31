@@ -1,0 +1,71 @@
+{
+  "slug": "immediate-food-delivery-iii",
+  "number": 2686,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Immediate Order Definition",
+      "text": "An order is immediate if order_date equals customer_pref_delivery_date."
+    },
+    {
+      "level": 2,
+      "title": "Group by Order Date",
+      "text": "Aggregate over order_date and calculate the ratio of immediate orders to total orders on that date."
+    },
+    {
+      "level": 3,
+      "title": "Percentage Formatting",
+      "text": "Multiply the ratio by 100, round to two decimal places, and order by order_date in ascending order."
+    },
+    {
+      "level": 4,
+      "title": "Daily Immediate Ratio Query Implementation",
+      "text": "```mysql\nSELECT\n    order_date,\n    ROUND(100.0 * SUM(CASE WHEN order_date = customer_pref_delivery_date THEN 1 ELSE 0 END) / COUNT(*), 2) AS immediate_percentage\nFROM Delivery\nGROUP BY order_date\nORDER BY order_date ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) sorting grouped dates",
+    "space": "O(N) for date aggregate table",
+    "variables": [
+      "N: number of food deliveries"
+    ],
+    "notes": "Group-by date aggregation computing immediate order ratio.",
+    "whyNaiveFails": "Date-by-date subqueries perform repetitive table scans.",
+    "spaceTimeTradeoff": "O(N) hash aggregation table.",
+    "interviewerExpectation": "Uses conditional SUM or AVG within GROUP BY and rounds to 2 decimals."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Group By Date Conditional Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT\n    order_date,\n    ROUND(100.0 * SUM(CASE WHEN order_date = customer_pref_delivery_date THEN 1 ELSE 0 END) / COUNT(*), 2) AS immediate_percentage\nFROM Delivery\nGROUP BY order_date\nORDER BY order_date ASC;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Group By Date Conditional Sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "SELECT\n    order_date,\n    ROUND(100.0 * SUM(CASE WHEN order_date = customer_pref_delivery_date THEN 1 ELSE 0 END) / COUNT(*), 2) AS immediate_percentage\nFROM Delivery\nGROUP BY order_date\nORDER BY order_date ASC;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas GroupBy Percentage",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef immediate_delivery(delivery: pd.DataFrame) -> pd.DataFrame:\n    delivery['is_immediate'] = delivery['order_date'] == delivery['customer_pref_delivery_date']\n    df = delivery.groupby('order_date')['is_immediate'].agg(['sum', 'count']).reset_index()\n    df['immediate_percentage'] = (100.0 * df['sum'] / df['count']).round(2)\n    return df.sort_values(by='order_date')[['order_date', 'immediate_percentage']]"
+    }
+  ]
+}
