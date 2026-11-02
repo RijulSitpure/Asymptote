@@ -1,15 +1,11 @@
-import random
-import string
+import json
 
-def generate():
-    n = random.randint(3, 8)
-    names = ['aLiCe', 'bOB', 'chARLie', 'dAvId', 'EVE', 'fRAnK', 'gRaCe', 'hENRy']
-    random.shuffle(names)
-    inserts = []
-    for uid in range(1, n + 1):
-        name = names[uid - 1]
-        inserts.append(f"INSERT INTO Users VALUES ({uid}, '{name}');")
-    return "\n".join(inserts)
+cases = [
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Users VALUES (1, 'hENRy');\nINSERT INTO Users VALUES (2, 'chARLie');\nINSERT INTO Users VALUES (3, 'bOB');\nINSERT INTO Users VALUES (4, 'gRaCe');\nINSERT INTO Users VALUES (5, 'dAvId');\nINSERT INTO Users VALUES (6, 'fRAnK');"
+  }
+]
 
 if __name__ == "__main__":
-    print(generate())
+    print(json.dumps(cases))

@@ -1,25 +1,11 @@
 import json
+
 cases = [
-    {
-        "Employee": [
-            {"id": 1, "company": "A", "salary": 2341},
-            {"id": 2, "company": "A", "salary": 341},
-            {"id": 3, "company": "A", "salary": 15},
-            {"id": 4, "company": "A", "salary": 15314},
-            {"id": 5, "company": "A", "salary": 451},
-            {"id": 6, "company": "A", "salary": 513},
-            {"id": 7, "company": "B", "salary": 15},
-            {"id": 8, "company": "B", "salary": 13},
-            {"id": 9, "company": "B", "salary": 1154},
-            {"id": 10, "company": "B", "salary": 1345},
-            {"id": 11, "company": "B", "salary": 1221},
-            {"id": 12, "company": "B", "salary": 234},
-            {"id": 13, "company": "C", "salary": 2345},
-            {"id": 14, "company": "C", "salary": 2645},
-            {"id": 15, "company": "C", "salary": 2645},
-            {"id": 16, "company": "C", "salary": 2652},
-            {"id": 17, "company": "C", "salary": 65}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Employee (id, company, salary) VALUES (1, 'A', 2341), (2, 'A', 341), (3, 'A', 15), (4, 'A', 15314), (5, 'A', 451), (6, 'A', 513), (7, 'B', 15), (8, 'B', 13), (9, 'B', 1154), (10, 'B', 1345), (11, 'B', 1221), (12, 'B', 234), (13, 'C', 2345), (14, 'C', 2645), (15, 'C', 2645), (16, 'C', 2652), (17, 'C', 65);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

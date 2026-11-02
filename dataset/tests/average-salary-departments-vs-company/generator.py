@@ -1,19 +1,11 @@
 import json
+
 cases = [
-    {
-        "Salary": [
-            {"id": 1, "employee_id": 1, "amount": 9000, "pay_date": "2017-03-31"},
-            {"id": 2, "employee_id": 2, "amount": 6000, "pay_date": "2017-03-31"},
-            {"id": 3, "employee_id": 3, "amount": 10000, "pay_date": "2017-03-31"},
-            {"id": 4, "employee_id": 1, "amount": 7000, "pay_date": "2017-02-28"},
-            {"id": 5, "employee_id": 2, "amount": 6000, "pay_date": "2017-02-28"},
-            {"id": 6, "employee_id": 3, "amount": 8000, "pay_date": "2017-02-28"}
-        ],
-        "Employee": [
-            {"employee_id": 1, "department_id": 1},
-            {"employee_id": 2, "department_id": 2},
-            {"employee_id": 3, "department_id": 2}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Salary (id, employee_id, amount, pay_date) VALUES (1, 1, 9000, '2017-03-31'), (2, 2, 6000, '2017-03-31'), (3, 3, 10000, '2017-03-31'), (4, 1, 7000, '2017-02-28'), (5, 2, 6000, '2017-02-28'), (6, 3, 8000, '2017-02-28'); INSERT INTO Employee (employee_id, department_id) VALUES (1, 1), (2, 2), (3, 2);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

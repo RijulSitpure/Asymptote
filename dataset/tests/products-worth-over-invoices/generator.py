@@ -1,17 +1,11 @@
-import random
+import json
 
-def generate():
-    products = [(0, 'Ham'), (1, 'Bacon'), (2, 'Cheese'), (3, 'Milk')]
-    inserts = []
-    for p in products:
-        inserts.append(f"INSERT INTO Product VALUES ({p[0]}, '{p[1]}');")
-    inv_id = 1
-    for p in products:
-        for _ in range(random.randint(0, 3)):
-            r, pd_, c, rf = [random.randint(0, 50) for _ in range(4)]
-            inserts.append(f"INSERT INTO Invoice VALUES ({inv_id}, {p[0]}, {r}, {pd_}, {c}, {rf});")
-            inv_id += 1
-    return "\n".join(inserts)
+cases = [
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Product VALUES (0, 'Ham');\nINSERT INTO Product VALUES (1, 'Bacon');\nINSERT INTO Product VALUES (2, 'Cheese');\nINSERT INTO Product VALUES (3, 'Milk');\nINSERT INTO Invoice VALUES (1, 2, 10, 13, 36, 31);\nINSERT INTO Invoice VALUES (2, 2, 34, 41, 1, 10);\nINSERT INTO Invoice VALUES (3, 2, 9, 38, 34, 13);\nINSERT INTO Invoice VALUES (4, 3, 45, 27, 20, 45);"
+  }
+]
 
 if __name__ == "__main__":
-    print(generate())
+    print(json.dumps(cases))

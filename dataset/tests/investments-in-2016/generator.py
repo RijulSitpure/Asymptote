@@ -1,12 +1,11 @@
 import json
+
 cases = [
-    {
-        "Insurance": [
-            {"pid": 1, "tiv_2015": 10.0, "tiv_2016": 5.0, "lat": 10.0, "lon": 10.0},
-            {"pid": 2, "tiv_2015": 20.0, "tiv_2016": 20.0, "lat": 20.0, "lon": 20.0},
-            {"pid": 3, "tiv_2015": 10.0, "tiv_2016": 30.0, "lat": 20.0, "lon": 20.0},
-            {"pid": 4, "tiv_2015": 10.0, "tiv_2016": 40.0, "lat": 40.0, "lon": 40.0}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Insurance (pid, tiv_2015, tiv_2016, lat, lon) VALUES (1, 10.0, 5.0, 10.0, 10.0), (2, 20.0, 20.0, 20.0, 20.0), (3, 10.0, 30.0, 20.0, 20.0), (4, 10.0, 40.0, 40.0, 40.0);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

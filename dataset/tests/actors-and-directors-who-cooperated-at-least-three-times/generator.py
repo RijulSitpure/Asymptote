@@ -1,15 +1,11 @@
 import json
+
 cases = [
-    {
-        "ActorDirector": [
-            {"actor_id": 1, "director_id": 1, "timestamp": 0},
-            {"actor_id": 1, "director_id": 1, "timestamp": 1},
-            {"actor_id": 1, "director_id": 1, "timestamp": 2},
-            {"actor_id": 1, "director_id": 2, "timestamp": 3},
-            {"actor_id": 1, "director_id": 2, "timestamp": 4},
-            {"actor_id": 2, "director_id": 1, "timestamp": 5},
-            {"actor_id": 2, "director_id": 1, "timestamp": 6}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO ActorDirector (actor_id, director_id, timestamp) VALUES (1, 1, 0), (1, 1, 1), (1, 1, 2), (1, 2, 3), (1, 2, 4), (2, 1, 5), (2, 1, 6);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

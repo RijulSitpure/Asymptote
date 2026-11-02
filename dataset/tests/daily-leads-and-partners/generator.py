@@ -1,16 +1,11 @@
-import random
+import json
 
-def generate():
-    dates = ['2020-12-08', '2020-12-07']
-    makes = ['toyota', 'honda']
-    inserts = []
-    for _ in range(random.randint(6, 12)):
-        d = random.choice(dates)
-        m = random.choice(makes)
-        l = random.randint(0, 3)
-        p = random.randint(0, 3)
-        inserts.append(f"INSERT INTO DailySales VALUES ('{d}', '{m}', {l}, {p});")
-    return "\n".join(inserts)
+cases = [
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO DailySales VALUES ('2020-12-07', 'honda', 3, 1);\nINSERT INTO DailySales VALUES ('2020-12-08', 'honda', 0, 3);\nINSERT INTO DailySales VALUES ('2020-12-08', 'toyota', 0, 3);\nINSERT INTO DailySales VALUES ('2020-12-07', 'honda', 3, 1);\nINSERT INTO DailySales VALUES ('2020-12-08', 'honda', 0, 2);\nINSERT INTO DailySales VALUES ('2020-12-08', 'toyota', 0, 2);"
+  }
+]
 
 if __name__ == "__main__":
-    print(generate())
+    print(json.dumps(cases))

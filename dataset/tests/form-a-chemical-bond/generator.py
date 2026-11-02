@@ -1,15 +1,11 @@
 import json
+
 cases = [
-    {
-        "Elements": [
-            {"symbol": "He", "type": "Noble", "electrons": 0},
-            {"symbol": "Na", "type": "Metal", "electrons": 1},
-            {"symbol": "Ca", "type": "Metal", "electrons": 2},
-            {"symbol": "La", "type": "Metal", "electrons": 3},
-            {"symbol": "Cl", "type": "Nonmetal", "electrons": 1},
-            {"symbol": "O", "type": "Nonmetal", "electrons": 2},
-            {"symbol": "N", "type": "Nonmetal", "electrons": 3}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Elements (symbol, type, electrons) VALUES ('He', 'Noble', 0), ('Na', 'Metal', 1), ('Ca', 'Metal', 2), ('La', 'Metal', 3), ('Cl', 'Nonmetal', 1), ('O', 'Nonmetal', 2), ('N', 'Nonmetal', 3);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

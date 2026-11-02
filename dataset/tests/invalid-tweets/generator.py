@@ -1,14 +1,11 @@
-import random
-import string
+import json
 
-def generate():
-    n = random.randint(3, 8)
-    inserts = []
-    for tid in range(1, n + 1):
-        length = random.choice([5, 10, 15, 16, 25])
-        content = ''.join(random.choices(string.ascii_letters + ' ', k=length))
-        inserts.append(f"INSERT INTO Tweets VALUES ({tid}, '{content}');")
-    return "\n".join(inserts)
+cases = [
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Tweets VALUES (1, 'NuCUiFhKsxVzZo t');\nINSERT INTO Tweets VALUES (2, 'bGhnixo TU');\nINSERT INTO Tweets VALUES (3, 'JRiPD');\nINSERT INTO Tweets VALUES (4, 'vfDCaZcopxfTJzm');\nINSERT INTO Tweets VALUES (5, 'MOJsRsdiafjogbJSFMCVoLUIb');\nINSERT INTO Tweets VALUES (6, 'vhsUVGPTqRYNuBZdulsldhjPi');\nINSERT INTO Tweets VALUES (7, 'sOhjx');\nINSERT INTO Tweets VALUES (8, 'FSFoIUwhexU QCS');"
+  }
+]
 
 if __name__ == "__main__":
-    print(generate())
+    print(json.dumps(cases))

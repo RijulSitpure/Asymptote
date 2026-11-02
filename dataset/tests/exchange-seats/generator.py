@@ -1,13 +1,11 @@
 import json
+
 cases = [
-    {
-        "Seat": [
-            {"id": 1, "student": "Abbot"},
-            {"id": 2, "student": "Doris"},
-            {"id": 3, "student": "Emerson"},
-            {"id": 4, "student": "Green"},
-            {"id": 5, "student": "Jeames"}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Seat (id, student) VALUES (1, 'Abbot'), (2, 'Doris'), (3, 'Emerson'), (4, 'Green'), (5, 'Jeames');"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

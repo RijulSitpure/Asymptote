@@ -1,20 +1,11 @@
 import json
+
 cases = [
-    {
-        "Candidate": [
-            {"id": 1, "name": "A"},
-            {"id": 2, "name": "B"},
-            {"id": 3, "name": "C"},
-            {"id": 4, "name": "D"},
-            {"id": 5, "name": "E"}
-        ],
-        "Vote": [
-            {"id": 1, "candidateId": 2},
-            {"id": 2, "candidateId": 4},
-            {"id": 3, "candidateId": 3},
-            {"id": 4, "candidateId": 2},
-            {"id": 5, "candidateId": 5}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Candidate (id, name) VALUES (1, 'A'), (2, 'B'), (3, 'C'), (4, 'D'), (5, 'E'); INSERT INTO Vote (id, candidateId) VALUES (1, 2), (2, 4), (3, 3), (4, 2), (5, 5);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

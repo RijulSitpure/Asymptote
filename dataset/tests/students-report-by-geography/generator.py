@@ -1,12 +1,11 @@
 import json
+
 cases = [
-    {
-        "Student": [
-            {"name": "Jack", "continent": "America"},
-            {"name": "Pascal", "continent": "Europe"},
-            {"name": "Xi", "continent": "Asia"},
-            {"name": "Jane", "continent": "America"}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Student (name, continent) VALUES ('Jack', 'America'), ('Pascal', 'Europe'), ('Xi', 'Asia'), ('Jane', 'America');"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

@@ -1,16 +1,11 @@
 import json
+
 cases = [
-    {
-        "MyNumbers": [
-            {"num": 8},
-            {"num": 8},
-            {"num": 3},
-            {"num": 3},
-            {"num": 1},
-            {"num": 4},
-            {"num": 5},
-            {"num": 6}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO MyNumbers (num) VALUES (8), (8), (3), (3), (1), (4), (5), (6);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

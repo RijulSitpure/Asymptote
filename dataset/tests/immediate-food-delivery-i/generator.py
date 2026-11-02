@@ -1,14 +1,11 @@
 import json
+
 cases = [
-    {
-        "Delivery": [
-            {"delivery_id": 1, "customer_id": 1, "order_date": "2019-08-01", "customer_pref_delivery_date": "2019-08-02"},
-            {"delivery_id": 2, "customer_id": 5, "order_date": "2019-08-02", "customer_pref_delivery_date": "2019-08-02"},
-            {"delivery_id": 3, "customer_id": 1, "order_date": "2019-08-11", "customer_pref_delivery_date": "2019-08-11"},
-            {"delivery_id": 4, "customer_id": 3, "order_date": "2019-08-24", "customer_pref_delivery_date": "2019-08-26"},
-            {"delivery_id": 5, "customer_id": 4, "order_date": "2019-08-21", "customer_pref_delivery_date": "2019-08-22"},
-            {"delivery_id": 6, "customer_id": 2, "order_date": "2019-08-11", "customer_pref_delivery_date": "2019-08-13"}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Delivery (delivery_id, customer_id, order_date, customer_pref_delivery_date) VALUES (1, 1, '2019-08-01', '2019-08-02'), (2, 5, '2019-08-02', '2019-08-02'), (3, 1, '2019-08-11', '2019-08-11'), (4, 3, '2019-08-24', '2019-08-26'), (5, 4, '2019-08-21', '2019-08-22'), (6, 2, '2019-08-11', '2019-08-13');"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

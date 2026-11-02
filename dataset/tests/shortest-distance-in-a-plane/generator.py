@@ -1,11 +1,11 @@
 import json
+
 cases = [
-    {
-        "Point2D": [
-            {"x": -1, "y": -1},
-            {"x": 0, "y": 0},
-            {"x": -1, "y": -2}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Point2D (x, y) VALUES (-1, -1), (0, 0), (-1, -2);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

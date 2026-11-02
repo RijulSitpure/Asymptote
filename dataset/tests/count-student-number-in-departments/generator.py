@@ -1,16 +1,11 @@
 import json
+
 cases = [
-    {
-        "Student": [
-            {"student_id": 1, "student_name": "Jack", "gender": "M", "dept_id": 1},
-            {"student_id": 2, "student_name": "Jane", "gender": "F", "dept_id": 1},
-            {"student_id": 3, "student_name": "Mark", "gender": "M", "dept_id": 2}
-        ],
-        "Department": [
-            {"dept_id": 1, "dept_name": "Engineering"},
-            {"dept_id": 2, "dept_name": "Science"},
-            {"dept_id": 3, "dept_name": "Law"}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Student (student_id, student_name, gender, dept_id) VALUES (1, 'Jack', 'M', 1), (2, 'Jane', 'F', 1), (3, 'Mark', 'M', 2); INSERT INTO Department (dept_id, dept_name) VALUES (1, 'Engineering'), (2, 'Science'), (3, 'Law');"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

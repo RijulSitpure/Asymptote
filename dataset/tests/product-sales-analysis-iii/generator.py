@@ -1,11 +1,11 @@
 import json
+
 cases = [
-    {
-        "Sales": [
-            {"sale_id": 1, "product_id": 100, "year": 2008, "quantity": 10, "price": 5000},
-            {"sale_id": 2, "product_id": 100, "year": 2009, "quantity": 12, "price": 5000},
-            {"sale_id": 7, "product_id": 200, "year": 2011, "quantity": 15, "price": 9000}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Sales (sale_id, product_id, year, quantity, price) VALUES (1, 100, 2008, 10, 5000), (2, 100, 2009, 12, 5000), (7, 200, 2011, 15, 9000);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

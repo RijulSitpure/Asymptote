@@ -1,11 +1,11 @@
 import json
+
 cases = [
-    {
-        "Point": [
-            {"x": -1},
-            {"x": 0},
-            {"x": 2}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Point (x) VALUES (-1), (0), (2);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

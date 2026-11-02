@@ -1,13 +1,11 @@
 import json
+
 cases = [
-    {
-        "Cinema": [
-            {"seat_id": 1, "free": 1},
-            {"seat_id": 2, "free": 0},
-            {"seat_id": 3, "free": 1},
-            {"seat_id": 4, "free": 1},
-            {"seat_id": 5, "free": 1}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Cinema (seat_id, free) VALUES (1, 1), (2, 0), (3, 1), (4, 1), (5, 1);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

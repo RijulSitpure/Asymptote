@@ -1,26 +1,11 @@
 import json
+
 cases = [
-    {
-        "Users": [
-            {"user_id": 1, "join_date": "2018-01-01", "favorite_brand": "Lenovo"},
-            {"user_id": 2, "join_date": "2018-02-09", "favorite_brand": "Samsung"},
-            {"user_id": 3, "join_date": "2018-01-19", "favorite_brand": "LG"},
-            {"user_id": 4, "join_date": "2018-05-21", "favorite_brand": "HP"}
-        ],
-        "Orders": [
-            {"order_id": 1, "order_date": "2019-08-01", "item_id": 4, "buyer_id": 1, "seller_id": 2},
-            {"order_id": 2, "order_date": "2018-08-02", "item_id": 2, "buyer_id": 1, "seller_id": 3},
-            {"order_id": 3, "order_date": "2019-08-03", "item_id": 3, "buyer_id": 2, "seller_id": 3},
-            {"order_id": 4, "order_date": "2018-08-04", "item_id": 1, "buyer_id": 4, "seller_id": 2},
-            {"order_id": 5, "order_date": "2018-08-04", "item_id": 1, "buyer_id": 3, "seller_id": 4},
-            {"order_id": 6, "order_date": "2019-08-05", "item_id": 2, "buyer_id": 2, "seller_id": 4}
-        ],
-        "Items": [
-            {"item_id": 1, "item_brand": "Samsung"},
-            {"item_id": 2, "item_brand": "Lenovo"},
-            {"item_id": 3, "item_brand": "LG"},
-            {"item_id": 4, "item_brand": "HP"}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Users (user_id, join_date, favorite_brand) VALUES (1, '2018-01-01', 'Lenovo'), (2, '2018-02-09', 'Samsung'), (3, '2018-01-19', 'LG'), (4, '2018-05-21', 'HP'); INSERT INTO Orders (order_id, order_date, item_id, buyer_id, seller_id) VALUES (1, '2019-08-01', 4, 1, 2), (2, '2018-08-02', 2, 1, 3), (3, '2019-08-03', 3, 2, 3), (4, '2018-08-04', 1, 4, 2), (5, '2018-08-04', 1, 3, 4), (6, '2019-08-05', 2, 2, 4); INSERT INTO Items (item_id, item_brand) VALUES (1, 'Samsung'), (2, 'Lenovo'), (3, 'LG'), (4, 'HP');"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

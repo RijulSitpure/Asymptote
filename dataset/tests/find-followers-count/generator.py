@@ -1,15 +1,11 @@
-import random
+import json
 
-def generate():
-    inserts = []
-    pairs = set()
-    for _ in range(random.randint(5, 12)):
-        u = random.randint(0, 3)
-        f = random.randint(0, 5)
-        if (u, f) not in pairs:
-            pairs.add((u, f))
-            inserts.append(f"INSERT INTO Followers VALUES ({u}, {f});")
-    return "\n".join(inserts)
+cases = [
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Followers VALUES (0, 5);\nINSERT INTO Followers VALUES (1, 2);\nINSERT INTO Followers VALUES (0, 3);\nINSERT INTO Followers VALUES (2, 3);\nINSERT INTO Followers VALUES (2, 0);\nINSERT INTO Followers VALUES (2, 2);\nINSERT INTO Followers VALUES (1, 4);"
+  }
+]
 
 if __name__ == "__main__":
-    print(generate())
+    print(json.dumps(cases))

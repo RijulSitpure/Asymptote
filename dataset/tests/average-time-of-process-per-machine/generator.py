@@ -1,21 +1,11 @@
-import random
+import json
 
-def generate():
-    machines = list(range(random.randint(2, 5)))
-    rows = []
-    for m in machines:
-        num_procs = random.randint(1, 4)
-        for p in range(num_procs):
-            t_start = round(random.uniform(0.1, 10.0), 3)
-            duration = round(random.uniform(0.05, 5.0), 3)
-            t_end = round(t_start + duration, 3)
-            rows.append((m, p, 'start', t_start))
-            rows.append((m, p, 'end', t_end))
-    random.shuffle(rows)
-    inserts = []
-    for r in rows:
-        inserts.append(f"INSERT INTO Activity VALUES ({r[0]}, {r[1]}, '{r[2]}', {r[3]});")
-    return "\n".join(inserts)
+cases = [
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Activity VALUES (1, 3, 'start', 4.281);\nINSERT INTO Activity VALUES (1, 1, 'end', 2.781);\nINSERT INTO Activity VALUES (1, 3, 'end', 7.445);\nINSERT INTO Activity VALUES (0, 0, 'end', 8.6);\nINSERT INTO Activity VALUES (4, 0, 'start', 8.92);\nINSERT INTO Activity VALUES (3, 0, 'end', 4.999);\nINSERT INTO Activity VALUES (3, 2, 'start', 3.008);\nINSERT INTO Activity VALUES (2, 0, 'end', 9.195);\nINSERT INTO Activity VALUES (1, 2, 'start', 6.641);\nINSERT INTO Activity VALUES (2, 0, 'start', 7.519);\nINSERT INTO Activity VALUES (1, 0, 'start', 2.284);\nINSERT INTO Activity VALUES (1, 1, 'start', 0.734);\nINSERT INTO Activity VALUES (3, 0, 'start', 1.718);\nINSERT INTO Activity VALUES (3, 1, 'start', 5.498);\nINSERT INTO Activity VALUES (3, 2, 'end', 6.323);\nINSERT INTO Activity VALUES (1, 2, 'end', 7.548);\nINSERT INTO Activity VALUES (1, 0, 'end', 3.825);\nINSERT INTO Activity VALUES (0, 1, 'start', 4.765);\nINSERT INTO Activity VALUES (4, 0, 'end', 13.727);\nINSERT INTO Activity VALUES (0, 0, 'start', 4.622);\nINSERT INTO Activity VALUES (0, 1, 'end', 5.38);\nINSERT INTO Activity VALUES (3, 1, 'end', 6.906);"
+  }
+]
 
 if __name__ == "__main__":
-    print(generate())
+    print(json.dumps(cases))

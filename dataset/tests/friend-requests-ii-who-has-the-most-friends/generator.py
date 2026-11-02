@@ -1,12 +1,11 @@
 import json
+
 cases = [
-    {
-        "RequestAccepted": [
-            {"requester_id": 1, "accepter_id": 2, "accept_date": "2016-06-03"},
-            {"requester_id": 1, "accepter_id": 3, "accept_date": "2016-06-08"},
-            {"requester_id": 2, "accepter_id": 3, "accept_date": "2016-06-08"},
-            {"requester_id": 3, "accepter_id": 4, "accept_date": "2016-06-09"}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO RequestAccepted (requester_id, accepter_id, accept_date) VALUES (1, 2, '2016-06-03'), (1, 3, '2016-06-08'), (2, 3, '2016-06-08'), (3, 4, '2016-06-09');"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

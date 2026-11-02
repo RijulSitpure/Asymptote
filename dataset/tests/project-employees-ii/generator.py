@@ -1,19 +1,11 @@
 import json
+
 cases = [
-    {
-        "Project": [
-            {"project_id": 1, "employee_id": 1},
-            {"project_id": 1, "employee_id": 2},
-            {"project_id": 1, "employee_id": 3},
-            {"project_id": 2, "employee_id": 1},
-            {"project_id": 2, "employee_id": 4}
-        ],
-        "Employee": [
-            {"employee_id": 1, "name": "Khaled", "experience_years": 3},
-            {"employee_id": 2, "name": "Ali", "experience_years": 2},
-            {"employee_id": 3, "name": "John", "experience_years": 1},
-            {"employee_id": 4, "name": "Doe", "experience_years": 2}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Project (project_id, employee_id) VALUES (1, 1), (1, 2), (1, 3), (2, 1), (2, 4); INSERT INTO Employee (employee_id, name, experience_years) VALUES (1, 'Khaled', 3), (2, 'Ali', 2), (3, 'John', 1), (4, 'Doe', 2);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

@@ -1,13 +1,11 @@
 import json
+
 cases = [
-    {
-        "Activity": [
-            {"player_id": 1, "device_id": 2, "event_date": "2016-03-01", "games_played": 5},
-            {"player_id": 1, "device_id": 2, "event_date": "2016-05-02", "games_played": 6},
-            {"player_id": 2, "device_id": 3, "event_date": "2017-06-25", "games_played": 1},
-            {"player_id": 3, "device_id": 1, "event_date": "2016-03-02", "games_played": 0},
-            {"player_id": 3, "device_id": 4, "event_date": "2018-07-03", "games_played": 5}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Activity (player_id, device_id, event_date, games_played) VALUES (1, 2, '2016-03-01', 5), (1, 2, '2016-05-02', 6), (2, 3, '2017-06-25', 1), (3, 1, '2016-03-02', 0), (3, 4, '2018-07-03', 5);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

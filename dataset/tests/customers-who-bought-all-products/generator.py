@@ -1,17 +1,11 @@
 import json
+
 cases = [
-    {
-        "Customer": [
-            {"customer_id": 1, "product_key": 5},
-            {"customer_id": 2, "product_key": 6},
-            {"customer_id": 3, "product_key": 5},
-            {"customer_id": 3, "product_key": 6},
-            {"customer_id": 1, "product_key": 6}
-        ],
-        "Product": [
-            {"product_key": 5},
-            {"product_key": 6}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Customer (customer_id, product_key) VALUES (1, 5), (2, 6), (3, 5), (3, 6), (1, 6); INSERT INTO Product (product_key) VALUES (5), (6);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

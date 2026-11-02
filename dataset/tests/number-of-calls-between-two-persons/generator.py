@@ -1,16 +1,11 @@
-import random
+import json
 
-def generate():
-    inserts = []
-    n = random.randint(5, 12)
-    for _ in range(n):
-        a = random.randint(1, 4)
-        b = random.randint(1, 4)
-        while a == b:
-            b = random.randint(1, 4)
-        dur = random.randint(10, 200)
-        inserts.append(f"INSERT INTO Calls VALUES ({a}, {b}, {dur});")
-    return "\n".join(inserts)
+cases = [
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Calls VALUES (3, 4, 70);\nINSERT INTO Calls VALUES (3, 2, 26);\nINSERT INTO Calls VALUES (2, 3, 54);\nINSERT INTO Calls VALUES (1, 4, 139);\nINSERT INTO Calls VALUES (2, 4, 128);\nINSERT INTO Calls VALUES (3, 1, 47);"
+  }
+]
 
 if __name__ == "__main__":
-    print(generate())
+    print(json.dumps(cases))

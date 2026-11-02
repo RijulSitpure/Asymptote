@@ -1,16 +1,11 @@
 import json
+
 cases = [
-    {
-        "Orders": [
-            {"order_id": 1, "customer_id": 1, "order_date": "2019-07-01", "price": 100},
-            {"order_id": 2, "customer_id": 1, "order_date": "2019-11-07", "price": 100},
-            {"order_id": 3, "customer_id": 1, "order_date": "2020-01-01", "price": 250},
-            {"order_id": 4, "customer_id": 1, "order_date": "2021-02-15", "price": 500},
-            {"order_id": 5, "customer_id": 2, "order_date": "2019-01-01", "price": 300},
-            {"order_id": 6, "customer_id": 2, "order_date": "2020-01-01", "price": 200},
-            {"order_id": 7, "customer_id": 3, "order_date": "2019-01-01", "price": 100},
-            {"order_id": 8, "customer_id": 3, "order_date": "2021-01-01", "price": 300}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Orders (order_id, customer_id, order_date, price) VALUES (1, 1, '2019-07-01', 100), (2, 1, '2019-11-07', 100), (3, 1, '2020-01-01', 250), (4, 1, '2021-02-15', 500), (5, 2, '2019-01-01', 300), (6, 2, '2020-01-01', 200), (7, 3, '2019-01-01', 100), (8, 3, '2021-01-01', 300);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

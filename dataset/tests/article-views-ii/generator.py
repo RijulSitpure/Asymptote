@@ -1,16 +1,11 @@
 import json
+
 cases = [
-    {
-        "Views": [
-            {"article_id": 1, "author_id": 3, "viewer_id": 5, "view_date": "2019-08-01"},
-            {"article_id": 3, "author_id": 4, "viewer_id": 5, "view_date": "2019-08-01"},
-            {"article_id": 1, "author_id": 3, "viewer_id": 6, "view_date": "2019-08-02"},
-            {"article_id": 2, "author_id": 7, "viewer_id": 7, "view_date": "2019-08-01"},
-            {"article_id": 2, "author_id": 7, "viewer_id": 6, "view_date": "2019-08-02"},
-            {"article_id": 4, "author_id": 7, "viewer_id": 1, "view_date": "2019-07-22"},
-            {"article_id": 3, "author_id": 4, "viewer_id": 4, "view_date": "2019-07-21"},
-            {"article_id": 3, "author_id": 4, "viewer_id": 4, "view_date": "2019-07-21"}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Views (article_id, author_id, viewer_id, view_date) VALUES (1, 3, 5, '2019-08-01'), (3, 4, 5, '2019-08-01'), (1, 3, 6, '2019-08-02'), (2, 7, 7, '2019-08-01'), (2, 7, 6, '2019-08-02'), (4, 7, 1, '2019-07-22'), (3, 4, 4, '2019-07-21'), (3, 4, 4, '2019-07-21');"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

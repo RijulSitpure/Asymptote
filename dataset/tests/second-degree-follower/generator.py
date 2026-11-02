@@ -1,12 +1,11 @@
 import json
+
 cases = [
-    {
-        "Follow": [
-            {"followee": "Alice", "follower": "Bob"},
-            {"followee": "Bob", "follower": "Cena"},
-            {"followee": "Bob", "follower": "Dan"},
-            {"followee": "Bob", "follower": "Alice"}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Follow (followee, follower) VALUES ('Alice', 'Bob'), ('Bob', 'Cena'), ('Bob', 'Dan'), ('Bob', 'Alice');"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

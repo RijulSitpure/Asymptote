@@ -1,13 +1,11 @@
 import json
+
 cases = [
-    {
-        "Person": [
-            {"person_id": 1, "name": "Alex", "profession": "Doctor"},
-            {"person_id": 2, "name": "Alice", "profession": "Doctor"},
-            {"person_id": 3, "name": "Bob", "profession": "Singer"},
-            {"person_id": 4, "name": "Mike", "profession": "Singer"},
-            {"person_id": 5, "name": "Angela", "profession": "Teacher"}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Person (person_id, name, profession) VALUES (1, 'Alex', 'Doctor'), (2, 'Alice', 'Doctor'), (3, 'Bob', 'Singer'), (4, 'Mike', 'Singer'), (5, 'Angela', 'Teacher');"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))

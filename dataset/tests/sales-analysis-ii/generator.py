@@ -1,17 +1,11 @@
 import json
+
 cases = [
-    {
-        "Product": [
-            {"product_id": 1, "product_name": "S8", "unit_price": 1000},
-            {"product_id": 2, "product_name": "G4", "unit_price": 800},
-            {"product_id": 3, "product_name": "iPhone", "unit_price": 1400}
-        ],
-        "Sales": [
-            {"seller_id": 1, "product_id": 1, "buyer_id": 1, "sale_date": "2019-01-21", "quantity": 2, "price": 2000},
-            {"seller_id": 1, "product_id": 2, "buyer_id": 2, "sale_date": "2019-02-17", "quantity": 1, "price": 800},
-            {"seller_id": 2, "product_id": 1, "buyer_id": 3, "sale_date": "2019-06-02", "quantity": 1, "price": 800},
-            {"seller_id": 3, "product_id": 3, "buyer_id": 3, "sale_date": "2019-05-13", "quantity": 2, "price": 2800}
-        ]
-    }
+  {
+    "name": "case_1",
+    "inserts": "INSERT INTO Product (product_id, product_name, unit_price) VALUES (1, 'S8', 1000), (2, 'G4', 800), (3, 'iPhone', 1400); INSERT INTO Sales (seller_id, product_id, buyer_id, sale_date, quantity, price) VALUES (1, 1, 1, '2019-01-21', 2, 2000), (1, 2, 2, '2019-02-17', 1, 800), (2, 1, 3, '2019-06-02', 1, 800), (3, 3, 3, '2019-05-13', 2, 2800);"
+  }
 ]
-print(json.dumps(cases))
+
+if __name__ == "__main__":
+    print(json.dumps(cases))
