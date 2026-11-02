@@ -1,0 +1,2 @@
+import json
+print(json.dumps([{ "name": "case_1", "inserts": "INSERT INTO Orders VALUES (1, 0), (2, 2), (3, 4), (4, 6), (5, 1), (6, 4), (7, 1), (8, 2), (9, 4), (10, 1), (11, 4), (12, 6);" }]))
