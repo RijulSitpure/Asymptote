@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-sum-queries",
+  "number": 2736,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-monotonic-next-greater",
+    "binary-search-basic"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Offline Query Sorting",
+      "text": "Sort both the input number pairs and the queries in descending order of their first component."
+    },
+    {
+      "level": 2,
+      "title": "Progressive Insertion",
+      "text": "As queries loosen the minimum threshold for nums1, insert qualified pairs into a monotonic structure tracking nums2 and their sum."
+    },
+    {
+      "level": 3,
+      "title": "Bisection Threshold Search",
+      "text": "Use a monotonic sequence where y values increase and sums decrease, allowing logarithmic search for the required y threshold."
+    },
+    {
+      "level": 4,
+      "title": "Monotonic Stack Offline Queries",
+      "text": "```python\nfrom bisect import bisect_left\n\nclass Solution:\n    def maximumSumQueries(self, nums1: list[int], nums2: list[int], queries: list[list[int]]) -> list[int]:\n        pairs = sorted(zip(nums1, nums2), key=lambda x: x[0], reverse=True)\n        q_sorted = sorted([(qx, qy, i) for i, (qx, qy) in enumerate(queries)], key=lambda x: x[0], reverse=True)\n        ans = [-1] * len(queries)\n        stack = []\n        p = 0\n        n = len(pairs)\n        for qx, qy, qidx in q_sorted:\n            while p < n and pairs[p][0] >= qx:\n                x, y = pairs[p]\n                s = x + y\n                while stack and stack[-1][1] <= s:\n                    stack.pop()\n                if not stack or stack[-1][0] < y:\n                    stack.append((y, s))\n                p += 1\n            idx = bisect_left(stack, (qy, -1))\n            if idx < len(stack):\n                ans[qidx] = stack[idx][1]\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((n + q) log n)",
+    "space": "O(n + q)",
+    "variables": [
+      "n: number of pairs",
+      "q: number of queries"
+    ],
+    "notes": "Offline sorting and monotonic stack binary search process each query in O(log n).",
+    "whyNaiveFails": "Scanning all n pairs per query takes O(n * q) which times out.",
+    "spaceTimeTradeoff": "Monotonic stack uses O(n) space.",
+    "interviewerExpectation": "Combines offline sorting, monotonic pruning, and binary search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Offline Monotonic Stack Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "from bisect import bisect_left\n\nclass Solution:\n    def maximumSumQueries(self, nums1: list[int], nums2: list[int], queries: list[list[int]]) -> list[int]:\n        pairs = sorted(zip(nums1, nums2), key=lambda x: x[0], reverse=True)\n        q_sorted = sorted([(qx, qy, i) for i, (qx, qy) in enumerate(queries)], key=lambda x: x[0], reverse=True)\n        ans = [-1] * len(queries)\n        stack = []\n        p = 0\n        n = len(pairs)\n        for qx, qy, qidx in q_sorted:\n            while p < n and pairs[p][0] >= qx:\n                x, y = pairs[p]\n                s = x + y\n                while stack and stack[-1][1] <= s:\n                    stack.pop()\n                if not stack or stack[-1][0] < y:\n                    stack.append((y, s))\n                p += 1\n            idx = bisect_left(stack, (qy, -1))\n            if idx < len(stack):\n                ans[qidx] = stack[idx][1]\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Offline Monotonic Stack Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    vector<int> maximumSumQueries(vector<int>& nums1, vector<int>& nums2, vector<vector<int>>& queries) {\n        int n = nums1.size();\n        vector<pair<int, int>> pairs(n);\n        for (int i = 0; i < n; ++i) pairs[i] = {nums1[i], nums2[i]};\n        sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) {\n            return a.first > b.first;\n        });\n        int q = queries.size();\n        vector<tuple<int, int, int>> q_sorted(q);\n        for (int i = 0; i < q; ++i) q_sorted[i] = {queries[i][0], queries[i][1], i};\n        sort(q_sorted.begin(), q_sorted.end(), [](const auto& a, const auto& b) {\n            return get<0>(a) > get<0>(b);\n        });\n        vector<int> ans(q, -1);\n        vector<pair<int, int>> stack;\n        int p = 0;\n        for (const auto& [qx, qy, qidx] : q_sorted) {\n            while (p < n && pairs[p].first >= qx) {\n                int x = pairs[p].first, y = pairs[p].second;\n                int s = x + y;\n                while (!stack.empty() && stack.back().second <= s) {\n                    stack.pop_back();\n                }\n                if (stack.empty() || stack.back().first < y) {\n                    stack.push_back({y, s});\n                }\n                p++;\n            }\n            int l = 0, r = stack.size() - 1, best = -1;\n            while (l <= r) {\n                int mid = l + (r - l) / 2;\n                if (stack[mid].first >= qy) {\n                    best = mid;\n                    r = mid - 1;\n                } else {\n                    l = mid + 1;\n                }\n            }\n            if (best != -1) ans[qidx] = stack[best].second;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Offline Monotonic Stack Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\nclass Solution {\n    public int[] maximumSumQueries(int[] nums1, int[] nums2, int[][] queries) {\n        int n = nums1.length;\n        int[][] pairs = new int[n][2];\n        for (int i = 0; i < n; i++) {\n            pairs[i][0] = nums1[i];\n            pairs[i][1] = nums2[i];\n        }\n        Arrays.sort(pairs, (a, b) -> Integer.compare(b[0], a[0]));\n        int q = queries.length;\n        Integer[] qIdx = new Integer[q];\n        for (int i = 0; i < q; i++) qIdx[i] = i;\n        Arrays.sort(qIdx, (a, b) -> Integer.compare(queries[b][0], queries[a][0]));\n        int[] ans = new int[q];\n        Arrays.fill(ans, -1);\n        List<int[]> stack = new ArrayList<>();\n        int p = 0;\n        for (int idx : qIdx) {\n            int qx = queries[idx][0], qy = queries[idx][1];\n            while (p < n && pairs[p][0] >= qx) {\n                int x = pairs[p][0], y = pairs[p][1];\n                int s = x + y;\n                while (!stack.isEmpty() && stack.get(stack.size() - 1)[1] <= s) {\n                    stack.remove(stack.size() - 1);\n                }\n                if (stack.isEmpty() || stack.get(stack.size() - 1)[0] < y) {\n                    stack.add(new int[]{y, s});\n                }\n                p++;\n            }\n            int l = 0, r = stack.size() - 1, best = -1;\n            while (l <= r) {\n                int mid = l + (r - l) / 2;\n                if (stack.get(mid)[0] >= qy) {\n                    best = mid;\n                    r = mid - 1;\n                } else {\n                    l = mid + 1;\n                }\n            }\n            if (best != -1) ans[idx] = stack.get(best)[1];\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Offline Monotonic Stack Binary Search",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var maximumSumQueries = function(nums1, nums2, queries) {\n    const n = nums1.length;\n    const pairs = [];\n    for (let i = 0; i < n; i++) pairs.push([nums1[i], nums2[i]]);\n    pairs.sort((a, b) => b[0] - a[0]);\n    const q = queries.length;\n    const qIdx = Array.from({ length: q }, (_, i) => i);\n    qIdx.sort((a, b) => queries[b][0] - queries[a][0]);\n    const ans = new Array(q).fill(-1);\n    const stack = [];\n    let p = 0;\n    for (const idx of qIdx) {\n        const [qx, qy] = queries[idx];\n        while (p < n && pairs[p][0] >= qx) {\n            const [x, y] = pairs[p];\n            const s = x + y;\n            while (stack.length > 0 && stack[stack.length - 1][1] <= s) {\n                stack.pop();\n            }\n            if (stack.length === 0 || stack[stack.length - 1][0] < y) {\n                stack.push([y, s]);\n            }\n            p++;\n        }\n        let l = 0, r = stack.length - 1, best = -1;\n        while (l <= r) {\n            const mid = Math.floor((l + r) / 2);\n            if (stack[mid][0] >= qy) {\n                best = mid;\n                r = mid - 1;\n            } else {\n                l = mid + 1;\n            }\n        }\n        if (best !== -1) ans[idx] = stack[best][1];\n    }\n    return ans;\n};"
+    }
+  ]
+}

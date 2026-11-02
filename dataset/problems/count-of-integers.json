@@ -1,0 +1,80 @@
+{
+  "slug": "count-of-integers",
+  "number": 2719,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear",
+    "math-number-theory"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Boundary Decomposition",
+      "text": "Frame the count between two endpoints by counting values up to each bound independently."
+    },
+    {
+      "level": 2,
+      "title": "Positional State Tracking",
+      "text": "Construct numbers digit by digit while tracking prefix constraints and the running digit sum."
+    },
+    {
+      "level": 3,
+      "title": "Difference Formulation",
+      "text": "Compute the valid counts up to num2 and num1, then check if num1 itself qualifies."
+    },
+    {
+      "level": 4,
+      "title": "Digit State Traversal",
+      "text": "```python\nclass Solution:\n    def count(self, num1: str, num2: str, min_sum: int, max_sum: int) -> int:\n        MOD = 10**9 + 7\n        def count_up_to(s: str) -> int:\n            from functools import lru_cache\n            @lru_cache(None)\n            def dp(idx: int, cur_sum: int, is_tight: bool) -> int:\n                if cur_sum > max_sum:\n                    return 0\n                if idx == len(s):\n                    return 1 if cur_sum >= min_sum else 0\n                limit = int(s[idx]) if is_tight else 9\n                res = 0\n                for d in range(limit + 1):\n                    res = (res + dp(idx + 1, cur_sum + d, is_tight and (d == limit))) % MOD\n                return res\n            return dp(0, 0, True)\n        ans = (count_up_to(num2) - count_up_to(num1)) % MOD\n        s1 = sum(int(c) for c in num1)\n        if min_sum <= s1 <= max_sum:\n            ans = (ans + 1) % MOD\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(len(s) * max_sum * 10)",
+    "space": "O(len(s) * max_sum)",
+    "variables": [
+      "len(s): number of digits in num2",
+      "max_sum: maximum digit sum constraint"
+    ],
+    "notes": "State transitions explore 10 digits per position and accumulated sum.",
+    "whyNaiveFails": "Iterating across values up to 10^22 triggers timeout.",
+    "spaceTimeTradeoff": "Memoization table scales with digit count and maximum sum.",
+    "interviewerExpectation": "Formulates digit-by-digit construction with tight prefix tracking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Prefix Bound Digit Construction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def count(self, num1: str, num2: str, min_sum: int, max_sum: int) -> int:\n        MOD = 10**9 + 7\n        def count_up_to(s: str) -> int:\n            from functools import lru_cache\n            @lru_cache(None)\n            def dp(idx: int, cur_sum: int, is_tight: bool) -> int:\n                if cur_sum > max_sum:\n                    return 0\n                if idx == len(s):\n                    return 1 if cur_sum >= min_sum else 0\n                limit = int(s[idx]) if is_tight else 9\n                res = 0\n                for d in range(limit + 1):\n                    res = (res + dp(idx + 1, cur_sum + d, is_tight and (d == limit))) % MOD\n                return res\n            return dp(0, 0, True)\n        ans = (count_up_to(num2) - count_up_to(num1)) % MOD\n        s1 = sum(int(c) for c in num1)\n        if min_sum <= s1 <= max_sum:\n            ans = (ans + 1) % MOD\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Prefix Bound Digit Construction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int count(string num1, string num2, int min_sum, int max_sum) {\n        const int MOD = 1e9 + 7;\n        auto count_up_to = [&](const string& s) {\n            int n = s.size();\n            int memo[25][405][2];\n            memset(memo, -1, sizeof(memo));\n            function<int(int, int, bool)> dp = [&](int idx, int cur_sum, bool is_tight) -> int {\n                if (cur_sum > max_sum) return 0;\n                if (idx == n) return cur_sum >= min_sum ? 1 : 0;\n                if (memo[idx][cur_sum][is_tight] != -1) return memo[idx][cur_sum][is_tight];\n                int limit = is_tight ? s[idx] - '0' : 9;\n                long long res = 0;\n                for (int d = 0; d <= limit; ++d) {\n                    res = (res + dp(idx + 1, cur_sum + d, is_tight && (d == limit))) % MOD;\n                }\n                return memo[idx][cur_sum][is_tight] = res;\n            };\n            return dp(0, 0, true);\n        };\n        int ans = (count_up_to(num2) - count_up_to(num1) + MOD) % MOD;\n        int s1 = 0;\n        for (char c : num1) s1 += c - '0';\n        if (s1 >= min_sum && s1 <= max_sum) ans = (ans + 1) % MOD;\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Prefix Bound Digit Construction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    private static final int MOD = 1_000_000_007;\n\n    private int countUpTo(String s, int minSum, int maxSum) {\n        int n = s.length();\n        int[][][] memo = new int[n + 1][maxSum + 1][2];\n        for (int[][] a : memo) {\n            for (int[] b : a) Arrays.fill(b, -1);\n        }\n        return dfs(s, 0, 0, true, minSum, maxSum, memo);\n    }\n\n    private int dfs(String s, int idx, int curSum, boolean isTight, int minSum, int maxSum, int[][][] memo) {\n        if (curSum > maxSum) return 0;\n        if (idx == s.length()) return curSum >= minSum ? 1 : 0;\n        int tightIdx = isTight ? 1 : 0;\n        if (memo[idx][curSum][tightIdx] != -1) return memo[idx][curSum][tightIdx];\n        int limit = isTight ? s.charAt(idx) - '0' : 9;\n        long res = 0;\n        for (int d = 0; d <= limit; d++) {\n            res = (res + dfs(s, idx + 1, curSum + d, isTight && (d == limit), minSum, maxSum, memo)) % MOD;\n        }\n        return memo[idx][curSum][tightIdx] = (int) res;\n    }\n\n    public int count(String num1, String num2, int min_sum, int max_sum) {\n        int ans = (countUpTo(num2, min_sum, max_sum) - countUpTo(num1, min_sum, max_sum) + MOD) % MOD;\n        int s1 = 0;\n        for (int i = 0; i < num1.length(); i++) s1 += num1.charAt(i) - '0';\n        if (s1 >= min_sum && s1 <= max_sum) ans = (ans + 1) % MOD;\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Prefix Bound Digit Construction",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var count = function(num1, num2, min_sum, max_sum) {\n    const MOD = 1000000007n;\n    function countUpTo(s) {\n        const n = s.length;\n        const memo = new Map();\n        function dp(idx, curSum, isTight) {\n            if (curSum > max_sum) return 0n;\n            if (idx === n) return curSum >= min_sum ? 1n : 0n;\n            const key = `${idx},${curSum},${isTight ? 1 : 0}`;\n            if (memo.has(key)) return memo.get(key);\n            const limit = isTight ? Number(s[idx]) : 9;\n            let res = 0n;\n            for (let d = 0; d <= limit; d++) {\n                res = (res + dp(idx + 1, curSum + d, isTight && (d === limit))) % MOD;\n            }\n            memo.set(key, res);\n            return res;\n        }\n        return dp(0, 0, true);\n    }\n    let ans = (countUpTo(num2) - countUpTo(num1) + MOD) % MOD;\n    let s1 = 0;\n    for (let i = 0; i < num1.length; i++) s1 += Number(num1[i]);\n    if (s1 >= min_sum && s1 <= max_sum) ans = (ans + 1n) % MOD;\n    return Number(ans);\n};"
+    }
+  ]
+}

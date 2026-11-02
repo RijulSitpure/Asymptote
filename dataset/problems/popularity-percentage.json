@@ -1,0 +1,71 @@
+{
+  "slug": "popularity-percentage",
+  "number": 2720,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Undirected Connections",
+      "text": "Friendships represent bidirectional connections between pairs of platform members."
+    },
+    {
+      "level": 2,
+      "title": "Union Symmetry",
+      "text": "Combine both directional perspectives using a union so every connection is registered for each individual participant."
+    },
+    {
+      "level": 3,
+      "title": "Popularity Ratio",
+      "text": "Count the unique individuals platform-wide in one aggregate, then group by participant to compute their connection ratio rounded to two decimal places."
+    },
+    {
+      "level": 4,
+      "title": "Bidirectional SQL Aggregation",
+      "text": "```mysql\nWITH CombinedFriends AS (\n    SELECT user1, user2 FROM Friends\n    UNION\n    SELECT user2 AS user1, user1 AS user2 FROM Friends\n),\nTotalUsers AS (\n    SELECT COUNT(DISTINCT user1) AS cnt FROM CombinedFriends\n)\nSELECT \n    cf.user1,\n    ROUND(COUNT(cf.user2) * 100.0 / (SELECT cnt FROM TotalUsers), 2) AS percentage_popularity\nFROM CombinedFriends cf\nGROUP BY cf.user1\nORDER BY cf.user1 ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) for union distinct and sorting",
+    "space": "O(N) temporary hash storage",
+    "variables": [
+      "N: number of friendship records"
+    ],
+    "notes": "Symmetric union followed by aggregation yields friend counts.",
+    "whyNaiveFails": "Querying friendship pairs without symmetrizing misses reverse relationships.",
+    "spaceTimeTradeoff": "Combined friendship relation takes linear space.",
+    "interviewerExpectation": "Correctly normalizes undirected relations using UNION and applies scalar aggregation."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Symmetric Union Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH CombinedFriends AS (\n    SELECT user1, user2 FROM Friends\n    UNION\n    SELECT user2 AS user1, user1 AS user2 FROM Friends\n),\nTotalUsers AS (\n    SELECT COUNT(DISTINCT user1) AS cnt FROM CombinedFriends\n)\nSELECT \n    cf.user1,\n    ROUND(COUNT(cf.user2) * 100.0 / (SELECT cnt FROM TotalUsers), 2) AS percentage_popularity\nFROM CombinedFriends cf\nGROUP BY cf.user1\nORDER BY cf.user1 ASC;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Symmetric Union Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH CombinedFriends AS (\n    SELECT user1, user2 FROM Friends\n    UNION\n    SELECT user2 AS user1, user1 AS user2 FROM Friends\n),\nTotalUsers AS (\n    SELECT COUNT(DISTINCT user1)::numeric AS cnt FROM CombinedFriends\n)\nSELECT \n    cf.user1,\n    ROUND(COUNT(cf.user2) * 100.0 / (SELECT cnt FROM TotalUsers), 2) AS percentage_popularity\nFROM CombinedFriends cf\nGROUP BY cf.user1\nORDER BY cf.user1 ASC;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Symmetric Union Aggregation",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef popularity_percentage(friends: pd.DataFrame) -> pd.DataFrame:\n    df1 = friends[['user1', 'user2']]\n    df2 = friends[['user2', 'user1']].rename(columns={'user2': 'user1', 'user1': 'user2'})\n    all_pairs = pd.concat([df1, df2]).drop_duplicates()\n    total_users = all_pairs['user1'].nunique()\n    if total_users == 0:\n        return pd.DataFrame(columns=['user1', 'percentage_popularity'])\n    grouped = all_pairs.groupby('user1').size().reset_index(name='friends_count')\n    grouped['percentage_popularity'] = (grouped['friends_count'] * 100.0 / total_users).round(2)\n    return grouped[['user1', 'percentage_popularity']].sort_values(by='user1')"
+    }
+  ]
+}

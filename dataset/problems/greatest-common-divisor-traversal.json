@@ -1,0 +1,80 @@
+{
+  "slug": "greatest-common-divisor-traversal",
+  "number": 2709,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu",
+    "math-number-theory"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Divisibility Connectivity",
+      "text": "Two elements share a path whenever they share a common prime divisor."
+    },
+    {
+      "level": 2,
+      "title": "Bipartite Prime Connections",
+      "text": "Instead of connecting pairs directly, connect each number to its prime factors."
+    },
+    {
+      "level": 3,
+      "title": "Single Component Verification",
+      "text": "Verify that all elements end up in the exact same connected component."
+    },
+    {
+      "level": 4,
+      "title": "Disjoint Set Union",
+      "text": "```python\nclass Solution:\n    def canTraverseAllPairs(self, nums: list[int]) -> bool:\n        n = len(nums)\n        if n == 1:\n            return True\n        if 1 in nums:\n            return False\n        parent = {}\n        def find(x):\n            if parent.setdefault(x, x) != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n        def union(x, y):\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n        for x in nums:\n            val = x\n            d = 2\n            while d * d <= val:\n                if val % d == 0:\n                    union(x, d)\n                    while val % d == 0:\n                        val //= d\n                d += 1\n            if val > 1:\n                union(x, val)\n        root = find(nums[0])\n        return all(find(x) == root for x in nums)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * sqrt(max_val))",
+    "space": "O(n + distinct_primes)",
+    "variables": [
+      "n: length of nums array",
+      "max_val: largest value in nums"
+    ],
+    "notes": "Prime factorization drives component grouping with path compression.",
+    "whyNaiveFails": "Pairwise gcd computation takes O(n^2 * log(max_val)) which times out for large n.",
+    "spaceTimeTradeoff": "Disjoint set mapping stores components efficiently.",
+    "interviewerExpectation": "Bridges integers via prime divisors rather than quadratic graph construction."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Prime Divisor Disjoint Set Union",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def canTraverseAllPairs(self, nums: list[int]) -> bool:\n        n = len(nums)\n        if n == 1:\n            return True\n        if 1 in nums:\n            return False\n        parent = {}\n        def find(x):\n            if parent.setdefault(x, x) != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n        def union(x, y):\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n        for x in nums:\n            val = x\n            d = 2\n            while d * d <= val:\n                if val % d == 0:\n                    union(x, d)\n                    while val % d == 0:\n                        val //= d\n                d += 1\n            if val > 1:\n                union(x, val)\n        root = find(nums[0])\n        return all(find(x) == root for x in nums)"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Prime Divisor Disjoint Set Union",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    unordered_map<int, int> parent;\n    int find(int x) {\n        if (!parent.count(x)) parent[x] = x;\n        if (parent[x] != x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    void unite(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) parent[rx] = ry;\n    }\n    bool canTraverseAllPairs(vector<int>& nums) {\n        int n = nums.size();\n        if (n == 1) return true;\n        for (int x : nums) if (x == 1) return false;\n        for (int x : nums) {\n            int val = x;\n            for (int d = 2; d * d <= val; ++d) {\n                if (val % d == 0) {\n                    unite(x, d);\n                    while (val % d == 0) val /= d;\n                }\n            }\n            if (val > 1) unite(x, val);\n        }\n        int root = find(nums[0]);\n        for (int x : nums) {\n            if (find(x) != root) return false;\n        }\n        return true;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Prime Divisor Disjoint Set Union",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Solution {\n    private Map<Integer, Integer> parent = new HashMap<>();\n    private int find(int x) {\n        parent.putIfAbsent(x, x);\n        if (parent.get(x) != x) {\n            parent.put(x, find(parent.get(x)));\n        }\n        return parent.get(x);\n    }\n    private void union(int x, int y) {\n        int rx = find(x), ry = find(y);\n        if (rx != ry) parent.put(rx, ry);\n    }\n    public boolean canTraverseAllPairs(int[] nums) {\n        int n = nums.length;\n        if (n == 1) return true;\n        for (int x : nums) if (x == 1) return false;\n        for (int x : nums) {\n            int val = x;\n            for (int d = 2; d * d <= val; d++) {\n                if (val % d == 0) {\n                    union(x, d);\n                    while (val % d == 0) val /= d;\n                }\n            }\n            if (val > 1) union(x, val);\n        }\n        int root = find(nums[0]);\n        for (int x : nums) {\n            if (find(x) != root) return false;\n        }\n        return true;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Prime Divisor Disjoint Set Union",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var canTraverseAllPairs = function(nums) {\n    const n = nums.length;\n    if (n === 1) return true;\n    for (const x of nums) if (x === 1) return false;\n    const parent = new Map();\n    function find(x) {\n        if (!parent.has(x)) parent.set(x, x);\n        if (parent.get(x) !== x) {\n            parent.set(x, find(parent.get(x)));\n        }\n        return parent.get(x);\n    }\n    function union(x, y) {\n        const rx = find(x);\n        const ry = find(y);\n        if (rx !== ry) parent.set(rx, ry);\n    }\n    for (const x of nums) {\n        let val = x;\n        for (let d = 2; d * d <= val; d++) {\n            if (val % d === 0) {\n                union(x, d);\n                while (val % d === 0) val = Math.floor(val / d);\n            }\n        }\n        if (val > 1) union(x, val);\n    }\n    const root = find(nums[0]);\n    for (const x of nums) {\n        if (find(x) !== root) return false;\n    }\n    return true;\n};"
+    }
+  ]
+}

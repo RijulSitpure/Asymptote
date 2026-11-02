@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-strictly-increasing-cells-in-a-matrix",
+  "number": 2713,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-grid-2d",
+    "matrix-simulation"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Ascending Value Order",
+      "text": "Sort the distinct cell values in ascending order to resolve transitions safely."
+    },
+    {
+      "level": 2,
+      "title": "Row and Column Maxima",
+      "text": "Maintain the maximum path length reachable across each individual row and column."
+    },
+    {
+      "level": 3,
+      "title": "Simultaneous Updates",
+      "text": "Calculate the new length for all cells with identical values before updating row and column maxima."
+    },
+    {
+      "level": 4,
+      "title": "Value-Grouped Iteration",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def maxIncreasingCells(self, mat: list[list[int]]) -> int:\n        m, n = len(mat), len(mat[0])\n        val_to_cells = defaultdict(list)\n        for r in range(m):\n            for c in range(n):\n                val_to_cells[mat[r][c]].append((r, c))\n        row_max = [0] * m\n        col_max = [0] * n\n        for val in sorted(val_to_cells.keys()):\n            updates = []\n            for r, c in val_to_cells[val]:\n                best = 1 + max(row_max[r], col_max[c])\n                updates.append((r, c, best))\n            for r, c, best in updates:\n                row_max[r] = max(row_max[r], best)\n                col_max[c] = max(col_max[c], best)\n        return max(max(row_max), max(col_max))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n * log(m * n))",
+    "space": "O(m * n)",
+    "variables": [
+      "m: rows in mat",
+      "n: columns in mat"
+    ],
+    "notes": "Grouping by distinct value and sorting determines safe DAG ordering.",
+    "whyNaiveFails": "Direct graph traversal between all smaller and larger cells builds quadratic edges per row and column.",
+    "spaceTimeTradeoff": "Row and column maximum vectors compress state lookups to O(1).",
+    "interviewerExpectation": "Resolves equal-value updates simultaneously to enforce strictly increasing paths."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Value-Grouped DAG Transitions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def maxIncreasingCells(self, mat: list[list[int]]) -> int:\n        m, n = len(mat), len(mat[0])\n        val_to_cells = defaultdict(list)\n        for r in range(m):\n            for c in range(n):\n                val_to_cells[mat[r][c]].append((r, c))\n        row_max = [0] * m\n        col_max = [0] * n\n        for val in sorted(val_to_cells.keys()):\n            updates = []\n            for r, c in val_to_cells[val]:\n                best = 1 + max(row_max[r], col_max[c])\n                updates.append((r, c, best))\n            for r, c, best in updates:\n                row_max[r] = max(row_max[r], best)\n                col_max[c] = max(col_max[c], best)\n        return max(max(row_max), max(col_max))"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Value-Grouped DAG Transitions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int maxIncreasingCells(vector<vector<int>>& mat) {\n        int m = mat.size(), n = mat[0].size();\n        map<int, vector<pair<int, int>>> val_to_cells;\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                val_to_cells[mat[r][c]].emplace_back(r, c);\n            }\n        }\n        vector<int> row_max(m, 0), col_max(n, 0);\n        for (auto& [val, cells] : val_to_cells) {\n            vector<int> best(cells.size());\n            for (int i = 0; i < (int)cells.size(); ++i) {\n                int r = cells[i].first, c = cells[i].second;\n                best[i] = 1 + max(row_max[r], col_max[c]);\n            }\n            for (int i = 0; i < (int)cells.size(); ++i) {\n                int r = cells[i].first, c = cells[i].second;\n                row_max[r] = max(row_max[r], best[i]);\n                col_max[c] = max(col_max[c], best[i]);\n            }\n        }\n        int ans = 0;\n        for (int x : row_max) ans = max(ans, x);\n        for (int x : col_max) ans = max(ans, x);\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Value-Grouped DAG Transitions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.TreeMap;\n\nclass Solution {\n    public int maxIncreasingCells(int[][] mat) {\n        int m = mat.length, n = mat[0].length;\n        TreeMap<Integer, List<int[]>> map = new TreeMap<>();\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                map.computeIfAbsent(mat[r][c], k -> new ArrayList<>()).add(new int[]{r, c});\n            }\n        }\n        int[] rowMax = new int[m];\n        int[] colMax = new int[n];\n        for (int val : map.keySet()) {\n            List<int[]> cells = map.get(val);\n            int[] best = new int[cells.size()];\n            for (int i = 0; i < cells.size(); i++) {\n                int r = cells.get(i)[0], c = cells.get(i)[1];\n                best[i] = 1 + Math.max(rowMax[r], colMax[c]);\n            }\n            for (int i = 0; i < cells.size(); i++) {\n                int r = cells.get(i)[0], c = cells.get(i)[1];\n                rowMax[r] = Math.max(rowMax[r], best[i]);\n                colMax[c] = Math.max(colMax[c], best[i]);\n            }\n        }\n        int ans = 0;\n        for (int x : rowMax) ans = Math.max(ans, x);\n        for (int x : colMax) ans = Math.max(ans, x);\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Value-Grouped DAG Transitions",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var maxIncreasingCells = function(mat) {\n    const m = mat.length;\n    const n = mat[0].length;\n    const valToCells = new Map();\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            const v = mat[r][c];\n            if (!valToCells.has(v)) valToCells.set(v, []);\n            valToCells.get(v).push([r, c]);\n        }\n    }\n    const sortedVals = Array.from(valToCells.keys()).sort((a, b) => a - b);\n    const rowMax = new Array(m).fill(0);\n    const colMax = new Array(n).fill(0);\n    for (const val of sortedVals) {\n        const cells = valToCells.get(val);\n        const best = [];\n        for (const [r, c] of cells) {\n            best.push(1 + Math.max(rowMax[r], colMax[c]));\n        }\n        for (let i = 0; i < cells.length; i++) {\n            const [r, c] = cells[i];\n            rowMax[r] = Math.max(rowMax[r], best[i]);\n            colMax[c] = Math.max(colMax[c], best[i]);\n        }\n    }\n    let ans = 0;\n    for (const x of rowMax) ans = Math.max(ans, x);\n    for (const x of colMax) ans = Math.max(ans, x);\n    return ans;\n};"
+    }
+  ]
+}
