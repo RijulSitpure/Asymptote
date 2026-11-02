@@ -90,7 +90,8 @@ describe('React Dashboard Serverless Wiring & Bundle Verification', () => {
           : path.resolve(process.cwd(), 'extension', 'data', 'manifest.json'));
     expect(fs.existsSync(extManifestPath)).toBe(true);
     const manifest = JSON.parse(fs.readFileSync(extManifestPath, 'utf8'));
-    expect(manifest.version).toBe('2.0.0');
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'));
+    expect(manifest.version).toBe(pkg.version);
     expect(manifest.checksums).toBeDefined();
 
     // Client dist dataset
