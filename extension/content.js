@@ -501,6 +501,14 @@ function injectFloatingButtons() {
       flex-direction: column;
       color: #334155;
       overflow: hidden;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      transition: box-shadow 0.2s ease;
+    }
+    .drawer-panel.is-dragging {
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.28), 0 0 0 1px rgba(16,185,129,0.3) !important;
+      transition: none !important;
+      user-select: none !important;
+      cursor: grabbing !important;
     }
     .drawer-header {
       padding: 14px 16px;
@@ -512,6 +520,28 @@ function injectFloatingButtons() {
       position: sticky;
       top: 0;
       z-index: 10;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+    .drawer-header:active {
+      cursor: grabbing;
+    }
+    .drawer-drag-grip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      cursor: grab;
+      margin-right: 4px;
+      transition: color 0.15s ease;
+    }
+    .drawer-header:hover .drawer-drag-grip {
+      color: #475569;
+    }
+    .drawer-panel.is-dragging .drawer-header,
+    .drawer-panel.is-dragging .drawer-drag-grip {
+      cursor: grabbing !important;
     }
     .tabs-nav {
       display: flex;
@@ -918,6 +948,186 @@ function checkUrlOrSlugChange() {
   }
 }
 
+// ==========================================
+// Persistent Draggable Drawer Subsystem
+// ==========================================
+let cachedDrawerPos = null;
+if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
+  try {
+    chrome.storage.local.get(['asymptote_drawer_pos'], (res) => {
+      if (chrome.runtime?.lastError) return;
+      if (res && res.asymptote_drawer_pos) {
+        cachedDrawerPos = res.asymptote_drawer_pos;
+      }
+    });
+  } catch (_) {}
+}
+
+function clampDrawerPosition(left, top, drawerWidth) {
+  const width = drawerWidth || 400;
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const minLeft = 8;
+  const maxLeft = Math.max(minLeft, viewportWidth - width - 8);
+  const minTop = 8;
+  const maxTop = Math.max(minTop, viewportHeight - 56);
+
+  return {
+    left: Math.min(Math.max(left, minLeft), maxLeft),
+    top: Math.min(Math.max(top, minTop), maxTop)
+  };
+}
+
+function restoreDrawerPosition(drawer) {
+  if (!drawer) return;
+  if (cachedDrawerPos && typeof cachedDrawerPos.left === 'number' && typeof cachedDrawerPos.top === 'number') {
+    const width = drawer.offsetWidth || 400;
+    const clamped = clampDrawerPosition(cachedDrawerPos.left, cachedDrawerPos.top, width);
+    drawer.style.left = `${Math.round(clamped.left)}px`;
+    drawer.style.top = `${Math.round(clamped.top)}px`;
+    drawer.style.right = 'auto';
+    drawer.style.bottom = 'auto';
+  } else if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
+    try {
+      chrome.storage.local.get(['asymptote_drawer_pos'], (res) => {
+        if (chrome.runtime?.lastError) return;
+        if (res && res.asymptote_drawer_pos && !cachedDrawerPos) {
+          cachedDrawerPos = res.asymptote_drawer_pos;
+          restoreDrawerPosition(drawer);
+        }
+      });
+    } catch (_) {}
+  }
+}
+
+function saveDrawerPosition(pos) {
+  if (!pos || typeof pos.left !== 'number' || typeof pos.top !== 'number') return;
+  cachedDrawerPos = pos;
+  if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
+    try {
+      chrome.storage.local.set({ asymptote_drawer_pos: pos });
+    } catch (_) {}
+  }
+}
+
+function resetDrawerPosition(drawer) {
+  cachedDrawerPos = null;
+  if (drawer) {
+    drawer.style.left = '';
+    drawer.style.top = '';
+    drawer.style.right = '';
+    drawer.style.bottom = '';
+  }
+  if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
+    try {
+      chrome.storage.local.remove('asymptote_drawer_pos');
+    } catch (_) {}
+  }
+  showToast('Drawer position reset to default', 'info');
+}
+
+function makeDrawerDraggable(drawer, header) {
+  if (!drawer || !header) return;
+
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+  let rafId = null;
+  let curLeft = 0;
+  let curTop = 0;
+
+  header.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    if (e.target.closest('button, a, input, select, textarea')) return;
+
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    const rect = drawer.getBoundingClientRect();
+    startLeft = rect.left;
+    startTop = rect.top;
+    curLeft = startLeft;
+    curTop = startTop;
+
+    drawer.classList.add('is-dragging');
+    try {
+      header.setPointerCapture(e.pointerId);
+    } catch (_) {}
+    e.preventDefault();
+  });
+
+  header.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const drawerWidth = drawer.offsetWidth || 400;
+    const clamped = clampDrawerPosition(startLeft + dx, startTop + dy, drawerWidth);
+
+    curLeft = clamped.left;
+    curTop = clamped.top;
+
+    if (!rafId) {
+      rafId = requestAnimationFrame(() => {
+        drawer.style.left = `${Math.round(curLeft)}px`;
+        drawer.style.top = `${Math.round(curTop)}px`;
+        drawer.style.right = 'auto';
+        drawer.style.bottom = 'auto';
+        rafId = null;
+      });
+    }
+  });
+
+  const stopDrag = (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    drawer.classList.remove('is-dragging');
+    try {
+      header.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
+    saveDrawerPosition({ left: curLeft, top: curTop });
+  };
+
+  header.addEventListener('pointerup', stopDrag);
+  header.addEventListener('pointercancel', stopDrag);
+
+  header.addEventListener('dblclick', (e) => {
+    if (e.target.closest('button, a, input, select, textarea')) return;
+    resetDrawerPosition(drawer);
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => {
+    try {
+      const shadow = getShadowRoot();
+      if (!shadow) return;
+      const drawer = shadow.getElementById('lc-pattern-drawer');
+      if (!drawer || !cachedDrawerPos) return;
+      restoreDrawerPosition(drawer);
+    } catch (_) {}
+  });
+}
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__ASYMPTOTE_DRAWER_HELPERS__ = {
+    clampDrawerPosition,
+    restoreDrawerPosition,
+    saveDrawerPosition,
+    resetDrawerPosition,
+    makeDrawerDraggable
+  };
+}
+
 // In-Page Socratic Hints & Complexity Drawer inside Shadow DOM
 async function toggleHintsDrawer() {
   if (typeof chrome !== 'undefined' && !chrome?.runtime?.id) {
@@ -942,8 +1152,18 @@ async function toggleHintsDrawer() {
   drawer.className = 'drawer-panel';
 
   drawer.innerHTML = `
-    <div class="drawer-header">
+    <div class="drawer-header" title="Drag to move • Double-click to reset position">
       <div style="display:flex; align-items:center; gap:8px;">
+        <span class="drawer-drag-grip" title="Drag to move • Double-click to reset position" aria-label="Drag handle">
+          <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+            <circle cx="2.5" cy="2.5" r="1.5" />
+            <circle cx="7.5" cy="2.5" r="1.5" />
+            <circle cx="2.5" cy="8" r="1.5" />
+            <circle cx="7.5" cy="8" r="1.5" />
+            <circle cx="2.5" cy="13.5" r="1.5" />
+            <circle cx="7.5" cy="13.5" r="1.5" />
+          </svg>
+        </span>
         <img src="${safeGetURL('icons/asymptote-icon-small.svg')}" width="28" height="28" alt="Asymptote" style="border-radius:6px; display:block; flex-shrink:0;" />
         <span style="font-size:18px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:#1e2033; letter-spacing:-0.02em;">Asymptote</span>
       </div>
@@ -974,6 +1194,12 @@ async function toggleHintsDrawer() {
   `;
 
   shadow.appendChild(drawer);
+
+  const drawerHeader = drawer.querySelector('.drawer-header');
+  restoreDrawerPosition(drawer);
+  if (drawerHeader) {
+    makeDrawerDraggable(drawer, drawerHeader);
+  }
 
   const headerDashBtn = shadow.getElementById('lc-open-dashboard-header-btn');
   if (headerDashBtn) {
