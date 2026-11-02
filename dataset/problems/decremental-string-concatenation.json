@@ -1,0 +1,78 @@
+{
+  "slug": "decremental-string-concatenation",
+  "number": 2746,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Boundary Character Tracking",
+      "text": "Only the first and last characters of the concatenated string influence future joins."
+    },
+    {
+      "level": 2,
+      "title": "Binary Placement Decisions",
+      "text": "For each subsequent word, decide between appending to the right or prepending to the left."
+    },
+    {
+      "level": 3,
+      "title": "Overlapping Character Discount",
+      "text": "Subtract one character length whenever the connecting boundaries match."
+    },
+    {
+      "level": 4,
+      "title": "Boundary DP Implementation",
+      "text": "```python\nclass Solution:\n    def minimizeConcatenatedLength(self, words: list[str]) -> int:\n        n = len(words)\n        from functools import lru_cache\n        @lru_cache(None)\n        def dp(idx: int, first: str, last: str) -> int:\n            if idx == n:\n                return 0\n            w = words[idx]\n            w_first, w_last, w_len = w[0], w[-1], len(w)\n            # Option 1: append to right (join last with w_first)\n            save1 = 1 if last == w_first else 0\n            res1 = (w_len - save1) + dp(idx + 1, first, w_last)\n            # Option 2: prepend to left (join w_last with first)\n            save2 = 1 if w_last == first else 0\n            res2 = (w_len - save2) + dp(idx + 1, w_first, last)\n            return min(res1, res2)\n        return len(words[0]) + dp(1, words[0][0], words[0][-1])\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * 26 * 26)",
+    "space": "O(n * 26 * 26)",
+    "variables": [
+      "n: number of words"
+    ],
+    "notes": "State determined by current word index, first character, and last character.",
+    "whyNaiveFails": "Evaluating 2^n concat combinations without state memoization causes exponential timeout.",
+    "spaceTimeTradeoff": "Table of size n * 26 * 26 bounds total subproblems.",
+    "interviewerExpectation": "Recognizes that internal characters are irrelevant; only boundary letters affect future merges."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Boundary Character DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def minimizeConcatenatedLength(self, words: list[str]) -> int:\n        n = len(words)\n        from functools import lru_cache\n        @lru_cache(None)\n        def dp(idx: int, first: str, last: str) -> int:\n            if idx == n:\n                return 0\n            w = words[idx]\n            w_first, w_last, w_len = w[0], w[-1], len(w)\n            # Option 1: append to right (join last with w_first)\n            save1 = 1 if last == w_first else 0\n            res1 = (w_len - save1) + dp(idx + 1, first, w_last)\n            # Option 2: prepend to left (join w_last with first)\n            save2 = 1 if w_last == first else 0\n            res2 = (w_len - save2) + dp(idx + 1, w_first, last)\n            return min(res1, res2)\n        return len(words[0]) + dp(1, words[0][0], words[0][-1])"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Boundary Character DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int minimizeConcatenatedLength(vector<string>& words) {\n        int n = words.size();\n        int memo[1005][26][26];\n        memset(memo, -1, sizeof(memo));\n        auto dp = [&](auto& self, int idx, int first, int last) -> int {\n            if (idx == n) return 0;\n            if (memo[idx][first][last] != -1) return memo[idx][first][last];\n            const string& w = words[idx];\n            int w_first = w.front() - 'a', w_last = w.back() - 'a', w_len = w.size();\n            int save1 = (last == w_first) ? 1 : 0;\n            int res1 = (w_len - save1) + self(self, idx + 1, first, w_last);\n            int save2 = (w_last == first) ? 1 : 0;\n            int res2 = (w_len - save2) + self(self, idx + 1, w_first, last);\n            return memo[idx][first][last] = min(res1, res2);\n        };\n        return (int)words[0].size() + dp(dp, 1, words[0].front() - 'a', words[0].back() - 'a');\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Boundary Character DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    public int minimizeConcatenatedLength(String[] words) {\n        int n = words.length;\n        int[][][] memo = new int[n][26][26];\n        for (int[][] mat : memo) {\n            for (int[] row : mat) Arrays.fill(row, -1);\n        }\n        return words[0].length() + dfs(words, 1, words[0].charAt(0) - 'a', words[0].charAt(words[0].length() - 1) - 'a', memo);\n    }\n\n    private int dfs(String[] words, int idx, int first, int last, int[][][] memo) {\n        if (idx == words.length) return 0;\n        if (memo[idx][first][last] != -1) return memo[idx][first][last];\n        String w = words[idx];\n        int wFirst = w.charAt(0) - 'a', wLast = w.charAt(w.length() - 1) - 'a', wLen = w.length();\n        int save1 = (last == wFirst) ? 1 : 0;\n        int res1 = (wLen - save1) + dfs(words, idx + 1, first, wLast, memo);\n        int save2 = (wLast == first) ? 1 : 0;\n        int res2 = (wLen - save2) + dfs(words, idx + 1, wFirst, last, memo);\n        return memo[idx][first][last] = Math.min(res1, res2);\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Boundary Character DP",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var minimizeConcatenatedLength = function(words) {\n    const n = words.length;\n    const memo = new Map();\n    function dp(idx, first, last) {\n        if (idx === n) return 0;\n        const key = `${idx},${first},${last}`;\n        if (memo.has(key)) return memo.get(key);\n        const w = words[idx];\n        const wFirst = w.charCodeAt(0) - 97;\n        const wLast = w.charCodeAt(w.length - 1) - 97;\n        const wLen = w.length;\n        const save1 = (last === wFirst) ? 1 : 0;\n        const res1 = (wLen - save1) + dp(idx + 1, first, wLast);\n        const save2 = (wLast === first) ? 1 : 0;\n        const res2 = (wLen - save2) + dp(idx + 1, wFirst, last);\n        const ans = Math.min(res1, res2);\n        memo.set(key, ans);\n        return ans;\n    }\n    const first0 = words[0].charCodeAt(0) - 97;\n    const last0 = words[0].charCodeAt(words[0].length - 1) - 97;\n    return words[0].length + dp(1, first0, last0);\n};"
+    }
+  ]
+}

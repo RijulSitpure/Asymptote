@@ -1,0 +1,78 @@
+{
+  "slug": "special-permutations",
+  "number": 2741,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Divisibility Neighbor Condition",
+      "text": "Every adjacent pair of numbers in the permutation must have one value divide the other."
+    },
+    {
+      "level": 2,
+      "title": "Subset State Representation",
+      "text": "Represent the set of chosen indices as a bitmask and track the most recently placed element."
+    },
+    {
+      "level": 3,
+      "title": "Branch Pruning",
+      "text": "Only transition to unused elements that satisfy the divisibility condition with the current tail."
+    },
+    {
+      "level": 4,
+      "title": "Bitmask DP Code",
+      "text": "```python\nclass Solution:\n    def specialPerm(self, nums: list[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(nums)\n        from functools import lru_cache\n        @lru_cache(None)\n        def dp(mask: int, last: int) -> int:\n            if mask == (1 << n) - 1:\n                return 1\n            res = 0\n            for j in range(n):\n                if not (mask & (1 << j)):\n                    if last == -1 or nums[last] % nums[j] == 0 or nums[j] % nums[last] == 0:\n                        res = (res + dp(mask | (1 << j), j)) % MOD\n            return res\n        return dp(0, -1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * 2^n)",
+    "space": "O(n * 2^n)",
+    "variables": [
+      "n: length of nums array (n <= 14)"
+    ],
+    "notes": "State defined by bitmask of visited elements and last placed index.",
+    "whyNaiveFails": "Checking all 14! permutations takes over 87 billion iterations.",
+    "spaceTimeTradeoff": "Table of size 2^14 * 14 caches subproblem counts.",
+    "interviewerExpectation": "Models Hamiltonian paths on divisibility DAG via bitmask dynamic programming."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Bitmask Permutation State Memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution:\n    def specialPerm(self, nums: list[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(nums)\n        from functools import lru_cache\n        @lru_cache(None)\n        def dp(mask: int, last: int) -> int:\n            if mask == (1 << n) - 1:\n                return 1\n            res = 0\n            for j in range(n):\n                if not (mask & (1 << j)):\n                    if last == -1 or nums[last] % nums[j] == 0 or nums[j] % nums[last] == 0:\n                        res = (res + dp(mask | (1 << j), j)) % MOD\n            return res\n        return dp(0, -1)"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Bitmask Permutation State Memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int specialPerm(vector<int>& nums) {\n        const int MOD = 1e9 + 7;\n        int n = nums.size();\n        vector<vector<int>> memo(1 << n, vector<int>(n, -1));\n        auto dp = [&](auto& self, int mask, int last) -> int {\n            if (mask == (1 << n) - 1) return 1;\n            if (last != -1 && memo[mask][last] != -1) return memo[mask][last];\n            long long res = 0;\n            for (int j = 0; j < n; ++j) {\n                if (!(mask & (1 << j))) {\n                    if (last == -1 || nums[last] % nums[j] == 0 || nums[j] % nums[last] == 0) {\n                        res = (res + self(self, mask | (1 << j), j)) % MOD;\n                    }\n                }\n            }\n            if (last != -1) memo[mask][last] = res;\n            return res;\n        };\n        return dp(dp, 0, -1);\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Bitmask Permutation State Memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    private static final int MOD = 1_000_000_007;\n\n    public int specialPerm(int[] nums) {\n        int n = nums.length;\n        int[][] memo = new int[1 << n][n];\n        for (int[] row : memo) Arrays.fill(row, -1);\n        return dfs(nums, 0, -1, memo, n);\n    }\n\n    private int dfs(int[] nums, int mask, int last, int[][] memo, int n) {\n        if (mask == (1 << n) - 1) return 1;\n        if (last != -1 && memo[mask][last] != -1) return memo[mask][last];\n        long res = 0;\n        for (int j = 0; j < n; j++) {\n            if ((mask & (1 << j)) == 0) {\n                if (last == -1 || nums[last] % nums[j] == 0 || nums[j] % nums[last] == 0) {\n                    res = (res + dfs(nums, mask | (1 << j), j, memo, n)) % MOD;\n                }\n            }\n        }\n        if (last != -1) memo[mask][last] = (int) res;\n        return (int) res;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Bitmask Permutation State Memoization",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var specialPerm = function(nums) {\n    const MOD = 1000000007;\n    const n = nums.length;\n    const memo = Array.from({ length: 1 << n }, () => new Array(n).fill(-1));\n    function dp(mask, last) {\n        if (mask === (1 << n) - 1) return 1;\n        if (last !== -1 && memo[mask][last] !== -1) return memo[mask][last];\n        let res = 0;\n        for (let j = 0; j < n; j++) {\n            if (!(mask & (1 << j))) {\n                if (last === -1 || nums[last] % nums[j] === 0 || nums[j] % nums[last] === 0) {\n                    res = (res + dp(mask | (1 << j), j)) % MOD;\n                }\n            }\n        }\n        if (last !== -1) memo[mask][last] = res;\n        return res;\n    }\n    return dp(0, -1);\n};"
+    }
+  ]
+}

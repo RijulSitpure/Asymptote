@@ -1,0 +1,80 @@
+{
+  "slug": "count-zero-request-servers",
+  "number": 2747,
+  "category": "Algorithms",
+  "patterns": [
+    "two-pointers-window-dynamic",
+    "sorting-quickselect"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Time Interval Window",
+      "text": "For each query, count servers active in the time range from q minus x up to q."
+    },
+    {
+      "level": 2,
+      "title": "Offline Sorted Queries",
+      "text": "Sort the queries chronologically so that the active log interval slides forward continuously."
+    },
+    {
+      "level": 3,
+      "title": "Active Server Count",
+      "text": "Subtract the number of distinct active servers from n to get the idle server count."
+    },
+    {
+      "level": 4,
+      "title": "Sliding Log Window Code",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def countServers(self, n: int, logs: list[list[int]], x: int, queries: list[int]) -> list[int]:\n        logs.sort(key=lambda item: item[1])\n        q_sorted = sorted([(q, i) for i, q in enumerate(queries)])\n        ans = [0] * len(queries)\n        active_counts = defaultdict(int)\n        left = 0\n        right = 0\n        num_logs = len(logs)\n        for q_time, q_idx in q_sorted:\n            # Expand right boundary: include logs with time <= q_time\n            while right < num_logs and logs[right][1] <= q_time:\n                active_counts[logs[right][0]] += 1\n                right += 1\n            # Shrink left boundary: exclude logs with time < q_time - x\n            while left < num_logs and logs[left][1] < q_time - x:\n                srv = logs[left][0]\n                active_counts[srv] -= 1\n                if active_counts[srv] == 0:\n                    del active_counts[srv]\n                left += 1\n            ans[q_idx] = n - len(active_counts)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m log m + q log q)",
+    "space": "O(m + q)",
+    "variables": [
+      "m: number of logs",
+      "q: number of queries"
+    ],
+    "notes": "Offline sorting allows two pointers to traverse logs linearly.",
+    "whyNaiveFails": "Scanning all logs for each query takes O(q * m) time.",
+    "spaceTimeTradeoff": "Map tracks frequency of active servers within the sliding window.",
+    "interviewerExpectation": "Sorts queries offline to use a dynamic sliding window on timestamped logs."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Offline Sorted Query Sliding Window",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def countServers(self, n: int, logs: list[list[int]], x: int, queries: list[int]) -> list[int]:\n        logs.sort(key=lambda item: item[1])\n        q_sorted = sorted([(q, i) for i, q in enumerate(queries)])\n        ans = [0] * len(queries)\n        active_counts = defaultdict(int)\n        left = 0\n        right = 0\n        num_logs = len(logs)\n        for q_time, q_idx in q_sorted:\n            # Expand right boundary: include logs with time <= q_time\n            while right < num_logs and logs[right][1] <= q_time:\n                active_counts[logs[right][0]] += 1\n                right += 1\n            # Shrink left boundary: exclude logs with time < q_time - x\n            while left < num_logs and logs[left][1] < q_time - x:\n                srv = logs[left][0]\n                active_counts[srv] -= 1\n                if active_counts[srv] == 0:\n                    del active_counts[srv]\n                left += 1\n            ans[q_idx] = n - len(active_counts)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Offline Sorted Query Sliding Window",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    vector<int> countServers(int n, vector<vector<int>>& logs, int x, vector<int>& queries) {\n        sort(logs.begin(), logs.end(), [](const auto& a, const auto& b) {\n            return a[1] < b[1];\n        });\n        int q = queries.size();\n        vector<pair<int, int>> q_sorted(q);\n        for (int i = 0; i < q; ++i) q_sorted[i] = {queries[i], i};\n        sort(q_sorted.begin(), q_sorted.end());\n        vector<int> ans(q, 0);\n        unordered_map<int, int> active;\n        int left = 0, right = 0, num_logs = logs.size();\n        for (const auto& [q_time, q_idx] : q_sorted) {\n            while (right < num_logs && logs[right][1] <= q_time) {\n                active[logs[right][0]]++;\n                right++;\n            }\n            while (left < num_logs && logs[left][1] < q_time - x) {\n                int srv = logs[left][0];\n                if (--active[srv] == 0) active.erase(srv);\n                left++;\n            }\n            ans[q_idx] = n - (int)active.size();\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Offline Sorted Query Sliding Window",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import java.util.Arrays;\nimport java.util.HashMap;\nimport java.util.Map;\n\nclass Solution {\n    public int[] countServers(int n, int[][] logs, int x, int[] queries) {\n        Arrays.sort(logs, (a, b) -> Integer.compare(a[1], b[1]));\n        int q = queries.length;\n        Integer[] qIdx = new Integer[q];\n        for (int i = 0; i < q; i++) qIdx[i] = i;\n        Arrays.sort(qIdx, (a, b) -> Integer.compare(queries[a], queries[b]));\n        int[] ans = new int[q];\n        Map<Integer, Integer> active = new HashMap<>();\n        int left = 0, right = 0, numLogs = logs.length;\n        for (int idx : qIdx) {\n            int qTime = queries[idx];\n            while (right < numLogs && logs[right][1] <= qTime) {\n                active.put(logs[right][0], active.getOrDefault(logs[right][0], 0) + 1);\n                right++;\n            }\n            while (left < numLogs && logs[left][1] < qTime - x) {\n                int srv = logs[left][0];\n                int cnt = active.get(srv) - 1;\n                if (cnt == 0) active.remove(srv);\n                else active.put(srv, cnt);\n                left++;\n            }\n            ans[idx] = n - active.size();\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Offline Sorted Query Sliding Window",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var countServers = function(n, logs, x, queries) {\n    logs.sort((a, b) => a[1] - b[1]);\n    const q = queries.length;\n    const qSorted = Array.from({ length: q }, (_, i) => [queries[i], i]);\n    qSorted.sort((a, b) => a[0] - b[0]);\n    const ans = new Array(q).fill(0);\n    const active = new Map();\n    let left = 0, right = 0;\n    const numLogs = logs.length;\n    for (const [qTime, qIdx] of qSorted) {\n        while (right < numLogs && logs[right][1] <= qTime) {\n            const srv = logs[right][0];\n            active.set(srv, (active.get(srv) || 0) + 1);\n            right++;\n        }\n        while (left < numLogs && logs[left][1] < qTime - x) {\n            const srv = logs[left][0];\n            const cnt = active.get(srv) - 1;\n            if (cnt === 0) active.delete(srv);\n            else active.set(srv, cnt);\n            left++;\n        }\n        ans[qIdx] = n - active.size;\n    }\n    return ans;\n};"
+    }
+  ]
+}

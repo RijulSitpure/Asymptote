@@ -1,0 +1,71 @@
+{
+  "slug": "customers-with-maximum-number-of-transactions-on-consecutive-days",
+  "number": 2752,
+  "category": "Database",
+  "patterns": [
+    "gaps-and-islands"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Distinct Daily Activity",
+      "text": "First isolate unique customer and transaction date pairs to avoid double counting multiple purchases in a single day."
+    },
+    {
+      "level": 2,
+      "title": "Consecutive Date Grouping",
+      "text": "Subtract each row number sequence from the calendar date to produce an identical identifier for consecutive dates."
+    },
+    {
+      "level": 3,
+      "title": "Streak Maximization",
+      "text": "Aggregate over customer and streak group to calculate streak lengths, then filter customers who achieve the global maximum length."
+    },
+    {
+      "level": 4,
+      "title": "Gaps and Islands Solution",
+      "text": "```mysql\nWITH UniqueTransactions AS (\n    SELECT DISTINCT customer_id, transaction_date\n    FROM Transactions\n),\nRankedTransactions AS (\n    SELECT \n        customer_id,\n        transaction_date,\n        ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY transaction_date) AS rn\n    FROM UniqueTransactions\n),\nConsecutiveGroups AS (\n    SELECT \n        customer_id,\n        DATE_SUB(transaction_date, INTERVAL rn DAY) AS streak_group,\n        COUNT(*) AS consecutive_count\n    FROM RankedTransactions\n    GROUP BY customer_id, streak_group\n),\nMaxStreaks AS (\n    SELECT \n        customer_id,\n        MAX(consecutive_count) AS max_streak\n    FROM ConsecutiveGroups\n    GROUP BY customer_id\n),\nGlobalMax AS (\n    SELECT MAX(max_streak) AS global_max\n    FROM MaxStreaks\n)\nSELECT m.customer_id\nFROM MaxStreaks m\nJOIN GlobalMax g ON m.max_streak = g.global_max\nORDER BY m.customer_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N) for window ranking and grouping",
+    "space": "O(N) for intermediate window partitions",
+    "variables": [
+      "N: number of transaction rows"
+    ],
+    "notes": "Classic gaps and islands pattern using date arithmetic on row number.",
+    "whyNaiveFails": "Self-joining consecutive days creates combinatorial blowup on dense transaction histories.",
+    "spaceTimeTradeoff": "Window function partitions customer dates linearly.",
+    "interviewerExpectation": "Applies standard date minus row-number transformation for consecutive sequences."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Date Arithmetic Gaps and Islands",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH UniqueTransactions AS (\n    SELECT DISTINCT customer_id, transaction_date\n    FROM Transactions\n),\nRankedTransactions AS (\n    SELECT \n        customer_id,\n        transaction_date,\n        ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY transaction_date) AS rn\n    FROM UniqueTransactions\n),\nConsecutiveGroups AS (\n    SELECT \n        customer_id,\n        DATE_SUB(transaction_date, INTERVAL rn DAY) AS streak_group,\n        COUNT(*) AS consecutive_count\n    FROM RankedTransactions\n    GROUP BY customer_id, streak_group\n),\nMaxStreaks AS (\n    SELECT \n        customer_id,\n        MAX(consecutive_count) AS max_streak\n    FROM ConsecutiveGroups\n    GROUP BY customer_id\n),\nGlobalMax AS (\n    SELECT MAX(max_streak) AS global_max\n    FROM MaxStreaks\n)\nSELECT m.customer_id\nFROM MaxStreaks m\nJOIN GlobalMax g ON m.max_streak = g.global_max\nORDER BY m.customer_id ASC;"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Date Arithmetic Gaps and Islands",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "WITH UniqueTransactions AS (\n    SELECT DISTINCT customer_id, transaction_date\n    FROM Transactions\n),\nRankedTransactions AS (\n    SELECT \n        customer_id,\n        transaction_date,\n        ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY transaction_date) AS rn\n    FROM UniqueTransactions\n),\nConsecutiveGroups AS (\n    SELECT \n        customer_id,\n        transaction_date - (rn || ' days')::interval AS streak_group,\n        COUNT(*) AS consecutive_count\n    FROM RankedTransactions\n    GROUP BY customer_id, streak_group\n),\nMaxStreaks AS (\n    SELECT \n        customer_id,\n        MAX(consecutive_count) AS max_streak\n    FROM ConsecutiveGroups\n    GROUP BY customer_id\n),\nGlobalMax AS (\n    SELECT MAX(max_streak) AS global_max\n    FROM MaxStreaks\n)\nSELECT m.customer_id\nFROM MaxStreaks m\nJOIN GlobalMax g ON m.max_streak = g.global_max\nORDER BY m.customer_id ASC;"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Date Arithmetic Gaps and Islands",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import pandas as pd\n\ndef find_customers(transactions: pd.DataFrame) -> pd.DataFrame:\n    df = transactions[['customer_id', 'transaction_date']].drop_duplicates().sort_values(['customer_id', 'transaction_date'])\n    df['transaction_date'] = pd.to_datetime(df['transaction_date'])\n    df['rn'] = df.groupby('customer_id').cumcount()\n    df['streak_group'] = df['transaction_date'] - pd.to_timedelta(df['rn'], unit='D')\n    grouped = df.groupby(['customer_id', 'streak_group']).size().reset_index(name='consecutive_count')\n    max_streaks = grouped.groupby('customer_id')['consecutive_count'].max().reset_index(name='max_streak')\n    if max_streaks.empty:\n        return pd.DataFrame(columns=['customer_id'])\n    global_max = max_streaks['max_streak'].max()\n    res = max_streaks[max_streaks['max_streak'] == global_max][['customer_id']].sort_values('customer_id')\n    return res"
+    }
+  ]
+}

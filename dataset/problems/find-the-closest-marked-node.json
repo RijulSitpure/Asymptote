@@ -1,0 +1,79 @@
+{
+  "slug": "find-the-closest-marked-node",
+  "number": 2737,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Single-Source Distances",
+      "text": "Compute the shortest paths from the source node to all other reachable nodes in the weighted graph."
+    },
+    {
+      "level": 2,
+      "title": "Greedy Distance Expansion",
+      "text": "Relax adjacent edges in order of known cumulative distance from the source."
+    },
+    {
+      "level": 3,
+      "title": "Marked Set Query",
+      "text": "Take the minimum calculated distance across all targets present in the marked list."
+    },
+    {
+      "level": 4,
+      "title": "Shortest Path Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def minimumDistance(self, n: int, edges: list[list[int]], s: int, marked: list[int]) -> int:\n        graph = [[] for _ in range(n)]\n        for u, v, w in edges:\n            graph[u].append((v, w))\n        dist = [float('inf')] * n\n        dist[s] = 0\n        min_heap = [(0, s)]\n        while min_heap:\n            d, u = heapq.heappop(min_heap)\n            if d > dist[u]:\n                continue\n            for v, w in graph[u]:\n                if dist[u] + w < dist[v]:\n                    dist[v] = dist[u] + w\n                    heapq.heappush(min_heap, (dist[v], v))\n        ans = min((dist[u] for u in marked), default=float('inf'))\n        return ans if ans != float('inf') else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((V + E) log V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes n",
+      "E: number of edges"
+    ],
+    "notes": "Standard single-source shortest path using priority expansion.",
+    "whyNaiveFails": "Examining paths through DFS visits exponentially many permutations on dense graphs.",
+    "spaceTimeTradeoff": "Distance array and adjacency representation scale linearly with graph size.",
+    "interviewerExpectation": "Models non-negative edge weights via Dijkstra algorithm accurately."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Single Source Shortest Path",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import heapq\n\nclass Solution:\n    def minimumDistance(self, n: int, edges: list[list[int]], s: int, marked: list[int]) -> int:\n        graph = [[] for _ in range(n)]\n        for u, v, w in edges:\n            graph[u].append((v, w))\n        dist = [float('inf')] * n\n        dist[s] = 0\n        min_heap = [(0, s)]\n        while min_heap:\n            d, u = heapq.heappop(min_heap)\n            if d > dist[u]:\n                continue\n            for v, w in graph[u]:\n                if dist[u] + w < dist[v]:\n                    dist[v] = dist[u] + w\n                    heapq.heappush(min_heap, (dist[v], v))\n        ans = min((dist[u] for u in marked), default=float('inf'))\n        return ans if ans != float('inf') else -1"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Single Source Shortest Path",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "class Solution {\npublic:\n    int minimumDistance(int n, vector<vector<int>>& edges, int s, vector<int>& marked) {\n        vector<vector<pair<int, int>>> graph(n);\n        for (const auto& e : edges) {\n            graph[e[0]].emplace_back(e[1], e[2]);\n        }\n        vector<int> dist(n, 1e9);\n        dist[s] = 0;\n        using P = pair<int, int>;\n        priority_queue<P, vector<P>, greater<P>> pq;\n        pq.emplace(0, s);\n        while (!pq.empty()) {\n            auto [d, u] = pq.top();\n            pq.pop();\n            if (d > dist[u]) continue;\n            for (auto& [v, w] : graph[u]) {\n                if (dist[u] + w < dist[v]) {\n                    dist[v] = dist[u] + w;\n                    pq.emplace(dist[v], v);\n                }\n            }\n        }\n        int ans = 1e9;\n        for (int u : marked) ans = min(ans, dist[u]);\n        return ans >= 1e9 ? -1 : ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Single Source Shortest Path",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.PriorityQueue;\n\nclass Solution {\n    public int minimumDistance(int n, List<List<Integer>> edges, int s, int[] marked) {\n        List<List<int[]>> graph = new ArrayList<>();\n        for (int i = 0; i < n; i++) graph.add(new ArrayList<>());\n        for (List<Integer> e : edges) {\n            graph.get(e.get(0)).add(new int[]{e.get(1), e.get(2)});\n        }\n        int[] dist = new int[n];\n        Arrays.fill(dist, Integer.MAX_VALUE);\n        dist[s] = 0;\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        pq.offer(new int[]{0, s});\n        while (!pq.isEmpty()) {\n            int[] top = pq.poll();\n            int d = top[0], u = top[1];\n            if (d > dist[u]) continue;\n            for (int[] next : graph.get(u)) {\n                int v = next[0], w = next[1];\n                if (dist[u] + w < dist[v]) {\n                    dist[v] = dist[u] + w;\n                    pq.offer(new int[]{dist[v], v});\n                }\n            }\n        }\n        int ans = Integer.MAX_VALUE;\n        for (int u : marked) ans = Math.min(ans, dist[u]);\n        return ans == Integer.MAX_VALUE ? -1 : ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Single Source Shortest Path",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "code": "var minimumDistance = function(n, edges, s, marked) {\n    const graph = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        graph[u].push([v, w]);\n    }\n    const dist = new Array(n).fill(Infinity);\n    dist[s] = 0;\n    const pq = [[0, s]];\n    while (pq.length > 0) {\n        pq.sort((a, b) => a[0] - b[0]);\n        const [d, u] = pq.shift();\n        if (d > dist[u]) continue;\n        for (const [v, w] of graph[u]) {\n            if (dist[u] + w < dist[v]) {\n                dist[v] = dist[u] + w;\n                pq.push([dist[v], v]);\n            }\n        }\n    }\n    let ans = Infinity;\n    for (const u of marked) ans = Math.min(ans, dist[u]);\n    return ans === Infinity ? -1 : ans;\n};"
+    }
+  ]
+}
