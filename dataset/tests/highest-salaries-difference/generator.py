@@ -1,0 +1,2 @@
+import json
+print(json.dumps([{ "name": "case_1", "inserts": "INSERT INTO Salaries VALUES ('Kathy', 'Engineering', 24000), ('Roy', 'Marketing', 30000), ('Charles', 'Engineering', 22000), ('Jack', 'Engineering', 21000), ('Benjamin', 'Marketing', 34000), ('Anthony', 'Marketing', 42000), ('Edward', 'Engineering', 37000), ('Terry', 'Engineering', 17000), ('Evelyn', 'Marketing', 53000), ('Arthur', 'Engineering', 32000);" }]))

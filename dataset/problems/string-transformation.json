@@ -1,0 +1,80 @@
+{
+  "slug": "string-transformation",
+  "number": 2851,
+  "category": "Algorithms",
+  "patterns": [
+    "string-matching",
+    "math-number-theory"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Cyclic Shift Characterization",
+      "text": "Each operation performs a non-zero cyclic shift of s by some offset from 1 to n - 1."
+    },
+    {
+      "level": 2,
+      "title": "Matching Shifts via Prefix Search",
+      "text": "Concatenate s with itself, slice off the last character to avoid full wrapping, and count occurrences of t using prefix function pattern search to find valid shift offsets."
+    },
+    {
+      "level": 3,
+      "title": "Recurrence for Transitions",
+      "text": "Closed form transitions count identity shifts dp[0] = ((n - 1)^k + (-1)^k * (n - 1)) / n and other shifts dp[1] = ((n - 1)^k - (-1)^k) / n modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def numberOfWays(self, s: str, t: str, k: int) -> int:\n        mod = 10**9 + 7\n        n = len(s)\n        ss = (s + s)[:-1]\n        pi = [0] * n\n        j = 0\n        for i in range(1, n):\n            while j > 0 and t[i] != t[j]:\n                j = pi[j - 1]\n            if t[i] == t[j]:\n                j += 1\n            pi[i] = j\n        c = 0\n        j = 0\n        for i in range(len(ss)):\n            while j > 0 and ss[i] != t[j]:\n                j = pi[j - 1]\n            if ss[i] == t[j]:\n                j += 1\n            if j == n:\n                c += 1\n                j = pi[j - 1]\n        p1 = pow(n - 1, k, mod)\n        p2 = 1 if k % 2 == 0 else -1\n        inv_n = pow(n, mod - 2, mod)\n        dp0 = (p1 + p2 * (n - 1)) % mod * inv_n % mod\n        dp1 = (p1 - p2) % mod * inv_n % mod\n        if s == t:\n            ans = (dp0 + (c - 1) * dp1) % mod\n        else:\n            ans = (c * dp1) % mod\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + log k)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of string s",
+      "k: number of transformation steps"
+    ],
+    "notes": "KMP search on concatenated string followed by modular exponentiation.",
+    "whyNaiveFails": "Simulating k matrix transitions or string rotations is far too slow for k = 10^15.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for KMP prefix function array.",
+    "interviewerExpectation": "Use KMP string matching and closed-form modular recurrence."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def numberOfWays(self, s: str, t: str, k: int) -> int:\n        mod = 10**9 + 7\n        n = len(s)\n        ss = (s + s)[:-1]\n        pi = [0] * n\n        j = 0\n        for i in range(1, n):\n            while j > 0 and t[i] != t[j]:\n                j = pi[j - 1]\n            if t[i] == t[j]:\n                j += 1\n            pi[i] = j\n        c = 0\n        j = 0\n        for i in range(len(ss)):\n            while j > 0 and ss[i] != t[j]:\n                j = pi[j - 1]\n            if ss[i] == t[j]:\n                j += 1\n            if j == n:\n                c += 1\n                j = pi[j - 1]\n        p1 = pow(n - 1, k, mod)\n        p2 = 1 if k % 2 == 0 else -1\n        inv_n = pow(n, mod - 2, mod)\n        dp0 = (p1 + p2 * (n - 1)) % mod * inv_n % mod\n        dp1 = (p1 - p2) % mod * inv_n % mod\n        if s == t:\n            ans = (dp0 + (c - 1) * dp1) % mod\n        else:\n            ans = (c * dp1) % mod\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "KMP Pattern Search with Closed-Form Recurrence"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int numberOfWays(string s, string t, long long k) {\n        long long mod = 1e9 + 7;\n        int n = s.size();\n        string ss = s + s;\n        ss.pop_back();\n        vector<int> pi(n, 0);\n        int j = 0;\n        for (int i = 1; i < n; i++) {\n            while (j > 0 && t[i] != t[j]) j = pi[j - 1];\n            if (t[i] == t[j]) j++;\n            pi[i] = j;\n        }\n        int c = 0;\n        j = 0;\n        for (int i = 0; i < ss.size(); i++) {\n            while (j > 0 && ss[i] != t[j]) j = pi[j - 1];\n            if (ss[i] == t[j]) j++;\n            if (j == n) {\n                c++;\n                j = pi[j - 1];\n            }\n        }\n        auto power = [&](long long base, long long exp) -> long long {\n            long long res = 1;\n            base %= mod;\n            while (exp > 0) {\n                if (exp & 1) res = (res * base) % mod;\n                base = (base * base) % mod;\n                exp >>= 1;\n            }\n            return res;\n        };\n        long long p1 = power(n - 1, k);\n        long long p2 = (k % 2 == 0) ? 1 : -1;\n        long long inv_n = power(n, mod - 2);\n        long long dp0 = (p1 + p2 * (n - 1)) % mod;\n        if (dp0 < 0) dp0 += mod;\n        dp0 = (dp0 * inv_n) % mod;\n        long long dp1 = (p1 - p2) % mod;\n        if (dp1 < 0) dp1 += mod;\n        dp1 = (dp1 * inv_n) % mod;\n        long long ans = 0;\n        if (s == t) {\n            ans = (dp0 + (c - 1) * dp1) % mod;\n        } else {\n            ans = (c * dp1) % mod;\n        }\n        if (ans < 0) ans += mod;\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "KMP Pattern Search with Closed-Form Recurrence"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int numberOfWays(String s, String t, long k) {\n        long mod = 1_000_000_007L;\n        int n = s.length();\n        String ss = (s + s).substring(0, 2 * n - 1);\n        int[] pi = new int[n];\n        int j = 0;\n        for (int i = 1; i < n; i++) {\n            while (j > 0 && t.charAt(i) != t.charAt(j)) j = pi[j - 1];\n            if (t.charAt(i) == t.charAt(j)) j++;\n            pi[i] = j;\n        }\n        int c = 0;\n        j = 0;\n        for (int i = 0; i < ss.length(); i++) {\n            while (j > 0 && ss.charAt(i) != t.charAt(j)) j = pi[j - 1];\n            if (ss.charAt(i) == t.charAt(j)) j++;\n            if (j == n) {\n                c++;\n                j = pi[j - 1];\n            }\n        }\n        long p1 = power(n - 1, k, mod);\n        long p2 = (k % 2 == 0) ? 1 : -1;\n        long invN = power(n, mod - 2, mod);\n        long dp0 = (p1 + p2 * (n - 1)) % mod;\n        if (dp0 < 0) dp0 += mod;\n        dp0 = (dp0 * invN) % mod;\n        long dp1 = (p1 - p2) % mod;\n        if (dp1 < 0) dp1 += mod;\n        dp1 = (dp1 * invN) % mod;\n        long ans = s.equals(t) ? (dp0 + (c - 1) * dp1) % mod : (c * dp1) % mod;\n        if (ans < 0) ans += mod;\n        return (int) ans;\n    }\n    private long power(long base, long exp, long mod) {\n        long res = 1;\n        base %= mod;\n        while (exp > 0) {\n            if ((exp & 1) == 1) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp >>= 1;\n        }\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "KMP Pattern Search with Closed-Form Recurrence"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} s\n * @param {string} t\n * @param {number} k\n * @return {number}\n */\nvar numberOfWays = function(s, t, k) {\n    const mod = 1000000007n;\n    const n = s.length;\n    const bn = BigInt(n);\n    const bk = BigInt(k);\n    const ss = (s + s).slice(0, 2 * n - 1);\n    const pi = new Int32Array(n);\n    let j = 0;\n    for (let i = 1; i < n; i++) {\n        while (j > 0 && t[i] !== t[j]) j = pi[j - 1];\n        if (t[i] === t[j]) j++;\n        pi[i] = j;\n    }\n    let c = 0n;\n    j = 0;\n    for (let i = 0; i < ss.length; i++) {\n        while (j > 0 && ss[i] !== t[j]) j = pi[j - 1];\n        if (ss[i] === t[j]) j++;\n        if (j === n) {\n            c++;\n            j = pi[j - 1];\n        }\n    }\n    function power(base, exp) {\n        let res = 1n;\n        base = ((base % mod) + mod) % mod;\n        while (exp > 0n) {\n            if (exp & 1n) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp >>= 1n;\n        }\n        return res;\n    }\n    const p1 = power(bn - 1n, bk);\n    const p2 = (bk % 2n === 0n) ? 1n : -1n;\n    const invN = power(bn, mod - 2n);\n    let dp0 = ((p1 + p2 * (bn - 1n)) % mod + mod) % mod;\n    dp0 = (dp0 * invN) % mod;\n    let dp1 = ((p1 - p2) % mod + mod) % mod;\n    dp1 = (dp1 * invN) % mod;\n    let ans = 0n;\n    if (s === t) ans = (dp0 + (c - 1n) * dp1) % mod;\n    else ans = (c * dp1) % mod;\n    return Number((ans + mod) % mod);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "KMP Pattern Search with Closed-Form Recurrence"
+    }
+  ]
+}

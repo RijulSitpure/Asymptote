@@ -1,0 +1,80 @@
+{
+  "slug": "maximize-value-of-function-in-a-ball-passing-game",
+  "number": 2836,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear",
+    "bit-manipulation-tricks"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Functional Graph Structure",
+      "text": "Each player passes the ball to a deterministic successor, creating a functional graph with out-degree 1."
+    },
+    {
+      "level": 2,
+      "title": "Binary Doubling Technique",
+      "text": "Since k can be up to 10^10, precompute destinations and path sums for power-of-two steps up to 34 bits."
+    },
+    {
+      "level": 3,
+      "title": "Binary Lifting Table",
+      "text": "Maintain up[node][step] and sum[node][step]. For any start node, traverse the bits of k to accumulate the path sum in O(log k) time."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def getMaxFunctionValue(self, receiver: List[int], k: int) -> int:\n        n = len(receiver)\n        m = k.bit_length()\n        up = [[0] * m for _ in range(n)]\n        sm = [[0] * m for _ in range(n)]\n        for i in range(n):\n            up[i][0] = receiver[i]\n            sm[i][0] = receiver[i]\n        for j in range(1, m):\n            for i in range(n):\n                p = up[i][j - 1]\n                up[i][j] = up[p][j - 1]\n                sm[i][j] = sm[i][j - 1] + sm[p][j - 1]\n        ans = 0\n        for i in range(n):\n            curr = i\n            total = i\n            for j in range(m):\n                if (k >> j) & 1:\n                    total += sm[curr][j]\n                    curr = up[curr][j]\n            if total > ans:\n                ans = total\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log k)",
+    "space": "O(n log k)",
+    "variables": [
+      "n: number of players",
+      "k: number of passes"
+    ],
+    "notes": "Binary lifting doubling table for jumping powers of 2.",
+    "whyNaiveFails": "Simulating k steps per node requires O(n * k) steps, which times out for k = 10^10.",
+    "spaceTimeTradeoff": "O(n log k) memory for jumping tables.",
+    "interviewerExpectation": "Apply binary lifting doubling to compute jump destination and accumulated sum."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def getMaxFunctionValue(self, receiver: List[int], k: int) -> int:\n        n = len(receiver)\n        m = k.bit_length()\n        up = [[0] * m for _ in range(n)]\n        sm = [[0] * m for _ in range(n)]\n        for i in range(n):\n            up[i][0] = receiver[i]\n            sm[i][0] = receiver[i]\n        for j in range(1, m):\n            for i in range(n):\n                p = up[i][j - 1]\n                up[i][j] = up[p][j - 1]\n                sm[i][j] = sm[i][j - 1] + sm[p][j - 1]\n        ans = 0\n        for i in range(n):\n            curr = i\n            total = i\n            for j in range(m):\n                if (k >> j) & 1:\n                    total += sm[curr][j]\n                    curr = up[curr][j]\n            if total > ans:\n                ans = total\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Binary Lifting on Functional Graph"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    long long getMaxFunctionValue(vector<int>& receiver, long long k) {\n        int n = receiver.size();\n        int m = 64 - __builtin_clzll(k);\n        vector<vector<int>> up(n, vector<int>(m));\n        vector<vector<long long>> sm(n, vector<long long>(m));\n        for (int i = 0; i < n; i++) {\n            up[i][0] = receiver[i];\n            sm[i][0] = receiver[i];\n        }\n        for (int j = 1; j < m; j++) {\n            for (int i = 0; i < n; i++) {\n                int p = up[i][j - 1];\n                up[i][j] = up[p][j - 1];\n                sm[i][j] = sm[i][j - 1] + sm[p][j - 1];\n            }\n        }\n        long long ans = 0;\n        for (int i = 0; i < n; i++) {\n            int curr = i;\n            long long total = i;\n            for (int j = 0; j < m; j++) {\n                if ((k >> j) & 1) {\n                    total += sm[curr][j];\n                    curr = up[curr][j];\n                }\n            }\n            ans = max(ans, total);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Binary Lifting on Functional Graph"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public long getMaxFunctionValue(List<Integer> receiver, long k) {\n        int n = receiver.size();\n        int m = 64 - Long.numberOfLeadingZeros(k);\n        int[][] up = new int[n][m];\n        long[][] sm = new long[n][m];\n        for (int i = 0; i < n; i++) {\n            up[i][0] = receiver.get(i);\n            sm[i][0] = receiver.get(i);\n        }\n        for (int j = 1; j < m; j++) {\n            for (int i = 0; i < n; i++) {\n                int p = up[i][j - 1];\n                up[i][j] = up[p][j - 1];\n                sm[i][j] = sm[i][j - 1] + sm[p][j - 1];\n            }\n        }\n        long ans = 0;\n        for (int i = 0; i < n; i++) {\n            int curr = i;\n            long total = i;\n            for (int j = 0; j < m; j++) {\n                if (((k >> j) & 1) == 1) {\n                    total += sm[curr][j];\n                    curr = up[curr][j];\n                }\n            }\n            ans = Math.max(ans, total);\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Binary Lifting on Functional Graph"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} receiver\n * @param {number} k\n * @return {number}\n */\nvar getMaxFunctionValue = function(receiver, k) {\n    const n = receiver.length;\n    const bk = BigInt(k);\n    let m = 0;\n    while ((1n << BigInt(m)) <= bk) m++;\n    const up = Array.from({ length: n }, () => new Int32Array(m));\n    const sm = Array.from({ length: n }, () => new BigInt64Array(m));\n    for (let i = 0; i < n; i++) {\n        up[i][0] = receiver[i];\n        sm[i][0] = BigInt(receiver[i]);\n    }\n    for (let j = 1; j < m; j++) {\n        for (let i = 0; i < n; i++) {\n            const p = up[i][j - 1];\n            up[i][j] = up[p][j - 1];\n            sm[i][j] = sm[i][j - 1] + sm[p][j - 1];\n        }\n    }\n    let ans = 0n;\n    for (let i = 0; i < n; i++) {\n        let curr = i;\n        let total = BigInt(i);\n        for (let j = 0; j < m; j++) {\n            if ((bk >> BigInt(j)) & 1n) {\n                total += sm[curr][j];\n                curr = up[curr][j];\n            }\n        }\n        if (total > ans) ans = total;\n    }\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Binary Lifting on Functional Graph"
+    }
+  ]
+}

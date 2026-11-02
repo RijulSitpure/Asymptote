@@ -1,0 +1,72 @@
+{
+  "slug": "rolling-average-steps",
+  "number": 2854,
+  "category": "Database",
+  "patterns": [
+    "window-offset",
+    "running-total"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Consecutive Three Days Requirement",
+      "text": "A rolling average must only be calculated for dates that have records for today, yesterday, and the day before yesterday."
+    },
+    {
+      "level": 2,
+      "title": "Self Join Date Offsets",
+      "text": "Join the Steps table to itself twice on matching user_id with date differences of 1 and 2 days."
+    },
+    {
+      "level": 3,
+      "title": "Rounded Average",
+      "text": "Sum the three steps counts, divide by 3.0, round to 2 decimal places, and order by user_id ascending, steps_date ascending."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nSELECT \n    s1.user_id,\n    s1.steps_date,\n    ROUND((s1.steps_count + s2.steps_count + s3.steps_count) / 3.0, 2) AS rolling_average\nFROM Steps s1\nJOIN Steps s2 ON s1.user_id = s2.user_id AND DATEDIFF(s1.steps_date, s2.steps_date) = 1\nJOIN Steps s3 ON s1.user_id = s3.user_id AND DATEDIFF(s1.steps_date, s3.steps_date) = 2\nORDER BY s1.user_id ASC, s1.steps_date ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of records in Steps table"
+    ],
+    "notes": "Self join on date offsets followed by sorting.",
+    "whyNaiveFails": "Window function avg over 2 preceding rows includes gaps across missing calendar days.",
+    "spaceTimeTradeoff": "O(N) memory for matched triplets.",
+    "interviewerExpectation": "Enforce strict consecutive calendar day difference using self-join or range window."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT \n    s1.user_id,\n    s1.steps_date,\n    ROUND((s1.steps_count + s2.steps_count + s3.steps_count) / 3.0, 2) AS rolling_average\nFROM Steps s1\nJOIN Steps s2 ON s1.user_id = s2.user_id AND DATEDIFF(s1.steps_date, s2.steps_date) = 1\nJOIN Steps s3 ON s1.user_id = s3.user_id AND DATEDIFF(s1.steps_date, s3.steps_date) = 2\nORDER BY s1.user_id ASC, s1.steps_date ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Three-Way Self Join on Date Difference"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT \n    s1.user_id,\n    s1.steps_date,\n    ROUND((s1.steps_count + s2.steps_count + s3.steps_count) / 3.0, 2) AS rolling_average\nFROM Steps s1\nJOIN Steps s2 ON s1.user_id = s2.user_id AND (s1.steps_date - s2.steps_date) = 1\nJOIN Steps s3 ON s1.user_id = s3.user_id AND (s1.steps_date - s3.steps_date) = 2\nORDER BY s1.user_id ASC, s1.steps_date ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Three-Way Self Join on Date Difference"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef rolling_average(steps: pd.DataFrame) -> pd.DataFrame:\n    steps[\"steps_date\"] = pd.to_datetime(steps[\"steps_date\"])\n    steps = steps.sort_values([\"user_id\", \"steps_date\"])\n    s2 = steps.copy()\n    s2[\"date_plus_1\"] = s2[\"steps_date\"] + pd.Timedelta(days=1)\n    s3 = steps.copy()\n    s3[\"date_plus_2\"] = s3[\"steps_date\"] + pd.Timedelta(days=2)\n    m1 = steps.merge(s2, left_on=[\"user_id\", \"steps_date\"], right_on=[\"user_id\", \"date_plus_1\"], suffixes=(\"\", \"_2\"))\n    m2 = m1.merge(s3, left_on=[\"user_id\", \"steps_date\"], right_on=[\"user_id\", \"date_plus_2\"], suffixes=(\"\", \"_3\"))\n    m2[\"rolling_average\"] = ((m2[\"steps_count\"] + m2[\"steps_count_2\"] + m2[\"steps_count_3\"]) / 3.0).round(2)\n    res = m2[[\"user_id\", \"steps_date\", \"rolling_average\"]].sort_values([\"user_id\", \"steps_date\"])\n    res[\"steps_date\"] = res[\"steps_date\"].dt.strftime(\"%Y-%m-%d\")\n    return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Pandas Merge on Consecutive Calendar Days"
+    }
+  ]
+}

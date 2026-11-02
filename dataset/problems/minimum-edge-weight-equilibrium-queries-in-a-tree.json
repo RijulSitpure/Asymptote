@@ -1,0 +1,81 @@
+{
+  "slug": "minimum-edge-weight-equilibrium-queries-in-a-tree",
+  "number": 2846,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem",
+    "graph-bfs-shortest-path"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Weight Bounded Property",
+      "text": "Edge weights are strictly between 1 and 26, which is small enough to track counts of all weights along tree paths."
+    },
+    {
+      "level": 2,
+      "title": "Path Weight Frequencies via LCA",
+      "text": "For query (u, v), the count of weight w on path u-v is cnt[u][w] + cnt[v][w] - 2 * cnt[lca][w]."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Retained Weight",
+      "text": "To minimize edge changes, pick the edge weight with the maximum frequency along the path, and subtract that maximum from the total path length."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def minOperationsQueries(self, n: int, edges: List[List[int]], queries: List[List[int]]) -> List[int]:\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n        depth = [0] * n\n        up = [[0] * 15 for _ in range(n)]\n        cnt = [[0] * 27 for _ in range(n)]\n        stack = [(0, 0, 0, 0)]\n        visited = [False] * n\n        order = []\n        parent = [0] * n\n        depth[0] = 0\n        visited[0] = True\n        q = [0]\n        while q:\n            u = q.pop(0)\n            order.append(u)\n            for v, w in adj[u]:\n                if not visited[v]:\n                    visited[v] = True\n                    depth[v] = depth[u] + 1\n                    up[v][0] = u\n                    for c in range(1, 27):\n                        cnt[v][c] = cnt[u][c]\n                    cnt[v][w] += 1\n                    q.append(v)\n        for j in range(1, 15):\n            for i in range(n):\n                up[i][j] = up[up[i][j - 1]][j - 1]\n        def get_lca(u, v):\n            if depth[u] < depth[v]:\n                u, v = v, u\n            diff = depth[u] - depth[v]\n            for i in range(15):\n                if (diff >> i) & 1:\n                    u = up[u][i]\n            if u == v:\n                return u\n            for i in range(14, -1, -1):\n                if up[u][i] != up[v][i]:\n                    u = up[u][i]\n                    v = up[v][i]\n            return up[u][0]\n        ans = []\n        for u, v in queries:\n            lca = get_lca(u, v)\n            path_len = depth[u] + depth[v] - 2 * depth[lca]\n            max_freq = 0\n            for w in range(1, 27):\n                c = cnt[u][w] + cnt[v][w] - 2 * cnt[lca][w]\n                if c > max_freq:\n                    max_freq = c\n            ans.append(path_len - max_freq)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((n + q) * log n + q * W)",
+    "space": "O(n * (log n + W))",
+    "variables": [
+      "n: number of tree nodes",
+      "q: number of queries",
+      "W: maximum edge weight (26)"
+    ],
+    "notes": "Binary lifting for LCA queries and constant 26-element prefix weight vectors.",
+    "whyNaiveFails": "Traversing each path linearly per query requires O(q * n), exceeding time limits.",
+    "spaceTimeTradeoff": "O(n * 26) extra memory for root-to-node weight counts.",
+    "interviewerExpectation": "Binary lifting LCA with path frequency decomposition."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minOperationsQueries(self, n: int, edges: List[List[int]], queries: List[List[int]]) -> List[int]:\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n        depth = [0] * n\n        up = [[0] * 15 for _ in range(n)]\n        cnt = [[0] * 27 for _ in range(n)]\n        stack = [(0, 0, 0, 0)]\n        visited = [False] * n\n        order = []\n        parent = [0] * n\n        depth[0] = 0\n        visited[0] = True\n        q = [0]\n        while q:\n            u = q.pop(0)\n            order.append(u)\n            for v, w in adj[u]:\n                if not visited[v]:\n                    visited[v] = True\n                    depth[v] = depth[u] + 1\n                    up[v][0] = u\n                    for c in range(1, 27):\n                        cnt[v][c] = cnt[u][c]\n                    cnt[v][w] += 1\n                    q.append(v)\n        for j in range(1, 15):\n            for i in range(n):\n                up[i][j] = up[up[i][j - 1]][j - 1]\n        def get_lca(u, v):\n            if depth[u] < depth[v]:\n                u, v = v, u\n            diff = depth[u] - depth[v]\n            for i in range(15):\n                if (diff >> i) & 1:\n                    u = up[u][i]\n            if u == v:\n                return u\n            for i in range(14, -1, -1):\n                if up[u][i] != up[v][i]:\n                    u = up[u][i]\n                    v = up[v][i]\n            return up[u][0]\n        ans = []\n        for u, v in queries:\n            lca = get_lca(u, v)\n            path_len = depth[u] + depth[v] - 2 * depth[lca]\n            max_freq = 0\n            for w in range(1, 27):\n                c = cnt[u][w] + cnt[v][w] - 2 * cnt[lca][w]\n                if c > max_freq:\n                    max_freq = c\n            ans.append(path_len - max_freq)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "LCA with Binary Lifting and Weight Prefix Arrays"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> minOperationsQueries(int n, vector<vector<int>>& edges, vector<vector<int>>& queries) {\n        vector<vector<pair<int, int>>> adj(n);\n        for (auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            adj[e[1]].push_back({e[0], e[2]});\n        }\n        vector<int> depth(n, 0);\n        vector<vector<int>> up(n, vector<int>(15, 0));\n        vector<vector<int>> cnt(n, vector<int>(27, 0));\n        vector<int> q = {0};\n        vector<bool> vis(n, false);\n        vis[0] = true;\n        int head = 0;\n        while (head < q.size()) {\n            int u = q[head++];\n            for (auto& edge : adj[u]) {\n                int v = edge.first, w = edge.second;\n                if (!vis[v]) {\n                    vis[v] = true;\n                    depth[v] = depth[u] + 1;\n                    up[v][0] = u;\n                    cnt[v] = cnt[u];\n                    cnt[v][w]++;\n                    q.push_back(v);\n                }\n            }\n        }\n        for (int j = 1; j < 15; j++) {\n            for (int i = 0; i < n; i++) {\n                up[i][j] = up[up[i][j - 1]][j - 1];\n            }\n        }\n        auto get_lca = [&](int u, int v) {\n            if (depth[u] < depth[v]) swap(u, v);\n            int diff = depth[u] - depth[v];\n            for (int i = 0; i < 15; i++) if ((diff >> i) & 1) u = up[u][i];\n            if (u == v) return u;\n            for (int i = 14; i >= 0; i--) {\n                if (up[u][i] != up[v][i]) {\n                    u = up[u][i];\n                    v = up[v][i];\n                }\n            }\n            return up[u][0];\n        };\n        vector<int> ans;\n        ans.reserve(queries.size());\n        for (auto& qry : queries) {\n            int u = qry[0], v = qry[1];\n            int lca = get_lca(u, v);\n            int path_len = depth[u] + depth[v] - 2 * depth[lca];\n            int max_freq = 0;\n            for (int w = 1; w <= 26; w++) {\n                int c = cnt[u][w] + cnt[v][w] - 2 * cnt[lca][w];\n                max_freq = max(max_freq, c);\n            }\n            ans.push_back(path_len - max_freq);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "LCA with Binary Lifting and Weight Prefix Arrays"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[] minOperationsQueries(int n, int[][] edges, int[][] queries) {\n        List<int[]>[] adj = new ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(new int[]{e[1], e[2]});\n            adj[e[1]].add(new int[]{e[0], e[2]});\n        }\n        int[] depth = new int[n];\n        int[][] up = new int[n][15];\n        int[][] cnt = new int[n][27];\n        boolean[] vis = new boolean[n];\n        Queue<Integer> q = new LinkedList<>();\n        q.add(0);\n        vis[0] = true;\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            for (int[] edge : adj[u]) {\n                int v = edge[0], w = edge[1];\n                if (!vis[v]) {\n                    vis[v] = true;\n                    depth[v] = depth[u] + 1;\n                    up[v][0] = u;\n                    System.arraycopy(cnt[u], 0, cnt[v], 0, 27);\n                    cnt[v][w]++;\n                    q.add(v);\n                }\n            }\n        }\n        for (int j = 1; j < 15; j++) {\n            for (int i = 0; i < n; i++) {\n                up[i][j] = up[up[i][j - 1]][j - 1];\n            }\n        }\n        int[] ans = new int[queries.length];\n        for (int qi = 0; qi < queries.length; qi++) {\n            int u = queries[qi][0], v = queries[qi][1];\n            int lca = getLca(u, v, depth, up);\n            int pathLen = depth[u] + depth[v] - 2 * depth[lca];\n            int maxFreq = 0;\n            for (int w = 1; w <= 26; w++) {\n                int c = cnt[u][w] + cnt[v][w] - 2 * cnt[lca][w];\n                maxFreq = Math.max(maxFreq, c);\n            }\n            ans[qi] = pathLen - maxFreq;\n        }\n        return ans;\n    }\n    private int getLca(int u, int v, int[] depth, int[][] up) {\n        if (depth[u] < depth[v]) { int t = u; u = v; v = t; }\n        int diff = depth[u] - depth[v];\n        for (int i = 0; i < 15; i++) if (((diff >> i) & 1) == 1) u = up[u][i];\n        if (u == v) return u;\n        for (int i = 14; i >= 0; i--) {\n            if (up[u][i] != up[v][i]) {\n                u = up[u][i];\n                v = up[v][i];\n            }\n        }\n        return up[u][0];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "LCA with Binary Lifting and Weight Prefix Arrays"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number[][]} queries\n * @return {number[]}\n */\nvar minOperationsQueries = function(n, edges, queries) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        adj[u].push([v, w]);\n        adj[v].push([u, w]);\n    }\n    const depth = new Int32Array(n);\n    const up = Array.from({ length: n }, () => new Int32Array(15));\n    const cnt = Array.from({ length: n }, () => new Int32Array(27));\n    const q = [0];\n    const vis = new Uint8Array(n);\n    vis[0] = 1;\n    let head = 0;\n    while (head < q.length) {\n        const u = q[head++];\n        for (const [v, w] of adj[u]) {\n            if (!vis[v]) {\n                vis[v] = 1;\n                depth[v] = depth[u] + 1;\n                up[v][0] = u;\n                cnt[v].set(cnt[u]);\n                cnt[v][w]++;\n                q.push(v);\n            }\n        }\n    }\n    for (let j = 1; j < 15; j++) {\n        for (let i = 0; i < n; i++) {\n            up[i][j] = up[up[i][j - 1]][j - 1];\n        }\n    }\n    const getLca = (u, v) => {\n        if (depth[u] < depth[v]) { const t = u; u = v; v = t; }\n        const diff = depth[u] - depth[v];\n        for (let i = 0; i < 15; i++) if ((diff >> i) & 1) u = up[u][i];\n        if (u === v) return u;\n        for (let i = 14; i >= 0; i--) {\n            if (up[u][i] !== up[v][i]) {\n                u = up[u][i];\n                v = up[v][i];\n            }\n        }\n        return up[u][0];\n    };\n    const ans = [];\n    for (const [u, v] of queries) {\n        const lca = getLca(u, v);\n        const pathLen = depth[u] + depth[v] - 2 * depth[lca];\n        let maxFreq = 0;\n        for (let w = 1; w <= 26; w++) {\n            const c = cnt[u][w] + cnt[v][w] - 2 * cnt[lca][w];\n            if (c > maxFreq) maxFreq = c;\n        }\n        ans.push(pathLen - maxFreq);\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "LCA with Binary Lifting and Weight Prefix Arrays"
+    }
+  ]
+}

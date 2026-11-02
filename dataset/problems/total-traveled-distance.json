@@ -1,0 +1,73 @@
+{
+  "slug": "total-traveled-distance",
+  "number": 2837,
+  "category": "Database",
+  "patterns": [
+    "join-filter",
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Preserve All Users",
+      "text": "Users who have taken no rides must still appear in the output with a distance of 0."
+    },
+    {
+      "level": 2,
+      "title": "Outer Join and Sum",
+      "text": "Perform a left join from Users to Rides on user_id."
+    },
+    {
+      "level": 3,
+      "title": "Null Coalescing",
+      "text": "Aggregate distance with sum, wrapping it in coalesce to replace null with 0, and order by user_id ascending."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nSELECT \n    u.user_id,\n    u.name,\n    COALESCE(SUM(r.distance), 0) AS `traveled distance`\nFROM Users u\nLEFT JOIN Rides r ON u.user_id = r.user_id\nGROUP BY u.user_id, u.name\nORDER BY u.user_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(U + R log U)",
+    "space": "O(U + R)",
+    "variables": [
+      "U: number of users",
+      "R: number of rides"
+    ],
+    "notes": "Left join followed by grouping on user_id and sort.",
+    "whyNaiveFails": "Inner join omits users with zero rides, violating the specification.",
+    "spaceTimeTradeoff": "O(U) hash table state for aggregation.",
+    "interviewerExpectation": "Use LEFT JOIN and COALESCE to handle users without rides."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT \n    u.user_id,\n    u.name,\n    COALESCE(SUM(r.distance), 0) AS `traveled distance`\nFROM Users u\nLEFT JOIN Rides r ON u.user_id = r.user_id\nGROUP BY u.user_id, u.name\nORDER BY u.user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "LEFT JOIN with COALESCE Aggregation"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT \n    u.user_id,\n    u.name,\n    COALESCE(SUM(r.distance), 0) AS \"traveled distance\"\nFROM Users u\nLEFT JOIN Rides r ON u.user_id = r.user_id\nGROUP BY u.user_id, u.name\nORDER BY u.user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "LEFT JOIN with COALESCE Aggregation"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef get_total_distance(users: pd.DataFrame, rides: pd.DataFrame) -> pd.DataFrame:\n    merged = users.merge(rides, on=\"user_id\", how=\"left\")\n    merged[\"distance\"] = merged[\"distance\"].fillna(0)\n    res = merged.groupby([\"user_id\", \"name\"])[[\"distance\"]].sum().reset_index()\n    res = res.rename(columns={\"distance\": \"traveled distance\"})\n    return res.sort_values(\"user_id\")",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Merge and Groupby Sum"
+    }
+  ]
+}
