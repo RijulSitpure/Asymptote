@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-balanced-subsequence-sum",
+  "number": 2926,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick",
+    "dp-lis"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Algebraic Invariant Transformation",
+      "text": "The condition nums[i_j] - nums[i_k] >= i_j - i_k for i_j > i_k rearranges to nums[i_j] - i_j >= nums[i_k] - i_k."
+    },
+    {
+      "level": 2,
+      "title": "LIS with Value Accumulation",
+      "text": "Let key[i] = nums[i] - i. We need to find an increasing subsequence of keys that maximizes the sum of chosen nums values."
+    },
+    {
+      "level": 3,
+      "title": "Fenwick Tree over Coordinate Compression",
+      "text": "Coordinate compress unique key values. Maintain a Fenwick tree to query the maximum DP sum for all keys <= key[i]."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def maxBalancedSubsequenceSum(self, nums: List[int]) -> int:\n        n = len(nums)\n        keys = [nums[i] - i for i in range(n)]\n        sorted_keys = sorted(set(keys))\n        rank = {val: i + 1 for i, val in enumerate(sorted_keys)}\n        m = len(sorted_keys)\n        bit = [-float('inf')] * (m + 1)\n        \n        def update(idx, val):\n            while idx <= m:\n                if val > bit[idx]:\n                    bit[idx] = val\n                idx += idx & (-idx)\n                \n        def query(idx):\n            res = -float('inf')\n            while idx > 0:\n                if bit[idx] > res:\n                    res = bit[idx]\n                idx -= idx & (-idx)\n            return res\n            \n        ans = -float('inf')\n        for i in range(n):\n            r = rank[keys[i]]\n            prev_best = query(r)\n            curr = max(nums[i], prev_best + nums[i])\n            if curr > ans:\n                ans = curr\n            update(r, curr)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums array"
+    ],
+    "notes": "Coordinate compression and Fenwick tree prefix maximum queries.",
+    "whyNaiveFails": "O(n^2) standard LIS DP times out for n = 10^5.",
+    "spaceTimeTradeoff": "O(n) Fenwick tree storage.",
+    "interviewerExpectation": "Transform indexing inequality into 1D non-decreasing key condition."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maxBalancedSubsequenceSum(self, nums: List[int]) -> int:\n        n = len(nums)\n        keys = [nums[i] - i for i in range(n)]\n        sorted_keys = sorted(set(keys))\n        rank = {val: i + 1 for i, val in enumerate(sorted_keys)}\n        m = len(sorted_keys)\n        bit = [-float('inf')] * (m + 1)\n        \n        def update(idx, val):\n            while idx <= m:\n                if val > bit[idx]:\n                    bit[idx] = val\n                idx += idx & (-idx)\n                \n        def query(idx):\n            res = -float('inf')\n            while idx > 0:\n                if bit[idx] > res:\n                    res = bit[idx]\n                idx -= idx & (-idx)\n            return res\n            \n        ans = -float('inf')\n        for i in range(n):\n            r = rank[keys[i]]\n            prev_best = query(r)\n            curr = max(nums[i], prev_best + nums[i])\n            if curr > ans:\n                ans = curr\n            update(r, curr)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Coordinate Compression and Fenwick Tree Prefix Max"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    long long maxBalancedSubsequenceSum(vector<int>& nums) {\n        int n = nums.size();\n        vector<long long> keys(n);\n        for (int i = 0; i < n; i++) keys[i] = (long long) nums[i] - i;\n        vector<long long> sorted_keys = keys;\n        sort(sorted_keys.begin(), sorted_keys.end());\n        sorted_keys.erase(unique(sorted_keys.begin(), sorted_keys.end()), sorted_keys.end());\n        int m = sorted_keys.size();\n        vector<long long> bit(m + 1, -1e18);\n        auto update = [&](int idx, long long val) {\n            for (; idx <= m; idx += idx & (-idx)) bit[idx] = max(bit[idx], val);\n        };\n        auto query = [&](int idx) {\n            long long res = -1e18;\n            for (; idx > 0; idx -= idx & (-idx)) res = max(res, bit[idx]);\n            return res;\n        };\n        long long ans = -1e18;\n        for (int i = 0; i < n; i++) {\n            int r = lower_bound(sorted_keys.begin(), sorted_keys.end(), keys[i]) - sorted_keys.begin() + 1;\n            long long prev = query(r);\n            long long curr = max((long long) nums[i], prev + nums[i]);\n            ans = max(ans, curr);\n            update(r, curr);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Coordinate Compression and Fenwick Tree Prefix Max"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public long maxBalancedSubsequenceSum(int[] nums) {\n        int n = nums.length;\n        long[] keys = new long[n];\n        for (int i = 0; i < n; i++) keys[i] = (long) nums[i] - i;\n        long[] sortedKeys = keys.clone();\n        Arrays.sort(sortedKeys);\n        int m = 0;\n        for (int i = 0; i < n; i++) {\n            if (i == 0 || sortedKeys[i] != sortedKeys[i - 1]) {\n                sortedKeys[m++] = sortedKeys[i];\n            }\n        }\n        long[] bit = new long[m + 1];\n        Arrays.fill(bit, Long.MIN_VALUE / 2);\n        long ans = Long.MIN_VALUE;\n        for (int i = 0; i < n; i++) {\n            int r = Arrays.binarySearch(sortedKeys, 0, m, keys[i]) + 1;\n            long prev = Long.MIN_VALUE / 2;\n            for (int idx = r; idx > 0; idx -= idx & (-idx)) prev = Math.max(prev, bit[idx]);\n            long curr = Math.max((long) nums[i], prev + nums[i]);\n            ans = Math.max(ans, curr);\n            for (int idx = r; idx <= m; idx += idx & (-idx)) bit[idx] = Math.max(bit[idx], curr);\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Coordinate Compression and Fenwick Tree Prefix Max"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar maxBalancedSubsequenceSum = function(nums) {\n    const n = nums.length;\n    const keys = new Array(n);\n    for (let i = 0; i < n; i++) keys[i] = BigInt(nums[i] - i);\n    const sortedKeys = Array.from(new Set(keys)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));\n    const m = sortedKeys.length;\n    const bit = new BigInt64Array(m + 1).fill(-1000000000000000000n);\n    function query(idx) {\n        let res = -1000000000000000000n;\n        for (; idx > 0; idx -= idx & (-idx)) {\n            if (bit[idx] > res) res = bit[idx];\n        }\n        return res;\n    }\n    function update(idx, val) {\n        for (; idx <= m; idx += idx & (-idx)) {\n            if (val > bit[idx]) bit[idx] = val;\n        }\n    }\n    let ans = -1000000000000000000n;\n    for (let i = 0; i < n; i++) {\n        let lo = 0, hi = m - 1, r = 1;\n        while (lo <= hi) {\n            const mid = (lo + hi) >> 1;\n            if (sortedKeys[mid] >= keys[i]) {\n                r = mid + 1;\n                hi = mid - 1;\n            } else lo = mid + 1;\n        }\n        const prev = query(r);\n        const numVal = BigInt(nums[i]);\n        const curr = (numVal > prev + numVal) ? numVal : prev + numVal;\n        if (curr > ans) ans = curr;\n        update(r, curr);\n    }\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Coordinate Compression and Fenwick Tree Prefix Max"
+    }
+  ]
+}

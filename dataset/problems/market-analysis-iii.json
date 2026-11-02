@@ -1,0 +1,72 @@
+{
+  "slug": "market-analysis-iii",
+  "number": 2922,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate",
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Table Relationships",
+      "text": "Join Orders with Users on seller_id and with Items on item_id to inspect the sold item's brand against the seller's favorite brand."
+    },
+    {
+      "level": 2,
+      "title": "Brand Mismatch Filtering",
+      "text": "Filter out items where item_brand matches favorite_brand."
+    },
+    {
+      "level": 3,
+      "title": "Unique Item Aggregation",
+      "text": "Group by seller_id, count distinct item_id, and filter for sellers achieving the maximum count."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nWITH RankedSellers AS (\n    SELECT \n        o.seller_id,\n        COUNT(DISTINCT o.item_id) AS num_items,\n        DENSE_RANK() OVER (ORDER BY COUNT(DISTINCT o.item_id) DESC) AS rk\n    FROM Orders o\n    JOIN Users u ON o.seller_id = u.seller_id\n    JOIN Items i ON o.item_id = i.item_id\n    WHERE i.item_brand <> u.favorite_brand\n    GROUP BY o.seller_id\n)\nSELECT \n    seller_id,\n    num_items\nFROM RankedSellers\nWHERE rk = 1\nORDER BY seller_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total records in Orders table"
+    ],
+    "notes": "Hash join and distinct aggregation followed by top count filtration.",
+    "whyNaiveFails": "Correlated subqueries per seller lead to quadratic runtime.",
+    "spaceTimeTradeoff": "O(N) memory for aggregation hash tables.",
+    "interviewerExpectation": "Use CTE or window ranking to handle ties at maximum count gracefully."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RankedSellers AS (\n    SELECT \n        o.seller_id,\n        COUNT(DISTINCT o.item_id) AS num_items,\n        DENSE_RANK() OVER (ORDER BY COUNT(DISTINCT o.item_id) DESC) AS rk\n    FROM Orders o\n    JOIN Users u ON o.seller_id = u.seller_id\n    JOIN Items i ON o.item_id = i.item_id\n    WHERE i.item_brand <> u.favorite_brand\n    GROUP BY o.seller_id\n)\nSELECT \n    seller_id,\n    num_items\nFROM RankedSellers\nWHERE rk = 1\nORDER BY seller_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Window Dense Rank CTE Aggregation"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RankedSellers AS (\n    SELECT \n        o.seller_id,\n        COUNT(DISTINCT o.item_id) AS num_items,\n        DENSE_RANK() OVER (ORDER BY COUNT(DISTINCT o.item_id) DESC) AS rk\n    FROM Orders o\n    JOIN Users u ON o.seller_id = u.seller_id\n    JOIN Items i ON o.item_id = i.item_id\n    WHERE i.item_brand <> u.favorite_brand\n    GROUP BY o.seller_id\n)\nSELECT \n    seller_id,\n    num_items\nFROM RankedSellers\nWHERE rk = 1\nORDER BY seller_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Window Dense Rank CTE Aggregation"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef market_analysis_iii(orders: pd.DataFrame, users: pd.DataFrame, items: pd.DataFrame) -> pd.DataFrame:\n    merged = orders.merge(users, on='seller_id').merge(items, on='item_id')\n    filtered = merged[merged['item_brand'] != merged['favorite_brand']]\n    if filtered.empty:\n        return pd.DataFrame(columns=['seller_id', 'num_items'])\n    grouped = filtered.groupby('seller_id')['item_id'].nunique().reset_index()\n    grouped.rename(columns={'item_id': 'num_items'}, inplace=True)\n    max_items = grouped['num_items'].max()\n    res = grouped[grouped['num_items'] == max_items].sort_values('seller_id')\n    return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Pandas Merges and Groupby Unique Count"
+    }
+  ]
+}

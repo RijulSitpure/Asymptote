@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-profitable-triplets-with-increasing-prices-ii",
+  "number": 2921,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick",
+    "dp-lis"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Middle Element Anchoring",
+      "text": "Anchor the middle index j. We need the maximum profits[i] where i < j and prices[i] < prices[j], and the maximum profits[k] where k > j and prices[k] > prices[j]."
+    },
+    {
+      "level": 2,
+      "title": "Prefix and Suffix Binary Indexed Trees",
+      "text": "Maintain a Fenwick tree (Binary Indexed Tree) for prefix maximums over price values to find the best left profit."
+    },
+    {
+      "level": 3,
+      "title": "Suffix Sweep",
+      "text": "Scan from right to left with a second Fenwick tree (querying prices > prices[j]) to find the best right profit."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def maxProfit(self, prices: List[int], profits: List[int]) -> int:\n        n = len(prices)\n        m = max(prices) + 1\n        bit_left = [0] * (m + 2)\n        \n        def update_left(idx, val):\n            while idx < len(bit_left):\n                if val > bit_left[idx]:\n                    bit_left[idx] = val\n                idx += idx & (-idx)\n                \n        def query_left(idx):\n            res = 0\n            while idx > 0:\n                if bit_left[idx] > res:\n                    res = bit_left[idx]\n                idx -= idx & (-idx)\n            return res\n            \n        left_max = [0] * n\n        for i in range(n):\n            best = query_left(prices[i] - 1)\n            left_max[i] = best\n            update_left(prices[i], profits[i])\n            \n        bit_right = [0] * (m + 2)\n        \n        def update_right(idx, val):\n            while idx > 0:\n                if val > bit_right[idx]:\n                    bit_right[idx] = val\n                idx -= idx & (-idx)\n                \n        def query_right(idx):\n            res = 0\n            while idx < len(bit_right):\n                if bit_right[idx] > res:\n                    res = bit_right[idx]\n                idx += idx & (-idx)\n            return res\n            \n        right_max = [0] * n\n        for i in range(n - 1, -1, -1):\n            best = query_right(prices[i] + 1)\n            right_max[i] = best\n            update_right(prices[i], profits[i])\n            \n        ans = -1\n        for j in range(n):\n            if left_max[j] > 0 and right_max[j] > 0:\n                total = left_max[j] + profits[j] + right_max[j]\n                if total > ans:\n                    ans = total\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log M)",
+    "space": "O(M)",
+    "variables": [
+      "n: length of prices array",
+      "M: maximum price value"
+    ],
+    "notes": "Two sweeps using Fenwick trees querying range maximum profits.",
+    "whyNaiveFails": "O(n^2) nested scans exceed time limits for n = 10^5.",
+    "spaceTimeTradeoff": "O(M) space for Fenwick trees.",
+    "interviewerExpectation": "Use Fenwick tree or coordinate-compressed segment tree for prefix/suffix point updates."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maxProfit(self, prices: List[int], profits: List[int]) -> int:\n        n = len(prices)\n        m = max(prices) + 1\n        bit_left = [0] * (m + 2)\n        \n        def update_left(idx, val):\n            while idx < len(bit_left):\n                if val > bit_left[idx]:\n                    bit_left[idx] = val\n                idx += idx & (-idx)\n                \n        def query_left(idx):\n            res = 0\n            while idx > 0:\n                if bit_left[idx] > res:\n                    res = bit_left[idx]\n                idx -= idx & (-idx)\n            return res\n            \n        left_max = [0] * n\n        for i in range(n):\n            best = query_left(prices[i] - 1)\n            left_max[i] = best\n            update_left(prices[i], profits[i])\n            \n        bit_right = [0] * (m + 2)\n        \n        def update_right(idx, val):\n            while idx > 0:\n                if val > bit_right[idx]:\n                    bit_right[idx] = val\n                idx -= idx & (-idx)\n                \n        def query_right(idx):\n            res = 0\n            while idx < len(bit_right):\n                if bit_right[idx] > res:\n                    res = bit_right[idx]\n                idx += idx & (-idx)\n            return res\n            \n        right_max = [0] * n\n        for i in range(n - 1, -1, -1):\n            best = query_right(prices[i] + 1)\n            right_max[i] = best\n            update_right(prices[i], profits[i])\n            \n        ans = -1\n        for j in range(n):\n            if left_max[j] > 0 and right_max[j] > 0:\n                total = left_max[j] + profits[j] + right_max[j]\n                if total > ans:\n                    ans = total\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Dual Fenwick Trees Prefix and Suffix Max Sweeps"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int maxProfit(vector<int>& prices, vector<int>& profits) {\n        int n = prices.size();\n        int m = *max_element(prices.begin(), prices.end()) + 1;\n        vector<int> bit_left(m + 2, 0);\n        auto update_left = [&](int idx, int val) {\n            for (; idx < bit_left.size(); idx += idx & (-idx))\n                bit_left[idx] = max(bit_left[idx], val);\n        };\n        auto query_left = [&](int idx) {\n            int res = 0;\n            for (; idx > 0; idx -= idx & (-idx))\n                res = max(res, bit_left[idx]);\n            return res;\n        };\n        vector<int> left_max(n, 0);\n        for (int i = 0; i < n; i++) {\n            left_max[i] = query_left(prices[i] - 1);\n            update_left(prices[i], profits[i]);\n        }\n        vector<int> bit_right(m + 2, 0);\n        auto update_right = [&](int idx, int val) {\n            for (; idx > 0; idx -= idx & (-idx))\n                bit_right[idx] = max(bit_right[idx], val);\n        };\n        auto query_right = [&](int idx) {\n            int res = 0;\n            for (; idx < bit_right.size(); idx += idx & (-idx))\n                res = max(res, bit_right[idx]);\n            return res;\n        };\n        vector<int> right_max(n, 0);\n        for (int i = n - 1; i >= 0; i--) {\n            right_max[i] = query_right(prices[i] + 1);\n            update_right(prices[i], profits[i]);\n        }\n        int ans = -1;\n        for (int j = 0; j < n; j++) {\n            if (left_max[j] > 0 && right_max[j] > 0) {\n                ans = max(ans, left_max[j] + profits[j] + right_max[j]);\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Dual Fenwick Trees Prefix and Suffix Max Sweeps"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int maxProfit(int[] prices, int[] profits) {\n        int n = prices.length;\n        int m = 0;\n        for (int p : prices) if (p > m) m = p;\n        m += 1;\n        int[] bitLeft = new int[m + 2];\n        int[] leftMax = new int[n];\n        for (int i = 0; i < n; i++) {\n            int p = prices[i] - 1;\n            int res = 0;\n            for (int idx = p; idx > 0; idx -= idx & (-idx)) res = Math.max(res, bitLeft[idx]);\n            leftMax[i] = res;\n            for (int idx = prices[i]; idx < bitLeft.length; idx += idx & (-idx)) bitLeft[idx] = Math.max(bitLeft[idx], profits[i]);\n        }\n        int[] bitRight = new int[m + 2];\n        int[] rightMax = new int[n];\n        for (int i = n - 1; i >= 0; i--) {\n            int p = prices[i] + 1;\n            int res = 0;\n            for (int idx = p; idx < bitRight.length; idx += idx & (-idx)) res = Math.max(res, bitRight[idx]);\n            rightMax[i] = res;\n            for (int idx = prices[i]; idx > 0; idx -= idx & (-idx)) bitRight[idx] = Math.max(bitRight[idx], profits[i]);\n        }\n        int ans = -1;\n        for (int j = 0; j < n; j++) {\n            if (leftMax[j] > 0 && rightMax[j] > 0) {\n                int total = leftMax[j] + profits[j] + rightMax[j];\n                if (total > ans) ans = total;\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Dual Fenwick Trees Prefix and Suffix Max Sweeps"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} prices\n * @param {number[]} profits\n * @return {number}\n */\nvar maxProfit = function(prices, profits) {\n    const n = prices.length;\n    let m = 0;\n    for (const p of prices) if (p > m) m = p;\n    m += 1;\n    const bitLeft = new Int32Array(m + 2);\n    const leftMax = new Int32Array(n);\n    for (let i = 0; i < n; i++) {\n        let res = 0;\n        for (let idx = prices[i] - 1; idx > 0; idx -= idx & (-idx)) {\n            if (bitLeft[idx] > res) res = bitLeft[idx];\n        }\n        leftMax[i] = res;\n        for (let idx = prices[i]; idx < bitLeft.length; idx += idx & (-idx)) {\n            if (profits[i] > bitLeft[idx]) bitLeft[idx] = profits[i];\n        }\n    }\n    const bitRight = new Int32Array(m + 2);\n    const rightMax = new Int32Array(n);\n    for (let i = n - 1; i >= 0; i--) {\n        let res = 0;\n        for (let idx = prices[i] + 1; idx < bitRight.length; idx += idx & (-idx)) {\n            if (bitRight[idx] > res) res = bitRight[idx];\n        }\n        rightMax[i] = res;\n        for (let idx = prices[i]; idx > 0; idx -= idx & (-idx)) {\n            if (profits[i] > bitRight[idx]) bitRight[idx] = profits[i];\n        }\n    }\n    let ans = -1;\n    for (let j = 0; j < n; j++) {\n        if (leftMax[j] > 0 && rightMax[j] > 0) {\n            const total = leftMax[j] + profits[j] + rightMax[j];\n            if (total > ans) ans = total;\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Dual Fenwick Trees Prefix and Suffix Max Sweeps"
+    }
+  ]
+}

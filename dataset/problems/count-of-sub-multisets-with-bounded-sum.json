@@ -1,0 +1,80 @@
+{
+  "slug": "count-of-sub-multisets-with-bounded-sum",
+  "number": 2902,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-knapsack-variants",
+    "sliding-window-fixed"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Zero Multiplicity",
+      "text": "Zeros add nothing to the sum, so if there are c zeros in nums, every valid sub-multiset can include between 0 and c zeros, multiplying ways by c + 1."
+    },
+    {
+      "level": 2,
+      "title": "Distinct Items Bounded Knapsack",
+      "text": "Group identical positive numbers. Distinct non-zero values sum to at most sum(nums), limiting distinct count to at most sqrt(2 * sum)."
+    },
+    {
+      "level": 3,
+      "title": "Sliding Window Optimization",
+      "text": "For each distinct value x with frequency c, use a sliding window over residue classes modulo x to update dp[j] in O(r) time."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def countSubMultisets(self, nums: List[int], l: int, r: int) -> int:\n        mod = 10**9 + 7\n        cnt = Counter(nums)\n        dp = [0] * (r + 1)\n        dp[0] = 1\n        for x, c in cnt.items():\n            if x == 0:\n                continue\n            new_dp = [0] * (r + 1)\n            for rem in range(x):\n                window_sum = 0\n                for j in range(rem, r + 1, x):\n                    window_sum = (window_sum + dp[j]) % mod\n                    if j - (c + 1) * x >= 0:\n                        window_sum = (window_sum - dp[j - (c + 1) * x] + mod) % mod\n                    new_dp[j] = window_sum\n            dp = new_dp\n        ans = sum(dp[l:r + 1]) % mod\n        ans = (ans * (cnt[0] + 1)) % mod\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(r * sqrt(sum))",
+    "space": "O(r)",
+    "variables": [
+      "r: upper bound on sum",
+      "sum: sum of elements in nums"
+    ],
+    "notes": "Bounded knapsack using residue class sliding window prefix sums.",
+    "whyNaiveFails": "Standard 0/1 knapsack takes O(n * r), which times out for large n.",
+    "spaceTimeTradeoff": "O(r) memory for DP table.",
+    "interviewerExpectation": "Apply bounded knapsack sliding window optimization over distinct values."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def countSubMultisets(self, nums: List[int], l: int, r: int) -> int:\n        mod = 10**9 + 7\n        cnt = Counter(nums)\n        dp = [0] * (r + 1)\n        dp[0] = 1\n        for x, c in cnt.items():\n            if x == 0:\n                continue\n            new_dp = [0] * (r + 1)\n            for rem in range(x):\n                window_sum = 0\n                for j in range(rem, r + 1, x):\n                    window_sum = (window_sum + dp[j]) % mod\n                    if j - (c + 1) * x >= 0:\n                        window_sum = (window_sum - dp[j - (c + 1) * x] + mod) % mod\n                    new_dp[j] = window_sum\n            dp = new_dp\n        ans = sum(dp[l:r + 1]) % mod\n        ans = (ans * (cnt[0] + 1)) % mod\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Bounded Knapsack with Residue Window DP"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int countSubMultisets(vector<int>& nums, int l, int r) {\n        long long mod = 1e9 + 7;\n        unordered_map<int, int> cnt;\n        for (int x : nums) cnt[x]++;\n        vector<long long> dp(r + 1, 0);\n        dp[0] = 1;\n        for (const auto& [x, c] : cnt) {\n            if (x == 0) continue;\n            vector<long long> next_dp(r + 1, 0);\n            for (int rem = 0; rem < x; rem++) {\n                long long window_sum = 0;\n                for (int j = rem; j <= r; j += x) {\n                    window_sum = (window_sum + dp[j]) % mod;\n                    if (j - 1LL * (c + 1) * x >= 0) {\n                        window_sum = (window_sum - dp[j - (c + 1) * x] + mod) % mod;\n                    }\n                    next_dp[j] = window_sum;\n                }\n            }\n            dp = move(next_dp);\n        }\n        long long ans = 0;\n        for (int i = l; i <= r; i++) ans = (ans + dp[i]) % mod;\n        ans = (ans * (cnt[0] + 1)) % mod;\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Bounded Knapsack with Residue Window DP"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int countSubMultisets(List<Integer> nums, int l, int r) {\n        long mod = 1_000_000_007L;\n        Map<Integer, Integer> cnt = new HashMap<>();\n        for (int x : nums) cnt.put(x, cnt.getOrDefault(x, 0) + 1);\n        long[] dp = new long[r + 1];\n        dp[0] = 1;\n        for (Map.Entry<Integer, Integer> entry : cnt.entrySet()) {\n            int x = entry.getKey(), c = entry.getValue();\n            if (x == 0) continue;\n            long[] nextDp = new long[r + 1];\n            for (int rem = 0; rem < x; rem++) {\n                long windowSum = 0;\n                for (int j = rem; j <= r; j += x) {\n                    windowSum = (windowSum + dp[j]) % mod;\n                    if (j - (long) (c + 1) * x >= 0) {\n                        windowSum = (windowSum - dp[j - (c + 1) * x] + mod) % mod;\n                    }\n                    nextDp[j] = windowSum;\n                }\n            }\n            dp = nextDp;\n        }\n        long ans = 0;\n        for (int i = l; i <= r; i++) ans = (ans + dp[i]) % mod;\n        ans = (ans * (cnt.getOrDefault(0, 0) + 1)) % mod;\n        return (int) ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Bounded Knapsack with Residue Window DP"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} l\n * @param {number} r\n * @return {number}\n */\nvar countSubMultisets = function(nums, l, r) {\n    const mod = 1000000007n;\n    const cnt = new Map();\n    for (const x of nums) cnt.set(x, (cnt.get(x) || 0) + 1);\n    let dp = new BigInt64Array(r + 1);\n    dp[0] = 1n;\n    for (const [x, c] of cnt.entries()) {\n        if (x === 0) continue;\n        const nextDp = new BigInt64Array(r + 1);\n        const limit = (c + 1) * x;\n        for (let rem = 0; rem < x; rem++) {\n            let windowSum = 0n;\n            for (let j = rem; j <= r; j += x) {\n                windowSum = (windowSum + dp[j]) % mod;\n                if (j >= limit) {\n                    windowSum = (windowSum - dp[j - limit] + mod) % mod;\n                }\n                nextDp[j] = windowSum;\n            }\n        }\n        dp = nextDp;\n    }\n    let ans = 0n;\n    for (let i = l; i <= r; i++) ans = (ans + dp[i]) % mod;\n    const zeros = BigInt(cnt.get(0) || 0);\n    ans = (ans * (zeros + 1n)) % mod;\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Bounded Knapsack with Residue Window DP"
+    }
+  ]
+}

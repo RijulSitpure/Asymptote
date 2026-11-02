@@ -1,0 +1,79 @@
+{
+  "slug": "subarrays-distinct-element-sum-of-squares-ii",
+  "number": 2916,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick",
+    "hash-map-lookup"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Right Endpoint Sweepline",
+      "text": "Fix the right endpoint r from 0 to n - 1. For left endpoints l in [last_pos + 1, r], distinct count c_l increments by 1."
+    },
+    {
+      "level": 2,
+      "title": "Algebraic Square Expansion",
+      "text": "When incrementing c_l by 1, (c_l + 1)^2 expands to c_l^2 + 2 * c_l + 1. The sum of squares increases by 2 * sum(c_l) + len."
+    },
+    {
+      "level": 3,
+      "title": "Segment Tree with Lazy Tags",
+      "text": "Maintain both sum(c_l) and sum(c_l^2) in each segment tree node, propagating lazy increment tags."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def sumCounts(self, nums: List[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(nums)\n        tree_sum = [0] * (4 * n)\n        tree_sq = [0] * (4 * n)\n        lazy = [0] * (4 * n)\n        \n        def apply(node, l, r, v):\n            length = r - l + 1\n            tree_sq[node] = (tree_sq[node] + 2 * v * tree_sum[node] + length * v * v) % MOD\n            tree_sum[node] = (tree_sum[node] + length * v) % MOD\n            lazy[node] = (lazy[node] + v) % MOD\n            \n        def push_down(node, l, r):\n            if lazy[node] != 0:\n                mid = (l + r) // 2\n                apply(2 * node, l, mid, lazy[node])\n                apply(2 * node + 1, mid + 1, r, lazy[node])\n                lazy[node] = 0\n                \n        def update(node, l, r, ql, qr, v):\n            if ql <= l and r <= qr:\n                apply(node, l, r, v)\n                return\n            push_down(node, l, r)\n            mid = (l + r) // 2\n            if ql <= mid:\n                update(2 * node, l, mid, ql, qr, v)\n            if qr > mid:\n                update(2 * node + 1, mid + 1, r, ql, qr, v)\n            tree_sum[node] = (tree_sum[2 * node] + tree_sum[2 * node + 1]) % MOD\n            tree_sq[node] = (tree_sq[2 * node] + tree_sq[2 * node + 1]) % MOD\n            \n        last_seen = {}\n        total = 0\n        for r, x in enumerate(nums):\n            l = last_seen[x] + 1 if x in last_seen else 0\n            update(1, 0, n - 1, l, r, 1)\n            total = (total + tree_sq[1]) % MOD\n            last_seen[x] = r\n        return total\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums array"
+    ],
+    "notes": "Segment tree with lazy addition and algebraic square maintenance.",
+    "whyNaiveFails": "O(n^2) times out when n is up to 10^5.",
+    "spaceTimeTradeoff": "O(n) segment tree arrays.",
+    "interviewerExpectation": "Derive the sum of squares update formula using linear sum and interval length."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def sumCounts(self, nums: List[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(nums)\n        tree_sum = [0] * (4 * n)\n        tree_sq = [0] * (4 * n)\n        lazy = [0] * (4 * n)\n        \n        def apply(node, l, r, v):\n            length = r - l + 1\n            tree_sq[node] = (tree_sq[node] + 2 * v * tree_sum[node] + length * v * v) % MOD\n            tree_sum[node] = (tree_sum[node] + length * v) % MOD\n            lazy[node] = (lazy[node] + v) % MOD\n            \n        def push_down(node, l, r):\n            if lazy[node] != 0:\n                mid = (l + r) // 2\n                apply(2 * node, l, mid, lazy[node])\n                apply(2 * node + 1, mid + 1, r, lazy[node])\n                lazy[node] = 0\n                \n        def update(node, l, r, ql, qr, v):\n            if ql <= l and r <= qr:\n                apply(node, l, r, v)\n                return\n            push_down(node, l, r)\n            mid = (l + r) // 2\n            if ql <= mid:\n                update(2 * node, l, mid, ql, qr, v)\n            if qr > mid:\n                update(2 * node + 1, mid + 1, r, ql, qr, v)\n            tree_sum[node] = (tree_sum[2 * node] + tree_sum[2 * node + 1]) % MOD\n            tree_sq[node] = (tree_sq[2 * node] + tree_sq[2 * node + 1]) % MOD\n            \n        last_seen = {}\n        total = 0\n        for r, x in enumerate(nums):\n            l = last_seen[x] + 1 if x in last_seen else 0\n            update(1, 0, n - 1, l, r, 1)\n            total = (total + tree_sq[1]) % MOD\n            last_seen[x] = r\n        return total",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Lazy Segment Tree Tracking Sum and Square Sum"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    long long MOD = 1e9 + 7;\n    vector<long long> tree_sum, tree_sq, lazy;\n    void apply(int node, int l, int r, long long v) {\n        long long len = r - l + 1;\n        tree_sq[node] = (tree_sq[node] + 2 * v * tree_sum[node] + len * (v % MOD) % MOD * v) % MOD;\n        tree_sum[node] = (tree_sum[node] + len * v) % MOD;\n        lazy[node] = (lazy[node] + v) % MOD;\n    }\n    void push_down(int node, int l, int r) {\n        if (lazy[node] != 0) {\n            int mid = l + (r - l) / 2;\n            apply(2 * node, l, mid, lazy[node]);\n            apply(2 * node + 1, mid + 1, r, lazy[node]);\n            lazy[node] = 0;\n        }\n    }\n    void update(int node, int l, int r, int ql, int qr, long long v) {\n        if (ql <= l && r <= qr) {\n            apply(node, l, r, v);\n            return;\n        }\n        push_down(node, l, r);\n        int mid = l + (r - l) / 2;\n        if (ql <= mid) update(2 * node, l, mid, ql, qr, v);\n        if (qr > mid) update(2 * node + 1, mid + 1, r, ql, qr, v);\n        tree_sum[node] = (tree_sum[2 * node] + tree_sum[2 * node + 1]) % MOD;\n        tree_sq[node] = (tree_sq[2 * node] + tree_sq[2 * node + 1]) % MOD;\n    }\npublic:\n    int sumCounts(vector<int>& nums) {\n        int n = nums.size();\n        tree_sum.assign(4 * n, 0);\n        tree_sq.assign(4 * n, 0);\n        lazy.assign(4 * n, 0);\n        unordered_map<int, int> last_seen;\n        long long total = 0;\n        for (int r = 0; r < n; r++) {\n            int l = last_seen.count(nums[r]) ? last_seen[nums[r]] + 1 : 0;\n            update(1, 0, n - 1, l, r, 1);\n            total = (total + tree_sq[1]) % MOD;\n            last_seen[nums[r]] = r;\n        }\n        return total;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Lazy Segment Tree Tracking Sum and Square Sum"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    long MOD = 1_000_000_007L;\n    long[] tree_sum, tree_sq, lazy;\n    void apply(int node, int l, int r, long v) {\n        long len = r - l + 1;\n        tree_sq[node] = (tree_sq[node] + 2 * v * tree_sum[node] + len * (v % MOD) % MOD * v) % MOD;\n        tree_sum[node] = (tree_sum[node] + len * v) % MOD;\n        lazy[node] = (lazy[node] + v) % MOD;\n    }\n    void push_down(int node, int l, int r) {\n        if (lazy[node] != 0) {\n            int mid = l + (r - l) / 2;\n            apply(2 * node, l, mid, lazy[node]);\n            apply(2 * node + 1, mid + 1, r, lazy[node]);\n            lazy[node] = 0;\n        }\n    }\n    void update(int node, int l, int r, int ql, int qr, long v) {\n        if (ql <= l && r <= qr) {\n            apply(node, l, r, v);\n            return;\n        }\n        push_down(node, l, r);\n        int mid = l + (r - l) / 2;\n        if (ql <= mid) update(2 * node, l, mid, ql, qr, v);\n        if (qr > mid) update(2 * node + 1, mid + 1, r, ql, qr, v);\n        tree_sum[node] = (tree_sum[2 * node] + tree_sum[2 * node + 1]) % MOD;\n        tree_sq[node] = (tree_sq[2 * node] + tree_sq[2 * node + 1]) % MOD;\n    }\n    public int sumCounts(int[] nums) {\n        int n = nums.length;\n        tree_sum = new long[4 * n];\n        tree_sq = new long[4 * n];\n        lazy = new long[4 * n];\n        Map<Integer, Integer> last_seen = new HashMap<>();\n        long total = 0;\n        for (int r = 0; r < n; r++) {\n            int l = last_seen.getOrDefault(nums[r], -1) + 1;\n            update(1, 0, n - 1, l, r, 1);\n            total = (total + tree_sq[1]) % MOD;\n            last_seen.put(nums[r], r);\n        }\n        return (int) total;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Lazy Segment Tree Tracking Sum and Square Sum"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar sumCounts = function(nums) {\n    const MOD = 1000000007n;\n    const n = nums.length;\n    const tree_sum = new BigInt64Array(4 * n);\n    const tree_sq = new BigInt64Array(4 * n);\n    const lazy = new BigInt64Array(4 * n);\n    \n    function apply(node, l, r, v) {\n        const len = BigInt(r - l + 1);\n        tree_sq[node] = (tree_sq[node] + 2n * v * tree_sum[node] + len * (v % MOD) * v) % MOD;\n        tree_sum[node] = (tree_sum[node] + len * v) % MOD;\n        lazy[node] = (lazy[node] + v) % MOD;\n    }\n    function push_down(node, l, r) {\n        if (lazy[node] !== 0n) {\n            const mid = Math.floor((l + r) / 2);\n            apply(2 * node, l, mid, lazy[node]);\n            apply(2 * node + 1, mid + 1, r, lazy[node]);\n            lazy[node] = 0n;\n        }\n    }\n    function update(node, l, r, ql, qr, v) {\n        if (ql <= l && r <= qr) {\n            apply(node, l, r, v);\n            return;\n        }\n        push_down(node, l, r);\n        const mid = Math.floor((l + r) / 2);\n        if (ql <= mid) update(2 * node, l, mid, ql, qr, v);\n        if (qr > mid) update(2 * node + 1, mid + 1, r, ql, qr, v);\n        tree_sum[node] = (tree_sum[2 * node] + tree_sum[2 * node + 1]) % MOD;\n        tree_sq[node] = (tree_sq[2 * node] + tree_sq[2 * node + 1]) % MOD;\n    }\n    \n    const last_seen = new Map();\n    let total = 0n;\n    for (let r = 0; r < n; r++) {\n        const l = last_seen.has(nums[r]) ? last_seen.get(nums[r]) + 1 : 0;\n        update(1, 0, n - 1, l, r, 1n);\n        total = (total + tree_sq[1]) % MOD;\n        last_seen.set(nums[r], r);\n    }\n    return Number(total);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Lazy Segment Tree Tracking Sum and Square Sum"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-changes-to-make-k-semi-palindromes",
+  "number": 2911,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear",
+    "string-matching"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Divisor Residue Palindromes",
+      "text": "A string of length L is a semi-palindrome if there exists a proper divisor d of L such that indices i = rem mod d form palindromes for all 0 <= rem < d."
+    },
+    {
+      "level": 2,
+      "title": "Precomputing Substring Costs",
+      "text": "For every substring s[i..j], compute the minimum character replacements needed to make it a semi-palindrome across all valid divisors d of its length."
+    },
+    {
+      "level": 3,
+      "title": "Partitioning Dynamic Programming",
+      "text": "Let dp[cnt][j] be the minimum changes to partition s[0..j] into cnt semi-palindromes. Transition by taking min over i of dp[cnt - 1][i - 1] + cost[i][j]."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def minimumChanges(self, s: str, k: int) -> int:\n        n = len(s)\n        divisors = [[] for _ in range(n + 1)]\n        for d in range(1, n):\n            for l in range(d * 2, n + 1, d):\n                divisors[l].append(d)\n        cost = [[0] * n for _ in range(n)]\n        for i in range(n):\n            for j in range(i + 1, n):\n                length = j - i + 1\n                sub = s[i : j + 1]\n                min_c = float('inf')\n                for d in divisors[length]:\n                    curr = 0\n                    for rem in range(d):\n                        l_idx = rem\n                        r_idx = length - d + rem\n                        while l_idx < r_idx:\n                            if sub[l_idx] != sub[r_idx]:\n                                curr += 1\n                            l_idx += d\n                            r_idx -= d\n                    if curr < min_c:\n                        min_c = curr\n                cost[i][j] = min_c\n        dp = [[float('inf')] * (n + 1) for _ in range(k + 1)]\n        dp[0][0] = 0\n        for cnt in range(1, k + 1):\n            for j in range(cnt * 2, n + 1):\n                for i in range((cnt - 1) * 2, j - 1):\n                    c = dp[cnt - 1][i] + cost[i][j - 1]\n                    if c < dp[cnt][j]:\n                        dp[cnt][j] = c\n        return dp[k][n]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^3 + k * n^2)",
+    "space": "O(n^2 + k * n)",
+    "variables": [
+      "n: length of string s",
+      "k: number of semi-palindrome parts"
+    ],
+    "notes": "Precomputing divisor semi-palindrome costs followed by 2D DP.",
+    "whyNaiveFails": "Recursive partition without precomputation is exponential.",
+    "spaceTimeTradeoff": "O(n^2) cost table for all substrings.",
+    "interviewerExpectation": "Precompute divisor palindromic costs and partition using 2D DP."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minimumChanges(self, s: str, k: int) -> int:\n        n = len(s)\n        divisors = [[] for _ in range(n + 1)]\n        for d in range(1, n):\n            for l in range(d * 2, n + 1, d):\n                divisors[l].append(d)\n        cost = [[0] * n for _ in range(n)]\n        for i in range(n):\n            for j in range(i + 1, n):\n                length = j - i + 1\n                sub = s[i : j + 1]\n                min_c = float('inf')\n                for d in divisors[length]:\n                    curr = 0\n                    for rem in range(d):\n                        l_idx = rem\n                        r_idx = length - d + rem\n                        while l_idx < r_idx:\n                            if sub[l_idx] != sub[r_idx]:\n                                curr += 1\n                            l_idx += d\n                            r_idx -= d\n                    if curr < min_c:\n                        min_c = curr\n                cost[i][j] = min_c\n        dp = [[float('inf')] * (n + 1) for _ in range(k + 1)]\n        dp[0][0] = 0\n        for cnt in range(1, k + 1):\n            for j in range(cnt * 2, n + 1):\n                for i in range((cnt - 1) * 2, j - 1):\n                    c = dp[cnt - 1][i] + cost[i][j - 1]\n                    if c < dp[cnt][j]:\n                        dp[cnt][j] = c\n        return dp[k][n]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Precomputed Substring Cost with Partition DP"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minimumChanges(string s, int k) {\n        int n = s.size();\n        vector<vector<int>> divisors(n + 1);\n        for (int d = 1; d < n; d++) {\n            for (int l = d * 2; l <= n; l += d) divisors[l].push_back(d);\n        }\n        vector<vector<int>> cost(n, vector<int>(n, 0));\n        for (int i = 0; i < n; i++) {\n            for (int j = i + 1; j < n; j++) {\n                int len = j - i + 1;\n                int min_c = 1e9;\n                for (int d : divisors[len]) {\n                    int curr = 0;\n                    for (int rem = 0; rem < d; rem++) {\n                        int l_idx = rem, r_idx = len - d + rem;\n                        while (l_idx < r_idx) {\n                            if (s[i + l_idx] != s[i + r_idx]) curr++;\n                            l_idx += d;\n                            r_idx -= d;\n                        }\n                    }\n                    min_c = min(min_c, curr);\n                }\n                cost[i][j] = min_c;\n            }\n        }\n        vector<vector<int>> dp(k + 1, vector<int>(n + 1, 1e9));\n        dp[0][0] = 0;\n        for (int cnt = 1; cnt <= k; cnt++) {\n            for (int j = cnt * 2; j <= n; j++) {\n                for (int i = (cnt - 1) * 2; i <= j - 2; i++) {\n                    if (dp[cnt - 1][i] != 1e9) {\n                        dp[cnt][j] = min(dp[cnt][j], dp[cnt - 1][i] + cost[i][j - 1]);\n                    }\n                }\n            }\n        }\n        return dp[k][n];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Precomputed Substring Cost with Partition DP"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int minimumChanges(String s, int k) {\n        int n = s.length();\n        List<Integer>[] divisors = new ArrayList[n + 1];\n        for (int i = 0; i <= n; i++) divisors[i] = new ArrayList<>();\n        for (int d = 1; d < n; d++) {\n            for (int l = d * 2; l <= n; l += d) divisors[l].add(d);\n        }\n        int[][] cost = new int[n][n];\n        for (int i = 0; i < n; i++) {\n            for (int j = i + 1; j < n; j++) {\n                int len = j - i + 1;\n                int minC = 1_000_000_000;\n                for (int d : divisors[len]) {\n                    int curr = 0;\n                    for (int rem = 0; rem < d; rem++) {\n                        int lIdx = rem, rIdx = len - d + rem;\n                        while (lIdx < rIdx) {\n                            if (s.charAt(i + lIdx) != s.charAt(i + rIdx)) curr++;\n                            lIdx += d;\n                            rIdx -= d;\n                        }\n                    }\n                    minC = Math.min(minC, curr);\n                }\n                cost[i][j] = minC;\n            }\n        }\n        int[][] dp = new int[k + 1][n + 1];\n        for (int[] row : dp) Arrays.fill(row, 1_000_000_000);\n        dp[0][0] = 0;\n        for (int cnt = 1; cnt <= k; cnt++) {\n            for (int j = cnt * 2; j <= n; j++) {\n                for (int i = (cnt - 1) * 2; i <= j - 2; i++) {\n                    if (dp[cnt - 1][i] != 1_000_000_000) {\n                        dp[cnt][j] = Math.min(dp[cnt][j], dp[cnt - 1][i] + cost[i][j - 1]);\n                    }\n                }\n            }\n        }\n        return dp[k][n];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Precomputed Substring Cost with Partition DP"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} s\n * @param {number} k\n * @return {number}\n */\nvar minimumChanges = function(s, k) {\n    const n = s.length;\n    const divisors = Array.from({ length: n + 1 }, () => []);\n    for (let d = 1; d < n; d++) {\n        for (let l = d * 2; l <= n; l += d) divisors[l].push(d);\n    }\n    const cost = Array.from({ length: n }, () => new Int32Array(n));\n    for (let i = 0; i < n; i++) {\n        for (let j = i + 1; j < n; j++) {\n            const len = j - i + 1;\n            let minC = 1e9;\n            for (const d of divisors[len]) {\n                let curr = 0;\n                for (let rem = 0; rem < d; rem++) {\n                    let lIdx = rem, rIdx = len - d + rem;\n                    while (lIdx < rIdx) {\n                        if (s[i + lIdx] !== s[i + rIdx]) curr++;\n                        lIdx += d;\n                        rIdx -= d;\n                    }\n                }\n                if (curr < minC) minC = curr;\n            }\n            cost[i][j] = minC;\n        }\n    }\n    const dp = Array.from({ length: k + 1 }, () => new Int32Array(n + 1).fill(1e9));\n    dp[0][0] = 0;\n    for (let cnt = 1; cnt <= k; cnt++) {\n        for (let j = cnt * 2; j <= n; j++) {\n            for (let i = (cnt - 1) * 2; i <= j - 2; i++) {\n                if (dp[cnt - 1][i] !== 1e9) {\n                    const c = dp[cnt - 1][i] + cost[i][j - 1];\n                    if (c < dp[cnt][j]) dp[cnt][j] = c;\n                }\n            }\n        }\n    }\n    return dp[k][n];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Precomputed Substring Cost with Partition DP"
+    }
+  ]
+}

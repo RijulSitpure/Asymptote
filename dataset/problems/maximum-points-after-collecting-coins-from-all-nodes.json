@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-points-after-collecting-coins-from-all-nodes",
+  "number": 2920,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem",
+    "dp-state-machine"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tree Structure and Operations",
+      "text": "At each node, we either take (coins[u] >> c) - k, or floor((coins[u] >> c) / 2) which increments the halving count c for all descendants."
+    },
+    {
+      "level": 2,
+      "title": "Halving Threshold Bound",
+      "text": "Since coins[u] <= 10^4, right shifting 14 times reduces any coin value to 0, so c only needs to be tracked from 0 up to 14."
+    },
+    {
+      "level": 3,
+      "title": "Tree Subproblem Memoization",
+      "text": "Use DFS with memoization state (u, c), returning the maximum total points collected from subtree u given ancestor halving count c."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def maximumPoints(self, edges: List[List[int]], coins: List[int], k: int) -> int:\n        n = len(coins)\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        memo = {}\n        \n        def dfs(u, p, c):\n            c = min(c, 14)\n            state = (u, c)\n            if state in memo:\n                return memo[state]\n            val = coins[u] >> c\n            \n            # Option 1: val - k\n            res1 = val - k\n            for v in adj[u]:\n                if v != p:\n                    res1 += dfs(v, u, c)\n                    \n            # Option 2: val // 2 with c + 1 for subtree\n            res2 = val // 2\n            for v in adj[u]:\n                if v != p:\n                    res2 += dfs(v, u, c + 1)\n                    \n            ans = max(res1, res2)\n            memo[state] = ans\n            return ans\n            \n        return dfs(0, -1, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * 14)",
+    "space": "O(n * 14)",
+    "variables": [
+      "n: number of tree nodes"
+    ],
+    "notes": "Tree DFS with bounded halving states up to 14.",
+    "whyNaiveFails": "Exponential branches without memoization.",
+    "spaceTimeTradeoff": "O(n * 14) memo table.",
+    "interviewerExpectation": "Identify that coin values become 0 after at most 14 divisions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maximumPoints(self, edges: List[List[int]], coins: List[int], k: int) -> int:\n        n = len(coins)\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        memo = {}\n        \n        def dfs(u, p, c):\n            c = min(c, 14)\n            state = (u, c)\n            if state in memo:\n                return memo[state]\n            val = coins[u] >> c\n            \n            # Option 1: val - k\n            res1 = val - k\n            for v in adj[u]:\n                if v != p:\n                    res1 += dfs(v, u, c)\n                    \n            # Option 2: val // 2 with c + 1 for subtree\n            res2 = val // 2\n            for v in adj[u]:\n                if v != p:\n                    res2 += dfs(v, u, c + 1)\n                    \n            ans = max(res1, res2)\n            memo[state] = ans\n            return ans\n            \n        return dfs(0, -1, 0)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Tree DFS with Bounded Halving Memoization"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int maximumPoints(vector<vector<int>>& edges, vector<int>& coins, int k) {\n        int n = coins.size();\n        vector<vector<int>> adj(n);\n        for (auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        vector<vector<int>> memo(n, vector<int>(15, -1));\n        function<int(int, int, int)> dfs = [&](int u, int p, int c) -> int {\n            c = min(c, 14);\n            if (memo[u][c] != -1) return memo[u][c];\n            int val = coins[u] >> c;\n            int res1 = val - k;\n            for (int v : adj[u]) {\n                if (v != p) res1 += dfs(v, u, c);\n            }\n            int res2 = val / 2;\n            for (int v : adj[u]) {\n                if (v != p) res2 += dfs(v, u, c + 1);\n            }\n            return memo[u][c] = max(res1, res2);\n        };\n        return dfs(0, -1, 0);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Tree DFS with Bounded Halving Memoization"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    int[][] memo;\n    List<Integer>[] adj;\n    int[] coins;\n    int k;\n    int dfs(int u, int p, int c) {\n        c = Math.min(c, 14);\n        if (memo[u][c] != -1) return memo[u][c];\n        int val = coins[u] >> c;\n        int res1 = val - k;\n        for (int v : adj[u]) {\n            if (v != p) res1 += dfs(v, u, c);\n        }\n        int res2 = val / 2;\n        for (int v : adj[u]) {\n            if (v != p) res2 += dfs(v, u, c + 1);\n        }\n        return memo[u][c] = Math.max(res1, res2);\n    }\n    public int maximumPoints(int[][] edges, int[] coins, int k) {\n        int n = coins.length;\n        this.coins = coins;\n        this.k = k;\n        adj = new ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(e[1]);\n            adj[e[1]].add(e[0]);\n        }\n        memo = new int[n][15];\n        for (int[] row : memo) Arrays.fill(row, -1);\n        return dfs(0, -1, 0);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Tree DFS with Bounded Halving Memoization"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[][]} edges\n * @param {number[]} coins\n * @param {number} k\n * @return {number}\n */\nvar maximumPoints = function(edges, coins, k) {\n    const n = coins.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const memo = Array.from({ length: n }, () => new Int32Array(15).fill(-1));\n    function dfs(u, p, c) {\n        c = Math.min(c, 14);\n        if (memo[u][c] !== -1) return memo[u][c];\n        const val = coins[u] >> c;\n        let res1 = val - k;\n        for (const v of adj[u]) {\n            if (v !== p) res1 += dfs(v, u, c);\n        }\n        let res2 = Math.floor(val / 2);\n        for (const v of adj[u]) {\n            if (v !== p) res2 += dfs(v, u, c + 1);\n        }\n        const ans = Math.max(res1, res2);\n        memo[u][c] = ans;\n        return ans;\n    }\n    return dfs(0, -1, 0);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Tree DFS with Bounded Halving Memoization"
+    }
+  ]
+}
