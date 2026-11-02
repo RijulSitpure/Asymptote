@@ -1,0 +1,2 @@
+import json
+print(json.dumps([{"name": "case_1", "inserts": "INSERT INTO Flights VALUES (1, 2), (2, 1); INSERT INTO Passengers VALUES (101, 1, '2023-07-10 10:00:00'), (102, 1, '2023-07-10 10:05:00'), (103, 1, '2023-07-10 10:10:00'), (104, 2, '2023-07-10 09:00:00'), (105, 2, '2023-07-10 09:30:00');"}]))

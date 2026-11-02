@@ -1,0 +1,72 @@
+{
+  "slug": "status-of-flight-tickets",
+  "number": 2793,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "First-Come Allocation",
+      "text": "Tickets are confirmed according to the order of booking time partitioned by flight."
+    },
+    {
+      "level": 2,
+      "title": "Window Ranking",
+      "text": "Use the ranking window function partitioned by flight_id and ordered by booking_time ascending."
+    },
+    {
+      "level": 3,
+      "title": "Comparison with Capacity",
+      "text": "Assign Confirmed if the passenger rank is within flight capacity; otherwise assign Waitlist."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nSELECT \n    p.passenger_id,\n    CASE \n        WHEN RANK() OVER (PARTITION BY p.flight_id ORDER BY p.booking_time ASC) <= f.capacity \n        THEN 'Confirmed' \n        ELSE 'Waitlist' \n    END AS status\nFROM Passengers p\nJOIN Flights f ON p.flight_id = f.flight_id\nORDER BY p.passenger_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(p log p)",
+    "space": "O(p + f)",
+    "variables": [
+      "p: number of passengers",
+      "f: number of flights"
+    ],
+    "notes": "Window ranking partitioned by flight and ordered chronologically by booking time.",
+    "whyNaiveFails": "Correlated subqueries to determine passenger order scale quadratically with ticket count.",
+    "spaceTimeTradeoff": "O(n log n) time due to window sorting and O(n) space.",
+    "interviewerExpectation": "Apply window functions with partition and order specifications for chronological ranking."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT \n    p.passenger_id,\n    CASE \n        WHEN RANK() OVER (PARTITION BY p.flight_id ORDER BY p.booking_time ASC) <= f.capacity \n        THEN 'Confirmed' \n        ELSE 'Waitlist' \n    END AS status\nFROM Passengers p\nJOIN Flights f ON p.flight_id = f.flight_id\nORDER BY p.passenger_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Window Rank Capacity Comparison"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT \n    p.passenger_id,\n    CASE \n        WHEN RANK() OVER (PARTITION BY p.flight_id ORDER BY p.booking_time ASC) <= f.capacity \n        THEN 'Confirmed' \n        ELSE 'Waitlist' \n    END AS status\nFROM Passengers p\nJOIN Flights f ON p.flight_id = f.flight_id\nORDER BY p.passenger_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Window Rank Capacity Comparison"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef status_of_flight_tickets(flights: pd.DataFrame, passengers: pd.DataFrame) -> pd.DataFrame:\n    df = passengers.merge(flights, on=\"flight_id\")\n    df[\"rk\"] = df.groupby(\"flight_id\")[\"booking_time\"].rank(method=\"min\")\n    df[\"status\"] = df.apply(lambda r: \"Confirmed\" if r[\"rk\"] <= r[\"capacity\"] else \"Waitlist\", axis=1)\n    return df[[\"passenger_id\", \"status\"]].sort_values(\"passenger_id\")",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Window Rank Capacity Comparison"
+    }
+  ]
+}

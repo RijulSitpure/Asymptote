@@ -1,0 +1,78 @@
+{
+  "slug": "count-paths-that-can-form-a-palindrome-in-a-tree",
+  "number": 2791,
+  "category": "Algorithms",
+  "patterns": [
+    "bit-manipulation-tricks"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Palindrome Parity Condition",
+      "text": "A set of characters can form a palindrome if at most one character appears an odd number of times."
+    },
+    {
+      "level": 2,
+      "title": "Bitmask Representation",
+      "text": "Represent character frequency parity using a 26-bit mask, where bit i denotes odd parity for character i."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Path XOR",
+      "text": "The path mask between u and v is mask[u] ^ mask[v]. Valid pairs have bitwise differences equal to 0 or a single power of 2."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def countPalindromePaths(self, parent: list[int], s: str) -> int:\n        n = len(parent)\n        adj = defaultdict(list)\n        for i in range(1, n):\n            adj[parent[i]].append((i, 1 << (ord(s[i]) - ord(\"a\"))))\n        mask = [0] * n\n        stack = [(0, 0)]\n        while stack:\n            u, m = stack.pop()\n            mask[u] = m\n            for v, bit in adj[u]:\n                stack.append((v, m ^ bit))\n        counts = defaultdict(int)\n        for m in mask:\n            counts[m] += 1\n        ans = 0\n        for m, cnt in counts.items():\n            ans += cnt * (cnt - 1) // 2\n            for i in range(26):\n                target = m ^ (1 << i)\n                if target > m and target in counts:\n                    ans += cnt * counts[target]\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(26 * n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes in tree"
+    ],
+    "notes": "Bitmask representation of character frequencies with prefix XOR frequency counting.",
+    "whyNaiveFails": "Traversing every pair of tree nodes takes O(n^2) which is far too slow for n up to 10^5.",
+    "spaceTimeTradeoff": "O(26 * n) time using a bitmask hash map and O(n) space for tree storage.",
+    "interviewerExpectation": "Use the property that LCA parity cancels out to reduce tree path queries to root-prefix XOR matching."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def countPalindromePaths(self, parent: list[int], s: str) -> int:\n        n = len(parent)\n        adj = defaultdict(list)\n        for i in range(1, n):\n            adj[parent[i]].append((i, 1 << (ord(s[i]) - ord(\"a\"))))\n        mask = [0] * n\n        stack = [(0, 0)]\n        while stack:\n            u, m = stack.pop()\n            mask[u] = m\n            for v, bit in adj[u]:\n                stack.append((v, m ^ bit))\n        counts = defaultdict(int)\n        for m in mask:\n            counts[m] += 1\n        ans = 0\n        for m, cnt in counts.items():\n            ans += cnt * (cnt - 1) // 2\n            for i in range(26):\n                target = m ^ (1 << i)\n                if target > m and target in counts:\n                    ans += cnt * counts[target]\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Root-to-Node Bitmask Frequency Map"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    long long countPalindromePaths(vector<int>& parent, string s) {\n        int n = parent.size();\n        vector<vector<pair<int, int>>> adj(n);\n        for (int i = 1; i < n; ++i) {\n            adj[parent[i]].push_back({i, 1 << (s[i] - 'a')});\n        }\n        vector<int> mask(n, 0);\n        vector<pair<int, int>> stack = {{0, 0}};\n        while (!stack.empty()) {\n            auto [u, m] = stack.back();\n            stack.pop_back();\n            mask[u] = m;\n            for (auto& edge : adj[u]) {\n                stack.push_back({edge.first, m ^ edge.second});\n            }\n        }\n        unordered_map<int, int> counts;\n        for (int m : mask) counts[m]++;\n        long long ans = 0;\n        for (auto& entry : counts) {\n            int m = entry.first;\n            long long cnt = entry.second;\n            ans += cnt * (cnt - 1) / 2;\n            for (int i = 0; i < 26; ++i) {\n                int target = m ^ (1 << i);\n                if (target > m && counts.count(target)) {\n                    ans += cnt * counts[target];\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Root-to-Node Bitmask Frequency Map"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.ArrayList;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\nclass Solution {\n    public long countPalindromePaths(List<Integer> parent, String s) {\n        int n = parent.size();\n        List<List<int[]>> adj = new ArrayList<>(n);\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int i = 1; i < n; i++) {\n            adj.get(parent.get(i)).add(new int[]{i, 1 << (s.charAt(i) - 'a')});\n        }\n        int[] mask = new int[n];\n        List<int[]> stack = new ArrayList<>();\n        stack.add(new int[]{0, 0});\n        while (!stack.isEmpty()) {\n            int[] top = stack.remove(stack.size() - 1);\n            int u = top[0], m = top[1];\n            mask[u] = m;\n            for (int[] edge : adj.get(u)) {\n                stack.add(new int[]{edge[0], m ^ edge[1]});\n            }\n        }\n        Map<Integer, Integer> counts = new HashMap<>();\n        for (int m : mask) counts.put(m, counts.getOrDefault(m, 0) + 1);\n        long ans = 0;\n        for (Map.Entry<Integer, Integer> entry : counts.entrySet()) {\n            int m = entry.getKey();\n            long cnt = entry.getValue();\n            ans += cnt * (cnt - 1) / 2;\n            for (int i = 0; i < 26; i++) {\n                int target = m ^ (1 << i);\n                if (target > m && counts.containsKey(target)) {\n                    ans += cnt * counts.get(target);\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Root-to-Node Bitmask Frequency Map"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} parent\n * @param {string} s\n * @return {number}\n */\nvar countPalindromePaths = function(parent, s) {\n    const n = parent.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (let i = 1; i < n; i++) {\n        adj[parent[i]].push([i, 1 << (s.charCodeAt(i) - 97)]);\n    }\n    const mask = new Array(n).fill(0);\n    const stack = [[0, 0]];\n    while (stack.length > 0) {\n        const [u, m] = stack.pop();\n        mask[u] = m;\n        for (const [v, bit] of adj[u]) {\n            stack.push([v, m ^ bit]);\n        }\n    }\n    const counts = new Map();\n    for (const m of mask) {\n        counts.set(m, (counts.get(m) || 0) + 1);\n    }\n    let ans = 0;\n    for (const [m, cnt] of counts.entries()) {\n        ans += (cnt * (cnt - 1)) / 2;\n        for (let i = 0; i < 26; i++) {\n            const target = m ^ (1 << i);\n            if (target > m && counts.has(target)) {\n                ans += cnt * counts.get(target);\n            }\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Root-to-Node Bitmask Frequency Map"
+    }
+  ]
+}

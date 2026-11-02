@@ -1,0 +1,72 @@
+{
+  "slug": "flight-occupancy-and-waitlist-analysis",
+  "number": 2783,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Preserve All Flights",
+      "text": "Use a left join from Flights to Passengers so flights without passengers are included with 0 bookings."
+    },
+    {
+      "level": 2,
+      "title": "Aggregation by Flight",
+      "text": "Count the number of passengers per flight id."
+    },
+    {
+      "level": 3,
+      "title": "Capacity Partitioning",
+      "text": "Booked count is bounded above by capacity, while waitlist count is any excess above capacity."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nSELECT \n    f.flight_id, \n    LEAST(f.capacity, COUNT(p.passenger_id)) AS booked_cnt,\n    GREATEST(0, COUNT(p.passenger_id) - f.capacity) AS waitlist_cnt\nFROM Flights f\nLEFT JOIN Passengers p ON f.flight_id = p.flight_id\nGROUP BY f.flight_id, f.capacity\nORDER BY f.flight_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(f log f + p)",
+    "space": "O(f + p)",
+    "variables": [
+      "f: number of flights",
+      "p: number of passengers"
+    ],
+    "notes": "Left join between Flights and Passengers with capacity bounding.",
+    "whyNaiveFails": "An inner join discards flights that currently have zero passenger registrations.",
+    "spaceTimeTradeoff": "O(f log f + p) time dominated by the join, grouping, and ordering of flights.",
+    "interviewerExpectation": "Use LEAST and GREATEST or CASE statements to divide bookings cleanly against capacity."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT \n    f.flight_id, \n    LEAST(f.capacity, COUNT(p.passenger_id)) AS booked_cnt,\n    GREATEST(0, COUNT(p.passenger_id) - f.capacity) AS waitlist_cnt\nFROM Flights f\nLEFT JOIN Passengers p ON f.flight_id = p.flight_id\nGROUP BY f.flight_id, f.capacity\nORDER BY f.flight_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Left Join Group Aggregation"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT \n    f.flight_id, \n    LEAST(f.capacity, COUNT(p.passenger_id)) AS booked_cnt,\n    GREATEST(0, COUNT(p.passenger_id) - f.capacity) AS waitlist_cnt\nFROM Flights f\nLEFT JOIN Passengers p ON f.flight_id = p.flight_id\nGROUP BY f.flight_id, f.capacity\nORDER BY f.flight_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Left Join Group Aggregation"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef flight_occupancy_and_waitlist(flights: pd.DataFrame, passengers: pd.DataFrame) -> pd.DataFrame:\n    counts = passengers.groupby(\"flight_id\").size().reset_index(name=\"total\")\n    df = flights.merge(counts, on=\"flight_id\", how=\"left\").fillna({\"total\": 0})\n    df[\"total\"] = df[\"total\"].astype(int)\n    df[\"booked_cnt\"] = df[[\"capacity\", \"total\"]].min(axis=1)\n    df[\"waitlist_cnt\"] = (df[\"total\"] - df[\"capacity\"]).clip(lower=0)\n    return df[[\"flight_id\", \"booked_cnt\", \"waitlist_cnt\"]].sort_values(\"flight_id\")",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Left Join Group Aggregation"
+    }
+  ]
+}
