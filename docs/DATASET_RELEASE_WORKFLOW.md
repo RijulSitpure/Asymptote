@@ -172,7 +172,7 @@ Commit the new problem files and updated `extension/data/` shards:
 git add dataset/ extension/data/
 git commit -m "feat(dataset): Release Batch X curated problems (v1.0.1)"
 ```
-Once pushed to `main`, the updated shards become available at `https://raw.githubusercontent.com/RijulSitpure/LeetCode-Pattern_Tracker/main/extension/data/`.
+Once pushed to `main`, the updated shards become available at `https://raw.githubusercontent.com/RijulSitpure/Asymptote/main/dist-dataset/`.
 
 ---
 
