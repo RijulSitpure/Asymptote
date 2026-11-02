@@ -1,0 +1,81 @@
+{
+  "slug": "minimum-relative-loss-after-buying-chocolates",
+  "number": 2819,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer",
+    "prefix-sum-hashmap"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Cost Partitioning",
+      "text": "For each chocolate with price p, the relative loss is p if p <= k, and 2*k - p if p > k."
+    },
+    {
+      "level": 2,
+      "title": "Sorted Greedy Partition",
+      "text": "Sort the prices array and compute prefix sums. To minimize relative loss, pick small prices <= k from the left and large prices > k from the right."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search Split Boundary",
+      "text": "Use binary search to find the optimal number of items l taken from the left such that prices[mid] < 2 * k - prices[n - (m - mid)]."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def minimumRelativeLosses(self, prices: List[int], queries: List[List[int]]) -> List[int]:\n        from bisect import bisect_right\n        from itertools import accumulate\n        prices.sort()\n        s = list(accumulate(prices, initial=0))\n        n = len(prices)\n        def f(k: int, m: int) -> int:\n            l, r = 0, min(m, bisect_right(prices, k))\n            while l < r:\n                mid = (l + r) >> 1\n                right = m - mid\n                if prices[mid] < 2 * k - prices[n - right]:\n                    l = mid + 1\n                else:\n                    r = mid\n            return l\n        ans = []\n        for k, m in queries:\n            l = f(k, m)\n            r = m - l\n            loss = s[l] + 2 * k * r - (s[n] - s[n - r])\n            ans.append(loss)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n + q log m)",
+    "space": "O(n + q)",
+    "variables": [
+      "n: length of prices",
+      "q: number of queries",
+      "m: chocolates per query"
+    ],
+    "notes": "Prefix sum precomputation with binary search on the optimal prefix count.",
+    "whyNaiveFails": "Evaluating all combinations of m chocolates per query takes exponential time.",
+    "spaceTimeTradeoff": "O(n) auxiliary prefix sums enable constant time range queries.",
+    "interviewerExpectation": "Use binary search on the monotonic marginal contribution condition."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def minimumRelativeLosses(self, prices: List[int], queries: List[List[int]]) -> List[int]:\n        from bisect import bisect_right\n        from itertools import accumulate\n        prices.sort()\n        s = list(accumulate(prices, initial=0))\n        n = len(prices)\n        def f(k: int, m: int) -> int:\n            l, r = 0, min(m, bisect_right(prices, k))\n            while l < r:\n                mid = (l + r) >> 1\n                right = m - mid\n                if prices[mid] < 2 * k - prices[n - right]:\n                    l = mid + 1\n                else:\n                    r = mid\n            return l\n        ans = []\n        for k, m in queries:\n            l = f(k, m)\n            r = m - l\n            loss = s[l] + 2 * k * r - (s[n] - s[n - r])\n            ans.append(loss)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Prefix Sum Binary Search Partition"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<long long> minimumRelativeLosses(vector<int>& prices, vector<vector<int>>& queries) {\n        int n = prices.size();\n        sort(prices.begin(), prices.end());\n        vector<long long> s(n + 1, 0);\n        for (int i = 0; i < n; ++i) s[i + 1] = s[i] + prices[i];\n        auto f = [&](int k, int m) {\n            int l = 0, r = upper_bound(prices.begin(), prices.end(), k) - prices.begin();\n            r = min(r, m);\n            while (l < r) {\n                int mid = (l + r) >> 1;\n                int right = m - mid;\n                if (prices[mid] < 2LL * k - prices[n - right]) {\n                    l = mid + 1;\n                } else {\n                    r = mid;\n                }\n            }\n            return l;\n        };\n        vector<long long> ans;\n        for (auto& q : queries) {\n            int k = q[0], m = q[1];\n            int l = f(k, m);\n            int r = m - l;\n            ans.push_back(s[l] + 2LL * k * r - (s[n] - s[n - r]));\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Prefix Sum Binary Search Partition"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int n;\n    private int[] prices;\n\n    public long[] minimumRelativeLosses(int[] prices, int[][] queries) {\n        n = prices.length;\n        Arrays.sort(prices);\n        this.prices = prices;\n        long[] s = new long[n + 1];\n        for (int i = 0; i < n; ++i) {\n            s[i + 1] = s[i] + prices[i];\n        }\n        int q = queries.length;\n        long[] ans = new long[q];\n        for (int i = 0; i < q; ++i) {\n            int k = queries[i][0], m = queries[i][1];\n            int l = f(k, m);\n            int r = m - l;\n            ans[i] = s[l] + 2L * k * r - (s[n] - s[n - r]);\n        }\n        return ans;\n    }\n\n    private int f(int k, int m) {\n        int l = 0, r = Arrays.binarySearch(prices, k);\n        if (r < 0) {\n            r = -(r + 1);\n        } else {\n            while (r < n && prices[r] == k) r++;\n        }\n        r = Math.min(m, r);\n        while (l < r) {\n            int mid = (l + r) >> 1;\n            int right = m - mid;\n            if (prices[mid] < 2L * k - prices[n - right]) {\n                l = mid + 1;\n            } else {\n                r = mid;\n            }\n        }\n        return l;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Prefix Sum Binary Search Partition"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} prices\n * @param {number[][]} queries\n * @return {number[]}\n */\nvar minimumRelativeLosses = function(prices, queries) {\n    const n = prices.length;\n    prices.sort((a, b) => a - b);\n    const s = new Array(n + 1).fill(0n);\n    for (let i = 0; i < n; i++) {\n        s[i + 1] = s[i] + BigInt(prices[i]);\n    }\n    function bisectRight(arr, val) {\n        let l = 0, r = arr.length;\n        while (l < r) {\n            const m = Math.floor((l + r) / 2);\n            if (arr[m] <= val) l = m + 1;\n            else r = m;\n        }\n        return l;\n    }\n    function f(k, m) {\n        let l = 0, r = Math.min(m, bisectRight(prices, k));\n        while (l < r) {\n            const mid = Math.floor((l + r) / 2);\n            const right = m - mid;\n            if (BigInt(prices[mid]) < 2n * BigInt(k) - BigInt(prices[n - right])) {\n                l = mid + 1;\n            } else {\n                r = mid;\n            }\n        }\n        return l;\n    }\n    const ans = [];\n    for (const [k, m] of queries) {\n        const l = f(k, m);\n        const r = m - l;\n        const loss = s[l] + 2n * BigInt(k) * BigInt(r) - (s[n] - s[n - r]);\n        ans.push(Number(loss));\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Prefix Sum Binary Search Partition"
+    }
+  ]
+}

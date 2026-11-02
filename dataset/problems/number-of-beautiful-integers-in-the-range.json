@@ -1,0 +1,80 @@
+{
+  "slug": "number-of-beautiful-integers-in-the-range",
+  "number": 2827,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear",
+    "math-number-theory"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two-Part Invariant",
+      "text": "A beautiful integer must have an equal count of even and odd digits, and its overall value must be divisible by k."
+    },
+    {
+      "level": 2,
+      "title": "Digit DP Formulation",
+      "text": "Count beautiful integers up to high and subtract those up to low - 1 using digit dynamic programming."
+    },
+    {
+      "level": 3,
+      "title": "State Parameters",
+      "text": "Track current index, diff between even and odd count, running modulo k, tight upper bound flag, and started flag."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def numberOfBeautifulIntegers(self, low: int, high: int, k: int) -> int:\n        def count(n: int) -> int:\n            s = str(n)\n            memo = {}\n            def dp(idx: int, diff: int, rem: int, is_tight: bool, started: bool) -> int:\n                if idx == len(s):\n                    return 1 if (started and diff == 0 and rem == 0) else 0\n                state = (idx, diff, rem, is_tight, started)\n                if state in memo:\n                    return memo[state]\n                limit = int(s[idx]) if is_tight else 9\n                ans = 0\n                for d in range(0, limit + 1):\n                    nxt_tight = is_tight and (d == limit)\n                    if not started:\n                        if d == 0:\n                            ans += dp(idx + 1, 0, 0, nxt_tight, False)\n                        else:\n                            nxt_diff = diff + (1 if d % 2 == 0 else -1)\n                            ans += dp(idx + 1, nxt_diff, (rem * 10 + d) % k, nxt_tight, True)\n                    else:\n                        nxt_diff = diff + (1 if d % 2 == 0 else -1)\n                        ans += dp(idx + 1, nxt_diff, (rem * 10 + d) % k, nxt_tight, True)\n                memo[state] = ans\n                return ans\n            return dp(0, 0, 0, True, False)\n        return count(high) - count(low - 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(d^2 * k * 10)",
+    "space": "O(d^2 * k)",
+    "variables": [
+      "d: number of digits in high",
+      "k: divisibility constraint"
+    ],
+    "notes": "Digit DP state memoized across digit index, parity difference, modulo, and tight flags.",
+    "whyNaiveFails": "Brute-force iteration over up to 10^9 numbers times out.",
+    "spaceTimeTradeoff": "O(d^2 * k) memoization table.",
+    "interviewerExpectation": "Track modulo arithmetic alongside parity balance in a standard digit dynamic programming state."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def numberOfBeautifulIntegers(self, low: int, high: int, k: int) -> int:\n        def count(n: int) -> int:\n            s = str(n)\n            memo = {}\n            def dp(idx: int, diff: int, rem: int, is_tight: bool, started: bool) -> int:\n                if idx == len(s):\n                    return 1 if (started and diff == 0 and rem == 0) else 0\n                state = (idx, diff, rem, is_tight, started)\n                if state in memo:\n                    return memo[state]\n                limit = int(s[idx]) if is_tight else 9\n                ans = 0\n                for d in range(0, limit + 1):\n                    nxt_tight = is_tight and (d == limit)\n                    if not started:\n                        if d == 0:\n                            ans += dp(idx + 1, 0, 0, nxt_tight, False)\n                        else:\n                            nxt_diff = diff + (1 if d % 2 == 0 else -1)\n                            ans += dp(idx + 1, nxt_diff, (rem * 10 + d) % k, nxt_tight, True)\n                    else:\n                        nxt_diff = diff + (1 if d % 2 == 0 else -1)\n                        ans += dp(idx + 1, nxt_diff, (rem * 10 + d) % k, nxt_tight, True)\n                memo[state] = ans\n                return ans\n            return dp(0, 0, 0, True, False)\n        return count(high) - count(low - 1)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Digit Dynamic Programming with Parity Difference and Modulo"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int memo[11][25][21][2][2];\n    int k_val;\n    int dp(int idx, int diff, int rem, bool is_tight, bool started, const string& s) {\n        if (idx == s.size()) return (started && diff == 10 && rem == 0) ? 1 : 0;\n        if (memo[idx][diff][rem][is_tight][started] != -1) return memo[idx][diff][rem][is_tight][started];\n        int limit = is_tight ? (s[idx] - '0') : 9;\n        int ans = 0;\n        for (int d = 0; d <= limit; ++d) {\n            bool nxt_tight = is_tight && (d == limit);\n            if (!started) {\n                if (d == 0) ans += dp(idx + 1, 10, 0, nxt_tight, false, s);\n                else {\n                    int nd = 10 + (d % 2 == 0 ? 1 : -1);\n                    ans += dp(idx + 1, nd, (rem * 10 + d) % k_val, nxt_tight, true, s);\n                }\n            } else {\n                int nd = diff + (d % 2 == 0 ? 1 : -1);\n                ans += dp(idx + 1, nd, (rem * 10 + d) % k_val, nxt_tight, true, s);\n            }\n        }\n        return memo[idx][diff][rem][is_tight][started] = ans;\n    }\n    int countUpTo(int n) {\n        if (n <= 0) return 0;\n        string s = to_string(n);\n        memset(memo, -1, sizeof(memo));\n        return dp(0, 10, 0, true, false, s);\n    }\npublic:\n    int numberOfBeautifulIntegers(int low, int high, int k) {\n        k_val = k;\n        return countUpTo(high) - countUpTo(low - 1);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Digit Dynamic Programming with Parity Difference and Modulo"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int[][][][][] memo;\n    private int kVal;\n\n    private int dp(int idx, int diff, int rem, boolean isTight, boolean started, String s) {\n        if (idx == s.length()) return (started && diff == 10 && rem == 0) ? 1 : 0;\n        int tIdx = isTight ? 1 : 0;\n        int sIdx = started ? 1 : 0;\n        if (memo[idx][diff][rem][tIdx][sIdx] != -1) return memo[idx][diff][rem][tIdx][sIdx];\n        int limit = isTight ? (s.charAt(idx) - '0') : 9;\n        int ans = 0;\n        for (int d = 0; d <= limit; d++) {\n            boolean nxtTight = isTight && (d == limit);\n            if (!started) {\n                if (d == 0) ans += dp(idx + 1, 10, 0, nxtTight, false, s);\n                else {\n                    int nd = 10 + (d % 2 == 0 ? 1 : -1);\n                    ans += dp(idx + 1, nd, (rem * 10 + d) % kVal, nxtTight, true, s);\n                }\n            } else {\n                int nd = diff + (d % 2 == 0 ? 1 : -1);\n                ans += dp(idx + 1, nd, (rem * 10 + d) % kVal, nxtTight, true, s);\n            }\n        }\n        return memo[idx][diff][rem][tIdx][sIdx] = ans;\n    }\n\n    private int countUpTo(int n) {\n        if (n <= 0) return 0;\n        String s = Integer.toString(n);\n        memo = new int[s.length()][25][21][2][2];\n        for (int[][][][] a : memo) for (int[][][] b : a) for (int[][] c : b) for (int[] d : c) Arrays.fill(d, -1);\n        return dp(0, 10, 0, true, false, s);\n    }\n\n    public int numberOfBeautifulIntegers(int low, int high, int k) {\n        kVal = k;\n        return countUpTo(high) - countUpTo(low - 1);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Digit Dynamic Programming with Parity Difference and Modulo"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} low\n * @param {number} high\n * @param {number} k\n * @return {number}\n */\nvar numberOfBeautifulIntegers = function(low, high, k) {\n    function countUpTo(n) {\n        if (n <= 0) return 0;\n        const s = n.toString();\n        const memo = new Map();\n        function dp(idx, diff, rem, isTight, started) {\n            if (idx === s.length) return (started && diff === 0 && rem === 0) ? 1 : 0;\n            const key = `${idx},${diff},${rem},${isTight ? 1 : 0},${started ? 1 : 0}`;\n            if (memo.has(key)) return memo.get(key);\n            const limit = isTight ? Number(s[idx]) : 9;\n            let ans = 0;\n            for (let d = 0; d <= limit; d++) {\n                const nxtTight = isTight && d === limit;\n                if (!started) {\n                    if (d === 0) ans += dp(idx + 1, 0, 0, nxtTight, false);\n                    else {\n                        const nd = diff + (d % 2 === 0 ? 1 : -1);\n                        ans += dp(idx + 1, nd, (rem * 10 + d) % k, nxtTight, true);\n                    }\n                } else {\n                    const nd = diff + (d % 2 === 0 ? 1 : -1);\n                    ans += dp(idx + 1, nd, (rem * 10 + d) % k, nxtTight, true);\n                }\n            }\n            memo.set(key, ans);\n            return ans;\n        }\n        return dp(0, 0, 0, true, false);\n    }\n    return countUpTo(high) - countUpTo(low - 1);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Digit Dynamic Programming with Parity Difference and Modulo"
+    }
+  ]
+}

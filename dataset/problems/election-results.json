@@ -1,0 +1,72 @@
+{
+  "slug": "election-results",
+  "number": 2820,
+  "category": "Database",
+  "patterns": [
+    "window-ranking",
+    "join-filter"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Vote Weight Partition",
+      "text": "Each voter casts a total weight of 1 vote, split equally among all non-null candidates they chose."
+    },
+    {
+      "level": 2,
+      "title": "Weighted Aggregation",
+      "text": "Compute the count of votes per voter using a window function, then assign 1.0 / count to each vote and aggregate by candidate."
+    },
+    {
+      "level": 3,
+      "title": "Dense Ranking Filter",
+      "text": "Rank candidates by total vote weight descending using dense_rank, and return candidate names tied at rank 1 ordered alphabetically."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nWITH WeightedVotes AS (\n    SELECT \n        candidate,\n        1.0 / COUNT(*) OVER (PARTITION BY voter) AS vote_weight\n    FROM Votes\n    WHERE candidate IS NOT NULL\n),\nCandidateTotals AS (\n    SELECT \n        candidate,\n        SUM(vote_weight) AS total_votes,\n        DENSE_RANK() OVER (ORDER BY SUM(vote_weight) DESC) AS rk\n    FROM WeightedVotes\n    GROUP BY candidate\n)\nSELECT candidate\nFROM CandidateTotals\nWHERE rk = 1\nORDER BY candidate ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V log V)",
+    "space": "O(V)",
+    "variables": [
+      "V: number of votes in Votes table"
+    ],
+    "notes": "Window partition for voter weight followed by candidate aggregation and dense ranking.",
+    "whyNaiveFails": "Correlated subqueries to compute voter weight lead to quadratic scan time.",
+    "spaceTimeTradeoff": "O(V) working space for intermediate CTE tables.",
+    "interviewerExpectation": "Use window functions for voter weight distribution and handle potential ties with dense ranking."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH WeightedVotes AS (\n    SELECT \n        candidate,\n        1.0 / COUNT(*) OVER (PARTITION BY voter) AS vote_weight\n    FROM Votes\n    WHERE candidate IS NOT NULL\n),\nCandidateTotals AS (\n    SELECT \n        candidate,\n        SUM(vote_weight) AS total_votes,\n        DENSE_RANK() OVER (ORDER BY SUM(vote_weight) DESC) AS rk\n    FROM WeightedVotes\n    GROUP BY candidate\n)\nSELECT candidate\nFROM CandidateTotals\nWHERE rk = 1\nORDER BY candidate ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Window Weight Distribution with Dense Rank"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH WeightedVotes AS (\n    SELECT \n        candidate,\n        1.0 / COUNT(*) OVER (PARTITION BY voter) AS vote_weight\n    FROM Votes\n    WHERE candidate IS NOT NULL\n),\nCandidateTotals AS (\n    SELECT \n        candidate,\n        SUM(vote_weight) AS total_votes,\n        DENSE_RANK() OVER (ORDER BY SUM(vote_weight) DESC) AS rk\n    FROM WeightedVotes\n    GROUP BY candidate\n)\nSELECT candidate\nFROM CandidateTotals\nWHERE rk = 1\nORDER BY candidate ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Window Weight Distribution with Dense Rank"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef get_election_results(votes: pd.DataFrame) -> pd.DataFrame:\n    valid = votes.dropna(subset=[\"candidate\"]).copy()\n    voter_counts = valid.groupby(\"voter\")[\"candidate\"].transform(\"count\")\n    valid[\"vote_weight\"] = 1.0 / voter_counts\n    totals = valid.groupby(\"candidate\")[\"vote_weight\"].sum().reset_index()\n    max_votes = totals[\"vote_weight\"].max()\n    winners = totals[totals[\"vote_weight\"] == max_votes][[\"candidate\"]].sort_values(\"candidate\")\n    return winners",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Window Weight Distribution with Dense Rank"
+    }
+  ]
+}

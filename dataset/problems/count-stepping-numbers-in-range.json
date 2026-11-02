@@ -1,0 +1,79 @@
+{
+  "slug": "count-stepping-numbers-in-range",
+  "number": 2801,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear",
+    "math-number-theory"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Digit Transitions",
+      "text": "Every stepping number has the property that each consecutive digit differs from its predecessor by exactly one."
+    },
+    {
+      "level": 2,
+      "title": "Digit State Tracking",
+      "text": "Compute the count for numbers up to high and subtract the count for numbers up to low minus one using digit DP with tight and leading-zero flags."
+    },
+    {
+      "level": 3,
+      "title": "Memoized Construction",
+      "text": "Track current digit index, previous digit value, tight constraint, and whether a non-zero prefix has started. Transition to previous digit plus or minus one."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def countSteppingNumbers(self, low: str, high: str) -> int:\n        MOD = 10**9 + 7\n        def count_up_to(s: str) -> int:\n            memo = {}\n            def dp(idx: int, prev: int, is_tight: bool, started: bool) -> int:\n                if idx == len(s):\n                    return 1 if started else 0\n                state = (idx, prev, is_tight, started)\n                if state in memo:\n                    return memo[state]\n                limit = int(s[idx]) if is_tight else 9\n                ans = 0\n                for d in range(0, limit + 1):\n                    nxt_tight = is_tight and (d == limit)\n                    if not started:\n                        if d == 0:\n                            ans = (ans + dp(idx + 1, -1, nxt_tight, False)) % MOD\n                        else:\n                            ans = (ans + dp(idx + 1, d, nxt_tight, True)) % MOD\n                    else:\n                        if abs(d - prev) == 1:\n                            ans = (ans + dp(idx + 1, d, nxt_tight, True)) % MOD\n                memo[state] = ans\n                return ans\n            return dp(0, -1, True, False)\n        ans = (count_up_to(high) - count_up_to(str(int(low) - 1))) % MOD\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(d * 10)",
+    "space": "O(d * 10)",
+    "variables": [
+      "d: number of digits in high string"
+    ],
+    "notes": "Digit DP memoizes across index, previous digit, and tight flags.",
+    "whyNaiveFails": "Iterating across 10^100 numbers leads to exponential timeout.",
+    "spaceTimeTradeoff": "Memoization requires space proportional to digit length times alphabet size.",
+    "interviewerExpectation": "Apply digit dynamic programming with prefix count subtraction f(high) - f(low - 1)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def countSteppingNumbers(self, low: str, high: str) -> int:\n        MOD = 10**9 + 7\n        def count_up_to(s: str) -> int:\n            memo = {}\n            def dp(idx: int, prev: int, is_tight: bool, started: bool) -> int:\n                if idx == len(s):\n                    return 1 if started else 0\n                state = (idx, prev, is_tight, started)\n                if state in memo:\n                    return memo[state]\n                limit = int(s[idx]) if is_tight else 9\n                ans = 0\n                for d in range(0, limit + 1):\n                    nxt_tight = is_tight and (d == limit)\n                    if not started:\n                        if d == 0:\n                            ans = (ans + dp(idx + 1, -1, nxt_tight, False)) % MOD\n                        else:\n                            ans = (ans + dp(idx + 1, d, nxt_tight, True)) % MOD\n                    else:\n                        if abs(d - prev) == 1:\n                            ans = (ans + dp(idx + 1, d, nxt_tight, True)) % MOD\n                memo[state] = ans\n                return ans\n            return dp(0, -1, True, False)\n        ans = (count_up_to(high) - count_up_to(str(int(low) - 1))) % MOD\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Digit DP with Tight and Leading Zero Flags"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int MOD = 1e9 + 7;\n    int memo[105][11][2][2];\n    int dp(int idx, int prev, bool is_tight, bool started, const string& s) {\n        if (idx == s.size()) return started ? 1 : 0;\n        int p_idx = prev == -1 ? 10 : prev;\n        if (memo[idx][p_idx][is_tight][started] != -1) return memo[idx][p_idx][is_tight][started];\n        int limit = is_tight ? (s[idx] - '0') : 9;\n        long long ans = 0;\n        for (int d = 0; d <= limit; ++d) {\n            bool nxt_tight = is_tight && (d == limit);\n            if (!started) {\n                if (d == 0) ans = (ans + dp(idx + 1, -1, nxt_tight, false, s)) % MOD;\n                else ans = (ans + dp(idx + 1, d, nxt_tight, true, s)) % MOD;\n            } else {\n                if (abs(d - prev) == 1) ans = (ans + dp(idx + 1, d, nxt_tight, true, s)) % MOD;\n            }\n        }\n        return memo[idx][p_idx][is_tight][started] = ans;\n    }\n    int count_up_to(const string& s) {\n        memset(memo, -1, sizeof(memo));\n        return dp(0, -1, true, false, s);\n    }\npublic:\n    int countSteppingNumbers(string low, string high) {\n        int ans = count_up_to(high);\n        int i = low.size() - 1;\n        while (i >= 0 && low[i] == '0') {\n            low[i] = '9';\n            --i;\n        }\n        if (i >= 0) low[i]--;\n        while (low.size() > 1 && low[0] == '0') low.erase(low.begin());\n        int sub = count_up_to(low);\n        return (ans - sub + MOD) % MOD;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Digit DP with Tight and Leading Zero Flags"
+    },
+    {
+      "lang": "java",
+      "code": "import java.math.BigInteger;\nimport java.util.Arrays;\n\nclass Solution {\n    private static final int MOD = 1_000_000_007;\n    private int[][][][] memo;\n\n    private int dp(int idx, int prev, boolean isTight, boolean started, String s) {\n        if (idx == s.length()) return started ? 1 : 0;\n        int pIdx = prev == -1 ? 10 : prev;\n        int tIdx = isTight ? 1 : 0;\n        int sIdx = started ? 1 : 0;\n        if (memo[idx][pIdx][tIdx][sIdx] != -1) return memo[idx][pIdx][tIdx][sIdx];\n        int limit = isTight ? (s.charAt(idx) - '0') : 9;\n        long ans = 0;\n        for (int d = 0; d <= limit; d++) {\n            boolean nxtTight = isTight && (d == limit);\n            if (!started) {\n                if (d == 0) ans = (ans + dp(idx + 1, -1, nxtTight, false, s)) % MOD;\n                else ans = (ans + dp(idx + 1, d, nxtTight, true, s)) % MOD;\n            } else {\n                if (Math.abs(d - prev) == 1) ans = (ans + dp(idx + 1, d, nxtTight, true, s)) % MOD;\n            }\n        }\n        return memo[idx][pIdx][tIdx][sIdx] = (int) ans;\n    }\n\n    private int countUpTo(String s) {\n        memo = new int[s.length()][11][2][2];\n        for (int[][][] a : memo) for (int[][] b : a) for (int[] c : b) Arrays.fill(c, -1);\n        return dp(0, -1, true, false, s);\n    }\n\n    public int countSteppingNumbers(String low, String high) {\n        int ans = countUpTo(high);\n        BigInteger lowVal = new BigInteger(low).subtract(BigInteger.ONE);\n        int sub = countUpTo(lowVal.toString());\n        return (ans - sub + MOD) % MOD;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Digit DP with Tight and Leading Zero Flags"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} low\n * @param {string} high\n * @return {number}\n */\nvar countSteppingNumbers = function(low, high) {\n    const MOD = 1000000007n;\n    function countUpTo(s) {\n        const memo = new Map();\n        function dp(idx, prev, isTight, started) {\n            if (idx === s.length) return started ? 1n : 0n;\n            const key = `${idx},${prev},${isTight ? 1 : 0},${started ? 1 : 0}`;\n            if (memo.has(key)) return memo.get(key);\n            const limit = isTight ? Number(s[idx]) : 9;\n            let ans = 0n;\n            for (let d = 0; d <= limit; d++) {\n                const nxtTight = isTight && d === limit;\n                if (!started) {\n                    if (d === 0) ans = (ans + dp(idx + 1, -1, nxtTight, false)) % MOD;\n                    else ans = (ans + dp(idx + 1, d, nxtTight, true)) % MOD;\n                } else {\n                    if (Math.abs(d - prev) === 1) ans = (ans + dp(idx + 1, d, nxtTight, true)) % MOD;\n                }\n            }\n            memo.set(key, ans);\n            return ans;\n        }\n        return dp(0, -1, true, false);\n    }\n    const lowSub = (BigInt(low) - 1n).toString();\n    const ans = (countUpTo(high) - countUpTo(lowSub) + MOD) % MOD;\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Digit DP with Tight and Leading Zero Flags"
+    }
+  ]
+}

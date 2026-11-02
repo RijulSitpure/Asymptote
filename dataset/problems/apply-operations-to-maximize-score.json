@@ -1,0 +1,80 @@
+{
+  "slug": "apply-operations-to-maximize-score",
+  "number": 2818,
+  "category": "Algorithms",
+  "patterns": [
+    "stack-monotonic-next-greater",
+    "greedy-general"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prime Score Precomputation",
+      "text": "Precompute the number of distinct prime factors for each number using an Euler sieve up to the maximum element value."
+    },
+    {
+      "level": 2,
+      "title": "Monotonic Stack Span",
+      "text": "For each index i, determine the left boundary with strictly greater prime score and the right boundary with greater or equal prime score using monotonic stacks."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Power Accumulation",
+      "text": "The number of subarrays where nums[i] is chosen is (i - left) * (right - i). Sort the elements by value descending and greedily apply operations using modular exponentiation."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def maximumScore(self, nums: List[int], k: int) -> int:\n        MOD = 10**9 + 7\n        max_v = max(nums)\n        prime_factors = [0] * (max_v + 1)\n        for i in range(2, max_v + 1):\n            if prime_factors[i] == 0:\n                for j in range(i, max_v + 1, i):\n                    prime_factors[j] += 1\n        scores = [prime_factors[v] for v in nums]\n        n = len(nums)\n        left = [-1] * n\n        right = [n] * n\n        stack = []\n        for i in range(n):\n            while stack and scores[stack[-1]] < scores[i]:\n                stack.pop()\n            if stack:\n                left[i] = stack[-1]\n            stack.append(i)\n        stack = []\n        for i in range(n - 1, -1, -1):\n            while stack and scores[stack[-1]] <= scores[i]:\n                stack.pop()\n            if stack:\n                right[i] = stack[-1]\n            stack.append(i)\n        items = sorted(range(n), key=lambda i: nums[i], reverse=True)\n        ans = 1\n        rem_k = k\n        for i in items:\n            count = (i - left[i]) * (right[i] - i)\n            take = min(rem_k, count)\n            ans = (ans * pow(nums[i], take, MOD)) % MOD\n            rem_k -= take\n            if rem_k == 0:\n                break\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M log log M + n log n)",
+    "space": "O(M + n)",
+    "variables": [
+      "M: maximum value in nums",
+      "n: length of nums"
+    ],
+    "notes": "Sieve prime factor computation, monotonic stack span tracking, and greedy modular exponentiation.",
+    "whyNaiveFails": "Evaluating all subarrays takes O(n^2) which exceeds timeout for large n.",
+    "spaceTimeTradeoff": "O(M + n) auxiliary memory for sieve and stack arrays.",
+    "interviewerExpectation": "Combine number theory sieve, monotonic stacks for interval counting, and greedy modular arithmetic."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maximumScore(self, nums: List[int], k: int) -> int:\n        MOD = 10**9 + 7\n        max_v = max(nums)\n        prime_factors = [0] * (max_v + 1)\n        for i in range(2, max_v + 1):\n            if prime_factors[i] == 0:\n                for j in range(i, max_v + 1, i):\n                    prime_factors[j] += 1\n        scores = [prime_factors[v] for v in nums]\n        n = len(nums)\n        left = [-1] * n\n        right = [n] * n\n        stack = []\n        for i in range(n):\n            while stack and scores[stack[-1]] < scores[i]:\n                stack.pop()\n            if stack:\n                left[i] = stack[-1]\n            stack.append(i)\n        stack = []\n        for i in range(n - 1, -1, -1):\n            while stack and scores[stack[-1]] <= scores[i]:\n                stack.pop()\n            if stack:\n                right[i] = stack[-1]\n            stack.append(i)\n        items = sorted(range(n), key=lambda i: nums[i], reverse=True)\n        ans = 1\n        rem_k = k\n        for i in items:\n            count = (i - left[i]) * (right[i] - i)\n            take = min(rem_k, count)\n            ans = (ans * pow(nums[i], take, MOD)) % MOD\n            rem_k -= take\n            if rem_k == 0:\n                break\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Monotonic Stack Subarray Counting with Sieve"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    long long modPow(long long base, long long exp, long long mod) {\n        long long res = 1;\n        base %= mod;\n        while (exp > 0) {\n            if (exp % 2 == 1) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp /= 2;\n        }\n        return res;\n    }\npublic:\n    int maximumScore(vector<int>& nums, int k) {\n        int MOD = 1e9 + 7;\n        int max_v = 0;\n        for (int v : nums) max_v = max(max_v, v);\n        vector<int> prime_factors(max_v + 1, 0);\n        for (int i = 2; i <= max_v; ++i) {\n            if (prime_factors[i] == 0) {\n                for (int j = i; j <= max_v; j += i) prime_factors[j]++;\n            }\n        }\n        int n = nums.size();\n        vector<int> scores(n);\n        for (int i = 0; i < n; ++i) scores[i] = prime_factors[nums[i]];\n        vector<int> left(n, -1), right(n, n);\n        vector<int> st;\n        for (int i = 0; i < n; ++i) {\n            while (!st.empty() && scores[st.back()] < scores[i]) st.pop_back();\n            if (!st.empty()) left[i] = st.back();\n            st.push_back(i);\n        }\n        st.clear();\n        for (int i = n - 1; i >= 0; --i) {\n            while (!st.empty() && scores[st.back()] <= scores[i]) st.pop_back();\n            if (!st.empty()) right[i] = st.back();\n            st.push_back(i);\n        }\n        vector<int> items(n);\n        iota(items.begin(), items.end(), 0);\n        sort(items.begin(), items.end(), [&](int a, int b) { return nums[a] > nums[b]; });\n        long long ans = 1, rem_k = k;\n        for (int i : items) {\n            long long count = 1LL * (i - left[i]) * (right[i] - i);\n            long long take = min(rem_k, count);\n            ans = (ans * modPow(nums[i], take, MOD)) % MOD;\n            rem_k -= take;\n            if (rem_k == 0) break;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Monotonic Stack Subarray Counting with Sieve"
+    },
+    {
+      "lang": "java",
+      "code": "import java.util.*;\n\nclass Solution {\n    private static final int MOD = 1_000_000_007;\n    private long modPow(long base, long exp) {\n        long res = 1;\n        base %= MOD;\n        while (exp > 0) {\n            if ((exp & 1) == 1) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp >>= 1;\n        }\n        return res;\n    }\n    public int maximumScore(List<Integer> nums, int k) {\n        int n = nums.size();\n        int maxV = 0;\n        for (int v : nums) maxV = Math.max(maxV, v);\n        int[] primeFactors = new int[maxV + 1];\n        for (int i = 2; i <= maxV; i++) {\n            if (primeFactors[i] == 0) {\n                for (int j = i; j <= maxV; j += i) primeFactors[j]++;\n            }\n        }\n        int[] scores = new int[n];\n        for (int i = 0; i < n; i++) scores[i] = primeFactors[nums.get(i)];\n        int[] left = new int[n];\n        Arrays.fill(left, -1);\n        int[] right = new int[n];\n        Arrays.fill(right, n);\n        Deque<Integer> stack = new ArrayDeque<>();\n        for (int i = 0; i < n; i++) {\n            while (!stack.isEmpty() && scores[stack.peek()] < scores[i]) stack.pop();\n            if (!stack.isEmpty()) left[i] = stack.peek();\n            stack.push(i);\n        }\n        stack.clear();\n        for (int i = n - 1; i >= 0; i--) {\n            while (!stack.isEmpty() && scores[stack.peek()] <= scores[i]) stack.pop();\n            if (!stack.isEmpty()) right[i] = stack.peek();\n            stack.push(i);\n        }\n        Integer[] items = new Integer[n];\n        for (int i = 0; i < n; i++) items[i] = i;\n        Arrays.sort(items, (a, b) -> Integer.compare(nums.get(b), nums.get(a)));\n        long ans = 1;\n        long remK = k;\n        for (int i : items) {\n            long count = (long) (i - left[i]) * (right[i] - i);\n            long take = Math.min(remK, count);\n            ans = (ans * modPow(nums.get(i), take)) % MOD;\n            remK -= take;\n            if (remK == 0) break;\n        }\n        return (int) ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Monotonic Stack Subarray Counting with Sieve"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} k\n * @return {number}\n */\nvar maximumScore = function(nums, k) {\n    const MOD = 1000000007n;\n    function modPow(base, exp) {\n        let res = 1n;\n        let b = BigInt(base) % MOD;\n        let e = BigInt(exp);\n        while (e > 0n) {\n            if ((e & 1n) === 1n) res = (res * b) % MOD;\n            b = (b * b) % MOD;\n            e >>= 1n;\n        }\n        return res;\n    }\n    let maxV = 0;\n    for (const v of nums) if (v > maxV) maxV = v;\n    const primeFactors = new Array(maxV + 1).fill(0);\n    for (let i = 2; i <= maxV; i++) {\n        if (primeFactors[i] === 0) {\n            for (let j = i; j <= maxV; j += i) primeFactors[j]++;\n        }\n    }\n    const n = nums.length;\n    const scores = nums.map(v => primeFactors[v]);\n    const left = new Array(n).fill(-1);\n    const right = new Array(n).fill(n);\n    const stack = [];\n    for (let i = 0; i < n; i++) {\n        while (stack.length > 0 && scores[stack[stack.length - 1]] < scores[i]) stack.pop();\n        if (stack.length > 0) left[i] = stack[stack.length - 1];\n        stack.push(i);\n    }\n    stack.length = 0;\n    for (let i = n - 1; i >= 0; i--) {\n        while (stack.length > 0 && scores[stack[stack.length - 1]] <= scores[i]) stack.pop();\n        if (stack.length > 0) right[i] = stack[stack.length - 1];\n        stack.push(i);\n    }\n    const items = Array.from({ length: n }, (_, i) => i);\n    items.sort((a, b) => nums[b] - nums[a]);\n    let ans = 1n;\n    let remK = BigInt(k);\n    for (const i of items) {\n        const count = BigInt(i - left[i]) * BigInt(right[i] - i);\n        const take = remK < count ? remK : count;\n        ans = (ans * modPow(nums[i], take)) % MOD;\n        remK -= take;\n        if (remK === 0n) break;\n    }\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Monotonic Stack Subarray Counting with Sieve"
+    }
+  ]
+}
