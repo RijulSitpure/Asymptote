@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-number-of-operations-with-the-same-score-ii",
+  "number": 3040,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "The initial operation can choose the first two elements, the last two elements, or the first and last elements."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "This yields at most 3 possible candidate scores: nums[0] + nums[1], nums[-2] + nums[-1], or nums[0] + nums[-1]."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "For each candidate score, run interval dynamic programming with memoization memo[i, j] representing the max operations on subarray nums[i...j]."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def maxOperations(self, nums: list[int]) -> int:\n        n = len(nums)\n        candidates = {\n            nums[0] + nums[1],\n            nums[-2] + nums[-1],\n            nums[0] + nums[-1]\n        }\n        \n        def solve(target):\n            memo = {}\n            def dp(i, j):\n                if j - i + 1 < 2:\n                    return 0\n                state = (i, j)\n                if state in memo:\n                    return memo[state]\n                res = 0\n                if nums[i] + nums[i + 1] == target:\n                    res = max(res, 1 + dp(i + 2, j))\n                if nums[j - 1] + nums[j] == target:\n                    res = max(res, 1 + dp(i, j - 2))\n                if nums[i] + nums[j] == target:\n                    res = max(res, 1 + dp(i + 1, j - 1))\n                memo[state] = res\n                return res\n            return dp(0, n - 1)\n            \n        return max(solve(target) for target in candidates)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2)",
+    "space": "O(n^2)",
+    "variables": [
+      "n: length of array nums"
+    ],
+    "notes": "Interval dynamic programming for 3 fixed candidate target scores.",
+    "whyNaiveFails": "Exhaustive branching without memoization has 3^(n/2) exponential combinations.",
+    "spaceTimeTradeoff": "O(n^2) memoization table for subproblem states (i, j).",
+    "interviewerExpectation": "Identify that the first move fixes the score, bounding the search to 3 interval DP instances."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Three-Candidate Interval Dynamic Programming",
+      "code": "class Solution:\n    def maxOperations(self, nums: list[int]) -> int:\n        n = len(nums)\n        candidates = {\n            nums[0] + nums[1],\n            nums[-2] + nums[-1],\n            nums[0] + nums[-1]\n        }\n        \n        def solve(target):\n            memo = {}\n            def dp(i, j):\n                if j - i + 1 < 2:\n                    return 0\n                state = (i, j)\n                if state in memo:\n                    return memo[state]\n                res = 0\n                if nums[i] + nums[i + 1] == target:\n                    res = max(res, 1 + dp(i + 2, j))\n                if nums[j - 1] + nums[j] == target:\n                    res = max(res, 1 + dp(i, j - 2))\n                if nums[i] + nums[j] == target:\n                    res = max(res, 1 + dp(i + 1, j - 1))\n                memo[state] = res\n                return res\n            return dp(0, n - 1)\n            \n        return max(solve(target) for target in candidates)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Three-Candidate Interval Dynamic Programming",
+      "code": "#include <vector>\n#include <algorithm>\n#include <set>\n#include <cstring>\n\nclass Solution {\n    int memo[2005][2005];\n    int solve(const std::vector<int>& nums, int target) {\n        int n = nums.size();\n        std::memset(memo, -1, sizeof(memo));\n        auto dp = [&](auto& self, int i, int j) -> int {\n            if (j - i + 1 < 2) return 0;\n            if (memo[i][j] != -1) return memo[i][j];\n            int res = 0;\n            if (nums[i] + nums[i + 1] == target) res = std::max(res, 1 + self(self, i + 2, j));\n            if (nums[j - 1] + nums[j] == target) res = std::max(res, 1 + self(self, i, j - 2));\n            if (nums[i] + nums[j] == target) res = std::max(res, 1 + self(self, i + 1, j - 1));\n            return memo[i][j] = res;\n        };\n        return dp(dp, 0, n - 1);\n    }\npublic:\n    int maxOperations(std::vector<int>& nums) {\n        int n = nums.size();\n        std::set<int> candidates = {nums[0] + nums[1], nums[n - 2] + nums[n - 1], nums[0] + nums[n - 1]};\n        int ans = 0;\n        for (int c : candidates) ans = std::max(ans, solve(nums, c));\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Three-Candidate Interval Dynamic Programming",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int[][] memo;\n    private int solve(int[] nums, int target) {\n        int n = nums.length;\n        memo = new int[n][n];\n        for (int[] row : memo) Arrays.fill(row, -1);\n        return dp(nums, 0, n - 1, target);\n    }\n\n    private int dp(int[] nums, int i, int j, int target) {\n        if (j - i + 1 < 2) return 0;\n        if (memo[i][j] != -1) return memo[i][j];\n        int res = 0;\n        if (nums[i] + nums[i + 1] == target) res = Math.max(res, 1 + dp(nums, i + 2, j, target));\n        if (nums[j - 1] + nums[j] == target) res = Math.max(res, 1 + dp(nums, i, j - 2, target));\n        if (nums[i] + nums[j] == target) res = Math.max(res, 1 + dp(nums, i + 1, j - 1, target));\n        return memo[i][j] = res;\n    }\n\n    public int maxOperations(int[] nums) {\n        int n = nums.length;\n        Set<Integer> candidates = new HashSet<>(Arrays.asList(\n            nums[0] + nums[1],\n            nums[n - 2] + nums[n - 1],\n            nums[0] + nums[n - 1]\n        ));\n        int ans = 0;\n        for (int c : candidates) ans = Math.max(ans, solve(nums, c));\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Three-Candidate Interval Dynamic Programming",
+      "code": "var maxOperations = function(nums) {\n    const n = nums.length;\n    const candidates = new Set([\n        nums[0] + nums[1],\n        nums[n - 2] + nums[n - 1],\n        nums[0] + nums[n - 1]\n    ]);\n    const solve = (target) => {\n        const memo = new Map();\n        const dp = (i, j) => {\n            if (j - i + 1 < 2) return 0;\n            const key = (i << 12) | j;\n            if (memo.has(key)) return memo.get(key);\n            let res = 0;\n            if (nums[i] + nums[i + 1] === target) res = Math.max(res, 1 + dp(i + 2, j));\n            if (nums[j - 1] + nums[j] === target) res = Math.max(res, 1 + dp(i, j - 2));\n            if (nums[i] + nums[j] === target) res = Math.max(res, 1 + dp(i + 1, j - 1));\n            memo.set(key, res);\n            return res;\n        };\n        return dp(0, n - 1);\n    };\n    let ans = 0;\n    for (const c of candidates) ans = Math.max(ans, solve(c));\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

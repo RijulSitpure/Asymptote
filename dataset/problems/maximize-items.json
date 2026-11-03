@@ -1,0 +1,71 @@
+{
+  "slug": "maximize-items",
+  "number": 3052,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "We have 500,000 square feet of warehouse space. First prioritize packing the maximum possible number of prime items, then fill the remainder with non-prime items."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Compute the total square footage and item count for prime_eligible items, and determine how many complete sets can fit."
+    },
+    {
+      "level": 3,
+      "title": "Query Construction",
+      "text": "Use the remaining square footage to calculate how many complete sets of not_prime items can fit."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH T AS (\n    SELECT\n        IFNULL(SUM(square_footage), 0) AS s,\n        COUNT(1) AS cnt\n    FROM Inventory\n    WHERE item_type = 'prime_eligible'\n)\nSELECT\n    'prime_eligible' AS item_type,\n    IF(s = 0, 0, cnt * FLOOR(500000 / s)) AS item_count\nFROM T\nUNION ALL\nSELECT\n    'not_prime',\n    IFNULL(COUNT(1) * FLOOR(IF(s = 0, 500000, 500000 % s) / SUM(square_footage)), 0)\nFROM Inventory\nJOIN T\nWHERE item_type = 'not_prime'\nGROUP BY s\nORDER BY item_count DESC, item_type DESC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(1)",
+    "variables": [
+      "N: total inventory items"
+    ],
+    "notes": "Aggregation of space requirements per category followed by greedy floor division.",
+    "whyNaiveFails": "Knapsack simulation is slow and unneeded since all items in a category must be replicated proportionally.",
+    "spaceTimeTradeoff": "O(1) memory for scalar space totals.",
+    "interviewerExpectation": "Compute prime capacity first and use remaining modulo space for secondary items."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Capacity Floor Division with Modulo Remainder",
+      "code": "WITH T AS (\n    SELECT\n        IFNULL(SUM(square_footage), 0) AS s,\n        COUNT(1) AS cnt\n    FROM Inventory\n    WHERE item_type = 'prime_eligible'\n)\nSELECT\n    'prime_eligible' AS item_type,\n    IF(s = 0, 0, cnt * FLOOR(500000 / s)) AS item_count\nFROM T\nUNION ALL\nSELECT\n    'not_prime',\n    IFNULL(COUNT(1) * FLOOR(IF(s = 0, 500000, 500000 % s) / SUM(square_footage)), 0)\nFROM Inventory\nJOIN T\nWHERE item_type = 'not_prime'\nGROUP BY s\nORDER BY item_count DESC, item_type DESC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Capacity Floor Division with Modulo Remainder",
+      "code": "WITH T AS (\n    SELECT\n        COALESCE(SUM(square_footage), 0) AS s,\n        COUNT(1) AS cnt\n    FROM Inventory\n    WHERE item_type = 'prime_eligible'\n)\nSELECT\n    'prime_eligible'::varchar AS item_type,\n    (CASE WHEN s = 0 THEN 0 ELSE cnt * FLOOR(500000 / s) END)::bigint AS item_count\nFROM T\nUNION ALL\nSELECT\n    'not_prime'::varchar,\n    COALESCE(COUNT(1) * FLOOR((CASE WHEN s = 0 THEN 500000 ELSE (500000 % s::bigint) END) / SUM(square_footage)), 0)::bigint\nFROM Inventory\nCROSS JOIN T\nWHERE item_type = 'not_prime'\nGROUP BY s\nORDER BY item_count DESC, item_type DESC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Floor Division and Space Remainder",
+      "code": "import pandas as pd\nimport numpy as np\n\ndef maximize_items(inventory: pd.DataFrame) -> pd.DataFrame:\n    prime = inventory[inventory['item_type'] == 'prime_eligible']\n    not_prime = inventory[inventory['item_type'] == 'not_prime']\n    \n    prime_s = prime['square_footage'].sum() if not prime.empty else 0\n    prime_cnt = len(prime)\n    \n    if prime_s > 0:\n        prime_batches = 500000 // prime_s\n        prime_items = int(prime_cnt * prime_batches)\n        rem_space = 500000 % prime_s\n    else:\n        prime_items = 0\n        rem_space = 500000\n        \n    np_s = not_prime['square_footage'].sum() if not not_prime.empty else 0\n    np_cnt = len(not_prime)\n    \n    if np_s > 0:\n        np_batches = rem_space // np_s\n        np_items = int(np_cnt * np_batches)\n    else:\n        np_items = 0\n        \n    res = pd.DataFrame([\n        {'item_type': 'prime_eligible', 'item_count': prime_items},\n        {'item_type': 'not_prime', 'item_count': np_items}\n    ])\n    return res.sort_values(by=['item_count', 'item_type'], ascending=[False, False])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "earliest-second-to-mark-indices-ii",
+  "number": 3049,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "lookup structure on the total time t in [1, len(changeIndices)]."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "In Part II, an index can be reset to 0 in 1 second; map each index to its first occurrence."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Traverse backwards from t - 1 down to 0, using a min-heap to greedily keep the best reset operations while ensuring sufficient time slots."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def earliestSecondToMarkIndices(self, nums: list[int], changeIndices: list[int]) -> int:\n        n = len(nums)\n        m = len(changeIndices)\n        nums_sum = sum(nums)\n\n        def can_mark(max_second: int) -> bool:\n            second_to_index = {}\n            seen = set()\n            for s in range(max_second):\n                idx = changeIndices[s] - 1\n                if idx not in seen and nums[idx] > 0:\n                    seen.add(idx)\n                    second_to_index[s] = idx\n\n            min_heap = []\n            marks = 0\n            for second in range(max_second - 1, -1, -1):\n                if second in second_to_index:\n                    index = second_to_index[second]\n                    heapq.heappush(min_heap, nums[index])\n                    if marks == 0:\n                        heapq.heappop(min_heap)\n                        marks += 1\n                    else:\n                        marks -= 1\n                else:\n                    marks += 1\n\n            decrement_cost = (nums_sum - sum(min_heap)) + (n - len(min_heap))\n            reset_cost = 2 * len(min_heap)\n            return decrement_cost + reset_cost <= max_second\n\n        l, r = 1, m\n        ans = -1\n        while l <= r:\n            mid = (l + r) // 2\n            if can_mark(mid):\n                ans = mid\n                r = mid - 1\n            else:\n                l = mid + 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((m + n log n) log m)",
+    "space": "O(n + m)",
+    "variables": [
+      "n: length of nums",
+      "m: length of changeIndices"
+    ],
+    "notes": "Binary search on monotonic completion time with reverse min-heap greedy check.",
+    "whyNaiveFails": "Exponential search over reset vs decrement choices is infeasible.",
+    "spaceTimeTradeoff": "O(n) auxiliary heap memory.",
+    "interviewerExpectation": "Recognize that reset operation is only useful on first occurrence and priority queue resolves greedy conflicts."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Binary Search and Reverse Min-Heap Greedy Check",
+      "code": "import heapq\n\nclass Solution:\n    def earliestSecondToMarkIndices(self, nums: list[int], changeIndices: list[int]) -> int:\n        n = len(nums)\n        m = len(changeIndices)\n        nums_sum = sum(nums)\n\n        def can_mark(max_second: int) -> bool:\n            second_to_index = {}\n            seen = set()\n            for s in range(max_second):\n                idx = changeIndices[s] - 1\n                if idx not in seen and nums[idx] > 0:\n                    seen.add(idx)\n                    second_to_index[s] = idx\n\n            min_heap = []\n            marks = 0\n            for second in range(max_second - 1, -1, -1):\n                if second in second_to_index:\n                    index = second_to_index[second]\n                    heapq.heappush(min_heap, nums[index])\n                    if marks == 0:\n                        heapq.heappop(min_heap)\n                        marks += 1\n                    else:\n                        marks -= 1\n                else:\n                    marks += 1\n\n            decrement_cost = (nums_sum - sum(min_heap)) + (n - len(min_heap))\n            reset_cost = 2 * len(min_heap)\n            return decrement_cost + reset_cost <= max_second\n\n        l, r = 1, m\n        ans = -1\n        while l <= r:\n            mid = (l + r) // 2\n            if can_mark(mid):\n                ans = mid\n                r = mid - 1\n            else:\n                l = mid + 1\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Binary Search and Reverse Min-Heap Greedy Check",
+      "code": "#include <vector>\n#include <queue>\n#include <numeric>\n#include <unordered_map>\n\nclass Solution {\npublic:\n    int earliestSecondToMarkIndices(std::vector<int>& nums, std::vector<int>& changeIndices) {\n        int n = nums.size(), m = changeIndices.size();\n        long long nums_sum = 0;\n        for (int x : nums) nums_sum += x;\n\n        auto can_mark = [&](int max_second) {\n            std::unordered_map<int, int> second_to_index;\n            for (int s = 0; s < max_second; ++s) {\n                int idx = changeIndices[s] - 1;\n                if (!second_to_index.count(s) && nums[idx] > 0) {\n                    bool seen = false;\n                    for (auto const& [sec, i] : second_to_index) if (i == idx) { seen = true; break; }\n                    if (!seen) second_to_index[s] = idx;\n                }\n            }\n            std::priority_queue<int, std::vector<int>, std::greater<int>> min_heap;\n            int marks = 0;\n            for (int s = max_second - 1; s >= 0; --s) {\n                if (second_to_index.count(s)) {\n                    int index = second_to_index[s];\n                    min_heap.push(nums[index]);\n                    if (marks == 0) {\n                        min_heap.pop();\n                        marks++;\n                    } else {\n                        marks--;\n                    }\n                } else {\n                    marks++;\n                }\n            }\n            long long heap_sum = 0;\n            std::vector<int> tmp;\n            while (!min_heap.empty()) { heap_sum += min_heap.top(); tmp.push_back(min_heap.top()); min_heap.pop(); }\n            int heap_size = tmp.size();\n            long long decrement_cost = (nums_sum - heap_sum) + (n - heap_size);\n            long long reset_cost = 2LL * heap_size;\n            return decrement_cost + reset_cost <= max_second;\n        };\n\n        int l = 1, r = m, ans = -1;\n        while (l <= r) {\n            int mid = l + (r - l) / 2;\n            if (can_mark(mid)) {\n                ans = mid;\n                r = mid - 1;\n            } else l = mid + 1;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Binary Search and Reverse Min-Heap Greedy Check",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int earliestSecondToMarkIndices(int[] nums, int[] changeIndices) {\n        int n = nums.length, m = changeIndices.length;\n        long numsSum = 0;\n        for (int x : nums) numsSum += x;\n\n        int l = 1, r = m, ans = -1;\n        while (l <= r) {\n            int mid = l + (r - l) / 2;\n            if (canMark(mid, nums, changeIndices, numsSum)) {\n                ans = mid;\n                r = mid - 1;\n            } else l = mid + 1;\n        }\n        return ans;\n    }\n\n    private boolean canMark(int maxSecond, int[] nums, int[] changeIndices, long numsSum) {\n        int n = nums.length;\n        Map<Integer, Integer> secondToIndex = new HashMap<>();\n        Set<Integer> seen = new HashSet<>();\n        for (int s = 0; s < maxSecond; ++s) {\n            int idx = changeIndices[s] - 1;\n            if (!seen.contains(idx) && nums[idx] > 0) {\n                seen.add(idx);\n                secondToIndex.put(s, idx);\n            }\n        }\n        PriorityQueue<Integer> minHeap = new PriorityQueue<>();\n        int marks = 0;\n        for (int s = maxSecond - 1; s >= 0; --s) {\n            if (secondToIndex.containsKey(s)) {\n                int index = secondToIndex.get(s);\n                minHeap.add(nums[index]);\n                if (marks == 0) {\n                    minHeap.poll();\n                    marks++;\n                } else {\n                    marks--;\n                }\n            } else {\n                marks++;\n            }\n        }\n        long heapSum = 0;\n        int heapSize = minHeap.size();\n        for (int val : minHeap) heapSum += val;\n        long decrementCost = (numsSum - heapSum) + (n - heapSize);\n        long resetCost = 2L * heapSize;\n        return decrementCost + resetCost <= maxSecond;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Binary Search and Reverse Min-Heap Greedy Check",
+      "code": "var earliestSecondToMarkIndices = function(nums, changeIndices) {\n    const n = nums.length, m = changeIndices.length;\n    let numsSum = 0;\n    for (const x of nums) numsSum += x;\n\n    const canMark = (maxSecond) => {\n        const secondToIndex = new Map();\n        const seen = new Set();\n        for (let s = 0; s < maxSecond; ++s) {\n            const idx = changeIndices[s] - 1;\n            if (!seen.has(idx) && nums[idx] > 0) {\n                seen.add(idx);\n                secondToIndex.set(s, idx);\n            }\n        }\n        const heap = [];\n        let marks = 0;\n        for (let s = maxSecond - 1; s >= 0; --s) {\n            if (secondToIndex.has(s)) {\n                const index = secondToIndex.get(s);\n                heap.push(nums[index]);\n                heap.sort((a, b) => a - b);\n                if (marks === 0) {\n                    heap.shift();\n                    marks++;\n                } else {\n                    marks--;\n                }\n            } else {\n                marks++;\n            }\n        }\n        let heapSum = 0;\n        for (const v of heap) heapSum += v;\n        const heapSize = heap.length;\n        const decrementCost = (numsSum - heapSum) + (n - heapSize);\n        const resetCost = 2 * heapSize;\n        return decrementCost + resetCost <= maxSecond;\n    };\n\n    let l = 1, r = m, ans = -1;\n    while (l <= r) {\n        const mid = Math.floor((l + r) / 2);\n        if (canMark(mid)) {\n            ans = mid;\n            r = mid - 1;\n        } else l = mid + 1;\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

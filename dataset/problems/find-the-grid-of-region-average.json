@@ -1,0 +1,79 @@
+{
+  "slug": "find-the-grid-of-region-average",
+  "number": 3030,
+  "category": "Algorithms",
+  "patterns": [
+    "matrix-simulation"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "A 3 x 3 subgrid is a valid region if the absolute difference between every pair of adjacent cells within it is <= threshold."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "For every valid 3 x 3 region, calculate its average: floor(sum / 9)."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Each cell in the output gets floor(sum of region averages covering it / number of covering regions). If no region covers a cell, keep its original value."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def resultGrid(self, image: list[list[int]], threshold: int) -> list[list[int]]:\n        m, n = len(image), len(image[0])\n        val = [[0] * n for _ in range(m)]\n        cnt = [[0] * n for _ in range(m)]\n        \n        for i in range(m - 2):\n            for j in range(n - 2):\n                ok = True\n                s = 0\n                for r in range(i, i + 3):\n                    for c in range(j, j + 3):\n                        s += image[r][c]\n                        if r + 1 < i + 3 and abs(image[r][c] - image[r + 1][c]) > threshold:\n                            ok = False\n                        if c + 1 < j + 3 and abs(image[r][c] - image[r][c + 1]) > threshold:\n                            ok = False\n                if ok:\n                    avg = s // 9\n                    for r in range(i, i + 3):\n                        for c in range(j, j + 3):\n                            val[r][c] += avg\n                            cnt[r][c] += 1\n                            \n        ans = [[0] * n for _ in range(m)]\n        for i in range(m):\n            for j in range(n):\n                if cnt[i][j] > 0:\n                    ans[i][j] = val[i][j] // cnt[i][j]\n                else:\n                    ans[i][j] = image[i][j]\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n)",
+    "space": "O(m * n)",
+    "variables": [
+      "m: rows in image",
+      "n: columns in image"
+    ],
+    "notes": "3 x 3 sliding window evaluation followed by cell-wise average reconstruction.",
+    "whyNaiveFails": "Brute force recalculation without caching covering regions takes excessive constant factor overhead.",
+    "spaceTimeTradeoff": "O(m * n) memory for accumulator grids.",
+    "interviewerExpectation": "Verify all 12 internal adjacent edges within each 3x3 block before accumulating average."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "3x3 Window Neighborhood Validation and Averaging",
+      "code": "class Solution:\n    def resultGrid(self, image: list[list[int]], threshold: int) -> list[list[int]]:\n        m, n = len(image), len(image[0])\n        val = [[0] * n for _ in range(m)]\n        cnt = [[0] * n for _ in range(m)]\n        \n        for i in range(m - 2):\n            for j in range(n - 2):\n                ok = True\n                s = 0\n                for r in range(i, i + 3):\n                    for c in range(j, j + 3):\n                        s += image[r][c]\n                        if r + 1 < i + 3 and abs(image[r][c] - image[r + 1][c]) > threshold:\n                            ok = False\n                        if c + 1 < j + 3 and abs(image[r][c] - image[r][c + 1]) > threshold:\n                            ok = False\n                if ok:\n                    avg = s // 9\n                    for r in range(i, i + 3):\n                        for c in range(j, j + 3):\n                            val[r][c] += avg\n                            cnt[r][c] += 1\n                            \n        ans = [[0] * n for _ in range(m)]\n        for i in range(m):\n            for j in range(n):\n                if cnt[i][j] > 0:\n                    ans[i][j] = val[i][j] // cnt[i][j]\n                else:\n                    ans[i][j] = image[i][j]\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "3x3 Window Neighborhood Validation and Averaging",
+      "code": "#include <vector>\n#include <cmath>\n\nclass Solution {\npublic:\n    std::vector<std::vector<int>> resultGrid(std::vector<std::vector<int>>& image, int threshold) {\n        int m = image.size(), n = image[0].size();\n        std::vector<std::vector<int>> val(m, std::vector<int>(n, 0));\n        std::vector<std::vector<int>> cnt(m, std::vector<int>(n, 0));\n\n        for (int i = 0; i < m - 2; ++i) {\n            for (int j = 0; j < n - 2; ++j) {\n                bool ok = true;\n                int s = 0;\n                for (int r = i; r < i + 3; ++r) {\n                    for (int c = j; c < j + 3; ++c) {\n                        s += image[r][c];\n                        if (r + 1 < i + 3 && std::abs(image[r][c] - image[r + 1][c]) > threshold) ok = false;\n                        if (c + 1 < j + 3 && std::abs(image[r][c] - image[r][c + 1]) > threshold) ok = false;\n                    }\n                }\n                if (ok) {\n                    int avg = s / 9;\n                    for (int r = i; r < i + 3; ++r) {\n                        for (int c = j; c < j + 3; ++c) {\n                            val[r][c] += avg;\n                            cnt[r][c]++;\n                        }\n                    }\n                }\n            }\n        }\n        std::vector<std::vector<int>> ans(m, std::vector<int>(n, 0));\n        for (int i = 0; i < m; ++i) {\n            for (int j = 0; j < n; ++j) {\n                ans[i][j] = cnt[i][j] > 0 ? val[i][j] / cnt[i][j] : image[i][j];\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "3x3 Window Neighborhood Validation and Averaging",
+      "code": "class Solution {\n    public int[][] resultGrid(int[][] image, int threshold) {\n        int m = image.length, n = image[0].length;\n        int[][] val = new int[m][n];\n        int[][] cnt = new int[m][n];\n\n        for (int i = 0; i < m - 2; ++i) {\n            for (int j = 0; j < n - 2; ++j) {\n                boolean ok = true;\n                int s = 0;\n                for (int r = i; r < i + 3; ++r) {\n                    for (int c = j; c < j + 3; ++c) {\n                        s += image[r][c];\n                        if (r + 1 < i + 3 && Math.abs(image[r][c] - image[r + 1][c]) > threshold) ok = false;\n                        if (c + 1 < j + 3 && Math.abs(image[r][c] - image[r][c + 1]) > threshold) ok = false;\n                    }\n                }\n                if (ok) {\n                    int avg = s / 9;\n                    for (int r = i; r < i + 3; ++r) {\n                        for (int c = j; c < j + 3; ++c) {\n                            val[r][c] += avg;\n                            cnt[r][c]++;\n                        }\n                    }\n                }\n            }\n        }\n        int[][] ans = new int[m][n];\n        for (int i = 0; i < m; ++i) {\n            for (int j = 0; j < n; ++j) {\n                ans[i][j] = cnt[i][j] > 0 ? val[i][j] / cnt[i][j] : image[i][j];\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "3x3 Window Neighborhood Validation and Averaging",
+      "code": "var resultGrid = function(image, threshold) {\n    const m = image.length, n = image[0].length;\n    const val = Array.from({ length: m }, () => new Array(n).fill(0));\n    const cnt = Array.from({ length: m }, () => new Array(n).fill(0));\n\n    for (let i = 0; i < m - 2; ++i) {\n        for (let j = 0; j < n - 2; ++j) {\n            let ok = true;\n            let s = 0;\n            for (let r = i; r < i + 3; ++r) {\n                for (let c = j; c < j + 3; ++c) {\n                    s += image[r][c];\n                    if (r + 1 < i + 3 && Math.abs(image[r][c] - image[r + 1][c]) > threshold) ok = false;\n                    if (c + 1 < j + 3 && Math.abs(image[r][c] - image[r][c + 1]) > threshold) ok = false;\n                }\n            }\n            if (ok) {\n                const avg = Math.floor(s / 9);\n                for (let r = i; r < i + 3; ++r) {\n                    for (let c = j; c < j + 3; ++c) {\n                        val[r][c] += avg;\n                        cnt[r][c]++;\n                    }\n                }\n            }\n        }\n    }\n    const ans = Array.from({ length: m }, () => new Array(n).fill(0));\n    for (let i = 0; i < m; ++i) {\n        for (let j = 0; j < n; ++j) {\n            ans[i][j] = cnt[i][j] > 0 ? Math.floor(val[i][j] / cnt[i][j]) : image[i][j];\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

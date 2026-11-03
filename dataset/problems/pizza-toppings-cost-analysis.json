@@ -1,0 +1,71 @@
+{
+  "slug": "pizza-toppings-cost-analysis",
+  "number": 3050,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "We need to generate all combinations of 3 distinct toppings ordered alphabetically."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Rank or order toppings alphabetically and self-join the table three times with strictly increasing rank conditions t1.rk < t2.rk and t2.rk < t3.rk."
+    },
+    {
+      "level": 3,
+      "title": "Query Construction",
+      "text": "Concatenate the three topping names with commas and compute the sum of costs rounded to 2 decimal places, ordered by total cost descending then pizza ascending."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH T AS (\n    SELECT *, RANK() OVER (ORDER BY topping_name) AS rk\n    FROM Toppings\n)\nSELECT\n    CONCAT(t1.topping_name, ',', t2.topping_name, ',', t3.topping_name) AS pizza,\n    ROUND(t1.cost + t2.cost + t3.cost, 2) AS total_cost\nFROM T AS t1\nJOIN T AS t2 ON t1.rk < t2.rk\nJOIN T AS t3 ON t2.rk < t3.rk\nORDER BY 2 DESC, 1 ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^3)",
+    "space": "O(N^3)",
+    "variables": [
+      "N: total number of distinct toppings"
+    ],
+    "notes": "3-way self-join generating combinations of size 3.",
+    "whyNaiveFails": "Unfiltered cross joins generate permutations and duplicates rather than combinations.",
+    "spaceTimeTradeoff": "O(N^3) memory for the output pizza combinations.",
+    "interviewerExpectation": "Enforce strict alphabetical ordering via join inequality to prevent permutations and duplicates."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Three-Way Self Join with Strict Inequality",
+      "code": "WITH T AS (\n    SELECT *, RANK() OVER (ORDER BY topping_name) AS rk\n    FROM Toppings\n)\nSELECT\n    CONCAT(t1.topping_name, ',', t2.topping_name, ',', t3.topping_name) AS pizza,\n    ROUND(t1.cost + t2.cost + t3.cost, 2) AS total_cost\nFROM T AS t1\nJOIN T AS t2 ON t1.rk < t2.rk\nJOIN T AS t3 ON t2.rk < t3.rk\nORDER BY 2 DESC, 1 ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Three-Way Self Join with Strict Inequality",
+      "code": "WITH T AS (\n    SELECT *, RANK() OVER (ORDER BY topping_name) AS rk\n    FROM Toppings\n)\nSELECT\n    CONCAT(t1.topping_name, ',', t2.topping_name, ',', t3.topping_name) AS pizza,\n    ROUND((t1.cost + t2.cost + t3.cost)::numeric, 2) AS total_cost\nFROM T AS t1\nJOIN T AS t2 ON t1.rk < t2.rk\nJOIN T AS t3 ON t2.rk < t3.rk\nORDER BY 2 DESC, 1 ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Itertools Combinations on Sorted Toppings",
+      "code": "import pandas as pd\nfrom itertools import combinations\n\ndef cost_analysis(toppings: pd.DataFrame) -> pd.DataFrame:\n    df = toppings.sort_values(by='topping_name').reset_index(drop=True)\n    rows = []\n    for c1, c2, c3 in combinations(df.itertuples(), 3):\n        pizza = f\"{c1.topping_name},{c2.topping_name},{c3.topping_name}\"\n        total_cost = round(float(c1.cost) + float(c2.cost) + float(c3.cost), 2)\n        rows.append({'pizza': pizza, 'total_cost': total_cost})\n    res = pd.DataFrame(rows)\n    if res.empty:\n        return pd.DataFrame(columns=['pizza', 'total_cost'])\n    return res.sort_values(by=['total_cost', 'pizza'], ascending=[False, True])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

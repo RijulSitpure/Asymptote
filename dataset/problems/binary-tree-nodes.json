@@ -1,0 +1,71 @@
+{
+  "slug": "binary-tree-nodes",
+  "number": 3054,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "A node is 'Root' if its parent pointer P is null."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "A node is 'Leaf' if it has a non-null parent and never appears as a parent P for any child node."
+    },
+    {
+      "level": 3,
+      "title": "Query Construction",
+      "text": "Otherwise, it is 'Inner'. Left join the table on t1.N = t2.P to detect child presence."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nSELECT DISTINCT\n    t1.N AS N,\n    IF(t1.P IS NULL, 'Root', IF(t2.P IS NULL, 'Leaf', 'Inner')) AS Type\nFROM Tree AS t1\nLEFT JOIN Tree AS t2 ON t1.N = t2.P\nORDER BY 1;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in binary tree"
+    ],
+    "notes": "Left join to check child presence followed by classification and sort.",
+    "whyNaiveFails": "Correlated subqueries per row take quadratic time.",
+    "spaceTimeTradeoff": "O(N) memory for child presence lookup.",
+    "interviewerExpectation": "Identify parent nullness for root and absence in parent column for leaves."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Left Join Child Detection and Conditional Classification",
+      "code": "SELECT DISTINCT\n    t1.N AS N,\n    IF(t1.P IS NULL, 'Root', IF(t2.P IS NULL, 'Leaf', 'Inner')) AS Type\nFROM Tree AS t1\nLEFT JOIN Tree AS t2 ON t1.N = t2.P\nORDER BY 1;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Left Join Child Detection and Conditional Classification",
+      "code": "SELECT DISTINCT\n    t1.N AS N,\n    CASE \n        WHEN t1.P IS NULL THEN 'Root'\n        WHEN t2.P IS NULL THEN 'Leaf'\n        ELSE 'Inner'\n    END AS Type\nFROM Tree AS t1\nLEFT JOIN Tree AS t2 ON t1.N = t2.P\nORDER BY 1;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Set Membership for Parent Detection",
+      "code": "import pandas as pd\n\ndef binary_tree_nodes(tree: pd.DataFrame) -> pd.DataFrame:\n    parents = set(tree['P'].dropna().unique())\n    def classify(row):\n        if pd.isna(row['P']):\n            return 'Root'\n        elif row['N'] not in parents:\n            return 'Leaf'\n        else:\n            return 'Inner'\n\n    res = tree[['N']].copy().drop_duplicates()\n    res['Type'] = tree.apply(classify, axis=1)\n    return res.sort_values(by='N')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

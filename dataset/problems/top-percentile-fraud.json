@@ -1,0 +1,71 @@
+{
+  "slug": "top-percentile-fraud",
+  "number": 3055,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "We want to identify claims in the top 5th percentile of fraud score within each state."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Use the percent_rank() window function partitioned by state and ordered by fraud_score descending."
+    },
+    {
+      "level": 3,
+      "title": "Query Construction",
+      "text": "Filter for percent_rank <= 0.05 and order results by state ascending, fraud_score descending, and policy_id ascending."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH RankedFraud AS (\n    SELECT \n        policy_id, \n        state, \n        fraud_score,\n        PERCENT_RANK() OVER (\n            PARTITION BY state \n            ORDER BY fraud_score DESC\n        ) AS p_rank\n    FROM Fraud\n)\nSELECT \n    policy_id, \n    state, \n    fraud_score\nFROM RankedFraud\nWHERE p_rank <= 0.05\nORDER BY \n    state ASC, \n    fraud_score DESC, \n    policy_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total fraud claim records"
+    ],
+    "notes": "Partitioned percent rank window calculation followed by threshold filter.",
+    "whyNaiveFails": "Calculating percentile cutoffs per state manually requires multiple passes.",
+    "spaceTimeTradeoff": "O(N) memory for window buffer.",
+    "interviewerExpectation": "Use percent_rank window function partitioned by state to isolate top percentiles cleanly."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Partitioned Percent Rank Window Function",
+      "code": "WITH RankedFraud AS (\n    SELECT \n        policy_id, \n        state, \n        fraud_score,\n        PERCENT_RANK() OVER (\n            PARTITION BY state \n            ORDER BY fraud_score DESC\n        ) AS p_rank\n    FROM Fraud\n)\nSELECT \n    policy_id, \n    state, \n    fraud_score\nFROM RankedFraud\nWHERE p_rank <= 0.05\nORDER BY \n    state ASC, \n    fraud_score DESC, \n    policy_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Partitioned Percent Rank Window Function",
+      "code": "WITH RankedFraud AS (\n    SELECT \n        policy_id, \n        state, \n        fraud_score,\n        PERCENT_RANK() OVER (\n            PARTITION BY state \n            ORDER BY fraud_score DESC\n        ) AS p_rank\n    FROM Fraud\n)\nSELECT \n    policy_id, \n    state, \n    fraud_score\nFROM RankedFraud\nWHERE p_rank <= 0.05\nORDER BY \n    state ASC, \n    fraud_score DESC, \n    policy_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Percentile Rank Filtering",
+      "code": "import pandas as pd\n\ndef top_percentile_fraud(fraud: pd.DataFrame) -> pd.DataFrame:\n    df = fraud.copy()\n    def get_prank(group):\n        n = len(group)\n        if n == 1:\n            group['p_rank'] = 0.0\n        else:\n            rank = group['fraud_score'].rank(ascending=False, method='min')\n            group['p_rank'] = (rank - 1) / (n - 1)\n        return group\n\n    ranked = df.groupby('state', group_keys=False).apply(get_prank)\n    filtered = ranked[ranked['p_rank'] <= 0.05]\n    res = filtered[['policy_id', 'state', 'fraud_score']]\n    return res.sort_values(by=['state', 'fraud_score', 'policy_id'], ascending=[True, False, True])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}
