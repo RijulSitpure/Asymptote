@@ -1,0 +1,80 @@
+{
+  "slug": "find-building-where-alice-and-bob-can-meet",
+  "number": 2940,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements",
+    "stack-monotonic-next-greater"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Direct Meeting Condition",
+      "text": "If a <= b and heights[a] < heights[b], Alice can jump directly to Bob, making index b the answer."
+    },
+    {
+      "level": 2,
+      "title": "Offline Query Grouping",
+      "text": "For queries where heights[a] >= heights[b], group the query at index b requesting the first subsequent building taller than heights[a]."
+    },
+    {
+      "level": 3,
+      "title": "Min-Heap Sweep",
+      "text": "Scan buildings from left to right with a min-heap storing pending queries ordered by required height."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def leftmostBuildingQueries(self, heights: List[int], queries: List[List[int]]) -> List[int]:\n        n = len(heights)\n        ans = [-1] * len(queries)\n        pending = [[] for _ in range(n)]\n        for qi, (a, b) in enumerate(queries):\n            if a > b:\n                a, b = b, a\n            if a == b or heights[a] < heights[b]:\n                ans[qi] = b\n            else:\n                pending[b].append((heights[a], qi))\n                \n        pq = []\n        for i, h in enumerate(heights):\n            while pq and pq[0][0] < h:\n                _, qi = heapq.heappop(pq)\n                ans[qi] = i\n            for req in pending[i]:\n                heapq.heappush(pq, req)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + q log q)",
+    "space": "O(n + q)",
+    "variables": [
+      "n: number of buildings",
+      "q: number of queries"
+    ],
+    "notes": "Offline query sweep with min-heap.",
+    "whyNaiveFails": "Evaluating each query independently takes O(n * q) which times out for 50,000 queries.",
+    "spaceTimeTradeoff": "O(n + q) priority queue and pending query storage.",
+    "interviewerExpectation": "Sort or group queries to solve next greater element with a priority queue."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def leftmostBuildingQueries(self, heights: List[int], queries: List[List[int]]) -> List[int]:\n        n = len(heights)\n        ans = [-1] * len(queries)\n        pending = [[] for _ in range(n)]\n        for qi, (a, b) in enumerate(queries):\n            if a > b:\n                a, b = b, a\n            if a == b or heights[a] < heights[b]:\n                ans[qi] = b\n            else:\n                pending[b].append((heights[a], qi))\n                \n        pq = []\n        for i, h in enumerate(heights):\n            while pq and pq[0][0] < h:\n                _, qi = heapq.heappop(pq)\n                ans[qi] = i\n            for req in pending[i]:\n                heapq.heappush(pq, req)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Offline Query Sweep with Min-Heap"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> leftmostBuildingQueries(vector<int>& heights, vector<vector<int>>& queries) {\n        int n = heights.size();\n        int q = queries.size();\n        vector<int> ans(q, -1);\n        vector<vector<pair<int, int>>> pending(n);\n        for (int qi = 0; qi < q; qi++) {\n            int a = queries[qi][0], b = queries[qi][1];\n            if (a > b) swap(a, b);\n            if (a == b || heights[a] < heights[b]) ans[qi] = b;\n            else pending[b].push_back({heights[a], qi});\n        }\n        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;\n        for (int i = 0; i < n; i++) {\n            while (!pq.empty() && pq.top().first < heights[i]) {\n                ans[pq.top().second] = i;\n                pq.pop();\n            }\n            for (auto& req : pending[i]) pq.push(req);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Offline Query Sweep with Min-Heap"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[] leftmostBuildingQueries(int[] heights, int[][] queries) {\n        int n = heights.length;\n        int q = queries.length;\n        int[] ans = new int[q];\n        Arrays.fill(ans, -1);\n        List<int[]>[] pending = new ArrayList[n];\n        for (int i = 0; i < n; i++) pending[i] = new ArrayList<>();\n        for (int qi = 0; qi < q; qi++) {\n            int a = queries[qi][0], b = queries[qi][1];\n            if (a > b) { int tmp = a; a = b; b = tmp; }\n            if (a == b || heights[a] < heights[b]) ans[qi] = b;\n            else pending[b].add(new int[]{heights[a], qi});\n        }\n        PriorityQueue<int[]> pq = new PriorityQueue<>((x, y) -> Integer.compare(x[0], y[0]));\n        for (int i = 0; i < n; i++) {\n            while (!pq.isEmpty() && pq.peek()[0] < heights[i]) {\n                int[] top = pq.poll();\n                ans[top[1]] = i;\n            }\n            for (int[] req : pending[i]) pq.offer(req);\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Offline Query Sweep with Min-Heap"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} heights\n * @param {number[][]} queries\n * @return {number[]}\n */\nvar leftmostBuildingQueries = function(heights, queries) {\n    const n = heights.length;\n    const q = queries.length;\n    const ans = new Int32Array(q).fill(-1);\n    const pending = Array.from({ length: n }, () => []);\n    for (let qi = 0; qi < q; qi++) {\n        let [a, b] = queries[qi];\n        if (a > b) [a, b] = [b, a];\n        if (a === b || heights[a] < heights[b]) ans[qi] = b;\n        else pending[b].push([heights[a], qi]);\n    }\n    const heap = [];\n    function push(item) {\n        heap.push(item);\n        let idx = heap.length - 1;\n        while (idx > 0) {\n            const p = (idx - 1) >> 1;\n            if (heap[p][0] > heap[idx][0]) {\n                [heap[p], heap[idx]] = [heap[idx], heap[p]];\n                idx = p;\n            } else break;\n        }\n    }\n    function pop() {\n        const top = heap[0];\n        const last = heap.pop();\n        if (heap.length > 0) {\n            heap[0] = last;\n            let idx = 0;\n            while ((idx << 1) + 1 < heap.length) {\n                let left = (idx << 1) + 1, right = left + 1, best = left;\n                if (right < heap.length && heap[right][0] < heap[left][0]) best = right;\n                if (heap[best][0] < heap[idx][0]) {\n                    [heap[best], heap[idx]] = [heap[idx], heap[best]];\n                    idx = best;\n                } else break;\n            }\n        }\n        return top;\n    }\n    for (let i = 0; i < n; i++) {\n        while (heap.length > 0 && heap[0][0] < heights[i]) {\n            const [_, qi] = pop();\n            ans[qi] = i;\n        }\n        for (const req of pending[i]) push(req);\n    }\n    return Array.from(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Offline Query Sweep with Min-Heap"
+    }
+  ]
+}

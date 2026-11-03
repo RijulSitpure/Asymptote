@@ -1,0 +1,79 @@
+{
+  "slug": "count-the-number-of-infection-sequences",
+  "number": 2954,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory",
+    "greedy-general"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Segment Partitioning",
+      "text": "Sick children partition healthy children into left end segment, interior segments, and right end segment."
+    },
+    {
+      "level": 2,
+      "title": "Interior Segment Options",
+      "text": "An interior segment of length L can be infected from both boundaries, yielding 2^(L - 1) internal orderings. End segments have only 1 internal ordering."
+    },
+    {
+      "level": 3,
+      "title": "Multinomial Permutations",
+      "text": "Multiply factorial(total_uninfected) / product(factorial(L_i)) by product(2^(L_int - 1)) modulo 10^9 + 7 using modular inverse factorials."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def numberOfInfectionSequences(self, n: int, sick: List[int]) -> int:\n        MOD = 10**9 + 7\n        gaps = []\n        if sick[0] > 0:\n            gaps.append(sick[0])\n        interior = []\n        for i in range(1, len(sick)):\n            l = sick[i] - sick[i - 1] - 1\n            if l > 0:\n                gaps.append(l)\n                interior.append(l)\n        if sick[-1] < n - 1:\n            gaps.append(n - 1 - sick[-1])\n            \n        tot = sum(gaps)\n        fact = [1] * (tot + 1)\n        for i in range(1, tot + 1):\n            fact[i] = (fact[i - 1] * i) % MOD\n            \n        ans = fact[tot]\n        for l in gaps:\n            ans = (ans * pow(fact[l], MOD - 2, MOD)) % MOD\n        for l in interior:\n            ans = (ans * pow(2, l - 1, MOD)) % MOD\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: total number of children"
+    ],
+    "notes": "Precomputing factorials and modular inverse with multinomial coefficient.",
+    "whyNaiveFails": "Simulating all infection tree paths is intractable.",
+    "spaceTimeTradeoff": "O(n) factorial arrays.",
+    "interviewerExpectation": "Derive multinomial coefficient formula combined with 2^(L-1) interior powers."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def numberOfInfectionSequences(self, n: int, sick: List[int]) -> int:\n        MOD = 10**9 + 7\n        gaps = []\n        if sick[0] > 0:\n            gaps.append(sick[0])\n        interior = []\n        for i in range(1, len(sick)):\n            l = sick[i] - sick[i - 1] - 1\n            if l > 0:\n                gaps.append(l)\n                interior.append(l)\n        if sick[-1] < n - 1:\n            gaps.append(n - 1 - sick[-1])\n            \n        tot = sum(gaps)\n        fact = [1] * (tot + 1)\n        for i in range(1, tot + 1):\n            fact[i] = (fact[i - 1] * i) % MOD\n            \n        ans = fact[tot]\n        for l in gaps:\n            ans = (ans * pow(fact[l], MOD - 2, MOD)) % MOD\n        for l in interior:\n            ans = (ans * pow(2, l - 1, MOD)) % MOD\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Multinomial Combinatorics on Infection Intervals"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    long long MOD = 1e9 + 7;\n    long long power(long long base, long long exp) {\n        long long res = 1;\n        base %= MOD;\n        while (exp > 0) {\n            if (exp & 1) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp >>= 1;\n        }\n        return res;\n    }\npublic:\n    int numberOfInfectionSequences(int n, vector<int>& sick) {\n        vector<int> gaps, interior;\n        if (sick[0] > 0) gaps.push_back(sick[0]);\n        for (int i = 1; i < sick.size(); i++) {\n            int l = sick[i] - sick[i - 1] - 1;\n            if (l > 0) {\n                gaps.push_back(l);\n                interior.push_back(l);\n            }\n        }\n        if (sick.back() < n - 1) gaps.push_back(n - 1 - sick.back());\n        int tot = 0;\n        for (int x : gaps) tot += x;\n        vector<long long> fact(tot + 1, 1);\n        for (int i = 1; i <= tot; i++) fact[i] = (fact[i - 1] * i) % MOD;\n        long long ans = fact[tot];\n        for (int l : gaps) ans = (ans * power(fact[l], MOD - 2)) % MOD;\n        for (int l : interior) ans = (ans * power(2, l - 1)) % MOD;\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Multinomial Combinatorics on Infection Intervals"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    long MOD = 1_000_000_007L;\n    long power(long base, long exp) {\n        long res = 1;\n        base %= MOD;\n        while (exp > 0) {\n            if ((exp & 1) == 1) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp >>= 1;\n        }\n        return res;\n    }\n    public int numberOfInfectionSequences(int n, int[] sick) {\n        List<Integer> gaps = new ArrayList<>();\n        List<Integer> interior = new ArrayList<>();\n        if (sick[0] > 0) gaps.add(sick[0]);\n        for (int i = 1; i < sick.length; i++) {\n            int l = sick[i] - sick[i - 1] - 1;\n            if (l > 0) {\n                gaps.add(l);\n                interior.add(l);\n            }\n        }\n        if (sick[sick.length - 1] < n - 1) gaps.add(n - 1 - sick[sick.length - 1]);\n        int tot = 0;\n        for (int x : gaps) tot += x;\n        long[] fact = new long[tot + 1];\n        fact[0] = 1;\n        for (int i = 1; i <= tot; i++) fact[i] = (fact[i - 1] * i) % MOD;\n        long ans = fact[tot];\n        for (int l : gaps) ans = (ans * power(fact[l], MOD - 2)) % MOD;\n        for (int l : interior) ans = (ans * power(2, l - 1)) % MOD;\n        return (int) ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Multinomial Combinatorics on Infection Intervals"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} n\n * @param {number[]} sick\n * @return {number}\n */\nvar numberOfInfectionSequences = function(n, sick) {\n    const MOD = 1000000007n;\n    function power(base, exp) {\n        let res = 1n;\n        base = BigInt(base) % MOD;\n        let e = BigInt(exp);\n        while (e > 0n) {\n            if ((e & 1n) === 1n) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            e >>= 1n;\n        }\n        return res;\n    }\n    const gaps = [], interior = [];\n    if (sick[0] > 0) gaps.push(sick[0]);\n    for (let i = 1; i < sick.length; i++) {\n        const l = sick[i] - sick[i - 1] - 1;\n        if (l > 0) {\n            gaps.push(l);\n            interior.push(l);\n        }\n    }\n    if (sick[sick.length - 1] < n - 1) gaps.push(n - 1 - sick[sick.length - 1]);\n    let tot = 0;\n    for (const x of gaps) tot += x;\n    const fact = new BigInt64Array(tot + 1);\n    fact[0] = 1n;\n    for (let i = 1; i <= tot; i++) fact[i] = (fact[i - 1] * BigInt(i)) % MOD;\n    let ans = fact[tot];\n    for (const l of gaps) ans = (ans * power(fact[l], MOD - 2n)) % MOD;\n    for (const l of interior) ans = (ans * power(2n, l - 1)) % MOD;\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Multinomial Combinatorics on Infection Intervals"
+    }
+  ]
+}

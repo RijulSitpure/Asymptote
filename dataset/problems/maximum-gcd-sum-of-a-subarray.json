@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-gcd-sum-of-a-subarray",
+  "number": 2941,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory",
+    "prefix-sum-hashmap"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bounded Distinct Divisors",
+      "text": "For any fixed right endpoint, extending a subarray leftward produces at most log2(max(nums)) distinct greatest common divisors."
+    },
+    {
+      "level": 2,
+      "title": "Earliest Index Merging",
+      "text": "Maintain a list of (leftmost_index, gcd_val) ending at index i. When two prefixes share the same gcd, keep the smaller index to maximize subarray sum."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Sum Multiplication",
+      "text": "Query subarray sums in O(1) via prefix sums and update maximum score when length r - l + 1 is at least k."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def maxGcdSum(self, nums: List[int], k: int) -> int:\n        n = len(nums)\n        pref = [0] * (n + 1)\n        for i in range(n):\n            pref[i + 1] = pref[i] + nums[i]\n            \n        ans = 0\n        states = []  # list of (leftmost_idx, gcd_val)\n        for r, x in enumerate(nums):\n            next_states = [(r, x)]\n            for l_idx, g in states:\n                next_states.append((l_idx, math.gcd(g, x)))\n            merged = []\n            for l_idx, g in next_states:\n                if not merged or merged[-1][1] != g:\n                    merged.append((l_idx, g))\n                else:\n                    merged[-1] = (min(merged[-1][0], l_idx), g)\n            states = merged\n            for l_idx, g in states:\n                if r - l_idx + 1 >= k:\n                    score = g * (pref[r + 1] - pref[l_idx])\n                    if score > ans:\n                        ans = score\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log M)",
+    "space": "O(n + log M)",
+    "variables": [
+      "n: length of nums array",
+      "M: maximum value in nums"
+    ],
+    "notes": "Maintaining logarithmic distinct prefix gcd states with prefix sum queries.",
+    "whyNaiveFails": "Examining all subarrays takes O(n^2 log M) which times out for n = 10^5.",
+    "spaceTimeTradeoff": "O(n) prefix sum array.",
+    "interviewerExpectation": "Compress contiguous subarrays by greatest common divisor states."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maxGcdSum(self, nums: List[int], k: int) -> int:\n        n = len(nums)\n        pref = [0] * (n + 1)\n        for i in range(n):\n            pref[i + 1] = pref[i] + nums[i]\n            \n        ans = 0\n        states = []  # list of (leftmost_idx, gcd_val)\n        for r, x in enumerate(nums):\n            next_states = [(r, x)]\n            for l_idx, g in states:\n                next_states.append((l_idx, math.gcd(g, x)))\n            merged = []\n            for l_idx, g in next_states:\n                if not merged or merged[-1][1] != g:\n                    merged.append((l_idx, g))\n                else:\n                    merged[-1] = (min(merged[-1][0], l_idx), g)\n            states = merged\n            for l_idx, g in states:\n                if r - l_idx + 1 >= k:\n                    score = g * (pref[r + 1] - pref[l_idx])\n                    if score > ans:\n                        ans = score\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Prefix Sums and Logarithmic GCD State Compression"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    long long gcd(long long a, long long b) {\n        while (b) { long long t = b; b = a % b; a = t; }\n        return a;\n    }\npublic:\n    long long maxGcdSum(vector<int>& nums, int k) {\n        int n = nums.size();\n        vector<long long> pref(n + 1, 0);\n        for (int i = 0; i < n; i++) pref[i + 1] = pref[i] + nums[i];\n        long long ans = 0;\n        vector<pair<int, long long>> states;\n        for (int r = 0; r < n; r++) {\n            vector<pair<int, long long>> next_states;\n            next_states.push_back({r, (long long) nums[r]});\n            for (auto& s : states) next_states.push_back({s.first, gcd(s.second, (long long) nums[r])});\n            vector<pair<int, long long>> merged;\n            for (auto& s : next_states) {\n                if (merged.empty() || merged.back().second != s.second) merged.push_back(s);\n                else merged.back().first = min(merged.back().first, s.first);\n            }\n            states = merged;\n            for (auto& s : states) {\n                if (r - s.first + 1 >= k) {\n                    long long score = s.second * (pref[r + 1] - pref[s.first]);\n                    if (score > ans) ans = score;\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Prefix Sums and Logarithmic GCD State Compression"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    long gcd(long a, long b) {\n        while (b != 0) { long t = b; b = a % b; a = t; }\n        return a;\n    }\n    public long maxGcdSum(int[] nums, int k) {\n        int n = nums.length;\n        long[] pref = new long[n + 1];\n        for (int i = 0; i < n; i++) pref[i + 1] = pref[i] + nums[i];\n        long ans = 0;\n        List<long[]> states = new ArrayList<>();\n        for (int r = 0; r < n; r++) {\n            List<long[]> nextStates = new ArrayList<>();\n            nextStates.add(new long[]{r, nums[r]});\n            for (long[] s : states) nextStates.add(new long[]{s[0], gcd(s[1], nums[r])});\n            List<long[]> merged = new ArrayList<>();\n            for (long[] s : nextStates) {\n                if (merged.isEmpty() || merged.get(merged.size() - 1)[1] != s[1]) merged.add(s);\n                else merged.get(merged.size() - 1)[0] = Math.min(merged.get(merged.size() - 1)[0], s[0]);\n            }\n            states = merged;\n            for (long[] s : states) {\n                if (r - (int) s[0] + 1 >= k) {\n                    long score = s[1] * (pref[r + 1] - pref[(int) s[0]]);\n                    if (score > ans) ans = score;\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Prefix Sums and Logarithmic GCD State Compression"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} k\n * @return {number}\n */\nvar maxGcdSum = function(nums, k) {\n    function gcd(a, b) {\n        while (b !== 0n) { const t = b; b = a % b; a = t; }\n        return a;\n    }\n    const n = nums.length;\n    const pref = new BigInt64Array(n + 1);\n    for (let i = 0; i < n; i++) pref[i + 1] = pref[i] + BigInt(nums[i]);\n    let ans = 0n;\n    let states = [];\n    for (let r = 0; r < n; r++) {\n        const x = BigInt(nums[r]);\n        const nextStates = [[r, x]];\n        for (const [lIdx, g] of states) nextStates.push([lIdx, gcd(g, x)]);\n        const merged = [];\n        for (const [lIdx, g] of nextStates) {\n            if (merged.length === 0 || merged[merged.length - 1][1] !== g) merged.push([lIdx, g]);\n            else merged[merged.length - 1][0] = Math.min(merged[merged.length - 1][0], lIdx);\n        }\n        states = merged;\n        for (const [lIdx, g] of states) {\n            if (r - lIdx + 1 >= k) {\n                const score = g * (pref[r + 1] - pref[lIdx]);\n                if (score > ans) ans = score;\n            }\n        }\n    }\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Prefix Sums and Logarithmic GCD State Compression"
+    }
+  ]
+}

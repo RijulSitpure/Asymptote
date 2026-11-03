@@ -1,0 +1,79 @@
+{
+  "slug": "count-complete-substrings",
+  "number": 2953,
+  "category": "Algorithms",
+  "patterns": [
+    "sliding-window-fixed",
+    "hash-map-lookup"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Adjacent Difference Splitting",
+      "text": "Split word into independent valid substrings at every index where abs(word[i] - word[i - 1]) > 2."
+    },
+    {
+      "level": 2,
+      "title": "Fixed Window Lengths",
+      "text": "In any valid substring with c unique characters, each character appears exactly k times, so the window length must be c * k."
+    },
+    {
+      "level": 3,
+      "title": "Sliding Window over Components",
+      "text": "For each component and each c from 1 to 26 such that c * k <= length, slide a window of size c * k and check if every present character has frequency k."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def countCompleteSubstrings(self, word: str, k: int) -> int:\n        def solve(sub):\n            res = 0\n            for c in range(1, 27):\n                w_len = c * k\n                if w_len > len(sub):\n                    break\n                freq = [0] * 26\n                for i in range(w_len):\n                    freq[ord(sub[i]) - ord('a')] += 1\n                if all(cnt == 0 or cnt == k for cnt in freq):\n                    res += 1\n                for i in range(w_len, len(sub)):\n                    freq[ord(sub[i]) - ord('a')] += 1\n                    freq[ord(sub[i - w_len]) - ord('a')] -= 1\n                    if all(cnt == 0 or cnt == k for cnt in freq):\n                        res += 1\n            return res\n            \n        ans = 0\n        start = 0\n        n = len(word)\n        for i in range(1, n + 1):\n            if i == n or abs(ord(word[i]) - ord(word[i - 1])) > 2:\n                ans += solve(word[start:i])\n                start = i\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(26 * n)",
+    "space": "O(1)",
+    "variables": [
+      "n: length of word"
+    ],
+    "notes": "Testing 26 fixed window sizes over valid adjacent difference components.",
+    "whyNaiveFails": "Checking all O(n^2) substrings takes O(26 * n^2).",
+    "spaceTimeTradeoff": "O(1) 26-character frequency array.",
+    "interviewerExpectation": "Notice that window length is restricted to multiples c * k for c in 1..26."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def countCompleteSubstrings(self, word: str, k: int) -> int:\n        def solve(sub):\n            res = 0\n            for c in range(1, 27):\n                w_len = c * k\n                if w_len > len(sub):\n                    break\n                freq = [0] * 26\n                for i in range(w_len):\n                    freq[ord(sub[i]) - ord('a')] += 1\n                if all(cnt == 0 or cnt == k for cnt in freq):\n                    res += 1\n                for i in range(w_len, len(sub)):\n                    freq[ord(sub[i]) - ord('a')] += 1\n                    freq[ord(sub[i - w_len]) - ord('a')] -= 1\n                    if all(cnt == 0 or cnt == k for cnt in freq):\n                        res += 1\n            return res\n            \n        ans = 0\n        start = 0\n        n = len(word)\n        for i in range(1, n + 1):\n            if i == n or abs(ord(word[i]) - ord(word[i - 1])) > 2:\n                ans += solve(word[start:i])\n                start = i\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Component Partitioning with Fixed-Length Sliding Windows"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    int solve(string_view sub, int k) {\n        int res = 0;\n        int m = sub.size();\n        for (int c = 1; c <= 26; c++) {\n            int w_len = c * k;\n            if (w_len > m) break;\n            int freq[26] = {0};\n            for (int i = 0; i < w_len; i++) freq[sub[i] - 'a']++;\n            auto valid = [&]() {\n                for (int x : freq) if (x != 0 && x != k) return false;\n                return true;\n            };\n            if (valid()) res++;\n            for (int i = w_len; i < m; i++) {\n                freq[sub[i] - 'a']++;\n                freq[sub[i - w_len] - 'a']--;\n                if (valid()) res++;\n            }\n        }\n        return res;\n    }\npublic:\n    int countCompleteSubstrings(string word, int k) {\n        int n = word.size();\n        int ans = 0, start = 0;\n        for (int i = 1; i <= n; i++) {\n            if (i == n || abs(word[i] - word[i - 1]) > 2) {\n                ans += solve(string_view(word).substr(start, i - start), k);\n                start = i;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Component Partitioning with Fixed-Length Sliding Windows"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    int solve(String sub, int k) {\n        int res = 0;\n        int m = sub.length();\n        for (int c = 1; c <= 26; c++) {\n            int wLen = c * k;\n            if (wLen > m) break;\n            int[] freq = new int[26];\n            for (int i = 0; i < wLen; i++) freq[sub.charAt(i) - 'a']++;\n            if (isValid(freq, k)) res++;\n            for (int i = wLen; i < m; i++) {\n                freq[sub.charAt(i) - 'a']++;\n                freq[sub.charAt(i - wLen) - 'a']--;\n                if (isValid(freq, k)) res++;\n            }\n        }\n        return res;\n    }\n    boolean isValid(int[] freq, int k) {\n        for (int x : freq) if (x != 0 && x != k) return false;\n        return true;\n    }\n    public int countCompleteSubstrings(String word, int k) {\n        int n = word.length();\n        int ans = 0, start = 0;\n        for (int i = 1; i <= n; i++) {\n            if (i == n || Math.abs(word.charAt(i) - word.charAt(i - 1)) > 2) {\n                ans += solve(word.substring(start, i), k);\n                start = i;\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Component Partitioning with Fixed-Length Sliding Windows"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {string} word\n * @param {number} k\n * @return {number}\n */\nvar countCompleteSubstrings = function(word, k) {\n    function solve(sub) {\n        let res = 0;\n        const m = sub.length;\n        for (let c = 1; c <= 26; c++) {\n            const wLen = c * k;\n            if (wLen > m) break;\n            const freq = new Int32Array(26);\n            for (let i = 0; i < wLen; i++) freq[sub.charCodeAt(i) - 97]++;\n            function isValid() {\n                for (let j = 0; j < 26; j++) if (freq[j] !== 0 && freq[j] !== k) return false;\n                return true;\n            }\n            if (isValid()) res++;\n            for (let i = wLen; i < m; i++) {\n                freq[sub.charCodeAt(i) - 97]++;\n                freq[sub.charCodeAt(i - wLen) - 97]--;\n                if (isValid()) res++;\n            }\n        }\n        return res;\n    }\n    const n = word.length;\n    let ans = 0, start = 0;\n    for (let i = 1; i <= n; i++) {\n        if (i === n || Math.abs(word.charCodeAt(i) - word.charCodeAt(i - 1)) > 2) {\n            ans += solve(word.slice(start, i));\n            start = i;\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Component Partitioning with Fixed-Length Sliding Windows"
+    }
+  ]
+}

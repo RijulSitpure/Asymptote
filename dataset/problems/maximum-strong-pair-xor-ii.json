@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-strong-pair-xor-ii",
+  "number": 2935,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix",
+    "two-pointers-window-dynamic"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sorted Strong Pair Window",
+      "text": "Sort the numbers. For x <= y, the strong pair condition |x - y| <= min(x, y) simplifies to y <= 2 * x."
+    },
+    {
+      "level": 2,
+      "title": "Sliding Window Elements",
+      "text": "As the right pointer r advances, maintain a window [l, r] such that nums[r] <= 2 * nums[l]. When invalid, increment l."
+    },
+    {
+      "level": 3,
+      "title": "Bitwise Prefix Structure",
+      "text": "Maintain numbers in the current window within a bitwise prefix trie with count references to query the maximum bitwise xor."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def maximumStrongPairXor(self, nums: List[int]) -> int:\n        nums.sort()\n        trie = {}\n        \n        def insert(val):\n            curr = trie\n            for i in range(20, -1, -1):\n                b = (val >> i) & 1\n                if b not in curr:\n                    curr[b] = {'cnt': 0}\n                curr = curr[b]\n                curr['cnt'] += 1\n                \n        def remove(val):\n            curr = trie\n            for i in range(20, -1, -1):\n                b = (val >> i) & 1\n                curr = curr[b]\n                curr['cnt'] -= 1\n                \n        def query(val):\n            curr = trie\n            res = 0\n            for i in range(20, -1, -1):\n                b = (val >> i) & 1\n                want = 1 - b\n                if want in curr and curr[want]['cnt'] > 0:\n                    res |= (1 << i)\n                    curr = curr[want]\n                else:\n                    curr = curr.get(b, {'cnt': 0})\n            return res\n            \n        l = 0\n        ans = 0\n        for r in range(len(nums)):\n            insert(nums[r])\n            while nums[r] > 2 * nums[l]:\n                remove(nums[l])\n                l += 1\n            ans = max(ans, query(nums[r]))\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * 20)",
+    "space": "O(n * 20)",
+    "variables": [
+      "n: length of nums array"
+    ],
+    "notes": "Sorting followed by 20-bit trie insertions and queries across sliding window.",
+    "whyNaiveFails": "O(n^2) times out for n = 50,000.",
+    "spaceTimeTradeoff": "O(n * 20) trie node allocation.",
+    "interviewerExpectation": "Combine two-pointer windowing with bitwise prefix trie to maintain active elements."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maximumStrongPairXor(self, nums: List[int]) -> int:\n        nums.sort()\n        trie = {}\n        \n        def insert(val):\n            curr = trie\n            for i in range(20, -1, -1):\n                b = (val >> i) & 1\n                if b not in curr:\n                    curr[b] = {'cnt': 0}\n                curr = curr[b]\n                curr['cnt'] += 1\n                \n        def remove(val):\n            curr = trie\n            for i in range(20, -1, -1):\n                b = (val >> i) & 1\n                curr = curr[b]\n                curr['cnt'] -= 1\n                \n        def query(val):\n            curr = trie\n            res = 0\n            for i in range(20, -1, -1):\n                b = (val >> i) & 1\n                want = 1 - b\n                if want in curr and curr[want]['cnt'] > 0:\n                    res |= (1 << i)\n                    curr = curr[want]\n                else:\n                    curr = curr.get(b, {'cnt': 0})\n            return res\n            \n        l = 0\n        ans = 0\n        for r in range(len(nums)):\n            insert(nums[r])\n            while nums[r] > 2 * nums[l]:\n                remove(nums[l])\n                l += 1\n            ans = max(ans, query(nums[r]))\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Sliding Window with Counted Bitwise Trie"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\n    struct Node {\n        int cnt = 0;\n        Node* next[2] = {nullptr, nullptr};\n    };\n    Node* root = new Node();\n    void insert(int val) {\n        Node* curr = root;\n        for (int i = 20; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            if (!curr->next[b]) curr->next[b] = new Node();\n            curr = curr->next[b];\n            curr->cnt++;\n        }\n    }\n    void remove(int val) {\n        Node* curr = root;\n        for (int i = 20; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            curr = curr->next[b];\n            curr->cnt--;\n        }\n    }\n    int query(int val) {\n        Node* curr = root;\n        int res = 0;\n        for (int i = 20; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            int want = 1 - b;\n            if (curr->next[want] && curr->next[want]->cnt > 0) {\n                res |= (1 << i);\n                curr = curr->next[want];\n            } else if (curr->next[b]) {\n                curr = curr->next[b];\n            } else break;\n        }\n        return res;\n    }\npublic:\n    int maximumStrongPairXor(vector<int>& nums) {\n        sort(nums.begin(), nums.end());\n        int l = 0, ans = 0;\n        for (int r = 0; r < nums.size(); r++) {\n            insert(nums[r]);\n            while (nums[r] > 2 * nums[l]) {\n                remove(nums[l]);\n                l++;\n            }\n            ans = max(ans, query(nums[r]));\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Sliding Window with Counted Bitwise Trie"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    static class Node {\n        int cnt = 0;\n        Node[] next = new Node[2];\n    }\n    Node root = new Node();\n    void insert(int val) {\n        Node curr = root;\n        for (int i = 20; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            if (curr.next[b] == null) curr.next[b] = new Node();\n            curr = curr.next[b];\n            curr.cnt++;\n        }\n    }\n    void remove(int val) {\n        Node curr = root;\n        for (int i = 20; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            curr = curr.next[b];\n            curr.cnt--;\n        }\n    }\n    int query(int val) {\n        Node curr = root;\n        int res = 0;\n        for (int i = 20; i >= 0; i--) {\n            int b = (val >> i) & 1;\n            int want = 1 - b;\n            if (curr.next[want] != null && curr.next[want].cnt > 0) {\n                res |= (1 << i);\n                curr = curr.next[want];\n            } else if (curr.next[b] != null) {\n                curr = curr.next[b];\n            } else break;\n        }\n        return res;\n    }\n    public int maximumStrongPairXor(int[] nums) {\n        Arrays.sort(nums);\n        int l = 0, ans = 0;\n        for (int r = 0; r < nums.length; r++) {\n            insert(nums[r]);\n            while (nums[r] > 2 * nums[l]) {\n                remove(nums[l]);\n                l++;\n            }\n            ans = Math.max(ans, query(nums[r]));\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Sliding Window with Counted Bitwise Trie"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar maximumStrongPairXor = function(nums) {\n    nums.sort((a, b) => a - b);\n    const trie = {};\n    function insert(val) {\n        let curr = trie;\n        for (let i = 20; i >= 0; i--) {\n            const b = (val >> i) & 1;\n            if (!curr[b]) curr[b] = { cnt: 0 };\n            curr = curr[b];\n            curr.cnt++;\n        }\n    }\n    function remove(val) {\n        let curr = trie;\n        for (let i = 20; i >= 0; i--) {\n            const b = (val >> i) & 1;\n            curr = curr[b];\n            curr.cnt--;\n        }\n    }\n    function query(val) {\n        let curr = trie;\n        let res = 0;\n        for (let i = 20; i >= 0; i--) {\n            const b = (val >> i) & 1;\n            const want = 1 - b;\n            if (curr[want] && curr[want].cnt > 0) {\n                res |= (1 << i);\n                curr = curr[want];\n            } else if (curr[b]) {\n                curr = curr[b];\n            } else break;\n        }\n        return res;\n    }\n    let l = 0, ans = 0;\n    for (let r = 0; r < nums.length; r++) {\n        insert(nums[r]);\n        while (nums[r] > 2 * nums[l]) {\n            remove(nums[l]);\n            l++;\n        }\n        ans = Math.max(ans, query(nums[r]));\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Sliding Window with Counted Bitwise Trie"
+    }
+  ]
+}

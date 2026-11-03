@@ -1,0 +1,80 @@
+{
+  "slug": "number-of-possible-sets-of-closing-branches",
+  "number": 2959,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask",
+    "graph-dijkstra"
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-10-31T00:00:00.000Z",
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bitmask Subset Representation",
+      "text": "With n <= 10, there are only 2^10 = 1024 possible subsets of branches to keep open."
+    },
+    {
+      "level": 2,
+      "title": "All-Pairs Shortest Path",
+      "text": "For each bitmask subset of open branches, run Floyd-Warshall on the induced subgraph using roads between open branches."
+    },
+    {
+      "level": 3,
+      "title": "Distance Verification",
+      "text": "Verify that every pair of open nodes u and v has shortest distance at most maxDistance. If so, increment valid count."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def numberOfSets(self, n: int, maxDistance: int, roads: List[List[int]]) -> int:\n        ans = 0\n        for mask in range(1 << n):\n            dist = [[float('inf')] * n for _ in range(n)]\n            for i in range(n):\n                dist[i][i] = 0\n            for u, v, w in roads:\n                if ((mask >> u) & 1) and ((mask >> v) & 1):\n                    dist[u][v] = min(dist[u][v], w)\n                    dist[v][u] = min(dist[v][u], w)\n                    \n            for k in range(n):\n                if not ((mask >> k) & 1): continue\n                for i in range(n):\n                    if not ((mask >> i) & 1): continue\n                    for j in range(n):\n                        if not ((mask >> j) & 1): continue\n                        if dist[i][k] + dist[k][j] < dist[i][j]:\n                            dist[i][j] = dist[i][k] + dist[k][j]\n                            \n            valid = True\n            for i in range(n):\n                if not ((mask >> i) & 1): continue\n                for j in range(i + 1, n):\n                    if not ((mask >> j) & 1): continue\n                    if dist[i][j] > maxDistance:\n                        valid = False\n                        break\n                if not valid: break\n            if valid: ans += 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(2^n * n^3)",
+    "space": "O(n^2)",
+    "variables": [
+      "n: number of branches",
+      "roads count"
+    ],
+    "notes": "Testing all 2^n subsets with Floyd-Warshall all-pairs shortest paths.",
+    "whyNaiveFails": "Exhaustive branch search without bitmasking is unstructured.",
+    "spaceTimeTradeoff": "O(n^2) distance matrix per subset.",
+    "interviewerExpectation": "Recognize n <= 10 constraint allows 2^n Floyd-Warshall checks in ~10^6 operations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def numberOfSets(self, n: int, maxDistance: int, roads: List[List[int]]) -> int:\n        ans = 0\n        for mask in range(1 << n):\n            dist = [[float('inf')] * n for _ in range(n)]\n            for i in range(n):\n                dist[i][i] = 0\n            for u, v, w in roads:\n                if ((mask >> u) & 1) and ((mask >> v) & 1):\n                    dist[u][v] = min(dist[u][v], w)\n                    dist[v][u] = min(dist[v][u], w)\n                    \n            for k in range(n):\n                if not ((mask >> k) & 1): continue\n                for i in range(n):\n                    if not ((mask >> i) & 1): continue\n                    for j in range(n):\n                        if not ((mask >> j) & 1): continue\n                        if dist[i][k] + dist[k][j] < dist[i][j]:\n                            dist[i][j] = dist[i][k] + dist[k][j]\n                            \n            valid = True\n            for i in range(n):\n                if not ((mask >> i) & 1): continue\n                for j in range(i + 1, n):\n                    if not ((mask >> j) & 1): continue\n                    if dist[i][j] > maxDistance:\n                        valid = False\n                        break\n                if not valid: break\n            if valid: ans += 1\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Bitmask Subset Enumeration with Floyd-Warshall"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int numberOfSets(int n, int maxDistance, vector<vector<int>>& roads) {\n        int ans = 0;\n        for (int mask = 0; mask < (1 << n); mask++) {\n            vector<vector<int>> dist(n, vector<int>(n, 1e9));\n            for (int i = 0; i < n; i++) dist[i][i] = 0;\n            for (const auto& r : roads) {\n                int u = r[0], v = r[1], w = r[2];\n                if (((mask >> u) & 1) && ((mask >> v) & 1)) {\n                    dist[u][v] = min(dist[u][v], w);\n                    dist[v][u] = min(dist[v][u], w);\n                }\n            }\n            for (int k = 0; k < n; k++) {\n                if (!((mask >> k) & 1)) continue;\n                for (int i = 0; i < n; i++) {\n                    if (!((mask >> i) & 1)) continue;\n                    for (int j = 0; j < n; j++) {\n                        if (!((mask >> j) & 1)) continue;\n                        dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]);\n                    }\n                }\n            }\n            bool valid = true;\n            for (int i = 0; i < n; i++) {\n                if (!((mask >> i) & 1)) continue;\n                for (int j = i + 1; j < n; j++) {\n                    if (!((mask >> j) & 1)) continue;\n                    if (dist[i][j] > maxDistance) {\n                        valid = false;\n                        break;\n                    }\n                }\n                if (!valid) break;\n            }\n            if (valid) ans++;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Bitmask Subset Enumeration with Floyd-Warshall"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int numberOfSets(int n, int maxDistance, int[][] roads) {\n        int ans = 0;\n        int INF = 1_000_000_000;\n        for (int mask = 0; mask < (1 << n); mask++) {\n            int[][] dist = new int[n][n];\n            for (int i = 0; i < n; i++) {\n                Arrays.fill(dist[i], INF);\n                dist[i][i] = 0;\n            }\n            for (int[] r : roads) {\n                int u = r[0], v = r[1], w = r[2];\n                if (((mask >> u) & 1) == 1 && ((mask >> v) & 1) == 1) {\n                    dist[u][v] = Math.min(dist[u][v], w);\n                    dist[v][u] = Math.min(dist[v][u], w);\n                }\n            }\n            for (int k = 0; k < n; k++) {\n                if (((mask >> k) & 1) == 0) continue;\n                for (int i = 0; i < n; i++) {\n                    if (((mask >> i) & 1) == 0) continue;\n                    for (int j = 0; j < n; j++) {\n                        if (((mask >> j) & 1) == 0) continue;\n                        if (dist[i][k] + dist[k][j] < dist[i][j]) {\n                            dist[i][j] = dist[i][k] + dist[k][j];\n                        }\n                    }\n                }\n            }\n            boolean valid = true;\n            for (int i = 0; i < n; i++) {\n                if (((mask >> i) & 1) == 0) continue;\n                for (int j = i + 1; j < n; j++) {\n                    if (((mask >> j) & 1) == 0) continue;\n                    if (dist[i][j] > maxDistance) {\n                        valid = false;\n                        break;\n                    }\n                }\n                if (!valid) break;\n            }\n            if (valid) ans++;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Bitmask Subset Enumeration with Floyd-Warshall"
+    },
+    {
+      "lang": "javascript",
+      "code": "/**\n * @param {number} n\n * @param {number} maxDistance\n * @param {number[][]} roads\n * @return {number}\n */\nvar numberOfSets = function(n, maxDistance, roads) {\n    let ans = 0;\n    const INF = 1e9;\n    for (let mask = 0; mask < (1 << n); mask++) {\n        const dist = Array.from({ length: n }, () => new Int32Array(n).fill(INF));\n        for (let i = 0; i < n; i++) dist[i][i] = 0;\n        for (const [u, v, w] of roads) {\n            if (((mask >> u) & 1) && ((mask >> v) & 1)) {\n                dist[u][v] = Math.min(dist[u][v], w);\n                dist[v][u] = Math.min(dist[v][u], w);\n            }\n        }\n        for (let k = 0; k < n; k++) {\n            if (!((mask >> k) & 1)) continue;\n            for (let i = 0; i < n; i++) {\n                if (!((mask >> i) & 1)) continue;\n                for (let j = 0; j < n; j++) {\n                    if (!((mask >> j) & 1)) continue;\n                    if (dist[i][k] + dist[k][j] < dist[i][j]) {\n                        dist[i][j] = dist[i][k] + dist[k][j];\n                    }\n                }\n            }\n        }\n        let valid = true;\n        for (let i = 0; i < n; i++) {\n            if (!((mask >> i) & 1)) continue;\n            for (let j = i + 1; j < n; j++) {\n                if (!((mask >> j) & 1)) continue;\n                if (dist[i][j] > maxDistance) {\n                    valid = false;\n                    break;\n                }\n            }\n            if (!valid) break;\n        }\n        if (valid) ans++;\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Bitmask Subset Enumeration with Floyd-Warshall"
+    }
+  ]
+}
