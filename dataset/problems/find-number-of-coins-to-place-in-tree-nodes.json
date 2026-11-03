@@ -1,0 +1,78 @@
+{
+  "slug": "find-number-of-coins-to-place-in-tree-nodes",
+  "number": 2973,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Problem Analysis",
+      "text": "Perform a post-order depth-first traversal starting from node 0."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "For each subtree, we need to know the subtree size and candidate costs that could maximize a product of 3 elements."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Strategy",
+      "text": "Return the 3 largest positive values and 2 smallest negative values from each child subtree to calculate max product."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def placedCoins(self, edges: list[list[int]], cost: list[int]) -> list[int]:\n        from collections import defaultdict\n        n = len(cost)\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        ans = [0] * n\n        def dfs(u: int, p: int) -> list[int]:\n            cur = [cost[u]]\n            for v in adj[u]:\n                if v != p:\n                    cur.extend(dfs(v, u))\n            cur.sort()\n            if len(cur) >= 3:\n                prod1 = cur[-1] * cur[-2] * cur[-3]\n                prod2 = cur[0] * cur[1] * cur[-1]\n                ans[u] = max(0, prod1, prod2)\n            else:\n                ans[u] = 1\n            if len(cur) > 5:\n                cur = cur[:2] + cur[-3:]\n            return cur\n        dfs(0, -1)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: size of input array or string"
+    ],
+    "notes": "Efficient execution matching optimal computational complexity.",
+    "whyNaiveFails": "Brute force exceeds standard time constraints.",
+    "spaceTimeTradeoff": "O(n) auxiliary space overhead.",
+    "interviewerExpectation": "Identify core invariants and leverage optimal structures."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Post-Order Tree DFS Subproblem",
+      "code": "class Solution:\n    def placedCoins(self, edges: list[list[int]], cost: list[int]) -> list[int]:\n        from collections import defaultdict\n        n = len(cost)\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        ans = [0] * n\n        def dfs(u: int, p: int) -> list[int]:\n            cur = [cost[u]]\n            for v in adj[u]:\n                if v != p:\n                    cur.extend(dfs(v, u))\n            cur.sort()\n            if len(cur) >= 3:\n                prod1 = cur[-1] * cur[-2] * cur[-3]\n                prod2 = cur[0] * cur[1] * cur[-1]\n                ans[u] = max(0, prod1, prod2)\n            else:\n                ans[u] = 1\n            if len(cur) > 5:\n                cur = cur[:2] + cur[-3:]\n            return cur\n        dfs(0, -1)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Post-Order Tree DFS Subproblem",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\nprivate:\n    std::vector<long long> ans;\n    std::vector<std::vector<int>> adj;\n    \n    std::vector<long long> dfs(int u, int p, const std::vector<int>& cost) {\n        std::vector<long long> cur = {cost[u]};\n        for (int v : adj[u]) {\n            if (v == p) continue;\n            auto sub = dfs(v, u, cost);\n            cur.insert(cur.end(), sub.begin(), sub.end());\n        }\n        std::sort(cur.begin(), cur.end());\n        if (cur.size() >= 3) {\n            long long p1 = cur[cur.size() - 1] * cur[cur.size() - 2] * cur[cur.size() - 3];\n            long long p2 = cur[0] * cur[1] * cur[cur.size() - 1];\n            ans[u] = std::max(0LL, std::max(p1, p2));\n        } else {\n            ans[u] = 1;\n        }\n        if (cur.size() > 5) {\n            cur = {cur[0], cur[1], cur[cur.size() - 3], cur[cur.size() - 2], cur[cur.size() - 1]};\n        }\n        return cur;\n    }\npublic:\n    std::vector<long long> placedCoins(std::vector<std::vector<int>>& edges, std::vector<int>& cost) {\n        int n = cost.size();\n        ans.assign(n, 0);\n        adj.assign(n, {});\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        dfs(0, -1, cost);\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Post-Order Tree DFS Subproblem",
+      "code": "import java.util.*;\n\nclass Solution {\n    private long[] ans;\n    private List<List<Integer>> adj;\n\n    private List<Long> dfs(int u, int p, int[] cost) {\n        List<Long> cur = new ArrayList<>();\n        cur.add((long) cost[u]);\n        for (int v : adj.get(u)) {\n            if (v == p) continue;\n            cur.addAll(dfs(v, u, cost));\n        }\n        Collections.sort(cur);\n        int sz = cur.size();\n        if (sz >= 3) {\n            long p1 = cur.get(sz - 1) * cur.get(sz - 2) * cur.get(sz - 3);\n            long p2 = cur.get(0) * cur.get(1) * cur.get(sz - 1);\n            ans[u] = Math.max(0, Math.max(p1, p2));\n        } else {\n            ans[u] = 1;\n        }\n        if (sz > 5) {\n            List<Long> pruned = new ArrayList<>();\n            pruned.add(cur.get(0));\n            pruned.add(cur.get(1));\n            pruned.add(cur.get(sz - 3));\n            pruned.add(cur.get(sz - 2));\n            pruned.add(cur.get(sz - 1));\n            return pruned;\n        }\n        return cur;\n    }\n\n    public long[] placedCoins(int[][] edges, int[] cost) {\n        int n = cost.length;\n        ans = new long[n];\n        adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        dfs(0, -1, cost);\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Post-Order Tree DFS Subproblem",
+      "code": "var placedCoins = function(edges, cost) {\n    const n = cost.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const ans = new Array(n).fill(0);\n    function dfs(u, p) {\n        let cur = [BigInt(cost[u])];\n        for (const v of adj[u]) {\n            if (v !== p) {\n                cur.push(...dfs(v, u));\n            }\n        }\n        cur.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));\n        const sz = cur.length;\n        if (sz >= 3) {\n            const p1 = cur[sz - 1] * cur[sz - 2] * cur[sz - 3];\n            const p2 = cur[0] * cur[1] * cur[sz - 1];\n            let maxP = 0n;\n            if (p1 > maxP) maxP = p1;\n            if (p2 > maxP) maxP = p2;\n            ans[u] = Number(maxP);\n        } else {\n            ans[u] = 1;\n        }\n        if (sz > 5) {\n            cur = [cur[0], cur[1], cur[sz - 3], cur[sz - 2], cur[sz - 1]];\n        }\n        return cur;\n    }\n    dfs(0, -1);\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

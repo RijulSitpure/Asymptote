@@ -1,0 +1,71 @@
+{
+  "slug": "top-three-wineries",
+  "number": 2991,
+  "category": "Database",
+  "patterns": [
+    "conditional-pivot"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Problem Analysis",
+      "text": "Calculate total points for each winery within each country by grouping on country and winery."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Rank wineries within each country using row number ordered by total points descending, winery name ascending."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Strategy",
+      "text": "Pivot the top 3 ranks into columns top_winery, second_winery, and third_winery using conditional aggregation with concat and fallback labels."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nWITH WineryToTotalPoints AS (\n    SELECT \n        country, \n        winery, \n        SUM(points) AS total_points \n    FROM Wineries \n    GROUP BY country, winery\n), \nRankedWineries AS (\n    SELECT \n        country,\n        winery,\n        total_points,\n        ROW_NUMBER() OVER(PARTITION BY country ORDER BY total_points DESC, winery ASC) AS rn \n    FROM WineryToTotalPoints\n) \nSELECT \n    country, \n    MAX(CASE WHEN rn = 1 THEN CONCAT(winery, ' (', total_points, ')') END) AS top_winery, \n    IFNULL(MAX(CASE WHEN rn = 2 THEN CONCAT(winery, ' (', total_points, ')') END), 'No second winery') AS second_winery, \n    IFNULL(MAX(CASE WHEN rn = 3 THEN CONCAT(winery, ' (', total_points, ')') END), 'No third winery') AS third_winery \nFROM RankedWineries \nWHERE rn <= 3 \nGROUP BY country \nORDER BY country ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "N: total records in primary table"
+    ],
+    "notes": "Efficient execution matching optimal computational complexity.",
+    "whyNaiveFails": "Brute force exceeds standard time constraints.",
+    "spaceTimeTradeoff": "O(n) auxiliary space overhead.",
+    "interviewerExpectation": "Identify core invariants and leverage optimal structures."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window Row Number and Conditional Pivot",
+      "code": "WITH WineryToTotalPoints AS (\n    SELECT \n        country, \n        winery, \n        SUM(points) AS total_points \n    FROM Wineries \n    GROUP BY country, winery\n), \nRankedWineries AS (\n    SELECT \n        country,\n        winery,\n        total_points,\n        ROW_NUMBER() OVER(PARTITION BY country ORDER BY total_points DESC, winery ASC) AS rn \n    FROM WineryToTotalPoints\n) \nSELECT \n    country, \n    MAX(CASE WHEN rn = 1 THEN CONCAT(winery, ' (', total_points, ')') END) AS top_winery, \n    IFNULL(MAX(CASE WHEN rn = 2 THEN CONCAT(winery, ' (', total_points, ')') END), 'No second winery') AS second_winery, \n    IFNULL(MAX(CASE WHEN rn = 3 THEN CONCAT(winery, ' (', total_points, ')') END), 'No third winery') AS third_winery \nFROM RankedWineries \nWHERE rn <= 3 \nGROUP BY country \nORDER BY country ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window Row Number and Conditional Pivot",
+      "code": "WITH WineryToTotalPoints AS (\n    SELECT \n        country, \n        winery, \n        SUM(points) AS total_points \n    FROM Wineries \n    GROUP BY country, winery\n), \nRankedWineries AS (\n    SELECT \n        country,\n        winery,\n        total_points,\n        ROW_NUMBER() OVER(PARTITION BY country ORDER BY total_points DESC, winery ASC) AS rn \n    FROM WineryToTotalPoints\n) \nSELECT \n    country, \n    MAX(CASE WHEN rn = 1 THEN winery || ' (' || total_points || ')' END) AS top_winery, \n    COALESCE(MAX(CASE WHEN rn = 2 THEN winery || ' (' || total_points || ')' END), 'No second winery') AS second_winery, \n    COALESCE(MAX(CASE WHEN rn = 3 THEN winery || ' (' || total_points || ')' END), 'No third winery') AS third_winery \nFROM RankedWineries \nWHERE rn <= 3 \nGROUP BY country \nORDER BY country ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Sort, Cumcount, and Pivot Formatting",
+      "code": "import pandas as pd\n\ndef top_three_wineries(wineries: pd.DataFrame) -> pd.DataFrame:\n    grouped = wineries.groupby(['country', 'winery'])['points'].sum().reset_index()\n    grouped = grouped.sort_values(by=['country', 'points', 'winery'], ascending=[True, False, True])\n    grouped['rn'] = grouped.groupby('country').cumcount() + 1\n    \n    countries = sorted(wineries['country'].unique())\n    rows = []\n    for c in countries:\n        c_df = grouped[grouped['country'] == c]\n        w1 = c_df[c_df['rn'] == 1]\n        w2 = c_df[c_df['rn'] == 2]\n        w3 = c_df[c_df['rn'] == 3]\n        top_w = f\"{w1.iloc[0]['winery']} ({w1.iloc[0]['points']})\" if not w1.empty else None\n        sec_w = f\"{w2.iloc[0]['winery']} ({w2.iloc[0]['points']})\" if not w2.empty else 'No second winery'\n        thd_w = f\"{w3.iloc[0]['winery']} ({w3.iloc[0]['points']})\" if not w3.empty else 'No third winery'\n        rows.append({'country': c, 'top_winery': top_w, 'second_winery': sec_w, 'third_winery': thd_w})\n    return pd.DataFrame(rows)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

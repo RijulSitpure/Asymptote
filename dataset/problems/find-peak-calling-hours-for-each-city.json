@@ -1,0 +1,71 @@
+{
+  "slug": "find-peak-calling-hours-for-each-city",
+  "number": 2984,
+  "category": "Database",
+  "patterns": [
+    "top-n-per-group"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Problem Analysis",
+      "text": "Extract the hour from call_time using hour extraction and aggregate count of calls grouped by city and hour."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Use window ranking partitioned by city and ordered by number of calls descending to handle ties."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Strategy",
+      "text": "Filter for rank = 1 and order by peak_calling_hour descending, then city descending."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nWITH CityHourCount AS (\n    SELECT \n        city, \n        HOUR(call_time) AS peak_calling_hour, \n        COUNT(*) AS number_of_calls,\n        RANK() OVER (PARTITION BY city ORDER BY COUNT(*) DESC) AS rk\n    FROM Calls\n    GROUP BY city, HOUR(call_time)\n)\nSELECT \n    city, \n    peak_calling_hour, \n    number_of_calls\nFROM CityHourCount\nWHERE rk = 1\nORDER BY peak_calling_hour DESC, city DESC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "N: total records in primary table"
+    ],
+    "notes": "Efficient execution matching optimal computational complexity.",
+    "whyNaiveFails": "Brute force exceeds standard time constraints.",
+    "spaceTimeTradeoff": "O(n) auxiliary space overhead.",
+    "interviewerExpectation": "Identify core invariants and leverage optimal structures."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window Ranking with Hour Aggregation",
+      "code": "WITH CityHourCount AS (\n    SELECT \n        city, \n        HOUR(call_time) AS peak_calling_hour, \n        COUNT(*) AS number_of_calls,\n        RANK() OVER (PARTITION BY city ORDER BY COUNT(*) DESC) AS rk\n    FROM Calls\n    GROUP BY city, HOUR(call_time)\n)\nSELECT \n    city, \n    peak_calling_hour, \n    number_of_calls\nFROM CityHourCount\nWHERE rk = 1\nORDER BY peak_calling_hour DESC, city DESC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window Ranking with Hour Aggregation",
+      "code": "WITH CityHourCount AS (\n    SELECT \n        city, \n        EXTRACT(HOUR FROM call_time)::INTEGER AS peak_calling_hour, \n        COUNT(*)::INTEGER AS number_of_calls,\n        RANK() OVER (PARTITION BY city ORDER BY COUNT(*) DESC) AS rk\n    FROM Calls\n    GROUP BY city, EXTRACT(HOUR FROM call_time)\n)\nSELECT \n    city, \n    peak_calling_hour, \n    number_of_calls\nFROM CityHourCount\nWHERE rk = 1\nORDER BY peak_calling_hour DESC, city DESC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Datetime Hour and Window Rank",
+      "code": "import pandas as pd\n\ndef peak_calling_hours(calls: pd.DataFrame) -> pd.DataFrame:\n    if calls.empty:\n        return pd.DataFrame(columns=['city', 'peak_calling_hour', 'number_of_calls'])\n    df = calls.copy()\n    df['peak_calling_hour'] = pd.to_datetime(df['call_time']).dt.hour\n    grouped = df.groupby(['city', 'peak_calling_hour']).size().reset_index(name='number_of_calls')\n    grouped['rk'] = grouped.groupby('city')['number_of_calls'].rank(method='min', ascending=False)\n    res = grouped[grouped['rk'] == 1][['city', 'peak_calling_hour', 'number_of_calls']]\n    return res.sort_values(by=['peak_calling_hour', 'city'], ascending=[False, False])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

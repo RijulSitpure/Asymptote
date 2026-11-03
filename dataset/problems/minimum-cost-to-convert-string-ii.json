@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-cost-to-convert-string-ii",
+  "number": 2977,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Problem Analysis",
+      "text": "Assign a unique integer ID to each distinct string in original and changed."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Run Floyd-Warshall or multi-source Dijkstra across the mapped string IDs to obtain the minimum conversion cost between any pair of distinct substrings."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Strategy",
+      "text": "Use dynamic programming where dp[i] is the minimum cost to convert prefix source[0..i]. At index i, transition either with a 1-character match or a substring conversion found via Trie search."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def minimumCost(self, source: str, target: str, original: list[str], changed: list[str], cost: list[int]) -> int:\n        INF = float('inf')\n        word_id = {}\n        for w in original + changed:\n            if w not in word_id:\n                word_id[w] = len(word_id)\n        m = len(word_id)\n        dist = [[INF] * m for _ in range(m)]\n        for i in range(m):\n            dist[i][i] = 0\n        for u, v, w in zip(original, changed, cost):\n            uid, vid = word_id[u], word_id[v]\n            dist[uid][vid] = min(dist[uid][vid], w)\n        for k in range(m):\n            for i in range(m):\n                for j in range(m):\n                    if dist[i][k] + dist[k][j] < dist[i][j]:\n                        dist[i][j] = dist[i][k] + dist[k][j]\n        root = {}\n        for w, wid in word_id.items():\n            node = root\n            for ch in w:\n                node = node.setdefault(ch, {})\n            node['#'] = wid\n        n = len(source)\n        dp = [INF] * (n + 1)\n        dp[0] = 0\n        for i in range(n):\n            if dp[i] == INF:\n                continue\n            if source[i] == target[i]:\n                dp[i + 1] = min(dp[i + 1], dp[i])\n            u_node = root\n            v_node = root\n            for j in range(i, n):\n                if source[j] not in u_node or target[j] not in v_node:\n                    break\n                u_node = u_node[source[j]]\n                v_node = v_node[target[j]]\n                if '#' in u_node and '#' in v_node:\n                    uid = u_node['#']\n                    vid = v_node['#']\n                    if dist[uid][vid] < INF:\n                        dp[j + 1] = min(dp[j + 1], dp[i] + dist[uid][vid])\n        return dp[n] if dp[n] < INF else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m^3 + n * L)",
+    "space": "O(m^2 + n + total_trie_nodes)",
+    "variables": [
+      "n: size of input array or string"
+    ],
+    "notes": "Efficient execution matching optimal computational complexity.",
+    "whyNaiveFails": "Brute force exceeds standard time constraints.",
+    "spaceTimeTradeoff": "O(m^2 + n + total_trie_nodes) auxiliary space overhead.",
+    "interviewerExpectation": "Identify core invariants and leverage optimal structures."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Floyd-Warshall and Trie DP",
+      "code": "class Solution:\n    def minimumCost(self, source: str, target: str, original: list[str], changed: list[str], cost: list[int]) -> int:\n        INF = float('inf')\n        word_id = {}\n        for w in original + changed:\n            if w not in word_id:\n                word_id[w] = len(word_id)\n        m = len(word_id)\n        dist = [[INF] * m for _ in range(m)]\n        for i in range(m):\n            dist[i][i] = 0\n        for u, v, w in zip(original, changed, cost):\n            uid, vid = word_id[u], word_id[v]\n            dist[uid][vid] = min(dist[uid][vid], w)\n        for k in range(m):\n            for i in range(m):\n                for j in range(m):\n                    if dist[i][k] + dist[k][j] < dist[i][j]:\n                        dist[i][j] = dist[i][k] + dist[k][j]\n        root = {}\n        for w, wid in word_id.items():\n            node = root\n            for ch in w:\n                node = node.setdefault(ch, {})\n            node['#'] = wid\n        n = len(source)\n        dp = [INF] * (n + 1)\n        dp[0] = 0\n        for i in range(n):\n            if dp[i] == INF:\n                continue\n            if source[i] == target[i]:\n                dp[i + 1] = min(dp[i + 1], dp[i])\n            u_node = root\n            v_node = root\n            for j in range(i, n):\n                if source[j] not in u_node or target[j] not in v_node:\n                    break\n                u_node = u_node[source[j]]\n                v_node = v_node[target[j]]\n                if '#' in u_node and '#' in v_node:\n                    uid = u_node['#']\n                    vid = v_node['#']\n                    if dist[uid][vid] < INF:\n                        dp[j + 1] = min(dp[j + 1], dp[i] + dist[uid][vid])\n        return dp[n] if dp[n] < INF else -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Floyd-Warshall and Trie DP",
+      "code": "#include <string>\n#include <vector>\n#include <unordered_map>\n#include <algorithm>\n\nstruct TrieNode {\n    int next[26];\n    int id;\n    TrieNode() {\n        std::fill(next, next + 26, -1);\n        id = -1;\n    }\n};\n\nclass Solution {\npublic:\n    long long minimumCost(std::string source, std::string target, std::vector<std::string>& original, std::vector<std::string>& changed, std::vector<int>& cost) {\n        std::unordered_map<std::string, int> wordId;\n        auto getId = [&](const std::string& s) {\n            if (!wordId.count(s)) {\n                int id = wordId.size();\n                wordId[s] = id;\n            }\n            return wordId[s];\n        };\n        for (const auto& s : original) getId(s);\n        for (const auto& s : changed) getId(s);\n        \n        int m = wordId.size();\n        const long long INF = 1e16;\n        std::vector<std::vector<long long>> dist(m, std::vector<long long>(m, INF));\n        for (int i = 0; i < m; ++i) dist[i][i] = 0;\n        for (size_t i = 0; i < original.size(); ++i) {\n            int u = wordId[original[i]];\n            int v = wordId[changed[i]];\n            dist[u][v] = std::min(dist[u][v], (long long)cost[i]);\n        }\n        for (int k = 0; k < m; ++k) {\n            for (int i = 0; i < m; ++i) {\n                for (int j = 0; j < m; ++j) {\n                    if (dist[i][k] + dist[k][j] < dist[i][j]) {\n                        dist[i][j] = dist[i][k] + dist[k][j];\n                    }\n                }\n            }\n        }\n        \n        std::vector<TrieNode> trie(1);\n        for (const auto& p : wordId) {\n            int curr = 0;\n            for (char ch : p.first) {\n                int c = ch - 'a';\n                if (trie[curr].next[c] == -1) {\n                    trie[curr].next[c] = trie.size();\n                    trie.emplace_back();\n                }\n                curr = trie[curr].next[c];\n            }\n            trie[curr].id = p.second;\n        }\n        \n        int n = source.size();\n        std::vector<long long> dp(n + 1, INF);\n        dp[0] = 0;\n        for (int i = 0; i < n; ++i) {\n            if (dp[i] >= INF) continue;\n            if (source[i] == target[i]) {\n                dp[i + 1] = std::min(dp[i + 1], dp[i]);\n            }\n            int uNode = 0, vNode = 0;\n            for (int j = i; j < n; ++j) {\n                int cU = source[j] - 'a';\n                int cV = target[j] - 'a';\n                if (trie[uNode].next[cU] == -1 || trie[vNode].next[cV] == -1) break;\n                uNode = trie[uNode].next[cU];\n                vNode = trie[vNode].next[cV];\n                if (trie[uNode].id != -1 && trie[vNode].id != -1) {\n                    int uid = trie[uNode].id;\n                    int vid = trie[vNode].id;\n                    if (dist[uid][vid] < INF) {\n                        dp[j + 1] = std::min(dp[j + 1], dp[i] + dist[uid][vid]);\n                    }\n                }\n            }\n        }\n        return dp[n] >= INF ? -1 : dp[n];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Floyd-Warshall and Trie DP",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class TrieNode {\n        int[] next = new int[26];\n        int id = -1;\n        TrieNode() {\n            Arrays.fill(next, -1);\n        }\n    }\n\n    public long minimumCost(String source, String target, String[] original, String[] changed, int[] cost) {\n        Map<String, Integer> wordId = new HashMap<>();\n        for (String s : original) {\n            if (!wordId.containsKey(s)) wordId.put(s, wordId.size());\n        }\n        for (String s : changed) {\n            if (!wordId.containsKey(s)) wordId.put(s, wordId.size());\n        }\n\n        int m = wordId.size();\n        long INF = (long) 1e16;\n        long[][] dist = new long[m][m];\n        for (int i = 0; i < m; i++) {\n            Arrays.fill(dist[i], INF);\n            dist[i][i] = 0;\n        }\n        for (int i = 0; i < original.length; i++) {\n            int u = wordId.get(original[i]);\n            int v = wordId.get(changed[i]);\n            dist[u][v] = Math.min(dist[u][v], cost[i]);\n        }\n        for (int k = 0; k < m; k++) {\n            for (int i = 0; i < m; i++) {\n                for (int j = 0; j < m; j++) {\n                    if (dist[i][k] + dist[k][j] < dist[i][j]) {\n                        dist[i][j] = dist[i][k] + dist[k][j];\n                    }\n                }\n            }\n        }\n\n        List<TrieNode> trie = new ArrayList<>();\n        trie.add(new TrieNode());\n        for (Map.Entry<String, Integer> entry : wordId.entrySet()) {\n            int curr = 0;\n            for (char ch : entry.getKey().toCharArray()) {\n                int c = ch - 'a';\n                if (trie.get(curr).next[c] == -1) {\n                    trie.get(curr).next[c] = trie.size();\n                    trie.add(new TrieNode());\n                }\n                curr = trie.get(curr).next[c];\n            }\n            trie.get(curr).id = entry.getValue();\n        }\n\n        int n = source.length();\n        long[] dp = new long[n + 1];\n        Arrays.fill(dp, INF);\n        dp[0] = 0;\n\n        for (int i = 0; i < n; i++) {\n            if (dp[i] >= INF) continue;\n            if (source.charAt(i) == target.charAt(i)) {\n                dp[i + 1] = Math.min(dp[i + 1], dp[i]);\n            }\n            int uNode = 0, vNode = 0;\n            for (int j = i; j < n; j++) {\n                int cU = source.charAt(j) - 'a';\n                int cV = target.charAt(j) - 'a';\n                if (trie.get(uNode).next[cU] == -1 || trie.get(vNode).next[cV] == -1) break;\n                uNode = trie.get(uNode).next[cU];\n                vNode = trie.get(vNode).next[cV];\n                if (trie.get(uNode).id != -1 && trie.get(vNode).id != -1) {\n                    int uid = trie.get(uNode).id;\n                    int vid = trie.get(vNode).id;\n                    if (dist[uid][vid] < INF) {\n                        dp[j + 1] = Math.min(dp[j + 1], dp[i] + dist[uid][vid]);\n                    }\n                }\n            }\n        }\n        return dp[n] >= INF ? -1 : dp[n];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Floyd-Warshall and Trie DP",
+      "code": "var minimumCost = function(source, target, original, changed, cost) {\n    const wordId = new Map();\n    for (const w of [...original, ...changed]) {\n        if (!wordId.has(w)) {\n            wordId.set(w, wordId.size);\n        }\n    }\n    const m = wordId.size;\n    const INF = Infinity;\n    const dist = Array.from({ length: m }, () => new Array(m).fill(INF));\n    for (let i = 0; i < m; i++) dist[i][i] = 0;\n    for (let i = 0; i < original.length; i++) {\n        const u = wordId.get(original[i]);\n        const v = wordId.get(changed[i]);\n        dist[u][v] = Math.min(dist[u][v], cost[i]);\n    }\n    for (let k = 0; k < m; k++) {\n        for (let i = 0; i < m; i++) {\n            for (let j = 0; j < m; j++) {\n                if (dist[i][k] + dist[k][j] < dist[i][j]) {\n                    dist[i][j] = dist[i][k] + dist[k][j];\n                }\n            }\n        }\n    }\n    const root = {};\n    for (const [w, wid] of wordId.entries()) {\n        let node = root;\n        for (const ch of w) {\n            if (!node[ch]) node[ch] = {};\n            node = node[ch];\n        }\n        node['#'] = wid;\n    }\n    const n = source.length;\n    const dp = new Array(n + 1).fill(INF);\n    dp[0] = 0;\n    for (let i = 0; i < n; i++) {\n        if (dp[i] === INF) continue;\n        if (source[i] === target[i]) {\n            dp[i + 1] = Math.min(dp[i + 1], dp[i]);\n        }\n        let uNode = root, vNode = root;\n        for (let j = i; j < n; j++) {\n            if (!uNode[source[j]] || !vNode[target[j]]) break;\n            uNode = uNode[source[j]];\n            vNode = vNode[target[j]];\n            if ('#' in uNode && '#' in vNode) {\n                const uid = uNode['#'];\n                const vid = vNode['#'];\n                if (dist[uid][vid] < INF) {\n                    dp[j + 1] = Math.min(dp[j + 1], dp[i] + dist[uid][vid]);\n                }\n            }\n        }\n    }\n    return dp[n] === INF ? -1 : dp[n];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

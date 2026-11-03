@@ -1,0 +1,71 @@
+{
+  "slug": "symmetric-coordinates",
+  "number": 2978,
+  "category": "Database",
+  "patterns": [
+    "self-join"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Problem Analysis",
+      "text": "Assign a unique row ID using ROW_NUMBER() to handle potential duplicate coordinate pairs."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Join the table with itself on p1.x = p2.y and p1.y = p2.x with different row IDs distinct row identifiers `p1.id <> p2.id`."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Strategy",
+      "text": "Filter for unique pairs satisfying p1.x <= p1.y and sort by x, y ascending."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nWITH P AS (\n    SELECT ROW_NUMBER() OVER () AS id, X AS x, Y AS y \n    FROM Coordinates\n)\nSELECT DISTINCT p1.x, p1.y \nFROM P AS p1 \nJOIN P AS p2 \n  ON p1.x = p2.y \n AND p1.y = p2.x \n AND p1.x <= p1.y \n AND p1.id != p2.id \nORDER BY p1.x, p1.y;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2)",
+    "space": "O(n)",
+    "variables": [
+      "N: total records in primary table"
+    ],
+    "notes": "Efficient execution matching optimal computational complexity.",
+    "whyNaiveFails": "Brute force exceeds standard time constraints.",
+    "spaceTimeTradeoff": "O(n) auxiliary space overhead.",
+    "interviewerExpectation": "Identify core invariants and leverage optimal structures."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Row Number CTE and Self-Join",
+      "code": "WITH P AS (\n    SELECT ROW_NUMBER() OVER () AS id, X AS x, Y AS y \n    FROM Coordinates\n)\nSELECT DISTINCT p1.x, p1.y \nFROM P AS p1 \nJOIN P AS p2 \n  ON p1.x = p2.y \n AND p1.y = p2.x \n AND p1.x <= p1.y \n AND p1.id != p2.id \nORDER BY p1.x, p1.y;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Row Number CTE and Self-Join",
+      "code": "WITH P AS (\n    SELECT ROW_NUMBER() OVER () AS id, X AS x, Y AS y \n    FROM Coordinates\n)\nSELECT DISTINCT p1.x, p1.y \nFROM P AS p1 \nJOIN P AS p2 \n  ON p1.x = p2.y \n AND p1.y = p2.x \n AND p1.x <= p1.y \n AND p1.id != p2.id \nORDER BY p1.x, p1.y;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Merge Self-Join",
+      "code": "import pandas as pd\n\ndef symmetric_coordinates(coordinates: pd.DataFrame) -> pd.DataFrame:\n    df = coordinates.copy()\n    df['id'] = range(len(df))\n    merged = df.merge(df, left_on=['X', 'Y'], right_on=['Y', 'X'], suffixes=('_1', '_2'))\n    res = merged[(merged['id_1'] != merged['id_2']) & (merged['X_1'] <= merged['Y_1'])][['X_1', 'Y_1']]\n    res = res.drop_duplicates().sort_values(by=['X_1', 'Y_1']).rename(columns={'X_1': 'x', 'Y_1': 'y'})\n    return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

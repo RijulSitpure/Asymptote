@@ -1,0 +1,71 @@
+{
+  "slug": "find-third-transaction",
+  "number": 2986,
+  "category": "Database",
+  "patterns": [
+    "window-offset"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Problem Analysis",
+      "text": "Sort transactions chronologically per user using ROW_NUMBER() over (partition by user_id order by transaction_date)."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Use lag(spend, 1) and lag(spend, 2) to inspect the spend amounts of the preceding two transactions."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Strategy",
+      "text": "Filter for row number 3 where current spend is strictly greater than both previous spends."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nWITH RankedTransactions AS (\n    SELECT \n        user_id,\n        spend AS third_transaction_spend,\n        transaction_date AS third_transaction_date,\n        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY transaction_date) AS rn,\n        LAG(spend, 1) OVER (PARTITION BY user_id ORDER BY transaction_date) AS prev1,\n        LAG(spend, 2) OVER (PARTITION BY user_id ORDER BY transaction_date) AS prev2\n    FROM Transactions\n)\nSELECT \n    user_id,\n    third_transaction_spend,\n    third_transaction_date\nFROM RankedTransactions\nWHERE rn = 3 \n  AND third_transaction_spend > prev1 \n  AND third_transaction_spend > prev2\nORDER BY user_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "N: total records in primary table"
+    ],
+    "notes": "Efficient execution matching optimal computational complexity.",
+    "whyNaiveFails": "Brute force exceeds standard time constraints.",
+    "spaceTimeTradeoff": "O(n) auxiliary space overhead.",
+    "interviewerExpectation": "Identify core invariants and leverage optimal structures."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "ROW_NUMBER and LAG Window Functions",
+      "code": "WITH RankedTransactions AS (\n    SELECT \n        user_id,\n        spend AS third_transaction_spend,\n        transaction_date AS third_transaction_date,\n        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY transaction_date) AS rn,\n        LAG(spend, 1) OVER (PARTITION BY user_id ORDER BY transaction_date) AS prev1,\n        LAG(spend, 2) OVER (PARTITION BY user_id ORDER BY transaction_date) AS prev2\n    FROM Transactions\n)\nSELECT \n    user_id,\n    third_transaction_spend,\n    third_transaction_date\nFROM RankedTransactions\nWHERE rn = 3 \n  AND third_transaction_spend > prev1 \n  AND third_transaction_spend > prev2\nORDER BY user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "ROW_NUMBER and LAG Window Functions",
+      "code": "WITH RankedTransactions AS (\n    SELECT \n        user_id,\n        spend AS third_transaction_spend,\n        transaction_date AS third_transaction_date,\n        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY transaction_date) AS rn,\n        LAG(spend, 1) OVER (PARTITION BY user_id ORDER BY transaction_date) AS prev1,\n        LAG(spend, 2) OVER (PARTITION BY user_id ORDER BY transaction_date) AS prev2\n    FROM Transactions\n)\nSELECT \n    user_id,\n    third_transaction_spend,\n    third_transaction_date\nFROM RankedTransactions\nWHERE rn = 3 \n  AND third_transaction_spend > prev1 \n  AND third_transaction_spend > prev2\nORDER BY user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Sort and Shift",
+      "code": "import pandas as pd\n\ndef find_third_transaction(transactions: pd.DataFrame) -> pd.DataFrame:\n    df = transactions.sort_values(by=['user_id', 'transaction_date']).copy()\n    df['rn'] = df.groupby('user_id').cumcount() + 1\n    df['prev1'] = df.groupby('user_id')['spend'].shift(1)\n    df['prev2'] = df.groupby('user_id')['spend'].shift(2)\n    res = df[(df['rn'] == 3) & (df['spend'] > df['prev1']) & (df['spend'] > df['prev2'])].copy()\n    res = res.rename(columns={'spend': 'third_transaction_spend', 'transaction_date': 'third_transaction_date'})\n    return res[['user_id', 'third_transaction_spend', 'third_transaction_date']].sort_values(by='user_id')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}
