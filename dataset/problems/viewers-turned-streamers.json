@@ -1,0 +1,71 @@
+{
+  "slug": "viewers-turned-streamers",
+  "number": 2995,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Identify each user's earliest chronological session using ROW_NUMBER() or `rank`() ordered by session_start."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Filter for users whose first session type was 'Viewer'."
+    },
+    {
+      "level": 3,
+      "title": "Query Construction",
+      "text": "Count their subsequent 'Streamer' sessions and return those with at least one streamer session, ordered by session count descending then user_id descending."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH FirstSessions AS (\n    SELECT \n        user_id, \n        session_type, \n        RANK() OVER(PARTITION BY user_id ORDER BY session_start) AS session_rank \n    FROM Sessions \n), ViewerFirst AS (\n    SELECT user_id \n    FROM FirstSessions \n    WHERE session_rank = 1 \n      AND session_type = 'Viewer' \n) \nSELECT \n    Sessions.user_id, \n    COUNT(*) AS sessions_count \nFROM Sessions \nINNER JOIN ViewerFirst USING (user_id) \nWHERE Sessions.session_type = 'Streamer' \nGROUP BY 1 \nORDER BY sessions_count DESC, Sessions.user_id DESC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total records in Sessions table"
+    ],
+    "notes": "Partitioned window ranking followed by inner join filtering and aggregation.",
+    "whyNaiveFails": "Correlated subqueries per user incur quadratic runtime.",
+    "spaceTimeTradeoff": "O(N) memory for window buffer.",
+    "interviewerExpectation": "Recognize that first session condition requires window ranking on session_start."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window Ranking CTE and Filtering Join",
+      "code": "WITH FirstSessions AS (\n    SELECT \n        user_id, \n        session_type, \n        RANK() OVER(PARTITION BY user_id ORDER BY session_start) AS session_rank \n    FROM Sessions \n), ViewerFirst AS (\n    SELECT user_id \n    FROM FirstSessions \n    WHERE session_rank = 1 \n      AND session_type = 'Viewer' \n) \nSELECT \n    Sessions.user_id, \n    COUNT(*) AS sessions_count \nFROM Sessions \nINNER JOIN ViewerFirst USING (user_id) \nWHERE Sessions.session_type = 'Streamer' \nGROUP BY 1 \nORDER BY sessions_count DESC, Sessions.user_id DESC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window Ranking CTE and Filtering Join",
+      "code": "WITH FirstSessions AS (\n    SELECT \n        user_id, \n        session_type, \n        RANK() OVER(PARTITION BY user_id ORDER BY session_start) AS session_rank \n    FROM Sessions \n), ViewerFirst AS (\n    SELECT user_id \n    FROM FirstSessions \n    WHERE session_rank = 1 \n      AND session_type = 'Viewer' \n) \nSELECT \n    Sessions.user_id, \n    COUNT(*)::INTEGER AS sessions_count \nFROM Sessions \nINNER JOIN ViewerFirst USING (user_id) \nWHERE Sessions.session_type = 'Streamer' \nGROUP BY 1 \nORDER BY sessions_count DESC, Sessions.user_id DESC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Sort and Groupby Filter",
+      "code": "import pandas as pd\n\ndef viewers_turned_streamers(sessions: pd.DataFrame) -> pd.DataFrame:\n    df = sessions.sort_values(by=['user_id', 'session_start']).copy()\n    first_sess = df.groupby('user_id').first().reset_index()\n    viewer_first_users = set(first_sess[first_sess['session_type'] == 'Viewer']['user_id'])\n    \n    streamer_df = df[(df['user_id'].isin(viewer_first_users)) & (df['session_type'] == 'Streamer')]\n    if streamer_df.empty:\n        return pd.DataFrame(columns=['user_id', 'sessions_count'])\n    \n    res = streamer_df.groupby('user_id').size().reset_index(name='sessions_count')\n    return res.sort_values(by=['sessions_count', 'user_id'], ascending=[False, False])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

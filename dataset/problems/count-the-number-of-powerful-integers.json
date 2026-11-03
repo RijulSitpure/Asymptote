@@ -1,0 +1,78 @@
+{
+  "slug": "count-the-number-of-powerful-integers",
+  "number": 2999,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "We need powerful integers in [start, finish]. Compute count_upto(finish) - count_upto(start - 1)."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Every powerful integer must end with suffix string s and have all digits <= limit."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Use digit DP over the prefix digits preceding s to count valid numbers bounded by N."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def numberOfPowerfulInt(self, start: int, finish: int, limit: int, s: str) -> int:\n        def count_upto(N: int) -> int:\n            s_val = int(s)\n            if N < s_val:\n                return 0\n            str_n = str(N)\n            if len(str_n) < len(s):\n                return 0\n            if any(int(c) > limit for c in s):\n                return 0\n            p_len = len(str_n) - len(s)\n            suffix = str_n[p_len:]\n            memo = {}\n            def dp(i: int, is_less: bool, is_tight: bool) -> int:\n                if i == p_len:\n                    if is_less:\n                        return 1\n                    return 1 if s <= suffix else 0\n                state = (i, is_less)\n                if not is_tight and state in memo:\n                    return memo[state]\n                up = int(str_n[i]) if is_tight else 9\n                ans = 0\n                for d in range(min(up, limit) + 1):\n                    ans += dp(i + 1, is_less or (d < int(str_n[i])), is_tight and (d == up))\n                if not is_tight:\n                    memo[state] = ans\n                return ans\n            return dp(0, False, True)\n        return count_upto(finish) - count_upto(start - 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log10(finish) * limit)",
+    "space": "O(log10(finish))",
+    "variables": [
+      "finish: upper bound integer"
+    ],
+    "notes": "Digit DP counting prefixes of valid length.",
+    "whyNaiveFails": "Linear iteration up to 10^15 causes time limit exceeded.",
+    "spaceTimeTradeoff": "O(log10(N)) recursion stack and memo table.",
+    "interviewerExpectation": "Use digit DP on prefix digits with suffix validation."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Prefix Digit DP with Suffix Match",
+      "code": "class Solution:\n    def numberOfPowerfulInt(self, start: int, finish: int, limit: int, s: str) -> int:\n        def count_upto(N: int) -> int:\n            s_val = int(s)\n            if N < s_val:\n                return 0\n            str_n = str(N)\n            if len(str_n) < len(s):\n                return 0\n            if any(int(c) > limit for c in s):\n                return 0\n            p_len = len(str_n) - len(s)\n            suffix = str_n[p_len:]\n            memo = {}\n            def dp(i: int, is_less: bool, is_tight: bool) -> int:\n                if i == p_len:\n                    if is_less:\n                        return 1\n                    return 1 if s <= suffix else 0\n                state = (i, is_less)\n                if not is_tight and state in memo:\n                    return memo[state]\n                up = int(str_n[i]) if is_tight else 9\n                ans = 0\n                for d in range(min(up, limit) + 1):\n                    ans += dp(i + 1, is_less or (d < int(str_n[i])), is_tight and (d == up))\n                if not is_tight:\n                    memo[state] = ans\n                return ans\n            return dp(0, False, True)\n        return count_upto(finish) - count_upto(start - 1)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Prefix Digit DP with Suffix Match",
+      "code": "#include <string>\n#include <vector>\n#include <algorithm>\n\nclass Solution {\nprivate:\n    long long countUpto(long long N, int limit, const std::string& s) {\n        std::string strN = std::to_string(N);\n        if (strN.size() < s.size()) return 0;\n        for (char c : s) {\n            if (c - '0' > limit) return 0;\n        }\n        int pLen = strN.size() - s.size();\n        std::string suffix = strN.substr(pLen);\n        std::vector<std::vector<long long>> memo(pLen + 1, std::vector<long long>(2, -1));\n        \n        auto dp = [&](auto& self, int i, bool isLess, bool isTight) -> long long {\n            if (i == pLen) {\n                if (isLess) return 1;\n                return s <= suffix ? 1 : 0;\n            }\n            if (!isTight && memo[i][isLess] != -1) return memo[i][isLess];\n            int up = isTight ? (strN[i] - '0') : 9;\n            long long ans = 0;\n            for (int d = 0; d <= std::min(up, limit); ++d) {\n                ans += self(self, i + 1, isLess || (d < (strN[i] - '0')), isTight && (d == up));\n            }\n            if (!isTight) memo[i][isLess] = ans;\n            return ans;\n        };\n        return dp(dp, 0, false, true);\n    }\npublic:\n    long long numberOfPowerfulInt(long long start, long long finish, int limit, std::string s) {\n        return countUpto(finish, limit, s) - countUpto(start - 1, limit, s);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Prefix Digit DP with Suffix Match",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    private long countUpto(long N, int limit, String s) {\n        String strN = Long.toString(N);\n        if (strN.length() < s.length()) return 0;\n        for (char c : s.toCharArray()) {\n            if (c - '0' > limit) return 0;\n        }\n        int pLen = strN.length() - s.length();\n        String suffix = strN.substring(pLen);\n        long[][] memo = new long[pLen + 1][2];\n        for (long[] row : memo) Arrays.fill(row, -1);\n\n        return dp(0, false, true, pLen, strN, suffix, s, limit, memo);\n    }\n\n    private long dp(int i, boolean isLess, boolean isTight, int pLen, String strN, String suffix, String s, int limit, long[][] memo) {\n        if (i == pLen) {\n            if (isLess) return 1;\n            return s.compareTo(suffix) <= 0 ? 1 : 0;\n        }\n        if (!isTight && memo[i][isLess ? 1 : 0] != -1) return memo[i][isLess ? 1 : 0];\n        int up = isTight ? (strN.charAt(i) - '0') : 9;\n        long ans = 0;\n        for (int d = 0; d <= Math.min(up, limit); d++) {\n            ans += dp(i + 1, isLess || (d < (strN.charAt(i) - '0')), isTight && (d == up), pLen, strN, suffix, s, limit, memo);\n        }\n        if (!isTight) memo[i][isLess ? 1 : 0] = ans;\n        return ans;\n    }\n\n    public long numberOfPowerfulInt(long start, long finish, int limit, String s) {\n        return countUpto(finish, limit, s) - countUpto(start - 1, limit, s);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Prefix Digit DP with Suffix Match",
+      "code": "var numberOfPowerfulInt = function(start, finish, limit, s) {\n    function countUpto(N) {\n        const strN = String(N);\n        if (strN.length < s.length) return 0n;\n        for (const c of s) {\n            if (Number(c) > limit) return 0n;\n        }\n        const pLen = strN.length - s.length;\n        const suffix = strN.slice(pLen);\n        const memo = new Map();\n\n        function dp(i, isLess, isTight) {\n            if (i === pLen) {\n                if (isLess) return 1n;\n                return s <= suffix ? 1n : 0n;\n            }\n            const key = `${i}_${isLess ? 1 : 0}`;\n            if (!isTight && memo.has(key)) return memo.get(key);\n            const up = isTight ? Number(strN[i]) : 9;\n            let ans = 0n;\n            for (let d = 0; d <= Math.min(up, limit); d++) {\n                ans += dp(i + 1, isLess || d < Number(strN[i]), isTight && d === up);\n            }\n            if (!isTight) memo.set(key, ans);\n            return ans;\n        }\n        return dp(0, false, true);\n    }\n    return Number(countUpto(finish) - countUpto(start - 1));\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

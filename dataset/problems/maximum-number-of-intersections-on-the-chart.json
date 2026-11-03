@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-number-of-intersections-on-the-chart",
+  "number": 3009,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "A horizontal line can intersect line chart segments at integer heights or halfway between integers."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Double all coordinates by multiplying each y-value by 2 to map all half-integer coordinates to integers."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Represent each line segment as a vertical interval [min(start, end), max(start, end)] and use a difference event map to count overlapping intervals."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nfrom collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def maxIntersectionCount(self, y: List[int]) -> int:\n        n = len(y)\n        events = defaultdict(int)\n        for i in range(1, n):\n            start = 2 * y[i - 1]\n            end = 2 * y[i]\n            if i < n - 1:\n                if y[i] > y[i - 1]:\n                    end -= 1\n                else:\n                    end += 1\n            events[min(start, end)] += 1\n            events[max(start, end) + 1] -= 1\n        curr = 0\n        ans = 0\n        for k in sorted(events.keys()):\n            curr += events[k]\n            ans = max(ans, curr)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of vertices in line chart"
+    ],
+    "notes": "Coordinate doubling followed by sorting sweep-line event points.",
+    "whyNaiveFails": "Evaluating every possible continuous height takes unbounded or quadratic time.",
+    "spaceTimeTradeoff": "O(n) auxiliary hash table for sweep-line difference array events.",
+    "interviewerExpectation": "Use coordinate doubling to turn half-integer level sets into discrete integer events without float precision loss."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Coordinate Doubling with Sweep-Line Difference Map",
+      "code": "from collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def maxIntersectionCount(self, y: List[int]) -> int:\n        n = len(y)\n        events = defaultdict(int)\n        for i in range(1, n):\n            start = 2 * y[i - 1]\n            end = 2 * y[i]\n            if i < n - 1:\n                if y[i] > y[i - 1]:\n                    end -= 1\n                else:\n                    end += 1\n            events[min(start, end)] += 1\n            events[max(start, end) + 1] -= 1\n        curr = 0\n        ans = 0\n        for k in sorted(events.keys()):\n            curr += events[k]\n            ans = max(ans, curr)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Coordinate Doubling with Sweep-Line Map",
+      "code": "#include <vector>\n#include <map>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxIntersectionCount(std::vector<int>& y) {\n        int n = y.size();\n        std::map<int, int> events;\n        for (int i = 1; i < n; ++i) {\n            int start = 2 * y[i - 1];\n            int end = 2 * y[i];\n            if (i < n - 1) {\n                if (y[i] > y[i - 1]) end--;\n                else end++;\n            }\n            events[std::min(start, end)]++;\n            events[std::max(start, end) + 1]--;\n        }\n        int curr = 0, ans = 0;\n        for (auto const& [k, v] : events) {\n            curr += v;\n            ans = std::max(ans, curr);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Coordinate Doubling with TreeMap Events",
+      "code": "import java.util.TreeMap;\nimport java.util.Map;\n\nclass Solution {\n    public int maxIntersectionCount(int[] y) {\n        int n = y.length;\n        TreeMap<Integer, Integer> events = new TreeMap<>();\n        for (int i = 1; i < n; ++i) {\n            int start = 2 * y[i - 1];\n            int end = 2 * y[i];\n            if (i < n - 1) {\n                if (y[i] > y[i - 1]) end--;\n                else end++;\n            }\n            int mn = Math.min(start, end);\n            int mx = Math.max(start, end);\n            events.put(mn, events.getOrDefault(mn, 0) + 1);\n            events.put(mx + 1, events.getOrDefault(mx + 1, 0) - 1);\n        }\n        int curr = 0, ans = 0;\n        for (Map.Entry<Integer, Integer> entry : events.entrySet()) {\n            curr += entry.getValue();\n            ans = Math.max(ans, curr);\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Coordinate Doubling with Sweep-Line Map",
+      "code": "var maxIntersectionCount = function(y) {\n    const n = y.length;\n    const events = new Map();\n    const add = (k, v) => events.set(k, (events.get(k) || 0) + v);\n    for (let i = 1; i < n; ++i) {\n        let start = 2 * y[i - 1];\n        let end = 2 * y[i];\n        if (i < n - 1) {\n            if (y[i] > y[i - 1]) end--;\n            else end++;\n        }\n        add(Math.min(start, end), 1);\n        add(Math.max(start, end) + 1, -1);\n    }\n    const sortedKeys = Array.from(events.keys()).sort((a, b) => a - b);\n    let curr = 0, ans = 0;\n    for (const k of sortedKeys) {\n        curr += events.get(k);\n        ans = Math.max(ans, curr);\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

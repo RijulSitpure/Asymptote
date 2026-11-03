@@ -1,0 +1,71 @@
+{
+  "slug": "friday-purchases-i",
+  "number": 2993,
+  "category": "Database",
+  "patterns": [
+    "date-time"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "We want purchases made on Fridays in November 2023."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "In MySQL, `dayofweek` returns 6 for Friday, and the week index of November can be derived using the difference between week numbers plus 1."
+    },
+    {
+      "level": 3,
+      "title": "Query Construction",
+      "text": "Group by purchase_date and aggregate total spending, ordering by week_of_month ascending."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nSELECT \n    WEEK(purchase_date, 1) - WEEK('2023-11-01', 1) + 1 AS week_of_month, \n    purchase_date, \n    SUM(amount_spend) AS total_amount \nFROM Purchases \nWHERE DAYOFWEEK(purchase_date) = 6 \n  AND MONTH(purchase_date) = 11 \n  AND YEAR(purchase_date) = 2023 \nGROUP BY purchase_date \nORDER BY week_of_month;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total records in Purchases table"
+    ],
+    "notes": "Filter November Fridays followed by single-key aggregation.",
+    "whyNaiveFails": "Full table scans without date index are inefficient.",
+    "spaceTimeTradeoff": "O(N) memory for aggregation hash tables.",
+    "interviewerExpectation": "Use date-time extractors cleanly to isolate week numbers and Friday days of the week."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Date Filtering and Week Calculation",
+      "code": "SELECT \n    WEEK(purchase_date, 1) - WEEK('2023-11-01', 1) + 1 AS week_of_month, \n    purchase_date, \n    SUM(amount_spend) AS total_amount \nFROM Purchases \nWHERE DAYOFWEEK(purchase_date) = 6 \n  AND MONTH(purchase_date) = 11 \n  AND YEAR(purchase_date) = 2023 \nGROUP BY purchase_date \nORDER BY week_of_month;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Date Filtering and Week Calculation",
+      "code": "SELECT \n    (EXTRACT(WEEK FROM purchase_date) - EXTRACT(WEEK FROM DATE '2023-11-01') + 1)::INTEGER AS week_of_month, \n    purchase_date, \n    SUM(amount_spend)::INTEGER AS total_amount \nFROM Purchases \nWHERE EXTRACT(DOW FROM purchase_date) = 5 \n  AND EXTRACT(MONTH FROM purchase_date) = 11 \n  AND EXTRACT(YEAR FROM purchase_date) = 2023 \nGROUP BY purchase_date \nORDER BY week_of_month;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Datetime Filtering and Groupby",
+      "code": "import pandas as pd\n\ndef friday_purchases(purchases: pd.DataFrame) -> pd.DataFrame:\n    df = purchases.copy()\n    df['purchase_date'] = pd.to_datetime(df['purchase_date'])\n    df = df[(df['purchase_date'].dt.year == 2023) & (df['purchase_date'].dt.month == 11) & (df['purchase_date'].dt.dayofweek == 4)]\n    if df.empty:\n        return pd.DataFrame(columns=['week_of_month', 'purchase_date', 'total_amount'])\n    grouped = df.groupby('purchase_date')['amount_spend'].sum().reset_index()\n    start_week = pd.to_datetime('2023-11-01').isocalendar()[1]\n    grouped['week_of_month'] = grouped['purchase_date'].dt.isocalendar().week - start_week + 1\n    grouped = grouped.rename(columns={'amount_spend': 'total_amount'})\n    grouped['purchase_date'] = grouped['purchase_date'].dt.strftime('%Y-%m-%d')\n    return grouped[['week_of_month', 'purchase_date', 'total_amount']].sort_values(by='week_of_month')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

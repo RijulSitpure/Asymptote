@@ -1,0 +1,79 @@
+{
+  "slug": "divide-an-array-into-subarrays-with-minimum-cost-ii",
+  "number": 3013,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "We must pick nums[0] and then k - 1 additional starting indices from 1 to n - 1."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "All chosen starting indices must fall within a sliding window of size at most dist."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Slide a window of size dist + 1 across nums[1:] while tracking the sum of the smallest k - 1 elements."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def minimumCost(self, nums: list[int], k: int, dist: int) -> int:\n        k -= 1\n        window = sorted(nums[1:dist + 2])\n        cur_sum = sum(window[:k])\n        ans = cur_sum\n        for i in range(dist + 2, len(nums)):\n            out_val = nums[i - dist - 1]\n            idx = bisect.bisect_left(window, out_val)\n            window.pop(idx)\n            in_val = nums[i]\n            bisect.insort(window, in_val)\n            cur_sum = sum(window[:k])\n            ans = min(ans, cur_sum)\n        return nums[0] + ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * dist)",
+    "space": "O(dist)",
+    "variables": [
+      "n: length of array nums",
+      "dist: maximum index span"
+    ],
+    "notes": "Sliding window with sorted array insertion or two heaps.",
+    "whyNaiveFails": "Re-evaluating the top k elements naively takes O(n * dist log dist) time.",
+    "spaceTimeTradeoff": "O(dist) space for sorted window buffer.",
+    "interviewerExpectation": "Formulate as sliding window minimum top-k sum problem."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Sliding Window with Sorted Window Buffer",
+      "code": "import bisect\n\nclass Solution:\n    def minimumCost(self, nums: list[int], k: int, dist: int) -> int:\n        k -= 1\n        window = sorted(nums[1:dist + 2])\n        cur_sum = sum(window[:k])\n        ans = cur_sum\n        for i in range(dist + 2, len(nums)):\n            out_val = nums[i - dist - 1]\n            idx = bisect.bisect_left(window, out_val)\n            window.pop(idx)\n            in_val = nums[i]\n            bisect.insort(window, in_val)\n            cur_sum = sum(window[:k])\n            ans = min(ans, cur_sum)\n        return nums[0] + ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Sliding Window with Dual Multisets",
+      "code": "#include <vector>\n#include <set>\n#include <numeric>\n#include <algorithm>\n\nclass Solution {\npublic:\n    long long minimumCost(std::vector<int>& nums, int k, int dist) {\n        k--;\n        std::multiset<int> left, right;\n        long long cur_sum = 0;\n        int n = nums.size();\n        for (int i = 1; i <= std::min(dist + 1, n - 1); ++i) {\n            left.insert(nums[i]);\n            cur_sum += nums[i];\n        }\n        while (left.size() > (size_t)k) {\n            auto it = std::prev(left.end());\n            cur_sum -= *it;\n            right.insert(*it);\n            left.erase(it);\n        }\n        long long ans = cur_sum;\n        for (int i = dist + 2; i < n; ++i) {\n            int out_val = nums[i - dist - 1];\n            auto it = left.find(out_val);\n            if (it != left.end()) {\n                cur_sum -= *it;\n                left.erase(it);\n            } else {\n                right.erase(right.find(out_val));\n            }\n            int in_val = nums[i];\n            if (!left.empty() && in_val < *std::prev(left.end())) {\n                left.insert(in_val);\n                cur_sum += in_val;\n            } else {\n                right.insert(in_val);\n            }\n            while (left.size() < (size_t)k) {\n                auto rit = right.begin();\n                cur_sum += *rit;\n                left.insert(*rit);\n                right.erase(rit);\n            }\n            while (left.size() > (size_t)k) {\n                auto lit = std::prev(left.end());\n                cur_sum -= *lit;\n                right.insert(*lit);\n                left.erase(lit);\n            }\n            ans = std::min(ans, cur_sum);\n        }\n        return (long long)nums[0] + ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Sliding Window with Dual TreeMaps",
+      "code": "import java.util.TreeMap;\n\nclass Solution {\n    private TreeMap<Integer, Integer> left = new TreeMap<>();\n    private TreeMap<Integer, Integer> right = new TreeMap<>();\n    private int leftSize = 0, rightSize = 0;\n    private long sum = 0;\n\n    private void add(TreeMap<Integer, Integer> map, int val) {\n        map.put(val, map.getOrDefault(val, 0) + 1);\n    }\n\n    private void remove(TreeMap<Integer, Integer> map, int val) {\n        int count = map.get(val);\n        if (count == 1) map.remove(val);\n        else map.put(val, count - 1);\n    }\n\n    public long minimumCost(int[] nums, int k, int dist) {\n        k--;\n        int n = nums.length;\n        for (int i = 1; i <= Math.min(dist + 1, n - 1); ++i) {\n            add(left, nums[i]);\n            sum += nums[i];\n            leftSize++;\n        }\n        while (leftSize > k) {\n            int val = left.lastKey();\n            remove(left, val);\n            sum -= val;\n            leftSize--;\n            add(right, val);\n            rightSize++;\n        }\n        long ans = sum;\n        for (int i = dist + 2; i < n; ++i) {\n            int out = nums[i - dist - 1];\n            if (left.containsKey(out)) {\n                remove(left, out);\n                sum -= out;\n                leftSize--;\n            } else {\n                remove(right, out);\n                rightSize--;\n            }\n            int inVal = nums[i];\n            if (!left.isEmpty() && inVal < left.lastKey()) {\n                add(left, inVal);\n                sum += inVal;\n                leftSize++;\n            } else {\n                add(right, inVal);\n                rightSize++;\n            }\n            while (leftSize < k) {\n                int val = right.firstKey();\n                remove(right, val);\n                rightSize--;\n                add(left, val);\n                sum += val;\n                leftSize++;\n            }\n            while (leftSize > k) {\n                int val = left.lastKey();\n                remove(left, val);\n                sum -= val;\n                leftSize--;\n                add(right, val);\n                rightSize++;\n            }\n            ans = Math.min(ans, sum);\n        }\n        return nums[0] + ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Sliding Window with Sorted Window",
+      "code": "var minimumCost = function(nums, k, dist) {\n    k--;\n    const window = nums.slice(1, dist + 2).sort((a, b) => a - b);\n    let curSum = 0;\n    for (let j = 0; j < k; ++j) curSum += window[j];\n    let ans = curSum;\n    for (let i = dist + 2; i < nums.length; ++i) {\n        const outVal = nums[i - dist - 1];\n        const idx = window.indexOf(outVal);\n        window.splice(idx, 1);\n        const inVal = nums[i];\n        let pos = 0;\n        while (pos < window.length && window[pos] < inVal) pos++;\n        window.splice(pos, 0, inVal);\n        let s = 0;\n        for (let j = 0; j < k; ++j) s += window[j];\n        ans = Math.min(ans, s);\n    }\n    return nums[0] + ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

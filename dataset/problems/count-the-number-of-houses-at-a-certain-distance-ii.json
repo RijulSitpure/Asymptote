@@ -1,0 +1,78 @@
+{
+  "slug": "count-the-number-of-houses-at-a-certain-distance-ii",
+  "number": 3017,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "With n up to 10^5, an O(n^2) loop is too slow. The shortcut creates a cycle of length abs(x - y) + 1 with two attached tails."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Calculate distances separately for the cycle and both linear tails."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Combine the baseline line contributions, cycle pair counts, and tail-to-cycle transition paths in linear time."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def countOfPairs(self, n: int, x: int, y: int) -> list[int]:\n        if abs(x - y) <= 1:\n            return [2 * v for v in reversed(range(n))]\n        cycle_len = abs(x - y) + 1\n        n2 = n - cycle_len + 2\n        res = [2 * v for v in reversed(range(n2))]\n        while len(res) < n:\n            res.append(0)\n        res2 = [cycle_len * 2] * (cycle_len >> 1)\n        if not cycle_len & 1:\n            res2[-1] = cycle_len\n        res2[0] -= 2\n        for i in range(len(res2)):\n            res[i] += res2[i]\n        if x > y:\n            x, y = y, x\n        tail1 = x - 1\n        tail2 = n - y\n        for tail in (tail1, tail2):\n            if not tail:\n                continue\n            i_mx = tail + (cycle_len >> 1)\n            val_mx = 4 * min((cycle_len - 3) >> 1, tail)\n            i_mx2 = i_mx - (1 - (cycle_len & 1))\n            res3 = [val_mx] * i_mx\n            res3[0] = 0\n            res3[1] = 0\n            if not cycle_len & 1:\n                res3[-1] = 0\n            for i, j in enumerate(range(4, val_mx, 4)):\n                res3[i + 2] = j\n                res3[i_mx2 - i - 1] = j\n            for i in range(1, tail + 1):\n                res3[i] += 2\n            if not cycle_len & 1:\n                mn = cycle_len >> 1\n                for i in range(mn, mn + tail):\n                    res3[i] += 2\n            for i in range(len(res3)):\n                res[i] += res3[i]\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of houses"
+    ],
+    "notes": "Direct mathematical counting on cycle and tail subgraphs.",
+    "whyNaiveFails": "Quadratic all-pairs distance evaluation times out for n = 10^5.",
+    "spaceTimeTradeoff": "O(n) auxiliary list for distance frequency results.",
+    "interviewerExpectation": "Decompose graph topology into cycle plus linear tails to achieve linear time."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Cycle and Linear Tail Graph Decomposition",
+      "code": "class Solution:\n    def countOfPairs(self, n: int, x: int, y: int) -> list[int]:\n        if abs(x - y) <= 1:\n            return [2 * v for v in reversed(range(n))]\n        cycle_len = abs(x - y) + 1\n        n2 = n - cycle_len + 2\n        res = [2 * v for v in reversed(range(n2))]\n        while len(res) < n:\n            res.append(0)\n        res2 = [cycle_len * 2] * (cycle_len >> 1)\n        if not cycle_len & 1:\n            res2[-1] = cycle_len\n        res2[0] -= 2\n        for i in range(len(res2)):\n            res[i] += res2[i]\n        if x > y:\n            x, y = y, x\n        tail1 = x - 1\n        tail2 = n - y\n        for tail in (tail1, tail2):\n            if not tail:\n                continue\n            i_mx = tail + (cycle_len >> 1)\n            val_mx = 4 * min((cycle_len - 3) >> 1, tail)\n            i_mx2 = i_mx - (1 - (cycle_len & 1))\n            res3 = [val_mx] * i_mx\n            res3[0] = 0\n            res3[1] = 0\n            if not cycle_len & 1:\n                res3[-1] = 0\n            for i, j in enumerate(range(4, val_mx, 4)):\n                res3[i + 2] = j\n                res3[i_mx2 - i - 1] = j\n            for i in range(1, tail + 1):\n                res3[i] += 2\n            if not cycle_len & 1:\n                mn = cycle_len >> 1\n                for i in range(mn, mn + tail):\n                    res3[i] += 2\n            for i in range(len(res3)):\n                res[i] += res3[i]\n        return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Cycle and Linear Tail Graph Decomposition",
+      "code": "#include <vector>\n#include <algorithm>\n#include <cmath>\n\nclass Solution {\npublic:\n    std::vector<long long> countOfPairs(int n, int x, int y) {\n        if (std::abs(x - y) <= 1) {\n            std::vector<long long> res(n);\n            for (int i = 0; i < n; ++i) res[i] = 2LL * (n - 1 - i);\n            return res;\n        }\n        int cycle_len = std::abs(x - y) + 1;\n        int n2 = n - cycle_len + 2;\n        std::vector<long long> res(n, 0);\n        for (int i = 0; i < n2; ++i) res[i] = 2LL * (n2 - 1 - i);\n        std::vector<long long> res2(cycle_len / 2, 2LL * cycle_len);\n        if (!(cycle_len & 1)) res2.back() = cycle_len;\n        res2[0] -= 2;\n        for (size_t i = 0; i < res2.size(); ++i) res[i] += res2[i];\n        if (x > y) std::swap(x, y);\n        int tail1 = x - 1, tail2 = n - y;\n        for (int tail : {tail1, tail2}) {\n            if (!tail) continue;\n            int i_mx = tail + (cycle_len / 2);\n            long long val_mx = 4LL * std::min((cycle_len - 3) / 2, tail);\n            int i_mx2 = i_mx - (1 - (cycle_len & 1));\n            std::vector<long long> res3(i_mx, val_mx);\n            res3[0] = 0;\n            if (i_mx > 1) res3[1] = 0;\n            if (!(cycle_len & 1)) res3.back() = 0;\n            long long j = 4;\n            int idx = 0;\n            while (j < val_mx) {\n                res3[idx + 2] = j;\n                res3[i_mx2 - idx - 1] = j;\n                j += 4;\n                idx++;\n            }\n            for (int i = 1; i <= tail; ++i) res3[i] += 2;\n            if (!(cycle_len & 1)) {\n                int mn = cycle_len / 2;\n                for (int i = mn; i < mn + tail; ++i) res3[i] += 2;\n            }\n            for (size_t i = 0; i < res3.size(); ++i) res[i] += res3[i];\n        }\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Cycle and Linear Tail Graph Decomposition",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    public long[] countOfPairs(int n, int x, int y) {\n        if (Math.abs(x - y) <= 1) {\n            long[] res = new long[n];\n            for (int i = 0; i < n; ++i) res[i] = 2L * (n - 1 - i);\n            return res;\n        }\n        int cycleLen = Math.abs(x - y) + 1;\n        int n2 = n - cycleLen + 2;\n        long[] res = new long[n];\n        for (int i = 0; i < n2; ++i) res[i] = 2L * (n2 - 1 - i);\n        long[] res2 = new long[cycleLen / 2];\n        Arrays.fill(res2, 2L * cycleLen);\n        if ((cycleLen & 1) == 0) res2[res2.length - 1] = cycleLen;\n        res2[0] -= 2;\n        for (int i = 0; i < res2.length; ++i) res[i] += res2[i];\n        if (x > y) { int tmp = x; x = y; y = tmp; }\n        int[] tails = { x - 1, n - y };\n        for (int tail : tails) {\n            if (tail == 0) continue;\n            int iMx = tail + (cycleLen / 2);\n            long valMx = 4L * Math.min((cycleLen - 3) / 2, tail);\n            int iMx2 = iMx - (1 - (cycleLen & 1));\n            long[] res3 = new long[iMx];\n            Arrays.fill(res3, valMx);\n            res3[0] = 0;\n            if (iMx > 1) res3[1] = 0;\n            if ((cycleLen & 1) == 0) res3[res3.length - 1] = 0;\n            long j = 4;\n            int idx = 0;\n            while (j < valMx) {\n                res3[idx + 2] = j;\n                res3[iMx2 - idx - 1] = j;\n                j += 4;\n                idx++;\n            }\n            for (int i = 1; i <= tail; ++i) res3[i] += 2;\n            if ((cycleLen & 1) == 0) {\n                int mn = cycleLen / 2;\n                for (int i = mn; i < mn + tail; ++i) res3[i] += 2;\n            }\n            for (int i = 0; i < res3.length; ++i) res[i] += res3[i];\n        }\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Cycle and Linear Tail Graph Decomposition",
+      "code": "var countOfPairs = function(n, x, y) {\n    if (Math.abs(x - y) <= 1) {\n        const res = new Array(n);\n        for (let i = 0; i < n; ++i) res[i] = 2 * (n - 1 - i);\n        return res;\n    }\n    const cycleLen = Math.abs(x - y) + 1;\n    const n2 = n - cycleLen + 2;\n    const res = new Array(n).fill(0);\n    for (let i = 0; i < n2; ++i) res[i] = 2 * (n2 - 1 - i);\n    const res2 = new Array(Math.floor(cycleLen / 2)).fill(2 * cycleLen);\n    if ((cycleLen & 1) === 0) res2[res2.length - 1] = cycleLen;\n    res2[0] -= 2;\n    for (let i = 0; i < res2.length; ++i) res[i] += res2[i];\n    if (x > y) { const tmp = x; x = y; y = tmp; }\n    const tails = [x - 1, n - y];\n    for (const tail of tails) {\n        if (!tail) continue;\n        const iMx = tail + Math.floor(cycleLen / 2);\n        const valMx = 4 * Math.min(Math.floor((cycleLen - 3) / 2), tail);\n        const iMx2 = iMx - (1 - (cycleLen & 1));\n        const res3 = new Array(iMx).fill(valMx);\n        res3[0] = 0;\n        if (iMx > 1) res3[1] = 0;\n        if ((cycleLen & 1) === 0) res3[res3.length - 1] = 0;\n        let j = 4;\n        let idx = 0;\n        while (j < valMx) {\n            res3[idx + 2] = j;\n            res3[iMx2 - idx - 1] = j;\n            j += 4;\n            idx++;\n        }\n        for (let i = 1; i <= tail; ++i) res3[i] += 2;\n        if ((cycleLen & 1) === 0) {\n            const mn = Math.floor(cycleLen / 2);\n            for (let i = mn; i < mn + tail; ++i) res3[i] += 2;\n        }\n        for (let i = 0; i < res3.length; ++i) res[i] += res3[i];\n    }\n    return res;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "maximize-the-number-of-partitions-after-operations",
+  "number": 3003,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-state-machine"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "If k == 26, any character modification still allows all 26 distinct characters, so the answer is always 1."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Represent the distinct characters in the current partition using a 26-bit mask."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Use memoized dynamic programming with state (i, mask, changed) exploring either keeping s[i] or modifying it once to any lowercase letter."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def maxPartitionsAfterOperations(self, s: str, k: int) -> int:\n        if k == 26:\n            return 1\n        memo = {}\n        def dfs(i: int, mask: int, changed: bool) -> int:\n            if i == len(s):\n                return 1\n            state = (i, mask, changed)\n            if state in memo:\n                return memo[state]\n            bit = 1 << (ord(s[i]) - 97)\n            new_mask = mask | bit\n            if bin(new_mask).count('1') > k:\n                res = 1 + dfs(i + 1, bit, changed)\n            else:\n                res = dfs(i + 1, new_mask, changed)\n            if not changed:\n                for c in range(26):\n                    c_bit = 1 << c\n                    new_mask2 = mask | c_bit\n                    if bin(new_mask2).count('1') > k:\n                        cand = 1 + dfs(i + 1, c_bit, True)\n                    else:\n                        cand = dfs(i + 1, new_mask2, True)\n                    res = max(res, cand)\n            memo[state] = res\n            return res\n        return dfs(0, 0, False)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * 26)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of string s"
+    ],
+    "notes": "Memoized dynamic programming across linear string index and boolean changed flag.",
+    "whyNaiveFails": "Brute forcing every character modification and recalculating partitions takes O(26 * n^2).",
+    "spaceTimeTradeoff": "O(n) memoization map.",
+    "interviewerExpectation": "Recognize that greedy partition state only depends on distinct character bitmask."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Bitmask Memoized DP",
+      "code": "class Solution:\n    def maxPartitionsAfterOperations(self, s: str, k: int) -> int:\n        if k == 26:\n            return 1\n        memo = {}\n        def dfs(i: int, mask: int, changed: bool) -> int:\n            if i == len(s):\n                return 1\n            state = (i, mask, changed)\n            if state in memo:\n                return memo[state]\n            bit = 1 << (ord(s[i]) - 97)\n            new_mask = mask | bit\n            if bin(new_mask).count('1') > k:\n                res = 1 + dfs(i + 1, bit, changed)\n            else:\n                res = dfs(i + 1, new_mask, changed)\n            if not changed:\n                for c in range(26):\n                    c_bit = 1 << c\n                    new_mask2 = mask | c_bit\n                    if bin(new_mask2).count('1') > k:\n                        cand = 1 + dfs(i + 1, c_bit, True)\n                    else:\n                        cand = dfs(i + 1, new_mask2, True)\n                    res = max(res, cand)\n            memo[state] = res\n            return res\n        return dfs(0, 0, False)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Bitmask Memoized DP",
+      "code": "#include <string>\n#include <unordered_map>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxPartitionsAfterOperations(std::string s, int k) {\n        if (k == 26) return 1;\n        std::unordered_map<long long, int> memo;\n        auto dfs = [&](auto& self, int i, int mask, bool changed) -> int {\n            if (i == (int)s.size()) return 1;\n            long long state = ((long long)i << 28) | ((long long)mask << 1) | (changed ? 1 : 0);\n            if (memo.count(state)) return memo[state];\n            \n            int bit = 1 << (s[i] - 'a');\n            int newMask = mask | bit;\n            int res = 0;\n            if (__builtin_popcount(newMask) > k) {\n                res = 1 + self(self, i + 1, bit, changed);\n            } else {\n                res = self(self, i + 1, newMask, changed);\n            }\n            if (!changed) {\n                for (int c = 0; c < 26; ++c) {\n                    int cBit = 1 << c;\n                    int newMask2 = mask | cBit;\n                    int cand = 0;\n                    if (__builtin_popcount(newMask2) > k) {\n                        cand = 1 + self(self, i + 1, cBit, true);\n                    } else {\n                        cand = self(self, i + 1, newMask2, true);\n                    }\n                    res = std::max(res, cand);\n                }\n            }\n            return memo[state] = res;\n        };\n        return dfs(dfs, 0, 0, false);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Bitmask Memoized DP",
+      "code": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Solution {\n    private Map<Long, Integer> memo;\n\n    public int maxPartitionsAfterOperations(String s, int k) {\n        if (k == 26) return 1;\n        memo = new HashMap<>();\n        return dfs(0, 0, false, s, k);\n    }\n\n    private int dfs(int i, int mask, boolean changed, String s, int k) {\n        if (i == s.length()) return 1;\n        long state = ((long) i << 28) | ((long) mask << 1) | (changed ? 1L : 0L);\n        if (memo.containsKey(state)) return memo.get(state);\n\n        int bit = 1 << (s.charAt(i) - 'a');\n        int newMask = mask | bit;\n        int res;\n        if (Integer.bitCount(newMask) > k) {\n            res = 1 + dfs(i + 1, bit, changed, s, k);\n        } else {\n            res = dfs(i + 1, newMask, changed, s, k);\n        }\n\n        if (!changed) {\n            for (int c = 0; c < 26; c++) {\n                int cBit = 1 << c;\n                int newMask2 = mask | cBit;\n                int cand;\n                if (Integer.bitCount(newMask2) > k) {\n                    cand = 1 + dfs(i + 1, cBit, true, s, k);\n                } else {\n                    cand = dfs(i + 1, newMask2, true, s, k);\n                }\n                res = Math.max(res, cand);\n            }\n        }\n        memo.put(state, res);\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Bitmask Memoized DP",
+      "code": "var maxPartitionsAfterOperations = function(s, k) {\n    if (k === 26) return 1;\n    const memo = new Map();\n    function popcount(x) {\n        let cnt = 0;\n        while (x > 0) { cnt += x & 1; x >>= 1; }\n        return cnt;\n    }\n    function dfs(i, mask, changed) {\n        if (i === s.length) return 1;\n        const key = `${i}_${mask}_${changed ? 1 : 0}`;\n        if (memo.has(key)) return memo.get(key);\n\n        const bit = 1 << (s.charCodeAt(i) - 97);\n        const newMask = mask | bit;\n        let res = 0;\n        if (popcount(newMask) > k) {\n            res = 1 + dfs(i + 1, bit, changed);\n        } else {\n            res = dfs(i + 1, newMask, changed);\n        }\n\n        if (!changed) {\n            for (let c = 0; c < 26; c++) {\n                const cBit = 1 << c;\n                const newMask2 = mask | cBit;\n                let cand = 0;\n                if (popcount(newMask2) > k) {\n                    cand = 1 + dfs(i + 1, cBit, true);\n                } else {\n                    cand = dfs(i + 1, newMask2, true);\n                }\n                res = Math.max(res, cand);\n            }\n        }\n        memo.set(key, res);\n        return res;\n    }\n    return dfs(0, 0, false);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}

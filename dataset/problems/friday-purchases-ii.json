@@ -1,0 +1,71 @@
+{
+  "slug": "friday-purchases-ii",
+  "number": 2994,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Unlike Part I, we must output all four Fridays of November 2023, even if no purchases were made on that day."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Generate all Fridays in November 2023 using a recursive CTE starting at '2023-11-03' and incrementing by 7 days."
+    },
+    {
+      "level": 3,
+      "title": "Query Construction",
+      "text": "Left join the generated Fridays table with Purchases on Friday = purchase_date and replace null sums with 0."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH RECURSIVE Fridays AS (\n    SELECT '2023-11-03' AS friday\n    UNION ALL\n    SELECT DATE_ADD(friday, INTERVAL 7 DAY) \n    FROM Fridays\n    WHERE friday < '2023-11-23'\n) \nSELECT \n    WEEK(Fridays.friday, 1) - WEEK('2023-11-01', 1) + 1 AS week_of_month, \n    Fridays.friday AS purchase_date, \n    IFNULL(SUM(Purchases.amount_spend), 0) AS total_amount \nFROM Fridays \nLEFT JOIN Purchases ON (Fridays.friday = Purchases.purchase_date) \nGROUP BY Fridays.friday \nORDER BY week_of_month;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total records in Purchases table"
+    ],
+    "notes": "Recursive CTE calendar generation joined against sales records.",
+    "whyNaiveFails": "Inner joins omit Fridays that had zero purchases.",
+    "spaceTimeTradeoff": "O(1) extra space for 4 Friday date constants.",
+    "interviewerExpectation": "Use recursive CTE or date series with left join to retain zero-purchase dates."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Recursive CTE Calendar Generation and Left Join",
+      "code": "WITH RECURSIVE Fridays AS (\n    SELECT '2023-11-03' AS friday\n    UNION ALL\n    SELECT DATE_ADD(friday, INTERVAL 7 DAY) \n    FROM Fridays\n    WHERE friday < '2023-11-23'\n) \nSELECT \n    WEEK(Fridays.friday, 1) - WEEK('2023-11-01', 1) + 1 AS week_of_month, \n    Fridays.friday AS purchase_date, \n    IFNULL(SUM(Purchases.amount_spend), 0) AS total_amount \nFROM Fridays \nLEFT JOIN Purchases ON (Fridays.friday = Purchases.purchase_date) \nGROUP BY Fridays.friday \nORDER BY week_of_month;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Recursive CTE Calendar Generation and Left Join",
+      "code": "WITH RECURSIVE Fridays AS (\n    SELECT DATE '2023-11-03' AS friday\n    UNION ALL\n    SELECT (friday + INTERVAL '7 DAY')::DATE \n    FROM Fridays\n    WHERE friday < DATE '2023-11-23'\n) \nSELECT \n    (EXTRACT(WEEK FROM Fridays.friday) - EXTRACT(WEEK FROM DATE '2023-11-01') + 1)::INTEGER AS week_of_month, \n    Fridays.friday AS purchase_date, \n    COALESCE(SUM(Purchases.amount_spend), 0)::INTEGER AS total_amount \nFROM Fridays \nLEFT JOIN Purchases ON (Fridays.friday = Purchases.purchase_date) \nGROUP BY Fridays.friday \nORDER BY week_of_month;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Calendar Merge",
+      "code": "import pandas as pd\n\ndef friday_purchases_ii(purchases: pd.DataFrame) -> pd.DataFrame:\n    fridays = pd.date_range(start='2023-11-01', end='2023-11-30', freq='W-FRI')\n    f_df = pd.DataFrame({'friday': fridays})\n    f_df['purchase_date'] = f_df['friday'].dt.strftime('%Y-%m-%d')\n    start_week = pd.to_datetime('2023-11-01').isocalendar()[1]\n    f_df['week_of_month'] = f_df['friday'].dt.isocalendar().week - start_week + 1\n    \n    p = purchases.copy()\n    p['purchase_date'] = pd.to_datetime(p['purchase_date']).dt.strftime('%Y-%m-%d')\n    p_grouped = p.groupby('purchase_date')['amount_spend'].sum().reset_index()\n    \n    merged = f_df.merge(p_grouped, on='purchase_date', how='left')\n    merged['total_amount'] = merged['amount_spend'].fillna(0).astype(int)\n    return merged[['week_of_month', 'purchase_date', 'total_amount']].sort_values(by='week_of_month')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-03T00:00:00.000Z"
+}
