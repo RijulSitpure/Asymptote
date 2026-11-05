@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-time-to-break-locks-ii",
+  "number": 3385,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Fixed Turn Rate Mapping",
+      "text": "Notice that the sword rate on the j-th broken lock is exactly j + 1 for each step from 0 to n - 1."
+    },
+    {
+      "level": 2,
+      "title": "Bipartite Cost Matrix",
+      "text": "Construct an n by n cost matrix where cost[i][j] is the minutes needed to break lock i when rate is j + 1."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Assignment",
+      "text": "Find a perfect matching between locks and steps that minimizes total cost using Hungarian algorithm."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def findMinimumTime(self, strength: list[int]) -> int:\n        n = len(strength)\n        cost = [[(strength[i] + j) // (j + 1) for j in range(n)] for i in range(n)]\n        \n        u = [0] * (n + 1)\n        v = [0] * (n + 1)\n        p = [0] * (n + 1)\n        way = [0] * (n + 1)\n        \n        for i in range(1, n + 1):\n            p[0] = i\n            j0 = 0\n            minv = [float('inf')] * (n + 1)\n            used = [False] * (n + 1)\n            while True:\n                used[j0] = True\n                i0 = p[j0]\n                delta = float('inf')\n                j1 = 0\n                for j in range(1, n + 1):\n                    if not used[j]:\n                        cur = cost[i0 - 1][j - 1] - u[i0] - v[j]\n                        if cur < minv[j]:\n                            minv[j] = cur\n                            way[j] = j0\n                        if minv[j] < delta:\n                            delta = minv[j]\n                            j1 = j\n                for j in range(n + 1):\n                    if used[j]:\n                        u[p[j]] += delta\n                        v[j] -= delta\n                    else:\n                        minv[j] -= delta\n                j0 = j1\n                if p[j0] == 0:\n                    break\n            while True:\n                j1 = way[j0]\n                p[j0] = p[j1]\n                j0 = j1\n                if j0 == 0:\n                    break\n                    \n        return -v[0]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^3)",
+    "space": "O(n^2)",
+    "variables": [
+      "n: number of locks (up to 80)"
+    ],
+    "notes": "Hungarian algorithm solves minimum-weight bipartite matching between locks and sequential turn indices.",
+    "whyNaiveFails": "Exponential subset search is intractable for n up to 80.",
+    "spaceTimeTradeoff": "O(n^2) cost matrix tracking time to break lock i on step j.",
+    "interviewerExpectation": "Formulates the assignment as minimum-weight bipartite matching using Hungarian algorithm or min-cost flow."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def findMinimumTime(self, strength: list[int]) -> int:\n        n = len(strength)\n        cost = [[(strength[i] + j) // (j + 1) for j in range(n)] for i in range(n)]\n        \n        u = [0] * (n + 1)\n        v = [0] * (n + 1)\n        p = [0] * (n + 1)\n        way = [0] * (n + 1)\n        \n        for i in range(1, n + 1):\n            p[0] = i\n            j0 = 0\n            minv = [float('inf')] * (n + 1)\n            used = [False] * (n + 1)\n            while True:\n                used[j0] = True\n                i0 = p[j0]\n                delta = float('inf')\n                j1 = 0\n                for j in range(1, n + 1):\n                    if not used[j]:\n                        cur = cost[i0 - 1][j - 1] - u[i0] - v[j]\n                        if cur < minv[j]:\n                            minv[j] = cur\n                            way[j] = j0\n                        if minv[j] < delta:\n                            delta = minv[j]\n                            j1 = j\n                for j in range(n + 1):\n                    if used[j]:\n                        u[p[j]] += delta\n                        v[j] -= delta\n                    else:\n                        minv[j] -= delta\n                j0 = j1\n                if p[j0] == 0:\n                    break\n            while True:\n                j1 = way[j0]\n                p[j0] = p[j1]\n                j0 = j1\n                if j0 == 0:\n                    break\n                    \n        return -v[0]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    int findMinimumTime(vector<int>& strength) {\n        int n = strength.size();\n        vector<vector<int>> cost(n, vector<int>(n));\n        for (int i = 0; i < n; ++i) {\n            for (int j = 0; j < n; ++j) {\n                cost[i][j] = (strength[i] + j) / (j + 1);\n            }\n        }\n        \n        vector<int> u(n + 1, 0), v(n + 1, 0), p(n + 1, 0), way(n + 1, 0);\n        for (int i = 1; i <= n; ++i) {\n            p[0] = i;\n            int j0 = 0;\n            vector<int> minv(n + 1, 1e9);\n            vector<bool> used(n + 1, false);\n            do {\n                used[j0] = true;\n                int i0 = p[j0], delta = 1e9, j1 = 0;\n                for (int j = 1; j <= n; ++j) {\n                    if (!used[j]) {\n                        int cur = cost[i0 - 1][j - 1] - u[i0] - v[j];\n                        if (cur < minv[j]) {\n                            minv[j] = cur;\n                            way[j] = j0;\n                        }\n                        if (minv[j] < delta) {\n                            delta = minv[j];\n                            j1 = j;\n                        }\n                    }\n                }\n                for (int j = 0; j <= n; ++j) {\n                    if (used[j]) {\n                        u[p[j]] += delta;\n                        v[j] -= delta;\n                    } else {\n                        minv[j] -= delta;\n                    }\n                }\n                j0 = j1;\n            } while (p[j0] != 0);\n            do {\n                int j1 = way[j0];\n                p[j0] = p[j1];\n                j0 = j1;\n            } while (j0 != 0);\n        }\n        return -v[0];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int findMinimumTime(List<Integer> strength) {\n        int n = strength.size();\n        int[][] cost = new int[n][n];\n        for (int i = 0; i < n; ++i) {\n            for (int j = 0; j < n; ++j) {\n                cost[i][j] = (strength.get(i) + j) / (j + 1);\n            }\n        }\n        \n        int[] u = new int[n + 1];\n        int[] v = new int[n + 1];\n        int[] p = new int[n + 1];\n        int[] way = new int[n + 1];\n        \n        for (int i = 1; i <= n; ++i) {\n            p[0] = i;\n            int j0 = 0;\n            int[] minv = new int[n + 1];\n            Arrays.fill(minv, (int) 1e9);\n            boolean[] used = new boolean[n + 1];\n            do {\n                used[j0] = true;\n                int i0 = p[j0], delta = (int) 1e9, j1 = 0;\n                for (int j = 1; j <= n; ++j) {\n                    if (!used[j]) {\n                        int cur = cost[i0 - 1][j - 1] - u[i0] - v[j];\n                        if (cur < minv[j]) {\n                            minv[j] = cur;\n                            way[j] = j0;\n                        }\n                        if (minv[j] < delta) {\n                            delta = minv[j];\n                            j1 = j;\n                        }\n                    }\n                }\n                for (int j = 0; j <= n; ++j) {\n                    if (used[j]) {\n                        u[p[j]] += delta;\n                        v[j] -= delta;\n                    } else {\n                        minv[j] -= delta;\n                    }\n                }\n                j0 = j1;\n            } while (p[j0] != 0);\n            do {\n                int j1 = way[j0];\n                p[j0] = p[j1];\n                j0 = j1;\n            } while (j0 != 0);\n        }\n        return -v[0];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var findMinimumTime = function(strength) {\n    const n = strength.length;\n    const cost = Array.from({ length: n }, (_, i) =>\n        Array.from({ length: n }, (_, j) => Math.floor((strength[i] + j) / (j + 1)))\n    );\n    \n    const u = new Int32Array(n + 1);\n    const v = new Int32Array(n + 1);\n    const p = new Int32Array(n + 1);\n    const way = new Int32Array(n + 1);\n    \n    for (let i = 1; i <= n; i++) {\n        p[0] = i;\n        let j0 = 0;\n        const minv = new Int32Array(n + 1).fill(1e9);\n        const used = new Uint8Array(n + 1);\n        do {\n            used[j0] = 1;\n            const i0 = p[j0];\n            let delta = 1e9, j1 = 0;\n            for (let j = 1; j <= n; j++) {\n                if (!used[j]) {\n                    const cur = cost[i0 - 1][j - 1] - u[i0] - v[j];\n                    if (cur < minv[j]) {\n                        minv[j] = cur;\n                        way[j] = j0;\n                    }\n                    if (minv[j] < delta) {\n                        delta = minv[j];\n                        j1 = j;\n                    }\n                }\n            }\n            for (let j = 0; j <= n; j++) {\n                if (used[j]) {\n                    u[p[j]] += delta;\n                    v[j] -= delta;\n                } else {\n                    minv[j] -= delta;\n                }\n            }\n            j0 = j1;\n        } while (p[j0] !== 0);\n        do {\n            const j1 = way[j0];\n            p[j0] = p[j1];\n            j0 = j1;\n        } while (j0 !== 0);\n    }\n    return -v[0];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

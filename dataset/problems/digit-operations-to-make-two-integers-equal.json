@@ -1,0 +1,78 @@
+{
+  "slug": "digit-operations-to-make-two-integers-equal",
+  "number": 3377,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prime State Validity",
+      "text": "Notice that if either the starting number or target number is prime, no valid sequence can begin or terminate."
+    },
+    {
+      "level": 2,
+      "title": "Transition Graph",
+      "text": "Each state can transition by incrementing or decrementing any single digit without introducing leading zeros or primes."
+    },
+    {
+      "level": 3,
+      "title": "Cost Minimization",
+      "text": "Use a priority queue to explore paths with lowest accumulated values, returning minimal cost once target is popped."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def minOperations(self, n: int, m: int) -> int:\n        limit = 10000\n        is_prime = [True] * limit\n        is_prime[0] = is_prime[1] = False\n        for p in range(2, int(limit**0.5) + 1):\n            if is_prime[p]:\n                for multiple in range(p * p, limit, p):\n                    is_prime[multiple] = False\n                    \n        if is_prime[n] or is_prime[m]:\n            return -1\n            \n        pq = [(n, n)]\n        dist = {n: n}\n        \n        while pq:\n            cost, curr = heapq.heappop(pq)\n            if curr == m:\n                return cost\n            if cost > dist[curr]:\n                continue\n                \n            s = str(curr)\n            for i in range(len(s)):\n                d = int(s[i])\n                if d < 9:\n                    nxt = int(s[:i] + str(d + 1) + s[i + 1:])\n                    if not is_prime[nxt]:\n                        if nxt not in dist or cost + nxt < dist[nxt]:\n                            dist[nxt] = cost + nxt\n                            heapq.heappush(pq, (cost + nxt, nxt))\n                if d > 0 and (i > 0 or d > 1):\n                    nxt = int(s[:i] + str(d - 1) + s[i + 1:])\n                    if not is_prime[nxt]:\n                        if nxt not in dist or cost + nxt < dist[nxt]:\n                            dist[nxt] = cost + nxt\n                            heapq.heappush(pq, (cost + nxt, nxt))\n                            \n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V log V)",
+    "space": "O(V)",
+    "variables": [
+      "V: maximum integer range (10^4)"
+    ],
+    "notes": "Shortest path search with priority queue over non-prime states of identical digit length.",
+    "whyNaiveFails": "Unweighted search does not account for accumulated node value costs.",
+    "spaceTimeTradeoff": "O(V) sieve array and distance lookup table.",
+    "interviewerExpectation": "Precomputes primes using a sieve and finds minimal path cost using a priority queue."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\n\nclass Solution:\n    def minOperations(self, n: int, m: int) -> int:\n        limit = 10000\n        is_prime = [True] * limit\n        is_prime[0] = is_prime[1] = False\n        for p in range(2, int(limit**0.5) + 1):\n            if is_prime[p]:\n                for multiple in range(p * p, limit, p):\n                    is_prime[multiple] = False\n                    \n        if is_prime[n] or is_prime[m]:\n            return -1\n            \n        pq = [(n, n)]\n        dist = {n: n}\n        \n        while pq:\n            cost, curr = heapq.heappop(pq)\n            if curr == m:\n                return cost\n            if cost > dist[curr]:\n                continue\n                \n            s = str(curr)\n            for i in range(len(s)):\n                d = int(s[i])\n                if d < 9:\n                    nxt = int(s[:i] + str(d + 1) + s[i + 1:])\n                    if not is_prime[nxt]:\n                        if nxt not in dist or cost + nxt < dist[nxt]:\n                            dist[nxt] = cost + nxt\n                            heapq.heappush(pq, (cost + nxt, nxt))\n                if d > 0 and (i > 0 or d > 1):\n                    nxt = int(s[:i] + str(d - 1) + s[i + 1:])\n                    if not is_prime[nxt]:\n                        if nxt not in dist or cost + nxt < dist[nxt]:\n                            dist[nxt] = cost + nxt\n                            heapq.heappush(pq, (cost + nxt, nxt))\n                            \n        return -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    int minOperations(int n, int m) {\n        const int limit = 10000;\n        vector<bool> isPrime(limit, true);\n        isPrime[0] = isPrime[1] = false;\n        for (int p = 2; p * p < limit; ++p) {\n            if (isPrime[p]) {\n                for (int multiple = p * p; multiple < limit; multiple += p) {\n                    isPrime[multiple] = false;\n                }\n            }\n        }\n        if (isPrime[n] || isPrime[m]) return -1;\n        \n        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;\n        vector<int> dist(limit, 1e9);\n        pq.push({n, n});\n        dist[n] = n;\n        \n        while (!pq.empty()) {\n            auto [cost, curr] = pq.top();\n            pq.pop();\n            if (curr == m) return cost;\n            if (cost > dist[curr]) continue;\n            \n            string s = to_string(curr);\n            for (size_t i = 0; i < s.length(); ++i) {\n                int d = s[i] - '0';\n                if (d < 9) {\n                    string nxtS = s;\n                    nxtS[i] = (char)('0' + d + 1);\n                    int nxt = stoi(nxtS);\n                    if (!isPrime[nxt] && cost + nxt < dist[nxt]) {\n                        dist[nxt] = cost + nxt;\n                        pq.push({cost + nxt, nxt});\n                    }\n                }\n                if (d > 0 && (i > 0 || d > 1)) {\n                    string nxtS = s;\n                    nxtS[i] = (char)('0' + d - 1);\n                    int nxt = stoi(nxtS);\n                    if (!isPrime[nxt] && cost + nxt < dist[nxt]) {\n                        dist[nxt] = cost + nxt;\n                        pq.push({cost + nxt, nxt});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int minOperations(int n, int m) {\n        int limit = 10000;\n        boolean[] isPrime = new boolean[limit];\n        Arrays.fill(isPrime, true);\n        isPrime[0] = isPrime[1] = false;\n        for (int p = 2; p * p < limit; ++p) {\n            if (isPrime[p]) {\n                for (int multiple = p * p; multiple < limit; multiple += p) {\n                    isPrime[multiple] = false;\n                }\n            }\n        }\n        if (isPrime[n] || isPrime[m]) return -1;\n        \n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        int[] dist = new int[limit];\n        Arrays.fill(dist, Integer.MAX_VALUE);\n        pq.offer(new int[]{n, n});\n        dist[n] = n;\n        \n        while (!pq.isEmpty()) {\n            int[] top = pq.poll();\n            int cost = top[0], curr = top[1];\n            if (curr == m) return cost;\n            if (cost > dist[curr]) continue;\n            \n            String s = String.valueOf(curr);\n            for (int i = 0; i < s.length(); ++i) {\n                int d = s.charAt(i) - '0';\n                if (d < 9) {\n                    String nxtS = s.substring(0, i) + (d + 1) + s.substring(i + 1);\n                    int nxt = Integer.parseInt(nxtS);\n                    if (!isPrime[nxt] && cost + nxt < dist[nxt]) {\n                        dist[nxt] = cost + nxt;\n                        pq.offer(new int[]{cost + nxt, nxt});\n                    }\n                }\n                if (d > 0 && (i > 0 || d > 1)) {\n                    String nxtS = s.substring(0, i) + (d - 1) + s.substring(i + 1);\n                    int nxt = Integer.parseInt(nxtS);\n                    if (!isPrime[nxt] && cost + nxt < dist[nxt]) {\n                        dist[nxt] = cost + nxt;\n                        pq.offer(new int[]{cost + nxt, nxt});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minOperations = function(n, m) {\n    const limit = 10000;\n    const isPrime = new Uint8Array(limit).fill(1);\n    isPrime[0] = isPrime[1] = 0;\n    for (let p = 2; p * p < limit; p++) {\n        if (isPrime[p]) {\n            for (let mult = p * p; mult < limit; mult += p) {\n                isPrime[mult] = 0;\n            }\n        }\n    }\n    if (isPrime[n] || isPrime[m]) return -1;\n    \n    const pq = [[n, n]];\n    const dist = new Int32Array(limit).fill(1e9);\n    dist[n] = n;\n    \n    while (pq.length > 0) {\n        pq.sort((a, b) => a[0] - b[0]);\n        const [cost, curr] = pq.shift();\n        if (curr === m) return cost;\n        if (cost > dist[curr]) continue;\n        \n        const s = String(curr);\n        for (let i = 0; i < s.length; i++) {\n            const d = Number(s[i]);\n            if (d < 9) {\n                const nxt = Number(s.slice(0, i) + (d + 1) + s.slice(i + 1));\n                if (!isPrime[nxt] && cost + nxt < dist[nxt]) {\n                    dist[nxt] = cost + nxt;\n                    pq.push([cost + nxt, nxt]);\n                }\n            }\n            if (d > 0 && (i > 0 || d > 1)) {\n                const nxt = Number(s.slice(0, i) + (d - 1) + s.slice(i + 1));\n                if (!isPrime[nxt] && cost + nxt < dist[nxt]) {\n                    dist[nxt] = cost + nxt;\n                    pq.push([cost + nxt, nxt]);\n                }\n            }\n        }\n    }\n    return -1;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

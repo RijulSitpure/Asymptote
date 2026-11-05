@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-area-rectangle-with-point-constraints-ii",
+  "number": 3382,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Consecutive Vertical Segments",
+      "text": "Group points sharing the same x-coordinate and consider adjacent y-coordinates as potential rectangle edges."
+    },
+    {
+      "level": 2,
+      "title": "Matching Left Edge",
+      "text": "For two points (x, y1) and (x, y2), check if both y1 and y2 were seen previously at the same earlier x-coordinate."
+    },
+    {
+      "level": 3,
+      "title": "Range Maximum Query",
+      "text": "Use a segment tree over compressed y-coordinates to verify no points fall in range [y1, y2] strictly between x-coordinates."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass SegmentTree:\n    def __init__(self, size):\n        self.n = size\n        self.tree = [-1] * (4 * size)\n        \n    def update(self, node, l, r, idx, val):\n        if l == r:\n            self.tree[node] = val\n            return\n        mid = (l + r) // 2\n        if idx <= mid:\n            self.update(2 * node, l, mid, idx, val)\n        else:\n            self.update(2 * node + 1, mid + 1, r, idx, val)\n        self.tree[node] = max(self.tree[2 * node], self.tree[2 * node + 1])\n        \n    def query(self, node, l, r, ql, qr):\n        if ql <= l and r <= qr:\n            return self.tree[node]\n        if r < ql or l > qr:\n            return -1\n        mid = (l + r) // 2\n        return max(self.query(2 * node, l, mid, ql, qr),\n                   self.query(2 * node + 1, mid + 1, r, ql, qr))\n\nclass Solution:\n    def maxRectangleArea(self, xCoord: list[int], yCoord: list[int]) -> int:\n        points = sorted(zip(xCoord, yCoord))\n        ys = sorted(set(yCoord))\n        y_to_idx = {y: i for i, y in enumerate(ys)}\n        \n        st = SegmentTree(len(ys))\n        last_x = {}\n        ans = -1\n        \n        i = 0\n        n = len(points)\n        while i < n:\n            j = i\n            while j < n and points[j][0] == points[i][0]:\n                j += 1\n            curr_pts = points[i:j]\n            for k in range(len(curr_pts) - 1):\n                x = curr_pts[k][0]\n                y1 = curr_pts[k][1]\n                y2 = curr_pts[k + 1][1]\n                idx1 = y_to_idx[y1]\n                idx2 = y_to_idx[y2]\n                if y1 in last_x and y2 in last_x and last_x[y1] == last_x[y2]:\n                    prev_x = last_x[y1]\n                    max_inside = st.query(1, 0, len(ys) - 1, idx1, idx2)\n                    if max_inside <= prev_x:\n                        area = (x - prev_x) * (y2 - y1)\n                        if area > ans:\n                            ans = area\n            for x, y in curr_pts:\n                idx = y_to_idx[y]\n                last_x[y] = x\n                st.update(1, 0, len(ys) - 1, idx, x)\n            i = j\n            \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of points"
+    ],
+    "notes": "Sweep-line over vertical segments and segment tree over compressed y-coordinates checking empty interior bounds.",
+    "whyNaiveFails": "Checking all candidate point pairs takes quadratic time, failing on 2 * 10^5 points.",
+    "spaceTimeTradeoff": "O(n) segment tree and coordinate compression structures.",
+    "interviewerExpectation": "Combines sweep-line processing with range query structures over y-coordinates."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class SegmentTree:\n    def __init__(self, size):\n        self.n = size\n        self.tree = [-1] * (4 * size)\n        \n    def update(self, node, l, r, idx, val):\n        if l == r:\n            self.tree[node] = val\n            return\n        mid = (l + r) // 2\n        if idx <= mid:\n            self.update(2 * node, l, mid, idx, val)\n        else:\n            self.update(2 * node + 1, mid + 1, r, idx, val)\n        self.tree[node] = max(self.tree[2 * node], self.tree[2 * node + 1])\n        \n    def query(self, node, l, r, ql, qr):\n        if ql <= l and r <= qr:\n            return self.tree[node]\n        if r < ql or l > qr:\n            return -1\n        mid = (l + r) // 2\n        return max(self.query(2 * node, l, mid, ql, qr),\n                   self.query(2 * node + 1, mid + 1, r, ql, qr))\n\nclass Solution:\n    def maxRectangleArea(self, xCoord: list[int], yCoord: list[int]) -> int:\n        points = sorted(zip(xCoord, yCoord))\n        ys = sorted(set(yCoord))\n        y_to_idx = {y: i for i, y in enumerate(ys)}\n        \n        st = SegmentTree(len(ys))\n        last_x = {}\n        ans = -1\n        \n        i = 0\n        n = len(points)\n        while i < n:\n            j = i\n            while j < n and points[j][0] == points[i][0]:\n                j += 1\n            curr_pts = points[i:j]\n            for k in range(len(curr_pts) - 1):\n                x = curr_pts[k][0]\n                y1 = curr_pts[k][1]\n                y2 = curr_pts[k + 1][1]\n                idx1 = y_to_idx[y1]\n                idx2 = y_to_idx[y2]\n                if y1 in last_x and y2 in last_x and last_x[y1] == last_x[y2]:\n                    prev_x = last_x[y1]\n                    max_inside = st.query(1, 0, len(ys) - 1, idx1, idx2)\n                    if max_inside <= prev_x:\n                        area = (x - prev_x) * (y2 - y1)\n                        if area > ans:\n                            ans = area\n            for x, y in curr_pts:\n                idx = y_to_idx[y]\n                last_x[y] = x\n                st.update(1, 0, len(ys) - 1, idx, x)\n            i = j\n            \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class SegmentTree {\npublic:\n    int n;\n    vector<int> tree;\n    SegmentTree(int size) : n(size), tree(4 * size, -1) {}\n    \n    void update(int node, int l, int r, int idx, int val) {\n        if (l == r) { tree[node] = val; return; }\n        int mid = (l + r) / 2;\n        if (idx <= mid) update(2 * node, l, mid, idx, val);\n        else update(2 * node + 1, mid + 1, r, idx, val);\n        tree[node] = max(tree[2 * node], tree[2 * node + 1]);\n    }\n    \n    int query(int node, int l, int r, int ql, int qr) {\n        if (ql <= l && r <= qr) return tree[node];\n        if (r < ql || l > qr) return -1;\n        int mid = (l + r) / 2;\n        return max(query(2 * node, l, mid, ql, qr), query(2 * node + 1, mid + 1, r, ql, qr));\n    }\n};\n\nclass Solution {\npublic:\n    long long maxRectangleArea(vector<int>& xCoord, vector<int>& yCoord) {\n        int n = xCoord.size();\n        vector<pair<int, int>> points(n);\n        for (int i = 0; i < n; ++i) points[i] = {xCoord[i], yCoord[i]};\n        sort(points.begin(), points.end());\n        \n        vector<int> ys = yCoord;\n        sort(ys.begin(), ys.end());\n        ys.erase(unique(ys.begin(), ys.end()), ys.end());\n        unordered_map<int, int> yToIdx;\n        for (size_t i = 0; i < ys.size(); ++i) yToIdx[ys[i]] = i;\n        \n        SegmentTree st(ys.size());\n        unordered_map<int, int> lastX;\n        long long ans = -1;\n        \n        size_t i = 0;\n        while (i < points.size()) {\n            size_t j = i;\n            while (j < points.size() && points[j].first == points[i].first) j++;\n            for (size_t k = i; k + 1 < j; ++k) {\n                int x = points[k].first;\n                int y1 = points[k].second;\n                int y2 = points[k + 1].second;\n                int idx1 = yToIdx[y1], idx2 = yToIdx[y2];\n                if (lastX.contains(y1) && lastX.contains(y2) && lastX[y1] == lastX[y2]) {\n                    int prevX = lastX[y1];\n                    int maxInside = st.query(1, 0, ys.size() - 1, idx1, idx2);\n                    if (maxInside <= prevX) {\n                        long long area = 1LL * (x - prevX) * (y2 - y1);\n                        ans = max(ans, area);\n                    }\n                }\n            }\n            for (size_t k = i; k < j; ++k) {\n                int x = points[k].first, y = points[k].second;\n                int idx = yToIdx[y];\n                lastX[y] = x;\n                st.update(1, 0, ys.size() - 1, idx, x);\n            }\n            i = j;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    static class SegmentTree {\n        int n;\n        int[] tree;\n        SegmentTree(int size) {\n            n = size;\n            tree = new int[4 * size];\n            Arrays.fill(tree, -1);\n        }\n        void update(int node, int l, int r, int idx, int val) {\n            if (l == r) { tree[node] = val; return; }\n            int mid = (l + r) / 2;\n            if (idx <= mid) update(2 * node, l, mid, idx, val);\n            else update(2 * node + 1, mid + 1, r, idx, val);\n            tree[node] = Math.max(tree[2 * node], tree[2 * node + 1]);\n        }\n        int query(int node, int l, int r, int ql, int qr) {\n            if (ql <= l && r <= qr) return tree[node];\n            if (r < ql || l > qr) return -1;\n            int mid = (l + r) / 2;\n            return Math.max(query(2 * node, l, mid, ql, qr), query(2 * node + 1, mid + 1, r, ql, qr));\n        }\n    }\n    \n    public long maxRectangleArea(int[] xCoord, int[] yCoord) {\n        int n = xCoord.length;\n        int[][] points = new int[n][2];\n        for (int i = 0; i < n; ++i) points[i] = new int[]{xCoord[i], yCoord[i]};\n        Arrays.sort(points, (a, b) -> a[0] != b[0] ? Integer.compare(a[0], b[0]) : Integer.compare(a[1], b[1]));\n        \n        int[] ys = Arrays.stream(yCoord).distinct().sorted().toArray();\n        Map<Integer, Integer> yToIdx = new HashMap<>();\n        for (int i = 0; i < ys.length; ++i) yToIdx.put(ys[i], i);\n        \n        SegmentTree st = new SegmentTree(ys.length);\n        Map<Integer, Integer> lastX = new HashMap<>();\n        long ans = -1;\n        \n        int i = 0;\n        while (i < n) {\n            int j = i;\n            while (j < n && points[j][0] == points[i][0]) j++;\n            for (int k = i; k + 1 < j; ++k) {\n                int x = points[k][0], y1 = points[k][1], y2 = points[k + 1][1];\n                int idx1 = yToIdx.get(y1), idx2 = yToIdx.get(y2);\n                if (lastX.containsKey(y1) && lastX.containsKey(y2) && lastX.get(y1).equals(lastX.get(y2))) {\n                    int prevX = lastX.get(y1);\n                    int maxInside = st.query(1, 0, ys.length - 1, idx1, idx2);\n                    if (maxInside <= prevX) {\n                        long area = 1L * (x - prevX) * (y2 - y1);\n                        ans = Math.max(ans, area);\n                    }\n                }\n            }\n            for (int k = i; k < j; ++k) {\n                int x = points[k][0], y = points[k][1];\n                int idx = yToIdx.get(y);\n                lastX.put(y, x);\n                st.update(1, 0, ys.length - 1, idx, x);\n            }\n            i = j;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxRectangleArea = function(xCoord, yCoord) {\n    const n = xCoord.length;\n    const points = Array.from({ length: n }, (_, i) => [xCoord[i], yCoord[i]]);\n    points.sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]);\n    \n    const ys = Array.from(new Set(yCoord)).sort((a, b) => a - b);\n    const yToIdx = new Map(ys.map((y, i) => [y, i]));\n    \n    const tree = new Int32Array(4 * ys.length).fill(-1);\n    const update = (node, l, r, idx, val) => {\n        if (l === r) { tree[node] = val; return; }\n        const mid = (l + r) >> 1;\n        if (idx <= mid) update(2 * node, l, mid, idx, val);\n        else update(2 * node + 1, mid + 1, r, idx, val);\n        tree[node] = Math.max(tree[2 * node], tree[2 * node + 1]);\n    };\n    const query = (node, l, r, ql, qr) => {\n        if (ql <= l && r <= qr) return tree[node];\n        if (r < ql || l > qr) return -1;\n        const mid = (l + r) >> 1;\n        return Math.max(query(2 * node, l, mid, ql, qr), query(2 * node + 1, mid + 1, r, ql, qr));\n    };\n    \n    const lastX = new Map();\n    let ans = -1;\n    \n    let i = 0;\n    while (i < n) {\n        let j = i;\n        while (j < n && points[j][0] === points[i][0]) j++;\n        for (let k = i; k + 1 < j; k++) {\n            const x = points[k][0], y1 = points[k][1], y2 = points[k + 1][1];\n            const idx1 = yToIdx.get(y1), idx2 = yToIdx.get(y2);\n            if (lastX.has(y1) && lastX.has(y2) && lastX.get(y1) === lastX.get(y2)) {\n                const prevX = lastX.get(y1);\n                const maxInside = query(1, 0, ys.length - 1, idx1, idx2);\n                if (maxInside <= prevX) {\n                    const area = (x - prevX) * (y2 - y1);\n                    if (area > ans) ans = area;\n                }\n            }\n        }\n        for (let k = i; k < j; k++) {\n            const [x, y] = points[k];\n            const idx = yToIdx.get(y);\n            lastX.set(y, x);\n            update(1, 0, ys.length - 1, idx, x);\n        }\n        i = j;\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

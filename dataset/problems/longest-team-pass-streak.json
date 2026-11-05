@@ -1,0 +1,71 @@
+{
+  "slug": "longest-team-pass-streak",
+  "number": 3390,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sequential Pass Ordering",
+      "text": "Join each pass with team identifiers and rank all events chronologically within each team."
+    },
+    {
+      "level": 2,
+      "title": "Consecutive Streak Tracking",
+      "text": "Recursively compute streak length, incrementing count when pass_to is on the same team and resetting to zero on turnovers."
+    },
+    {
+      "level": 3,
+      "title": "Team Maximum",
+      "text": "Group by team and select the maximum streak achieved, filtering for teams with at least one successful streak."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH RECURSIVE \nTeamPasses AS (\n    SELECT \n        Team1.team_name AS team1, \n        Team2.team_name AS team2, \n        Passes.time_stamp\n    FROM Passes\n    INNER JOIN Teams AS Team1 ON Passes.pass_from = Team1.player_id\n    INNER JOIN Teams AS Team2 ON Passes.pass_to = Team2.player_id\n), \nRanked AS (\n    SELECT \n        team1, \n        team2, \n        RANK() OVER(PARTITION BY team1 ORDER BY time_stamp) AS `rank`\n    FROM TeamPasses\n), \nPassStreaks AS (\n    SELECT \n        team1, \n        team2, \n        `rank`, \n        CASE WHEN team1 = team2 THEN 1 ELSE 0 END AS streak\n    FROM Ranked\n    WHERE `rank` = 1\n    UNION ALL\n    SELECT \n        Ranked.team1, \n        Ranked.team2, \n        Ranked.`rank`, \n        CASE WHEN Ranked.team1 = Ranked.team2 THEN PassStreaks.streak + 1 ELSE 0 END AS streak\n    FROM Ranked\n    INNER JOIN PassStreaks \n        ON Ranked.`rank` = PassStreaks.`rank` + 1 \n       AND Ranked.team1 = PassStreaks.team1\n)\nSELECT \n    team1 AS team_name, \n    MAX(streak) AS longest_streak\nFROM PassStreaks\nGROUP BY team1\nHAVING longest_streak > 0\nORDER BY team_name ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(m log m)",
+    "space": "O(m)",
+    "variables": [
+      "m: count of pass events"
+    ],
+    "notes": "Recursive CTE maintains cumulative streak counter per team resetting upon turnovers.",
+    "whyNaiveFails": "Identifying streaks without recursion or window framing requires complex multiple self-joins.",
+    "spaceTimeTradeoff": "O(m) memory for ranking and recursive traversal.",
+    "interviewerExpectation": "Uses window ranking and recursive CTE to calculate sequential pass streaks."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH RECURSIVE \nTeamPasses AS (\n    SELECT \n        Team1.team_name AS team1, \n        Team2.team_name AS team2, \n        Passes.time_stamp\n    FROM Passes\n    INNER JOIN Teams AS Team1 ON Passes.pass_from = Team1.player_id\n    INNER JOIN Teams AS Team2 ON Passes.pass_to = Team2.player_id\n), \nRanked AS (\n    SELECT \n        team1, \n        team2, \n        RANK() OVER(PARTITION BY team1 ORDER BY time_stamp) AS `rank`\n    FROM TeamPasses\n), \nPassStreaks AS (\n    SELECT \n        team1, \n        team2, \n        `rank`, \n        CASE WHEN team1 = team2 THEN 1 ELSE 0 END AS streak\n    FROM Ranked\n    WHERE `rank` = 1\n    UNION ALL\n    SELECT \n        Ranked.team1, \n        Ranked.team2, \n        Ranked.`rank`, \n        CASE WHEN Ranked.team1 = Ranked.team2 THEN PassStreaks.streak + 1 ELSE 0 END AS streak\n    FROM Ranked\n    INNER JOIN PassStreaks \n        ON Ranked.`rank` = PassStreaks.`rank` + 1 \n       AND Ranked.team1 = PassStreaks.team1\n)\nSELECT \n    team1 AS team_name, \n    MAX(streak) AS longest_streak\nFROM PassStreaks\nGROUP BY team1\nHAVING longest_streak > 0\nORDER BY team_name ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH RECURSIVE \nTeamPasses AS (\n    SELECT \n        Team1.team_name AS team1, \n        Team2.team_name AS team2, \n        Passes.time_stamp\n    FROM Passes\n    INNER JOIN Teams AS Team1 ON Passes.pass_from = Team1.player_id\n    INNER JOIN Teams AS Team2 ON Passes.pass_to = Team2.player_id\n), \nRanked AS (\n    SELECT \n        team1, \n        team2, \n        RANK() OVER(PARTITION BY team1 ORDER BY time_stamp) AS rank_col\n    FROM TeamPasses\n), \nPassStreaks AS (\n    SELECT \n        team1, \n        team2, \n        rank_col, \n        CASE WHEN team1 = team2 THEN 1 ELSE 0 END AS streak\n    FROM Ranked\n    WHERE rank_col = 1\n    UNION ALL\n    SELECT \n        Ranked.team1, \n        Ranked.team2, \n        Ranked.rank_col, \n        CASE WHEN Ranked.team1 = Ranked.team2 THEN PassStreaks.streak + 1 ELSE 0 END AS streak\n    FROM Ranked\n    INNER JOIN PassStreaks \n        ON Ranked.rank_col = PassStreaks.rank_col + 1 \n       AND Ranked.team1 = PassStreaks.team1\n)\nSELECT \n    team1 AS team_name, \n    MAX(streak) AS longest_streak\nFROM PassStreaks\nGROUP BY team1\nHAVING MAX(streak) > 0\nORDER BY team_name ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef longest_team_pass_streak(teams: pd.DataFrame, passes: pd.DataFrame) -> pd.DataFrame:\n    merged = passes.merge(teams, left_on='pass_from', right_on='player_id').rename(columns={'team_name': 'team1'})\n    merged = merged.merge(teams, left_on='pass_to', right_on='player_id').rename(columns={'team_name': 'team2'})\n    merged = merged.sort_values(['team1', 'time_stamp'])\n    \n    records = []\n    for team1, group in merged.groupby('team1'):\n        max_streak = 0\n        curr_streak = 0\n        for _, row in group.iterrows():\n            if row['team1'] == row['team2']:\n                curr_streak += 1\n                if curr_streak > max_streak:\n                    max_streak = curr_streak\n            else:\n                curr_streak = 0\n        if max_streak > 0:\n            records.append({'team_name': team1, 'longest_streak': max_streak})\n            \n    res = pd.DataFrame(records)\n    if res.empty:\n        return pd.DataFrame(columns=['team_name', 'longest_streak'])\n    return res.sort_values('team_name')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "subsequences-with-a-unique-middle-mode-i",
+  "number": 3395,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Fixed Center",
+      "text": "Fix index i as the middle element of the 5-element subsequence."
+    },
+    {
+      "level": 2,
+      "title": "Prefix and Suffix Partitions",
+      "text": "Two elements must be chosen from the prefix before i and two from the suffix after i."
+    },
+    {
+      "level": 3,
+      "title": "Complementary Counting",
+      "text": "Accumulate configurations where center element appears at least three times, and subtract tied rival pairs when appearing twice."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom collections import Counter\n\nclass Solution:\n    def subsequencesWithMiddleMode(self, nums: list[int]) -> int:\n        def nC2(n: int) -> int:\n            return n * (n - 1) // 2 if n >= 2 else 0\n\n        MOD = 1_000_000_007\n        n = len(nums)\n        if n < 5:\n            return 0\n            \n        left = Counter()\n        right = Counter(nums)\n        ans = 0\n        \n        for i in range(n):\n            x = nums[i]\n            right[x] -= 1\n            \n            if i >= 2 and n - 1 - i >= 2:\n                L = i\n                R = n - 1 - i\n                lx = left[x]\n                rx = right[x]\n                lo = L - lx\n                ro = R - rx\n                \n                ans += nC2(lx) * nC2(rx)\n                ans += nC2(lx) * rx * ro\n                ans += lx * lo * nC2(rx)\n                ans += nC2(lx) * nC2(ro)\n                ans += nC2(lo) * nC2(rx)\n                ans += lx * lo * rx * ro\n                \n                waysA = lx * lo * nC2(ro)\n                badA = 0\n                waysB = nC2(lo) * rx * ro\n                badB = 0\n                \n                for y in set(left.keys()) | set(right.keys()):\n                    if y == x:\n                        continue\n                    ly = left[y]\n                    ry = right[y]\n                    if ly == 0 and ry == 0:\n                        continue\n                    badA += nC2(ry) * lo + ly * ry * (ro - ry)\n                    badB += nC2(ly) * ro + ly * ry * (lo - ly)\n                    \n                ans += (waysA - badA) + (waysB - badB)\n                ans %= MOD\n                \n            left[x] += 1\n            \n        return ans % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * u)",
+    "space": "O(u)",
+    "variables": [
+      "n: length of array",
+      "u: number of distinct elements"
+    ],
+    "notes": "Iterates each middle index and evaluates rival element frequencies across prefix and suffix.",
+    "whyNaiveFails": "Enumerating quintuplets of length 5 takes O(n^5) which exceeds time limits.",
+    "spaceTimeTradeoff": "O(u) hash maps track dynamic prefix and suffix element counts.",
+    "interviewerExpectation": "Uses combinatorics and complementary subtraction around the middle element."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import Counter\n\nclass Solution:\n    def subsequencesWithMiddleMode(self, nums: list[int]) -> int:\n        def nC2(n: int) -> int:\n            return n * (n - 1) // 2 if n >= 2 else 0\n\n        MOD = 1_000_000_007\n        n = len(nums)\n        if n < 5:\n            return 0\n            \n        left = Counter()\n        right = Counter(nums)\n        ans = 0\n        \n        for i in range(n):\n            x = nums[i]\n            right[x] -= 1\n            \n            if i >= 2 and n - 1 - i >= 2:\n                L = i\n                R = n - 1 - i\n                lx = left[x]\n                rx = right[x]\n                lo = L - lx\n                ro = R - rx\n                \n                ans += nC2(lx) * nC2(rx)\n                ans += nC2(lx) * rx * ro\n                ans += lx * lo * nC2(rx)\n                ans += nC2(lx) * nC2(ro)\n                ans += nC2(lo) * nC2(rx)\n                ans += lx * lo * rx * ro\n                \n                waysA = lx * lo * nC2(ro)\n                badA = 0\n                waysB = nC2(lo) * rx * ro\n                badB = 0\n                \n                for y in set(left.keys()) | set(right.keys()):\n                    if y == x:\n                        continue\n                    ly = left[y]\n                    ry = right[y]\n                    if ly == 0 and ry == 0:\n                        continue\n                    badA += nC2(ry) * lo + ly * ry * (ro - ry)\n                    badB += nC2(ly) * ro + ly * ry * (lo - ly)\n                    \n                ans += (waysA - badA) + (waysB - badB)\n                ans %= MOD\n                \n            left[x] += 1\n            \n        return ans % MOD",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    int subsequencesWithMiddleMode(vector<int>& nums) {\n        auto nC2 = [](long long n) -> long long {\n            return n >= 2 ? n * (n - 1) / 2 : 0;\n        };\n        const int MOD = 1e9 + 7;\n        int n = nums.size();\n        if (n < 5) return 0;\n        \n        unordered_map<int, int> left, right;\n        for (int v : nums) right[v]++;\n        long long ans = 0;\n        \n        for (int i = 0; i < n; ++i) {\n            int x = nums[i];\n            right[x]--;\n            \n            if (i >= 2 && n - 1 - i >= 2) {\n                long long L = i, R = n - 1 - i;\n                long long lx = left[x], rx = right[x];\n                long long lo = L - lx, ro = R - rx;\n                \n                ans += nC2(lx) * nC2(rx);\n                ans += nC2(lx) * rx * ro;\n                ans += lx * lo * nC2(rx);\n                ans += nC2(lx) * nC2(ro);\n                ans += nC2(lo) * nC2(rx);\n                ans += lx * lo * rx * ro;\n                \n                long long waysA = lx * lo * nC2(ro);\n                long long badA = 0;\n                long long waysB = nC2(lo) * rx * ro;\n                long long badB = 0;\n                \n                for (const auto& [y, ly] : left) {\n                    if (y == x) continue;\n                    long long ry = right.count(y) ? right[y] : 0;\n                    badA += nC2(ry) * lo + ly * ry * (ro - ry);\n                    badB += nC2(ly) * ro + ly * ry * (lo - ly);\n                }\n                for (const auto& [y, ry] : right) {\n                    if (y == x || left.count(y)) continue;\n                    long long ly = 0;\n                    badA += nC2(ry) * lo + ly * ry * (ro - ry);\n                    badB += nC2(ly) * ro + ly * ry * (lo - ly);\n                }\n                \n                ans += (waysA - badA) + (waysB - badB);\n                ans %= MOD;\n            }\n            left[x]++;\n        }\n        return (ans % MOD + MOD) % MOD;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    private long nC2(long n) {\n        return n >= 2 ? n * (n - 1) / 2 : 0;\n    }\n    \n    public int subsequencesWithMiddleMode(int[] nums) {\n        int MOD = 1_000_000_007;\n        int n = nums.length;\n        if (n < 5) return 0;\n        \n        Map<Integer, Integer> left = new HashMap<>();\n        Map<Integer, Integer> right = new HashMap<>();\n        for (int v : nums) right.put(v, right.getOrDefault(v, 0) + 1);\n        \n        long ans = 0;\n        for (int i = 0; i < n; ++i) {\n            int x = nums[i];\n            right.put(x, right.get(x) - 1);\n            \n            if (i >= 2 && n - 1 - i >= 2) {\n                long L = i, R = n - 1 - i;\n                long lx = left.getOrDefault(x, 0);\n                long rx = right.getOrDefault(x, 0);\n                long lo = L - lx, ro = R - rx;\n                \n                ans += nC2(lx) * nC2(rx);\n                ans += nC2(lx) * rx * ro;\n                ans += lx * lo * nC2(rx);\n                ans += nC2(lx) * nC2(ro);\n                ans += nC2(lo) * nC2(rx);\n                ans += lx * lo * rx * ro;\n                \n                long waysA = lx * lo * nC2(ro);\n                long badA = 0;\n                long waysB = nC2(lo) * rx * ro;\n                long badB = 0;\n                \n                Set<Integer> allKeys = new HashSet<>(left.keySet());\n                allKeys.addAll(right.keySet());\n                for (int y : allKeys) {\n                    if (y == x) continue;\n                    long ly = left.getOrDefault(y, 0);\n                    long ry = right.getOrDefault(y, 0);\n                    badA += nC2(ry) * lo + ly * ry * (ro - ry);\n                    badB += nC2(ly) * ro + ly * ry * (lo - ly);\n                }\n                \n                ans += (waysA - badA) + (waysB - badB);\n                ans %= MOD;\n            }\n            left.put(x, left.getOrDefault(x, 0) + 1);\n        }\n        return (int) ((ans % MOD + MOD) % MOD);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var subsequencesWithMiddleMode = function(nums) {\n    const nC2 = (n) => n >= 2 ? (BigInt(n) * BigInt(n - 1) / 2n) : 0n;\n    const MOD = 1000000007n;\n    const n = nums.length;\n    if (n < 5) return 0;\n    \n    const left = new Map();\n    const right = new Map();\n    for (const v of nums) right.set(v, (right.get(v) || 0) + 1);\n    \n    let ans = 0n;\n    for (let i = 0; i < n; ++i) {\n        const x = nums[i];\n        right.set(x, right.get(x) - 1);\n        \n        if (i >= 2 && n - 1 - i >= 2) {\n            const L = BigInt(i), R = BigInt(n - 1 - i);\n            const lx = BigInt(left.get(x) || 0);\n            const rx = BigInt(right.get(x) || 0);\n            const lo = L - lx, ro = R - rx;\n            \n            ans += nC2(Number(lx)) * nC2(Number(rx));\n            ans += nC2(Number(lx)) * rx * ro;\n            ans += lx * lo * nC2(Number(rx));\n            ans += nC2(Number(lx)) * nC2(Number(ro));\n            ans += nC2(Number(lo)) * nC2(Number(rx));\n            ans += lx * lo * rx * ro;\n            \n            const waysA = lx * lo * nC2(Number(ro));\n            let badA = 0n;\n            const waysB = nC2(Number(lo)) * rx * ro;\n            let badB = 0n;\n            \n            const allKeys = new Set([...left.keys(), ...right.keys()]);\n            for (const y of allKeys) {\n                if (y === x) continue;\n                const ly = BigInt(left.get(y) || 0);\n                const ry = BigInt(right.get(y) || 0);\n                badA += nC2(Number(ry)) * lo + ly * ry * (ro - ry);\n                badB += nC2(Number(ly)) * ro + ly * ry * (lo - ly);\n            }\n            \n            ans += (waysA - badA) + (waysB - badB);\n            ans %= MOD;\n        }\n        left.set(x, (left.get(x) || 0) + 1);\n    }\n    return Number((ans % MOD + MOD) % MOD);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

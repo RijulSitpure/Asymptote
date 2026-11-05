@@ -1,0 +1,72 @@
+{
+  "slug": "find-circular-gift-exchange-chains",
+  "number": 3401,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Cycle Traversal",
+      "text": "Each giver is paired with a receiver forming directed paths across SecretSanta participants."
+    },
+    {
+      "level": 2,
+      "title": "Recursive CTE Anchor",
+      "text": "Seed the recursion with every giver and follow receiver_id transitions until returning to start_id."
+    },
+    {
+      "level": 3,
+      "title": "Aggregation and Deduplication",
+      "text": "Aggregate cycle length and total gift value, deduplicating cycles and ranking by length then total value descending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH RECURSIVE Chains AS (\n    SELECT \n        giver_id, \n        receiver_id, \n        gift_value, \n        giver_id AS start_id \n    FROM SecretSanta\n    UNION ALL\n    SELECT \n        s.giver_id, \n        s.receiver_id, \n        s.gift_value, \n        c.start_id \n    FROM SecretSanta s\n    INNER JOIN Chains c \n        ON s.giver_id = c.receiver_id \n    WHERE s.giver_id != c.start_id\n),\nChainSummary AS (\n    SELECT \n        start_id, \n        COUNT(*) AS chain_length, \n        SUM(gift_value) AS total_gift_value \n    FROM Chains \n    GROUP BY start_id\n),\nUniqueChains AS (\n    SELECT DISTINCT \n        chain_length, \n        total_gift_value \n    FROM ChainSummary\n)\nSELECT \n    RANK() OVER (ORDER BY chain_length DESC, total_gift_value DESC) AS chain_id, \n    chain_length, \n    total_gift_value \nFROM UniqueChains;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of secret santa participants",
+      "E: number of exchanges"
+    ],
+    "notes": "Traverses graph cycles and aggregates cycle statistics with window ranking.",
+    "whyNaiveFails": "Static self-joins cannot dynamically resolve variable cycle path lengths.",
+    "spaceTimeTradeoff": "CTE recursion stack stores intermediate path states.",
+    "interviewerExpectation": "Constructs a clean recursive CTE and ranks distinct cycles with window functions."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH RECURSIVE Chains AS (\n    SELECT \n        giver_id, \n        receiver_id, \n        gift_value, \n        giver_id AS start_id \n    FROM SecretSanta\n    UNION ALL\n    SELECT \n        s.giver_id, \n        s.receiver_id, \n        s.gift_value, \n        c.start_id \n    FROM SecretSanta s\n    INNER JOIN Chains c \n        ON s.giver_id = c.receiver_id \n    WHERE s.giver_id != c.start_id\n),\nChainSummary AS (\n    SELECT \n        start_id, \n        COUNT(*) AS chain_length, \n        SUM(gift_value) AS total_gift_value \n    FROM Chains \n    GROUP BY start_id\n),\nUniqueChains AS (\n    SELECT DISTINCT \n        chain_length, \n        total_gift_value \n    FROM ChainSummary\n)\nSELECT \n    RANK() OVER (ORDER BY chain_length DESC, total_gift_value DESC) AS chain_id, \n    chain_length, \n    total_gift_value \nFROM UniqueChains;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH RECURSIVE Chains AS (\n    SELECT \n        giver_id, \n        receiver_id, \n        gift_value, \n        giver_id AS start_id \n    FROM SecretSanta\n    UNION ALL\n    SELECT \n        s.giver_id, \n        s.receiver_id, \n        s.gift_value, \n        c.start_id \n    FROM SecretSanta s\n    INNER JOIN Chains c \n        ON s.giver_id = c.receiver_id \n    WHERE s.giver_id != c.start_id\n),\nChainSummary AS (\n    SELECT \n        start_id, \n        COUNT(*) AS chain_length, \n        SUM(gift_value) AS total_gift_value \n    FROM Chains \n    GROUP BY start_id\n),\nUniqueChains AS (\n    SELECT DISTINCT \n        chain_length, \n        total_gift_value \n    FROM ChainSummary\n)\nSELECT \n    RANK() OVER (ORDER BY chain_length DESC, total_gift_value DESC) AS chain_id, \n    chain_length, \n    total_gift_value \nFROM UniqueChains;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_circular_gift_exchange_chains(secret_santa: pd.DataFrame) -> pd.DataFrame:\n    if secret_santa.empty:\n        return pd.DataFrame(columns=['chain_id', 'chain_length', 'total_gift_value'])\n        \n    adj = {}\n    for _, row in secret_santa.iterrows():\n        adj[int(row['giver_id'])] = (int(row['receiver_id']), int(row['gift_value']))\n        \n    seen = set()\n    chains = []\n    \n    for start in adj:\n        if start in seen:\n            continue\n        curr = start\n        visited_in_path = {}\n        path = []\n        step = 0\n        while curr in adj and curr not in visited_in_path and curr not in seen:\n            visited_in_path[curr] = step\n            nxt, val = adj[curr]\n            path.append((curr, nxt, val))\n            curr = nxt\n            step += 1\n            \n        if curr in visited_in_path:\n            cycle_start_step = visited_in_path[curr]\n            cycle_edges = path[cycle_start_step:]\n            cycle_nodes = [e[0] for e in cycle_edges]\n            for u in cycle_nodes:\n                seen.add(u)\n            length = len(cycle_edges)\n            val_sum = sum(e[2] for e in cycle_edges)\n            chains.append((length, val_sum))\n            \n    if not chains:\n        return pd.DataFrame(columns=['chain_id', 'chain_length', 'total_gift_value'])\n        \n    unique_chains = sorted(list(set(chains)), key=lambda x: (-x[0], -x[1]))\n    \n    res = []\n    for rank, (length, val_sum) in enumerate(unique_chains, 1):\n        res.append({'chain_id': rank, 'chain_length': length, 'total_gift_value': val_sum})\n        \n    return pd.DataFrame(res)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

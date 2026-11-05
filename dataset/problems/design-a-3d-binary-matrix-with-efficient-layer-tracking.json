@@ -1,0 +1,79 @@
+{
+  "slug": "design-a-3d-binary-matrix-with-efficient-layer-tracking",
+  "number": 3391,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Layer Count Aggregation",
+      "text": "Notice that cell toggles at (x, y, z) only affect the total count of 1s in layer x."
+    },
+    {
+      "level": 2,
+      "title": "Coordinate State Lookup",
+      "text": "Store active coordinates in a hash set to ensure set and unset operations are idempotent."
+    },
+    {
+      "level": 3,
+      "title": "Priority Queue Tie-Breaking",
+      "text": "Maintain layer counts in a max-heap with negative layer index as tie-breaker, discarding outdated entries lazily."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport heapq\n\nclass Matrix3D:\n    def __init__(self, n: int):\n        self.n = n\n        self.ones = set()\n        self.count = [0] * n\n        self.heap = [(0, -x) for x in range(n)]\n        heapq.heapify(self.heap)\n\n    def setCell(self, x: int, y: int, z: int) -> None:\n        if (x, y, z) not in self.ones:\n            self.ones.add((x, y, z))\n            self.count[x] += 1\n            heapq.heappush(self.heap, (-self.count[x], -x))\n\n    def unsetCell(self, x: int, y: int, z: int) -> None:\n        if (x, y, z) in self.ones:\n            self.ones.remove((x, y, z))\n            self.count[x] -= 1\n            heapq.heappush(self.heap, (-self.count[x], -x))\n\n    def largestMatrix(self) -> int:\n        while self.heap:\n            neg_c, neg_x = self.heap[0]\n            if -neg_c == self.count[-neg_x]:\n                return -neg_x\n            heapq.heappop(self.heap)\n        return 0\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log n) for set/unset, O(1) amortized for largestMatrix",
+    "space": "O(n + k)",
+    "variables": [
+      "n: matrix dimension",
+      "k: number of active ones"
+    ],
+    "notes": "Hash set stores active 3D coordinates, count array tracks ones per x-layer, and max-heap enables O(1) retrieval.",
+    "whyNaiveFails": "Scanning all n layers per query takes O(n) per operation.",
+    "spaceTimeTradeoff": "O(n + k) memory storing set cells and layer frequency heap.",
+    "interviewerExpectation": "Maintains per-layer counts and a priority queue with lazy updates."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\n\nclass Matrix3D:\n    def __init__(self, n: int):\n        self.n = n\n        self.ones = set()\n        self.count = [0] * n\n        self.heap = [(0, -x) for x in range(n)]\n        heapq.heapify(self.heap)\n\n    def setCell(self, x: int, y: int, z: int) -> None:\n        if (x, y, z) not in self.ones:\n            self.ones.add((x, y, z))\n            self.count[x] += 1\n            heapq.heappush(self.heap, (-self.count[x], -x))\n\n    def unsetCell(self, x: int, y: int, z: int) -> None:\n        if (x, y, z) in self.ones:\n            self.ones.remove((x, y, z))\n            self.count[x] -= 1\n            heapq.heappush(self.heap, (-self.count[x], -x))\n\n    def largestMatrix(self) -> int:\n        while self.heap:\n            neg_c, neg_x = self.heap[0]\n            if -neg_c == self.count[-neg_x]:\n                return -neg_x\n            heapq.heappop(self.heap)\n        return 0",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Matrix3D {\nprivate:\n    int n;\n    set<tuple<int, int, int>> ones;\n    vector<int> count;\n    priority_queue<pair<int, int>> pq;\n\npublic:\n    Matrix3D(int n) : n(n), count(n, 0) {\n        for (int x = 0; x < n; ++x) {\n            pq.push({0, x});\n        }\n    }\n    \n    void setCell(int x, int y, int z) {\n        if (!ones.contains({x, y, z})) {\n            ones.insert({x, y, z});\n            count[x]++;\n            pq.push({count[x], x});\n        }\n    }\n    \n    void unsetCell(int x, int y, int z) {\n        if (ones.contains({x, y, z})) {\n            ones.erase({x, y, z});\n            count[x]--;\n            pq.push({count[x], x});\n        }\n    }\n    \n    int largestMatrix() {\n        while (!pq.empty()) {\n            auto [c, x] = pq.top();\n            if (c == count[x]) return x;\n            pq.pop();\n        }\n        return 0;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Matrix3D {\n    private int n;\n    private Set<String> ones;\n    private int[] count;\n    private PriorityQueue<int[]> pq;\n\n    public Matrix3D(int n) {\n        this.n = n;\n        this.ones = new HashSet<>();\n        this.count = new int[n];\n        this.pq = new PriorityQueue<>((a, b) -> a[0] != b[0] ? Integer.compare(b[0], a[0]) : Integer.compare(b[1], a[1]));\n        for (int x = 0; x < n; ++x) {\n            pq.offer(new int[]{0, x});\n        }\n    }\n    \n    public void setCell(int x, int y, int z) {\n        String key = x + \",\" + y + \",\" + z;\n        if (ones.add(key)) {\n            count[x]++;\n            pq.offer(new int[]{count[x], x});\n        }\n    }\n    \n    public void unsetCell(int x, int y, int z) {\n        String key = x + \",\" + y + \",\" + z;\n        if (ones.remove(key)) {\n            count[x]--;\n            pq.offer(new int[]{count[x], x});\n        }\n    }\n    \n    public int largestMatrix() {\n        while (!pq.isEmpty()) {\n            int[] top = pq.peek();\n            if (top[0] == count[top[1]]) return top[1];\n            pq.poll();\n        }\n        return 0;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var Matrix3D = function(n) {\n    this.n = n;\n    this.ones = new Set();\n    this.count = new Int32Array(n);\n};\n\nMatrix3D.prototype.setCell = function(x, y, z) {\n    const key = `${x},${y},${z}`;\n    if (!this.ones.has(key)) {\n        this.ones.add(key);\n        this.count[x]++;\n    }\n};\n\nMatrix3D.prototype.unsetCell = function(x, y, z) {\n    const key = `${x},${y},${z}`;\n    if (this.ones.has(key)) {\n        this.ones.delete(key);\n        this.count[x]--;\n    }\n};\n\nMatrix3D.prototype.largestMatrix = function() {\n    let bestCount = -1;\n    let bestLayer = 0;\n    for (let x = 0; x < this.n; x++) {\n        if (this.count[x] >= bestCount) {\n            bestCount = this.count[x];\n            bestLayer = x;\n        }\n    }\n    return bestLayer;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

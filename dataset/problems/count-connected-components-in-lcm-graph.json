@@ -1,0 +1,79 @@
+{
+  "slug": "count-connected-components-in-lcm-graph",
+  "number": 3378,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Common Multiple Equivalence",
+      "text": "Observe that if two numbers have their least common multiple within threshold, any shared multiple bridges them into one component."
+    },
+    {
+      "level": 2,
+      "title": "Harmonic Sieve Traversal",
+      "text": "For each number at most threshold, union it with all its multiples up to threshold using a disjoint-set data structure."
+    },
+    {
+      "level": 3,
+      "title": "Unique Component Counting",
+      "text": "Count how many unique root representatives are formed across all elements of nums."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def countComponents(self, nums: list[int], threshold: int) -> int:\n        parent = {}\n        \n        def find(i):\n            if i not in parent:\n                parent[i] = i\n            if parent[i] == i:\n                return i\n            parent[i] = find(parent[i])\n            return parent[i]\n            \n        def union(i, j):\n            root_i = find(i)\n            root_j = find(j)\n            if root_i != root_j:\n                parent[root_i] = root_j\n                \n        for num in nums:\n            if num <= threshold:\n                for multiple in range(2 * num, threshold + 1, num):\n                    union(num, multiple)\n                    \n        roots = set()\n        for num in nums:\n            roots.add(find(num))\n        return len(roots)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(threshold * log(threshold) + n * alpha(threshold))",
+    "space": "O(threshold + n)",
+    "variables": [
+      "threshold: upper bound for least common multiple",
+      "n: length of nums"
+    ],
+    "notes": "Unions each number with its multiples up to threshold using disjoint-set union.",
+    "whyNaiveFails": "Pairwise lcm calculation takes quadratic O(n^2) time.",
+    "spaceTimeTradeoff": "O(threshold + n) memory for DSU parent mapping.",
+    "interviewerExpectation": "Recognizes that numbers sharing a common multiple up to threshold form connected components."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def countComponents(self, nums: list[int], threshold: int) -> int:\n        parent = {}\n        \n        def find(i):\n            if i not in parent:\n                parent[i] = i\n            if parent[i] == i:\n                return i\n            parent[i] = find(parent[i])\n            return parent[i]\n            \n        def union(i, j):\n            root_i = find(i)\n            root_j = find(j)\n            if root_i != root_j:\n                parent[root_i] = root_j\n                \n        for num in nums:\n            if num <= threshold:\n                for multiple in range(2 * num, threshold + 1, num):\n                    union(num, multiple)\n                    \n        roots = set()\n        for num in nums:\n            roots.add(find(num))\n        return len(roots)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    int countComponents(vector<int>& nums, int threshold) {\n        unordered_map<int, int> parent;\n        auto find = [&](auto& self, int i) -> int {\n            if (!parent.contains(i)) parent[i] = i;\n            return parent[i] == i ? i : (parent[i] = self(self, parent[i]));\n        };\n        auto unite = [&](int i, int j) {\n            int rootI = find(find, i);\n            int rootJ = find(find, j);\n            if (rootI != rootJ) parent[rootI] = rootJ;\n        };\n        \n        for (int num : nums) {\n            if (num <= threshold) {\n                for (int multiple = 2 * num; multiple <= threshold; multiple += num) {\n                    unite(num, multiple);\n                }\n            }\n        }\n        \n        unordered_set<int> roots;\n        for (int num : nums) {\n            roots.insert(find(find, num));\n        }\n        return roots.size();\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int countComponents(int[] nums, int threshold) {\n        Map<Integer, Integer> parent = new HashMap<>();\n        for (int num : nums) {\n            if (num <= threshold) {\n                for (int multiple = 2 * num; multiple <= threshold; multiple += num) {\n                    union(parent, num, multiple);\n                }\n            }\n        }\n        Set<Integer> roots = new HashSet<>();\n        for (int num : nums) {\n            roots.add(find(parent, num));\n        }\n        return roots.size();\n    }\n    \n    private int find(Map<Integer, Integer> parent, int i) {\n        parent.putIfAbsent(i, i);\n        if (parent.get(i) == i) return i;\n        int root = find(parent, parent.get(i));\n        parent.put(i, root);\n        return root;\n    }\n    \n    private void union(Map<Integer, Integer> parent, int i, int j) {\n        int rootI = find(parent, i);\n        int rootJ = find(parent, j);\n        if (rootI != rootJ) parent.put(rootI, rootJ);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countComponents = function(nums, threshold) {\n    const parent = new Map();\n    const find = (i) => {\n        if (!parent.has(i)) parent.set(i, i);\n        if (parent.get(i) === i) return i;\n        const root = find(parent.get(i));\n        parent.set(i, root);\n        return root;\n    };\n    const union = (i, j) => {\n        const rootI = find(i);\n        const rootJ = find(j);\n        if (rootI !== rootJ) parent.set(rootI, rootJ);\n    };\n    \n    for (const num of nums) {\n        if (num <= threshold) {\n            for (let multiple = 2 * num; multiple <= threshold; multiple += num) {\n                union(num, multiple);\n            }\n        }\n    }\n    \n    const roots = new Set();\n    for (const num of nums) {\n        roots.add(find(num));\n    }\n    return roots.size;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

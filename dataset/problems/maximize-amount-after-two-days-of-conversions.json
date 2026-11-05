@@ -1,0 +1,79 @@
+{
+  "slug": "maximize-amount-after-two-days-of-conversions",
+  "number": 3387,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two-Phase Conversion",
+      "text": "Notice that Day 1 conversions can be decoupled from Day 2 conversions, computing maximum holdings for each currency."
+    },
+    {
+      "level": 2,
+      "title": "Multiplicative Graph Search",
+      "text": "Build graphs where edges represent exchange rates and reverse edges represent inverse rates."
+    },
+    {
+      "level": 3,
+      "title": "Round-Trip Conversion",
+      "text": "From each currency held at the end of Day 1, compute maximum initial currency retrievable using Day 2 rates."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom collections import defaultdict, deque\n\nclass Solution:\n    def maxAmount(self, initialCurrency: str, pairs1: list[list[str]], rates1: list[float], pairs2: list[list[str]], rates2: list[float]) -> float:\n        def get_max_holdings(start_curr, base_amount, pairs, rates):\n            graph = defaultdict(list)\n            for (u, v), r in zip(pairs, rates):\n                graph[u].append((v, r))\n                graph[v].append((u, 1.0 / r))\n                \n            best = {start_curr: base_amount}\n            q = deque([(start_curr, base_amount)])\n            while q:\n                curr, amt = q.popleft()\n                for nxt, r in graph[curr]:\n                    new_amt = amt * r\n                    if new_amt > best.get(nxt, 0.0) * 1.0000001:\n                        best[nxt] = new_amt\n                        q.append((nxt, new_amt))\n            return best\n            \n        day1_holdings = get_max_holdings(initialCurrency, 1.0, pairs1, rates1)\n        ans = 1.0\n        for curr, amt in day1_holdings.items():\n            day2_holdings = get_max_holdings(curr, amt, pairs2, rates2)\n            if initialCurrency in day2_holdings:\n                if day2_holdings[initialCurrency] > ans:\n                    ans = day2_holdings[initialCurrency]\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: count of unique currencies",
+      "E: count of conversion pairs"
+    ],
+    "notes": "Two-phase multiplicative breadth-first search finding best Day 1 holdings then converting back to initial currency on Day 2.",
+    "whyNaiveFails": "Exhaustive permutation of all conversion sequences causes unbounded cycles.",
+    "spaceTimeTradeoff": "O(V + E) memory storing graph edges and best exchange ratios.",
+    "interviewerExpectation": "Runs separate BFS passes for Day 1 and Day 2 to maximize end currency balance."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import defaultdict, deque\n\nclass Solution:\n    def maxAmount(self, initialCurrency: str, pairs1: list[list[str]], rates1: list[float], pairs2: list[list[str]], rates2: list[float]) -> float:\n        def get_max_holdings(start_curr, base_amount, pairs, rates):\n            graph = defaultdict(list)\n            for (u, v), r in zip(pairs, rates):\n                graph[u].append((v, r))\n                graph[v].append((u, 1.0 / r))\n                \n            best = {start_curr: base_amount}\n            q = deque([(start_curr, base_amount)])\n            while q:\n                curr, amt = q.popleft()\n                for nxt, r in graph[curr]:\n                    new_amt = amt * r\n                    if new_amt > best.get(nxt, 0.0) * 1.0000001:\n                        best[nxt] = new_amt\n                        q.append((nxt, new_amt))\n            return best\n            \n        day1_holdings = get_max_holdings(initialCurrency, 1.0, pairs1, rates1)\n        ans = 1.0\n        for curr, amt in day1_holdings.items():\n            day2_holdings = get_max_holdings(curr, amt, pairs2, rates2)\n            if initialCurrency in day2_holdings:\n                if day2_holdings[initialCurrency] > ans:\n                    ans = day2_holdings[initialCurrency]\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    double maxAmount(string initialCurrency, vector<vector<string>>& pairs1, vector<double>& rates1, vector<vector<string>>& pairs2, vector<double>& rates2) {\n        auto getMaxHoldings = [](const string& startCurr, double baseAmt, const vector<vector<string>>& pairs, const vector<double>& rates) {\n            unordered_map<string, vector<pair<string, double>>> graph;\n            for (size_t i = 0; i < pairs.size(); ++i) {\n                graph[pairs[i][0]].push_back({pairs[i][1], rates[i]});\n                graph[pairs[i][1]].push_back({pairs[i][0], 1.0 / rates[i]});\n            }\n            unordered_map<string, double> best;\n            best[startCurr] = baseAmt;\n            queue<pair<string, double>> q;\n            q.push({startCurr, baseAmt});\n            while (!q.empty()) {\n                auto [curr, amt] = q.front();\n                q.pop();\n                for (const auto& [nxt, r] : graph[curr]) {\n                    double newAmt = amt * r;\n                    if (newAmt > best[nxt] * 1.0000001) {\n                        best[nxt] = newAmt;\n                        q.push({nxt, newAmt});\n                    }\n                }\n            }\n            return best;\n        };\n        \n        auto day1Holdings = getMaxHoldings(initialCurrency, 1.0, pairs1, rates1);\n        double ans = 1.0;\n        for (const auto& [curr, amt] : day1Holdings) {\n            auto day2Holdings = getMaxHoldings(curr, amt, pairs2, rates2);\n            if (day2Holdings.contains(initialCurrency)) {\n                ans = max(ans, day2Holdings[initialCurrency]);\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public double maxAmount(String initialCurrency, List<List<String>> pairs1, double[] rates1, List<List<String>> pairs2, double[] rates2) {\n        Map<String, Double> day1Holdings = getMaxHoldings(initialCurrency, 1.0, pairs1, rates1);\n        double ans = 1.0;\n        for (Map.Entry<String, Double> entry : day1Holdings.entrySet()) {\n            Map<String, Double> day2Holdings = getMaxHoldings(entry.getKey(), entry.getValue(), pairs2, rates2);\n            if (day2Holdings.containsKey(initialCurrency)) {\n                ans = Math.max(ans, day2Holdings.get(initialCurrency));\n            }\n        }\n        return ans;\n    }\n    \n    private Map<String, Double> getMaxHoldings(String startCurr, double baseAmt, List<List<String>> pairs, double[] rates) {\n        Map<String, List<Pair>> graph = new HashMap<>();\n        for (int i = 0; i < pairs.size(); ++i) {\n            String u = pairs.get(i).get(0), v = pairs.get(i).get(1);\n            double r = rates[i];\n            graph.computeIfAbsent(u, k -> new ArrayList<>()).add(new Pair(v, r));\n            graph.computeIfAbsent(v, k -> new ArrayList<>()).add(new Pair(u, 1.0 / r));\n        }\n        Map<String, Double> best = new HashMap<>();\n        best.put(startCurr, baseAmt);\n        Queue<Pair> q = new ArrayDeque<>();\n        q.offer(new Pair(startCurr, baseAmt));\n        while (!q.isEmpty()) {\n            Pair top = q.poll();\n            String curr = top.curr; double amt = top.rate;\n            if (!graph.containsKey(curr)) continue;\n            for (Pair edge : graph.get(curr)) {\n                double newAmt = amt * edge.rate;\n                if (newAmt > best.getOrDefault(edge.curr, 0.0) * 1.0000001) {\n                    best.put(edge.curr, newAmt);\n                    q.offer(new Pair(edge.curr, newAmt));\n                }\n            }\n        }\n        return best;\n    }\n    \n    private static class Pair {\n        String curr;\n        double rate;\n        Pair(String c, double r) { curr = c; rate = r; }\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxAmount = function(initialCurrency, pairs1, rates1, pairs2, rates2) {\n    const getMaxHoldings = (startCurr, baseAmt, pairs, rates) => {\n        const graph = new Map();\n        for (let i = 0; i < pairs.length; i++) {\n            const [u, v] = pairs[i];\n            const r = rates[i];\n            if (!graph.has(u)) graph.set(u, []);\n            if (!graph.has(v)) graph.set(v, []);\n            graph.get(u).push([v, r]);\n            graph.get(v).push([u, 1.0 / r]);\n        }\n        const best = new Map([[startCurr, baseAmt]]);\n        const q = [[startCurr, baseAmt]];\n        while (q.length > 0) {\n            const [curr, amt] = q.shift();\n            for (const [nxt, r] of graph.get(curr) || []) {\n                const newAmt = amt * r;\n                if (newAmt > (best.get(nxt) || 0) * 1.0000001) {\n                    best.set(nxt, newAmt);\n                    q.push([nxt, newAmt]);\n                }\n            }\n        }\n        return best;\n    };\n    \n    const day1Holdings = getMaxHoldings(initialCurrency, 1.0, pairs1, rates1);\n    let ans = 1.0;\n    for (const [curr, amt] of day1Holdings.entries()) {\n        const day2Holdings = getMaxHoldings(curr, amt, pairs2, rates2);\n        if (day2Holdings.has(initialCurrency)) {\n            ans = Math.max(ans, day2Holdings.get(initialCurrency));\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

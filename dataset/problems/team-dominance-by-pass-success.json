@@ -1,0 +1,71 @@
+{
+  "slug": "team-dominance-by-pass-success",
+  "number": 3384,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Double Player Join",
+      "text": "Join the Passes table with Teams on both pass_from and pass_to to identify the passing and receiving teams."
+    },
+    {
+      "level": 2,
+      "title": "Match Half Categorization",
+      "text": "Determine the match half: 1 if time_stamp is at most 45:00, otherwise 2."
+    },
+    {
+      "level": 3,
+      "title": "Net Dominance Sum",
+      "text": "Sum 1 for completed passes within the same team and -1 for turnovers to the opposing team grouped by team and half."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH PassDetails AS (\n    SELECT \n        T1.team_name AS from_team,\n        T2.team_name AS to_team,\n        CASE \n            WHEN Passes.time_stamp <= '45:00' THEN 1 \n            ELSE 2 \n        END AS half_number\n    FROM Passes\n    JOIN Teams T1 ON Passes.pass_from = T1.player_id\n    JOIN Teams T2 ON Passes.pass_to = T2.player_id\n)\nSELECT \n    from_team AS team_name,\n    half_number,\n    SUM(CASE WHEN from_team = to_team THEN 1 ELSE -1 END) AS dominance\nFROM PassDetails\nGROUP BY from_team, half_number\nORDER BY team_name ASC, half_number ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(m log m)",
+    "space": "O(m)",
+    "variables": [
+      "m: count of pass records in Passes table"
+    ],
+    "notes": "Double table join assigns team names, partitions by half number (00:00-45:00 vs 45:01-90:00), and computes net dominance.",
+    "whyNaiveFails": "Requires joining player identities to teams and evaluating timestamp ranges.",
+    "spaceTimeTradeoff": "O(m) temporary hash join memory.",
+    "interviewerExpectation": "Performs multi-table joins with conditional aggregation and timestamp filtering."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH PassDetails AS (\n    SELECT \n        T1.team_name AS from_team,\n        T2.team_name AS to_team,\n        CASE \n            WHEN Passes.time_stamp <= '45:00' THEN 1 \n            ELSE 2 \n        END AS half_number\n    FROM Passes\n    JOIN Teams T1 ON Passes.pass_from = T1.player_id\n    JOIN Teams T2 ON Passes.pass_to = T2.player_id\n)\nSELECT \n    from_team AS team_name,\n    half_number,\n    SUM(CASE WHEN from_team = to_team THEN 1 ELSE -1 END) AS dominance\nFROM PassDetails\nGROUP BY from_team, half_number\nORDER BY team_name ASC, half_number ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH PassDetails AS (\n    SELECT \n        T1.team_name AS from_team,\n        T2.team_name AS to_team,\n        CASE \n            WHEN Passes.time_stamp <= '45:00' THEN 1 \n            ELSE 2 \n        END AS half_number\n    FROM Passes\n    JOIN Teams T1 ON Passes.pass_from = T1.player_id\n    JOIN Teams T2 ON Passes.pass_to = T2.player_id\n)\nSELECT \n    from_team AS team_name,\n    half_number,\n    SUM(CASE WHEN from_team = to_team THEN 1 ELSE -1 END) AS dominance\nFROM PassDetails\nGROUP BY from_team, half_number\nORDER BY team_name ASC, half_number ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef calculate_team_dominance(teams: pd.DataFrame, passes: pd.DataFrame) -> pd.DataFrame:\n    merged = passes.merge(teams, left_on='pass_from', right_on='player_id').rename(columns={'team_name': 'from_team'})\n    merged = merged.merge(teams, left_on='pass_to', right_on='player_id').rename(columns={'team_name': 'to_team'})\n    merged['half_number'] = (merged['time_stamp'] > '45:00').astype(int) + 1\n    merged['dominance'] = (merged['from_team'] == merged['to_team']).astype(int) * 2 - 1\n    res = merged.groupby(['from_team', 'half_number'])['dominance'].sum().reset_index()\n    return res.rename(columns={'from_team': 'team_name'}).sort_values(['team_name', 'half_number'])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "design-task-manager",
+  "number": 3408,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Lookup and Ordering Hybrid",
+      "text": "Fast identifier lookups paired with prioritised execution require separating direct retrieval from ordered ranking."
+    },
+    {
+      "level": 2,
+      "title": "Ordered Storage",
+      "text": "Use a balanced BST or a priority queue with lazy deletion to maintain sorted order."
+    },
+    {
+      "level": 3,
+      "title": "Lazy Invalidation",
+      "text": "When updating or deleting tasks, register changes in the map and lazily pop stale entries during execTop."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport heapq\n\nclass TaskManager:\n    def __init__(self, tasks: list[list[int]]):\n        self.task_map = {}\n        self.pq = []\n        for user_id, task_id, priority in tasks:\n            self.add(user_id, task_id, priority)\n\n    def add(self, userId: int, taskId: int, priority: int) -> None:\n        self.task_map[taskId] = (userId, priority)\n        heapq.heappush(self.pq, (-priority, -taskId, userId))\n\n    def edit(self, taskId: int, newPriority: int) -> None:\n        if taskId in self.task_map:\n            user_id, _ = self.task_map[taskId]\n            self.task_map[taskId] = (user_id, newPriority)\n            heapq.heappush(self.pq, (-newPriority, -taskId, user_id))\n\n    def rmv(self, taskId: int) -> None:\n        if taskId in self.task_map:\n            del self.task_map[taskId]\n\n    def execTop(self) -> int:\n        while self.pq:\n            neg_p, neg_t, user_id = heapq.heappop(self.pq)\n            task_id = -neg_t\n            priority = -neg_p\n            if task_id in self.task_map and self.task_map[task_id] == (user_id, priority):\n                del self.task_map[task_id]\n                return user_id\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of active tasks"
+    ],
+    "notes": "Add, edit, remove, and execute operations run in logarithmic amortized time.",
+    "whyNaiveFails": "Scanning full task arrays upon every top query yields linear query time.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory pairs lookup hash map with priority queue.",
+    "interviewerExpectation": "Designs composite data structure balancing O(1) key lookups with O(log n) ordered retrieval."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\n\nclass TaskManager:\n    def __init__(self, tasks: list[list[int]]):\n        self.task_map = {}\n        self.pq = []\n        for user_id, task_id, priority in tasks:\n            self.add(user_id, task_id, priority)\n\n    def add(self, userId: int, taskId: int, priority: int) -> None:\n        self.task_map[taskId] = (userId, priority)\n        heapq.heappush(self.pq, (-priority, -taskId, userId))\n\n    def edit(self, taskId: int, newPriority: int) -> None:\n        if taskId in self.task_map:\n            user_id, _ = self.task_map[taskId]\n            self.task_map[taskId] = (user_id, newPriority)\n            heapq.heappush(self.pq, (-newPriority, -taskId, user_id))\n\n    def rmv(self, taskId: int) -> None:\n        if taskId in self.task_map:\n            del self.task_map[taskId]\n\n    def execTop(self) -> int:\n        while self.pq:\n            neg_p, neg_t, user_id = heapq.heappop(self.pq)\n            task_id = -neg_t\n            priority = -neg_p\n            if task_id in self.task_map and self.task_map[task_id] == (user_id, priority):\n                del self.task_map[task_id]\n                return user_id\n        return -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class TaskManager {\nprivate:\n    struct Task {\n        int userId, taskId, priority;\n        bool operator<(const Task& other) const {\n            if (priority != other.priority) return priority > other.priority;\n            return taskId > other.taskId;\n        }\n    };\n    unordered_map<int, pair<int, int>> taskMap;\n    set<Task> taskSet;\n\npublic:\n    TaskManager(vector<vector<int>>& tasks) {\n        for (const auto& t : tasks) {\n            add(t[0], t[1], t[2]);\n        }\n    }\n    \n    void add(int userId, int taskId, int priority) {\n        taskMap[taskId] = {userId, priority};\n        taskSet.insert({userId, taskId, priority});\n    }\n    \n    void edit(int taskId, int newPriority) {\n        auto it = taskMap.find(taskId);\n        if (it != taskMap.end()) {\n            int userId = it->second.first;\n            int oldPriority = it->second.second;\n            taskSet.erase({userId, taskId, oldPriority});\n            taskMap[taskId] = {userId, newPriority};\n            taskSet.insert({userId, taskId, newPriority});\n        }\n    }\n    \n    void rmv(int taskId) {\n        auto it = taskMap.find(taskId);\n        if (it != taskMap.end()) {\n            int userId = it->second.first;\n            int priority = it->second.second;\n            taskSet.erase({userId, taskId, priority});\n            taskMap.erase(it);\n        }\n    }\n    \n    int execTop() {\n        if (taskSet.empty()) return -1;\n        auto topIt = taskSet.begin();\n        int userId = topIt->userId;\n        int taskId = topIt->taskId;\n        taskSet.erase(topIt);\n        taskMap.erase(taskId);\n        return userId;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class TaskManager {\n    static class Task implements Comparable<Task> {\n        int userId, taskId, priority;\n        Task(int userId, int taskId, int priority) {\n            this.userId = userId;\n            this.taskId = taskId;\n            this.priority = priority;\n        }\n        @Override\n        public int compareTo(Task o) {\n            if (this.priority != o.priority) return Integer.compare(o.priority, this.priority);\n            return Integer.compare(o.taskId, this.taskId);\n        }\n    }\n    \n    private Map<Integer, Task> map;\n    private TreeSet<Task> set;\n\n    public TaskManager(List<List<Integer>> tasks) {\n        map = new HashMap<>();\n        set = new TreeSet<>();\n        for (List<Integer> t : tasks) {\n            add(t.get(0), t.get(1), t.get(2));\n        }\n    }\n    \n    public void add(int userId, int taskId, int priority) {\n        Task t = new Task(userId, taskId, priority);\n        map.put(taskId, t);\n        set.add(t);\n    }\n    \n    public void edit(int taskId, int newPriority) {\n        Task old = map.get(taskId);\n        if (old != null) {\n            set.remove(old);\n            Task next = new Task(old.userId, taskId, newPriority);\n            map.put(taskId, next);\n            set.add(next);\n        }\n    }\n    \n    public void rmv(int taskId) {\n        Task old = map.remove(taskId);\n        if (old != null) {\n            set.remove(old);\n        }\n    }\n    \n    public int execTop() {\n        if (set.isEmpty()) return -1;\n        Task top = set.pollFirst();\n        map.remove(top.taskId);\n        return top.userId;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "class TaskManager {\n    constructor(tasks) {\n        this.taskMap = new Map();\n        this.tasks = [];\n        for (const [userId, taskId, priority] of tasks) {\n            this.add(userId, taskId, priority);\n        }\n    }\n    \n    add(userId, taskId, priority) {\n        this.taskMap.set(taskId, { userId, priority });\n        this.tasks.push({ userId, taskId, priority });\n    }\n    \n    edit(taskId, newPriority) {\n        const item = this.taskMap.get(taskId);\n        if (item) {\n            item.priority = newPriority;\n            this.tasks.push({ userId: item.userId, taskId, priority: newPriority });\n        }\n    }\n    \n    rmv(taskId) {\n        this.taskMap.delete(taskId);\n    }\n    \n    execTop() {\n        this.tasks.sort((a, b) => b.priority !== a.priority ? b.priority - a.priority : b.taskId - a.taskId);\n        while (this.tasks.length > 0) {\n            const top = this.tasks.shift();\n            const current = this.taskMap.get(top.taskId);\n            if (current && current.priority === top.priority && current.userId === top.userId) {\n                this.taskMap.delete(top.taskId);\n                return top.userId;\n            }\n        }\n        return -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}
