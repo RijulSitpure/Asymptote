@@ -1,0 +1,78 @@
+{
+  "slug": "distribute-elements-into-two-arrays-ii",
+  "number": 3072,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "For each element we must count how many elements in arr1 and arr2 are strictly greater than it."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Dynamic point updates and range count queries are supported in logarithmic time by Binary Indexed Trees."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Coordinate compress all numbers in nums. Use two Fenwick trees to count elements strictly greater than current value, then route to arr1 or arr2."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def resultArray(self, nums: list[int]) -> list[int]:\n        sorted_unique = sorted(set(nums))\n        rank = {v: i + 1 for i, v in enumerate(sorted_unique)}\n        m = len(sorted_unique)\n        bit1 = [0] * (m + 2)\n        bit2 = [0] * (m + 2)\n        def add(bit, i):\n            while i <= m:\n                bit[i] += 1\n                i += i & (-i)\n        def query(bit, i):\n            s = 0\n            while i > 0:\n                s += bit[i]\n                i -= i & (-i)\n            return s\n        arr1 = [nums[0]]\n        arr2 = [nums[1]]\n        add(bit1, rank[nums[0]])\n        add(bit2, rank[nums[1]])\n        for x in nums[2:]:\n            r = rank[x]\n            g1 = len(arr1) - query(bit1, r)\n            g2 = len(arr2) - query(bit2, r)\n            if g1 > g2:\n                arr1.append(x)\n                add(bit1, r)\n            elif g2 > g1:\n                arr2.append(x)\n                add(bit2, r)\n            else:\n                if len(arr1) <= len(arr2):\n                    arr1.append(x)\n                    add(bit1, r)\n                else:\n                    arr2.append(x)\n                    add(bit2, r)\n        return arr1 + arr2\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of array nums"
+    ],
+    "notes": "Coordinate compression and two Fenwick trees for dynamic rank counts.",
+    "whyNaiveFails": "Linear search through arrays takes O(n^2).",
+    "spaceTimeTradeoff": "O(n) auxiliary Fenwick trees and rank tables.",
+    "interviewerExpectation": "Coordinate compress numbers and use Binary Indexed Trees for greaterCount queries in logarithmic time."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Coordinate Compression with Fenwick Trees",
+      "code": "class Solution:\n    def resultArray(self, nums: list[int]) -> list[int]:\n        sorted_unique = sorted(set(nums))\n        rank = {v: i + 1 for i, v in enumerate(sorted_unique)}\n        m = len(sorted_unique)\n        bit1 = [0] * (m + 2)\n        bit2 = [0] * (m + 2)\n        def add(bit, i):\n            while i <= m:\n                bit[i] += 1\n                i += i & (-i)\n        def query(bit, i):\n            s = 0\n            while i > 0:\n                s += bit[i]\n                i -= i & (-i)\n            return s\n        arr1 = [nums[0]]\n        arr2 = [nums[1]]\n        add(bit1, rank[nums[0]])\n        add(bit2, rank[nums[1]])\n        for x in nums[2:]:\n            r = rank[x]\n            g1 = len(arr1) - query(bit1, r)\n            g2 = len(arr2) - query(bit2, r)\n            if g1 > g2:\n                arr1.append(x)\n                add(bit1, r)\n            elif g2 > g1:\n                arr2.append(x)\n                add(bit2, r)\n            else:\n                if len(arr1) <= len(arr2):\n                    arr1.append(x)\n                    add(bit1, r)\n                else:\n                    arr2.append(x)\n                    add(bit2, r)\n        return arr1 + arr2",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Coordinate Compression with Fenwick Trees",
+      "code": "class Solution {\n    struct BIT {\n        int n;\n        vector<int> tree;\n        BIT(int n) : n(n), tree(n + 2, 0) {}\n        void add(int i) {\n            for (; i <= n; i += i & -i) tree[i]++;\n        }\n        int query(int i) {\n            int s = 0;\n            for (; i > 0; i -= i & -i) s += tree[i];\n            return s;\n        }\n    };\npublic:\n    vector<int> resultArray(vector<int>& nums) {\n        vector<int> sorted = nums;\n        sort(sorted.begin(), sorted.end());\n        sorted.erase(unique(sorted.begin(), sorted.end()), sorted.end());\n        int m = sorted.size();\n        auto getRank = [&](int v) {\n            return lower_bound(sorted.begin(), sorted.end(), v) - sorted.begin() + 1;\n        };\n        BIT bit1(m), bit2(m);\n        vector<int> arr1 = {nums[0]}, arr2 = {nums[1]};\n        bit1.add(getRank(nums[0]));\n        bit2.add(getRank(nums[1]));\n        for (int i = 2; i < nums.size(); ++i) {\n            int r = getRank(nums[i]);\n            int g1 = arr1.size() - bit1.query(r);\n            int g2 = arr2.size() - bit2.query(r);\n            if (g1 > g2) {\n                arr1.push_back(nums[i]);\n                bit1.add(r);\n            } else if (g2 > g1) {\n                arr2.push_back(nums[i]);\n                bit2.add(r);\n            } else {\n                if (arr1.size() <= arr2.size()) {\n                    arr1.push_back(nums[i]);\n                    bit1.add(r);\n                } else {\n                    arr2.push_back(nums[i]);\n                    bit2.add(r);\n                }\n            }\n        }\n        arr1.insert(arr1.end(), arr2.begin(), arr2.end());\n        return arr1;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Coordinate Compression with Fenwick Trees",
+      "code": "class Solution {\n    static class BIT {\n        int n;\n        int[] tree;\n        BIT(int n) {\n            this.n = n;\n            this.tree = new int[n + 2];\n        }\n        void add(int i) {\n            for (; i <= n; i += i & -i) tree[i]++;\n        }\n        int query(int i) {\n            int s = 0;\n            for (; i > 0; i -= i & -i) s += tree[i];\n            return s;\n        }\n    }\n    public int[] resultArray(int[] nums) {\n        int[] sorted = Arrays.stream(nums).distinct().sorted().toArray();\n        int m = sorted.length;\n        BIT bit1 = new BIT(m);\n        BIT bit2 = new BIT(m);\n        List<Integer> arr1 = new ArrayList<>();\n        List<Integer> arr2 = new ArrayList<>();\n        arr1.add(nums[0]);\n        arr2.add(nums[1]);\n        bit1.add(Arrays.binarySearch(sorted, nums[0]) + 1);\n        bit2.add(Arrays.binarySearch(sorted, nums[1]) + 1);\n        for (int i = 2; i < nums.length; i++) {\n            int r = Arrays.binarySearch(sorted, nums[i]) + 1;\n            int g1 = arr1.size() - bit1.query(r);\n            int g2 = arr2.size() - bit2.query(r);\n            if (g1 > g2) {\n                arr1.add(nums[i]);\n                bit1.add(r);\n            } else if (g2 > g1) {\n                arr2.add(nums[i]);\n                bit2.add(r);\n            } else {\n                if (arr1.size() <= arr2.size()) {\n                    arr1.add(nums[i]);\n                    bit1.add(r);\n                } else {\n                    arr2.add(nums[i]);\n                    bit2.add(r);\n                }\n            }\n        }\n        int[] ans = new int[nums.length];\n        int idx = 0;\n        for (int x : arr1) ans[idx++] = x;\n        for (int x : arr2) ans[idx++] = x;\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Coordinate Compression with Fenwick Trees",
+      "code": "var resultArray = function(nums) {\n    const sorted = Array.from(new Set(nums)).sort((a, b) => a - b);\n    const m = sorted.length;\n    const rankMap = new Map();\n    sorted.forEach((v, i) => rankMap.set(v, i + 1));\n    const tree1 = new Array(m + 2).fill(0);\n    const tree2 = new Array(m + 2).fill(0);\n    const add = (tree, i) => {\n        for (; i <= m; i += i & -i) tree[i]++;\n    };\n    const query = (tree, i) => {\n        let s = 0;\n        for (; i > 0; i -= i & -i) s += tree[i];\n        return s;\n    };\n    const arr1 = [nums[0]];\n    const arr2 = [nums[1]];\n    add(tree1, rankMap.get(nums[0]));\n    add(tree2, rankMap.get(nums[1]));\n    for (let i = 2; i < nums.length; ++i) {\n        const r = rankMap.get(nums[i]);\n        const g1 = arr1.length - query(tree1, r);\n        const g2 = arr2.length - query(tree2, r);\n        if (g1 > g2) {\n            arr1.push(nums[i]);\n            add(tree1, r);\n        } else if (g2 > g1) {\n            arr2.push(nums[i]);\n            add(tree2, r);\n        } else {\n            if (arr1.length <= arr2.length) {\n                arr1.push(nums[i]);\n                add(tree1, r);\n            } else {\n                arr2.push(nums[i]);\n                add(tree2, r);\n            }\n        }\n    }\n    return arr1.concat(arr2);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

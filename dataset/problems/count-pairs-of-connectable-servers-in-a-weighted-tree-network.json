@@ -1,0 +1,78 @@
+{
+  "slug": "count-pairs-of-connectable-servers-in-a-weighted-tree-network",
+  "number": 3067,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Every node can act as a central connection hub for pairs of servers located in distinct branches."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "For each neighbor of the hub, count how many nodes in that subtree have path distance from the hub divisible by signalSpeed."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Multiply branch counts to tally cross-branch server pairs for each candidate hub."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def countPairsOfConnectableServers(self, edges: list[list[int]], signalSpeed: int) -> list[int]:\n        from collections import defaultdict\n        graph = defaultdict(list)\n        n = len(edges) + 1\n        for u, v, w in edges:\n            graph[u].append((v, w))\n            graph[v].append((u, w))\n        def dfs(node, parent, dist):\n            cnt = 1 if dist % signalSpeed == 0 else 0\n            for nxt, w in graph[node]:\n                if nxt != parent:\n                    cnt += dfs(nxt, node, dist + w)\n            return cnt\n        ans = [0] * n\n        for c in range(n):\n            branch_counts = []\n            for nxt, w in graph[c]:\n                cnt = dfs(nxt, c, w)\n                if cnt > 0:\n                    branch_counts.append(cnt)\n            total_sum = 0\n            pairs = 0\n            for cnt in branch_counts:\n                pairs += total_sum * cnt\n                total_sum += cnt\n            ans[c] = pairs\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes in tree"
+    ],
+    "notes": "DFS traversal initiated from each node n.",
+    "whyNaiveFails": "All-pairs shortest path without subtree branching takes O(n^3).",
+    "spaceTimeTradeoff": "O(n) recursion call stack.",
+    "interviewerExpectation": "Recognize that valid pairs must lie in disjoint branches relative to the hub node."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Rooted Subtree DFS Counting",
+      "code": "class Solution:\n    def countPairsOfConnectableServers(self, edges: list[list[int]], signalSpeed: int) -> list[int]:\n        from collections import defaultdict\n        graph = defaultdict(list)\n        n = len(edges) + 1\n        for u, v, w in edges:\n            graph[u].append((v, w))\n            graph[v].append((u, w))\n        def dfs(node, parent, dist):\n            cnt = 1 if dist % signalSpeed == 0 else 0\n            for nxt, w in graph[node]:\n                if nxt != parent:\n                    cnt += dfs(nxt, node, dist + w)\n            return cnt\n        ans = [0] * n\n        for c in range(n):\n            branch_counts = []\n            for nxt, w in graph[c]:\n                cnt = dfs(nxt, c, w)\n                if cnt > 0:\n                    branch_counts.append(cnt)\n            total_sum = 0\n            pairs = 0\n            for cnt in branch_counts:\n                pairs += total_sum * cnt\n                total_sum += cnt\n            ans[c] = pairs\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Rooted Subtree DFS Counting",
+      "code": "class Solution {\npublic:\n    vector<int> countPairsOfConnectableServers(vector<vector<int>>& edges, int signalSpeed) {\n        int n = edges.size() + 1;\n        vector<vector<pair<int, int>>> adj(n);\n        for (auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            adj[e[1]].push_back({e[0], e[2]});\n        }\n        auto dfs = [&](auto& self, int u, int p, int dist) -> int {\n            int count = (dist % signalSpeed == 0) ? 1 : 0;\n            for (auto& [v, w] : adj[u]) {\n                if (v != p) count += self(self, v, u, dist + w);\n            }\n            return count;\n        };\n        vector<int> ans(n, 0);\n        for (int i = 0; i < n; ++i) {\n            int total_sum = 0, pairs = 0;\n            for (auto& [v, w] : adj[i]) {\n                int cnt = dfs(dfs, v, i, w);\n                pairs += total_sum * cnt;\n                total_sum += cnt;\n            }\n            ans[i] = pairs;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Rooted Subtree DFS Counting",
+      "code": "class Solution {\n    public int[] countPairsOfConnectableServers(int[][] edges, int signalSpeed) {\n        int n = edges.length + 1;\n        List<int[]>[] adj = new ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(new int[]{e[1], e[2]});\n            adj[e[1]].add(new int[]{e[0], e[2]});\n        }\n        int[] ans = new int[n];\n        for (int i = 0; i < n; i++) {\n            int totalSum = 0, pairs = 0;\n            for (int[] next : adj[i]) {\n                int cnt = dfs(next[0], i, next[1], signalSpeed, adj);\n                pairs += totalSum * cnt;\n                totalSum += cnt;\n            }\n            ans[i] = pairs;\n        }\n        return ans;\n    }\n    private int dfs(int u, int p, int dist, int speed, List<int[]>[] adj) {\n        int count = (dist % speed == 0) ? 1 : 0;\n        for (int[] next : adj[u]) {\n            if (next[0] != p) count += dfs(next[0], u, dist + next[1], speed, adj);\n        }\n        return count;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Rooted Subtree DFS Counting",
+      "code": "var countPairsOfConnectableServers = function(edges, signalSpeed) {\n    const n = edges.length + 1;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        adj[u].push([v, w]);\n        adj[v].push([u, w]);\n    }\n    const dfs = (u, p, dist) => {\n        let count = (dist % signalSpeed === 0) ? 1 : 0;\n        for (const [v, w] of adj[u]) {\n            if (v !== p) count += dfs(v, u, dist + w);\n        }\n        return count;\n    };\n    const ans = new Array(n).fill(0);\n    for (let i = 0; i < n; ++i) {\n        let totalSum = 0, pairs = 0;\n        for (const [v, w] of adj[i]) {\n            const cnt = dfs(v, i, w);\n            pairs += totalSum * cnt;\n            totalSum += cnt;\n        }\n        ans[i] = pairs;\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

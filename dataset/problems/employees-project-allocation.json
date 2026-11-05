@@ -1,0 +1,71 @@
+{
+  "slug": "employees-project-allocation",
+  "number": 3057,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Find employees whose project workload strictly exceeds the average workload of their respective team."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Join the Project table with the Employees table and compute the average workload partitioned by team."
+    },
+    {
+      "level": 3,
+      "title": "Query Structure",
+      "text": "Use a window function or CTE to calculate team average workload, then filter where workload is greater than the team average and sort by employee id and project id."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH T AS (\n    SELECT\n        p.employee_id,\n        p.project_id,\n        e.name AS employee_name,\n        p.workload AS project_workload,\n        AVG(p.workload) OVER (PARTITION BY e.team) AS avg_workload\n    FROM Project AS p\n    JOIN Employees AS e ON p.employee_id = e.employee_id\n)\nSELECT\n    employee_id,\n    project_id,\n    employee_name,\n    project_workload\nFROM T\nWHERE project_workload > avg_workload\nORDER BY employee_id, project_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total project assignment rows"
+    ],
+    "notes": "Equi-join followed by windowed partition average.",
+    "whyNaiveFails": "Correlated subqueries per row lead to quadratic execution time.",
+    "spaceTimeTradeoff": "O(N) memory for window buffer.",
+    "interviewerExpectation": "Compute team average using window functions partitioned by team."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window Partition Average with Join",
+      "code": "WITH T AS (\n    SELECT\n        p.employee_id,\n        p.project_id,\n        e.name AS employee_name,\n        p.workload AS project_workload,\n        AVG(p.workload) OVER (PARTITION BY e.team) AS avg_workload\n    FROM Project AS p\n    JOIN Employees AS e ON p.employee_id = e.employee_id\n)\nSELECT\n    employee_id,\n    project_id,\n    employee_name,\n    project_workload\nFROM T\nWHERE project_workload > avg_workload\nORDER BY employee_id, project_id;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window Partition Average with Join",
+      "code": "WITH T AS (\n    SELECT\n        p.employee_id,\n        p.project_id,\n        e.name AS employee_name,\n        p.workload AS project_workload,\n        AVG(p.workload) OVER (PARTITION BY e.team) AS avg_workload\n    FROM Project AS p\n    JOIN Employees AS e ON p.employee_id = e.employee_id\n)\nSELECT\n    employee_id,\n    project_id,\n    employee_name,\n    project_workload\nFROM T\nWHERE project_workload > avg_workload\nORDER BY employee_id, project_id;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Merge and Transform Mean",
+      "code": "import pandas as pd\n\ndef employees_with_above_avg_workload(project: pd.DataFrame, employees: pd.DataFrame) -> pd.DataFrame:\n    df = project.merge(employees, on='employee_id')\n    df['avg_workload'] = df.groupby('team')['workload'].transform('mean')\n    ans = df[df['workload'] > df['avg_workload']][['employee_id', 'project_id', 'name', 'workload']]\n    ans = ans.rename(columns={'name': 'employee_name', 'workload': 'project_workload'})\n    return ans.sort_values(by=['employee_id', 'project_id'])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

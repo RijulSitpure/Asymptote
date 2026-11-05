@@ -1,0 +1,71 @@
+{
+  "slug": "find-trending-hashtags",
+  "number": 3087,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Filter tweets in February 2024 and identify the trending tags mentioned across posts."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Extract text starting with # up to the next space or line boundary, then aggregate counts."
+    },
+    {
+      "level": 3,
+      "title": "Query Structure",
+      "text": "Use string extraction to isolate the hashtag, group by hashtag, and order by count descending then hashtag descending with limit 3."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nSELECT\n    CONCAT('#', SUBSTRING_INDEX(SUBSTRING_INDEX(tweet, '#', -1), ' ', 1)) AS hashtag,\n    COUNT(*) AS hashtag_count\nFROM Tweets\nWHERE tweet_date BETWEEN '2024-02-01' AND '2024-02-29'\nGROUP BY hashtag\nORDER BY hashtag_count DESC, hashtag DESC\nLIMIT 3;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total tweets in February 2024"
+    ],
+    "notes": "Date filtering, string split, and top 3 aggregation.",
+    "whyNaiveFails": "Omitting date filtering counts hashtags from other periods.",
+    "spaceTimeTradeoff": "O(N) grouping hash table.",
+    "interviewerExpectation": "Filter on February 2024 and correctly parse hashtag token."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "String Extraction and Group Count",
+      "code": "SELECT\n    CONCAT('#', SUBSTRING_INDEX(SUBSTRING_INDEX(tweet, '#', -1), ' ', 1)) AS hashtag,\n    COUNT(*) AS hashtag_count\nFROM Tweets\nWHERE tweet_date BETWEEN '2024-02-01' AND '2024-02-29'\nGROUP BY hashtag\nORDER BY hashtag_count DESC, hashtag DESC\nLIMIT 3;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Regex Substring and Group Count",
+      "code": "SELECT\n    SUBSTRING(tweet FROM '#[A-Za-z0-9_]+') AS hashtag,\n    COUNT(*) AS hashtag_count\nFROM Tweets\nWHERE tweet_date BETWEEN '2024-02-01' AND '2024-02-29'\nGROUP BY hashtag\nORDER BY hashtag_count DESC, hashtag DESC\nLIMIT 3;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Regex Extract and Value Counts",
+      "code": "import pandas as pd\n\ndef find_trending_hashtags(tweets: pd.DataFrame) -> pd.DataFrame:\n    df = tweets.copy()\n    df['tweet_date'] = pd.to_datetime(df['tweet_date'])\n    df = df[(df['tweet_date'] >= '2024-02-01') & (df['tweet_date'] <= '2024-02-29')]\n    if df.empty:\n        return pd.DataFrame(columns=['hashtag', 'hashtag_count'])\n    df['hashtag'] = df['tweet'].str.extract(r'(#[A-Za-z0-9_]+)')\n    res = df.groupby('hashtag').size().reset_index(name='hashtag_count')\n    return res.sort_values(by=['hashtag_count', 'hashtag'], ascending=[False, False]).head(3)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

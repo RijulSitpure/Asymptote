@@ -1,0 +1,79 @@
+{
+  "slug": "replace-question-marks-in-string-to-minimize-its-value",
+  "number": 3081,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Every character added increases total value by its count among identical characters before it."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Total cost depends solely on multiset of character frequencies, so greedily pick characters with smallest current frequency."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Tally fixed character counts. For each question mark, assign the character with smallest frequency (tiebreak alphabetically). Sort the replacements alphabetically and insert into question mark spots."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def minimizeStringValue(self, s: str) -> str:\n        import heapq\n        from collections import Counter\n        cnt = Counter(c for c in s if c != '?')\n        heap = [(cnt[chr(ord('a') + i)], chr(ord('a') + i)) for i in range(26)]\n        heapq.heapify(heap)\n        q_count = s.count('?')\n        picks = []\n        for _ in range(q_count):\n            c_freq, ch = heapq.heappop(heap)\n            picks.append(ch)\n            heapq.heappush(heap, (c_freq + 1, ch))\n        picks.sort()\n        res = list(s)\n        p_idx = 0\n        for i in range(len(res)):\n            if res[i] == '?':\n                res[i] = picks[p_idx]\n                p_idx += 1\n        return ''.join(res)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + q log 26)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of string s",
+      "q: number of question marks"
+    ],
+    "notes": "Greedy frequency balancing with min-heap and sorting chosen replacements.",
+    "whyNaiveFails": "Trying all 26^q replacement assignments is exponential.",
+    "spaceTimeTradeoff": "O(n) auxiliary list for modified string.",
+    "interviewerExpectation": "Notice that placement order within ? positions should be sorted alphabetically to minimize string lexicographically."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Greedy Min-Heap Frequency Balancing",
+      "code": "class Solution:\n    def minimizeStringValue(self, s: str) -> str:\n        import heapq\n        from collections import Counter\n        cnt = Counter(c for c in s if c != '?')\n        heap = [(cnt[chr(ord('a') + i)], chr(ord('a') + i)) for i in range(26)]\n        heapq.heapify(heap)\n        q_count = s.count('?')\n        picks = []\n        for _ in range(q_count):\n            c_freq, ch = heapq.heappop(heap)\n            picks.append(ch)\n            heapq.heappush(heap, (c_freq + 1, ch))\n        picks.sort()\n        res = list(s)\n        p_idx = 0\n        for i in range(len(res)):\n            if res[i] == '?':\n                res[i] = picks[p_idx]\n                p_idx += 1\n        return ''.join(res)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Greedy Min-Heap Frequency Balancing",
+      "code": "class Solution {\npublic:\n    string minimizeStringValue(string s) {\n        vector<int> cnt(26, 0);\n        int q = 0;\n        for (char c : s) {\n            if (c == '?') q++;\n            else cnt[c - 'a']++;\n        }\n        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;\n        for (int i = 0; i < 26; ++i) pq.push({cnt[i], i});\n        vector<char> picks;\n        for (int i = 0; i < q; ++i) {\n            auto [freq, ch] = pq.top(); pq.pop();\n            picks.push_back('a' + ch);\n            pq.push({freq + 1, ch});\n        }\n        sort(picks.begin(), picks.end());\n        int p = 0;\n        for (char& c : s) {\n            if (c == '?') c = picks[p++];\n        }\n        return s;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Greedy Min-Heap Frequency Balancing",
+      "code": "class Solution {\n    public String minimizeStringValue(String s) {\n        int[] cnt = new int[26];\n        int q = 0;\n        for (char c : s.toCharArray()) {\n            if (c == '?') q++;\n            else cnt[c - 'a']++;\n        }\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> a[0] != b[0] ? Integer.compare(a[0], b[0]) : Integer.compare(a[1], b[1]));\n        for (int i = 0; i < 26; i++) pq.offer(new int[]{cnt[i], i});\n        char[] picks = new char[q];\n        for (int i = 0; i < q; i++) {\n            int[] top = pq.poll();\n            picks[i] = (char)('a' + top[1]);\n            pq.offer(new int[]{top[0] + 1, top[1]});\n        }\n        Arrays.sort(picks);\n        char[] chars = s.toCharArray();\n        int p = 0;\n        for (int i = 0; i < chars.length; i++) {\n            if (chars[i] == '?') chars[i] = picks[p++];\n        }\n        return new String(chars);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Greedy Min-Heap Frequency Balancing",
+      "code": "var minimizeStringValue = function(s) {\n    const cnt = new Array(26).fill(0);\n    let q = 0;\n    for (const c of s) {\n        if (c === '?') q++;\n        else cnt[c.charCodeAt(0) - 97]++;\n    }\n    const picks = [];\n    for (let k = 0; k < q; ++k) {\n        let minFreq = Infinity, bestCh = 0;\n        for (let i = 0; i < 26; ++i) {\n            if (cnt[i] < minFreq) {\n                minFreq = cnt[i];\n                bestCh = i;\n            }\n        }\n        picks.push(String.fromCharCode(97 + bestCh));\n        cnt[bestCh]++;\n    }\n    picks.sort();\n    const chars = s.split('');\n    let p = 0;\n    for (let i = 0; i < chars.length; ++i) {\n        if (chars[i] === '?') chars[i] = picks[p++];\n    }\n    return chars.join('');\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

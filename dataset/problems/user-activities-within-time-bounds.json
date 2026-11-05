@@ -1,0 +1,71 @@
+{
+  "slug": "user-activities-within-time-bounds",
+  "number": 3060,
+  "category": "Database",
+  "patterns": [
+    "date-time"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Find users with at least two consecutive sessions of the same type within 12 hours."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Partition by user id and session type, ordering by session start to inspect consecutive sessions."
+    },
+    {
+      "level": 3,
+      "title": "Query Structure",
+      "text": "Use the lag window function to compare current session start with previous session end, filtering differences under 12 hours."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH T AS (\n    SELECT\n        user_id,\n        session_start,\n        LAG(session_end) OVER (PARTITION BY user_id, session_type ORDER BY session_start) AS prev_end\n    FROM Sessions\n)\nSELECT DISTINCT user_id\nFROM T\nWHERE TIMESTAMPDIFF(SECOND, prev_end, session_start) BETWEEN 0 AND 43200\nORDER BY user_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total session records"
+    ],
+    "notes": "Partition sort with lag window comparison.",
+    "whyNaiveFails": "Cross-joining sessions without window functions generates O(N^2) comparisons.",
+    "spaceTimeTradeoff": "O(N) window buffer.",
+    "interviewerExpectation": "Use window functions partitioned by user and session type to check temporal gap."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window Lag Partition with Second Difference",
+      "code": "WITH T AS (\n    SELECT\n        user_id,\n        session_start,\n        LAG(session_end) OVER (PARTITION BY user_id, session_type ORDER BY session_start) AS prev_end\n    FROM Sessions\n)\nSELECT DISTINCT user_id\nFROM T\nWHERE TIMESTAMPDIFF(SECOND, prev_end, session_start) BETWEEN 0 AND 43200\nORDER BY user_id;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window Lag Partition with Epoch Difference",
+      "code": "WITH T AS (\n    SELECT\n        user_id,\n        session_start,\n        LAG(session_end) OVER (PARTITION BY user_id, session_type ORDER BY session_start) AS prev_end\n    FROM Sessions\n)\nSELECT DISTINCT user_id\nFROM T\nWHERE EXTRACT(EPOCH FROM (session_start - prev_end)) BETWEEN 0 AND 43200\nORDER BY user_id;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Sort and Shift Time Difference",
+      "code": "import pandas as pd\n\ndef user_activities(sessions: pd.DataFrame) -> pd.DataFrame:\n    if sessions.empty:\n        return pd.DataFrame(columns=['user_id'])\n    df = sessions.sort_values(by=['user_id', 'session_type', 'session_start']).copy()\n    df['session_start'] = pd.to_datetime(df['session_start'])\n    df['session_end'] = pd.to_datetime(df['session_end'])\n    df['prev_end'] = df.groupby(['user_id', 'session_type'])['session_end'].shift(1)\n    diff = (df['session_start'] - df['prev_end']).dt.total_seconds()\n    valid = df[(diff >= 0) & (diff <= 43200)]['user_id'].drop_duplicates().sort_values()\n    return pd.DataFrame({'user_id': valid})",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

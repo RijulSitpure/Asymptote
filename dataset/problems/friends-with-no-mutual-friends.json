@@ -1,0 +1,71 @@
+{
+  "slug": "friends-with-no-mutual-friends",
+  "number": 3058,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Identify friend pairs who share zero mutual friends."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Friendships are undirected. Expand the table bidirectionally to find common neighbors between user pairs."
+    },
+    {
+      "level": 3,
+      "title": "Query Structure",
+      "text": "Self join bidirectional friendships on friend id to collect pairs that share a mutual friend, then filter them out from the original pairs using a left join or not exists."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH AllFriends AS (\n    SELECT user_id1 AS u1, user_id2 AS u2 FROM Friends\n    UNION ALL\n    SELECT user_id2 AS u1, user_id1 AS u2 FROM Friends\n),\nMutual AS (\n    SELECT a.u1, b.u1 AS u2\n    FROM AllFriends a\n    JOIN AllFriends b ON a.u2 = b.u2 AND a.u1 != b.u1\n)\nSELECT f.user_id1, f.user_id2\nFROM Friends f\nLEFT JOIN Mutual m ON f.user_id1 = m.u1 AND f.user_id2 = m.u2\nWHERE m.u1 IS NULL\nORDER BY f.user_id1, f.user_id2;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E^2)",
+    "space": "O(E)",
+    "variables": [
+      "E: total friend pairs"
+    ],
+    "notes": "Bidirectional expansion and self join on common neighbor.",
+    "whyNaiveFails": "Ignoring undirected symmetry omits mutual connections stored in reverse order.",
+    "spaceTimeTradeoff": "O(E) auxiliary space for bidirectional friend list.",
+    "interviewerExpectation": "Correctly expand undirected edges and filter out pairs sharing mutual friends."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Bidirectional Expansion and Anti-Join",
+      "code": "WITH AllFriends AS (\n    SELECT user_id1 AS u1, user_id2 AS u2 FROM Friends\n    UNION ALL\n    SELECT user_id2 AS u1, user_id1 AS u2 FROM Friends\n),\nMutual AS (\n    SELECT a.u1, b.u1 AS u2\n    FROM AllFriends a\n    JOIN AllFriends b ON a.u2 = b.u2 AND a.u1 != b.u1\n)\nSELECT f.user_id1, f.user_id2\nFROM Friends f\nLEFT JOIN Mutual m ON f.user_id1 = m.u1 AND f.user_id2 = m.u2\nWHERE m.u1 IS NULL\nORDER BY f.user_id1, f.user_id2;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Bidirectional Expansion and Anti-Join",
+      "code": "WITH AllFriends AS (\n    SELECT user_id1 AS u1, user_id2 AS u2 FROM Friends\n    UNION ALL\n    SELECT user_id2 AS u1, user_id1 AS u2 FROM Friends\n),\nMutual AS (\n    SELECT a.u1, b.u1 AS u2\n    FROM AllFriends a\n    JOIN AllFriends b ON a.u2 = b.u2 AND a.u1 != b.u1\n)\nSELECT f.user_id1, f.user_id2\nFROM Friends f\nLEFT JOIN Mutual m ON f.user_id1 = m.u1 AND f.user_id2 = m.u2\nWHERE m.u1 IS NULL\nORDER BY f.user_id1, f.user_id2;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Graph Adjacency Set Intersection",
+      "code": "import pandas as pd\nfrom collections import defaultdict\n\ndef friends_with_no_mutual_friends(friends: pd.DataFrame) -> pd.DataFrame:\n    adj = defaultdict(set)\n    for _, row in friends.iterrows():\n        u1, u2 = int(row['user_id1']), int(row['user_id2'])\n        adj[u1].add(u2)\n        adj[u2].add(u1)\n    \n    res = []\n    for _, row in friends.iterrows():\n        u1, u2 = int(row['user_id1']), int(row['user_id2'])\n        if len(adj[u1].intersection(adj[u2])) == 0:\n            res.append({'user_id1': u1, 'user_id2': u2})\n    \n    ans = pd.DataFrame(res)\n    if ans.empty:\n        return pd.DataFrame(columns=['user_id1', 'user_id2'])\n    return ans.sort_values(by=['user_id1', 'user_id2'])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

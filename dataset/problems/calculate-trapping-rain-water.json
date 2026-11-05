@@ -1,0 +1,71 @@
+{
+  "slug": "calculate-trapping-rain-water",
+  "number": 3061,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Calculate the total water trapped above all bars given their sequential heights."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "The water trapped at each bar is bounded by the minimum of the maximum height to its left and right minus its own height."
+    },
+    {
+      "level": 3,
+      "title": "Query Structure",
+      "text": "Compute cumulative maximums forward and backward using window functions, subtract height, and sum the trapped amounts."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH T AS (\n    SELECT\n        height,\n        MAX(height) OVER (ORDER BY id ASC) AS left_max,\n        MAX(height) OVER (ORDER BY id DESC) AS right_max\n    FROM Heights\n)\nSELECT\n    SUM(LEAST(left_max, right_max) - height) AS total_trapped_water\nFROM T;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of height bars"
+    ],
+    "notes": "Two window passes compute running prefix and suffix maximums.",
+    "whyNaiveFails": "Self-joining all bars to evaluate boundaries leads to quadratic complexity.",
+    "spaceTimeTradeoff": "O(N) window buffer.",
+    "interviewerExpectation": "Use window functions with opposite order to emulate prefix and suffix bounds."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Prefix and Suffix Window Maximums",
+      "code": "WITH T AS (\n    SELECT\n        height,\n        MAX(height) OVER (ORDER BY id ASC) AS left_max,\n        MAX(height) OVER (ORDER BY id DESC) AS right_max\n    FROM Heights\n)\nSELECT\n    SUM(LEAST(left_max, right_max) - height) AS total_trapped_water\nFROM T;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Prefix and Suffix Window Maximums",
+      "code": "WITH T AS (\n    SELECT\n        height,\n        MAX(height) OVER (ORDER BY id ASC) AS left_max,\n        MAX(height) OVER (ORDER BY id DESC) AS right_max\n    FROM Heights\n)\nSELECT\n    SUM(LEAST(left_max, right_max) - height) AS total_trapped_water\nFROM T;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Cumulative Maximums",
+      "code": "import pandas as pd\nimport numpy as np\n\ndef calculate_trapped_rain_water(heights: pd.DataFrame) -> pd.DataFrame:\n    if heights.empty:\n        return pd.DataFrame({'total_trapped_water': [0]})\n    df = heights.sort_values(by='id').reset_index(drop=True)\n    left_max = df['height'].cummax()\n    right_max = df['height'].iloc[::-1].cummax().iloc[::-1]\n    water = np.maximum(0, np.minimum(left_max, right_max) - df['height'])\n    return pd.DataFrame({'total_trapped_water': [int(water.sum())]})",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

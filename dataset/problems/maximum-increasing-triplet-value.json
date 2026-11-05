@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-increasing-triplet-value",
+  "number": 3073,
+  "category": "Algorithms",
+  "patterns": [
+    "hash-map-lookup"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Find indices i < j < k with nums[i] < nums[j] < nums[k] maximizing nums[i] - nums[j] + nums[k]."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "Fix the middle element nums[j]. We want the maximum possible nums[i] < nums[j] to the left, and the maximum nums[k] > nums[j] to the right."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Precompute suffix maximums for the right side. Maintain a sorted container of seen elements on the left, using binary search to find the greatest element strictly less than nums[j]."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def maximumTripletValue(self, nums: list[int]) -> int:\n        import bisect\n        n = len(nums)\n        right = [0] * n\n        right[-1] = nums[-1]\n        for i in range(n - 2, -1, -1):\n            right[i] = max(nums[i], right[i + 1])\n        left_sorted = [nums[0]]\n        ans = -float('inf')\n        for j in range(1, n - 1):\n            idx = bisect.bisect_left(left_sorted, nums[j]) - 1\n            if idx >= 0 and right[j + 1] > nums[j]:\n                ans = max(ans, left_sorted[idx] - nums[j] + right[j + 1])\n            bisect.insort(left_sorted, nums[j])\n        return ans if ans != -float('inf') else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of array nums"
+    ],
+    "notes": "Suffix maximum array with sorted list binary search on prefix.",
+    "whyNaiveFails": "Brute force triplet evaluation takes cubic time O(n^3).",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for suffix array and prefix set.",
+    "interviewerExpectation": "Fix the middle index and independently optimize left and right choices using suffix array and binary search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Middle Index Fixing with Binary Search",
+      "code": "class Solution:\n    def maximumTripletValue(self, nums: list[int]) -> int:\n        import bisect\n        n = len(nums)\n        right = [0] * n\n        right[-1] = nums[-1]\n        for i in range(n - 2, -1, -1):\n            right[i] = max(nums[i], right[i + 1])\n        left_sorted = [nums[0]]\n        ans = -float('inf')\n        for j in range(1, n - 1):\n            idx = bisect.bisect_left(left_sorted, nums[j]) - 1\n            if idx >= 0 and right[j + 1] > nums[j]:\n                ans = max(ans, left_sorted[idx] - nums[j] + right[j + 1])\n            bisect.insort(left_sorted, nums[j])\n        return ans if ans != -float('inf') else -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Middle Index Fixing with std::set",
+      "code": "class Solution {\npublic:\n    int maximumTripletValue(vector<int>& nums) {\n        int n = nums.size();\n        vector<int> right(n);\n        right[n - 1] = nums[n - 1];\n        for (int i = n - 2; i >= 0; --i) right[i] = max(nums[i], right[i + 1]);\n        set<int> left;\n        left.insert(nums[0]);\n        int ans = -1;\n        for (int j = 1; j < n - 1; ++j) {\n            auto it = left.lower_bound(nums[j]);\n            if (it != left.begin() && right[j + 1] > nums[j]) {\n                --it;\n                ans = max(ans, *it - nums[j] + right[j + 1]);\n            }\n            left.insert(nums[j]);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Middle Index Fixing with TreeSet",
+      "code": "class Solution {\n    public int maximumTripletValue(int[] nums) {\n        int n = nums.length;\n        int[] right = new int[n];\n        right[n - 1] = nums[n - 1];\n        for (int i = n - 2; i >= 0; --i) right[i] = Math.max(nums[i], right[i + 1]);\n        TreeSet<Integer> left = new TreeSet<>();\n        left.add(nums[0]);\n        int ans = -1;\n        for (int j = 1; j < n - 1; ++j) {\n            Integer leftVal = left.lower(nums[j]);\n            if (leftVal != null && right[j + 1] > nums[j]) {\n                ans = Math.max(ans, leftVal - nums[j] + right[j + 1]);\n            }\n            left.add(nums[j]);\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Middle Index Fixing with Sorted Array",
+      "code": "var maximumTripletValue = function(nums) {\n    const n = nums.length;\n    const right = new Array(n);\n    right[n - 1] = nums[n - 1];\n    for (let i = n - 2; i >= 0; --i) right[i] = Math.max(nums[i], right[i + 1]);\n    const left = [nums[0]];\n    let ans = -1;\n    for (let j = 1; j < n - 1; ++j) {\n        let low = 0, high = left.length - 1, best = -1;\n        while (low <= high) {\n            const mid = (low + high) >> 1;\n            if (left[mid] < nums[j]) {\n                best = left[mid];\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        if (best !== -1 && right[j + 1] > nums[j]) {\n            ans = Math.max(ans, best - nums[j] + right[j + 1]);\n        }\n        let ins = 0;\n        while (ins < left.length && left[ins] < nums[j]) ins++;\n        left.splice(ins, 0, nums[j]);\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

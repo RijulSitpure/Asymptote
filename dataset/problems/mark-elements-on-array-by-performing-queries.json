@@ -1,0 +1,79 @@
+{
+  "slug": "mark-elements-on-array-by-performing-queries",
+  "number": 3080,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Process queries by marking specified indices and k smallest unmarked elements."
+    },
+    {
+      "level": 2,
+      "title": "Key Observation",
+      "text": "A min heap tracking (nums[i], i) allows fast extraction of smallest unmarked elements."
+    },
+    {
+      "level": 3,
+      "title": "Algorithmic Steps",
+      "text": "Keep a boolean marked array and track total unmarked sum. Deduct from total whenever a newly marked element is processed."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def unmarkedSumArray(self, nums: list[int], queries: list[list[int]]) -> list[int]:\n        import heapq\n        n = len(nums)\n        marked = [False] * n\n        total = sum(nums)\n        heap = [(nums[i], i) for i in range(n)]\n        heapq.heapify(heap)\n        ans = []\n        for idx, k in queries:\n            if not marked[idx]:\n                marked[idx] = True\n                total -= nums[idx]\n            while k > 0 and heap:\n                val, i = heapq.heappop(heap)\n                if not marked[i]:\n                    marked[i] = True\n                    total -= val\n                    k -= 1\n            ans.append(total)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((n + q) log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums array",
+      "q: number of queries"
+    ],
+    "notes": "Min heap with lazy invalidation of marked elements.",
+    "whyNaiveFails": "Scanning for the minimum element on each query takes O(q * k * n).",
+    "spaceTimeTradeoff": "O(n) heap and marked array.",
+    "interviewerExpectation": "Maintain running sum and extract smallest unmarked elements via priority queue."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Min-Heap with Lazy Deletion",
+      "code": "class Solution:\n    def unmarkedSumArray(self, nums: list[int], queries: list[list[int]]) -> list[int]:\n        import heapq\n        n = len(nums)\n        marked = [False] * n\n        total = sum(nums)\n        heap = [(nums[i], i) for i in range(n)]\n        heapq.heapify(heap)\n        ans = []\n        for idx, k in queries:\n            if not marked[idx]:\n                marked[idx] = True\n                total -= nums[idx]\n            while k > 0 and heap:\n                val, i = heapq.heappop(heap)\n                if not marked[i]:\n                    marked[i] = True\n                    total -= val\n                    k -= 1\n            ans.append(total)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Min-Heap with Lazy Deletion",
+      "code": "class Solution {\npublic:\n    vector<long long> unmarkedSumArray(vector<int>& nums, vector<vector<int>>& queries) {\n        int n = nums.size();\n        vector<bool> marked(n, false);\n        long long total = 0;\n        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;\n        for (int i = 0; i < n; ++i) {\n            total += nums[i];\n            pq.push({nums[i], i});\n        }\n        vector<long long> ans;\n        for (auto& q : queries) {\n            int idx = q[0], k = q[1];\n            if (!marked[idx]) {\n                marked[idx] = true;\n                total -= nums[idx];\n            }\n            while (k > 0 && !pq.empty()) {\n                auto [val, i] = pq.top(); pq.pop();\n                if (!marked[i]) {\n                    marked[i] = true;\n                    total -= val;\n                    k--;\n                }\n            }\n            ans.push_back(total);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Min-Heap with Lazy Deletion",
+      "code": "class Solution {\n    public long[] unmarkedSumArray(int[] nums, int[][] queries) {\n        int n = nums.length;\n        boolean[] marked = new boolean[n];\n        long total = 0;\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> a[0] != b[0] ? Integer.compare(a[0], b[0]) : Integer.compare(a[1], b[1]));\n        for (int i = 0; i < n; i++) {\n            total += nums[i];\n            pq.offer(new int[]{nums[i], i});\n        }\n        long[] ans = new long[queries.length];\n        for (int q = 0; q < queries.length; q++) {\n            int idx = queries[q][0], k = queries[q][1];\n            if (!marked[idx]) {\n                marked[idx] = true;\n                total -= nums[idx];\n            }\n            while (k > 0 && !pq.isEmpty()) {\n                int[] top = pq.poll();\n                int val = top[0], i = top[1];\n                if (!marked[i]) {\n                    marked[i] = true;\n                    total -= val;\n                    k--;\n                }\n            }\n            ans[q] = total;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Sorted Array with Lazy Deletion",
+      "code": "var unmarkedSumArray = function(nums, queries) {\n    const n = nums.length;\n    const marked = new Array(n).fill(false);\n    let total = 0n;\n    const items = [];\n    for (let i = 0; i < n; ++i) {\n        total += BigInt(nums[i]);\n        items.push([nums[i], i]);\n    }\n    items.sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]);\n    let head = 0;\n    const ans = [];\n    for (const [idx, kCount] of queries) {\n        if (!marked[idx]) {\n            marked[idx] = true;\n            total -= BigInt(nums[idx]);\n        }\n        let k = kCount;\n        while (k > 0 && head < items.length) {\n            const [val, i] = items[head++];\n            if (!marked[i]) {\n                marked[i] = true;\n                total -= BigInt(val);\n                k--;\n            }\n        }\n        ans.push(Number(total));\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}
