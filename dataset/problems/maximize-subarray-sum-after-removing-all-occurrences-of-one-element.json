@@ -1,0 +1,78 @@
+{
+  "slug": "maximize-subarray-sum-after-removing-all-occurrences-of-one-element",
+  "number": 3410,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Negative Element Removal",
+      "text": "Removing positive elements never increases a subarray sum, so only negative values warrant trial removal."
+    },
+    {
+      "level": 2,
+      "title": "Subarray Merge Properties",
+      "text": "Maintain standard maximum prefix, suffix, and total subarray sum properties within a segment tree."
+    },
+    {
+      "level": 3,
+      "title": "Temporary Zero Updates",
+      "text": "For each distinct negative value, set its indices to 0, query the root maximum subarray sum, and revert."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass SegmentTree:\n    def __init__(self, nums: list[int]):\n        self.n = len(nums)\n        self.tree = [None] * (4 * self.n)\n        self.build(nums, 0, 0, self.n - 1)\n        \n    def merge(self, left, right):\n        if not left: return right\n        if not right: return left\n        tot_sum = left[0] + right[0]\n        pref = max(left[1], left[0] + right[1])\n        suff = max(right[2], right[0] + left[2])\n        max_sub = max(left[3], right[3], left[2] + right[1])\n        return (tot_sum, pref, suff, max_sub)\n        \n    def build(self, nums, node, l, r):\n        if l == r:\n            v = nums[l]\n            self.tree[node] = (v, max(0, v), max(0, v), v)\n            return\n        mid = (l + r) // 2\n        self.build(nums, 2 * node + 1, l, mid)\n        self.build(nums, 2 * node + 2, mid + 1, r)\n        self.tree[node] = self.merge(self.tree[2 * node + 1], self.tree[2 * node + 2])\n        \n    def update(self, node, l, r, idx, val):\n        if l == r:\n            self.tree[node] = (val, max(0, val), max(0, val), val)\n            return\n        mid = (l + r) // 2\n        if idx <= mid:\n            self.update(2 * node + 1, l, mid, idx, val)\n        else:\n            self.update(2 * node + 2, mid + 1, r, idx, val)\n        self.tree[node] = self.merge(self.tree[2 * node + 1], self.tree[2 * node + 2])\n\nclass Solution:\n    def maxSubarraySum(self, nums: list[int]) -> int:\n        if max(nums) < 0:\n            return max(nums)\n            \n        from collections import defaultdict\n        val_indices = defaultdict(list)\n        for i, v in enumerate(nums):\n            val_indices[v].append(i)\n            \n        st = SegmentTree(nums)\n        ans = st.tree[0][3]\n        \n        for v, indices in val_indices.items():\n            if v < 0:\n                for idx in indices:\n                    st.update(0, 0, len(nums) - 1, idx, 0)\n                ans = max(ans, st.tree[0][3])\n                for idx in indices:\n                    st.update(0, 0, len(nums) - 1, idx, v)\n                    \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of array nums"
+    ],
+    "notes": "Each index is updated twice in a segment tree with O(log n) overhead.",
+    "whyNaiveFails": "Running Kadane for each distinct negative value requires O(n * u) which hits quadratic limits.",
+    "spaceTimeTradeoff": "O(n) segment tree tracks prefix, suffix, and range sums dynamically.",
+    "interviewerExpectation": "Models dynamic subarray sum updates with segment tree and restricts trials to negative elements."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class SegmentTree:\n    def __init__(self, nums: list[int]):\n        self.n = len(nums)\n        self.tree = [None] * (4 * self.n)\n        self.build(nums, 0, 0, self.n - 1)\n        \n    def merge(self, left, right):\n        if not left: return right\n        if not right: return left\n        tot_sum = left[0] + right[0]\n        pref = max(left[1], left[0] + right[1])\n        suff = max(right[2], right[0] + left[2])\n        max_sub = max(left[3], right[3], left[2] + right[1])\n        return (tot_sum, pref, suff, max_sub)\n        \n    def build(self, nums, node, l, r):\n        if l == r:\n            v = nums[l]\n            self.tree[node] = (v, max(0, v), max(0, v), v)\n            return\n        mid = (l + r) // 2\n        self.build(nums, 2 * node + 1, l, mid)\n        self.build(nums, 2 * node + 2, mid + 1, r)\n        self.tree[node] = self.merge(self.tree[2 * node + 1], self.tree[2 * node + 2])\n        \n    def update(self, node, l, r, idx, val):\n        if l == r:\n            self.tree[node] = (val, max(0, val), max(0, val), val)\n            return\n        mid = (l + r) // 2\n        if idx <= mid:\n            self.update(2 * node + 1, l, mid, idx, val)\n        else:\n            self.update(2 * node + 2, mid + 1, r, idx, val)\n        self.tree[node] = self.merge(self.tree[2 * node + 1], self.tree[2 * node + 2])\n\nclass Solution:\n    def maxSubarraySum(self, nums: list[int]) -> int:\n        if max(nums) < 0:\n            return max(nums)\n            \n        from collections import defaultdict\n        val_indices = defaultdict(list)\n        for i, v in enumerate(nums):\n            val_indices[v].append(i)\n            \n        st = SegmentTree(nums)\n        ans = st.tree[0][3]\n        \n        for v, indices in val_indices.items():\n            if v < 0:\n                for idx in indices:\n                    st.update(0, 0, len(nums) - 1, idx, 0)\n                ans = max(ans, st.tree[0][3])\n                for idx in indices:\n                    st.update(0, 0, len(nums) - 1, idx, v)\n                    \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\n    struct Node {\n        long long sum, pref, suff, maxSub;\n        Node() : sum(0), pref(0), suff(0), maxSub(-1e18) {}\n        Node(long long v) : sum(v), pref(max(0LL, v)), suff(max(0LL, v)), maxSub(v) {}\n    };\n    \n    int n;\n    vector<Node> tree;\n    \n    Node merge(const Node& left, const Node& right) {\n        Node res;\n        res.sum = left.sum + right.sum;\n        res.pref = max(left.pref, left.sum + right.pref);\n        res.suff = max(right.suff, right.sum + left.suff);\n        res.maxSub = max({left.maxSub, right.maxSub, left.suff + right.pref});\n        return res;\n    }\n    \n    void build(const vector<int>& nums, int node, int l, int r) {\n        if (l == r) {\n            tree[node] = Node(nums[l]);\n            return;\n        }\n        int mid = l + (r - l) / 2;\n        build(nums, 2 * node + 1, l, mid);\n        build(nums, 2 * node + 2, mid + 1, r);\n        tree[node] = merge(tree[2 * node + 1], tree[2 * node + 2]);\n    }\n    \n    void update(int node, int l, int r, int idx, long long val) {\n        if (l == r) {\n            tree[node] = Node(val);\n            return;\n        }\n        int mid = l + (r - l) / 2;\n        if (idx <= mid) update(2 * node + 1, l, mid, idx, val);\n        else update(2 * node + 2, mid + 1, r, idx, val);\n        tree[node] = merge(tree[2 * node + 1], tree[2 * node + 2]);\n    }\n\npublic:\n    long long maxSubarraySum(vector<int>& nums) {\n        int maxVal = *max_element(nums.begin(), nums.end());\n        if (maxVal < 0) return maxVal;\n        \n        n = nums.size();\n        tree.resize(4 * n);\n        build(nums, 0, 0, n - 1);\n        \n        unordered_map<int, vector<int>> valIndices;\n        for (int i = 0; i < n; ++i) {\n            valIndices[nums[i]].push_back(i);\n        }\n        \n        long long ans = tree[0].maxSub;\n        for (const auto& [v, indices] : valIndices) {\n            if (v < 0) {\n                for (int idx : indices) update(0, 0, n - 1, idx, 0);\n                ans = max(ans, tree[0].maxSub);\n                for (int idx : indices) update(0, 0, n - 1, idx, v);\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    static class Node {\n        long sum, pref, suff, maxSub;\n        Node(long v) {\n            this.sum = v;\n            this.pref = Math.max(0, v);\n            this.suff = Math.max(0, v);\n            this.maxSub = v;\n        }\n    }\n    \n    private int n;\n    private Node[] tree;\n    \n    private Node merge(Node left, Node right) {\n        Node res = new Node(0);\n        res.sum = left.sum + right.sum;\n        res.pref = Math.max(left.pref, left.sum + right.pref);\n        res.suff = Math.max(right.suff, right.sum + left.suff);\n        res.maxSub = Math.max(Math.max(left.maxSub, right.maxSub), left.suff + right.pref);\n        return res;\n    }\n    \n    private void build(int[] nums, int node, int l, int r) {\n        if (l == r) {\n            tree[node] = new Node(nums[l]);\n            return;\n        }\n        int mid = (l + r) / 2;\n        build(nums, 2 * node + 1, l, mid);\n        build(nums, 2 * node + 2, mid + 1, r);\n        tree[node] = merge(tree[2 * node + 1], tree[2 * node + 2]);\n    }\n    \n    private void update(int node, int l, int r, int idx, long val) {\n        if (l == r) {\n            tree[node] = new Node(val);\n            return;\n        }\n        int mid = (l + r) / 2;\n        if (idx <= mid) update(2 * node + 1, l, mid, idx, val);\n        else update(2 * node + 2, mid + 1, r, idx, val);\n        tree[node] = merge(tree[2 * node + 1], tree[2 * node + 2]);\n    }\n\n    public long maxSubarraySum(int[] nums) {\n        int maxVal = Integer.MIN_VALUE;\n        for (int v : nums) maxVal = Math.max(maxVal, v);\n        if (maxVal < 0) return maxVal;\n        \n        n = nums.length;\n        tree = new Node[4 * n];\n        build(nums, 0, 0, n - 1);\n        \n        Map<Integer, List<Integer>> map = new HashMap<>();\n        for (int i = 0; i < n; ++i) {\n            map.computeIfAbsent(nums[i], k -> new ArrayList<>()).add(i);\n        }\n        \n        long ans = tree[0].maxSub;\n        for (Map.Entry<Integer, List<Integer>> entry : map.entrySet()) {\n            int v = entry.getKey();\n            if (v < 0) {\n                List<Integer> indices = entry.getValue();\n                for (int idx : indices) update(0, 0, n - 1, idx, 0);\n                ans = Math.max(ans, tree[0].maxSub);\n                for (int idx : indices) update(0, 0, n - 1, idx, v);\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxSubarraySum = function(nums) {\n    let maxVal = -Infinity;\n    for (const v of nums) if (v > maxVal) maxVal = v;\n    if (maxVal < 0) return maxVal;\n    \n    const n = nums.length;\n    const sumArr = new Float64Array(4 * n);\n    const prefArr = new Float64Array(4 * n);\n    const suffArr = new Float64Array(4 * n);\n    const maxSubArr = new Float64Array(4 * n);\n    \n    function merge(node, lChild, rChild) {\n        sumArr[node] = sumArr[lChild] + sumArr[rChild];\n        prefArr[node] = Math.max(prefArr[lChild], sumArr[lChild] + prefArr[rChild]);\n        suffArr[node] = Math.max(suffArr[rChild], sumArr[rChild] + suffArr[lChild]);\n        maxSubArr[node] = Math.max(maxSubArr[lChild], maxSubArr[rChild], suffArr[lChild] + prefArr[rChild]);\n    }\n    \n    function build(node, l, r) {\n        if (l === r) {\n            const v = nums[l];\n            sumArr[node] = v;\n            prefArr[node] = Math.max(0, v);\n            suffArr[node] = Math.max(0, v);\n            maxSubArr[node] = v;\n            return;\n        }\n        const mid = (l + r) >> 1;\n        const lc = 2 * node + 1, rc = 2 * node + 2;\n        build(lc, l, mid);\n        build(rc, mid + 1, r);\n        merge(node, lc, rc);\n    }\n    \n    function update(node, l, r, idx, val) {\n        if (l === r) {\n            sumArr[node] = val;\n            prefArr[node] = Math.max(0, val);\n            suffArr[node] = Math.max(0, val);\n            maxSubArr[node] = val;\n            return;\n        }\n        const mid = (l + r) >> 1;\n        const lc = 2 * node + 1, rc = 2 * node + 2;\n        if (idx <= mid) update(lc, l, mid, idx, val);\n        else update(rc, mid + 1, r, idx, val);\n        merge(node, lc, rc);\n    }\n    \n    build(0, 0, n - 1);\n    const map = new Map();\n    for (let i = 0; i < n; ++i) {\n        if (!map.has(nums[i])) map.set(nums[i], []);\n        map.get(nums[i]).push(i);\n    }\n    \n    let ans = maxSubArr[0];\n    for (const [v, indices] of map.entries()) {\n        if (v < 0) {\n            for (const idx of indices) update(0, 0, n - 1, idx, 0);\n            if (maxSubArr[0] > ans) ans = maxSubArr[0];\n            for (const idx of indices) update(0, 0, n - 1, idx, v);\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

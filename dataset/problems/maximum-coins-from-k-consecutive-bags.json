@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-coins-from-k-consecutive-bags",
+  "number": 3413,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Boundary Alignment",
+      "text": "An optimal window of size k can always be aligned with either the left endpoint or right endpoint of some interval."
+    },
+    {
+      "level": 2,
+      "title": "Forward Sweep",
+      "text": "Sort intervals by start coordinate and evaluate windows of length k beginning at each interval start."
+    },
+    {
+      "level": 3,
+      "title": "Reversed Coordinate Sweep",
+      "text": "Reverse and mirror coordinates to test windows ending at each interval right endpoint."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maximumCoins(self, coins: list[list[int]], k: int) -> int:\n        coins.sort(key=lambda x: x[0])\n        \n        def solve(arr: list[list[int]], length: int) -> int:\n            n = len(arr)\n            max_c = 0\n            j = 0\n            curr_c = 0\n            for i in range(n):\n                start = arr[i][0]\n                end = start + length - 1\n                while j < n and arr[j][0] <= end:\n                    ol = max(start, arr[j][0])\n                    orr = min(end, arr[j][1])\n                    if ol <= orr:\n                        curr_c += (orr - ol + 1) * arr[j][2]\n                    j += 1\n                max_c = max(max_c, curr_c)\n                ol = max(start, arr[i][0])\n                orr = min(end, arr[i][1])\n                if ol <= orr:\n                    curr_c -= (orr - ol + 1) * arr[i][2]\n            return max_c\n\n        ans = solve(coins, k)\n        rev_coins = [[-r, -l, c] for l, r, c in reversed(coins)]\n        ans = max(ans, solve(rev_coins, k))\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of coin intervals"
+    ],
+    "notes": "Sorts intervals and processes two linear sliding window passes.",
+    "whyNaiveFails": "Evaluating coordinates across 10^9 space causes memory and time limits to be exceeded.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory stores interval projections.",
+    "interviewerExpectation": "Identifies endpoint alignment property to reduce continuous search space into two discrete scans."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maximumCoins(self, coins: list[list[int]], k: int) -> int:\n        coins.sort(key=lambda x: x[0])\n        \n        def solve(arr: list[list[int]], length: int) -> int:\n            n = len(arr)\n            max_c = 0\n            j = 0\n            curr_c = 0\n            for i in range(n):\n                start = arr[i][0]\n                end = start + length - 1\n                while j < n and arr[j][0] <= end:\n                    ol = max(start, arr[j][0])\n                    orr = min(end, arr[j][1])\n                    if ol <= orr:\n                        curr_c += (orr - ol + 1) * arr[j][2]\n                    j += 1\n                max_c = max(max_c, curr_c)\n                ol = max(start, arr[i][0])\n                orr = min(end, arr[i][1])\n                if ol <= orr:\n                    curr_c -= (orr - ol + 1) * arr[i][2]\n            return max_c\n\n        ans = solve(coins, k)\n        rev_coins = [[-r, -l, c] for l, r, c in reversed(coins)]\n        ans = max(ans, solve(rev_coins, k))\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    long long maximumCoins(vector<vector<int>>& coins, int k) {\n        sort(coins.begin(), coins.end(), [](const auto& a, const auto& b) {\n            return a[0] < b[0];\n        });\n        \n        auto solve = [](const vector<vector<int>>& arr, int length) -> long long {\n            int n = arr.size();\n            long long maxC = 0, currC = 0;\n            int j = 0;\n            for (int i = 0; i < n; ++i) {\n                long long start = arr[i][0];\n                long long end = start + length - 1;\n                while (j < n && arr[j][0] <= end) {\n                    long long ol = max(start, (long long)arr[j][0]);\n                    long long orr = min(end, (long long)arr[j][1]);\n                    if (ol <= orr) {\n                        currC += (orr - ol + 1) * (long long)arr[j][2];\n                    }\n                    j++;\n                }\n                maxC = max(maxC, currC);\n                long long ol = max(start, (long long)arr[i][0]);\n                long long orr = min(end, (long long)arr[i][1]);\n                if (ol <= orr) {\n                    currC -= (orr - ol + 1) * (long long)arr[i][2];\n                }\n            }\n            return maxC;\n        };\n        \n        long long ans = solve(coins, k);\n        vector<vector<int>> revCoins;\n        for (int i = (int)coins.size() - 1; i >= 0; --i) {\n            revCoins.push_back({-coins[i][1], -coins[i][0], coins[i][2]});\n        }\n        ans = max(ans, solve(revCoins, k));\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public long maximumCoins(int[][] coins, int k) {\n        Arrays.sort(coins, (a, b) -> Integer.compare(a[0], b[0]));\n        \n        long ans = solve(coins, k);\n        int n = coins.length;\n        int[][] revCoins = new int[n][3];\n        for (int i = 0; i < n; ++i) {\n            revCoins[i][0] = -coins[n - 1 - i][1];\n            revCoins[i][1] = -coins[n - 1 - i][0];\n            revCoins[i][2] = coins[n - 1 - i][2];\n        }\n        ans = Math.max(ans, solve(revCoins, k));\n        return ans;\n    }\n    \n    private long solve(int[][] arr, int length) {\n        int n = arr.length;\n        long maxC = 0, currC = 0;\n        int j = 0;\n        for (int i = 0; i < n; ++i) {\n            long start = arr[i][0];\n            long end = start + length - 1;\n            while (j < n && arr[j][0] <= end) {\n                long ol = Math.max(start, arr[j][0]);\n                long orr = Math.min(end, arr[j][1]);\n                if (ol <= orr) {\n                    currC += (orr - ol + 1) * (long)arr[j][2];\n                }\n                j++;\n            }\n            maxC = Math.max(maxC, currC);\n            long ol = Math.max(start, arr[i][0]);\n            long orr = Math.min(end, arr[i][1]);\n            if (ol <= orr) {\n                currC -= (orr - ol + 1) * (long)arr[i][2];\n            }\n        }\n        return maxC;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maximumCoins = function(coins, k) {\n    coins.sort((a, b) => a[0] - b[0]);\n    \n    const solve = (arr, length) => {\n        const n = arr.length;\n        let maxC = 0n, currC = 0n;\n        let j = 0;\n        const lenBig = BigInt(length);\n        for (let i = 0; i < n; ++i) {\n            const start = BigInt(arr[i][0]);\n            const end = start + lenBig - 1n;\n            while (j < n && BigInt(arr[j][0]) <= end) {\n                const j0 = BigInt(arr[j][0]), j1 = BigInt(arr[j][1]), j2 = BigInt(arr[j][2]);\n                const ol = start > j0 ? start : j0;\n                const orr = end < j1 ? end : j1;\n                if (ol <= orr) {\n                    currC += (orr - ol + 1n) * j2;\n                }\n                j++;\n            }\n            if (currC > maxC) maxC = currC;\n            const i0 = BigInt(arr[i][0]), i1 = BigInt(arr[i][1]), i2 = BigInt(arr[i][2]);\n            const ol = start > i0 ? start : i0;\n            const orr = end < i1 ? end : i1;\n            if (ol <= orr) {\n                currC -= (orr - ol + 1n) * i2;\n            }\n        }\n        return maxC;\n    };\n    \n    let ans = solve(coins, k);\n    const revCoins = coins.slice().reverse().map(([l, r, c]) => [-r, -l, c]);\n    const revAns = solve(revCoins, k);\n    return Number(ans > revAns ? ans : revAns);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

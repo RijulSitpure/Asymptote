@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-score-of-non-overlapping-intervals",
+  "number": 3414,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Index Retention",
+      "text": "Pair each interval with its original index before sorting by start boundaries."
+    },
+    {
+      "level": 2,
+      "title": "Next Disjoint Search",
+      "text": "Use binary search on sorted start coordinates to locate the earliest non-overlapping successor."
+    },
+    {
+      "level": 3,
+      "title": "Lexicographical Tie-Breaking",
+      "text": "Track maximum weight and resolve identical scores by taking the lexicographically smaller sorted index list."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom bisect import bisect_right\n\nclass Solution:\n    def maximumWeight(self, intervals: list[list[int]]) -> list[int]:\n        n = len(intervals)\n        arr = [[intervals[i][0], intervals[i][1], intervals[i][2], i] for i in range(n)]\n        arr.sort(key=lambda x: x[0])\n        starts = [item[0] for item in arr]\n        memo = {}\n\n        def solve(i: int, k: int):\n            if k == 0 or i == n:\n                return 0, []\n            state = (i, k)\n            if state in memo:\n                return memo[state]\n                \n            skip_w, skip_idx = solve(i + 1, k)\n            next_idx = bisect_right(starts, arr[i][1])\n            take_w, take_raw = solve(next_idx, k - 1)\n            take_w += arr[i][2]\n            take_idx = sorted([arr[i][3]] + take_raw)\n            \n            if take_w > skip_w:\n                res = (take_w, take_idx)\n            elif take_w < skip_w:\n                res = (skip_w, skip_idx)\n            else:\n                res = (take_w, min(take_idx, skip_idx))\n                \n            memo[state] = res\n            return res\n\n        _, best_indices = solve(0, 4)\n        return sorted(best_indices)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of intervals"
+    ],
+    "notes": "Sorting and binary search queries across 4 capacity DP states in O(n log n).",
+    "whyNaiveFails": "Exhaustive subset generation takes O(n^4) which times out.",
+    "spaceTimeTradeoff": "O(n) memoization table stores weight and index sets.",
+    "interviewerExpectation": "Combines weighted interval scheduling DP with binary search and lexicographical list tie-breaking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from bisect import bisect_right\n\nclass Solution:\n    def maximumWeight(self, intervals: list[list[int]]) -> list[int]:\n        n = len(intervals)\n        arr = [[intervals[i][0], intervals[i][1], intervals[i][2], i] for i in range(n)]\n        arr.sort(key=lambda x: x[0])\n        starts = [item[0] for item in arr]\n        memo = {}\n\n        def solve(i: int, k: int):\n            if k == 0 or i == n:\n                return 0, []\n            state = (i, k)\n            if state in memo:\n                return memo[state]\n                \n            skip_w, skip_idx = solve(i + 1, k)\n            next_idx = bisect_right(starts, arr[i][1])\n            take_w, take_raw = solve(next_idx, k - 1)\n            take_w += arr[i][2]\n            take_idx = sorted([arr[i][3]] + take_raw)\n            \n            if take_w > skip_w:\n                res = (take_w, take_idx)\n            elif take_w < skip_w:\n                res = (skip_w, skip_idx)\n            else:\n                res = (take_w, min(take_idx, skip_idx))\n                \n            memo[state] = res\n            return res\n\n        _, best_indices = solve(0, 4)\n        return sorted(best_indices)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\n    struct Interval {\n        int l, r, w, id;\n    };\n    int n;\n    vector<Interval> arr;\n    vector<int> starts;\n    pair<long long, vector<int>> memo[50005][5];\n    bool visited[50005][5];\n\n    pair<long long, vector<int>> solve(int i, int k) {\n        if (k == 0 || i == n) return {0LL, {}};\n        if (visited[i][k]) return memo[i][k];\n        \n        auto skip = solve(i + 1, k);\n        int nextIdx = upper_bound(starts.begin(), starts.end(), arr[i].r) - starts.begin();\n        auto take = solve(nextIdx, k - 1);\n        take.first += arr[i].w;\n        take.second.push_back(arr[i].id);\n        sort(take.second.begin(), take.second.end());\n        \n        pair<long long, vector<int>> res;\n        if (take.first > skip.first) {\n            res = take;\n        } else if (take.first < skip.first) {\n            res = skip;\n        } else {\n            res = {take.first, min(take.second, skip.second)};\n        }\n        visited[i][k] = true;\n        return memo[i][k] = res;\n    }\n\npublic:\n    vector<int> maximumWeight(vector<vector<int>>& intervals) {\n        n = intervals.size();\n        arr.resize(n);\n        for (int i = 0; i < n; ++i) {\n            arr[i] = {intervals[i][0], intervals[i][1], intervals[i][2], i};\n        }\n        sort(arr.begin(), arr.end(), [](const auto& a, const auto& b) {\n            return a.l < b.l;\n        });\n        starts.resize(n);\n        for (int i = 0; i < n; ++i) starts[i] = arr[i].l;\n        for (int i = 0; i <= n; ++i) {\n            for (int k = 0; k <= 4; ++k) visited[i][k] = false;\n        }\n        \n        auto ans = solve(0, 4);\n        sort(ans.second.begin(), ans.second.end());\n        return ans.second;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    static class Interval {\n        int l, r, w, id;\n        Interval(int l, int r, int w, int id) {\n            this.l = l; this.r = r; this.w = w; this.id = id;\n        }\n    }\n    \n    static class State {\n        long weight;\n        List<Integer> indices;\n        State(long weight, List<Integer> indices) {\n            this.weight = weight;\n            this.indices = indices;\n        }\n    }\n    \n    private int n;\n    private Interval[] arr;\n    private int[] starts;\n    private State[][] memo;\n\n    public int[] maximumWeight(int[][] intervals) {\n        n = intervals.length;\n        arr = new Interval[n];\n        for (int i = 0; i < n; ++i) {\n            arr[i] = new Interval(intervals[i][0], intervals[i][1], intervals[i][2], i);\n        }\n        Arrays.sort(arr, (a, b) -> Integer.compare(a.l, b.l));\n        starts = new int[n];\n        for (int i = 0; i < n; ++i) starts[i] = arr[i].l;\n        memo = new State[n][5];\n        \n        State res = solve(0, 4);\n        int[] ans = new int[res.indices.size()];\n        for (int i = 0; i < ans.length; ++i) ans[i] = res.indices.get(i);\n        Arrays.sort(ans);\n        return ans;\n    }\n    \n    private State solve(int i, int k) {\n        if (k == 0 || i == n) return new State(0, new ArrayList<>());\n        if (memo[i][k] != null) return memo[i][k];\n        \n        State skip = solve(i + 1, k);\n        int nextIdx = upper_bound(starts, arr[i].r);\n        State takeRaw = solve(nextIdx, k - 1);\n        long takeW = takeRaw.weight + arr[i].w;\n        List<Integer> takeIdx = new ArrayList<>(takeRaw.indices);\n        takeIdx.add(arr[i].id);\n        Collections.sort(takeIdx);\n        \n        State res;\n        if (takeW > skip.weight) {\n            res = new State(takeW, takeIdx);\n        } else if (takeW < skip.weight) {\n            res = skip;\n        } else {\n            res = new State(takeW, compareIndices(takeIdx, skip.indices) < 0 ? takeIdx : skip.indices);\n        }\n        return memo[i][k] = res;\n    }\n    \n    private int upper_bound(int[] a, int target) {\n        int l = 0, r = a.length;\n        while (l < r) {\n            int mid = (l + r) / 2;\n            if (a[mid] <= target) l = mid + 1;\n            else r = mid;\n        }\n        return l;\n    }\n    \n    private int compareIndices(List<Integer> a, List<Integer> b) {\n        int len = Math.min(a.size(), b.size());\n        for (int i = 0; i < len; ++i) {\n            int cmp = Integer.compare(a.get(i), b.get(i));\n            if (cmp != 0) return cmp;\n        }\n        return Integer.compare(a.size(), b.size());\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maximumWeight = function(intervals) {\n    const n = intervals.length;\n    const arr = intervals.map(([l, r, w], i) => ({ l, r, w, id: i }));\n    arr.sort((a, b) => a.l - b.l);\n    const starts = arr.map(x => x.l);\n    const memo = new Map();\n    \n    function upper_bound(target) {\n        let l = 0, r = starts.length;\n        while (l < r) {\n            const mid = (l + r) >> 1;\n            if (starts[mid] <= target) l = mid + 1;\n            else r = mid;\n        }\n        return l;\n    }\n    \n    function solve(i, k) {\n        if (k === 0 || i === n) return { w: 0n, idx: [] };\n        const key = (i << 3) | k;\n        if (memo.has(key)) return memo.get(key);\n        \n        const skip = solve(i + 1, k);\n        const nextIdx = upper_bound(arr[i].r);\n        const takeRaw = solve(nextIdx, k - 1);\n        const takeW = takeRaw.w + BigInt(arr[i].w);\n        const takeIdx = [...takeRaw.idx, arr[i].id].sort((a, b) => a - b);\n        \n        let res;\n        if (takeW > skip.w) {\n            res = { w: takeW, idx: takeIdx };\n        } else if (takeW < skip.w) {\n            res = skip;\n        } else {\n            let pickTake = true;\n            const minLen = Math.min(takeIdx.length, skip.idx.length);\n            for (let p = 0; p < minLen; ++p) {\n                if (takeIdx[p] !== skip.idx[p]) {\n                    pickTake = takeIdx[p] < skip.idx[p];\n                    break;\n                }\n            }\n            res = { w: takeW, idx: pickTake ? takeIdx : skip.idx };\n        }\n        memo.set(key, res);\n        return res;\n    }\n    \n    const ans = solve(0, 4);\n    return ans.idx.sort((a, b) => a - b);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

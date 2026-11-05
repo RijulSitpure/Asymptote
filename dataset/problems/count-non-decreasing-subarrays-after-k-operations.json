@@ -1,0 +1,78 @@
+{
+  "slug": "count-non-decreasing-subarrays-after-k-operations",
+  "number": 3420,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Reverse Array Perspective",
+      "text": "Traversing backwards from right to left maintains cost bounds as suffixes naturally enforce non-decreasing ordering."
+    },
+    {
+      "level": 2,
+      "title": "Monotonic Deque Aggregation",
+      "text": "Store (value, count) pairs in a monotonic decreasing deque, merging smaller blocks and updating cumulative operation cost."
+    },
+    {
+      "level": 3,
+      "title": "Right Pointer Contraction",
+      "text": "Shrink right boundary j whenever operation cost exceeds k, then add j - i + 1 valid subarrays."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def countNonDecreasingSubarrays(self, nums: list[int], k: int) -> int:\n        ans = 0\n        cost = 0\n        dq = deque()\n        j = len(nums) - 1\n        \n        for i in range(len(nums) - 1, -1, -1):\n            num = nums[i]\n            count = 1\n            while dq and dq[-1][0] < num:\n                nxt_num, nxt_count = dq.pop()\n                count += nxt_count\n                cost += (num - nxt_num) * nxt_count\n            dq.append((num, count))\n            \n            while cost > k:\n                rm_num, rm_count = dq.popleft()\n                cost -= (rm_num - nums[j])\n                j -= 1\n                if rm_count > 1:\n                    dq.appendleft((rm_num, rm_count - 1))\n                    \n            ans += j - i + 1\n            \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of array nums"
+    ],
+    "notes": "Each element is inserted and evicted from monotonic deque at most once.",
+    "whyNaiveFails": "Evaluating each subarray independently takes O(n^2) or O(n^3) time.",
+    "spaceTimeTradeoff": "O(n) deque stores compacted values and counts.",
+    "interviewerExpectation": "Applies monotonic deque with sliding window to dynamically maintain deficit cost in linear time."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import deque\n\nclass Solution:\n    def countNonDecreasingSubarrays(self, nums: list[int], k: int) -> int:\n        ans = 0\n        cost = 0\n        dq = deque()\n        j = len(nums) - 1\n        \n        for i in range(len(nums) - 1, -1, -1):\n            num = nums[i]\n            count = 1\n            while dq and dq[-1][0] < num:\n                nxt_num, nxt_count = dq.pop()\n                count += nxt_count\n                cost += (num - nxt_num) * nxt_count\n            dq.append((num, count))\n            \n            while cost > k:\n                rm_num, rm_count = dq.popleft()\n                cost -= (rm_num - nums[j])\n                j -= 1\n                if rm_count > 1:\n                    dq.appendleft((rm_num, rm_count - 1))\n                    \n            ans += j - i + 1\n            \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    long long countNonDecreasingSubarrays(vector<int>& nums, int k) {\n        long long ans = 0, cost = 0;\n        deque<pair<int, int>> dq;\n        int j = nums.size() - 1;\n        \n        for (int i = (int)nums.size() - 1; i >= 0; --i) {\n            int num = nums[i];\n            int count = 1;\n            while (!dq.empty() && dq.back().first < num) {\n                auto [nxtNum, nxtCount] = dq.back();\n                dq.pop_back();\n                count += nxtCount;\n                cost += (long long)(num - nxtNum) * nxtCount;\n            }\n            dq.push_back({num, count});\n            \n            while (cost > k) {\n                auto [rmNum, rmCount] = dq.front();\n                dq.pop_front();\n                cost -= (long long)(rmNum - nums[j]);\n                j--;\n                if (rmCount > 1) {\n                    dq.push_front({rmNum, rmCount - 1});\n                }\n            }\n            ans += j - i + 1;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public long countNonDecreasingSubarrays(int[] nums, int k) {\n        long ans = 0, cost = 0;\n        Deque<int[]> dq = new ArrayDeque<>();\n        int j = nums.length - 1;\n        \n        for (int i = nums.length - 1; i >= 0; --i) {\n            int num = nums[i];\n            int count = 1;\n            while (!dq.isEmpty() && dq.peekLast()[0] < num) {\n                int[] nxt = dq.pollLast();\n                count += nxt[1];\n                cost += (long)(num - nxt[0]) * nxt[1];\n            }\n            dq.offerLast(new int[]{num, count});\n            \n            while (cost > k) {\n                int[] rm = dq.pollFirst();\n                cost -= (long)(rm[0] - nums[j]);\n                j--;\n                if (rm[1] > 1) {\n                    dq.offerFirst(new int[]{rm[0], rm[1] - 1});\n                }\n            }\n            ans += j - i + 1;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countNonDecreasingSubarrays = function(nums, k) {\n    let ans = 0, cost = 0;\n    const dq = [];\n    let j = nums.length - 1;\n    \n    for (let i = nums.length - 1; i >= 0; --i) {\n        const num = nums[i];\n        let count = 1;\n        while (dq.length > 0 && dq[dq.length - 1][0] < num) {\n            const [nxtNum, nxtCount] = dq.pop();\n            count += nxtCount;\n            cost += (num - nxtNum) * nxtCount;\n        }\n        dq.push([num, count]);\n        \n        while (cost > k) {\n            const [rmNum, rmCount] = dq[0];\n            cost -= (rmNum - nums[j]);\n            j--;\n            if (rmCount > 1) {\n                dq[0][1]--;\n            } else {\n                dq.shift();\n            }\n        }\n        ans += j - i + 1;\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

@@ -1,0 +1,80 @@
+{
+  "slug": "minimize-the-maximum-edge-weight-of-graph",
+  "number": 3419,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Graph Inversion",
+      "text": "Reverse all edges: reachability of node 0 from every node becomes reachability of all nodes from node 0."
+    },
+    {
+      "level": 2,
+      "title": "Monotonicity",
+      "text": "If reachability is achieved with maximum edge weight mid, all weights greater than mid also succeed."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search and Reachability",
+      "text": "Binary search on maximum edge weight and verify if depth-first search from node 0 reaches all n nodes in reversed graph."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def minMaxWeight(self, n: int, edges: list[list[int]], threshold: int) -> int:\n        rev_graph = [[] for _ in range(n)]\n        max_w = 0\n        for u, v, w in edges:\n            rev_graph[v].append((u, w))\n            max_w = max(max_w, w)\n            \n        def can_reach_all(limit: int) -> bool:\n            seen = [False] * n\n            st = [0]\n            seen[0] = True\n            count = 1\n            while st:\n                u = st.pop()\n                for v, w in rev_graph[u]:\n                    if not seen[v] and w <= limit:\n                        seen[v] = True\n                        count += 1\n                        st.append(v)\n            return count == n\n\n        low, high = 1, max_w\n        ans = -1\n        while low <= high:\n            mid = (low + high) // 2\n            if can_reach_all(mid):\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((V + E) * log(max_W))",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of nodes (n)",
+      "E: number of edges",
+      "max_W: maximum edge weight"
+    ],
+    "notes": "Binary searches on weight limits with linear graph traversals.",
+    "whyNaiveFails": "Examining edge deletion combinations produces intractable combinatorial state.",
+    "spaceTimeTradeoff": "O(V + E) stores inverted graph adjacency list.",
+    "interviewerExpectation": "Inverts reachability to node 0 into traversal from node 0 and binary searches edge bound."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minMaxWeight(self, n: int, edges: list[list[int]], threshold: int) -> int:\n        rev_graph = [[] for _ in range(n)]\n        max_w = 0\n        for u, v, w in edges:\n            rev_graph[v].append((u, w))\n            max_w = max(max_w, w)\n            \n        def can_reach_all(limit: int) -> bool:\n            seen = [False] * n\n            st = [0]\n            seen[0] = True\n            count = 1\n            while st:\n                u = st.pop()\n                for v, w in rev_graph[u]:\n                    if not seen[v] and w <= limit:\n                        seen[v] = True\n                        count += 1\n                        st.append(v)\n            return count == n\n\n        low, high = 1, max_w\n        ans = -1\n        while low <= high:\n            mid = (low + high) // 2\n            if can_reach_all(mid):\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    int minMaxWeight(int n, vector<vector<int>>& edges, int threshold) {\n        vector<vector<pair<int, int>>> revGraph(n);\n        int maxW = 0;\n        for (const auto& e : edges) {\n            revGraph[e[1]].push_back({e[0], e[2]});\n            maxW = max(maxW, e[2]);\n        }\n        \n        auto canReachAll = [&](int limit) -> bool {\n            vector<bool> seen(n, false);\n            vector<int> st = {0};\n            seen[0] = true;\n            int count = 1;\n            while (!st.empty()) {\n                int u = st.back();\n                st.pop_back();\n                for (const auto& [v, w] : revGraph[u]) {\n                    if (!seen[v] && w <= limit) {\n                        seen[v] = true;\n                        count++;\n                        st.push_back(v);\n                    }\n                }\n            }\n            return count == n;\n        };\n        \n        int low = 1, high = maxW, ans = -1;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (canReachAll(mid)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int minMaxWeight(int n, int[][] edges, int threshold) {\n        List<int[]>[] revGraph = new ArrayList[n];\n        for (int i = 0; i < n; ++i) revGraph[i] = new ArrayList<>();\n        int maxW = 0;\n        for (int[] e : edges) {\n            revGraph[e[1]].add(new int[]{e[0], e[2]});\n            maxW = Math.max(maxW, e[2]);\n        }\n        \n        int low = 1, high = maxW, ans = -1;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (canReachAll(n, revGraph, mid)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n    \n    private boolean canReachAll(int n, List<int[]>[] revGraph, int limit) {\n        boolean[] seen = new boolean[n];\n        Deque<Integer> st = new ArrayDeque<>();\n        st.push(0);\n        seen[0] = true;\n        int count = 1;\n        while (!st.isEmpty()) {\n            int u = st.pop();\n            for (int[] edge : revGraph[u]) {\n                int v = edge[0], w = edge[1];\n                if (!seen[v] && w <= limit) {\n                    seen[v] = true;\n                    count++;\n                    st.push(v);\n                }\n            }\n        }\n        return count == n;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minMaxWeight = function(n, edges, threshold) {\n    const revGraph = Array.from({ length: n }, () => []);\n    let maxW = 0;\n    for (const [u, v, w] of edges) {\n        revGraph[v].push([u, w]);\n        if (w > maxW) maxW = w;\n    }\n    \n    const canReachAll = (limit) => {\n        const seen = new Uint8Array(n);\n        const st = [0];\n        seen[0] = 1;\n        let count = 1;\n        while (st.length > 0) {\n            const u = st.pop();\n            for (const [v, w] of revGraph[u]) {\n                if (!seen[v] && w <= limit) {\n                    seen[v] = 1;\n                    count++;\n                    st.push(v);\n                }\n            }\n        }\n        return count === n;\n    };\n    \n    let low = 1, high = maxW, ans = -1;\n    while (low <= high) {\n        const mid = (low + high) >> 1;\n        if (canReachAll(mid)) {\n            ans = mid;\n            high = mid - 1;\n        } else {\n            low = mid + 1;\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

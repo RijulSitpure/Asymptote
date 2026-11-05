@@ -1,0 +1,78 @@
+{
+  "slug": "reschedule-meetings-for-maximum-free-time-ii",
+  "number": 3440,
+  "category": "Algorithms",
+  "patterns": [
+    "greedy-interval-scheduling"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix and Suffix Gap Extremes",
+      "text": "Compute prefix and suffix maximums over the free gaps separating the meetings."
+    },
+    {
+      "level": 2,
+      "title": "Local Sideways Shift",
+      "text": "For each meeting, consider shifting it sideways to merge its two adjacent gaps."
+    },
+    {
+      "level": 3,
+      "title": "Relocation Feasibility Check",
+      "text": "Check if the meeting can be relocated to a completely separate gap of sufficient capacity."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maxFreeTime(self, eventTime: int, startTime: list[int], endTime: list[int]) -> int:\n        n = len(startTime)\n        gaps = [startTime[0]]\n        for i in range(1, n):\n            gaps.append(startTime[i] - endTime[i - 1])\n        gaps.append(eventTime - endTime[n - 1])\n        \n        m = len(gaps)\n        pref = [0] * m\n        suff = [0] * m\n        pref[0] = gaps[0]\n        for i in range(1, m):\n            pref[i] = max(pref[i - 1], gaps[i])\n        suff[-1] = gaps[-1]\n        for i in range(m - 2, -1, -1):\n            suff[i] = max(suff[i + 1], gaps[i])\n            \n        ans = max(gaps)\n        for i in range(n):\n            dur = endTime[i] - startTime[i]\n            ans = max(ans, gaps[i] + gaps[i + 1])\n            outside = 0\n            if i > 0:\n                outside = max(outside, pref[i - 1])\n            if i + 2 < m:\n                outside = max(outside, suff[i + 2])\n            if outside >= dur:\n                ans = max(ans, gaps[i] + gaps[i + 1] + dur)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of meetings"
+    ],
+    "notes": "Uses prefix and suffix maximum arrays over gaps to determine if meeting can relocate outside its neighbors.",
+    "whyNaiveFails": "Searching all possible relocation gaps for each meeting takes quadratic time.",
+    "spaceTimeTradeoff": "Prefix and suffix arrays use linear auxiliary storage.",
+    "interviewerExpectation": "Applies prefix and suffix maximums to verify relocation feasibility in constant time per meeting."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "class Solution:\n    def maxFreeTime(self, eventTime: int, startTime: list[int], endTime: list[int]) -> int:\n        n = len(startTime)\n        gaps = [startTime[0]]\n        for i in range(1, n):\n            gaps.append(startTime[i] - endTime[i - 1])\n        gaps.append(eventTime - endTime[n - 1])\n        \n        m = len(gaps)\n        pref = [0] * m\n        suff = [0] * m\n        pref[0] = gaps[0]\n        for i in range(1, m):\n            pref[i] = max(pref[i - 1], gaps[i])\n        suff[-1] = gaps[-1]\n        for i in range(m - 2, -1, -1):\n            suff[i] = max(suff[i + 1], gaps[i])\n            \n        ans = max(gaps)\n        for i in range(n):\n            dur = endTime[i] - startTime[i]\n            ans = max(ans, gaps[i] + gaps[i + 1])\n            outside = 0\n            if i > 0:\n                outside = max(outside, pref[i - 1])\n            if i + 2 < m:\n                outside = max(outside, suff[i + 2])\n            if outside >= dur:\n                ans = max(ans, gaps[i] + gaps[i + 1] + dur)\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxFreeTime(int eventTime, std::vector<int>& startTime, std::vector<int>& endTime) {\n        int n = startTime.size();\n        std::vector<int> gaps;\n        gaps.reserve(n + 1);\n        gaps.push_back(startTime[0]);\n        for (int i = 1; i < n; ++i) {\n            gaps.push_back(startTime[i] - endTime[i - 1]);\n        }\n        gaps.push_back(eventTime - endTime[n - 1]);\n        \n        int m = gaps.size();\n        std::vector<int> pref(m, 0), suff(m, 0);\n        pref[0] = gaps[0];\n        for (int i = 1; i < m; ++i) pref[i] = std::max(pref[i - 1], gaps[i]);\n        suff[m - 1] = gaps[m - 1];\n        for (int i = m - 2; i >= 0; --i) suff[i] = std::max(suff[i + 1], gaps[i]);\n        \n        int ans = *std::max_element(gaps.begin(), gaps.end());\n        for (int i = 0; i < n; ++i) {\n            int dur = endTime[i] - startTime[i];\n            ans = std::max(ans, gaps[i] + gaps[i + 1]);\n            int outside = 0;\n            if (i > 0) outside = std::max(outside, pref[i - 1]);\n            if (i + 2 < m) outside = std::max(outside, suff[i + 2]);\n            if (outside >= dur) {\n                ans = std::max(ans, gaps[i] + gaps[i + 1] + dur);\n            }\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "class Solution {\n    public int maxFreeTime(int eventTime, int[] startTime, int[] endTime) {\n        int n = startTime.length;\n        int[] gaps = new int[n + 1];\n        gaps[0] = startTime[0];\n        for (int i = 1; i < n; i++) {\n            gaps[i] = startTime[i] - endTime[i - 1];\n        }\n        gaps[n] = eventTime - endTime[n - 1];\n        \n        int m = n + 1;\n        int[] pref = new int[m];\n        int[] suff = new int[m];\n        pref[0] = gaps[0];\n        for (int i = 1; i < m; i++) pref[i] = Math.max(pref[i - 1], gaps[i]);\n        suff[m - 1] = gaps[m - 1];\n        for (int i = m - 2; i >= 0; i--) suff[i] = Math.max(suff[i + 1], gaps[i]);\n        \n        int ans = 0;\n        for (int g : gaps) ans = Math.max(ans, g);\n        for (int i = 0; i < n; i++) {\n            int dur = endTime[i] - startTime[i];\n            ans = Math.max(ans, gaps[i] + gaps[i + 1]);\n            int outside = 0;\n            if (i > 0) outside = Math.max(outside, pref[i - 1]);\n            if (i + 2 < m) outside = Math.max(outside, suff[i + 2]);\n            if (outside >= dur) {\n                ans = Math.max(ans, gaps[i] + gaps[i + 1] + dur);\n            }\n        }\n        return ans;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "var maxFreeTime = function(eventTime, startTime, endTime) {\n    const n = startTime.length;\n    const gaps = new Int32Array(n + 1);\n    gaps[0] = startTime[0];\n    for (let i = 1; i < n; i++) {\n        gaps[i] = startTime[i] - endTime[i - 1];\n    }\n    gaps[n] = eventTime - endTime[n - 1];\n    \n    const m = n + 1;\n    const pref = new Int32Array(m);\n    const suff = new Int32Array(m);\n    pref[0] = gaps[0];\n    for (let i = 1; i < m; i++) pref[i] = Math.max(pref[i - 1], gaps[i]);\n    suff[m - 1] = gaps[m - 1];\n    for (let i = m - 2; i >= 0; i--) suff[i] = Math.max(suff[i + 1], gaps[i]);\n    \n    let ans = 0;\n    for (let i = 0; i < m; i++) {\n        if (gaps[i] > ans) ans = gaps[i];\n    }\n    for (let i = 0; i < n; i++) {\n        const dur = endTime[i] - startTime[i];\n        ans = Math.max(ans, gaps[i] + gaps[i + 1]);\n        let outside = 0;\n        if (i > 0) outside = Math.max(outside, pref[i - 1]);\n        if (i + 2 < m) outside = Math.max(outside, suff[i + 2]);\n        if (outside >= dur) {\n            ans = Math.max(ans, gaps[i] + gaps[i + 1] + dur);\n        }\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

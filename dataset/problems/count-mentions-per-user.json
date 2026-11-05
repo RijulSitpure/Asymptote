@@ -1,0 +1,79 @@
+{
+  "slug": "count-mentions-per-user",
+  "number": 3433,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Chronological Event Ordering",
+      "text": "Sort all events primarily by timestamp, breaking ties by processing offline status changes before messages."
+    },
+    {
+      "level": 2,
+      "title": "Offline Expiration State",
+      "text": "Maintain an array indicating the timestamp until which each user remains offline."
+    },
+    {
+      "level": 3,
+      "title": "Mention Token Processing",
+      "text": "Process all-user and online-user message broadcasts, as well as specific user identifiers."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def countMentions(self, numberOfUsers: int, events: list[list[str]]) -> list[int]:\n        events.sort(key=lambda x: (int(x[1]), 0 if x[0] == \"OFFLINE\" else 1))\n        mentions = [0] * numberOfUsers\n        offline_until = [0] * numberOfUsers\n        \n        for ev_type, ts_str, data in events:\n            curr_time = int(ts_str)\n            if ev_type == \"OFFLINE\":\n                user_id = int(data)\n                offline_until[user_id] = curr_time + 60\n            elif ev_type == \"MESSAGE\":\n                if data == \"ALL\":\n                    for i in range(numberOfUsers):\n                        mentions[i] += 1\n                elif data == \"HERE\":\n                    for i in range(numberOfUsers):\n                        if curr_time >= offline_until[i]:\n                            mentions[i] += 1\n                else:\n                    for token in data.split():\n                        user_id = int(token[2:])\n                        mentions[user_id] += 1\n        return mentions\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m log m + m * n)",
+    "space": "O(n + m)",
+    "variables": [
+      "m: number of events",
+      "n: number of users"
+    ],
+    "notes": "Sorts events chronologically with offline priority and updates mention counters per event.",
+    "whyNaiveFails": "Processing events out of order violates offline duration tracking.",
+    "spaceTimeTradeoff": "Maintains offline expiration array and mention tallies per user.",
+    "interviewerExpectation": "Designs simulation with stable multi-key event sorting and stateful status tracking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "class Solution:\n    def countMentions(self, numberOfUsers: int, events: list[list[str]]) -> list[int]:\n        events.sort(key=lambda x: (int(x[1]), 0 if x[0] == \"OFFLINE\" else 1))\n        mentions = [0] * numberOfUsers\n        offline_until = [0] * numberOfUsers\n        \n        for ev_type, ts_str, data in events:\n            curr_time = int(ts_str)\n            if ev_type == \"OFFLINE\":\n                user_id = int(data)\n                offline_until[user_id] = curr_time + 60\n            elif ev_type == \"MESSAGE\":\n                if data == \"ALL\":\n                    for i in range(numberOfUsers):\n                        mentions[i] += 1\n                elif data == \"HERE\":\n                    for i in range(numberOfUsers):\n                        if curr_time >= offline_until[i]:\n                            mentions[i] += 1\n                else:\n                    for token in data.split():\n                        user_id = int(token[2:])\n                        mentions[user_id] += 1\n        return mentions"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "#include <vector>\n#include <string>\n#include <sstream>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<int> countMentions(int numberOfUsers, std::vector<std::vector<std::string>>& events) {\n        std::sort(events.begin(), events.end(), [](const auto& a, const auto& b) {\n            int t_a = std::stoi(a[1]);\n            int t_b = std::stoi(b[1]);\n            if (t_a != t_b) return t_a < t_b;\n            int prio_a = (a[0] == \"OFFLINE\") ? 0 : 1;\n            int prio_b = (b[0] == \"OFFLINE\") ? 0 : 1;\n            return prio_a < prio_b;\n        });\n        \n        std::vector<int> mentions(numberOfUsers, 0);\n        std::vector<int> offline_until(numberOfUsers, 0);\n        \n        for (const auto& ev : events) {\n            int curr_time = std::stoi(ev[1]);\n            if (ev[0] == \"OFFLINE\") {\n                int uid = std::stoi(ev[2]);\n                offline_until[uid] = curr_time + 60;\n            } else if (ev[0] == \"MESSAGE\") {\n                if (ev[2] == \"ALL\") {\n                    for (int i = 0; i < numberOfUsers; ++i) mentions[i]++;\n                } else if (ev[2] == \"HERE\") {\n                    for (int i = 0; i < numberOfUsers; ++i) {\n                        if (curr_time >= offline_until[i]) mentions[i]++;\n                    }\n                } else {\n                    std::stringstream ss(ev[2]);\n                    std::string token;\n                    while (ss >> token) {\n                        int uid = std::stoi(token.substr(2));\n                        mentions[uid]++;\n                    }\n                }\n            }\n        }\n        return mentions;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] countMentions(int numberOfUsers, List<List<String>> events) {\n        events.sort((a, b) -> {\n            int tA = Integer.parseInt(a.get(1));\n            int tB = Integer.parseInt(b.get(1));\n            if (tA != tB) return Integer.compare(tA, tB);\n            int pA = a.get(0).equals(\"OFFLINE\") ? 0 : 1;\n            int pB = b.get(0).equals(\"OFFLINE\") ? 0 : 1;\n            return Integer.compare(pA, pB);\n        });\n        \n        int[] mentions = new int[numberOfUsers];\n        int[] offlineUntil = new int[numberOfUsers];\n        \n        for (List<String> ev : events) {\n            int currTime = Integer.parseInt(ev.get(1));\n            if (ev.get(0).equals(\"OFFLINE\")) {\n                int uid = Integer.parseInt(ev.get(2));\n                offlineUntil[uid] = currTime + 60;\n            } else {\n                String data = ev.get(2);\n                if (data.equals(\"ALL\")) {\n                    for (int i = 0; i < numberOfUsers; i++) mentions[i]++;\n                } else if (data.equals(\"HERE\")) {\n                    for (int i = 0; i < numberOfUsers; i++) {\n                        if (currTime >= offlineUntil[i]) mentions[i]++;\n                    }\n                } else {\n                    String[] tokens = data.split(\" \");\n                    for (String token : tokens) {\n                        int uid = Integer.parseInt(token.substring(2));\n                        mentions[uid]++;\n                    }\n                }\n            }\n        }\n        return mentions;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "var countMentions = function(numberOfUsers, events) {\n    events.sort((a, b) => {\n        const tA = Number(a[1]);\n        const tB = Number(b[1]);\n        if (tA !== tB) return tA - tB;\n        const pA = a[0] === 'OFFLINE' ? 0 : 1;\n        const pB = b[0] === 'OFFLINE' ? 0 : 1;\n        return pA - pB;\n    });\n    \n    const mentions = new Int32Array(numberOfUsers);\n    const offlineUntil = new Int32Array(numberOfUsers);\n    \n    for (const [evType, tsStr, data] of events) {\n        const currTime = Number(tsStr);\n        if (evType === 'OFFLINE') {\n            const uid = Number(data);\n            offlineUntil[uid] = currTime + 60;\n        } else {\n            if (data === 'ALL') {\n                for (let i = 0; i < numberOfUsers; i++) mentions[i]++;\n            } else if (data === 'HERE') {\n                for (let i = 0; i < numberOfUsers; i++) {\n                    if (currTime >= offlineUntil[i]) mentions[i]++;\n                }\n            } else {\n                const tokens = data.split(' ');\n                for (const token of tokens) {\n                    const uid = Number(token.slice(2));\n                    mentions[uid]++;\n                }\n            }\n        }\n    }\n    return Array.from(mentions);\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

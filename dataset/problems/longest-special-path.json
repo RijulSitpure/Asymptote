@@ -1,0 +1,78 @@
+{
+  "slug": "longest-special-path",
+  "number": 3425,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Root to Node Path Traversal",
+      "text": "Traverse the rooted tree downward while keeping track of the path from the root to the current node."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Distances on Branches",
+      "text": "Record running prefix distances along the ancestral branch to compute path lengths between any ancestor and descendant in constant time."
+    },
+    {
+      "level": 3,
+      "title": "Tracking Ancestor Depths",
+      "text": "Maintain the latest depth where each node value appears along the current path. The start of any valid special path cannot precede that depth."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def longestSpecialPath(self, edges: list[list[int]], nums: list[int]) -> list[int]:\n        import sys\n        sys.setrecursionlimit(200000)\n        n = len(nums)\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n        \n        pos = {}\n        dist = [0]\n        path = [0]\n        max_len = 0\n        min_nodes = 1\n        \n        def dfs(u, p, top_idx):\n            nonlocal max_len, min_nodes\n            val = nums[u]\n            prev_depth = pos.get(val, -1)\n            new_top = max(top_idx, prev_depth + 1)\n            \n            curr_len = dist[-1] - dist[new_top]\n            curr_nodes = len(path) - new_top\n            if curr_len > max_len:\n                max_len = curr_len\n                min_nodes = curr_nodes\n            elif curr_len == max_len and curr_len > 0:\n                min_nodes = min(min_nodes, curr_nodes)\n            \n            pos[val] = len(path) - 1\n            for v, w in adj[u]:\n                if v != p:\n                    dist.append(dist[-1] + w)\n                    path.append(v)\n                    dfs(v, u, new_top)\n                    path.pop()\n                    dist.pop()\n            if prev_depth != -1:\n                pos[val] = prev_depth\n            else:\n                del pos[val]\n        \n        dfs(0, -1, 0)\n        return [max_len, min_nodes]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes in the tree"
+    ],
+    "notes": "Traverses tree with DFS while tracking ancestor depths in a hash map with constant time backtracking.",
+    "whyNaiveFails": "Checking every downward path independently takes quadratic time which exceeds limits for fifty thousand nodes.",
+    "spaceTimeTradeoff": "Linear auxiliary storage maintains recursion stack, prefix distances, and ancestral depth positions.",
+    "interviewerExpectation": "Combines tree traversal with two pointer sliding window constraints on tree paths."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "class Solution:\n    def longestSpecialPath(self, edges: list[list[int]], nums: list[int]) -> list[int]:\n        import sys\n        sys.setrecursionlimit(200000)\n        n = len(nums)\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n        \n        pos = {}\n        dist = [0]\n        path = [0]\n        max_len = 0\n        min_nodes = 1\n        \n        def dfs(u, p, top_idx):\n            nonlocal max_len, min_nodes\n            val = nums[u]\n            prev_depth = pos.get(val, -1)\n            new_top = max(top_idx, prev_depth + 1)\n            \n            curr_len = dist[-1] - dist[new_top]\n            curr_nodes = len(path) - new_top\n            if curr_len > max_len:\n                max_len = curr_len\n                min_nodes = curr_nodes\n            elif curr_len == max_len and curr_len > 0:\n                min_nodes = min(min_nodes, curr_nodes)\n            \n            pos[val] = len(path) - 1\n            for v, w in adj[u]:\n                if v != p:\n                    dist.append(dist[-1] + w)\n                    path.append(v)\n                    dfs(v, u, new_top)\n                    path.pop()\n                    dist.pop()\n            if prev_depth != -1:\n                pos[val] = prev_depth\n            else:\n                del pos[val]\n        \n        dfs(0, -1, 0)\n        return [max_len, min_nodes]"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<int> longestSpecialPath(std::vector<std::vector<int>>& edges, std::vector<int>& nums) {\n        int n = nums.size();\n        std::vector<std::vector<std::pair<int, int>>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].emplace_back(e[1], e[2]);\n            adj[e[1]].emplace_back(e[0], e[2]);\n        }\n        \n        std::unordered_map<int, int> pos;\n        std::vector<int> dist = {0};\n        std::vector<int> path = {0};\n        int max_len = 0;\n        int min_nodes = 1;\n        \n        auto dfs = [&](auto&& self, int u, int p, int top_idx) -> void {\n            int val = nums[u];\n            int prev_depth = pos.count(val) ? pos[val] : -1;\n            int new_top = std::max(top_idx, prev_depth + 1);\n            \n            int curr_len = dist.back() - dist[new_top];\n            int curr_nodes = (int)path.size() - new_top;\n            if (curr_len > max_len) {\n                max_len = curr_len;\n                min_nodes = curr_nodes;\n            } else if (curr_len == max_len && curr_len > 0) {\n                min_nodes = std::min(min_nodes, curr_nodes);\n            }\n            \n            pos[val] = (int)path.size() - 1;\n            for (const auto& edge : adj[u]) {\n                int v = edge.first;\n                int w = edge.second;\n                if (v != p) {\n                    dist.push_back(dist.back() + w);\n                    path.push_back(v);\n                    self(self, v, u, new_top);\n                    path.pop_back();\n                    dist.pop_back();\n                }\n            }\n            if (prev_depth != -1) {\n                pos[val] = prev_depth;\n            } else {\n                pos.erase(val);\n            }\n        };\n        \n        dfs(dfs, 0, -1, 0);\n        return {max_len, min_nodes};\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int maxLen = 0;\n    private int minNodes = 1;\n    \n    public int[] longestSpecialPath(int[][] edges, int[] nums) {\n        int n = nums.length;\n        List<int[]>[] adj = new ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(new int[]{e[1], e[2]});\n            adj[e[1]].add(new int[]{e[0], e[2]});\n        }\n        \n        Map<Integer, Integer> pos = new HashMap<>();\n        List<Integer> dist = new ArrayList<>();\n        dist.add(0);\n        List<Integer> path = new ArrayList<>();\n        path.add(0);\n        \n        dfs(0, -1, 0, adj, nums, pos, dist, path);\n        return new int[]{maxLen, minNodes};\n    }\n    \n    private void dfs(int u, int p, int topIdx, List<int[]>[] adj, int[] nums, Map<Integer, Integer> pos, List<Integer> dist, List<Integer> path) {\n        int val = nums[u];\n        int prevDepth = pos.getOrDefault(val, -1);\n        int newTop = Math.max(topIdx, prevDepth + 1);\n        \n        int currLen = dist.get(dist.size() - 1) - dist.get(newTop);\n        int currNodes = path.size() - newTop;\n        if (currLen > maxLen) {\n            maxLen = currLen;\n            minNodes = currNodes;\n        } else if (currLen == maxLen && currLen > 0) {\n            minNodes = Math.min(minNodes, currNodes);\n        }\n        \n        pos.put(val, path.size() - 1);\n        for (int[] edge : adj[u]) {\n            int v = edge[0];\n            int w = edge[1];\n            if (v != p) {\n                dist.add(dist.get(dist.size() - 1) + w);\n                path.add(v);\n                dfs(v, u, newTop, adj, nums, pos, dist, path);\n                path.remove(path.size() - 1);\n                dist.remove(dist.size() - 1);\n            }\n        }\n        if (prevDepth != -1) {\n            pos.put(val, prevDepth);\n        } else {\n            pos.remove(val);\n        }\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "var longestSpecialPath = function(edges, nums) {\n    const n = nums.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        adj[u].push([v, w]);\n        adj[v].push([u, w]);\n    }\n    \n    const pos = new Map();\n    const dist = [0];\n    const path = [0];\n    let maxLen = 0;\n    let minNodes = 1;\n    \n    function dfs(u, p, topIdx) {\n        const val = nums[u];\n        const prevDepth = pos.has(val) ? pos.get(val) : -1;\n        const newTop = Math.max(topIdx, prevDepth + 1);\n        \n        const currLen = dist[dist.length - 1] - dist[newTop];\n        const currNodes = path.length - newTop;\n        if (currLen > maxLen) {\n            maxLen = currLen;\n            minNodes = currNodes;\n        } else if (currLen === maxLen && currLen > 0) {\n            minNodes = Math.min(minNodes, currNodes);\n        }\n        \n        pos.set(val, path.length - 1);\n        for (const [v, w] of adj[u]) {\n            if (v !== p) {\n                dist.push(dist[dist.length - 1] + w);\n                path.push(v);\n                dfs(v, u, newTop);\n                path.pop();\n                dist.pop();\n            }\n        }\n        if (prevDepth !== -1) {\n            pos.set(val, prevDepth);\n        } else {\n            pos.delete(val);\n        }\n    }\n    \n    dfs(0, -1, 0);\n    return [maxLen, minNodes];\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

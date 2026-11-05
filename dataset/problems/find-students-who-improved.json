@@ -1,0 +1,71 @@
+{
+  "slug": "find-students-who-improved",
+  "number": 3421,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Examination Sequence",
+      "text": "Partition by student and subject and rank exam dates chronologically."
+    },
+    {
+      "level": 2,
+      "title": "Score Extraction",
+      "text": "Identify the earliest and latest scores using ascending and descending date rankings."
+    },
+    {
+      "level": 3,
+      "title": "Strict Improvement Check",
+      "text": "Filter pairs with at least two exams where latest_score strictly exceeds first_score, ordered by student_id and subject."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH RankedScores AS (\n    SELECT \n        student_id, \n        subject, \n        score, \n        exam_date,\n        RANK() OVER (PARTITION BY student_id, subject ORDER BY exam_date ASC) AS rn_asc,\n        RANK() OVER (PARTITION BY student_id, subject ORDER BY exam_date DESC) AS rn_desc\n    FROM Scores\n),\nFirstLastScores AS (\n    SELECT \n        student_id, \n        subject, \n        MAX(CASE WHEN rn_asc = 1 THEN score END) AS first_score,\n        MAX(CASE WHEN rn_desc = 1 THEN score END) AS latest_score\n    FROM RankedScores\n    GROUP BY student_id, subject\n    HAVING COUNT(*) > 1\n)\nSELECT \n    student_id, \n    subject, \n    first_score, \n    latest_score\nFROM FirstLastScores\nWHERE latest_score > first_score\nORDER BY student_id ASC, subject ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of score records"
+    ],
+    "notes": "Window ranking partition and aggregation over student scores.",
+    "whyNaiveFails": "Joining full date cartesian products degrades performance needlessly.",
+    "spaceTimeTradeoff": "O(n) auxiliary CTE partitions.",
+    "interviewerExpectation": "Uses window ranking to extract boundary exam scores per partition."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH RankedScores AS (\n    SELECT \n        student_id, \n        subject, \n        score, \n        exam_date,\n        RANK() OVER (PARTITION BY student_id, subject ORDER BY exam_date ASC) AS rn_asc,\n        RANK() OVER (PARTITION BY student_id, subject ORDER BY exam_date DESC) AS rn_desc\n    FROM Scores\n),\nFirstLastScores AS (\n    SELECT \n        student_id, \n        subject, \n        MAX(CASE WHEN rn_asc = 1 THEN score END) AS first_score,\n        MAX(CASE WHEN rn_desc = 1 THEN score END) AS latest_score\n    FROM RankedScores\n    GROUP BY student_id, subject\n    HAVING COUNT(*) > 1\n)\nSELECT \n    student_id, \n    subject, \n    first_score, \n    latest_score\nFROM FirstLastScores\nWHERE latest_score > first_score\nORDER BY student_id ASC, subject ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH RankedScores AS (\n    SELECT \n        student_id, \n        subject, \n        score, \n        exam_date,\n        RANK() OVER (PARTITION BY student_id, subject ORDER BY exam_date ASC) AS rn_asc,\n        RANK() OVER (PARTITION BY student_id, subject ORDER BY exam_date DESC) AS rn_desc\n    FROM Scores\n),\nFirstLastScores AS (\n    SELECT \n        student_id, \n        subject, \n        MAX(CASE WHEN rn_asc = 1 THEN score END) AS first_score,\n        MAX(CASE WHEN rn_desc = 1 THEN score END) AS latest_score\n    FROM RankedScores\n    GROUP BY student_id, subject\n    HAVING COUNT(*) > 1\n)\nSELECT \n    student_id, \n    subject, \n    first_score, \n    latest_score\nFROM FirstLastScores\nWHERE latest_score > first_score\nORDER BY student_id ASC, subject ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_students_who_improved(scores: pd.DataFrame) -> pd.DataFrame:\n    if scores.empty:\n        return pd.DataFrame(columns=['student_id', 'subject', 'first_score', 'latest_score'])\n        \n    res = []\n    grouped = scores.groupby(['student_id', 'subject'])\n    for (sid, subj), group in grouped:\n        if len(group['exam_date'].unique()) >= 2:\n            sorted_g = group.sort_values(by='exam_date')\n            first_sc = sorted_g.iloc[0]['score']\n            latest_sc = sorted_g.iloc[-1]['score']\n            if latest_sc > first_sc:\n                res.append({\n                    'student_id': sid,\n                    'subject': subj,\n                    'first_score': first_sc,\n                    'latest_score': latest_sc\n                })\n                \n    if not res:\n        return pd.DataFrame(columns=['student_id', 'subject', 'first_score', 'latest_score'])\n        \n    df = pd.DataFrame(res)\n    return df.sort_values(by=['student_id', 'subject'], ascending=[True, True])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

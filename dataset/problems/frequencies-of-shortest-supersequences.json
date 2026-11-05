@@ -1,0 +1,79 @@
+{
+  "slug": "frequencies-of-shortest-supersequences",
+  "number": 3435,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Directed Order Graph",
+      "text": "Model the pairs of letters as directed edges indicating ordering in the supersequence."
+    },
+    {
+      "level": 2,
+      "title": "Cycle Elimination via Duplication",
+      "text": "Doubling a character breaks all cycles passing through it, placing one instance at the front and one at the back."
+    },
+    {
+      "level": 3,
+      "title": "Feedback Vertex Set Search",
+      "text": "Find minimum subsets of characters to double such that the remaining induced subgraph is a DAG."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def supersequences(self, words: list[str]) -> list[list[int]]:\n        from itertools import combinations\n        nodes = sorted(list(set(''.join(words))))\n        idx = {ch: i for i, ch in enumerate(nodes)}\n        n = len(nodes)\n        adj = [0] * n\n        in_adj = [0] * n\n        for w in words:\n            u, v = idx[w[0]], idx[w[1]]\n            adj[u] |= (1 << v)\n            in_adj[v] |= (1 << u)\n            \n        def is_dag(r_mask):\n            in_deg = [0] * n\n            q = []\n            count = 0\n            total = 0\n            for i in range(n):\n                if (r_mask >> i) & 1:\n                    total += 1\n                    deg = bin(in_adj[i] & r_mask).count('1')\n                    in_deg[i] = deg\n                    if deg == 0:\n                        q.append(i)\n            head = 0\n            while head < len(q):\n                u = q[head]\n                head += 1\n                count += 1\n                out = adj[u] & r_mask\n                while out:\n                    lsb = out & -out\n                    v = lsb.bit_length() - 1\n                    in_deg[v] -= 1\n                    if in_deg[v] == 0:\n                        q.append(v)\n                    out ^= lsb\n            return count == total\n            \n        ans = []\n        for k in range(n + 1):\n            for comb in combinations(range(n), k):\n                d_mask = sum(1 << i for i in comb)\n                r_mask = ((1 << n) - 1) ^ d_mask\n                if is_dag(r_mask):\n                    freq = [0] * 26\n                    for ch in nodes:\n                        freq[ord(ch) - ord('a')] = 1\n                    for i in comb:\n                        freq[ord(nodes[i]) - ord('a')] = 2\n                    ans.append(freq)\n            if ans:\n                break\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(2^V * V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of unique letters (<= 16)",
+      "E: number of input words"
+    ],
+    "notes": "Enumerates doubled subsets by increasing cardinality and verifies DAG property using bitwise Kahn algorithm.",
+    "whyNaiveFails": "Full supersequence search has factorial branching.",
+    "spaceTimeTradeoff": "Bitmask adjacency representations enable rapid bitwise cycle checks.",
+    "interviewerExpectation": "Connects shortest supersequence of length-two pairs to feedback vertex set on directed graphs."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "class Solution:\n    def supersequences(self, words: list[str]) -> list[list[int]]:\n        from itertools import combinations\n        nodes = sorted(list(set(''.join(words))))\n        idx = {ch: i for i, ch in enumerate(nodes)}\n        n = len(nodes)\n        adj = [0] * n\n        in_adj = [0] * n\n        for w in words:\n            u, v = idx[w[0]], idx[w[1]]\n            adj[u] |= (1 << v)\n            in_adj[v] |= (1 << u)\n            \n        def is_dag(r_mask):\n            in_deg = [0] * n\n            q = []\n            count = 0\n            total = 0\n            for i in range(n):\n                if (r_mask >> i) & 1:\n                    total += 1\n                    deg = bin(in_adj[i] & r_mask).count('1')\n                    in_deg[i] = deg\n                    if deg == 0:\n                        q.append(i)\n            head = 0\n            while head < len(q):\n                u = q[head]\n                head += 1\n                count += 1\n                out = adj[u] & r_mask\n                while out:\n                    lsb = out & -out\n                    v = lsb.bit_length() - 1\n                    in_deg[v] -= 1\n                    if in_deg[v] == 0:\n                        q.append(v)\n                    out ^= lsb\n            return count == total\n            \n        ans = []\n        for k in range(n + 1):\n            for comb in combinations(range(n), k):\n                d_mask = sum(1 << i for i in comb)\n                r_mask = ((1 << n) - 1) ^ d_mask\n                if is_dag(r_mask):\n                    freq = [0] * 26\n                    for ch in nodes:\n                        freq[ord(ch) - ord('a')] = 1\n                    for i in comb:\n                        freq[ord(nodes[i]) - ord('a')] = 2\n                    ans.append(freq)\n            if ans:\n                break\n        return ans"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "#include <vector>\n#include <string>\n#include <set>\n#include <map>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<std::vector<int>> supersequences(std::vector<std::string>& words) {\n        std::set<char> node_set;\n        for (const auto& w : words) {\n            node_set.insert(w[0]);\n            node_set.insert(w[1]);\n        }\n        std::vector<char> nodes(node_set.begin(), node_set.end());\n        int n = nodes.size();\n        std::map<char, int> idx;\n        for (int i = 0; i < n; ++i) idx[nodes[i]] = i;\n        \n        std::vector<int> adj(n, 0);\n        std::vector<int> in_adj(n, 0);\n        for (const auto& w : words) {\n            int u = idx[w[0]], v = idx[w[1]];\n            adj[u] |= (1 << v);\n            in_adj[v] |= (1 << u);\n        }\n        \n        auto is_dag = [&](int r_mask) -> bool {\n            std::vector<int> in_deg(n, 0);\n            std::vector<int> q;\n            int total = 0;\n            for (int i = 0; i < n; ++i) {\n                if ((r_mask >> i) & 1) {\n                    total++;\n                    int deg = __builtin_popcount(in_adj[i] & r_mask);\n                    in_deg[i] = deg;\n                    if (deg == 0) q.push_back(i);\n                }\n            }\n            int head = 0;\n            int count = 0;\n            while (head < (int)q.size()) {\n                int u = q[head++];\n                count++;\n                int out = adj[u] & r_mask;\n                while (out) {\n                    int lsb = out & -out;\n                    int v = __builtin_ctz(lsb);\n                    in_deg[v]--;\n                    if (in_deg[v] == 0) q.push_back(v);\n                    out ^= lsb;\n                }\n            }\n            return count == total;\n        };\n        \n        std::vector<std::vector<int>> ans;\n        for (int k = 0; k <= n; ++k) {\n            for (int d_mask = 0; d_mask < (1 << n); ++d_mask) {\n                if (__builtin_popcount(d_mask) == k) {\n                    int r_mask = ((1 << n) - 1) ^ d_mask;\n                    if (is_dag(r_mask)) {\n                        std::vector<int> freq(26, 0);\n                        for (char ch : nodes) freq[ch - 'a'] = 1;\n                        for (int i = 0; i < n; ++i) {\n                            if ((d_mask >> i) & 1) freq[nodes[i] - 'a'] = 2;\n                        }\n                        ans.push_back(freq);\n                    }\n                }\n            }\n            if (!ans.empty()) break;\n        }\n        return ans;\n    }\n};"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "import java.util.*;\n\nclass Solution {\n    public List<List<Integer>> supersequences(String[] words) {\n        TreeSet<Character> nodeSet = new TreeSet<>();\n        for (String w : words) {\n            nodeSet.add(w.charAt(0));\n            nodeSet.add(w.charAt(1));\n        }\n        List<Character> nodes = new ArrayList<>(nodeSet);\n        int n = nodes.size();\n        Map<Character, Integer> idx = new HashMap<>();\n        for (int i = 0; i < n; i++) idx.put(nodes.get(i), i);\n        \n        int[] adj = new int[n];\n        int[] inAdj = new int[n];\n        for (String w : words) {\n            int u = idx.get(w.charAt(0));\n            int v = idx.get(w.charAt(1));\n            adj[u] |= (1 << v);\n            inAdj[v] |= (1 << u);\n        }\n        \n        List<List<Integer>> ans = new ArrayList<>();\n        for (int k = 0; k <= n; k++) {\n            for (int dMask = 0; dMask < (1 << n); dMask++) {\n                if (Integer.bitCount(dMask) == k) {\n                    int rMask = ((1 << n) - 1) ^ dMask;\n                    if (isDag(rMask, n, adj, inAdj)) {\n                        List<Integer> freq = new ArrayList<>(Collections.nCopies(26, 0));\n                        for (char ch : nodes) freq.set(ch - 'a', 1);\n                        for (int i = 0; i < n; i++) {\n                            if (((dMask >> i) & 1) == 1) freq.set(nodes.get(i) - 'a', 2);\n                        }\n                        ans.add(freq);\n                    }\n                }\n            }\n            if (!ans.isEmpty()) break;\n        }\n        return ans;\n    }\n    \n    private boolean isDag(int rMask, int n, int[] adj, int[] inAdj) {\n        int[] inDeg = new int[n];\n        int[] q = new int[n];\n        int qLen = 0;\n        int total = 0;\n        for (int i = 0; i < n; i++) {\n            if (((rMask >> i) & 1) == 1) {\n                total++;\n                int deg = Integer.bitCount(inAdj[i] & rMask);\n                inDeg[i] = deg;\n                if (deg == 0) q[qLen++] = i;\n            }\n        }\n        int head = 0;\n        int count = 0;\n        while (head < qLen) {\n            int u = q[head++];\n            count++;\n            int out = adj[u] & rMask;\n            while (out != 0) {\n                int lsb = out & -out;\n                int v = Integer.numberOfTrailingZeros(lsb);\n                inDeg[v]--;\n                if (inDeg[v] == 0) q[qLen++] = v;\n                out ^= lsb;\n            }\n        }\n        return count == total;\n    }\n}"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "code": "var supersequences = function(words) {\n    const nodeSet = new Set();\n    for (const w of words) {\n        nodeSet.add(w[0]);\n        nodeSet.add(w[1]);\n    }\n    const nodes = Array.from(nodeSet).sort();\n    const n = nodes.length;\n    const idx = new Map();\n    for (let i = 0; i < n; i++) idx.set(nodes[i], i);\n    \n    const adj = new Int32Array(n);\n    const inAdj = new Int32Array(n);\n    for (const w of words) {\n        const u = idx.get(w[0]);\n        const v = idx.get(w[1]);\n        adj[u] |= (1 << v);\n        inAdj[v] |= (1 << u);\n    }\n    \n    function popcount(x) {\n        let cnt = 0;\n        while (x) {\n            x &= x - 1;\n            cnt++;\n        }\n        return cnt;\n    }\n    \n    function isDag(rMask) {\n        const inDeg = new Int32Array(n);\n        const q = [];\n        let total = 0;\n        for (let i = 0; i < n; i++) {\n            if ((rMask >> i) & 1) {\n                total++;\n                const deg = popcount(inAdj[i] & rMask);\n                inDeg[i] = deg;\n                if (deg === 0) q.push(i);\n            }\n        }\n        let head = 0;\n        let count = 0;\n        while (head < q.length) {\n            const u = q[head++];\n            count++;\n            let out = adj[u] & rMask;\n            while (out) {\n                const lsb = out & -out;\n                const v = 31 - Math.clz32(lsb);\n                inDeg[v]--;\n                if (inDeg[v] === 0) q.push(v);\n                out ^= lsb;\n            }\n        }\n        return count === total;\n    }\n    \n    const ans = [];\n    for (let k = 0; k <= n; k++) {\n        for (let dMask = 0; dMask < (1 << n); dMask++) {\n            if (popcount(dMask) === k) {\n                const rMask = ((1 << n) - 1) ^ dMask;\n                if (isDag(rMask)) {\n                    const freq = Array(26).fill(0);\n                    for (const ch of nodes) freq[ch.charCodeAt(0) - 97] = 1;\n                    for (let i = 0; i < n; i++) {\n                        if ((dMask >> i) & 1) freq[nodes[i].charCodeAt(0) - 97] = 2;\n                    }\n                    ans.push(freq);\n                }\n            }\n        }\n        if (ans.length > 0) break;\n    }\n    return ans;\n};"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

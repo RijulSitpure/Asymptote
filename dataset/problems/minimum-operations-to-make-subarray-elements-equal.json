@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-operations-to-make-subarray-elements-equal",
+  "number": 3422,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Median Optimality",
+      "text": "The minimum cost to make a window of numbers equal is achieved by setting all elements to the window median."
+    },
+    {
+      "level": 2,
+      "title": "Two-Heap Sliding Window",
+      "text": "Maintain two balanced priority queues to track the median and element sums dynamically."
+    },
+    {
+      "level": 3,
+      "title": "Lazy Deletion",
+      "text": "Track evicted window elements in a hash map and lazily pop stale entries from heap tops upon balance checks."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport heapq\nfrom collections import defaultdict\n\nclass Solution:\n    def minOperations(self, nums: list[int], k: int) -> int:\n        small = []\n        large = []\n        delayed = defaultdict(int)\n        \n        small_size = 0\n        large_size = 0\n        sum_small = 0\n        sum_large = 0\n        target = (k + 1) // 2\n        \n        def prune(heap, is_small):\n            while heap:\n                val = -heap[0] if is_small else heap[0]\n                if delayed[val] > 0:\n                    delayed[val] -= 1\n                    heapq.heappop(heap)\n                else:\n                    break\n                    \n        def rebalance():\n            nonlocal small_size, large_size, sum_small, sum_large\n            while small_size > target:\n                prune(small, True)\n                val = -heapq.heappop(small)\n                sum_small -= val\n                small_size -= 1\n                heapq.heappush(large, val)\n                sum_large += val\n                large_size += 1\n                prune(small, True)\n            while small_size < target and large_size > 0:\n                prune(large, False)\n                val = heapq.heappop(large)\n                sum_large -= val\n                large_size -= 1\n                heapq.heappush(small, -val)\n                sum_small += val\n                small_size += 1\n                prune(large, False)\n\n        def add(num):\n            nonlocal small_size, large_size, sum_small, sum_large\n            prune(small, True)\n            if not small or num <= -small[0]:\n                heapq.heappush(small, -num)\n                sum_small += num\n                small_size += 1\n            else:\n                heapq.heappush(large, num)\n                sum_large += num\n                large_size += 1\n            rebalance()\n            \n        def remove(num):\n            nonlocal small_size, large_size, sum_small, sum_large\n            prune(small, True)\n            delayed[num] += 1\n            if num <= -small[0]:\n                small_size -= 1\n                sum_small -= num\n                if num == -small[0]:\n                    prune(small, True)\n            else:\n                large_size -= 1\n                sum_large -= num\n                if large and num == large[0]:\n                    prune(large, False)\n            rebalance()\n\n        for i in range(k):\n            add(nums[i])\n            \n        def get_cost():\n            prune(small, True)\n            prune(large, False)\n            median = -small[0]\n            return (median * small_size - sum_small) + (sum_large - median * large_size)\n\n        ans = get_cost()\n        for i in range(k, len(nums)):\n            add(nums[i])\n            remove(nums[i - k])\n            ans = min(ans, get_cost())\n            \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log k)",
+    "space": "O(k)",
+    "variables": [
+      "n: length of array nums",
+      "k: sliding window size"
+    ],
+    "notes": "Maintains sliding window median in logarithmic time using dual priority queues.",
+    "whyNaiveFails": "Re-sorting each size-k window incurs O(n * k log k) which times out.",
+    "spaceTimeTradeoff": "O(k) auxiliary heap and frequency storage.",
+    "interviewerExpectation": "Recognizes median minimizes L1 distance and tracks dynamic median using dual priority queues with lazy deletion."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\nfrom collections import defaultdict\n\nclass Solution:\n    def minOperations(self, nums: list[int], k: int) -> int:\n        small = []\n        large = []\n        delayed = defaultdict(int)\n        \n        small_size = 0\n        large_size = 0\n        sum_small = 0\n        sum_large = 0\n        target = (k + 1) // 2\n        \n        def prune(heap, is_small):\n            while heap:\n                val = -heap[0] if is_small else heap[0]\n                if delayed[val] > 0:\n                    delayed[val] -= 1\n                    heapq.heappop(heap)\n                else:\n                    break\n                    \n        def rebalance():\n            nonlocal small_size, large_size, sum_small, sum_large\n            while small_size > target:\n                prune(small, True)\n                val = -heapq.heappop(small)\n                sum_small -= val\n                small_size -= 1\n                heapq.heappush(large, val)\n                sum_large += val\n                large_size += 1\n                prune(small, True)\n            while small_size < target and large_size > 0:\n                prune(large, False)\n                val = heapq.heappop(large)\n                sum_large -= val\n                large_size -= 1\n                heapq.heappush(small, -val)\n                sum_small += val\n                small_size += 1\n                prune(large, False)\n\n        def add(num):\n            nonlocal small_size, large_size, sum_small, sum_large\n            prune(small, True)\n            if not small or num <= -small[0]:\n                heapq.heappush(small, -num)\n                sum_small += num\n                small_size += 1\n            else:\n                heapq.heappush(large, num)\n                sum_large += num\n                large_size += 1\n            rebalance()\n            \n        def remove(num):\n            nonlocal small_size, large_size, sum_small, sum_large\n            prune(small, True)\n            delayed[num] += 1\n            if num <= -small[0]:\n                small_size -= 1\n                sum_small -= num\n                if num == -small[0]:\n                    prune(small, True)\n            else:\n                large_size -= 1\n                sum_large -= num\n                if large and num == large[0]:\n                    prune(large, False)\n            rebalance()\n\n        for i in range(k):\n            add(nums[i])\n            \n        def get_cost():\n            prune(small, True)\n            prune(large, False)\n            median = -small[0]\n            return (median * small_size - sum_small) + (sum_large - median * large_size)\n\n        ans = get_cost()\n        for i in range(k, len(nums)):\n            add(nums[i])\n            remove(nums[i - k])\n            ans = min(ans, get_cost())\n            \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\n    struct SumMultiset {\n        multiset<long long> nums;\n        long long sum = 0;\n        void insert(long long val) {\n            nums.insert(val);\n            sum += val;\n        }\n        void erase(long long val) {\n            auto it = nums.find(val);\n            if (it != nums.end()) {\n                nums.erase(it);\n                sum -= val;\n            }\n        }\n        long long getMax() const {\n            return nums.empty() ? 0 : *nums.rbegin();\n        }\n        long long getMin() const {\n            return nums.empty() ? 0 : *nums.begin();\n        }\n        size_t size() const {\n            return nums.size();\n        }\n    };\n\npublic:\n    long long minOperations(vector<int>& nums, int k) {\n        SumMultiset below, above;\n        int target = (k + 1) / 2;\n        \n        auto balance = [&]() {\n            while ((int)below.size() > target) {\n                long long v = below.getMax();\n                below.erase(v);\n                above.insert(v);\n            }\n            while ((int)below.size() < target && above.size() > 0) {\n                long long v = above.getMin();\n                above.erase(v);\n                below.insert(v);\n            }\n        };\n        \n        auto add = [&](long long val) {\n            if (below.size() == 0 || val <= below.getMax()) {\n                below.insert(val);\n            } else {\n                above.insert(val);\n            }\n            balance();\n        };\n        \n        auto remove = [&](long long val) {\n            if (below.nums.find(val) != below.nums.end()) {\n                below.erase(val);\n            } else {\n                above.erase(val);\n            }\n            balance();\n        };\n        \n        auto getCost = [&]() -> long long {\n            long long median = below.getMax();\n            return (median * below.size() - below.sum) + (above.sum - median * above.size());\n        };\n        \n        for (int i = 0; i < k; ++i) add(nums[i]);\n        long long ans = getCost();\n        \n        for (int i = k; i < (int)nums.size(); ++i) {\n            add(nums[i]);\n            remove(nums[i - k]);\n            ans = min(ans, getCost());\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    private PriorityQueue<Long> small = new PriorityQueue<>(Collections.reverseOrder());\n    private PriorityQueue<Long> large = new PriorityQueue<>();\n    private Map<Long, Integer> delayed = new HashMap<>();\n    private int smallSize = 0, largeSize = 0;\n    private long sumSmall = 0, sumLarge = 0;\n    private int target;\n\n    public long minOperations(int[] nums, int k) {\n        target = (k + 1) / 2;\n        for (int i = 0; i < k; ++i) add(nums[i]);\n        long ans = getCost();\n        \n        for (int i = k; i < nums.length; ++i) {\n            add(nums[i]);\n            remove(nums[i - k]);\n            ans = Math.min(ans, getCost());\n        }\n        return ans;\n    }\n\n    private void prune(PriorityQueue<Long> heap) {\n        while (!heap.isEmpty()) {\n            long val = heap.peek();\n            int count = delayed.getOrDefault(val, 0);\n            if (count > 0) {\n                delayed.put(val, count - 1);\n                heap.poll();\n            } else break;\n        }\n    }\n\n    private void balance() {\n        while (smallSize > target) {\n            prune(small);\n            long val = small.poll();\n            sumSmall -= val;\n            smallSize--;\n            large.offer(val);\n            sumLarge += val;\n            largeSize++;\n            prune(small);\n        }\n        while (smallSize < target && largeSize > 0) {\n            prune(large);\n            long val = large.poll();\n            sumLarge -= val;\n            largeSize--;\n            small.offer(val);\n            sumSmall += val;\n            smallSize++;\n            prune(large);\n        }\n    }\n\n    private void add(long num) {\n        prune(small);\n        if (small.isEmpty() || num <= small.peek()) {\n            small.offer(num);\n            sumSmall += num;\n            smallSize++;\n        } else {\n            large.offer(num);\n            sumLarge += num;\n            largeSize++;\n        }\n        balance();\n    }\n\n    private void remove(long num) {\n        prune(small);\n        delayed.put(num, delayed.getOrDefault(num, 0) + 1);\n        if (num <= small.peek()) {\n            smallSize--;\n            sumSmall -= num;\n            if (num == small.peek()) prune(small);\n        } else {\n            largeSize--;\n            sumLarge -= num;\n            if (!large.isEmpty() && num == large.peek()) prune(large);\n        }\n        balance();\n    }\n\n    private long getCost() {\n        prune(small);\n        prune(large);\n        long median = small.peek();\n        return (median * smallSize - sumSmall) + (sumLarge - median * largeSize);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minOperations = function(nums, k) {\n    const target = Math.floor((k + 1) / 2);\n    const window = [];\n    \n    function insertSorted(arr, val) {\n        let l = 0, r = arr.length;\n        while (l < r) {\n            const mid = (l + r) >> 1;\n            if (arr[mid] < val) l = mid + 1;\n            else r = mid;\n        }\n        arr.splice(l, 0, val);\n    }\n    \n    function removeSorted(arr, val) {\n        let l = 0, r = arr.length;\n        while (l < r) {\n            const mid = (l + r) >> 1;\n            if (arr[mid] < val) l = mid + 1;\n            else r = mid;\n        }\n        arr.splice(l, 1);\n    }\n    \n    for (let i = 0; i < k; ++i) insertSorted(window, nums[i]);\n    \n    function getCost() {\n        const median = window[target - 1];\n        let cost = 0;\n        for (let i = 0; i < k; ++i) {\n            cost += Math.abs(window[i] - median);\n        }\n        return cost;\n    }\n    \n    let ans = getCost();\n    for (let i = k; i < nums.length; ++i) {\n        insertSorted(window, nums[i]);\n        removeSorted(window, nums[i - k]);\n        ans = Math.min(ans, getCost());\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}
