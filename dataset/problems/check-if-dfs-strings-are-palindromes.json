@@ -1,0 +1,79 @@
+{
+  "slug": "check-if-dfs-strings-are-palindromes",
+  "number": 3327,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem",
+    "string-matching"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Post-Order Subtree Range",
+      "text": "The recursive string for any subtree rooted at u maps to a contiguous interval [L[u], R[u]] in the global post-order traversal."
+    },
+    {
+      "level": 2,
+      "title": "Subtree Palindrome Substring",
+      "text": "Determining if node u produces a palindrome reduces to checking whether the post-order substring across range [L[u], R[u]] is a palindrome."
+    },
+    {
+      "level": 3,
+      "title": "Manacher Palindrome Radius",
+      "text": "Run Manacher's algorithm on the post-order traversal string in O(n) time. Check if the palindrome radius at center (L[u] + R[u]) + 1 spans the entire subtree length."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def findAnswer(self, parent: list[int], s: str) -> list[bool]:\n        n = len(parent)\n        adj = [[] for _ in range(n)]\n        for i in range(1, n):\n            adj[parent[i]].append(i)\n            \n        # Children in increasing order\n        for i in range(n):\n            adj[i].sort()\n            \n        post_order = []\n        L = [0] * n\n        R = [0] * n\n        \n        # Post-order DFS traversal\n        # We can implement iteratively or increase recursion depth\n        import sys\n        sys.setrecursionlimit(max(200000, n + 100))\n        \n        def dfs(u):\n            l_idx = len(post_order)\n            for v in adj[u]:\n                dfs(v)\n            post_order.append(s[u])\n            r_idx = len(post_order) - 1\n            L[u] = l_idx\n            R[u] = r_idx\n            \n        dfs(0)\n        \n        # Manacher algorithm on post_order string\n        chars = ['#']\n        for ch in post_order:\n            chars.append(ch)\n            chars.append('#')\n            \n        m_len = len(chars)\n        P = [0] * m_len\n        c, r = 0, 0\n        for i in range(m_len):\n            i_mirror = 2 * c - i\n            if i < r:\n                P[i] = min(r - i, P[i_mirror])\n            while i - P[i] - 1 >= 0 and i + P[i] + 1 < m_len and chars[i - P[i] - 1] == chars[i + P[i] + 1]:\n                P[i] += 1\n            if i + P[i] > r:\n                c = i\n                r = i + P[i]\n                \n        ans = [False] * n\n        for i in range(n):\n            l = L[i]\n            r = R[i]\n            # Center in Manacher string chars\n            center = (l + r) + 1\n            span = r - l + 1\n            if P[center] >= span:\n                ans[i] = True\n                \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes in tree"
+    ],
+    "notes": "Post-order DFS and Manacher palindrome algorithm both run in deterministic linear O(n) time.",
+    "whyNaiveFails": "Evaluating substring equality individually per node takes O(n^2) causing TLE.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for tree representation and Manacher radius array.",
+    "interviewerExpectation": "Transforms tree post-order DFS into 1D interval palindrome queries solved via Manacher's algorithm."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def findAnswer(self, parent: list[int], s: str) -> list[bool]:\n        n = len(parent)\n        adj = [[] for _ in range(n)]\n        for i in range(1, n):\n            adj[parent[i]].append(i)\n            \n        # Children in increasing order\n        for i in range(n):\n            adj[i].sort()\n            \n        post_order = []\n        L = [0] * n\n        R = [0] * n\n        \n        # Post-order DFS traversal\n        # We can implement iteratively or increase recursion depth\n        import sys\n        sys.setrecursionlimit(max(200000, n + 100))\n        \n        def dfs(u):\n            l_idx = len(post_order)\n            for v in adj[u]:\n                dfs(v)\n            post_order.append(s[u])\n            r_idx = len(post_order) - 1\n            L[u] = l_idx\n            R[u] = r_idx\n            \n        dfs(0)\n        \n        # Manacher algorithm on post_order string\n        chars = ['#']\n        for ch in post_order:\n            chars.append(ch)\n            chars.append('#')\n            \n        m_len = len(chars)\n        P = [0] * m_len\n        c, r = 0, 0\n        for i in range(m_len):\n            i_mirror = 2 * c - i\n            if i < r:\n                P[i] = min(r - i, P[i_mirror])\n            while i - P[i] - 1 >= 0 and i + P[i] + 1 < m_len and chars[i - P[i] - 1] == chars[i + P[i] + 1]:\n                P[i] += 1\n            if i + P[i] > r:\n                c = i\n                r = i + P[i]\n                \n        ans = [False] * n\n        for i in range(n):\n            l = L[i]\n            r = R[i]\n            # Center in Manacher string chars\n            center = (l + r) + 1\n            span = r - l + 1\n            if P[center] >= span:\n                ans[i] = True\n                \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <string>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<bool> findAnswer(std::vector<int>& parent, std::string s) {\n        int n = parent.size();\n        std::vector<std::vector<int>> adj(n);\n        for (int i = 1; i < n; ++i) {\n            adj[parent[i]].push_back(i);\n        }\n        for (int i = 0; i < n; ++i) {\n            std::sort(adj[i].begin(), adj[i].end());\n        }\n        \n        std::string post_order = \"\";\n        std::vector<int> L(n), R(n);\n        \n        auto dfs = [&](auto& self, int u) -> void {\n            int l_idx = post_order.size();\n            for (int v : adj[u]) self(self, v);\n            post_order.push_back(s[u]);\n            int r_idx = post_order.size() - 1;\n            L[u] = l_idx;\n            R[u] = r_idx;\n        };\n        dfs(dfs, 0);\n        \n        std::string t = \"#\";\n        for (char ch : post_order) {\n            t.push_back(ch);\n            t.push_back('#');\n        }\n        \n        int m_len = t.size();\n        std::vector<int> P(m_len, 0);\n        int c = 0, r = 0;\n        for (int i = 0; i < m_len; ++i) {\n            int i_mirror = 2 * c - i;\n            if (i < r) P[i] = std::min(r - i, P[i_mirror]);\n            while (i - P[i] - 1 >= 0 && i + P[i] + 1 < m_len && t[i - P[i] - 1] == t[i + P[i] + 1]) {\n                P[i]++;\n            }\n            if (i + P[i] > r) {\n                c = i;\n                r = i + P[i];\n            }\n        }\n        \n        std::vector<bool> ans(n, false);\n        for (int i = 0; i < n; ++i) {\n            int l = L[i], right = R[i];\n            int center = (l + right) + 1;\n            int span = right - l + 1;\n            if (P[center] >= span) ans[i] = true;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private List<List<Integer>> adj;\n    private StringBuilder postOrder = new StringBuilder();\n    private int[] L, R;\n\n    public boolean[] findAnswer(int[] parent, String s) {\n        int n = parent.length;\n        adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int i = 1; i < n; i++) adj.get(parent[i]).add(i);\n        for (int i = 0; i < n; i++) Collections.sort(adj.get(i));\n\n        L = new int[n];\n        R = new int[n];\n        dfs(0, s);\n\n        char[] postStr = postOrder.toString().toCharArray();\n        char[] t = new char[2 * n + 1];\n        t[0] = '#';\n        for (int i = 0; i < n; i++) {\n            t[2 * i + 1] = postStr[i];\n            t[2 * i + 2] = '#';\n        }\n\n        int mLen = t.length;\n        int[] P = new int[mLen];\n        int c = 0, r = 0;\n        for (int i = 0; i < mLen; i++) {\n            int iMirror = 2 * c - i;\n            if (i < r) P[i] = Math.min(r - i, P[iMirror]);\n            while (i - P[i] - 1 >= 0 && i + P[i] + 1 < mLen && t[i - P[i] - 1] == t[i + P[i] + 1]) {\n                P[i]++;\n            }\n            if (i + P[i] > r) {\n                c = i;\n                r = i + P[i];\n            }\n        }\n\n        boolean[] ans = new boolean[n];\n        for (int i = 0; i < n; i++) {\n            int left = L[i], right = R[i];\n            int center = (left + right) + 1;\n            int span = right - left + 1;\n            if (P[center] >= span) ans[i] = true;\n        }\n        return ans;\n    }\n\n    private void dfs(int u, String s) {\n        int lIdx = postOrder.length();\n        for (int v : adj.get(u)) dfs(v, s);\n        postOrder.append(s.charAt(u));\n        int rIdx = postOrder.length() - 1;\n        L[u] = lIdx;\n        R[u] = rIdx;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var findAnswer = function(parent, s) {\n    const n = parent.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (let i = 1; i < n; i++) adj[parent[i]].push(i);\n    for (let i = 0; i < n; i++) adj[i].sort((a, b) => a - b);\n\n    const postOrder = [];\n    const L = new Int32Array(n);\n    const R = new Int32Array(n);\n\n    function dfs(u) {\n        const lIdx = postOrder.length;\n        for (const v of adj[u]) dfs(v);\n        postOrder.push(s[u]);\n        const rIdx = postOrder.length - 1;\n        L[u] = lIdx;\n        R[u] = rIdx;\n    }\n    dfs(0);\n\n    const t = ['#'];\n    for (const ch of postOrder) {\n        t.push(ch);\n        t.push('#');\n    }\n\n    const mLen = t.length;\n    const P = new Int32Array(mLen);\n    let c = 0, r = 0;\n    for (let i = 0; i < mLen; i++) {\n        const iMirror = 2 * c - i;\n        if (i < r) P[i] = Math.min(r - i, P[iMirror]);\n        while (i - P[i] - 1 >= 0 && i + P[i] + 1 < mLen && t[i - P[i] - 1] === t[i + P[i] + 1]) {\n            P[i]++;\n        }\n        if (i + P[i] > r) {\n            c = i;\n            r = i + P[i];\n        }\n    }\n\n    const ans = new Array(n).fill(false);\n    for (let i = 0; i < n; i++) {\n        const left = L[i], right = R[i];\n        const center = (left + right) + 1;\n        const span = right - left + 1;\n        if (P[center] >= span) ans[i] = true;\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

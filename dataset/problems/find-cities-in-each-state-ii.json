@@ -1,0 +1,71 @@
+{
+  "slug": "find-cities-in-each-state-ii",
+  "number": 3328,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Group Concatenation",
+      "text": "Group by state and aggregate sorted city names separated by commas using group concatenation."
+    },
+    {
+      "level": 2,
+      "title": "Matching Initial Letter Count",
+      "text": "Count cities whose first letter matches the first letter of their state using a conditional count: count(case when left(city, 1) = left(state, 1) then 1 end)."
+    },
+    {
+      "level": 3,
+      "title": "Group Filter and Sorting",
+      "text": "Filter states in the having clause having at least 3 cities and matching_letter_count > 0. Sort by matching_letter_count descending, then state ascending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    state, \n    GROUP_CONCAT(city ORDER BY city ASC SEPARATOR ', ') AS cities,\n    COUNT(CASE WHEN LEFT(city, 1) = LEFT(state, 1) THEN 1 END) AS matching_letter_count\nFROM cities\nGROUP BY state\nHAVING \n    COUNT(city) >= 3 \n    AND COUNT(CASE WHEN LEFT(city, 1) = LEFT(state, 1) THEN 1 END) > 0\nORDER BY \n    matching_letter_count DESC, \n    state ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total city rows"
+    ],
+    "notes": "Grouping by state and aggregating sorted city names.",
+    "whyNaiveFails": "Correlated subqueries per state for string concatenation cause performance degradation.",
+    "spaceTimeTradeoff": "O(N) memory for string aggregation buffers.",
+    "interviewerExpectation": "Applies group aggregation with conditional counting and having clause filters."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    state, \n    GROUP_CONCAT(city ORDER BY city ASC SEPARATOR ', ') AS cities,\n    COUNT(CASE WHEN LEFT(city, 1) = LEFT(state, 1) THEN 1 END) AS matching_letter_count\nFROM cities\nGROUP BY state\nHAVING \n    COUNT(city) >= 3 \n    AND COUNT(CASE WHEN LEFT(city, 1) = LEFT(state, 1) THEN 1 END) > 0\nORDER BY \n    matching_letter_count DESC, \n    state ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    state, \n    STRING_AGG(city, ', ' ORDER BY city ASC) AS cities,\n    COUNT(CASE WHEN LEFT(city, 1) = LEFT(state, 1) THEN 1 END) AS matching_letter_count\nFROM cities\nGROUP BY state\nHAVING \n    COUNT(city) >= 3 \n    AND COUNT(CASE WHEN LEFT(city, 1) = LEFT(state, 1) THEN 1 END) > 0\nORDER BY \n    matching_letter_count DESC, \n    state ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_cities_in_state(cities: pd.DataFrame) -> pd.DataFrame:\n    def process_group(g):\n        sorted_cities = sorted(g['city'])\n        state = g['state'].iloc[0]\n        match_count = sum(1 for c in sorted_cities if c[0].upper() == state[0].upper())\n        return pd.Series({\n            'cities': ', '.join(sorted_cities),\n            'city_count': len(sorted_cities),\n            'matching_letter_count': match_count\n        })\n\n    res = cities.groupby('state', as_index=False).apply(process_group)\n    res = res[(res['city_count'] >= 3) & (res['matching_letter_count'] > 0)]\n    return res[['state', 'cities', 'matching_letter_count']].sort_values(\n        by=['matching_letter_count', 'state'],\n        ascending=[False, True]\n    )",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

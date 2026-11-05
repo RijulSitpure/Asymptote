@@ -1,0 +1,78 @@
+{
+  "slug": "find-subtree-sizes-after-changes",
+  "number": 3331,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Insight",
+      "text": "Traverse the original hierarchy while remembering the most recent ancestor visited for each label."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Structure",
+      "text": "For each vertex, rewire its parent to the closest ancestor carrying the exact same character if one exists."
+    },
+    {
+      "level": 3,
+      "title": "State Transitions",
+      "text": "Once new parent links are established simultaneously, perform a bottom-up traversal on the updated structure to compute subtree sizes."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def findSubtreeSizes(self, parent: list[int], s: str) -> list[int]:\n        n = len(parent)\n        adj = [[] for _ in range(n)]\n        for i in range(1, n):\n            adj[parent[i]].append(i)\n            \n        new_parent = list(parent)\n        last = {}\n        \n        def dfs_ancestor(u: int):\n            ch = s[u]\n            prev = last.get(ch, -1)\n            if prev != -1 and u != 0:\n                new_parent[u] = prev\n            last[ch] = u\n            for v in adj[u]:\n                dfs_ancestor(v)\n            if prev != -1:\n                last[ch] = prev\n            else:\n                del last[ch]\n                \n        dfs_ancestor(0)\n        \n        new_adj = [[] for _ in range(n)]\n        for i in range(1, n):\n            new_adj[new_parent[i]].append(i)\n            \n        ans = [1] * n\n        def dfs_size(u: int):\n            for v in new_adj[u]:\n                dfs_size(v)\n                ans[u] += ans[v]\n                \n        dfs_size(0)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: size of input"
+    ],
+    "notes": "Evaluates in optimal O(n) runtime.",
+    "whyNaiveFails": "Brute-force exhaustive search exceeds the time limit.",
+    "spaceTimeTradeoff": "Uses O(n) auxiliary memory for optimal state tracking.",
+    "interviewerExpectation": "Identifies optimal pattern to achieve O(n) complexity."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def findSubtreeSizes(self, parent: list[int], s: str) -> list[int]:\n        n = len(parent)\n        adj = [[] for _ in range(n)]\n        for i in range(1, n):\n            adj[parent[i]].append(i)\n            \n        new_parent = list(parent)\n        last = {}\n        \n        def dfs_ancestor(u: int):\n            ch = s[u]\n            prev = last.get(ch, -1)\n            if prev != -1 and u != 0:\n                new_parent[u] = prev\n            last[ch] = u\n            for v in adj[u]:\n                dfs_ancestor(v)\n            if prev != -1:\n                last[ch] = prev\n            else:\n                del last[ch]\n                \n        dfs_ancestor(0)\n        \n        new_adj = [[] for _ in range(n)]\n        for i in range(1, n):\n            new_adj[new_parent[i]].append(i)\n            \n        ans = [1] * n\n        def dfs_size(u: int):\n            for v in new_adj[u]:\n                dfs_size(v)\n                ans[u] += ans[v]\n                \n        dfs_size(0)\n        return ans",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    vector<int> findSubtreeSizes(vector<int>& parent, string s) {\n        int n = parent.size();\n        vector<vector<int>> adj(n);\n        for (int i = 1; i < n; ++i) {\n            adj[parent[i]].push_back(i);\n        }\n        \n        vector<int> new_parent = parent;\n        vector<int> last(26, -1);\n        \n        auto dfs_ancestor = [&](auto& self, int u) -> void {\n            int ch = s[u] - 'a';\n            int prev = last[ch];\n            if (prev != -1 && u != 0) {\n                new_parent[u] = prev;\n            }\n            last[ch] = u;\n            for (int v : adj[u]) {\n                self(self, v);\n            }\n            last[ch] = prev;\n        };\n        \n        dfs_ancestor(dfs_ancestor, 0);\n        \n        vector<vector<int>> new_adj(n);\n        for (int i = 1; i < n; ++i) {\n            new_adj[new_parent[i]].push_back(i);\n        }\n        \n        vector<int> ans(n, 1);\n        auto dfs_size = [&](auto& self, int u) -> void {\n            for (int v : new_adj[u]) {\n                self(self, v);\n                ans[u] += ans[v];\n            }\n        };\n        \n        dfs_size(dfs_size, 0);\n        return ans;\n    }\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int[] findSubtreeSizes(int[] parent, String s) {\n        int n = parent.length;\n        List<Integer>[] adj = new ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new ArrayList<>();\n        for (int i = 1; i < n; i++) {\n            adj[parent[i]].add(i);\n        }\n        \n        int[] newParent = parent.clone();\n        int[] last = new int[26];\n        Arrays.fill(last, -1);\n        \n        dfsAncestor(0, adj, s, last, newParent);\n        \n        List<Integer>[] newAdj = new ArrayList[n];\n        for (int i = 0; i < n; i++) newAdj[i] = new ArrayList<>();\n        for (int i = 1; i < n; i++) {\n            newAdj[newParent[i]].add(i);\n        }\n        \n        int[] ans = new int[n];\n        Arrays.fill(ans, 1);\n        dfsSize(0, newAdj, ans);\n        return ans;\n    }\n    \n    private void dfsAncestor(int u, List<Integer>[] adj, String s, int[] last, int[] newParent) {\n        int ch = s.charAt(u) - 'a';\n        int prev = last[ch];\n        if (prev != -1 && u != 0) {\n            newParent[u] = prev;\n        }\n        last[ch] = u;\n        for (int v : adj[u]) {\n            dfsAncestor(v, adj, s, last, newParent);\n        }\n        last[ch] = prev;\n    }\n    \n    private void dfsSize(int u, List<Integer>[] adj, int[] ans) {\n        for (int v : adj[u]) {\n            dfsSize(v, adj, ans);\n            ans[u] += ans[v];\n        }\n    }\n}",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "code": "var findSubtreeSizes = function(parent, s) {\n    const n = parent.length;\n    const adj = Array.from({ length: n }, () => []);\n    for (let i = 1; i < n; i++) {\n        adj[parent[i]].push(i);\n    }\n    \n    const newParent = [...parent];\n    const last = new Array(26).fill(-1);\n    \n    function dfsAncestor(u) {\n        const ch = s.charCodeAt(u) - 97;\n        const prev = last[ch];\n        if (prev !== -1 && u !== 0) {\n            newParent[u] = prev;\n        }\n        last[ch] = u;\n        for (const v of adj[u]) {\n            dfsAncestor(v);\n        }\n        last[ch] = prev;\n    }\n    \n    dfsAncestor(0);\n    \n    const newAdj = Array.from({ length: n }, () => []);\n    for (let i = 1; i < n; i++) {\n        newAdj[newParent[i]].push(i);\n    }\n    \n    const ans = new Array(n).fill(1);\n    function dfsSize(u) {\n        for (const v of newAdj[u]) {\n            dfsSize(v);\n            ans[u] += ans[v];\n        }\n    }\n    \n    dfsSize(0);\n    return ans;\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

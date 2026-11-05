@@ -1,0 +1,79 @@
+{
+  "slug": "minimize-connected-groups-by-inserting-interval",
+  "number": 3323,
+  "category": "Algorithms",
+  "patterns": [
+    "greedy-interval-scheduling",
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Initial Overlap Merging",
+      "text": "Sort intervals by start coordinate and merge all naturally overlapping intervals to produce disjoint groups."
+    },
+    {
+      "level": 2,
+      "title": "Bridging Right Reach",
+      "text": "Placing the new interval of length k starting at merged[i][1] extends continuous coverage to merged[i][1] + k."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search Farthest Bridge",
+      "text": "Use binary search on start coordinates to find the farthest group j reachable within reach. Maximizing j - i minimizes remaining groups."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def minConnectedGroups(self, intervals: list[list[int]], k: int) -> int:\n        from bisect import bisect_right\n        \n        # 1. Merge overlapping intervals\n        intervals.sort(key=lambda x: x[0])\n        merged = []\n        for iv in intervals:\n            if not merged or merged[-1][1] < iv[0]:\n                merged.append(iv)\n            else:\n                merged[-1][1] = max(merged[-1][1], iv[1])\n                \n        m = len(merged)\n        if m <= 1:\n            return m\n            \n        starts = [iv[0] for iv in merged]\n        max_reduced = 0\n        \n        # 2. For each merged interval, inserting interval of length k starting at merged[i][1]\n        for i in range(m):\n            reach = merged[i][1] + k\n            j = bisect_right(starts, reach) - 1\n            if j > i:\n                max_reduced = max(max_reduced, j - i)\n                \n        return m - max_reduced\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of intervals"
+    ],
+    "notes": "Sorting takes O(n log n). Binary searches on m merged intervals take O(m log m).",
+    "whyNaiveFails": "Testing all possible float/integer placement positions directly is continuous and intractable.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for merged intervals.",
+    "interviewerExpectation": "Merges overlapping intervals first, then maximizes bridged groups via binary search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minConnectedGroups(self, intervals: list[list[int]], k: int) -> int:\n        from bisect import bisect_right\n        \n        # 1. Merge overlapping intervals\n        intervals.sort(key=lambda x: x[0])\n        merged = []\n        for iv in intervals:\n            if not merged or merged[-1][1] < iv[0]:\n                merged.append(iv)\n            else:\n                merged[-1][1] = max(merged[-1][1], iv[1])\n                \n        m = len(merged)\n        if m <= 1:\n            return m\n            \n        starts = [iv[0] for iv in merged]\n        max_reduced = 0\n        \n        # 2. For each merged interval, inserting interval of length k starting at merged[i][1]\n        for i in range(m):\n            reach = merged[i][1] + k\n            j = bisect_right(starts, reach) - 1\n            if j > i:\n                max_reduced = max(max_reduced, j - i)\n                \n        return m - max_reduced",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minConnectedGroups(std::vector<std::vector<int>>& intervals, int k) {\n        std::sort(intervals.begin(), intervals.end());\n        std::vector<std::pair<int, int>> merged;\n        for (const auto& iv : intervals) {\n            if (merged.empty() || merged.back().second < iv[0]) {\n                merged.push_back({iv[0], iv[1]});\n            } else {\n                merged.back().second = std::max(merged.back().second, iv[1]);\n            }\n        }\n        \n        int m = merged.size();\n        if (m <= 1) return m;\n        \n        std::vector<int> starts;\n        for (const auto& p : merged) starts.push_back(p.first);\n        \n        int max_reduced = 0;\n        for (int i = 0; i < m; ++i) {\n            int reach = merged[i].second + k;\n            auto it = std::upper_bound(starts.begin(), starts.end(), reach);\n            int j = std::distance(starts.begin(), it) - 1;\n            if (j > i) {\n                max_reduced = std::max(max_reduced, j - i);\n            }\n        }\n        return m - max_reduced;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minConnectedGroups(int[][] intervals, int k) {\n        Arrays.sort(intervals, (a, b) -> Integer.compare(a[0], b[0]));\n        List<int[]> merged = new ArrayList<>();\n        for (int[] iv : intervals) {\n            if (merged.isEmpty() || merged.get(merged.size() - 1)[1] < iv[0]) {\n                merged.add(new int[]{iv[0], iv[1]});\n            } else {\n                merged.get(merged.size() - 1)[1] = Math.max(merged.get(merged.size() - 1)[1], iv[1]);\n            }\n        }\n\n        int m = merged.size();\n        if (m <= 1) return m;\n\n        int[] starts = new int[m];\n        for (int i = 0; i < m; i++) starts[i] = merged.get(i)[0];\n\n        int maxReduced = 0;\n        for (int i = 0; i < m; i++) {\n            int reach = merged.get(i)[1] + k;\n            int idx = Arrays.binarySearch(starts, reach);\n            int j;\n            if (idx >= 0) {\n                while (idx + 1 < m && starts[idx + 1] == reach) idx++;\n                j = idx;\n            } else {\n                j = -(idx + 1) - 1;\n            }\n            if (j > i) {\n                maxReduced = Math.max(maxReduced, j - i);\n            }\n        }\n        return m - maxReduced;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minConnectedGroups = function(intervals, k) {\n    intervals.sort((a, b) => a[0] - b[0]);\n    const merged = [];\n    for (const iv of intervals) {\n        if (merged.length === 0 || merged[merged.length - 1][1] < iv[0]) {\n            merged.push([iv[0], iv[1]]);\n        } else {\n            merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], iv[1]);\n        }\n    }\n\n    const m = merged.length;\n    if (m <= 1) return m;\n\n    const starts = merged.map(x => x[0]);\n    let maxReduced = 0;\n\n    for (let i = 0; i < m; i++) {\n        const reach = merged[i][1] + k;\n        let low = 0, high = m - 1, j = i;\n        while (low <= high) {\n            const mid = (low + high) >> 1;\n            if (starts[mid] <= reach) {\n                j = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n        if (j > i) {\n            maxReduced = Math.max(maxReduced, j - i);\n        }\n    }\n    return m - maxReduced;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

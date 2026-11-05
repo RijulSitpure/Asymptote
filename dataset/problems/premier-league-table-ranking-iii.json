@@ -1,0 +1,71 @@
+{
+  "slug": "premier-league-table-ranking-iii",
+  "number": 3322,
+  "category": "Database",
+  "patterns": [
+    "window-ranking"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Season Metrics Derivation",
+      "text": "Compute points as wins * 3 + draws, and goal_difference as goals_for - goals_against."
+    },
+    {
+      "level": 2,
+      "title": "Window Ranking with Multi-Key Ordering",
+      "text": "Use window ranking partitioned by season_id, ordered by points descending, goal_difference descending, and team_name ascending."
+    },
+    {
+      "level": 3,
+      "title": "Final Output Sorting",
+      "text": "Order the final result table by season_id ascending, position ascending, and team_name ascending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    season_id, \n    team_id, \n    team_name, \n    (wins * 3 + draws) AS points, \n    (goals_for - goals_against) AS goal_difference, \n    ROW_NUMBER() OVER (\n        PARTITION BY season_id \n        ORDER BY (wins * 3 + draws) DESC, \n                 (goals_for - goals_against) DESC, \n                 team_name ASC\n    ) AS position\nFROM \n    SeasonStats\nORDER BY \n    season_id ASC, \n    position ASC, \n    team_name ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of rows in SeasonStats"
+    ],
+    "notes": "Sorting rows within season partitions.",
+    "whyNaiveFails": "Correlated subqueries or self-joins for ranking produce quadratic complexity.",
+    "spaceTimeTradeoff": "O(N) memory for window function evaluation.",
+    "interviewerExpectation": "Uses window ranking partitioned by season with multi-tier tie-breaking."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    season_id, \n    team_id, \n    team_name, \n    (wins * 3 + draws) AS points, \n    (goals_for - goals_against) AS goal_difference, \n    ROW_NUMBER() OVER (\n        PARTITION BY season_id \n        ORDER BY (wins * 3 + draws) DESC, \n                 (goals_for - goals_against) DESC, \n                 team_name ASC\n    ) AS position\nFROM \n    SeasonStats\nORDER BY \n    season_id ASC, \n    position ASC, \n    team_name ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    season_id, \n    team_id, \n    team_name, \n    (wins * 3 + draws) AS points, \n    (goals_for - goals_against) AS goal_difference, \n    ROW_NUMBER() OVER (\n        PARTITION BY season_id \n        ORDER BY (wins * 3 + draws) DESC, \n                 (goals_for - goals_against) DESC, \n                 team_name ASC\n    ) AS position\nFROM \n    SeasonStats\nORDER BY \n    season_id ASC, \n    position ASC, \n    team_name ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef process_team_standings(season_stats: pd.DataFrame) -> pd.DataFrame:\n    season_stats[\"points\"] = season_stats[\"wins\"] * 3 + season_stats[\"draws\"]\n    season_stats[\"goal_difference\"] = season_stats[\"goals_for\"] - season_stats[\"goals_against\"]\n    season_stats = season_stats.sort_values(\n        by=[\"season_id\", \"points\", \"goal_difference\", \"team_name\"],\n        ascending=[True, False, False, True]\n    )\n    season_stats[\"position\"] = season_stats.groupby(\"season_id\").cumcount() + 1\n    return season_stats[[\"season_id\", \"team_id\", \"team_name\", \"points\", \"goal_difference\", \"position\"]]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

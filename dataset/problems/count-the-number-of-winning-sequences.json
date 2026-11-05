@@ -1,0 +1,79 @@
+{
+  "slug": "count-the-number-of-winning-sequences",
+  "number": 3320,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-state-machine",
+    "dp-grid-2d"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Game Score Offset State",
+      "text": "The score difference between Alice and Bob can range from -n to +n. Shift indices by offset n to map non-negative table coordinates."
+    },
+    {
+      "level": 2,
+      "title": "Consecutive Move Restriction",
+      "text": "Alice cannot play the same creature consecutively. Maintain Alice's previous creature in the DP state to prevent repeat plays."
+    },
+    {
+      "level": 3,
+      "title": "Winning Differential Summation",
+      "text": "After n rounds, sum all DP configurations where Alice's final score difference exceeds 0 (offset + 1 to 2n)."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def countWinningSequences(self, s: str) -> int:\n        MOD = 1_000_000_007\n        n = len(s)\n        \n        # Creatures: 0: 'F', 1: 'W', 2: 'E'\n        char_map = {'F': 0, 'W': 1, 'E': 2}\n        bob_moves = [char_map[c] for c in s]\n        \n        # Outcome: alice vs bob\n        # W beats F (+1), F beats E (+1), E beats W (+1)\n        # Loss (-1), Tie (0)\n        def get_score(a, b):\n            if a == b:\n                return 0\n            if (a == 1 and b == 0) or (a == 0 and b == 2) or (a == 2 and b == 1):\n                return 1\n            return -1\n            \n        OFFSET = n\n        # dp[last_move][diff]\n        dp = [[0] * (2 * n + 1) for _ in range(4)]\n        # 3 represents no previous move\n        dp[3][OFFSET] = 1\n        \n        for b in bob_moves:\n            next_dp = [[0] * (2 * n + 1) for _ in range(4)]\n            for last in range(4):\n                for diff in range(2 * n + 1):\n                    count = dp[last][diff]\n                    if count == 0:\n                        continue\n                    for a in range(3):\n                        if a != last:\n                            delta = get_score(a, b)\n                            new_diff = diff + delta\n                            if 0 <= new_diff <= 2 * n:\n                                next_dp[a][new_diff] = (next_dp[a][new_diff] + count) % MOD\n            dp = next_dp\n            \n        ans = 0\n        for last in range(3):\n            for diff in range(OFFSET + 1, 2 * n + 1):\n                ans = (ans + dp[last][diff]) % MOD\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of sequence string s"
+    ],
+    "notes": "State transitions evaluate 4 * (2n + 1) states over n rounds in O(n^2) operations.",
+    "whyNaiveFails": "Examining 2^n sequence permutations causes exponential TLE.",
+    "spaceTimeTradeoff": "O(n) memory using rolling difference arrays.",
+    "interviewerExpectation": "Formulates state-machine DP tracking previous move and bounded cumulative score differential."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def countWinningSequences(self, s: str) -> int:\n        MOD = 1_000_000_007\n        n = len(s)\n        \n        # Creatures: 0: 'F', 1: 'W', 2: 'E'\n        char_map = {'F': 0, 'W': 1, 'E': 2}\n        bob_moves = [char_map[c] for c in s]\n        \n        # Outcome: alice vs bob\n        # W beats F (+1), F beats E (+1), E beats W (+1)\n        # Loss (-1), Tie (0)\n        def get_score(a, b):\n            if a == b:\n                return 0\n            if (a == 1 and b == 0) or (a == 0 and b == 2) or (a == 2 and b == 1):\n                return 1\n            return -1\n            \n        OFFSET = n\n        # dp[last_move][diff]\n        dp = [[0] * (2 * n + 1) for _ in range(4)]\n        # 3 represents no previous move\n        dp[3][OFFSET] = 1\n        \n        for b in bob_moves:\n            next_dp = [[0] * (2 * n + 1) for _ in range(4)]\n            for last in range(4):\n                for diff in range(2 * n + 1):\n                    count = dp[last][diff]\n                    if count == 0:\n                        continue\n                    for a in range(3):\n                        if a != last:\n                            delta = get_score(a, b)\n                            new_diff = diff + delta\n                            if 0 <= new_diff <= 2 * n:\n                                next_dp[a][new_diff] = (next_dp[a][new_diff] + count) % MOD\n            dp = next_dp\n            \n        ans = 0\n        for last in range(3):\n            for diff in range(OFFSET + 1, 2 * n + 1):\n                ans = (ans + dp[last][diff]) % MOD\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n\nclass Solution {\n    int get_score(int a, int b) {\n        if (a == b) return 0;\n        if ((a == 1 && b == 0) || (a == 0 && b == 2) || (a == 2 && b == 1)) return 1;\n        return -1;\n    }\npublic:\n    int countWinningSequences(std::string s) {\n        int MOD = 1000000007;\n        int n = s.size();\n        int offset = n;\n        \n        std::vector<std::vector<int>> dp(4, std::vector<int>(2 * n + 1, 0));\n        dp[3][offset] = 1;\n        \n        for (char c : s) {\n            int b = (c == 'F' ? 0 : (c == 'W' ? 1 : 2));\n            std::vector<std::vector<int>> next_dp(4, std::vector<int>(2 * n + 1, 0));\n            \n            for (int last = 0; last < 4; ++last) {\n                for (int diff = 0; diff <= 2 * n; ++diff) {\n                    int count = dp[last][diff];\n                    if (count == 0) continue;\n                    for (int a = 0; a < 3; ++a) {\n                        if (a != last) {\n                            int new_diff = diff + get_score(a, b);\n                            if (new_diff >= 0 && new_diff <= 2 * n) {\n                                next_dp[a][new_diff] = (next_dp[a][new_diff] + count) % MOD;\n                            }\n                        }\n                    }\n                }\n            }\n            dp = std::move(next_dp);\n        }\n        \n        int ans = 0;\n        for (int last = 0; last < 3; ++last) {\n            for (int diff = offset + 1; diff <= 2 * n; ++diff) {\n                ans = (ans + dp[last][diff]) % MOD;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    private final int MOD = 1_000_000_007;\n\n    public int countWinningSequences(String s) {\n        int n = s.length();\n        int offset = n;\n        int[][] dp = new int[4][2 * n + 1];\n        dp[3][offset] = 1;\n\n        for (int idx = 0; idx < n; idx++) {\n            char c = s.charAt(idx);\n            int b = (c == 'F' ? 0 : (c == 'W' ? 1 : 2));\n            int[][] nextDp = new int[4][2 * n + 1];\n\n            for (int last = 0; last < 4; last++) {\n                for (int diff = 0; diff <= 2 * n; diff++) {\n                    int count = dp[last][diff];\n                    if (count == 0) continue;\n                    for (int a = 0; a < 3; a++) {\n                        if (a != last) {\n                            int newDiff = diff + getScore(a, b);\n                            if (newDiff >= 0 && newDiff <= 2 * n) {\n                                nextDp[a][newDiff] = (nextDp[a][newDiff] + count) % MOD;\n                            }\n                        }\n                    }\n                }\n            }\n            dp = nextDp;\n        }\n\n        int ans = 0;\n        for (int last = 0; last < 3; last++) {\n            for (int diff = offset + 1; diff <= 2 * n; diff++) {\n                ans = (ans + dp[last][diff]) % MOD;\n            }\n        }\n        return ans;\n    }\n\n    private int getScore(int a, int b) {\n        if (a == b) return 0;\n        if ((a == 1 && b == 0) || (a == 0 && b == 2) || (a == 2 && b == 1)) return 1;\n        return -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countWinningSequences = function(s) {\n    const MOD = 1000000007;\n    const n = s.length;\n    const offset = n;\n\n    function getScore(a, b) {\n        if (a === b) return 0;\n        if ((a === 1 && b === 0) || (a === 0 && b === 2) || (a === 2 && b === 1)) return 1;\n        return -1;\n    }\n\n    let dp = Array.from({ length: 4 }, () => new Int32Array(2 * n + 1));\n    dp[3][offset] = 1;\n\n    for (let i = 0; i < n; i++) {\n        const c = s[i];\n        const b = (c === 'F' ? 0 : (c === 'W' ? 1 : 2));\n        const nextDp = Array.from({ length: 4 }, () => new Int32Array(2 * n + 1));\n\n        for (let last = 0; last < 4; last++) {\n            for (let diff = 0; diff <= 2 * n; diff++) {\n                const count = dp[last][diff];\n                if (count === 0) continue;\n                for (let a = 0; a < 3; a++) {\n                    if (a !== last) {\n                        const newDiff = diff + getScore(a, b);\n                        if (newDiff >= 0 && newDiff <= 2 * n) {\n                            nextDp[a][newDiff] = (nextDp[a][newDiff] + count) % MOD;\n                        }\n                    }\n                }\n            }\n        }\n        dp = nextDp;\n    }\n\n    let ans = 0;\n    for (let last = 0; last < 3; last++) {\n        for (let diff = offset + 1; diff <= 2 * n; diff++) {\n            ans = (ans + dp[last][diff]) % MOD;\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

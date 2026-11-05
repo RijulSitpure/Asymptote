@@ -1,0 +1,78 @@
+{
+  "slug": "total-characters-in-string-after-transformations-ii",
+  "number": 3337,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Insight",
+      "text": "Because t can be as large as 10^9 and alphabet size is only 26, model single-step shifts as a linear algebraic transformation."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Structure",
+      "text": "Construct a 26 by 26 transition matrix where entry M[i][j] represents how many times character i generates character j in one cycle."
+    },
+    {
+      "level": 3,
+      "title": "State Transitions",
+      "text": "Use binary matrix exponentiation to raise the matrix to the power t modulo 10^9+7, then apply it to the initial symbol counts."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def lengthAfterTransformations(self, s: str, t: int, nums: list[int]) -> int:\n        MOD = 1_000_000_007\n        M = [[0] * 26 for _ in range(26)]\n        for i in range(26):\n            for step in range(1, nums[i] + 1):\n                target = (i + step) % 26\n                M[i][target] += 1\n\n        def mat_mul(A, B):\n            C = [[0] * 26 for _ in range(26)]\n            for i in range(26):\n                for k in range(26):\n                    if A[i][k]:\n                        for j in range(26):\n                            C[i][j] = (C[i][j] + A[i][k] * B[k][j]) % MOD\n            return C\n\n        def mat_pow(A, p):\n            res = [[1 if i == j else 0 for j in range(26)] for i in range(26)]\n            base = A\n            while p > 0:\n                if p & 1:\n                    res = mat_mul(res, base)\n                base = mat_mul(base, base)\n                p >>= 1\n            return res\n\n        Mt = mat_pow(M, t)\n        initial = [0] * 26\n        for ch in s:\n            initial[ord(ch) - ord('a')] += 1\n\n        ans = 0\n        for i in range(26):\n            if initial[i]:\n                generated = sum(Mt[i]) % MOD\n                ans = (ans + initial[i] * generated) % MOD\n                \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(26^3 * log(t) + n)",
+    "space": "O(26^2)",
+    "variables": [
+      "n: size of input"
+    ],
+    "notes": "Evaluates in optimal O(26^3 * log(t) + n) runtime.",
+    "whyNaiveFails": "Brute-force exhaustive search exceeds the time limit.",
+    "spaceTimeTradeoff": "Uses O(26^2) auxiliary memory for optimal state tracking.",
+    "interviewerExpectation": "Identifies optimal pattern to achieve O(26^3 * log(t) + n) complexity."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def lengthAfterTransformations(self, s: str, t: int, nums: list[int]) -> int:\n        MOD = 1_000_000_007\n        M = [[0] * 26 for _ in range(26)]\n        for i in range(26):\n            for step in range(1, nums[i] + 1):\n                target = (i + step) % 26\n                M[i][target] += 1\n\n        def mat_mul(A, B):\n            C = [[0] * 26 for _ in range(26)]\n            for i in range(26):\n                for k in range(26):\n                    if A[i][k]:\n                        for j in range(26):\n                            C[i][j] = (C[i][j] + A[i][k] * B[k][j]) % MOD\n            return C\n\n        def mat_pow(A, p):\n            res = [[1 if i == j else 0 for j in range(26)] for i in range(26)]\n            base = A\n            while p > 0:\n                if p & 1:\n                    res = mat_mul(res, base)\n                base = mat_mul(base, base)\n                p >>= 1\n            return res\n\n        Mt = mat_pow(M, t)\n        initial = [0] * 26\n        for ch in s:\n            initial[ord(ch) - ord('a')] += 1\n\n        ans = 0\n        for i in range(26):\n            if initial[i]:\n                generated = sum(Mt[i]) % MOD\n                ans = (ans + initial[i] * generated) % MOD\n                \n        return ans",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int lengthAfterTransformations(string s, int t, vector<int>& nums) {\n        const long long MOD = 1000000007;\n        using Matrix = vector<vector<long long>>;\n        \n        auto mat_mul = [&](const Matrix& A, const Matrix& B) {\n            Matrix C(26, vector<long long>(26, 0));\n            for (int i = 0; i < 26; ++i) {\n                for (int k = 0; k < 26; ++k) {\n                    if (!A[i][k]) continue;\n                    for (int j = 0; j < 26; ++j) {\n                        C[i][j] = (C[i][j] + A[i][k] * B[k][j]) % MOD;\n                    }\n                }\n            }\n            return C;\n        };\n        \n        auto mat_pow = [&](Matrix A, int p) {\n            Matrix res(26, vector<long long>(26, 0));\n            for (int i = 0; i < 26; ++i) res[i][i] = 1;\n            while (p > 0) {\n                if (p & 1) res = mat_mul(res, A);\n                A = mat_mul(A, A);\n                p >>= 1;\n            }\n            return res;\n        };\n        \n        Matrix M(26, vector<long long>(26, 0));\n        for (int i = 0; i < 26; ++i) {\n            for (int step = 1; step <= nums[i]; ++step) {\n                int target = (i + step) % 26;\n                M[i][target]++;\n            }\n        }\n        \n        Matrix Mt = mat_pow(M, t);\n        vector<long long> initial(26, 0);\n        for (char ch : s) initial[ch - 'a']++;\n        \n        long long ans = 0;\n        for (int i = 0; i < 26; ++i) {\n            if (initial[i]) {\n                long long generated = 0;\n                for (int j = 0; j < 26; ++j) generated = (generated + Mt[i][j]) % MOD;\n                ans = (ans + initial[i] * generated) % MOD;\n            }\n        }\n        return ans;\n    }\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int lengthAfterTransformations(String s, int t, List<Integer> nums) {\n        long MOD = 1_000_000_007;\n        long[][] M = new long[26][26];\n        for (int i = 0; i < 26; i++) {\n            int cnt = nums.get(i);\n            for (int step = 1; step <= cnt; step++) {\n                int target = (i + step) % 26;\n                M[i][target]++;\n            }\n        }\n        \n        long[][] Mt = matPow(M, t, MOD);\n        long[] initial = new long[26];\n        for (int i = 0; i < s.length(); i++) {\n            initial[s.charAt(i) - 'a']++;\n        }\n        \n        long ans = 0;\n        for (int i = 0; i < 26; i++) {\n            if (initial[i] > 0) {\n                long generated = 0;\n                for (int j = 0; j < 26; j++) {\n                    generated = (generated + Mt[i][j]) % MOD;\n                }\n                ans = (ans + initial[i] * generated) % MOD;\n            }\n        }\n        return (int) ans;\n    }\n    \n    private long[][] matMul(long[][] A, long[][] B, long MOD) {\n        long[][] C = new long[26][26];\n        for (int i = 0; i < 26; i++) {\n            for (int k = 0; k < 26; k++) {\n                if (A[i][k] != 0) {\n                    for (int j = 0; j < 26; j++) {\n                        C[i][j] = (C[i][j] + A[i][k] * B[k][j]) % MOD;\n                    }\n                }\n            }\n        }\n        return C;\n    }\n    \n    private long[][] matPow(long[][] A, int p, long MOD) {\n        long[][] res = new long[26][26];\n        for (int i = 0; i < 26; i++) res[i][i] = 1;\n        long[][] base = A;\n        while (p > 0) {\n            if ((p & 1) == 1) res = matMul(res, base, MOD);\n            base = matMul(base, base, MOD);\n            p >>= 1;\n        }\n        return res;\n    }\n}",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "code": "var lengthAfterTransformations = function(s, t, nums) {\n    const MOD = 1000000007n;\n    function matMul(A, B) {\n        const C = Array.from({ length: 26 }, () => new Array(26).fill(0n));\n        for (let i = 0; i < 26; i++) {\n            for (let k = 0; k < 26; k++) {\n                if (A[i][k] !== 0n) {\n                    for (let j = 0; j < 26; j++) {\n                        C[i][j] = (C[i][j] + A[i][k] * B[k][j]) % MOD;\n                    }\n                }\n            }\n        }\n        return C;\n    }\n    \n    function matPow(A, p) {\n        let res = Array.from({ length: 26 }, (_, i) => {\n            const row = new Array(26).fill(0n);\n            row[i] = 1n;\n            return row;\n        });\n        let base = A;\n        while (p > 0) {\n            if (p & 1) res = matMul(res, base);\n            base = matMul(base, base);\n            p >>= 1;\n        }\n        return res;\n    }\n    \n    const M = Array.from({ length: 26 }, () => new Array(26).fill(0n));\n    for (let i = 0; i < 26; i++) {\n        for (let step = 1; step <= nums[i]; step++) {\n            const target = (i + step) % 26;\n            M[i][target] += 1n;\n        }\n    }\n    \n    const Mt = matPow(M, t);\n    const initial = new Array(26).fill(0n);\n    for (let i = 0; i < s.length; i++) {\n        initial[s.charCodeAt(i) - 97] += 1n;\n    }\n    \n    let ans = 0n;\n    for (let i = 0; i < 26; i++) {\n        if (initial[i] > 0n) {\n            let generated = 0n;\n            for (let j = 0; j < 26; j++) {\n                generated = (generated + Mt[i][j]) % MOD;\n            }\n            ans = (ans + initial[i] * generated) % MOD;\n        }\n    }\n    return Number(ans);\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "find-minimum-time-to-reach-last-room-ii",
+  "number": 3342,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Insight",
+      "text": "Notice that step costs alternate between 1 second and 2 seconds depending on how many steps have already been taken."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Structure",
+      "text": "Incorporate step count parity (0 for 1-second step, 1 for 2-second step) into the visited state space."
+    },
+    {
+      "level": 3,
+      "title": "State Transitions",
+      "text": "Use a priority structure over states (time, row, col, parity) and relax distance entries by swapping parity on each movement."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def minTimeToReach(self, moveTime: list[list[int]]) -> int:\n        n = len(moveTime)\n        m = len(moveTime[0])\n        dist = [[[float('inf'), float('inf')] for _ in range(m)] for _ in range(n)]\n        dist[0][0][0] = 0\n        pq = [(0, 0, 0, 0)]\n        \n        while pq:\n            t, r, c, p = heapq.heappop(pq)\n            if r == n - 1 and c == m - 1:\n                return t\n            if t > dist[r][c][p]:\n                continue\n            cost = 1 if p == 0 else 2\n            np = 1 - p\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < n and 0 <= nc < m:\n                    nt = max(t, moveTime[nr][nc]) + cost\n                    if nt < dist[nr][nc][np]:\n                        dist[nr][nc][np] = nt\n                        heapq.heappush(pq, (nt, nr, nc, np))\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * m * log(n * m))",
+    "space": "O(n * m)",
+    "variables": [
+      "n: size of input"
+    ],
+    "notes": "Evaluates in optimal O(n * m * log(n * m)) runtime.",
+    "whyNaiveFails": "Brute-force exhaustive search exceeds the time limit.",
+    "spaceTimeTradeoff": "Uses O(n * m) auxiliary memory for optimal state tracking.",
+    "interviewerExpectation": "Identifies optimal pattern to achieve O(n * m * log(n * m)) complexity."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "import heapq\n\nclass Solution:\n    def minTimeToReach(self, moveTime: list[list[int]]) -> int:\n        n = len(moveTime)\n        m = len(moveTime[0])\n        dist = [[[float('inf'), float('inf')] for _ in range(m)] for _ in range(n)]\n        dist[0][0][0] = 0\n        pq = [(0, 0, 0, 0)]\n        \n        while pq:\n            t, r, c, p = heapq.heappop(pq)\n            if r == n - 1 and c == m - 1:\n                return t\n            if t > dist[r][c][p]:\n                continue\n            cost = 1 if p == 0 else 2\n            np = 1 - p\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < n and 0 <= nc < m:\n                    nt = max(t, moveTime[nr][nc]) + cost\n                    if nt < dist[nr][nc][np]:\n                        dist[nr][nc][np] = nt\n                        heapq.heappush(pq, (nt, nr, nc, np))\n        return -1",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    int minTimeToReach(vector<vector<int>>& moveTime) {\n        int n = moveTime.size();\n        int m = moveTime[0].size();\n        vector<vector<vector<int>>> dist(n, vector<vector<int>>(m, vector<int>(2, 1e9 + 7)));\n        dist[0][0][0] = 0;\n        \n        using State = tuple<int, int, int, int>;\n        priority_queue<State, vector<State>, greater<State>> pq;\n        pq.push({0, 0, 0, 0});\n        \n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        \n        while (!pq.empty()) {\n            auto [t, r, c, p] = pq.top();\n            pq.pop();\n            if (r == n - 1 && c == m - 1) return t;\n            if (t > dist[r][c][p]) continue;\n            \n            int cost = (p == 0 ? 1 : 2);\n            int np = 1 - p;\n            for (auto& d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < n && nc >= 0 && nc < m) {\n                    int nt = max(t, moveTime[nr][nc]) + cost;\n                    if (nt < dist[nr][nc][np]) {\n                        dist[nr][nc][np] = nt;\n                        pq.push({nt, nr, nc, np});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public int minTimeToReach(int[][] moveTime) {\n        int n = moveTime.length;\n        int m = moveTime[0].length;\n        int[][][] dist = new int[n][m][2];\n        for (int[][] mat : dist) {\n            for (int[] row : mat) Arrays.fill(row, Integer.MAX_VALUE);\n        }\n        dist[0][0][0] = 0;\n        \n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        pq.offer(new int[]{0, 0, 0, 0});\n        \n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        \n        while (!pq.isEmpty()) {\n            int[] curr = pq.poll();\n            int t = curr[0], r = curr[1], c = curr[2], p = curr[3];\n            if (r == n - 1 && c == m - 1) return t;\n            if (t > dist[r][c][p]) continue;\n            \n            int cost = (p == 0 ? 1 : 2);\n            int np = 1 - p;\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < n && nc >= 0 && nc < m) {\n                    int nt = Math.max(t, moveTime[nr][nc]) + cost;\n                    if (nt < dist[nr][nc][np]) {\n                        dist[nr][nc][np] = nt;\n                        pq.offer(new int[]{nt, nr, nc, np});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "code": "var minTimeToReach = function(moveTime) {\n    const n = moveTime.length;\n    const m = moveTime[0].length;\n    const dist = Array.from({ length: n }, () => \n        Array.from({ length: m }, () => [Infinity, Infinity])\n    );\n    dist[0][0][0] = 0;\n    \n    const pq = [[0, 0, 0, 0]];\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    \n    while (pq.length > 0) {\n        let minIdx = 0;\n        for (let i = 1; i < pq.length; i++) {\n            if (pq[i][0] < pq[minIdx][0]) minIdx = i;\n        }\n        const [t, r, c, p] = pq.splice(minIdx, 1)[0];\n        \n        if (r === n - 1 && c === m - 1) return t;\n        if (t > dist[r][c][p]) continue;\n        \n        const cost = (p === 0 ? 1 : 2);\n        const np = 1 - p;\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < n && nc >= 0 && nc < m) {\n                const nt = Math.max(t, moveTime[nr][nc]) + cost;\n                if (nt < dist[nr][nc][np]) {\n                    dist[nr][nc][np] = nt;\n                    pq.push([nt, nr, nc, np]);\n                }\n            }\n        }\n    }\n    return -1;\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "find-the-last-marked-nodes-in-tree",
+  "number": 3313,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path",
+    "graph-tree-rerooting"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tree Diameter Farthest Extremities",
+      "text": "In any unweighted tree, the farthest node from any vertex i is always one of the two endpoints of the tree's diameter."
+    },
+    {
+      "level": 2,
+      "title": "Endpoint Discovery",
+      "text": "Use two breadth-first traversals: run BFS from node 0 to locate diameter endpoint u, then run BFS from u to find opposite diameter endpoint v and compute all distances from u."
+    },
+    {
+      "level": 3,
+      "title": "Dual Distance Comparison",
+      "text": "Run a third BFS from v to obtain all distances from v. For each node i, return u if dist_u[i] >= dist_v[i], otherwise return v."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def lastMarkedNodes(self, edges: list[list[int]]) -> list[int]:\n        from collections import deque\n        n = len(edges) + 1\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        def bfs_farthest(start: int):\n            dist = [-1] * n\n            dist[start] = 0\n            q = deque([start])\n            farthest = start\n            while q:\n                u = q.popleft()\n                if dist[u] > dist[farthest]:\n                    farthest = u\n                for v in adj[u]:\n                    if dist[v] == -1:\n                        dist[v] = dist[u] + 1\n                        q.append(v)\n            return farthest, dist\n            \n        # Diameter endpoint 1\n        u, _ = bfs_farthest(0)\n        # Diameter endpoint 2 and distances from u\n        v, dist_u = bfs_farthest(u)\n        # Distances from v\n        _, dist_v = bfs_farthest(v)\n        \n        ans = [0] * n\n        for i in range(n):\n            if dist_u[i] >= dist_v[i]:\n                ans[i] = u\n            else:\n                ans[i] = v\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes in tree"
+    ],
+    "notes": "Three linear BFS traversals explore vertices and edges in O(n) total time.",
+    "whyNaiveFails": "Running BFS from every single node takes O(n^2) which times out for n up to 10^5.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for adjacency list and distance arrays.",
+    "interviewerExpectation": "Applies the tree diameter theorem to reduce all-pairs farthest queries to three BFS passes."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def lastMarkedNodes(self, edges: list[list[int]]) -> list[int]:\n        from collections import deque\n        n = len(edges) + 1\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        def bfs_farthest(start: int):\n            dist = [-1] * n\n            dist[start] = 0\n            q = deque([start])\n            farthest = start\n            while q:\n                u = q.popleft()\n                if dist[u] > dist[farthest]:\n                    farthest = u\n                for v in adj[u]:\n                    if dist[v] == -1:\n                        dist[v] = dist[u] + 1\n                        q.append(v)\n            return farthest, dist\n            \n        # Diameter endpoint 1\n        u, _ = bfs_farthest(0)\n        # Diameter endpoint 2 and distances from u\n        v, dist_u = bfs_farthest(u)\n        # Distances from v\n        _, dist_v = bfs_farthest(v)\n        \n        ans = [0] * n\n        for i in range(n):\n            if dist_u[i] >= dist_v[i]:\n                ans[i] = u\n            else:\n                ans[i] = v\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n\nclass Solution {\npublic:\n    std::vector<int> lastMarkedNodes(std::vector<std::vector<int>>& edges) {\n        int n = edges.size() + 1;\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        \n        auto bfs = [&](int start, std::vector<int>& dist) {\n            std::fill(dist.begin(), dist.end(), -1);\n            dist[start] = 0;\n            std::queue<int> q;\n            q.push(start);\n            int farthest = start;\n            while (!q.empty()) {\n                int u = q.front(); q.pop();\n                if (dist[u] > dist[farthest]) farthest = u;\n                for (int v : adj[u]) {\n                    if (dist[v] == -1) {\n                        dist[v] = dist[u] + 1;\n                        q.push(v);\n                    }\n                }\n            }\n            return farthest;\n        };\n        \n        std::vector<int> dist_tmp(n);\n        int u = bfs(0, dist_tmp);\n        std::vector<int> dist_u(n);\n        int v = bfs(u, dist_u);\n        std::vector<int> dist_v(n);\n        bfs(v, dist_v);\n        \n        std::vector<int> ans(n);\n        for (int i = 0; i < n; ++i) {\n            ans[i] = (dist_u[i] >= dist_v[i]) ? u : v;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] lastMarkedNodes(int[][] edges) {\n        int n = edges.length + 1;\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n\n        int[] distTmp = new int[n];\n        int u = bfs(0, adj, distTmp, n);\n        int[] distU = new int[n];\n        int v = bfs(u, adj, distU, n);\n        int[] distV = new int[n];\n        bfs(v, adj, distV, n);\n\n        int[] ans = new int[n];\n        for (int i = 0; i < n; i++) {\n            ans[i] = (distU[i] >= distV[i]) ? u : v;\n        }\n        return ans;\n    }\n\n    private int bfs(int start, List<List<Integer>> adj, int[] dist, int n) {\n        Arrays.fill(dist, -1);\n        dist[start] = 0;\n        Queue<Integer> q = new LinkedList<>();\n        q.offer(start);\n        int farthest = start;\n\n        while (!q.isEmpty()) {\n            int curr = q.poll();\n            if (dist[curr] > dist[farthest]) farthest = curr;\n            for (int nxt : adj.get(curr)) {\n                if (dist[nxt] == -1) {\n                    dist[nxt] = dist[curr] + 1;\n                    q.offer(nxt);\n                }\n            }\n        }\n        return farthest;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var lastMarkedNodes = function(edges) {\n    const n = edges.length + 1;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n\n    function bfs(start, dist) {\n        dist.fill(-1);\n        dist[start] = 0;\n        const q = [start];\n        let head = 0;\n        let farthest = start;\n\n        while (head < q.length) {\n            const u = q[head++];\n            if (dist[u] > dist[farthest]) farthest = u;\n            for (const v of adj[u]) {\n                if (dist[v] === -1) {\n                    dist[v] = dist[u] + 1;\n                    q.push(v);\n                }\n            }\n        }\n        return farthest;\n    }\n\n    const distTmp = new Int32Array(n);\n    const u = bfs(0, distTmp);\n    const distU = new Int32Array(n);\n    const v = bfs(u, distU);\n    const distV = new Int32Array(n);\n    bfs(v, distV);\n\n    const ans = new Int32Array(n);\n    for (let i = 0; i < n; i++) {\n        ans[i] = (distU[i] >= distV[i]) ? u : v;\n    }\n    return Array.from(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}
