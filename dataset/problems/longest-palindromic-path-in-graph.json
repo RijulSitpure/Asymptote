@@ -1,0 +1,79 @@
+{
+  "slug": "longest-palindromic-path-in-graph",
+  "number": 3615,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Base Palindromic States",
+      "text": "Initialize states with length 1 paths at each single vertex and length 2 paths across edges with identical endpoints."
+    },
+    {
+      "level": 2,
+      "title": "Outward Simultaneous Step Expansion",
+      "text": "From palindromic path endpoints u and v, step outward simultaneously to neighbors with matching label characters."
+    },
+    {
+      "level": 3,
+      "title": "Breadth-First Search Order",
+      "text": "Expand paths in non-decreasing order of length to discover the maximum path distance across the network."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import deque\n\nclass Solution:\n    def longestPalindrome(self, n: int, edges: List[List[int]], labels: str) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        visited_states = set()\n        queue = deque()\n        max_len = 1\n        \n        for i in range(n):\n            mask = (1 << i)\n            visited_states.add((mask, i, i))\n            queue.append((mask, i, i, 1))\n            \n        for u, v in edges:\n            if labels[u] == labels[v]:\n                mask = (1 << u) | (1 << v)\n                visited_states.add((mask, u, v))\n                visited_states.add((mask, v, u))\n                queue.append((mask, u, v, 2))\n                queue.append((mask, v, u, 2))\n                max_len = max(max_len, 2)\n                \n        while queue:\n            mask, u, v, length = queue.popleft()\n            if length > max_len:\n                max_len = length\n                \n            for nu in adj[u]:\n                if mask & (1 << nu):\n                    continue\n                for nv in adj[v]:\n                    if nu == nv or (mask & (1 << nv)):\n                        continue\n                    if labels[nu] == labels[nv]:\n                        new_mask = mask | (1 << nu) | (1 << nv)\n                        if (new_mask, nu, nv) not in visited_states:\n                            visited_states.add((new_mask, nu, nv))\n                            queue.append((new_mask, nu, nv, length + 2))\n                            \n        return max_len\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V^2 + E^2)",
+    "space": "O(V^2)",
+    "variables": [
+      "V: number of graph vertices",
+      "E: number of graph edges"
+    ],
+    "notes": "Breadth-first search over vertex pairs (u, v) tracking palindromic path extensions.",
+    "whyNaiveFails": "Exhaustive simple path backtracking explores factorial combinations.",
+    "spaceTimeTradeoff": "Pairwise table of size V x V memoizes longest palindromic distances.",
+    "interviewerExpectation": "Model palindromic path expansion from the center using BFS on vertex pairs."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import deque\n\nclass Solution:\n    def longestPalindrome(self, n: int, edges: List[List[int]], labels: str) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        visited_states = set()\n        queue = deque()\n        max_len = 1\n        \n        for i in range(n):\n            mask = (1 << i)\n            visited_states.add((mask, i, i))\n            queue.append((mask, i, i, 1))\n            \n        for u, v in edges:\n            if labels[u] == labels[v]:\n                mask = (1 << u) | (1 << v)\n                visited_states.add((mask, u, v))\n                visited_states.add((mask, v, u))\n                queue.append((mask, u, v, 2))\n                queue.append((mask, v, u, 2))\n                max_len = max(max_len, 2)\n                \n        while queue:\n            mask, u, v, length = queue.popleft()\n            if length > max_len:\n                max_len = length\n                \n            for nu in adj[u]:\n                if mask & (1 << nu):\n                    continue\n                for nv in adj[v]:\n                    if nu == nv or (mask & (1 << nv)):\n                        continue\n                    if labels[nu] == labels[nv]:\n                        new_mask = mask | (1 << nu) | (1 << nv)\n                        if (new_mask, nu, nv) not in visited_states:\n                            visited_states.add((new_mask, nu, nv))\n                            queue.append((new_mask, nu, nv, length + 2))\n                            \n        return max_len\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <queue>\n#include <tuple>\n#include <unordered_set>\n#include <algorithm>\n\nclass Solution {\n    struct StateHash {\n        size_t operator()(const std::tuple<int, int, int>& t) const {\n            return std::get<0>(t) ^ (std::get<1>(t) << 14) ^ (std::get<2>(t) << 20);\n        }\n    };\npublic:\n    int longestPalindrome(int n, std::vector<std::vector<int>>& edges, std::string labels) {\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n\n        std::unordered_set<std::tuple<int, int, int>, StateHash> visited;\n        std::queue<std::tuple<int, int, int, int>> qu;\n        int max_len = 1;\n\n        for (int i = 0; i < n; ++i) {\n            int mask = (1 << i);\n            visited.insert({mask, i, i});\n            qu.push({mask, i, i, 1});\n        }\n\n        for (const auto& e : edges) {\n            int u = e[0], v = e[1];\n            if (labels[u] == labels[v]) {\n                int mask = (1 << u) | (1 << v);\n                visited.insert({mask, u, v});\n                visited.insert({mask, v, u});\n                qu.push({mask, u, v, 2});\n                qu.push({mask, v, u, 2});\n                max_len = std::max(max_len, 2);\n            }\n        }\n\n        while (!qu.empty()) {\n            auto [mask, u, v, len] = qu.front();\n            qu.pop();\n            max_len = std::max(max_len, len);\n\n            for (int nu : adj[u]) {\n                if (mask & (1 << nu)) continue;\n                for (int nv : adj[v]) {\n                    if (nu == nv || (mask & (1 << nv))) continue;\n                    if (labels[nu] == labels[nv]) {\n                        int new_mask = mask | (1 << nu) | (1 << nv);\n                        if (visited.insert({new_mask, nu, nv}).second) {\n                            qu.push({new_mask, nu, nv, len + 2});\n                        }\n                    }\n                }\n            }\n        }\n\n        return max_len;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int longestPalindrome(int n, int[][] edges, String labels) {\n        List<List<Integer>> adj = new ArrayList<>(n);\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n\n        Set<Long> visited = new HashSet<>();\n        Queue<int[]> queue = new ArrayDeque<>();\n        int maxLen = 1;\n\n        for (int i = 0; i < n; i++) {\n            int mask = (1 << i);\n            long state = ((long) mask << 16) | (i << 8) | i;\n            visited.add(state);\n            queue.add(new int[]{mask, i, i, 1});\n        }\n\n        for (int[] e : edges) {\n            int u = e[0], v = e[1];\n            if (labels.charAt(u) == labels.charAt(v)) {\n                int mask = (1 << u) | (1 << v);\n                visited.add(((long) mask << 16) | (u << 8) | v);\n                visited.add(((long) mask << 16) | (v << 8) | u);\n                queue.add(new int[]{mask, u, v, 2});\n                queue.add(new int[]{mask, v, u, 2});\n                maxLen = Math.max(maxLen, 2);\n            }\n        }\n\n        while (!queue.isEmpty()) {\n            int[] top = queue.poll();\n            int mask = top[0], u = top[1], v = top[2], len = top[3];\n            maxLen = Math.max(maxLen, len);\n\n            for (int nu : adj.get(u)) {\n                if ((mask & (1 << nu)) != 0) continue;\n                for (int nv : adj.get(v)) {\n                    if (nu == nv || (mask & (1 << nv)) != 0) continue;\n                    if (labels.charAt(nu) == labels.charAt(nv)) {\n                        int newMask = mask | (1 << nu) | (1 << nv);\n                        long nextState = ((long) newMask << 16) | (nu << 8) | nv;\n                        if (visited.add(nextState)) {\n                            queue.add(new int[]{newMask, nu, nv, len + 2});\n                        }\n                    }\n                }\n            }\n        }\n\n        return maxLen;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {string} labels\n * @return {number}\n */\nvar longestPalindrome = function(n, edges, labels) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n\n    const visited = new Set();\n    const queue = [];\n    let maxLen = 1;\n\n    for (let i = 0; i < n; i++) {\n        const mask = (1 << i);\n        visited.add(`${mask},${i},${i}`);\n        queue.push([mask, i, i, 1]);\n    }\n\n    for (const [u, v] of edges) {\n        if (labels[u] === labels[v]) {\n            const mask = (1 << u) | (1 << v);\n            visited.add(`${mask},${u},${v}`);\n            visited.add(`${mask},${v},${u}`);\n            queue.push([mask, u, v, 2]);\n            queue.push([mask, v, u, 2]);\n            if (maxLen < 2) maxLen = 2;\n        }\n    }\n\n    let head = 0;\n    while (head < queue.length) {\n        const [mask, u, v, len] = queue[head++];\n        if (len > maxLen) maxLen = len;\n\n        for (const nu of adj[u]) {\n            if (mask & (1 << nu)) continue;\n            for (const nv of adj[v]) {\n                if (nu === nv || (mask & (1 << nv))) continue;\n                if (labels[nu] === labels[nv]) {\n                    const newMask = mask | (1 << nu) | (1 << nv);\n                    const key = `${newMask},${nu},${nv}`;\n                    if (!visited.has(key)) {\n                        visited.add(key);\n                        queue.push([newMask, nu, nv, len + 2]);\n                    }\n                }\n            }\n        }\n    }\n\n    return maxLen;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

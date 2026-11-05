@@ -1,0 +1,78 @@
+{
+  "slug": "count-number-of-trapezoids-ii",
+  "number": 3625,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Canonical Slope Reduction",
+      "text": "Normalize direction vectors (dx, dy) by their greatest common divisor to represent slopes uniquely."
+    },
+    {
+      "level": 2,
+      "title": "Parallel Intercept Grouping",
+      "text": "Group collinear or parallel segments using their constant line offset dy * x - dx * y."
+    },
+    {
+      "level": 3,
+      "title": "Distinct Offset Combinatorics",
+      "text": "Pair segments having identical direction vector but distinct offset values."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import defaultdict\nimport math\n\nclass Solution:\n    def countTrapezoids(self, segments: List[List[int]]) -> int:\n        # segments[i] = [x1, y1, x2, y2]\n        # Group segments by canonical slope (dy, dx)\n        slope_groups = defaultdict(list)\n        \n        for x1, y1, x2, y2 in segments:\n            dx = x2 - x1\n            dy = y2 - y1\n            g = math.gcd(dx, dy)\n            dx //= g\n            dy //= g\n            if dx < 0 or (dx == 0 and dy < 0):\n                dx = -dx\n                dy = -dy\n            # Intercept representation: cross product / constant c = dy * x1 - dx * y1\n            c = dy * x1 - dx * y1\n            slope_groups[(dy, dx)].append(c)\n\n        total = 0\n        for slope, intercepts in slope_groups.items():\n            # Segments with different intercepts can form parallel bases\n            intercept_counts = defaultdict(int)\n            for c in intercepts:\n                intercept_counts[c] += 1\n                \n            running_sum = 0\n            for count in intercept_counts.values():\n                total += running_sum * count\n                running_sum += count\n                \n        return total\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log(max_coord))",
+    "space": "O(N)",
+    "variables": [
+      "N: count of segments"
+    ],
+    "notes": "Greatest common divisor slope normalization and running sum combinatorics.",
+    "whyNaiveFails": "Pairwise collinearity tests without hash classification take O(N^2) time.",
+    "spaceTimeTradeoff": "Slope hash map bins segments by geometric orientation in linear space.",
+    "interviewerExpectation": "Normalize slopes with GCD and count parallel pairs across distinct intercepts."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import defaultdict\nimport math\n\nclass Solution:\n    def countTrapezoids(self, segments: List[List[int]]) -> int:\n        # segments[i] = [x1, y1, x2, y2]\n        # Group segments by canonical slope (dy, dx)\n        slope_groups = defaultdict(list)\n        \n        for x1, y1, x2, y2 in segments:\n            dx = x2 - x1\n            dy = y2 - y1\n            g = math.gcd(dx, dy)\n            dx //= g\n            dy //= g\n            if dx < 0 or (dx == 0 and dy < 0):\n                dx = -dx\n                dy = -dy\n            # Intercept representation: cross product / constant c = dy * x1 - dx * y1\n            c = dy * x1 - dx * y1\n            slope_groups[(dy, dx)].append(c)\n\n        total = 0\n        for slope, intercepts in slope_groups.items():\n            # Segments with different intercepts can form parallel bases\n            intercept_counts = defaultdict(int)\n            for c in intercepts:\n                intercept_counts[c] += 1\n                \n            running_sum = 0\n            for count in intercept_counts.values():\n                total += running_sum * count\n                running_sum += count\n                \n        return total\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <map>\n#include <numeric>\n\nclass Solution {\npublic:\n    long long countTrapezoids(std::vector<std::vector<int>>& segments) {\n        std::map<std::pair<int, int>, std::vector<long long>> slope_groups;\n\n        for (const auto& s : segments) {\n            int x1 = s[0], y1 = s[1], x2 = s[2], y2 = s[3];\n            int dx = x2 - x1, dy = y2 - y1;\n            int g = std::gcd(dx, dy);\n            dx /= g;\n            dy /= g;\n            if (dx < 0 || (dx == 0 && dy < 0)) {\n                dx = -dx;\n                dy = -dy;\n            }\n            long long c = (long long)dy * x1 - (long long)dx * y1;\n            slope_groups[{dy, dx}].push_back(c);\n        }\n\n        long long total = 0;\n        for (const auto& [slope, intercepts] : slope_groups) {\n            std::map<long long, int> counts;\n            for (long long c : intercepts) counts[c]++;\n\n            long long running_sum = 0;\n            for (const auto& [c, count] : counts) {\n                total += running_sum * count;\n                running_sum += count;\n            }\n        }\n\n        return total;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long countTrapezoids(int[][] segments) {\n        Map<String, List<Long>> slopeGroups = new HashMap<>();\n\n        for (int[] s : segments) {\n            int x1 = s[0], y1 = s[1], x2 = s[2], y2 = s[3];\n            int dx = x2 - x1, dy = y2 - y1;\n            int g = gcd(Math.abs(dx), Math.abs(dy));\n            if (g != 0) {\n                dx /= g;\n                dy /= g;\n            }\n            if (dx < 0 || (dx == 0 && dy < 0)) {\n                dx = -dx;\n                dy = -dy;\n            }\n            long c = (long) dy * x1 - (long) dx * y1;\n            String slopeKey = dy + \"/\" + dx;\n            slopeGroups.computeIfAbsent(slopeKey, k -> new ArrayList<>()).add(c);\n        }\n\n        long total = 0;\n        for (List<Long> intercepts : slopeGroups.values()) {\n            Map<Long, Integer> counts = new HashMap<>();\n            for (long c : intercepts) counts.put(c, counts.getOrDefault(c, 0) + 1);\n\n            long runningSum = 0;\n            for (int count : counts.values()) {\n                total += runningSum * count;\n                runningSum += count;\n            }\n        }\n\n        return total;\n    }\n\n    private int gcd(int a, int b) {\n        while (b != 0) {\n            int t = b;\n            b = a % b;\n            a = t;\n        }\n        return a;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[][]} segments\n * @return {number}\n */\nvar countTrapezoids = function(segments) {\n    const gcd = (a, b) => {\n        a = Math.abs(a);\n        b = Math.abs(b);\n        while (b !== 0) {\n            const t = b;\n            b = a % b;\n            a = t;\n        }\n        return a;\n    };\n\n    const slopeGroups = new Map();\n\n    for (const [x1, y1, x2, y2] of segments) {\n        let dx = x2 - x1, dy = y2 - y1;\n        const g = gcd(dx, dy);\n        if (g !== 0) {\n            dx = Math.floor(dx / g);\n            dy = Math.floor(dy / g);\n        }\n        if (dx < 0 || (dx === 0 && dy < 0)) {\n            dx = -dx;\n            dy = -dy;\n        }\n        const c = dy * x1 - dx * y1;\n        const key = `${dy}/${dx}`;\n        if (!slopeGroups.has(key)) slopeGroups.set(key, []);\n        slopeGroups.get(key).push(c);\n    }\n\n    let total = 0;\n    for (const intercepts of slopeGroups.values()) {\n        const counts = new Map();\n        for (const c of intercepts) counts.set(c, (counts.get(c) || 0) + 1);\n\n        let runningSum = 0;\n        for (const count of counts.values()) {\n            total += runningSum * count;\n            runningSum += count;\n        }\n    }\n\n    return total;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

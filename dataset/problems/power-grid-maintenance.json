@@ -1,0 +1,80 @@
+{
+  "slug": "power-grid-maintenance",
+  "number": 3607,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Substation Connectivity Model",
+      "text": "Treat the electrical network as an undirected graph where connected components represent energized islands."
+    },
+    {
+      "level": 2,
+      "title": "Edge Disablement Simulation",
+      "text": "For each maintenance inquiry, rebuild or evaluate component connectivity excluding the serviced transmission line."
+    },
+    {
+      "level": 3,
+      "title": "Component Count Recording",
+      "text": "Count the number of disjoint trees or groups remaining after the edge is bypassed."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def maintenanceImpact(self, n: int, edges: List[List[int]], maintenance: List[int]) -> List[int]:\n        # Count connected components when edge at maintenance[i] is temporarily removed\n        ans = []\n        for remove_idx in maintenance:\n            parent = list(range(n))\n            def find(x: int) -> int:\n                if parent[x] != x:\n                    parent[x] = find(parent[x])\n                return parent[x]\n            def union(x: int, y: int) -> bool:\n                rx, ry = find(x), find(y)\n                if rx != ry:\n                    parent[rx] = ry\n                    return True\n                return False\n\n            comps = n\n            for i, (u, v) in enumerate(edges):\n                if i != remove_idx:\n                    if union(u, v):\n                        comps -= 1\n            ans.append(comps)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * E * alpha(N))",
+    "space": "O(N)",
+    "variables": [
+      "N: number of substations",
+      "E: number of transmission edges",
+      "M: number of maintenance events"
+    ],
+    "notes": "Component enumeration per query via disjoint set union.",
+    "whyNaiveFails": "Full recursive tree traversals without path compression incur extra overhead.",
+    "spaceTimeTradeoff": "Linear parent array represents partitions with constant auxiliary memory.",
+    "interviewerExpectation": "Track connected components using disjoint set union upon edge omission."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def maintenanceImpact(self, n: int, edges: List[List[int]], maintenance: List[int]) -> List[int]:\n        # Count connected components when edge at maintenance[i] is temporarily removed\n        ans = []\n        for remove_idx in maintenance:\n            parent = list(range(n))\n            def find(x: int) -> int:\n                if parent[x] != x:\n                    parent[x] = find(parent[x])\n                return parent[x]\n            def union(x: int, y: int) -> bool:\n                rx, ry = find(x), find(y)\n                if rx != ry:\n                    parent[rx] = ry\n                    return True\n                return False\n\n            comps = n\n            for i, (u, v) in enumerate(edges):\n                if i != remove_idx:\n                    if union(u, v):\n                        comps -= 1\n            ans.append(comps)\n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <numeric>\n\nclass Solution {\npublic:\n    std::vector<int> maintenanceImpact(int n, std::vector<std::vector<int>>& edges, std::vector<int>& maintenance) {\n        std::vector<int> ans;\n        ans.reserve(maintenance.size());\n\n        for (int rem_idx : maintenance) {\n            std::vector<int> parent(n);\n            std::iota(parent.begin(), parent.end(), 0);\n\n            auto find = [&](auto& self, int x) -> int {\n                return parent[x] == x ? x : parent[x] = self(self, parent[x]);\n            };\n\n            auto unite = [&](int x, int y) {\n                int rx = find(find, x), ry = find(find, y);\n                if (rx != ry) {\n                    parent[rx] = ry;\n                    return true;\n                }\n                return false;\n            };\n\n            int comps = n;\n            for (size_t i = 0; i < edges.size(); ++i) {\n                if ((int)i != rem_idx) {\n                    if (unite(edges[i][0], edges[i][1])) comps--;\n                }\n            }\n            ans.push_back(comps);\n        }\n\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] maintenanceImpact(int n, int[][] edges, int[] maintenance) {\n        int[] ans = new int[maintenance.length];\n        for (int q = 0; q < maintenance.length; q++) {\n            int remIdx = maintenance[q];\n            int[] parent = new int[n];\n            for (int i = 0; i < n; i++) parent[i] = i;\n\n            int comps = n;\n            for (int i = 0; i < edges.length; i++) {\n                if (i != remIdx) {\n                    if (union(parent, edges[i][0], edges[i][1])) comps--;\n                }\n            }\n            ans[q] = comps;\n        }\n        return ans;\n    }\n\n    private int find(int[] parent, int x) {\n        if (parent[x] != x) parent[x] = find(parent, parent[x]);\n        return parent[x];\n    }\n\n    private boolean union(int[] parent, int x, int y) {\n        int rx = find(parent, x), ry = find(parent, y);\n        if (rx != ry) {\n            parent[rx] = ry;\n            return true;\n        }\n        return false;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number[]} maintenance\n * @return {number[]}\n */\nvar maintenanceImpact = function(n, edges, maintenance) {\n    const ans = [];\n    for (const remIdx of maintenance) {\n        const parent = new Int32Array(n);\n        for (let i = 0; i < n; i++) parent[i] = i;\n\n        const find = (x) => {\n            if (parent[x] !== x) parent[x] = find(parent[x]);\n            return parent[x];\n        };\n\n        const union = (x, y) => {\n            const rx = find(x), ry = find(y);\n            if (rx !== ry) {\n                parent[rx] = ry;\n                return true;\n            }\n            return false;\n        };\n\n        let comps = n;\n        for (let i = 0; i < edges.length; i++) {\n            if (i !== remIdx) {\n                if (union(edges[i][0], edges[i][1])) comps--;\n            }\n        }\n        ans.push(comps);\n    }\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

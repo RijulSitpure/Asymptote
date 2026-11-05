@@ -20,6 +20,25 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
   beforeAll(async () => {
     const dataDir = path.resolve(process.cwd(), 'extension', 'data');
     dataset = await loadDatasetFromFs(dataDir);
+    // Synthetic uncurated catalog entries for tests that verify behavior on uncurated catalog problems
+    dataset.catalog.push(
+      {
+        n: 99998,
+        s: 'future-mock-uncurated-easy',
+        t: 'Future Mock Uncurated Easy',
+        d: 'Easy',
+        c: 'Algorithms',
+        p: null
+      },
+      {
+        n: 99999,
+        s: 'future-mock-uncurated-problem',
+        t: 'Future Mock Uncurated Problem',
+        d: 'Medium',
+        c: 'Algorithms',
+        p: 'prefix-sum-hashmap'
+      }
+    );
     storage = createMemoryStorage();
     engine = createAsymptoteEngine({ dataset, storage });
   });
@@ -416,10 +435,10 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(uncurated.supported_languages.length).toBeGreaterThanOrEqual(4);
     expect(uncurated.supported_languages.some(l => l.id === 'python3')).toBe(true);
 
-    // Problem #3628 (Maximum Number of Subsequences After One Inserting) - uncurated, in catalog with mapped pattern prefix-sum-hashmap
-    const uncuratedProb = await engine.getProblemHints('maximum-number-of-subsequences-after-one-inserting');
+    // Problem #99999 (Future Mock Uncurated Problem) - uncurated, in catalog with mapped pattern prefix-sum-hashmap
+    const uncuratedProb = await engine.getProblemHints('future-mock-uncurated-problem');
     expect(uncuratedProb.problem).not.toBeNull();
-    expect(uncuratedProb.problem.number).toBe(3628);
+    expect(uncuratedProb.problem.number).toBe(99999);
     expect(uncuratedProb.suggested_pattern).not.toBeNull();
     expect(uncuratedProb.suggested_pattern.id).toBe('prefix-sum-hashmap');
     expect(uncuratedProb.problem.verified).toBe(0);
@@ -450,7 +469,7 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
       asymptote_user_problems: {
         '1': { is_solved: 1, title: 'Two Sum' },
         '15': { is_solved: 1, title: '3Sum' },
-        '3628': { is_solved: 1, title: 'Maximum Number of Subsequences After One Inserting' }
+        '99999': { is_solved: 1, title: 'Future Mock Uncurated Problem' }
       }
     });
 
@@ -478,10 +497,10 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
     expect(threeSum.pattern_id).toBe('two-pointers-opposite');
     expect(threeSum.pattern_title).toBe('Opposite Ends Two Pointers');
 
-    // Maximum Number of Subsequences After One Inserting (#3628) - uncurated catalog problem keyed by numeric string "3628"
-    const minCost = solved.find(p => p.number === 3628);
+    // Future Mock Uncurated Problem (#99999) - uncurated catalog problem keyed by numeric string "99999"
+    const minCost = solved.find(p => p.number === 99999);
     expect(minCost).toBeDefined();
-    expect(minCost.slug).toBe('maximum-number-of-subsequences-after-one-inserting');
+    expect(minCost.slug).toBe('future-mock-uncurated-problem');
     expect(minCost.verified).toBe(0);
     expect(minCost.pattern_id).toBe('prefix-sum-hashmap');
     expect(minCost.pattern_title).toBe('Prefix Sum + Hash Map (Zero/Target Subarray Sum)');

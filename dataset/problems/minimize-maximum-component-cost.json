@@ -1,0 +1,80 @@
+{
+  "slug": "minimize-maximum-component-cost",
+  "number": 3613,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Component Count Relationship",
+      "text": "Removing at most k edges divides a connected network of n nodes into at most k plus one components."
+    },
+    {
+      "level": 2,
+      "title": "Kruskal Minimal Spanning Forest",
+      "text": "To minimize the maximum edge weight retained within components, greedily add the lightest edges first."
+    },
+    {
+      "level": 3,
+      "title": "Early Termination Condition",
+      "text": "Halt edge insertion as soon as the total component count reduces to k plus one."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def minMaxComponentCost(self, n: int, edges: List[List[int]], k: int) -> int:\n        # edges[i] = [u, v, w]\n        # Remove at most k edges -> number of components can be up to k + 1\n        # To minimize max edge weight inside any component, sort edges and pick (n - (k + 1)) lightest tree edges\n        if k >= n - 1:\n            return 0\n            \n        sorted_edges = sorted(edges, key=lambda x: x[2])\n        parent = list(range(n))\n        \n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n            \n        def union(x: int, y: int) -> bool:\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n                return True\n            return False\n\n        components = n\n        target_components = k + 1\n        max_cost = 0\n        \n        for u, v, w in sorted_edges:\n            if components <= target_components:\n                break\n            if union(u, v):\n                components -= 1\n                if w > max_cost:\n                    max_cost = w\n                    \n        return max_cost\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E log E + E * alpha(N))",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes",
+      "E: number of graph edges",
+      "K: number of edge removals allowed"
+    ],
+    "notes": "Sorting edges and Kruskal clustering until k + 1 components remain.",
+    "whyNaiveFails": "Examining all subsets of k edge deletions combinatorially explodes.",
+    "spaceTimeTradeoff": "Disjoint set union tracks cluster reductions with minimal scalar memory.",
+    "interviewerExpectation": "Recognize that removing k edges leaves k + 1 clusters in a minimum spanning forest."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def minMaxComponentCost(self, n: int, edges: List[List[int]], k: int) -> int:\n        # edges[i] = [u, v, w]\n        # Remove at most k edges -> number of components can be up to k + 1\n        # To minimize max edge weight inside any component, sort edges and pick (n - (k + 1)) lightest tree edges\n        if k >= n - 1:\n            return 0\n            \n        sorted_edges = sorted(edges, key=lambda x: x[2])\n        parent = list(range(n))\n        \n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n            \n        def union(x: int, y: int) -> bool:\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n                return True\n            return False\n\n        components = n\n        target_components = k + 1\n        max_cost = 0\n        \n        for u, v, w in sorted_edges:\n            if components <= target_components:\n                break\n            if union(u, v):\n                components -= 1\n                if w > max_cost:\n                    max_cost = w\n                    \n        return max_cost\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <numeric>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minMaxComponentCost(int n, std::vector<std::vector<int>>& edges, int k) {\n        if (k >= n - 1) return 0;\n        std::vector<std::vector<int>> sorted_edges = edges;\n        std::sort(sorted_edges.begin(), sorted_edges.end(), [](const auto& a, const auto& b) {\n            return a[2] < b[2];\n        });\n\n        std::vector<int> parent(n);\n        std::iota(parent.begin(), parent.end(), 0);\n\n        auto find = [&](auto& self, int x) -> int {\n            return parent[x] == x ? x : parent[x] = self(self, parent[x]);\n        };\n\n        auto unite = [&](int x, int y) {\n            int rx = find(find, x), ry = find(find, y);\n            if (rx != ry) {\n                parent[rx] = ry;\n                return true;\n            }\n            return false;\n        };\n\n        int components = n;\n        int target = k + 1;\n        int max_cost = 0;\n\n        for (const auto& e : sorted_edges) {\n            if (components <= target) break;\n            if (unite(e[0], e[1])) {\n                components--;\n                max_cost = std::max(max_cost, e[2]);\n            }\n        }\n\n        return max_cost;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minMaxComponentCost(int n, int[][] edges, int k) {\n        if (k >= n - 1) return 0;\n        Arrays.sort(edges, Comparator.comparingInt(a -> a[2]));\n\n        int[] parent = new int[n];\n        for (int i = 0; i < n; i++) parent[i] = i;\n\n        int components = n;\n        int target = k + 1;\n        int maxCost = 0;\n\n        for (int[] e : edges) {\n            if (components <= target) break;\n            if (union(parent, e[0], e[1])) {\n                components--;\n                maxCost = Math.max(maxCost, e[2]);\n            }\n        }\n\n        return maxCost;\n    }\n\n    private int find(int[] parent, int x) {\n        if (parent[x] != x) parent[x] = find(parent, parent[x]);\n        return parent[x];\n    }\n\n    private boolean union(int[] parent, int x, int y) {\n        int rx = find(parent, x), ry = find(parent, y);\n        if (rx != ry) {\n            parent[rx] = ry;\n            return true;\n        }\n        return false;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number} k\n * @return {number}\n */\nvar minMaxComponentCost = function(n, edges, k) {\n    if (k >= n - 1) return 0;\n    const sortedEdges = edges.slice().sort((a, b) => a[2] - b[2]);\n\n    const parent = new Int32Array(n);\n    for (let i = 0; i < n; i++) parent[i] = i;\n\n    const find = (x) => {\n        if (parent[x] !== x) parent[x] = find(parent[x]);\n        return parent[x];\n    };\n\n    const union = (x, y) => {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) {\n            parent[rx] = ry;\n            return true;\n        }\n        return false;\n    };\n\n    let components = n;\n    const target = k + 1;\n    let maxCost = 0;\n\n    for (const [u, v, w] of sortedEdges) {\n        if (components <= target) break;\n        if (union(u, v)) {\n            components--;\n            if (w > maxCost) maxCost = w;\n        }\n    }\n\n    return maxCost;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

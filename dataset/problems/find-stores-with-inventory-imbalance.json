@@ -1,0 +1,72 @@
+{
+  "slug": "find-stores-with-inventory-imbalance",
+  "number": 3626,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Store Category Aggregation",
+      "text": "Aggregate product quantities by store and category to determine category-level inventory counts."
+    },
+    {
+      "level": 2,
+      "title": "Category Disparity Calculation",
+      "text": "Compute the difference between the most stocked category and least stocked category per store."
+    },
+    {
+      "level": 3,
+      "title": "Threshold Filtering and Join",
+      "text": "Filter for stores with multiple categories exhibiting an inventory disparity of at least 50 units."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH store_category_quantities AS (\n    SELECT \n        store_id,\n        category,\n        SUM(quantity) AS cat_qty\n    FROM inventory\n    GROUP BY store_id, category\n),\nstore_imbalances AS (\n    SELECT \n        store_id,\n        MAX(cat_qty) AS max_category_qty,\n        MIN(cat_qty) AS min_category_qty,\n        MAX(cat_qty) - MIN(cat_qty) AS imbalance\n    FROM store_category_quantities\n    GROUP BY store_id\n    HAVING COUNT(category) >= 2 AND (MAX(cat_qty) - MIN(cat_qty)) >= 50\n)\nSELECT \n    s.store_id,\n    s.store_name,\n    s.location,\n    i.max_category_qty,\n    i.min_category_qty,\n    i.imbalance\nFROM store_imbalances i\nJOIN stores s ON i.store_id = s.store_id\nORDER BY i.imbalance DESC, s.store_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(I log I + S)",
+    "space": "O(I + S)",
+    "variables": [
+      "I: inventory items count",
+      "S: store count"
+    ],
+    "notes": "Two-level group aggregation followed by threshold filter and store join.",
+    "whyNaiveFails": "Correlated subqueries per category create quadratic joins on large inventories.",
+    "spaceTimeTradeoff": "Grouping by store and category condenses rows before calculating extremes.",
+    "interviewerExpectation": "Use CTEs to compute category totals and compare maximum versus minimum."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH store_category_quantities AS (\n    SELECT \n        store_id,\n        category,\n        SUM(quantity) AS cat_qty\n    FROM inventory\n    GROUP BY store_id, category\n),\nstore_imbalances AS (\n    SELECT \n        store_id,\n        MAX(cat_qty) AS max_category_qty,\n        MIN(cat_qty) AS min_category_qty,\n        MAX(cat_qty) - MIN(cat_qty) AS imbalance\n    FROM store_category_quantities\n    GROUP BY store_id\n    HAVING COUNT(category) >= 2 AND (MAX(cat_qty) - MIN(cat_qty)) >= 50\n)\nSELECT \n    s.store_id,\n    s.store_name,\n    s.location,\n    i.max_category_qty,\n    i.min_category_qty,\n    i.imbalance\nFROM store_imbalances i\nJOIN stores s ON i.store_id = s.store_id\nORDER BY i.imbalance DESC, s.store_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH store_category_quantities AS (\n    SELECT \n        store_id,\n        category,\n        SUM(quantity) AS cat_qty\n    FROM inventory\n    GROUP BY store_id, category\n),\nstore_imbalances AS (\n    SELECT \n        store_id,\n        MAX(cat_qty) AS max_category_qty,\n        MIN(cat_qty) AS min_category_qty,\n        MAX(cat_qty) - MIN(cat_qty) AS imbalance\n    FROM store_category_quantities\n    GROUP BY store_id\n    HAVING COUNT(category) >= 2 AND (MAX(cat_qty) - MIN(cat_qty)) >= 50\n)\nSELECT \n    s.store_id,\n    s.store_name,\n    s.location,\n    i.max_category_qty,\n    i.min_category_qty,\n    i.imbalance\nFROM store_imbalances i\nJOIN stores s ON i.store_id = s.store_id\nORDER BY i.imbalance DESC, s.store_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_stores_with_inventory_imbalance(stores: pd.DataFrame, inventory: pd.DataFrame) -> pd.DataFrame:\n    cat_sum = inventory.groupby(['store_id', 'category'])['quantity'].sum().reset_index()\n    \n    grouped = cat_sum.groupby('store_id').agg(\n        max_category_qty=('quantity', 'max'),\n        min_category_qty=('quantity', 'min'),\n        cat_count=('category', 'count')\n    ).reset_index()\n    \n    grouped['imbalance'] = grouped['max_category_qty'] - grouped['min_category_qty']\n    valid = grouped[(grouped['cat_count'] >= 2) & (grouped['imbalance'] >= 50)]\n    \n    res = valid.merge(stores, on='store_id', how='inner')\n    res = res.sort_values(by=['imbalance', 'store_id'], ascending=[False, True])\n    return res[['store_id', 'store_name', 'location', 'max_category_qty', 'min_category_qty', 'imbalance']]\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

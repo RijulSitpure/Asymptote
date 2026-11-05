@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-integers-with-popcount-depth-equal-to-k-ii",
+  "number": 3624,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Array Value Precomputation",
+      "text": "Transform each input integer into its popcount depth by repeatedly counting set bits until reaching 1."
+    },
+    {
+      "level": 2,
+      "title": "Point Update Processing",
+      "text": "Recalculate the transformed depth upon point updates and refresh the array index."
+    },
+    {
+      "level": 3,
+      "title": "Range Occurrence Querying",
+      "text": "Count matches of target depth k across the queried index interval."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def popcountQueries(self, nums: List[int], queries: List[List[int]]) -> List[int]:\n        depth = {1: 0}\n        def get_depth(x: int) -> int:\n            if x in depth:\n                return depth[x]\n            cnt = bin(x).count('1')\n            depth[x] = 1 + get_depth(cnt)\n            return depth[x]\n\n        arr = [get_depth(x) for x in nums]\n        ans = []\n        for q in queries:\n            t = q[0]\n            if t == 1:\n                # Range query [1, l, r, k]: count elements in arr[l..r] with depth k\n                l, r, k = q[1], q[2], q[3]\n                ans.append(sum(1 for i in range(l, r + 1) if arr[i] == k))\n            elif t == 2:\n                # Point update [2, idx, val]\n                idx, val = q[1], q[2]\n                arr[idx] = get_depth(val)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N + Q * N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of array nums",
+      "Q: count of queries"
+    ],
+    "notes": "Direct array simulation supporting dynamic updates and range counts.",
+    "whyNaiveFails": "Recomputing depths from scratch on every range query is wasteful.",
+    "spaceTimeTradeoff": "Mapped array caches depths for fast interval filtering.",
+    "interviewerExpectation": "Apply popcount depth mapping and handle dynamic queries cleanly."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def popcountQueries(self, nums: List[int], queries: List[List[int]]) -> List[int]:\n        depth = {1: 0}\n        def get_depth(x: int) -> int:\n            if x in depth:\n                return depth[x]\n            cnt = bin(x).count('1')\n            depth[x] = 1 + get_depth(cnt)\n            return depth[x]\n\n        arr = [get_depth(x) for x in nums]\n        ans = []\n        for q in queries:\n            t = q[0]\n            if t == 1:\n                # Range query [1, l, r, k]: count elements in arr[l..r] with depth k\n                l, r, k = q[1], q[2], q[3]\n                ans.append(sum(1 for i in range(l, r + 1) if arr[i] == k))\n            elif t == 2:\n                # Point update [2, idx, val]\n                idx, val = q[1], q[2]\n                arr[idx] = get_depth(val)\n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n\nclass Solution {\n    int get_depth(int x) {\n        if (x <= 1) return 0;\n        int c = 0;\n        int temp = x;\n        while (temp) {\n            c += (temp & 1);\n            temp >>= 1;\n        }\n        return 1 + get_depth(c);\n    }\npublic:\n    std::vector<int> popcountQueries(std::vector<int>& nums, std::vector<std::vector<int>>& queries) {\n        std::vector<int> arr;\n        arr.reserve(nums.size());\n        for (int x : nums) arr.push_back(get_depth(x));\n\n        std::vector<int> ans;\n        for (const auto& q : queries) {\n            int t = q[0];\n            if (t == 1) {\n                int l = q[1], r = q[2], k = q[3];\n                int cnt = 0;\n                for (int i = l; i <= r; ++i) {\n                    if (arr[i] == k) cnt++;\n                }\n                ans.push_back(cnt);\n            } else if (t == 2) {\n                int idx = q[1], val = q[2];\n                arr[idx] = get_depth(val);\n            }\n        }\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] popcountQueries(int[] nums, int[][] queries) {\n        int[] arr = new int[nums.length];\n        for (int i = 0; i < nums.length; i++) arr[i] = getDepth(nums[i]);\n\n        List<Integer> res = new ArrayList<>();\n        for (int[] q : queries) {\n            int t = q[0];\n            if (t == 1) {\n                int l = q[1], r = q[2], k = q[3];\n                int cnt = 0;\n                for (int i = l; i <= r; i++) {\n                    if (arr[i] == k) cnt++;\n                }\n                res.add(cnt);\n            } else if (t == 2) {\n                int idx = q[1], val = q[2];\n                arr[idx] = getDepth(val);\n            }\n        }\n\n        int[] ans = new int[res.size()];\n        for (int i = 0; i < res.size(); i++) ans[i] = res.get(i);\n        return ans;\n    }\n\n    private int getDepth(int x) {\n        if (x <= 1) return 0;\n        return 1 + getDepth(Integer.bitCount(x));\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @param {number[][]} queries\n * @return {number[]}\n */\nvar popcountQueries = function(nums, queries) {\n    const getDepth = (x) => {\n        if (x <= 1) return 0;\n        let c = 0;\n        let temp = x;\n        while (temp > 0) {\n            c += (temp & 1);\n            temp >>= 1;\n        }\n        return 1 + getDepth(c);\n    };\n\n    const arr = nums.map(getDepth);\n    const ans = [];\n\n    for (const q of queries) {\n        const t = q[0];\n        if (t === 1) {\n            const [, l, r, k] = q;\n            let cnt = 0;\n            for (let i = l; i <= r; i++) {\n                if (arr[i] === k) cnt++;\n            }\n            ans.push(cnt);\n        } else if (t === 2) {\n            const [, idx, val] = q;\n            arr[idx] = getDepth(val);\n        }\n    }\n\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

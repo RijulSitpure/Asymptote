@@ -1,0 +1,72 @@
+{
+  "slug": "find-drivers-with-improved-fuel-efficiency",
+  "number": 3601,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Trip Sequence Chronology",
+      "text": "Assign sequential rank numbers to each driver trips sorted chronologically by trip date."
+    },
+    {
+      "level": 2,
+      "title": "Halfway Partitioning",
+      "text": "Partition each driver trips into the initial half and the subsequent half based on the median split."
+    },
+    {
+      "level": 3,
+      "title": "Efficiency Gain Filtering",
+      "text": "Compute the average distance per fuel unit for both halves and filter for drivers with positive improvement."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH ranked_trips AS (\n    SELECT \n        trip_id,\n        driver_id,\n        trip_date,\n        distance_km,\n        fuel_liters,\n        ROW_NUMBER() OVER (PARTITION BY driver_id ORDER BY trip_date ASC, trip_id ASC) AS rn,\n        COUNT(*) OVER (PARTITION BY driver_id) AS total_trips\n    FROM trips\n),\nsplit_halves AS (\n    SELECT \n        driver_id,\n        AVG(CASE WHEN rn <= FLOOR(total_trips / 2.0) THEN (distance_km / fuel_liters) END) AS first_half_avg,\n        AVG(CASE WHEN rn > CEIL(total_trips / 2.0) THEN (distance_km / fuel_liters) END) AS second_half_avg\n    FROM ranked_trips\n    WHERE total_trips >= 4\n    GROUP BY driver_id\n)\nSELECT \n    d.driver_id,\n    d.driver_name,\n    ROUND(s.first_half_avg, 2) AS first_half_avg,\n    ROUND(s.second_half_avg, 2) AS second_half_avg,\n    ROUND(s.second_half_avg - s.first_half_avg, 2) AS efficiency_improvement\nFROM split_halves s\nJOIN drivers d ON s.driver_id = d.driver_id\nWHERE s.second_half_avg > s.first_half_avg\nORDER BY efficiency_improvement DESC, d.driver_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(T log T + D)",
+    "space": "O(T + D)",
+    "variables": [
+      "T: total trip records",
+      "D: total driver records"
+    ],
+    "notes": "Window ranking across driver trips followed by conditional aggregation.",
+    "whyNaiveFails": "Correlated subqueries per driver recalculate trip ranks repeatedly.",
+    "spaceTimeTradeoff": "Window functions compute counts and ranks in a single pass.",
+    "interviewerExpectation": "Use window functions to partition trips chronologically and compare period averages."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH ranked_trips AS (\n    SELECT \n        trip_id,\n        driver_id,\n        trip_date,\n        distance_km,\n        fuel_liters,\n        ROW_NUMBER() OVER (PARTITION BY driver_id ORDER BY trip_date ASC, trip_id ASC) AS rn,\n        COUNT(*) OVER (PARTITION BY driver_id) AS total_trips\n    FROM trips\n),\nsplit_halves AS (\n    SELECT \n        driver_id,\n        AVG(CASE WHEN rn <= FLOOR(total_trips / 2.0) THEN (distance_km / fuel_liters) END) AS first_half_avg,\n        AVG(CASE WHEN rn > CEIL(total_trips / 2.0) THEN (distance_km / fuel_liters) END) AS second_half_avg\n    FROM ranked_trips\n    WHERE total_trips >= 4\n    GROUP BY driver_id\n)\nSELECT \n    d.driver_id,\n    d.driver_name,\n    ROUND(s.first_half_avg, 2) AS first_half_avg,\n    ROUND(s.second_half_avg, 2) AS second_half_avg,\n    ROUND(s.second_half_avg - s.first_half_avg, 2) AS efficiency_improvement\nFROM split_halves s\nJOIN drivers d ON s.driver_id = d.driver_id\nWHERE s.second_half_avg > s.first_half_avg\nORDER BY efficiency_improvement DESC, d.driver_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH ranked_trips AS (\n    SELECT \n        trip_id,\n        driver_id,\n        trip_date,\n        distance_km,\n        fuel_liters,\n        ROW_NUMBER() OVER (PARTITION BY driver_id ORDER BY trip_date ASC, trip_id ASC) AS rn,\n        COUNT(*) OVER (PARTITION BY driver_id) AS total_trips\n    FROM trips\n),\nsplit_halves AS (\n    SELECT \n        driver_id,\n        AVG(CASE WHEN rn <= FLOOR(total_trips / 2.0) THEN (distance_km / fuel_liters) END) AS first_half_avg,\n        AVG(CASE WHEN rn > CEIL(total_trips / 2.0) THEN (distance_km / fuel_liters) END) AS second_half_avg\n    FROM ranked_trips\n    WHERE total_trips >= 4\n    GROUP BY driver_id\n)\nSELECT \n    d.driver_id,\n    d.driver_name,\n    ROUND(s.first_half_avg::numeric, 2) AS first_half_avg,\n    ROUND(s.second_half_avg::numeric, 2) AS second_half_avg,\n    ROUND((s.second_half_avg - s.first_half_avg)::numeric, 2) AS efficiency_improvement\nFROM split_halves s\nJOIN drivers d ON s.driver_id = d.driver_id\nWHERE s.second_half_avg > s.first_half_avg\nORDER BY efficiency_improvement DESC, d.driver_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\nimport numpy as np\n\ndef find_drivers_with_improved_fuel_efficiency(drivers: pd.DataFrame, trips: pd.DataFrame) -> pd.DataFrame:\n    trips_sorted = trips.sort_values(by=['driver_id', 'trip_date', 'trip_id']).copy()\n    trips_sorted['rn'] = trips_sorted.groupby('driver_id').cumcount() + 1\n    trips_sorted['total_trips'] = trips_sorted.groupby('driver_id')['trip_id'].transform('count')\n    \n    # Filter drivers with at least 4 trips\n    valid = trips_sorted[trips_sorted['total_trips'] >= 4].copy()\n    valid['eff'] = valid['distance_km'] / valid['fuel_liters']\n    \n    first_half = valid[valid['rn'] <= np.floor(valid['total_trips'] / 2.0)]\n    second_half = valid[valid['rn'] > np.ceil(valid['total_trips'] / 2.0)]\n    \n    f_avg = first_half.groupby('driver_id')['eff'].mean().reset_index(name='first_half_avg')\n    s_avg = second_half.groupby('driver_id')['eff'].mean().reset_index(name='second_half_avg')\n    \n    merged = f_avg.merge(s_avg, on='driver_id', how='inner')\n    merged = merged[merged['second_half_avg'] > merged['first_half_avg']].copy()\n    merged['efficiency_improvement'] = (merged['second_half_avg'] - merged['first_half_avg']).round(2)\n    merged['first_half_avg'] = merged['first_half_avg'].round(2)\n    merged['second_half_avg'] = merged['second_half_avg'].round(2)\n    \n    res = merged.merge(drivers, on='driver_id', how='inner')\n    res = res.sort_values(by=['efficiency_improvement', 'driver_id'], ascending=[False, True])\n    return res[['driver_id', 'driver_name', 'first_half_avg', 'second_half_avg', 'efficiency_improvement']]\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,72 @@
+{
+  "slug": "find-students-with-study-spiral-pattern",
+  "number": 3617,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subject Diversity Aggregation",
+      "text": "Aggregate study records per student to count unique subjects explored."
+    },
+    {
+      "level": 2,
+      "title": "Threshold Filtering",
+      "text": "Filter for scholars who have engaged with at least three distinct academic subjects."
+    },
+    {
+      "level": 3,
+      "title": "Total Effort Sorting",
+      "text": "Sum the total study hours accumulated and sort in descending order of effort."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH student_stats AS (\n    SELECT \n        s.student_id,\n        st.student_name,\n        st.major,\n        COUNT(DISTINCT s.subject) AS distinct_subjects,\n        SUM(s.hours_spent) AS total_study_hours\n    FROM study_sessions s\n    JOIN students st ON s.student_id = st.student_id\n    GROUP BY s.student_id, st.student_name, st.major\n)\nSELECT \n    student_id,\n    student_name,\n    major,\n    ROUND(total_study_hours, 2) AS total_study_hours\nFROM student_stats\nWHERE distinct_subjects >= 3\nORDER BY total_study_hours DESC, student_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(S log S + N)",
+    "space": "O(S + N)",
+    "variables": [
+      "S: study session records",
+      "N: count of students"
+    ],
+    "notes": "Group aggregation by student followed by count filtering and sorting.",
+    "whyNaiveFails": "Correlated subqueries per student recalculate distinct counts inefficiently.",
+    "spaceTimeTradeoff": "Single group-by aggregation evaluates hours and subjects concurrently.",
+    "interviewerExpectation": "Use group aggregation with COUNT(DISTINCT) and HAVING filters."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH student_stats AS (\n    SELECT \n        s.student_id,\n        st.student_name,\n        st.major,\n        COUNT(DISTINCT s.subject) AS distinct_subjects,\n        SUM(s.hours_spent) AS total_study_hours\n    FROM study_sessions s\n    JOIN students st ON s.student_id = st.student_id\n    GROUP BY s.student_id, st.student_name, st.major\n)\nSELECT \n    student_id,\n    student_name,\n    major,\n    ROUND(total_study_hours, 2) AS total_study_hours\nFROM student_stats\nWHERE distinct_subjects >= 3\nORDER BY total_study_hours DESC, student_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH student_stats AS (\n    SELECT \n        s.student_id,\n        st.student_name,\n        st.major,\n        COUNT(DISTINCT s.subject) AS distinct_subjects,\n        SUM(s.hours_spent) AS total_study_hours\n    FROM study_sessions s\n    JOIN students st ON s.student_id = st.student_id\n    GROUP BY s.student_id, st.student_name, st.major\n)\nSELECT \n    student_id,\n    student_name,\n    major,\n    ROUND(total_study_hours::numeric, 2) AS total_study_hours\nFROM student_stats\nWHERE distinct_subjects >= 3\nORDER BY total_study_hours DESC, student_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_students_with_study_spiral_pattern(students: pd.DataFrame, study_sessions: pd.DataFrame) -> pd.DataFrame:\n    grouped = study_sessions.groupby('student_id').agg(\n        distinct_subjects=('subject', 'nunique'),\n        total_study_hours=('hours_spent', 'sum')\n    ).reset_index()\n    \n    valid = grouped[grouped['distinct_subjects'] >= 3].copy()\n    valid['total_study_hours'] = valid['total_study_hours'].round(2)\n    \n    res = valid.merge(students, on='student_id', how='inner')\n    res = res.sort_values(by=['total_study_hours', 'student_id'], ascending=[False, True])\n    return res[['student_id', 'student_name', 'major', 'total_study_hours']]\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

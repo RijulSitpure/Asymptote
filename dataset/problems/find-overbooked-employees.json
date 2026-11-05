@@ -1,0 +1,72 @@
+{
+  "slug": "find-overbooked-employees",
+  "number": 3611,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Self Join Interval Overlap",
+      "text": "Join meetings with itself on same employee and date where meeting IDs differ."
+    },
+    {
+      "level": 2,
+      "title": "Time Interval Condition",
+      "text": "Two intervals overlap if the start time of each is strictly before the end time of the other."
+    },
+    {
+      "level": 3,
+      "title": "Distinct Overlapping Meetings",
+      "text": "Tally unique meeting occurrences involved in conflicts and join employee information."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH overlapping_pairs AS (\n    SELECT \n        m1.employee_id,\n        m1.meeting_date,\n        COUNT(DISTINCT m1.meeting_id) AS overlapping_meetings_count\n    FROM meetings m1\n    JOIN meetings m2 ON m1.employee_id = m2.employee_id \n                    AND m1.meeting_date = m2.meeting_date \n                    AND m1.meeting_id != m2.meeting_id\n                    AND m1.start_time < m2.end_time \n                    AND m2.start_time < m1.end_time\n    GROUP BY m1.employee_id, m1.meeting_date\n)\nSELECT \n    e.employee_id,\n    e.employee_name,\n    e.department,\n    o.meeting_date,\n    o.overlapping_meetings_count\nFROM overlapping_pairs o\nJOIN employees e ON o.employee_id = e.employee_id\nORDER BY o.meeting_date ASC, e.employee_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M^2 + E)",
+    "space": "O(M + E)",
+    "variables": [
+      "M: meeting records per employee day",
+      "E: employee count"
+    ],
+    "notes": "Self join on employee day partitions with interval overlap predicates.",
+    "whyNaiveFails": "Checking all pairs across different dates or employees creates unpartitioned quadratic overhead.",
+    "spaceTimeTradeoff": "Filtering by employee and date restricts self-joins to small daily buckets.",
+    "interviewerExpectation": "Use self-join with start1 < end2 AND start2 < end1 condition."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH overlapping_pairs AS (\n    SELECT \n        m1.employee_id,\n        m1.meeting_date,\n        COUNT(DISTINCT m1.meeting_id) AS overlapping_meetings_count\n    FROM meetings m1\n    JOIN meetings m2 ON m1.employee_id = m2.employee_id \n                    AND m1.meeting_date = m2.meeting_date \n                    AND m1.meeting_id != m2.meeting_id\n                    AND m1.start_time < m2.end_time \n                    AND m2.start_time < m1.end_time\n    GROUP BY m1.employee_id, m1.meeting_date\n)\nSELECT \n    e.employee_id,\n    e.employee_name,\n    e.department,\n    o.meeting_date,\n    o.overlapping_meetings_count\nFROM overlapping_pairs o\nJOIN employees e ON o.employee_id = e.employee_id\nORDER BY o.meeting_date ASC, e.employee_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH overlapping_pairs AS (\n    SELECT \n        m1.employee_id,\n        m1.meeting_date,\n        COUNT(DISTINCT m1.meeting_id) AS overlapping_meetings_count\n    FROM meetings m1\n    JOIN meetings m2 ON m1.employee_id = m2.employee_id \n                    AND m1.meeting_date = m2.meeting_date \n                    AND m1.meeting_id != m2.meeting_id\n                    AND m1.start_time < m2.end_time \n                    AND m2.start_time < m1.end_time\n    GROUP BY m1.employee_id, m1.meeting_date\n)\nSELECT \n    e.employee_id,\n    e.employee_name,\n    e.department,\n    o.meeting_date,\n    o.overlapping_meetings_count\nFROM overlapping_pairs o\nJOIN employees e ON o.employee_id = e.employee_id\nORDER BY o.meeting_date ASC, e.employee_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_overbooked_employees(employees: pd.DataFrame, meetings: pd.DataFrame) -> pd.DataFrame:\n    m = meetings.merge(meetings, on=['employee_id', 'meeting_date'], suffixes=('_1', '_2'))\n    m = m[m['meeting_id_1'] != m['meeting_id_2']]\n    overlaps = m[(m['start_time_1'] < m['end_time_2']) & (m['start_time_2'] < m['end_time_1'])]\n    \n    grouped = overlaps.groupby(['employee_id', 'meeting_date'])['meeting_id_1'].nunique().reset_index(name='overlapping_meetings_count')\n    res = grouped.merge(employees, on='employee_id', how='inner')\n    res = res.sort_values(by=['meeting_date', 'employee_id'], ascending=[True, True])\n    return res[['employee_id', 'employee_name', 'department', 'meeting_date', 'overlapping_meetings_count']]\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

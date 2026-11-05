@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-jumps-to-reach-end-via-prime-teleportation",
+  "number": 3629,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prime Factor Precomputation",
+      "text": "Extract all prime factors per element and index the positions containing each prime factor."
+    },
+    {
+      "level": 2,
+      "title": "Graph BFS Traversal",
+      "text": "Explore positions in level order using both adjacent step movements and prime factor teleportation."
+    },
+    {
+      "level": 3,
+      "title": "Prime Visitation Pruning",
+      "text": "Clear or mark each prime factor as visited after its first expansion to prevent redundant queue entries."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import defaultdict, deque\n\nclass Solution:\n    def minJumps(self, nums: List[int]) -> int:\n        n = len(nums)\n        if n <= 1:\n            return 0\n            \n        max_val = max(nums)\n        spf = list(range(max_val + 1))\n        for i in range(2, int(max_val**0.5) + 1):\n            if spf[i] == i:\n                for j in range(i * i, max_val + 1, i):\n                    if spf[j] == j:\n                        spf[j] = i\n                        \n        def get_primes(x: int) -> set:\n            res = set()\n            while x > 1:\n                p = spf[x]\n                res.add(p)\n                while x % p == 0:\n                    x //= p\n            return res\n\n        prime_to_indices = defaultdict(list)\n        for i, val in enumerate(nums):\n            for p in get_primes(val):\n                prime_to_indices[p].append(i)\n                \n        visited_indices = [False] * n\n        visited_primes = set()\n        \n        queue = deque([(0, 0)]) # (idx, dist)\n        visited_indices[0] = True\n        \n        while queue:\n            curr, d = queue.popleft()\n            if curr == n - 1:\n                return d\n                \n            # Adjacent moves\n            for nxt in (curr - 1, curr + 1):\n                if 0 <= nxt < n and not visited_indices[nxt]:\n                    visited_indices[nxt] = True\n                    queue.append((nxt, d + 1))\n                    \n            # Prime teleportation\n            for p in get_primes(nums[curr]):\n                if p not in visited_primes:\n                    visited_primes.add(p)\n                    for nxt in prime_to_indices[p]:\n                        if not visited_indices[nxt]:\n                            visited_indices[nxt] = True\n                            queue.append((nxt, d + 1))\n                            \n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * P + M log log M)",
+    "space": "O(N * P + M)",
+    "variables": [
+      "N: array length",
+      "M: maximum value in nums",
+      "P: max prime factors per value"
+    ],
+    "notes": "Breadth-first search with prime factor grouping pruning edges after first visit.",
+    "whyNaiveFails": "Re-expanding all indices of previously visited prime factors causes quadratic time.",
+    "spaceTimeTradeoff": "Prime factor inverted index allows instantaneous neighbor lookups.",
+    "interviewerExpectation": "Use BFS and prune prime factors to prevent redundant edge traversals."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import defaultdict, deque\n\nclass Solution:\n    def minJumps(self, nums: List[int]) -> int:\n        n = len(nums)\n        if n <= 1:\n            return 0\n            \n        max_val = max(nums)\n        spf = list(range(max_val + 1))\n        for i in range(2, int(max_val**0.5) + 1):\n            if spf[i] == i:\n                for j in range(i * i, max_val + 1, i):\n                    if spf[j] == j:\n                        spf[j] = i\n                        \n        def get_primes(x: int) -> set:\n            res = set()\n            while x > 1:\n                p = spf[x]\n                res.add(p)\n                while x % p == 0:\n                    x //= p\n            return res\n\n        prime_to_indices = defaultdict(list)\n        for i, val in enumerate(nums):\n            for p in get_primes(val):\n                prime_to_indices[p].append(i)\n                \n        visited_indices = [False] * n\n        visited_primes = set()\n        \n        queue = deque([(0, 0)]) # (idx, dist)\n        visited_indices[0] = True\n        \n        while queue:\n            curr, d = queue.popleft()\n            if curr == n - 1:\n                return d\n                \n            # Adjacent moves\n            for nxt in (curr - 1, curr + 1):\n                if 0 <= nxt < n and not visited_indices[nxt]:\n                    visited_indices[nxt] = True\n                    queue.append((nxt, d + 1))\n                    \n            # Prime teleportation\n            for p in get_primes(nums[curr]):\n                if p not in visited_primes:\n                    visited_primes.add(p)\n                    for nxt in prime_to_indices[p]:\n                        if not visited_indices[nxt]:\n                            visited_indices[nxt] = True\n                            queue.append((nxt, d + 1))\n                            \n        return -1\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <unordered_set>\n#include <queue>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minJumps(std::vector<int>& nums) {\n        int n = nums.size();\n        if (n <= 1) return 0;\n\n        int max_val = *std::max_element(nums.begin(), nums.end());\n        std::vector<int> spf(max_val + 1);\n        for (int i = 0; i <= max_val; ++i) spf[i] = i;\n        for (int i = 2; i * i <= max_val; ++i) {\n            if (spf[i] == i) {\n                for (int j = i * i; j <= max_val; j += i) {\n                    if (spf[j] == j) spf[j] = i;\n                }\n            }\n        }\n\n        auto get_primes = [&](int x) {\n            std::vector<int> res;\n            while (x > 1) {\n                int p = spf[x];\n                res.push_back(p);\n                while (x % p == 0) x /= p;\n            }\n            return res;\n        };\n\n        std::unordered_map<int, std::vector<int>> prime_to_indices;\n        for (int i = 0; i < n; ++i) {\n            for (int p : get_primes(nums[i])) {\n                prime_to_indices[p].push_back(i);\n            }\n        }\n\n        std::vector<bool> visited_indices(n, false);\n        std::unordered_set<int> visited_primes;\n        std::queue<std::pair<int, int>> qu;\n\n        visited_indices[0] = true;\n        qu.push({0, 0});\n\n        while (!qu.empty()) {\n            auto [curr, d] = qu.front();\n            qu.pop();\n\n            if (curr == n - 1) return d;\n\n            if (curr - 1 >= 0 && !visited_indices[curr - 1]) {\n                visited_indices[curr - 1] = true;\n                qu.push({curr - 1, d + 1});\n            }\n            if (curr + 1 < n && !visited_indices[curr + 1]) {\n                visited_indices[curr + 1] = true;\n                qu.push({curr + 1, d + 1});\n            }\n\n            for (int p : get_primes(nums[curr])) {\n                if (visited_primes.insert(p).second) {\n                    for (int nxt : prime_to_indices[p]) {\n                        if (!visited_indices[nxt]) {\n                            visited_indices[nxt] = true;\n                            qu.push({nxt, d + 1});\n                        }\n                    }\n                }\n            }\n        }\n\n        return -1;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minJumps(int[] nums) {\n        int n = nums.length;\n        if (n <= 1) return 0;\n\n        int maxVal = 0;\n        for (int x : nums) if (x > maxVal) maxVal = x;\n\n        int[] spf = new int[maxVal + 1];\n        for (int i = 0; i <= maxVal; i++) spf[i] = i;\n        for (int i = 2; i * i <= maxVal; i++) {\n            if (spf[i] == i) {\n                for (int j = i * i; j <= maxVal; j += i) {\n                    if (spf[j] == j) spf[j] = i;\n                }\n            }\n        }\n\n        Map<Integer, List<Integer>> primeToIndices = new HashMap<>();\n        for (int i = 0; i < n; i++) {\n            for (int p : getPrimes(nums[i], spf)) {\n                primeToIndices.computeIfAbsent(p, k -> new ArrayList<>()).add(i);\n            }\n        }\n\n        boolean[] visitedIndices = new boolean[n];\n        Set<Integer> visitedPrimes = new HashSet<>();\n        Queue<int[]> queue = new ArrayDeque<>();\n\n        visitedIndices[0] = true;\n        queue.add(new int[]{0, 0});\n\n        while (!queue.isEmpty()) {\n            int[] cell = queue.poll();\n            int curr = cell[0], d = cell[1];\n\n            if (curr == n - 1) return d;\n\n            if (curr - 1 >= 0 && !visitedIndices[curr - 1]) {\n                visitedIndices[curr - 1] = true;\n                queue.add(new int[]{curr - 1, d + 1});\n            }\n            if (curr + 1 < n && !visitedIndices[curr + 1]) {\n                visitedIndices[curr + 1] = true;\n                queue.add(new int[]{curr + 1, d + 1});\n            }\n\n            for (int p : getPrimes(nums[curr], spf)) {\n                if (visitedPrimes.add(p)) {\n                    List<Integer> list = primeToIndices.get(p);\n                    if (list != null) {\n                        for (int nxt : list) {\n                            if (!visitedIndices[nxt]) {\n                                visitedIndices[nxt] = true;\n                                queue.add(new int[]{nxt, d + 1});\n                            }\n                        }\n                    }\n                }\n            }\n        }\n\n        return -1;\n    }\n\n    private List<Integer> getPrimes(int x, int[] spf) {\n        List<Integer> res = new ArrayList<>();\n        while (x > 1) {\n            int p = spf[x];\n            res.add(p);\n            while (x % p == 0) x /= p;\n        }\n        return res;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar minJumps = function(nums) {\n    const n = nums.length;\n    if (n <= 1) return 0;\n\n    let maxVal = 0;\n    for (const x of nums) if (x > maxVal) maxVal = x;\n\n    const spf = new Int32Array(maxVal + 1);\n    for (let i = 0; i <= maxVal; i++) spf[i] = i;\n    for (let i = 2; i * i <= maxVal; i++) {\n        if (spf[i] === i) {\n            for (let j = i * i; j <= maxVal; j += i) {\n                if (spf[j] === j) spf[j] = i;\n            }\n        }\n    }\n\n    const getPrimes = (x) => {\n        const res = [];\n        while (x > 1) {\n            const p = spf[x];\n            res.push(p);\n            while (x % p === 0) x = Math.floor(x / p);\n        }\n        return res;\n    };\n\n    const primeToIndices = new Map();\n    for (let i = 0; i < n; i++) {\n        for (const p of getPrimes(nums[i])) {\n            if (!primeToIndices.has(p)) primeToIndices.set(p, []);\n            primeToIndices.get(p).push(i);\n        }\n    }\n\n    const visitedIndices = new Uint8Array(n);\n    const visitedPrimes = new Set();\n    const queue = [[0, 0]];\n    visitedIndices[0] = 1;\n\n    let head = 0;\n    while (head < queue.length) {\n        const [curr, d] = queue[head++];\n        if (curr === n - 1) return d;\n\n        if (curr - 1 >= 0 && !visitedIndices[curr - 1]) {\n            visitedIndices[curr - 1] = 1;\n            queue.push([curr - 1, d + 1]);\n        }\n        if (curr + 1 < n && !visitedIndices[curr + 1]) {\n            visitedIndices[curr + 1] = 1;\n            queue.push([curr + 1, d + 1]);\n        }\n\n        for (const p of getPrimes(nums[curr])) {\n            if (!visitedPrimes.has(p)) {\n                visitedPrimes.add(p);\n                const list = primeToIndices.get(p);\n                if (list) {\n                    for (const nxt of list) {\n                        if (!visitedIndices[nxt]) {\n                            visitedIndices[nxt] = 1;\n                            queue.push([nxt, d + 1]);\n                        }\n                    }\n                }\n            }\n        }\n    }\n\n    return -1;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

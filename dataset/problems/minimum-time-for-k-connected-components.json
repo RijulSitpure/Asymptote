@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-time-for-k-connected-components",
+  "number": 3608,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sort Edges by Activation Timestamp",
+      "text": "Sort the network links in ascending order of their appearance timestamps."
+    },
+    {
+      "level": 2,
+      "title": "Merge Components Incrementally",
+      "text": "Process each edge in order, connecting disjoint components and decreasing the component count."
+    },
+    {
+      "level": 3,
+      "title": "Target Component Threshold",
+      "text": "Return the timestamp of the edge that reduces the connected component count to at most k."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def minTimeForKComponents(self, n: int, edges: List[List[int]], k: int) -> int:\n        # edges[i] = [u, v, t]\n        if n <= k:\n            return 0\n            \n        sorted_edges = sorted(edges, key=lambda x: x[2])\n        parent = list(range(n))\n        \n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n            \n        def union(x: int, y: int) -> bool:\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n                return True\n            return False\n\n        components = n\n        for u, v, t in sorted_edges:\n            if union(u, v):\n                components -= 1\n                if components <= k:\n                    return t\n                    \n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(E log E + E * alpha(N))",
+    "space": "O(N)",
+    "variables": [
+      "N: number of vertices",
+      "E: number of timestamped edges"
+    ],
+    "notes": "Kruskal-like edge processing with disjoint set union until component target is reached.",
+    "whyNaiveFails": "Recomputing connected components from scratch after each timestamp takes O(E * (V + E)).",
+    "spaceTimeTradeoff": "Disjoint set union processes edges incrementally in near-linear time.",
+    "interviewerExpectation": "Sort edges by timestamp and maintain component count using union find."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def minTimeForKComponents(self, n: int, edges: List[List[int]], k: int) -> int:\n        # edges[i] = [u, v, t]\n        if n <= k:\n            return 0\n            \n        sorted_edges = sorted(edges, key=lambda x: x[2])\n        parent = list(range(n))\n        \n        def find(x: int) -> int:\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n            \n        def union(x: int, y: int) -> bool:\n            rx, ry = find(x), find(y)\n            if rx != ry:\n                parent[rx] = ry\n                return True\n            return False\n\n        components = n\n        for u, v, t in sorted_edges:\n            if union(u, v):\n                components -= 1\n                if components <= k:\n                    return t\n                    \n        return -1\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <numeric>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minTimeForKComponents(int n, std::vector<std::vector<int>>& edges, int k) {\n        if (n <= k) return 0;\n        std::vector<std::vector<int>> sorted_edges = edges;\n        std::sort(sorted_edges.begin(), sorted_edges.end(), [](const auto& a, const auto& b) {\n            return a[2] < b[2];\n        });\n\n        std::vector<int> parent(n);\n        std::iota(parent.begin(), parent.end(), 0);\n\n        auto find = [&](auto& self, int x) -> int {\n            return parent[x] == x ? x : parent[x] = self(self, parent[x]);\n        };\n\n        auto unite = [&](int x, int y) {\n            int rx = find(find, x), ry = find(find, y);\n            if (rx != ry) {\n                parent[rx] = ry;\n                return true;\n            }\n            return false;\n        };\n\n        int comps = n;\n        for (const auto& e : sorted_edges) {\n            if (unite(e[0], e[1])) {\n                comps--;\n                if (comps <= k) return e[2];\n            }\n        }\n\n        return -1;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minTimeForKComponents(int n, int[][] edges, int k) {\n        if (n <= k) return 0;\n        Arrays.sort(edges, Comparator.comparingInt(a -> a[2]));\n\n        int[] parent = new int[n];\n        for (int i = 0; i < n; i++) parent[i] = i;\n\n        int comps = n;\n        for (int[] e : edges) {\n            if (union(parent, e[0], e[1])) {\n                comps--;\n                if (comps <= k) return e[2];\n            }\n        }\n\n        return -1;\n    }\n\n    private int find(int[] parent, int x) {\n        if (parent[x] != x) parent[x] = find(parent, parent[x]);\n        return parent[x];\n    }\n\n    private boolean union(int[] parent, int x, int y) {\n        int rx = find(parent, x), ry = find(parent, y);\n        if (rx != ry) {\n            parent[rx] = ry;\n            return true;\n        }\n        return false;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number} k\n * @return {number}\n */\nvar minTimeForKComponents = function(n, edges, k) {\n    if (n <= k) return 0;\n    const sortedEdges = edges.slice().sort((a, b) => a[2] - b[2]);\n\n    const parent = new Int32Array(n);\n    for (let i = 0; i < n; i++) parent[i] = i;\n\n    const find = (x) => {\n        if (parent[x] !== x) parent[x] = find(parent[x]);\n        return parent[x];\n    };\n\n    const union = (x, y) => {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) {\n            parent[rx] = ry;\n            return true;\n        }\n        return false;\n    };\n\n    let comps = n;\n    for (const [u, v, t] of sortedEdges) {\n        if (union(u, v)) {\n            comps--;\n            if (comps <= k) return t;\n        }\n    }\n\n    return -1;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

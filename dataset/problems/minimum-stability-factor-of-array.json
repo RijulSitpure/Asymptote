@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-stability-factor-of-array",
+  "number": 3605,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monotonicity Observation",
+      "text": "If a maximum difference threshold L is achievable with at most k partitions, any larger threshold is also valid."
+    },
+    {
+      "level": 2,
+      "title": "Greedy Interval Partitioning",
+      "text": "For a candidate threshold L, greedily extend the current segment until the difference between maximum and minimum exceeds L."
+    },
+    {
+      "level": 3,
+      "title": "Subarray Budget Check",
+      "text": "Verify whether the total number of segments formed does not exceed the allotted budget k."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def minStabilityFactor(self, nums: List[int], k: int) -> int:\n        # A partition into at most k subarrays\n        # Stability factor is max(max(sub) - min(sub))\n        def check(limit: int) -> bool:\n            parts = 1\n            curr_min = nums[0]\n            curr_max = nums[0]\n            for x in nums[1:]:\n                n_min = min(curr_min, x)\n                n_max = max(curr_max, x)\n                if n_max - n_min > limit:\n                    parts += 1\n                    curr_min = x\n                    curr_max = x\n                    if parts > k:\n                        return False\n                else:\n                    curr_min = n_min\n                    curr_max = n_max\n            return parts <= k\n\n        low = 0\n        high = max(nums) - min(nums) if nums else 0\n        ans = high\n        \n        while low <= high:\n            mid = (low + high) // 2\n            if check(mid):\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n                \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log(max_diff))",
+    "space": "O(1)",
+    "variables": [
+      "N: length of array nums",
+      "max_diff: max element minus min element"
+    ],
+    "notes": "Binary search on difference limit with linear greedy partition verification.",
+    "whyNaiveFails": "Examining all combinations of partition split points has exponential cost.",
+    "spaceTimeTradeoff": "Direct tracking of rolling minimum and maximum uses O(1) space.",
+    "interviewerExpectation": "Identify monotonicity on the answer and verify feasibility with greedy linear scanning."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def minStabilityFactor(self, nums: List[int], k: int) -> int:\n        # A partition into at most k subarrays\n        # Stability factor is max(max(sub) - min(sub))\n        def check(limit: int) -> bool:\n            parts = 1\n            curr_min = nums[0]\n            curr_max = nums[0]\n            for x in nums[1:]:\n                n_min = min(curr_min, x)\n                n_max = max(curr_max, x)\n                if n_max - n_min > limit:\n                    parts += 1\n                    curr_min = x\n                    curr_max = x\n                    if parts > k:\n                        return False\n                else:\n                    curr_min = n_min\n                    curr_max = n_max\n            return parts <= k\n\n        low = 0\n        high = max(nums) - min(nums) if nums else 0\n        ans = high\n        \n        while low <= high:\n            mid = (low + high) // 2\n            if check(mid):\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n                \n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minStabilityFactor(std::vector<int>& nums, int k) {\n        if (nums.empty()) return 0;\n        int min_val = *std::min_element(nums.begin(), nums.end());\n        int max_val = *std::max_element(nums.begin(), nums.end());\n\n        auto check = [&](int limit) {\n            int parts = 1;\n            int curr_min = nums[0], curr_max = nums[0];\n            for (size_t i = 1; i < nums.size(); ++i) {\n                int n_min = std::min(curr_min, nums[i]);\n                int n_max = std::max(curr_max, nums[i]);\n                if (n_max - n_min > limit) {\n                    parts++;\n                    curr_min = nums[i];\n                    curr_max = nums[i];\n                    if (parts > k) return false;\n                } else {\n                    curr_min = n_min;\n                    curr_max = n_max;\n                }\n            }\n            return parts <= k;\n        };\n\n        int low = 0, high = max_val - min_val, ans = high;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (check(mid)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int minStabilityFactor(int[] nums, int k) {\n        if (nums.length == 0) return 0;\n        int minVal = Integer.MAX_VALUE, maxVal = Integer.MIN_VALUE;\n        for (int x : nums) {\n            minVal = Math.min(minVal, x);\n            maxVal = Math.max(maxVal, x);\n        }\n\n        int low = 0, high = maxVal - minVal, ans = high;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (check(nums, k, mid)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n\n    private boolean check(int[] nums, int k, int limit) {\n        int parts = 1;\n        int currMin = nums[0], currMax = nums[0];\n        for (int i = 1; i < nums.length; i++) {\n            int nMin = Math.min(currMin, nums[i]);\n            int nMax = Math.max(currMax, nums[i]);\n            if (nMax - nMin > limit) {\n                parts++;\n                currMin = nums[i];\n                currMax = nums[i];\n                if (parts > k) return false;\n            } else {\n                currMin = nMin;\n                currMax = nMax;\n            }\n        }\n        return parts <= k;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} k\n * @return {number}\n */\nvar minStabilityFactor = function(nums, k) {\n    if (nums.length === 0) return 0;\n    let minVal = Infinity, maxVal = -Infinity;\n    for (const x of nums) {\n        if (x < minVal) minVal = x;\n        if (x > maxVal) maxVal = x;\n    }\n\n    const check = (limit) => {\n        let parts = 1;\n        let currMin = nums[0], currMax = nums[0];\n        for (let i = 1; i < nums.length; i++) {\n            const nMin = Math.min(currMin, nums[i]);\n            const nMax = Math.max(currMax, nums[i]);\n            if (nMax - nMin > limit) {\n                parts++;\n                currMin = nums[i];\n                currMax = nums[i];\n                if (parts > k) return false;\n            } else {\n                currMin = nMin;\n                currMax = nMax;\n            }\n        }\n        return parts <= k;\n    };\n\n    let low = 0, high = maxVal - minVal, ans = high;\n    while (low <= high) {\n        const mid = Math.floor((low + high) / 2);\n        if (check(mid)) {\n            ans = mid;\n            high = mid - 1;\n        } else {\n            low = mid + 1;\n        }\n    }\n\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

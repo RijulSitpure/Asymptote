@@ -1,0 +1,79 @@
+{
+  "slug": "subarrays-with-xor-at-least-k",
+  "number": 3632,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Cumulative Bitwise Evaluation",
+      "text": "Subarray range bitwise exclusive or reduces to the difference between two prefix cumulative values."
+    },
+    {
+      "level": 2,
+      "title": "Binary Tree Prefix Search",
+      "text": "Store previous prefix values in a 31-bit binary trie with subtree occurrence counters."
+    },
+    {
+      "level": 3,
+      "title": "Bitwise Comparison Traversal",
+      "text": "Traverse the trie bit-by-bit from most significant to least significant, adding entire subtree counts when bits exceed k."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def countSubarrays(self, nums: List[int], k: int) -> int:\n        # Trie to count prefix XORs with XOR >= k\n        trie = {}\n        def insert(val: int):\n            node = trie\n            for i in range(30, -1, -1):\n                bit = (val >> i) & 1\n                if bit not in node:\n                    node[bit] = {\"cnt\": 0}\n                node = node[bit]\n                node[\"cnt\"] += 1\n\n        def query(val: int, limit: int) -> int:\n            node = trie\n            ans = 0\n            for i in range(30, -1, -1):\n                if not node:\n                    break\n                v_bit = (val >> i) & 1\n                k_bit = (limit >> i) & 1\n                \n                if k_bit == 0:\n                    # If we take branch opposite to v_bit, XOR has 1 in this bit > 0, so all its children satisfy >= k\n                    opp = 1 - v_bit\n                    if opp in node:\n                        ans += node[opp][\"cnt\"]\n                    node = node.get(v_bit)\n                else:\n                    # If k_bit == 1, we must match opp branch to have 1 in this bit\n                    opp = 1 - v_bit\n                    node = node.get(opp)\n            if node:\n                ans += node[\"cnt\"]\n            return ans\n\n        insert(0)\n        curr = 0\n        ans = 0\n        for x in nums:\n            curr ^= x\n            ans += query(curr, k)\n            insert(curr)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * B)",
+    "space": "O(N * B)",
+    "variables": [
+      "N: length of array nums",
+      "B: number of bits in representation (B <= 31)"
+    ],
+    "notes": "Prefix bitwise exclusive or tracking with binary trie prefix query.",
+    "whyNaiveFails": "Examining all N^2 subarray combinations exceeds time limits.",
+    "spaceTimeTradeoff": "Binary trie trades O(N * B) nodes for O(B) queries per element.",
+    "interviewerExpectation": "Use a binary trie to count prefix pairs whose XOR is at least k."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def countSubarrays(self, nums: List[int], k: int) -> int:\n        # Trie to count prefix XORs with XOR >= k\n        trie = {}\n        def insert(val: int):\n            node = trie\n            for i in range(30, -1, -1):\n                bit = (val >> i) & 1\n                if bit not in node:\n                    node[bit] = {\"cnt\": 0}\n                node = node[bit]\n                node[\"cnt\"] += 1\n\n        def query(val: int, limit: int) -> int:\n            node = trie\n            ans = 0\n            for i in range(30, -1, -1):\n                if not node:\n                    break\n                v_bit = (val >> i) & 1\n                k_bit = (limit >> i) & 1\n                \n                if k_bit == 0:\n                    # If we take branch opposite to v_bit, XOR has 1 in this bit > 0, so all its children satisfy >= k\n                    opp = 1 - v_bit\n                    if opp in node:\n                        ans += node[opp][\"cnt\"]\n                    node = node.get(v_bit)\n                else:\n                    # If k_bit == 1, we must match opp branch to have 1 in this bit\n                    opp = 1 - v_bit\n                    node = node.get(opp)\n            if node:\n                ans += node[\"cnt\"]\n            return ans\n\n        insert(0)\n        curr = 0\n        ans = 0\n        for x in nums:\n            curr ^= x\n            ans += query(curr, k)\n            insert(curr)\n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n\nclass Solution {\n    struct Node {\n        int next[2] = {-1, -1};\n        int cnt = 0;\n    };\n    std::vector<Node> trie;\n\n    void insert(int val) {\n        int u = 0;\n        for (int i = 30; i >= 0; --i) {\n            int bit = (val >> i) & 1;\n            if (trie[u].next[bit] == -1) {\n                trie[u].next[bit] = trie.size();\n                trie.emplace_back();\n            }\n            u = trie[u].next[bit];\n            trie[u].cnt++;\n        }\n    }\n\n    int query(int val, int limit) {\n        int u = 0;\n        int ans = 0;\n        for (int i = 30; i >= 0; --i) {\n            if (u == -1) break;\n            int v_bit = (val >> i) & 1;\n            int k_bit = (limit >> i) & 1;\n\n            if (k_bit == 0) {\n                int opp = 1 - v_bit;\n                if (trie[u].next[opp] != -1) {\n                    ans += trie[trie[u].next[opp]].cnt;\n                }\n                u = trie[u].next[v_bit];\n            } else {\n                int opp = 1 - v_bit;\n                u = trie[u].next[opp];\n            }\n        }\n        if (u != -1) ans += trie[u].cnt;\n        return ans;\n    }\n\npublic:\n    long long countSubarrays(std::vector<int>& nums, int k) {\n        trie.clear();\n        trie.emplace_back();\n\n        insert(0);\n        int curr = 0;\n        long long ans = 0;\n\n        for (int x : nums) {\n            curr ^= x;\n            ans += query(curr, k);\n            insert(curr);\n        }\n\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class Node {\n        int[] next = {-1, -1};\n        int cnt = 0;\n    }\n\n    private List<Node> trie = new ArrayList<>();\n\n    public long countSubarrays(int[] nums, int k) {\n        trie.clear();\n        trie.add(new Node());\n\n        insert(0);\n        int curr = 0;\n        long ans = 0;\n\n        for (int x : nums) {\n            curr ^= x;\n            ans += query(curr, k);\n            insert(curr);\n        }\n\n        return ans;\n    }\n\n    private void insert(int val) {\n        int u = 0;\n        for (int i = 30; i >= 0; i--) {\n            int bit = (val >> i) & 1;\n            if (trie.get(u).next[bit] == -1) {\n                trie.get(u).next[bit] = trie.size();\n                trie.add(new Node());\n            }\n            u = trie.get(u).next[bit];\n            trie.get(u).cnt++;\n        }\n    }\n\n    private int query(int val, int limit) {\n        int u = 0;\n        int ans = 0;\n        for (int i = 30; i >= 0; i--) {\n            if (u == -1) break;\n            int vBit = (val >> i) & 1;\n            int kBit = (limit >> i) & 1;\n\n            if (kBit == 0) {\n                int opp = 1 - vBit;\n                int childOpp = trie.get(u).next[opp];\n                if (childOpp != -1) {\n                    ans += trie.get(childOpp).cnt;\n                }\n                u = trie.get(u).next[vBit];\n            } else {\n                int opp = 1 - vBit;\n                u = trie.get(u).next[opp];\n            }\n        }\n        if (u != -1) ans += trie.get(u).cnt;\n        return ans;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} k\n * @return {number}\n */\nvar countSubarrays = function(nums, k) {\n    const trie = [{ next: [-1, -1], cnt: 0 }];\n\n    const insert = (val) => {\n        let u = 0;\n        for (let i = 30; i >= 0; i--) {\n            const bit = (val >> i) & 1;\n            if (trie[u].next[bit] === -1) {\n                trie[u].next[bit] = trie.length;\n                trie.push({ next: [-1, -1], cnt: 0 });\n            }\n            u = trie[u].next[bit];\n            trie[u].cnt++;\n        }\n    };\n\n    const query = (val, limit) => {\n        let u = 0;\n        let ans = 0;\n        for (let i = 30; i >= 0; i--) {\n            if (u === -1) break;\n            const vBit = (val >> i) & 1;\n            const kBit = (limit >> i) & 1;\n\n            if (kBit === 0) {\n                const opp = 1 - vBit;\n                const childOpp = trie[u].next[opp];\n                if (childOpp !== -1) {\n                    ans += trie[childOpp].cnt;\n                }\n                u = trie[u].next[vBit];\n            } else {\n                const opp = 1 - vBit;\n                u = trie[u].next[opp];\n            }\n        }\n        if (u !== -1) ans += trie[u].cnt;\n        return ans;\n    };\n\n    insert(0);\n    let curr = 0;\n    let ans = 0;\n\n    for (const x of nums) {\n        curr ^= x;\n        ans += query(curr, k);\n        insert(curr);\n    }\n\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}
