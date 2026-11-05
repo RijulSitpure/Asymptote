@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-score-from-grid-operations",
+  "number": 3225,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-grid-2d",
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Column Height Abstraction",
+      "text": "Operating on column j colors a prefix of rows from 0 to h-1 black. Only relative heights between adjacent columns trigger white cell scores."
+    },
+    {
+      "level": 2,
+      "title": "Adjacent Column Gain",
+      "text": "When column j is taller than column j-1, uncovered cells in column j-1 gain score from column j. Symmetrically, when column j-1 is taller, uncovered cells in column j gain score."
+    },
+    {
+      "level": 3,
+      "title": "Column Progression State",
+      "text": "Track the current column height and whether heights are expanding or contracting to prevent double counting across tripartite peaks."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maximumScore(self, grid: list[list[int]]) -> int:\n        n = len(grid)\n        prefix = [[0] * (n + 1) for _ in range(n)]\n        for j in range(n):\n            for i in range(n):\n                prefix[j][i + 1] = prefix[j][i] + grid[i][j]\n\n        prevPick = [0] * (n + 1)\n        prevSkip = [0] * (n + 1)\n\n        for j in range(1, n):\n            currPick = [0] * (n + 1)\n            currSkip = [0] * (n + 1)\n            \n            for curr in range(n + 1):\n                for prev in range(n + 1):\n                    if curr > prev:\n                        score = prefix[j - 1][curr] - prefix[j - 1][prev]\n                        currPick[curr] = max(currPick[curr], prevSkip[prev] + score)\n                        currSkip[curr] = max(currSkip[curr], prevSkip[prev] + score)\n                    else:\n                        score = prefix[j][prev] - prefix[j][curr]\n                        currPick[curr] = max(currPick[curr], prevPick[prev] + score)\n                        currSkip[curr] = max(currSkip[curr], prevPick[prev])\n            \n            prevPick = currPick\n            prevSkip = currSkip\n\n        return max(prevPick)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^3)",
+    "space": "O(n^2)",
+    "variables": [
+      "n: grid dimension"
+    ],
+    "notes": "State transitions evaluate height pairs across adjacent columns.",
+    "whyNaiveFails": "Examining (n+1)^n height configurations produces astronomical search space.",
+    "spaceTimeTradeoff": "Column DP table collapses dependencies into linear state arrays.",
+    "interviewerExpectation": "Models grid coloring as column heights and formulates structured state transitions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def maximumScore(self, grid: list[list[int]]) -> int:\n        n = len(grid)\n        prefix = [[0] * (n + 1) for _ in range(n)]\n        for j in range(n):\n            for i in range(n):\n                prefix[j][i + 1] = prefix[j][i] + grid[i][j]\n\n        prevPick = [0] * (n + 1)\n        prevSkip = [0] * (n + 1)\n\n        for j in range(1, n):\n            currPick = [0] * (n + 1)\n            currSkip = [0] * (n + 1)\n            \n            for curr in range(n + 1):\n                for prev in range(n + 1):\n                    if curr > prev:\n                        score = prefix[j - 1][curr] - prefix[j - 1][prev]\n                        currPick[curr] = max(currPick[curr], prevSkip[prev] + score)\n                        currSkip[curr] = max(currSkip[curr], prevSkip[prev] + score)\n                    else:\n                        score = prefix[j][prev] - prefix[j][curr]\n                        currPick[curr] = max(currPick[curr], prevPick[prev] + score)\n                        currSkip[curr] = max(currSkip[curr], prevPick[prev])\n            \n            prevPick = currPick\n            prevSkip = currSkip\n\n        return max(prevPick)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    long long maximumScore(vector<vector<int>>& grid) {\n        int n = grid.size();\n        vector<vector<long long>> prefix(n, vector<long long>(n + 1, 0));\n        for (int j = 0; j < n; ++j) {\n            for (int i = 0; i < n; ++i) {\n                prefix[j][i + 1] = prefix[j][i] + grid[i][j];\n            }\n        }\n\n        vector<long long> prevPick(n + 1, 0);\n        vector<long long> prevSkip(n + 1, 0);\n\n        for (int j = 1; j < n; ++j) {\n            vector<long long> currPick(n + 1, 0);\n            vector<long long> currSkip(n + 1, 0);\n            for (int curr = 0; curr <= n; ++curr) {\n                for (int prev = 0; prev <= n; ++prev) {\n                    if (curr > prev) {\n                        long long score = prefix[j - 1][curr] - prefix[j - 1][prev];\n                        currPick[curr] = max(currPick[curr], prevSkip[prev] + score);\n                        currSkip[curr] = max(currSkip[curr], prevSkip[prev] + score);\n                    } else {\n                        long long score = prefix[j][prev] - prefix[j][curr];\n                        currPick[curr] = max(currPick[curr], prevPick[prev] + score);\n                        currSkip[curr] = max(currSkip[curr], prevPick[prev]);\n                    }\n                }\n            }\n            prevPick = currPick;\n            prevSkip = currSkip;\n        }\n\n        long long ans = 0;\n        for (long long v : prevPick) {\n            ans = max(ans, v);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public long maximumScore(int[][] grid) {\n        int n = grid.length;\n        long[][] prefix = new long[n][n + 1];\n        for (int j = 0; j < n; ++j) {\n            for (int i = 0; i < n; ++i) {\n                prefix[j][i + 1] = prefix[j][i] + grid[i][j];\n            }\n        }\n\n        long[] prevPick = new long[n + 1];\n        long[] prevSkip = new long[n + 1];\n\n        for (int j = 1; j < n; ++j) {\n            long[] currPick = new long[n + 1];\n            long[] currSkip = new long[n + 1];\n            for (int curr = 0; curr <= n; ++curr) {\n                for (int prev = 0; prev <= n; ++prev) {\n                    if (curr > prev) {\n                        long score = prefix[j - 1][curr] - prefix[j - 1][prev];\n                        currPick[curr] = Math.max(currPick[curr], prevSkip[prev] + score);\n                        currSkip[curr] = Math.max(currSkip[curr], prevSkip[prev] + score);\n                    } else {\n                        long score = prefix[j][prev] - prefix[j][curr];\n                        currPick[curr] = Math.max(currPick[curr], prevPick[prev] + score);\n                        currSkip[curr] = Math.max(currSkip[curr], prevPick[prev]);\n                    }\n                }\n            }\n            prevPick = currPick;\n            prevSkip = currSkip;\n        }\n\n        long ans = 0;\n        for (long v : prevPick) {\n            ans = Math.max(ans, v);\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "javascript",
+      "code": "var maximumScore = function(grid) {\n    const n = grid.length;\n    const prefix = Array.from({ length: n }, () => new Array(n + 1).fill(0));\n    for (let j = 0; j < n; j++) {\n        for (let i = 0; i < n; i++) {\n            prefix[j][i + 1] = prefix[j][i] + grid[i][j];\n        }\n    }\n\n    let prevPick = new Array(n + 1).fill(0);\n    let prevSkip = new Array(n + 1).fill(0);\n\n    for (let j = 1; j < n; j++) {\n        const currPick = new Array(n + 1).fill(0);\n        const currSkip = new Array(n + 1).fill(0);\n        for (let curr = 0; curr <= n; curr++) {\n            for (let prev = 0; prev <= n; prev++) {\n                if (curr > prev) {\n                    const score = prefix[j - 1][curr] - prefix[j - 1][prev];\n                    currPick[curr] = Math.max(currPick[curr], prevSkip[prev] + score);\n                    currSkip[curr] = Math.max(currSkip[curr], prevSkip[prev] + score);\n                } else {\n                    const score = prefix[j][prev] - prefix[j][curr];\n                    currPick[curr] = Math.max(currPick[curr], prevPick[prev] + score);\n                    currSkip[curr] = Math.max(currSkip[curr], prevPick[prev]);\n                }\n            }\n        }\n        prevPick = currPick;\n        prevSkip = currSkip;\n    }\n\n    return Math.max(...prevPick);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

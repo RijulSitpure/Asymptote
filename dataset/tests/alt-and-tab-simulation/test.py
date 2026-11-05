@@ -1,0 +1,5 @@
+from solution import Solution
+sol = Solution()
+assert sol.simulationResult([1, 2, 3], [3, 3, 2]) == [2, 3, 1]
+assert sol.simulationResult([1, 4, 2, 3], [4, 1, 3]) == [3, 1, 4, 2]
+print("All tests passed successfully.")

@@ -1,0 +1,72 @@
+{
+  "slug": "ceo-subordinate-hierarchy",
+  "number": 3236,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte",
+    "self-join"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Recursive Anchor Initialization",
+      "text": "Locate the root record where manager_id is null to retrieve the chief executive salary and seed level one with direct reports."
+    },
+    {
+      "level": 2,
+      "title": "Recursive Traversal",
+      "text": "Join the previous recursive hierarchy set with employees where manager_id matches preceding subordinates, incrementing the hierarchy level."
+    },
+    {
+      "level": 3,
+      "title": "Salary Difference and Ordering",
+      "text": "Subtract the chief executive base salary from each subordinate salary. Sort rows primarily by hierarchy level ascending and secondarily by subordinate id ascending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH RECURSIVE Subordinates AS (\n    SELECT\n        e.employee_id AS subordinate_id,\n        e.employee_name AS subordinate_name,\n        1 AS hierarchy_level,\n        e.salary - ceo.salary AS salary_difference\n    FROM Employees e\n    JOIN Employees ceo ON ceo.manager_id IS NULL\n    WHERE e.manager_id = ceo.employee_id\n    \n    UNION ALL\n    \n    SELECT\n        e.employee_id,\n        e.employee_name,\n        s.hierarchy_level + 1,\n        e.salary - ceo.salary\n    FROM Employees e\n    JOIN Subordinates s ON e.manager_id = s.subordinate_id\n    JOIN Employees ceo ON ceo.manager_id IS NULL\n)\nSELECT\n    subordinate_id,\n    subordinate_name,\n    hierarchy_level,\n    salary_difference\nFROM Subordinates\nORDER BY hierarchy_level ASC, subordinate_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(e log e)",
+    "space": "O(e)",
+    "variables": [
+      "e: total number of employees"
+    ],
+    "notes": "Recursive CTE traverses hierarchy tree layer by layer.",
+    "whyNaiveFails": "Static self-joins cannot handle arbitrary organizational depth.",
+    "spaceTimeTradeoff": "Linear intermediate table stores discovered subordinates.",
+    "interviewerExpectation": "Implements recursive CTE with level tracking and root baseline subtraction."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH RECURSIVE Subordinates AS (\n    SELECT\n        e.employee_id AS subordinate_id,\n        e.employee_name AS subordinate_name,\n        1 AS hierarchy_level,\n        e.salary - ceo.salary AS salary_difference\n    FROM Employees e\n    JOIN Employees ceo ON ceo.manager_id IS NULL\n    WHERE e.manager_id = ceo.employee_id\n    \n    UNION ALL\n    \n    SELECT\n        e.employee_id,\n        e.employee_name,\n        s.hierarchy_level + 1,\n        e.salary - ceo.salary\n    FROM Employees e\n    JOIN Subordinates s ON e.manager_id = s.subordinate_id\n    JOIN Employees ceo ON ceo.manager_id IS NULL\n)\nSELECT\n    subordinate_id,\n    subordinate_name,\n    hierarchy_level,\n    salary_difference\nFROM Subordinates\nORDER BY hierarchy_level ASC, subordinate_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH RECURSIVE Subordinates AS (\n    SELECT\n        e.employee_id AS subordinate_id,\n        e.employee_name AS subordinate_name,\n        1 AS hierarchy_level,\n        e.salary - ceo.salary AS salary_difference\n    FROM Employees e\n    JOIN Employees ceo ON ceo.manager_id IS NULL\n    WHERE e.manager_id = ceo.employee_id\n    \n    UNION ALL\n    \n    SELECT\n        e.employee_id,\n        e.employee_name,\n        s.hierarchy_level + 1,\n        e.salary - ceo.salary\n    FROM Employees e\n    JOIN Subordinates s ON e.manager_id = s.subordinate_id\n    JOIN Employees ceo ON ceo.manager_id IS NULL\n)\nSELECT\n    subordinate_id,\n    subordinate_name,\n    hierarchy_level,\n    salary_difference\nFROM Subordinates\nORDER BY hierarchy_level ASC, subordinate_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef find_subordinates(employees: pd.DataFrame) -> pd.DataFrame:\n    if employees.empty:\n        return pd.DataFrame(columns=['subordinate_id', 'subordinate_name', 'hierarchy_level', 'salary_difference'])\n        \n    ceo_row = employees[employees['manager_id'].isna()]\n    if ceo_row.empty:\n        return pd.DataFrame(columns=['subordinate_id', 'subordinate_name', 'hierarchy_level', 'salary_difference'])\n    \n    ceo_id = ceo_row.iloc[0]['employee_id']\n    ceo_salary = ceo_row.iloc[0]['salary']\n    \n    results = []\n    # BFS traversal by hierarchy level\n    current_level = 1\n    current_managers = [ceo_id]\n    \n    while current_managers:\n        subs = employees[employees['manager_id'].isin(current_managers)]\n        if subs.empty:\n            break\n        for _, row in subs.iterrows():\n            results.append({\n                'subordinate_id': int(row['employee_id']),\n                'subordinate_name': row['employee_name'],\n                'hierarchy_level': current_level,\n                'salary_difference': int(row['salary'] - ceo_salary)\n            })\n        current_managers = subs['employee_id'].tolist()\n        current_level += 1\n        \n    if not results:\n        return pd.DataFrame(columns=['subordinate_id', 'subordinate_name', 'hierarchy_level', 'salary_difference'])\n        \n    res_df = pd.DataFrame(results)\n    return res_df.sort_values(by=['hierarchy_level', 'subordinate_id'], ascending=[True, True])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

@@ -1,0 +1,73 @@
+{
+  "slug": "customer-purchasing-behavior-analysis",
+  "number": 3230,
+  "category": "Database",
+  "patterns": [
+    "join-filter",
+    "window-ranking"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two-Tier CTE Structuring",
+      "text": "Separate global customer metrics like totals and loyalty score from category frequency ranking to avoid aggregation conflicts."
+    },
+    {
+      "level": 2,
+      "title": "Top Category Tie-Breaking",
+      "text": "Use row number partitioned by customer ordered by category count descending and earliest transaction date ascending to pick the primary category."
+    },
+    {
+      "level": 3,
+      "title": "Loyalty Score Formula",
+      "text": "Combine transaction count multiplied by ten plus total spend divided by one hundred rounded to two decimal places."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH customer_metrics AS (\n    SELECT\n        t.customer_id,\n        ROUND(SUM(t.amount), 2) AS total_amount,\n        COUNT(t.transaction_id) AS transaction_count,\n        COUNT(DISTINCT p.category) AS unique_categories,\n        ROUND(AVG(t.amount), 2) AS avg_transaction_amount,\n        ROUND((COUNT(t.transaction_id) * 10) + (SUM(t.amount) / 100), 2) AS loyalty_score\n    FROM Transactions t\n    JOIN Products p ON t.product_id = p.product_id\n    GROUP BY t.customer_id\n),\ncategory_frequency AS (\n    SELECT\n        t.customer_id,\n        p.category,\n        COUNT(t.transaction_id) AS cat_count,\n        MIN(t.transaction_date) AS earliest_date,\n        ROW_NUMBER() OVER (\n            PARTITION BY t.customer_id\n            ORDER BY COUNT(t.transaction_id) DESC, MIN(t.transaction_date) ASC\n        ) AS rn\n    FROM Transactions t\n    JOIN Products p ON t.product_id = p.product_id\n    GROUP BY t.customer_id, p.category\n)\nSELECT\n    m.customer_id,\n    m.total_amount,\n    m.transaction_count,\n    m.unique_categories,\n    m.avg_transaction_amount,\n    c.category AS top_category,\n    m.loyalty_score\nFROM customer_metrics m\nJOIN category_frequency c ON m.customer_id = c.customer_id AND c.rn = 1\nORDER BY m.loyalty_score DESC, m.customer_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(t log t)",
+    "space": "O(c + t)",
+    "variables": [
+      "t: count of transactions",
+      "c: count of unique customers"
+    ],
+    "notes": "Grouping by customer and category followed by window partitioning.",
+    "whyNaiveFails": "Correlated subqueries per customer incur repetitive full table scans.",
+    "spaceTimeTradeoff": "Modular CTE execution enables single indexed joins.",
+    "interviewerExpectation": "Applies window partition ranking for deterministic mode selection."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "WITH customer_metrics AS (\n    SELECT\n        t.customer_id,\n        ROUND(SUM(t.amount), 2) AS total_amount,\n        COUNT(t.transaction_id) AS transaction_count,\n        COUNT(DISTINCT p.category) AS unique_categories,\n        ROUND(AVG(t.amount), 2) AS avg_transaction_amount,\n        ROUND((COUNT(t.transaction_id) * 10) + (SUM(t.amount) / 100), 2) AS loyalty_score\n    FROM Transactions t\n    JOIN Products p ON t.product_id = p.product_id\n    GROUP BY t.customer_id\n),\ncategory_frequency AS (\n    SELECT\n        t.customer_id,\n        p.category,\n        COUNT(t.transaction_id) AS cat_count,\n        MIN(t.transaction_date) AS earliest_date,\n        ROW_NUMBER() OVER (\n            PARTITION BY t.customer_id\n            ORDER BY COUNT(t.transaction_id) DESC, MIN(t.transaction_date) ASC\n        ) AS rn\n    FROM Transactions t\n    JOIN Products p ON t.product_id = p.product_id\n    GROUP BY t.customer_id, p.category\n)\nSELECT\n    m.customer_id,\n    m.total_amount,\n    m.transaction_count,\n    m.unique_categories,\n    m.avg_transaction_amount,\n    c.category AS top_category,\n    m.loyalty_score\nFROM customer_metrics m\nJOIN category_frequency c ON m.customer_id = c.customer_id AND c.rn = 1\nORDER BY m.loyalty_score DESC, m.customer_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "postgresql",
+      "code": "WITH customer_metrics AS (\n    SELECT\n        t.customer_id,\n        ROUND(SUM(t.amount)::numeric, 2) AS total_amount,\n        COUNT(t.transaction_id) AS transaction_count,\n        COUNT(DISTINCT p.category) AS unique_categories,\n        ROUND(AVG(t.amount)::numeric, 2) AS avg_transaction_amount,\n        ROUND(((COUNT(t.transaction_id) * 10) + (SUM(t.amount) / 100))::numeric, 2) AS loyalty_score\n    FROM Transactions t\n    JOIN Products p ON t.product_id = p.product_id\n    GROUP BY t.customer_id\n),\ncategory_frequency AS (\n    SELECT\n        t.customer_id,\n        p.category,\n        COUNT(t.transaction_id) AS cat_count,\n        MIN(t.transaction_date) AS earliest_date,\n        ROW_NUMBER() OVER (\n            PARTITION BY t.customer_id\n            ORDER BY COUNT(t.transaction_id) DESC, MIN(t.transaction_date) ASC\n        ) AS rn\n    FROM Transactions t\n    JOIN Products p ON t.product_id = p.product_id\n    GROUP BY t.customer_id, p.category\n)\nSELECT\n    m.customer_id,\n    m.total_amount,\n    m.transaction_count,\n    m.unique_categories,\n    m.avg_transaction_amount,\n    c.category AS top_category,\n    m.loyalty_score\nFROM customer_metrics m\nJOIN category_frequency c ON m.customer_id = c.customer_id AND c.rn = 1\nORDER BY m.loyalty_score DESC, m.customer_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef analyze_customer_purchasing(transactions: pd.DataFrame, products: pd.DataFrame) -> pd.DataFrame:\n    if transactions.empty or products.empty:\n        return pd.DataFrame(columns=[\n            'customer_id', 'total_amount', 'transaction_count',\n            'unique_categories', 'avg_transaction_amount', 'top_category', 'loyalty_score'\n        ])\n    \n    df = transactions.merge(products, on='product_id', how='inner')\n    \n    # 1. Customer level aggregations\n    grouped = df.groupby('customer_id')\n    metrics = grouped.agg(\n        total_amount=('amount', 'sum'),\n        transaction_count=('transaction_id', 'count'),\n        unique_categories=('category', 'nunique'),\n        avg_transaction_amount=('amount', 'mean')\n    ).reset_index()\n    \n    metrics['total_amount'] = metrics['total_amount'].round(2)\n    metrics['avg_transaction_amount'] = metrics['avg_transaction_amount'].round(2)\n    metrics['loyalty_score'] = ((metrics['transaction_count'] * 10) + (metrics['total_amount'] / 100)).round(2)\n    \n    # 2. Top category per customer\n    cat_df = df.groupby(['customer_id', 'category']).agg(\n        cat_count=('transaction_id', 'count'),\n        earliest_date=('transaction_date', 'min')\n    ).reset_index()\n    \n    cat_df = cat_df.sort_values(by=['customer_id', 'cat_count', 'earliest_date'], ascending=[True, False, True])\n    top_cats = cat_df.drop_duplicates(subset=['customer_id'], keep='first')[['customer_id', 'category']]\n    top_cats.rename(columns={'category': 'top_category'}, inplace=True)\n    \n    result = metrics.merge(top_cats, on='customer_id')\n    result = result[[\n        'customer_id', 'total_amount', 'transaction_count',\n        'unique_categories', 'avg_transaction_amount', 'top_category', 'loyalty_score'\n    ]]\n    return result.sort_values(by=['loyalty_score', 'customer_id'], ascending=[False, True])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

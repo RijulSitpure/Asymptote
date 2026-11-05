@@ -1,0 +1,79 @@
+{
+  "slug": "check-if-the-rectangle-corner-is-reachable",
+  "number": 3235,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu",
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Barrier Topology",
+      "text": "A path from the origin to the opposite corner is blocked if and only if a continuous chain of overlapping circles connects the top or left border to the bottom or right border."
+    },
+    {
+      "level": 2,
+      "title": "Boundary Virtual Nodes",
+      "text": "Create two virtual boundary components: one representing the top-left boundaries and the other representing the bottom-right boundaries."
+    },
+    {
+      "level": 3,
+      "title": "Geometric Connectivity",
+      "text": "Add edges between overlapping circles. Run traversal from the top-left boundary component. If the bottom-right boundary becomes reachable, the path is blocked."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def canReachCorner(self, X: int, Y: int, circles: list[list[int]]) -> bool:\n        def in_circle(x, y, cx, cy, r):\n            return (x - cx) ** 2 + (y - cy) ** 2 <= r ** 2\n        \n        if any(in_circle(0, 0, cx, cy, r) or in_circle(X, Y, cx, cy, r) for cx, cy, r in circles):\n            return False\n            \n        m = len(circles)\n        # Node m: Top border (y=Y) or Left border (x=0)\n        # Node m+1: Bottom border (y=0) or Right border (x=X)\n        adj = [[] for _ in range(m + 2)]\n        \n        for i in range(m):\n            x1, y1, r1 = circles[i]\n            # Connect to Top or Left\n            if x1 - r1 <= 0 or y1 + r1 >= Y:\n                adj[i].append(m)\n                adj[m].append(i)\n            # Connect to Bottom or Right\n            if y1 - r1 <= 0 or x1 + r1 >= X:\n                adj[i].append(m + 1)\n                adj[m + 1].append(i)\n                \n            for j in range(i + 1, m):\n                x2, y2, r2 = circles[j]\n                if (x1 - x2) ** 2 + (y1 - y2) ** 2 <= (r1 + r2) ** 2:\n                    # Check if intersection contains points within rectangle bounding region\n                    adj[i].append(j)\n                    adj[j].append(i)\n                    \n        # Check if border m and m+1 are connected\n        vis = [False] * (m + 2)\n        queue = [m]\n        vis[m] = True\n        for u in queue:\n            if u == m + 1:\n                return False\n            for v in adj[u]:\n                if not vis[v]:\n                    vis[v] = True\n                    queue.append(v)\n        return True\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m^2)",
+    "space": "O(m^2)",
+    "variables": [
+      "m: number of circles"
+    ],
+    "notes": "Pairwise geometric intersection checks followed by linear graph traversal.",
+    "whyNaiveFails": "Grid continuous space simulation cannot discretize fractional barrier curves.",
+    "spaceTimeTradeoff": "Adjacency graph of size m+2 easily fits in memory for m <= 1000.",
+    "interviewerExpectation": "Translates continuous 2D motion planning into boundary barrier connectivity."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "code": "class Solution:\n    def canReachCorner(self, X: int, Y: int, circles: list[list[int]]) -> bool:\n        def in_circle(x, y, cx, cy, r):\n            return (x - cx) ** 2 + (y - cy) ** 2 <= r ** 2\n        \n        if any(in_circle(0, 0, cx, cy, r) or in_circle(X, Y, cx, cy, r) for cx, cy, r in circles):\n            return False\n            \n        m = len(circles)\n        # Node m: Top border (y=Y) or Left border (x=0)\n        # Node m+1: Bottom border (y=0) or Right border (x=X)\n        adj = [[] for _ in range(m + 2)]\n        \n        for i in range(m):\n            x1, y1, r1 = circles[i]\n            # Connect to Top or Left\n            if x1 - r1 <= 0 or y1 + r1 >= Y:\n                adj[i].append(m)\n                adj[m].append(i)\n            # Connect to Bottom or Right\n            if y1 - r1 <= 0 or x1 + r1 >= X:\n                adj[i].append(m + 1)\n                adj[m + 1].append(i)\n                \n            for j in range(i + 1, m):\n                x2, y2, r2 = circles[j]\n                if (x1 - x2) ** 2 + (y1 - y2) ** 2 <= (r1 + r2) ** 2:\n                    # Check if intersection contains points within rectangle bounding region\n                    adj[i].append(j)\n                    adj[j].append(i)\n                    \n        # Check if border m and m+1 are connected\n        vis = [False] * (m + 2)\n        queue = [m]\n        vis[m] = True\n        for u in queue:\n            if u == m + 1:\n                return False\n            for v in adj[u]:\n                if not vis[v]:\n                    vis[v] = True\n                    queue.append(v)\n        return True",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "cpp",
+      "code": "class Solution {\npublic:\n    bool canReachCorner(int X, int Y, vector<vector<int>>& circles) {\n        auto in_circle = [](long long x, long long y, long long cx, long long cy, long long r) {\n            return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r;\n        };\n        for (const auto& c : circles) {\n            if (in_circle(0, 0, c[0], c[1], c[2]) || in_circle(X, Y, c[0], c[1], c[2])) {\n                return false;\n            }\n        }\n        int m = circles.size();\n        vector<vector<int>> adj(m + 2);\n        for (int i = 0; i < m; ++i) {\n            long long x1 = circles[i][0], y1 = circles[i][1], r1 = circles[i][2];\n            if (x1 - r1 <= 0 || y1 + r1 >= Y) {\n                adj[i].push_back(m);\n                adj[m].push_back(i);\n            }\n            if (y1 - r1 <= 0 || x1 + r1 >= X) {\n                adj[i].push_back(m + 1);\n                adj[m + 1].push_back(i);\n            }\n            for (int j = i + 1; j < m; ++j) {\n                long long x2 = circles[j][0], y2 = circles[j][1], r2 = circles[j][2];\n                if ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) <= (r1 + r2) * (r1 + r2)) {\n                    adj[i].push_back(j);\n                    adj[j].push_back(i);\n                }\n            }\n        }\n        vector<bool> vis(m + 2, false);\n        vector<int> q;\n        q.push_back(m);\n        vis[m] = true;\n        for (int idx = 0; idx < q.size(); ++idx) {\n            int u = q[idx];\n            if (u == m + 1) return false;\n            for (int v : adj[u]) {\n                if (!vis[v]) {\n                    vis[v] = true;\n                    q.push_back(v);\n                }\n            }\n        }\n        return true;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "java",
+      "code": "class Solution {\n    public boolean canReachCorner(int X, int Y, int[][] circles) {\n        for (int[] c : circles) {\n            long cx = c[0], cy = c[1], r = c[2];\n            if (cx * cx + cy * cy <= r * r) return false;\n            long dx = X - cx, dy = Y - cy;\n            if (dx * dx + dy * dy <= r * r) return false;\n        }\n        int m = circles.length;\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < m + 2; ++i) adj.add(new ArrayList<>());\n        for (int i = 0; i < m; ++i) {\n            long x1 = circles[i][0], y1 = circles[i][1], r1 = circles[i][2];\n            if (x1 - r1 <= 0 || y1 + r1 >= Y) {\n                adj.get(i).add(m);\n                adj.get(m).add(i);\n            }\n            if (y1 - r1 <= 0 || x1 + r1 >= X) {\n                adj.get(i).add(m + 1);\n                adj.get(m + 1).add(i);\n            }\n            for (int j = i + 1; j < m; ++j) {\n                long x2 = circles[j][0], y2 = circles[j][1], r2 = circles[j][2];\n                if ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) <= (r1 + r2) * (r1 + r2)) {\n                    adj.get(i).add(j);\n                    adj.get(j).add(i);\n                }\n            }\n        }\n        boolean[] vis = new boolean[m + 2];\n        Queue<Integer> q = new LinkedList<>();\n        q.add(m);\n        vis[m] = true;\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            if (u == m + 1) return false;\n            for (int v : adj.get(u)) {\n                if (!vis[v]) {\n                    vis[v] = true;\n                    q.add(v);\n                }\n            }\n        }\n        return true;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "javascript",
+      "code": "var canReachCorner = function(X, Y, circles) {\n    const inCircle = (x, y, cx, cy, r) => {\n        return (BigInt(x) - BigInt(cx)) ** 2n + (BigInt(y) - BigInt(cy)) ** 2n <= BigInt(r) ** 2n;\n    };\n    for (const [cx, cy, r] of circles) {\n        if (inCircle(0, 0, cx, cy, r) || inCircle(X, Y, cx, cy, r)) {\n            return false;\n        }\n    }\n    const m = circles.length;\n    const adj = Array.from({ length: m + 2 }, () => []);\n    for (let i = 0; i < m; i++) {\n        const [x1, y1, r1] = circles[i];\n        if (x1 - r1 <= 0 || y1 + r1 >= Y) {\n            adj[i].push(m);\n            adj[m].push(i);\n        }\n        if (y1 - r1 <= 0 || x1 + r1 >= X) {\n            adj[i].push(m + 1);\n            adj[m + 1].push(i);\n        }\n        for (let j = i + 1; j < m; j++) {\n            const [x2, y2, r2] = circles[j];\n            const distSq = (BigInt(x1) - BigInt(x2)) ** 2n + (BigInt(y1) - BigInt(y2)) ** 2n;\n            if (distSq <= (BigInt(r1) + BigInt(r2)) ** 2n) {\n                adj[i].push(j);\n                adj[j].push(i);\n            }\n        }\n    }\n    const vis = new Array(m + 2).fill(false);\n    const q = [m];\n    vis[m] = true;\n    for (let idx = 0; idx < q.length; idx++) {\n        const u = q[idx];\n        if (u === m + 1) return false;\n        for (const v of adj[u]) {\n            if (!vis[v]) {\n                vis[v] = true;\n                q.push(v);\n            }\n        }\n    }\n    return true;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

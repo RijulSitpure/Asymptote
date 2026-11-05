@@ -1,0 +1,73 @@
+{
+  "slug": "odd-and-even-transactions",
+  "number": 3220,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate",
+    "conditional-pivot"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Parity Segmentation",
+      "text": "Group records by date while aggregating values conditionally based on integer modulo two."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Sum Expressions",
+      "text": "Use case expressions within sum aggregations to conditionally isolate odd amounts and even amounts."
+    },
+    {
+      "level": 3,
+      "title": "Zero Fallback and Ordering",
+      "text": "If a date contains no odd or even entries, the case expression defaults to zero. Sort the final output chronologically."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT\n    transaction_date,\n    SUM(CASE WHEN amount % 2 != 0 THEN amount ELSE 0 END) AS odd_sum,\n    SUM(CASE WHEN amount % 2 = 0 THEN amount ELSE 0 END) AS even_sum\nFROM transactions\nGROUP BY transaction_date\nORDER BY transaction_date ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(n log n)",
+    "space": "O(u)",
+    "variables": [
+      "n: total transaction rows",
+      "u: unique transaction dates"
+    ],
+    "notes": "Group by transaction date and sort output chronologically.",
+    "whyNaiveFails": "Separate queries for odd and even transactions require extra joins and scans.",
+    "spaceTimeTradeoff": "Single-pass aggregation computes both parity sums simultaneously.",
+    "interviewerExpectation": "Demonstrates clean conditional aggregation with case when."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "code": "SELECT\n    transaction_date,\n    SUM(CASE WHEN amount % 2 != 0 THEN amount ELSE 0 END) AS odd_sum,\n    SUM(CASE WHEN amount % 2 = 0 THEN amount ELSE 0 END) AS even_sum\nFROM transactions\nGROUP BY transaction_date\nORDER BY transaction_date ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "postgresql",
+      "code": "SELECT\n    transaction_date,\n    COALESCE(SUM(CASE WHEN amount % 2 != 0 THEN amount ELSE 0 END), 0) AS odd_sum,\n    COALESCE(SUM(CASE WHEN amount % 2 = 0 THEN amount ELSE 0 END), 0) AS even_sum\nFROM transactions\nGROUP BY transaction_date\nORDER BY transaction_date ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    },
+    {
+      "lang": "pythondata",
+      "code": "import pandas as pd\n\ndef sum_daily_odd_even(transactions: pd.DataFrame) -> pd.DataFrame:\n    if transactions.empty:\n        return pd.DataFrame(columns=['transaction_date', 'odd_sum', 'even_sum'])\n    \n    transactions['odd_sum'] = transactions['amount'].where(transactions['amount'] % 2 != 0, 0)\n    transactions['even_sum'] = transactions['amount'].where(transactions['amount'] % 2 == 0, 0)\n    \n    result = transactions.groupby('transaction_date', as_index=False)[['odd_sum', 'even_sum']].sum()\n    return result.sort_values(by='transaction_date', ascending=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31",
+      "approach": "Optimal"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}
