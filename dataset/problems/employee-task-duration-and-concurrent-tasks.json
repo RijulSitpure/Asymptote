@@ -1,0 +1,72 @@
+{
+  "slug": "employee-task-duration-and-concurrent-tasks",
+  "number": 3156,
+  "patterns": [
+    "window-offset",
+    "group-aggregate"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Timeline Discretization",
+      "text": "Collect all distinct start and end times for each employee into atomic endpoints."
+    },
+    {
+      "level": 2,
+      "title": "Consecutive Segments",
+      "text": "Form elementary consecutive intervals using offset window function window function partitioned by employee."
+    },
+    {
+      "level": 3,
+      "title": "Interval Concurrency",
+      "text": "Join segments to the Tasks table to determine the active task count and segment durations."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH TimePoints AS (\n    SELECT DISTINCT employee_id, start_time AS st FROM Tasks\n    UNION DISTINCT\n    SELECT DISTINCT employee_id, end_time AS st FROM Tasks\n),\nSegments AS (\n    SELECT \n        employee_id,\n        st AS start_time,\n        LEAD(st) OVER (PARTITION BY employee_id ORDER BY st) AS end_time\n    FROM TimePoints\n),\nSegmentStats AS (\n    SELECT \n        s.employee_id,\n        s.start_time,\n        s.end_time,\n        COUNT(t.task_id) AS concurrent_count\n    FROM Segments s\n    JOIN Tasks t\n      ON s.employee_id = t.employee_id\n     AND s.start_time >= t.start_time\n     AND s.end_time <= t.end_time\n    WHERE s.end_time IS NOT NULL\n    GROUP BY s.employee_id, s.start_time, s.end_time\n)\nSELECT \n    employee_id,\n    FLOOR(SUM(TIME_TO_SEC(TIMEDIFF(end_time, start_time))) / 3600) AS total_task_hours,\n    MAX(concurrent_count) AS max_concurrent_tasks\nFROM SegmentStats\nGROUP BY employee_id\nORDER BY employee_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of task rows"
+    ],
+    "notes": "Sorting distinct time points and windowing takes O(n log n).",
+    "whyNaiveFails": "Overlapping intervals cannot be added directly without interval splitting.",
+    "spaceTimeTradeoff": "CTE materializes distinct endpoints.",
+    "interviewerExpectation": "Use window LEAD to break timelines into non-overlapping atomic blocks."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Timeline Discretization with Window LEAD",
+      "code": "WITH TimePoints AS (\n    SELECT DISTINCT employee_id, start_time AS st FROM Tasks\n    UNION DISTINCT\n    SELECT DISTINCT employee_id, end_time AS st FROM Tasks\n),\nSegments AS (\n    SELECT \n        employee_id,\n        st AS start_time,\n        LEAD(st) OVER (PARTITION BY employee_id ORDER BY st) AS end_time\n    FROM TimePoints\n),\nSegmentStats AS (\n    SELECT \n        s.employee_id,\n        s.start_time,\n        s.end_time,\n        COUNT(t.task_id) AS concurrent_count\n    FROM Segments s\n    JOIN Tasks t\n      ON s.employee_id = t.employee_id\n     AND s.start_time >= t.start_time\n     AND s.end_time <= t.end_time\n    WHERE s.end_time IS NOT NULL\n    GROUP BY s.employee_id, s.start_time, s.end_time\n)\nSELECT \n    employee_id,\n    FLOOR(SUM(TIME_TO_SEC(TIMEDIFF(end_time, start_time))) / 3600) AS total_task_hours,\n    MAX(concurrent_count) AS max_concurrent_tasks\nFROM SegmentStats\nGROUP BY employee_id\nORDER BY employee_id;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Timeline Discretization with Window LEAD",
+      "code": "WITH TimePoints AS (\n    SELECT DISTINCT employee_id, start_time AS st FROM Tasks\n    UNION\n    SELECT DISTINCT employee_id, end_time AS st FROM Tasks\n),\nSegments AS (\n    SELECT \n        employee_id,\n        st AS start_time,\n        LEAD(st) OVER (PARTITION BY employee_id ORDER BY st) AS end_time\n    FROM TimePoints\n),\nSegmentStats AS (\n    SELECT \n        s.employee_id,\n        s.start_time,\n        s.end_time,\n        COUNT(t.task_id) AS concurrent_count\n    FROM Segments s\n    JOIN Tasks t\n      ON s.employee_id = t.employee_id\n     AND s.start_time >= t.start_time\n     AND s.end_time <= t.end_time\n    WHERE s.end_time IS NOT NULL\n    GROUP BY s.employee_id, s.start_time, s.end_time\n)\nSELECT \n    employee_id,\n    FLOOR(SUM(EXTRACT(EPOCH FROM (end_time - start_time))) / 3600)::INT AS total_task_hours,\n    MAX(concurrent_count) AS max_concurrent_tasks\nFROM SegmentStats\nGROUP BY employee_id\nORDER BY employee_id;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Interval Sweep",
+      "code": "import pandas as pd\nimport numpy as np\n\ndef find_total_duration_and_concurrent_tasks(tasks: pd.DataFrame) -> pd.DataFrame:\n    if tasks.empty:\n        return pd.DataFrame(columns=['employee_id', 'total_task_hours', 'max_concurrent_tasks'])\n    \n    tasks['start_time'] = pd.to_datetime(tasks['start_time'])\n    tasks['end_time'] = pd.to_datetime(tasks['end_time'])\n    \n    results = []\n    for emp_id, group in tasks.groupby('employee_id'):\n        times = sorted(list(set(group['start_time']).union(set(group['end_time']))))\n        total_seconds = 0\n        max_concurrent = 0\n        for i in range(len(times) - 1):\n            st, et = times[i], times[i + 1]\n            active = group[(group['start_time'] <= st) & (group['end_time'] >= et)]\n            cnt = len(active)\n            if cnt > 0:\n                total_seconds += (et - st).total_seconds()\n                max_concurrent = max(max_concurrent, cnt)\n        results.append({\n            'employee_id': emp_id,\n            'total_task_hours': int(np.floor(total_seconds / 3600)),\n            'max_concurrent_tasks': max_concurrent\n        })\n    \n    res_df = pd.DataFrame(results)\n    return res_df.sort_values(by='employee_id').reset_index(drop=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

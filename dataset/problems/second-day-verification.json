@@ -1,0 +1,73 @@
+{
+  "slug": "second-day-verification",
+  "number": 3172,
+  "patterns": [
+    "join-filter",
+    "date-time"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Table Join",
+      "text": "Join emails and texts using email_id to link signup dates with verification dates."
+    },
+    {
+      "level": 2,
+      "title": "Action Filter",
+      "text": "Filter for rows where signup_action equals Verified."
+    },
+    {
+      "level": 3,
+      "title": "Second Day Condition",
+      "text": "Filter for actions occurring exactly 1 day after the signup date using date difference = 1."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nSELECT e.user_id\nFROM emails e\nJOIN texts t ON e.email_id = t.email_id\nWHERE t.signup_action = 'Verified'\n  AND DATEDIFF(t.action_date, e.signup_date) = 1\nORDER BY e.user_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + m)",
+    "space": "O(n + m)",
+    "variables": [
+      "n: number of emails",
+      "m: number of texts"
+    ],
+    "notes": "Hash join on email_id followed by date filtering.",
+    "whyNaiveFails": "Not applicable; single join is optimal.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for joined records.",
+    "interviewerExpectation": "Use date difference functions properly and filter verified status."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Inner Join and DATEDIFF Filtering",
+      "code": "SELECT e.user_id\nFROM emails e\nJOIN texts t ON e.email_id = t.email_id\nWHERE t.signup_action = 'Verified'\n  AND DATEDIFF(t.action_date, e.signup_date) = 1\nORDER BY e.user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Inner Join and Date Filtering",
+      "code": "SELECT e.user_id\nFROM emails e\nJOIN texts t ON e.email_id = t.email_id\nWHERE t.signup_action = 'Verified'\n  AND t.action_date::date - e.signup_date::date = 1\nORDER BY e.user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Merge and Date Difference",
+      "code": "import pandas as pd\n\ndef find_second_day_signups(emails: pd.DataFrame, texts: pd.DataFrame) -> pd.DataFrame:\n    if emails.empty or texts.empty:\n        return pd.DataFrame(columns=['user_id'])\n    \n    merged = emails.merge(texts, on='email_id')\n    merged['signup_date'] = pd.to_datetime(merged['signup_date']).dt.date\n    merged['action_date'] = pd.to_datetime(merged['action_date']).dt.date\n    \n    cond = (merged['signup_action'] == 'Verified') & ((merged['action_date'] - merged['signup_date']).dt.days == 1)\n    res = merged[cond][['user_id']].drop_duplicates().sort_values(by='user_id').reset_index(drop=True)\n    return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

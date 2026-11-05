@@ -1,0 +1,72 @@
+{
+  "slug": "calculate-parking-fees-and-duration",
+  "number": 3166,
+  "patterns": [
+    "window-ranking",
+    "group-aggregate"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Per-Car Aggregates",
+      "text": "Calculate the total fee paid and total duration in minutes across all lots for each car."
+    },
+    {
+      "level": 2,
+      "title": "Per-Lot Duration",
+      "text": "Calculate the duration spent by each car in each parking lot."
+    },
+    {
+      "level": 3,
+      "title": "Most Time Lot Ranking",
+      "text": "Rank lots per car by total duration in descending order using ROW_NUMBER or ranking."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH CarTotals AS (\n    SELECT \n        car_id,\n        SUM(fee_paid) AS total_fee_paid,\n        SUM(TIMESTAMPDIFF(MINUTE, entry_time, exit_time)) AS total_duration\n    FROM ParkingTransactions\n    GROUP BY car_id\n),\nLotTotals AS (\n    SELECT \n        car_id,\n        lot_id,\n        SUM(TIMESTAMPDIFF(MINUTE, entry_time, exit_time)) AS lot_duration,\n        ROW_NUMBER() OVER (\n            PARTITION BY car_id \n            ORDER BY SUM(TIMESTAMPDIFF(MINUTE, entry_time, exit_time)) DESC, lot_id ASC\n        ) AS rnk\n    FROM ParkingTransactions\n    GROUP BY car_id, lot_id\n)\nSELECT \n    c.car_id,\n    c.total_fee_paid,\n    ROUND(c.total_fee_paid * 60.0 / c.total_duration, 2) AS avg_hourly_fee,\n    l.lot_id AS most_time_lot\nFROM CarTotals c\nJOIN LotTotals l \n  ON c.car_id = l.car_id AND l.rnk = 1\nORDER BY c.car_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of parking transactions"
+    ],
+    "notes": "Grouping and window ranking take O(n log n).",
+    "whyNaiveFails": "Cannot directly join without aggregating per car and per lot first.",
+    "spaceTimeTradeoff": "CTEs isolate car totals and ranked lot times.",
+    "interviewerExpectation": "Use CTEs and window ROW_NUMBER to identify the primary parking lot."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "CTE Aggregates and Window ROW_NUMBER",
+      "code": "WITH CarTotals AS (\n    SELECT \n        car_id,\n        SUM(fee_paid) AS total_fee_paid,\n        SUM(TIMESTAMPDIFF(MINUTE, entry_time, exit_time)) AS total_duration\n    FROM ParkingTransactions\n    GROUP BY car_id\n),\nLotTotals AS (\n    SELECT \n        car_id,\n        lot_id,\n        SUM(TIMESTAMPDIFF(MINUTE, entry_time, exit_time)) AS lot_duration,\n        ROW_NUMBER() OVER (\n            PARTITION BY car_id \n            ORDER BY SUM(TIMESTAMPDIFF(MINUTE, entry_time, exit_time)) DESC, lot_id ASC\n        ) AS rnk\n    FROM ParkingTransactions\n    GROUP BY car_id, lot_id\n)\nSELECT \n    c.car_id,\n    c.total_fee_paid,\n    ROUND(c.total_fee_paid * 60.0 / c.total_duration, 2) AS avg_hourly_fee,\n    l.lot_id AS most_time_lot\nFROM CarTotals c\nJOIN LotTotals l \n  ON c.car_id = l.car_id AND l.rnk = 1\nORDER BY c.car_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "CTE Aggregates and Window ROW_NUMBER",
+      "code": "WITH CarTotals AS (\n    SELECT \n        car_id,\n        SUM(fee_paid) AS total_fee_paid,\n        SUM(EXTRACT(EPOCH FROM (exit_time - entry_time)) / 60) AS total_duration\n    FROM ParkingTransactions\n    GROUP BY car_id\n),\nLotTotals AS (\n    SELECT \n        car_id,\n        lot_id,\n        SUM(EXTRACT(EPOCH FROM (exit_time - entry_time)) / 60) AS lot_duration,\n        ROW_NUMBER() OVER (\n            PARTITION BY car_id \n            ORDER BY SUM(EXTRACT(EPOCH FROM (exit_time - entry_time)) / 60) DESC, lot_id ASC\n        ) AS rnk\n    FROM ParkingTransactions\n    GROUP BY car_id, lot_id\n)\nSELECT \n    c.car_id,\n    c.total_fee_paid,\n    ROUND((c.total_fee_paid * 60.0 / c.total_duration)::numeric, 2) AS avg_hourly_fee,\n    l.lot_id AS most_time_lot\nFROM CarTotals c\nJOIN LotTotals l \n  ON c.car_id = l.car_id AND l.rnk = 1\nORDER BY c.car_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas GroupBy and Duration Metrics",
+      "code": "import pandas as pd\n\ndef calculate_parking_fees_and_duration(parking_transactions: pd.DataFrame) -> pd.DataFrame:\n    if parking_transactions.empty:\n        return pd.DataFrame(columns=['car_id', 'total_fee_paid', 'avg_hourly_fee', 'most_time_lot'])\n    \n    parking_transactions['entry_time'] = pd.to_datetime(parking_transactions['entry_time'])\n    parking_transactions['exit_time'] = pd.to_datetime(parking_transactions['exit_time'])\n    parking_transactions['duration'] = (parking_transactions['exit_time'] - parking_transactions['entry_time']).dt.total_seconds() / 60\n    \n    car_totals = parking_transactions.groupby('car_id').agg(\n        total_fee_paid=('fee_paid', 'sum'),\n        total_duration=('duration', 'sum')\n    ).reset_index()\n    car_totals['avg_hourly_fee'] = (car_totals['total_fee_paid'] * 60.0 / car_totals['total_duration']).round(2)\n    \n    lot_durations = parking_transactions.groupby(['car_id', 'lot_id'])['duration'].sum().reset_index()\n    lot_durations = lot_durations.sort_values(by=['car_id', 'duration', 'lot_id'], ascending=[True, False, True])\n    most_time = lot_durations.drop_duplicates(subset=['car_id']).rename(columns={'lot_id': 'most_time_lot'})\n    \n    res = car_totals.merge(most_time[['car_id', 'most_time_lot']], on='car_id')\n    return res[['car_id', 'total_fee_paid', 'avg_hourly_fee', 'most_time_lot']].sort_values(by='car_id').reset_index(drop=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

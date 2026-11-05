@@ -1,0 +1,79 @@
+{
+  "slug": "block-placement-queries",
+  "number": 3161,
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Obstacle Gaps",
+      "text": "Placing a block of size sz within [0, x] requires either a gap between consecutive obstacles of size at least sz, or a space between the last obstacle before x and x of at least sz."
+    },
+    {
+      "level": 2,
+      "title": "Point Updates in Segment Tree",
+      "text": "Maintain the max gap ending at each obstacle index using a segment tree over coordinate space."
+    },
+    {
+      "level": 3,
+      "title": "Range Query",
+      "text": "For query [2, x, sz], query the segment tree for max gap in [0, p] where p is the predecessor obstacle of x, and check x - p >= sz."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nimport bisect\n\nclass SegmentTree:\n    def __init__(self, size):\n        self.n = size\n        self.tree = [0] * (4 * size)\n    \n    def update(self, node, l, r, idx, val):\n        if l == r:\n            self.tree[node] = val\n            return\n        mid = (l + r) // 2\n        if idx <= mid:\n            self.update(2 * node, l, mid, idx, val)\n        else:\n            self.update(2 * node + 1, mid + 1, r, idx, val)\n        self.tree[node] = max(self.tree[2 * node], self.tree[2 * node + 1])\n    \n    def query(self, node, l, r, ql, qr):\n        if ql <= l and r <= qr:\n            return self.tree[node]\n        mid = (l + r) // 2\n        res = 0\n        if ql <= mid:\n            res = max(res, self.query(2 * node, l, mid, ql, qr))\n        if qr > mid:\n            res = max(res, self.query(2 * node + 1, mid + 1, r, ql, qr))\n        return res\n\nclass Solution:\n    def getResults(self, queries: list[list[int]]) -> list[bool]:\n        max_x = min(50005, 3 * len(queries) + 5)\n        for q in queries:\n            max_x = max(max_x, q[1] + 1)\n        \n        st = SegmentTree(max_x + 1)\n        obstacles = [0, max_x]\n        st.update(1, 0, max_x, max_x, max_x)\n        \n        ans = []\n        for q in queries:\n            if q[0] == 1:\n                x = q[1]\n                idx = bisect.bisect_left(obstacles, x)\n                prev_obs = obstacles[idx - 1]\n                next_obs = obstacles[idx]\n                obstacles.insert(idx, x)\n                st.update(1, 0, max_x, x, x - prev_obs)\n                st.update(1, 0, max_x, next_obs, next_obs - x)\n            else:\n                _, x, sz = q\n                idx = bisect.bisect_right(obstacles, x) - 1\n                prev_obs = obstacles[idx]\n                max_prev_gap = st.query(1, 0, max_x, 0, prev_obs)\n                tail_gap = x - prev_obs\n                ans.append(max(max_prev_gap, tail_gap) >= sz)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(q log M)",
+    "space": "O(M + q)",
+    "variables": [
+      "q: number of queries",
+      "M: maximum coordinate value"
+    ],
+    "notes": "Segment tree point updates and range maximum queries take O(log M).",
+    "whyNaiveFails": "Scanning obstacle gaps on each query takes O(q^2) causing time limit exceeded.",
+    "spaceTimeTradeoff": "O(M) tree storage enables logarithmic query response.",
+    "interviewerExpectation": "Recognize the dynamic interval gap query structure and implement range max segment tree."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Segment Tree Range Maximum Queries",
+      "code": "import bisect\n\nclass SegmentTree:\n    def __init__(self, size):\n        self.n = size\n        self.tree = [0] * (4 * size)\n    \n    def update(self, node, l, r, idx, val):\n        if l == r:\n            self.tree[node] = val\n            return\n        mid = (l + r) // 2\n        if idx <= mid:\n            self.update(2 * node, l, mid, idx, val)\n        else:\n            self.update(2 * node + 1, mid + 1, r, idx, val)\n        self.tree[node] = max(self.tree[2 * node], self.tree[2 * node + 1])\n    \n    def query(self, node, l, r, ql, qr):\n        if ql <= l and r <= qr:\n            return self.tree[node]\n        mid = (l + r) // 2\n        res = 0\n        if ql <= mid:\n            res = max(res, self.query(2 * node, l, mid, ql, qr))\n        if qr > mid:\n            res = max(res, self.query(2 * node + 1, mid + 1, r, ql, qr))\n        return res\n\nclass Solution:\n    def getResults(self, queries: list[list[int]]) -> list[bool]:\n        max_x = min(50005, 3 * len(queries) + 5)\n        for q in queries:\n            max_x = max(max_x, q[1] + 1)\n        \n        st = SegmentTree(max_x + 1)\n        obstacles = [0, max_x]\n        st.update(1, 0, max_x, max_x, max_x)\n        \n        ans = []\n        for q in queries:\n            if q[0] == 1:\n                x = q[1]\n                idx = bisect.bisect_left(obstacles, x)\n                prev_obs = obstacles[idx - 1]\n                next_obs = obstacles[idx]\n                obstacles.insert(idx, x)\n                st.update(1, 0, max_x, x, x - prev_obs)\n                st.update(1, 0, max_x, next_obs, next_obs - x)\n            else:\n                _, x, sz = q\n                idx = bisect.bisect_right(obstacles, x) - 1\n                prev_obs = obstacles[idx]\n                max_prev_gap = st.query(1, 0, max_x, 0, prev_obs)\n                tail_gap = x - prev_obs\n                ans.append(max(max_prev_gap, tail_gap) >= sz)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Segment Tree Range Maximum Queries",
+      "code": "class Solution {\n    vector<int> tree;\n    void update(int node, int l, int r, int idx, int val) {\n        if (l == r) {\n            tree[node] = val;\n            return;\n        }\n        int mid = (l + r) / 2;\n        if (idx <= mid) update(2 * node, l, mid, idx, val);\n        else update(2 * node + 1, mid + 1, r, idx, val);\n        tree[node] = max(tree[2 * node], tree[2 * node + 1]);\n    }\n    int query(int node, int l, int r, int ql, int qr) {\n        if (ql <= l && r <= qr) return tree[node];\n        int mid = (l + r) / 2, res = 0;\n        if (ql <= mid) res = max(res, query(2 * node, l, mid, ql, qr));\n        if (qr > mid) res = max(res, query(2 * node + 1, mid + 1, r, ql, qr));\n        return res;\n    }\npublic:\n    vector<bool> getResults(vector<vector<int>>& queries) {\n        int max_x = 50005;\n        for (const auto& q : queries) max_x = max(max_x, q[1] + 1);\n        tree.assign(4 * (max_x + 1), 0);\n        set<int> obstacles = {0, max_x};\n        update(1, 0, max_x, max_x, max_x);\n        vector<bool> ans;\n        for (const auto& q : queries) {\n            if (q[0] == 1) {\n                int x = q[1];\n                auto it = obstacles.lower_bound(x);\n                int next_obs = *it;\n                int prev_obs = *prev(it);\n                obstacles.insert(x);\n                update(1, 0, max_x, x, x - prev_obs);\n                update(1, 0, max_x, next_obs, next_obs - x);\n            } else {\n                int x = q[1], sz = q[2];\n                auto it = obstacles.upper_bound(x);\n                int prev_obs = *prev(it);\n                int max_prev_gap = query(1, 0, max_x, 0, prev_obs);\n                int tail_gap = x - prev_obs;\n                ans.push_back(max(max_prev_gap, tail_gap) >= sz);\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Segment Tree Range Maximum Queries",
+      "code": "class Solution {\n    private int[] tree;\n    private void update(int node, int l, int r, int idx, int val) {\n        if (l == r) {\n            tree[node] = val;\n            return;\n        }\n        int mid = (l + r) / 2;\n        if (idx <= mid) update(2 * node, l, mid, idx, val);\n        else update(2 * node + 1, mid + 1, r, idx, val);\n        tree[node] = Math.max(tree[2 * node], tree[2 * node + 1]);\n    }\n    private int query(int node, int l, int r, int ql, int qr) {\n        if (ql <= l && r <= qr) return tree[node];\n        int mid = (l + r) / 2, res = 0;\n        if (ql <= mid) res = Math.max(res, query(2 * node, l, mid, ql, qr));\n        if (qr > mid) res = Math.max(res, query(2 * node + 1, mid + 1, r, ql, qr));\n        return res;\n    }\n    public List<Boolean> getResults(int[][] queries) {\n        int maxX = 50005;\n        for (int[] q : queries) maxX = Math.max(maxX, q[1] + 1);\n        tree = new int[4 * (maxX + 1)];\n        TreeSet<Integer> obstacles = new TreeSet<>();\n        obstacles.add(0);\n        obstacles.add(maxX);\n        update(1, 0, maxX, maxX, maxX);\n        List<Boolean> ans = new ArrayList<>();\n        for (int[] q : queries) {\n            if (q[0] == 1) {\n                int x = q[1];\n                int prevObs = obstacles.floor(x);\n                int nextObs = obstacles.ceiling(x);\n                obstacles.add(x);\n                update(1, 0, maxX, x, x - prevObs);\n                update(1, 0, maxX, nextObs, nextObs - x);\n            } else {\n                int x = q[1], sz = q[2];\n                int prevObs = obstacles.floor(x);\n                int maxPrevGap = query(1, 0, maxX, 0, prevObs);\n                int tailGap = x - prevObs;\n                ans.add(Math.max(maxPrevGap, tailGap) >= sz);\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Segment Tree Range Maximum Queries",
+      "code": "var getResults = function(queries) {\n    let maxX = 50005;\n    for (const q of queries) maxX = Math.max(maxX, q[1] + 1);\n    const tree = new Int32Array(4 * (maxX + 1));\n    function update(node, l, r, idx, val) {\n        if (l === r) {\n            tree[node] = val;\n            return;\n        }\n        const mid = (l + r) >> 1;\n        if (idx <= mid) update(node * 2, l, mid, idx, val);\n        else update(node * 2 + 1, mid + 1, r, idx, val);\n        tree[node] = Math.max(tree[node * 2], tree[node * 2 + 1]);\n    }\n    function query(node, l, r, ql, qr) {\n        if (ql <= l && r <= qr) return tree[node];\n        const mid = (l + r) >> 1;\n        let res = 0;\n        if (ql <= mid) res = Math.max(res, query(node * 2, l, mid, ql, qr));\n        if (qr > mid) res = Math.max(res, query(node * 2 + 1, mid + 1, r, ql, qr));\n        return res;\n    }\n    const obstacles = [0, maxX];\n    update(1, 0, maxX, maxX, maxX);\n    const ans = [];\n    for (const q of queries) {\n        if (q[0] === 1) {\n            const x = q[1];\n            let idx = 0;\n            while (idx < obstacles.length && obstacles[idx] < x) idx++;\n            const prevObs = obstacles[idx - 1];\n            const nextObs = obstacles[idx];\n            obstacles.splice(idx, 0, x);\n            update(1, 0, maxX, x, x - prevObs);\n            update(1, 0, maxX, nextObs, nextObs - x);\n        } else {\n            const x = q[1], sz = q[2];\n            let idx = 0;\n            while (idx < obstacles.length && obstacles[idx] <= x) idx++;\n            const prevObs = obstacles[idx - 1];\n            const maxPrevGap = query(1, 0, maxX, 0, prevObs);\n            const tailGap = x - prevObs;\n            ans.push(Math.max(maxPrevGap, tailGap) >= sz);\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}
