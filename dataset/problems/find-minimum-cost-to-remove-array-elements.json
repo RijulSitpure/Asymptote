@@ -1,0 +1,78 @@
+{
+  "slug": "find-minimum-cost-to-remove-array-elements",
+  "number": 3469,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Single Element Invariant",
+      "text": "At each step, 2 elements among the first 3 active elements are removed, leaving exactly 1 element behind."
+    },
+    {
+      "level": 2,
+      "title": "State Representation",
+      "text": "Define state (last, i) where last is the index of the single leftover element and i is the index of the next unprocessed pair."
+    },
+    {
+      "level": 3,
+      "title": "Three-Way Transition Choices",
+      "text": "There are 3 choices: remove (i, i+1) keeping last; remove (last, i) keeping i+1; remove (last, i+1) keeping i."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def minCost(self, nums: list[int]) -> int:\n        n = len(nums)\n        memo = {}\n\n        def dp(last: int, i: int) -> int:\n            if i >= n:\n                return nums[last]\n            if i == n - 1:\n                return max(nums[last], nums[i])\n            state = (last, i)\n            if state in memo:\n                return memo[state]\n            c1 = max(nums[i], nums[i + 1]) + dp(last, i + 2)\n            c2 = max(nums[last], nums[i]) + dp(i + 1, i + 2)\n            c3 = max(nums[last], nums[i + 1]) + dp(i, i + 2)\n            res = min(c1, c2, c3)\n            memo[state] = res\n            return res\n\n        return dp(0, 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2)",
+    "space": "O(n^2)",
+    "variables": [
+      "n: length of array nums"
+    ],
+    "notes": "Memoized DP tracking the index of the single retained element and current position.",
+    "whyNaiveFails": "Simulating all permutations of removals explores O(3^(n/2)) branches.",
+    "spaceTimeTradeoff": "Tracking only the retained element index collapses exponential subproblems into O(n^2).",
+    "interviewerExpectation": "Identify the invariant that exactly one element is carried forward at each stage."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minCost(self, nums: list[int]) -> int:\n        n = len(nums)\n        memo = {}\n\n        def dp(last: int, i: int) -> int:\n            if i >= n:\n                return nums[last]\n            if i == n - 1:\n                return max(nums[last], nums[i])\n            state = (last, i)\n            if state in memo:\n                return memo[state]\n            c1 = max(nums[i], nums[i + 1]) + dp(last, i + 2)\n            c2 = max(nums[last], nums[i]) + dp(i + 1, i + 2)\n            c3 = max(nums[last], nums[i + 1]) + dp(i, i + 2)\n            res = min(c1, c2, c3)\n            memo[state] = res\n            return res\n\n        return dp(0, 1)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n#include <cstring>\n\nusing namespace std;\n\nclass Solution {\n    int memo[1005][1005];\n    int n;\n\n    int dp(int last, int i, const vector<int>& nums) {\n        if (i >= n) return nums[last];\n        if (i == n - 1) return max(nums[last], nums[i]);\n        if (memo[last][i] != -1) return memo[last][i];\n\n        int c1 = max(nums[i], nums[i + 1]) + dp(last, i + 2, nums);\n        int c2 = max(nums[last], nums[i]) + dp(i + 1, i + 2, nums);\n        int c3 = max(nums[last], nums[i + 1]) + dp(i, i + 2, nums);\n\n        return memo[last][i] = min({c1, c2, c3});\n    }\n\npublic:\n    int minCost(vector<int>& nums) {\n        n = nums.size();\n        memset(memo, -1, sizeof(memo));\n        return dp(0, 1, nums);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    private int[][] memo;\n    private int n;\n\n    private int dp(int last, int i, int[] nums) {\n        if (i >= n) return nums[last];\n        if (i == n - 1) return Math.max(nums[last], nums[i]);\n        if (memo[last][i] != -1) return memo[last][i];\n\n        int c1 = Math.max(nums[i], nums[i + 1]) + dp(last, i + 2, nums);\n        int c2 = Math.max(nums[last], nums[i]) + dp(i + 1, i + 2, nums);\n        int c3 = Math.max(nums[last], nums[i + 1]) + dp(i, i + 2, nums);\n\n        return memo[last][i] = Math.min(c1, Math.min(c2, c3));\n    }\n\n    public int minCost(int[] nums) {\n        n = nums.length;\n        memo = new int[n + 2][n + 2];\n        for (int[] row : memo) Arrays.fill(row, -1);\n        return dp(0, 1, nums);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar minCost = function(nums) {\n    const n = nums.length;\n    const memo = new Map();\n\n    function dp(last, i) {\n        if (i >= n) return nums[last];\n        if (i === n - 1) return Math.max(nums[last], nums[i]);\n        const key = `${last},${i}`;\n        if (memo.has(key)) return memo.get(key);\n\n        const c1 = Math.max(nums[i], nums[i + 1]) + dp(last, i + 2);\n        const c2 = Math.max(nums[last], nums[i]) + dp(i + 1, i + 2);\n        const c3 = Math.max(nums[last], nums[i + 1]) + dp(i, i + 2);\n\n        const res = Math.min(c1, c2, c3);\n        memo.set(key, res);\n        return res;\n    }\n\n    return dp(0, 1);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

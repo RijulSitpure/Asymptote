@@ -1,0 +1,79 @@
+{
+  "slug": "select-k-disjoint-special-substrings",
+  "number": 3458,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Character Boundary Invariant",
+      "text": "Determine the minimum bounding interval for every character present in the string."
+    },
+    {
+      "level": 2,
+      "title": "Minimal Self-Contained Expansion",
+      "text": "A substring is special if every character inside it appears exclusively within that substring. Expand each interval until all included characters are self-contained."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Interval Scheduling",
+      "text": "Discard the entire string as a candidate interval unless k is zero. Form the valid non-overlapping intervals greedily by sorting according to end boundaries."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maxSubstringLength(self, s: str, k: int) -> bool:\n        if k == 0:\n            return True\n        n = len(s)\n        first = {}\n        last = {}\n        for i, ch in enumerate(s):\n            if ch not in first:\n                first[ch] = i\n            last[ch] = i\n        \n        intervals = []\n        for ch in first:\n            start = first[ch]\n            end = last[ch]\n            valid = True\n            j = start\n            while j <= end:\n                c = s[j]\n                if first[c] < start:\n                    valid = False\n                    break\n                end = max(end, last[c])\n                j += 1\n            if valid and not (start == 0 and end == n - 1):\n                intervals.append((start, end))\n        \n        intervals.sort(key=lambda x: x[1])\n        count = 0\n        prev_end = -1\n        for start, end in intervals:\n            if start > prev_end:\n                count += 1\n                prev_end = end\n        return count >= k\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + sigma^2)",
+    "space": "O(sigma)",
+    "variables": [
+      "n: length of string s",
+      "sigma: alphabet size (at most 26)"
+    ],
+    "notes": "Locates bounds and expands valid intervals followed by interval scheduling.",
+    "whyNaiveFails": "Examining all O(n^2) substrings causes time limit issues.",
+    "spaceTimeTradeoff": "Precomputing first and last occurrences bounds the search to at most 26 candidate intervals.",
+    "interviewerExpectation": "Formulate minimal valid intervals containing all instances of their constituent characters and apply interval scheduling."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxSubstringLength(self, s: str, k: int) -> bool:\n        if k == 0:\n            return True\n        n = len(s)\n        first = {}\n        last = {}\n        for i, ch in enumerate(s):\n            if ch not in first:\n                first[ch] = i\n            last[ch] = i\n        \n        intervals = []\n        for ch in first:\n            start = first[ch]\n            end = last[ch]\n            valid = True\n            j = start\n            while j <= end:\n                c = s[j]\n                if first[c] < start:\n                    valid = False\n                    break\n                end = max(end, last[c])\n                j += 1\n            if valid and not (start == 0 and end == n - 1):\n                intervals.append((start, end))\n        \n        intervals.sort(key=lambda x: x[1])\n        count = 0\n        prev_end = -1\n        for start, end in intervals:\n            if start > prev_end:\n                count += 1\n                prev_end = end\n        return count >= k",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    bool maxSubstringLength(string s, int k) {\n        if (k == 0) return true;\n        int n = s.size();\n        vector<int> first(26, -1), last(26, -1);\n        for (int i = 0; i < n; i++) {\n            int c = s[i] - 'a';\n            if (first[c] == -1) first[c] = i;\n            last[c] = i;\n        }\n\n        vector<pair<int, int>> intervals;\n        for (int i = 0; i < 26; i++) {\n            if (first[i] == -1) continue;\n            int start = first[i];\n            int end = last[i];\n            bool valid = true;\n            for (int j = start; j <= end; j++) {\n                int c = s[j] - 'a';\n                if (first[c] < start) {\n                    valid = false;\n                    break;\n                }\n                end = max(end, last[c]);\n            }\n            if (valid && !(start == 0 && end == n - 1)) {\n                intervals.push_back({start, end});\n            }\n        }\n\n        sort(intervals.begin(), intervals.end(), [](const pair<int, int>& a, const pair<int, int>& b) {\n            return a.second < b.second;\n        });\n\n        int count = 0;\n        int prevEnd = -1;\n        for (const auto& iv : intervals) {\n            if (iv.first > prevEnd) {\n                count++;\n                prevEnd = iv.second;\n            }\n        }\n        return count >= k;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\nclass Solution {\n    public boolean maxSubstringLength(String s, int k) {\n        if (k == 0) return true;\n        int n = s.length();\n        int[] first = new int[26];\n        int[] last = new int[26];\n        Arrays.fill(first, -1);\n        Arrays.fill(last, -1);\n        for (int i = 0; i < n; i++) {\n            int c = s.charAt(i) - 'a';\n            if (first[c] == -1) first[c] = i;\n            last[c] = i;\n        }\n\n        List<int[]> intervals = new ArrayList<>();\n        for (int i = 0; i < 26; i++) {\n            if (first[i] == -1) continue;\n            int start = first[i];\n            int end = last[i];\n            boolean valid = true;\n            for (int j = start; j <= end; j++) {\n                int c = s.charAt(j) - 'a';\n                if (first[c] < start) {\n                    valid = false;\n                    break;\n                }\n                end = Math.max(end, last[c]);\n            }\n            if (valid && !(start == 0 && end == n - 1)) {\n                intervals.add(new int[]{start, end});\n            }\n        }\n\n        intervals.sort((a, b) -> Integer.compare(a[1], b[1]));\n        int count = 0;\n        int prevEnd = -1;\n        for (int[] iv : intervals) {\n            if (iv[0] > prevEnd) {\n                count++;\n                prevEnd = iv[1];\n            }\n        }\n        return count >= k;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {string} s\n * @param {number} k\n * @return {boolean}\n */\nvar maxSubstringLength = function(s, k) {\n    if (k === 0) return true;\n    const n = s.length;\n    const first = new Array(26).fill(-1);\n    const last = new Array(26).fill(-1);\n    const aCode = 'a'.charCodeAt(0);\n\n    for (let i = 0; i < n; i++) {\n        const c = s.charCodeAt(i) - aCode;\n        if (first[c] === -1) first[c] = i;\n        last[c] = i;\n    }\n\n    const intervals = [];\n    for (let i = 0; i < 26; i++) {\n        if (first[i] === -1) continue;\n        const start = first[i];\n        let end = last[i];\n        let valid = true;\n        for (let j = start; j <= end; j++) {\n            const c = s.charCodeAt(j) - aCode;\n            if (first[c] < start) {\n                valid = false;\n                break;\n            }\n            end = Math.max(end, last[c]);\n        }\n        if (valid && !(start === 0 && end === n - 1)) {\n            intervals.push([start, end]);\n        }\n    }\n\n    intervals.sort((a, b) => a[1] - b[1]);\n    let count = 0;\n    let prevEnd = -1;\n    for (const [start, end] of intervals) {\n        if (start > prevEnd) {\n            count++;\n            prevEnd = end;\n        }\n    }\n    return count >= k;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

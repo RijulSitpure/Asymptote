@@ -1,0 +1,80 @@
+{
+  "slug": "shortest-matching-substring",
+  "number": 3455,
+  "category": "Algorithms",
+  "patterns": [
+    "string-matching"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tripartite Substring Decomposition",
+      "text": "Split the pattern around the two wildcards into sub-patterns a, b, and c."
+    },
+    {
+      "level": 2,
+      "title": "KMP Substring Matching",
+      "text": "Locate all occurrence indices for a, b, and c across the string using the Knuth-Morris-Pratt algorithm."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search on Bipartite Endpoints",
+      "text": "For each occurrence of b, binary search the latest valid occurrence of a and the earliest valid occurrence of c to minimize total span."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport bisect\n\nclass Solution:\n    def shortestMatchingSubstring(self, s: str, p: str) -> int:\n        parts = p.split(\"*\")\n        a, b, c = parts[0], parts[1], parts[2]\n        \n        def find_all(sub: str) -> list[int]:\n            if not sub:\n                return list(range(len(s) + 1))\n            pi = [0] * len(sub)\n            for i in range(1, len(sub)):\n                j = pi[i - 1]\n                while j > 0 and sub[i] != sub[j]:\n                    j = pi[j - 1]\n                if sub[i] == sub[j]:\n                    j += 1\n                pi[i] = j\n            matches = []\n            j = 0\n            for i in range(len(s)):\n                while j > 0 and s[i] != sub[j]:\n                    j = pi[j - 1]\n                if s[i] == sub[j]:\n                    j += 1\n                if j == len(sub):\n                    matches.append(i - len(sub) + 1)\n                    j = pi[j - 1]\n            return matches\n\n        posA = find_all(a)\n        posB = find_all(b)\n        posC = find_all(c)\n        \n        if not posA or not posB or not posC:\n            return -1\n            \n        lenA, lenB, lenC = len(a), len(b), len(c)\n        ans = float(\"inf\")\n        \n        for startB in posB:\n            endB = startB + lenB\n            idxA = bisect.bisect_right(posA, startB - lenA) - 1\n            if idxA < 0:\n                continue\n            startA = posA[idxA]\n            \n            idxC = bisect.bisect_left(posC, endB)\n            if idxC >= len(posC):\n                continue\n            startC = posC[idxC]\n            endC = startC + lenC\n            \n            cand = endC - startA\n            if cand < ans:\n                ans = cand\n                \n        return ans if ans != float(\"inf\") else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(|s| + |p| + K log K)",
+    "space": "O(|s| + |p|)",
+    "variables": [
+      "|s|: length of string s",
+      "|p|: length of pattern p",
+      "K: number of sub-pattern matches"
+    ],
+    "notes": "Finds all occurrences in linear time via KMP and tests middle pattern occurrences using binary search.",
+    "whyNaiveFails": "Nested substring searches across both wildcards produce quadratic time complexity.",
+    "spaceTimeTradeoff": "LPS prefix arrays and match index arrays scale linearly with string lengths.",
+    "interviewerExpectation": "Combines KMP linear string matching with binary search on index lists."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import bisect\n\nclass Solution:\n    def shortestMatchingSubstring(self, s: str, p: str) -> int:\n        parts = p.split(\"*\")\n        a, b, c = parts[0], parts[1], parts[2]\n        \n        def find_all(sub: str) -> list[int]:\n            if not sub:\n                return list(range(len(s) + 1))\n            pi = [0] * len(sub)\n            for i in range(1, len(sub)):\n                j = pi[i - 1]\n                while j > 0 and sub[i] != sub[j]:\n                    j = pi[j - 1]\n                if sub[i] == sub[j]:\n                    j += 1\n                pi[i] = j\n            matches = []\n            j = 0\n            for i in range(len(s)):\n                while j > 0 and s[i] != sub[j]:\n                    j = pi[j - 1]\n                if s[i] == sub[j]:\n                    j += 1\n                if j == len(sub):\n                    matches.append(i - len(sub) + 1)\n                    j = pi[j - 1]\n            return matches\n\n        posA = find_all(a)\n        posB = find_all(b)\n        posC = find_all(c)\n        \n        if not posA or not posB or not posC:\n            return -1\n            \n        lenA, lenB, lenC = len(a), len(b), len(c)\n        ans = float(\"inf\")\n        \n        for startB in posB:\n            endB = startB + lenB\n            idxA = bisect.bisect_right(posA, startB - lenA) - 1\n            if idxA < 0:\n                continue\n            startA = posA[idxA]\n            \n            idxC = bisect.bisect_left(posC, endB)\n            if idxC >= len(posC):\n                continue\n            startC = posC[idxC]\n            endC = startC + lenC\n            \n            cand = endC - startA\n            if cand < ans:\n                ans = cand\n                \n        return ans if ans != float(\"inf\") else -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <algorithm>\n#include <climits>\n\nclass Solution {\n    std::vector<int> findAll(const std::string& s, const std::string& sub) {\n        if (sub.empty()) {\n            std::vector<int> res(s.length() + 1);\n            for (size_t i = 0; i <= s.length(); ++i) res[i] = i;\n            return res;\n        }\n        std::vector<int> pi(sub.length(), 0);\n        for (size_t i = 1; i < sub.length(); ++i) {\n            int j = pi[i - 1];\n            while (j > 0 && sub[i] != sub[j]) j = pi[j - 1];\n            if (sub[i] == sub[j]) j++;\n            pi[i] = j;\n        }\n        std::vector<int> matches;\n        int j = 0;\n        for (size_t i = 0; i < s.length(); ++i) {\n            while (j > 0 && s[i] != sub[j]) j = pi[j - 1];\n            if (s[i] == sub[j]) j++;\n            if (j == (int)sub.length()) {\n                matches.push_back(i - sub.length() + 1);\n                j = pi[j - 1];\n            }\n        }\n        return matches;\n    }\npublic:\n    int shortestMatchingSubstring(std::string s, std::string p) {\n        size_t star1 = p.find('*');\n        size_t star2 = p.find('*', star1 + 1);\n        std::string a = p.substr(0, star1);\n        std::string b = p.substr(star1 + 1, star2 - star1 - 1);\n        std::string c = p.substr(star2 + 1);\n        \n        std::vector<int> posA = findAll(s, a);\n        std::vector<int> posB = findAll(s, b);\n        std::vector<int> posC = findAll(s, c);\n        \n        if (posA.empty() || posB.empty() || posC.empty()) return -1;\n        \n        int lenA = a.length(), lenB = b.length(), lenC = c.length();\n        int ans = INT_MAX;\n        \n        for (int startB : posB) {\n            int endB = startB + lenB;\n            auto itA = std::upper_bound(posA.begin(), posA.end(), startB - lenA);\n            if (itA == posA.begin()) continue;\n            --itA;\n            int startA = *itA;\n            \n            auto itC = std::lower_bound(posC.begin(), posC.end(), endB);\n            if (itC == posC.end()) continue;\n            int startC = *itC;\n            int endC = startC + lenC;\n            \n            ans = std::min(ans, endC - startA);\n        }\n        return ans == INT_MAX ? -1 : ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private List<Integer> findAll(String s, String sub) {\n        List<Integer> matches = new ArrayList<>();\n        if (sub.isEmpty()) {\n            for (int i = 0; i <= s.length(); i++) matches.add(i);\n            return matches;\n        }\n        int[] pi = new int[sub.length()];\n        for (int i = 1; i < sub.length(); i++) {\n            int j = pi[i - 1];\n            while (j > 0 && sub.charAt(i) != sub.charAt(j)) j = pi[j - 1];\n            if (sub.charAt(i) == sub.charAt(j)) j++;\n            pi[i] = j;\n        }\n        int j = 0;\n        for (int i = 0; i < s.length(); i++) {\n            while (j > 0 && s.charAt(i) != sub.charAt(j)) j = pi[j - 1];\n            if (s.charAt(i) == sub.charAt(j)) j++;\n            if (j == sub.length()) {\n                matches.add(i - sub.length() + 1);\n                j = pi[j - 1];\n            }\n        }\n        return matches;\n    }\n    \n    public int shortestMatchingSubstring(String s, String p) {\n        int star1 = p.indexOf('*');\n        int star2 = p.indexOf('*', star1 + 1);\n        String a = p.substring(0, star1);\n        String b = p.substring(star1 + 1, star2);\n        String c = p.substring(star2 + 1);\n        \n        List<Integer> posA = findAll(s, a);\n        List<Integer> posB = findAll(s, b);\n        List<Integer> posC = findAll(s, c);\n        \n        if (posA.isEmpty() || posB.isEmpty() || posC.isEmpty()) return -1;\n        \n        int lenA = a.length(), lenB = b.length(), lenC = c.length();\n        int ans = Integer.MAX_VALUE;\n        \n        for (int startB : posB) {\n            int endB = startB + lenB;\n            int targetA = startB - lenA;\n            int idxA = Collections.binarySearch(posA, targetA);\n            if (idxA < 0) idxA = -idxA - 2;\n            if (idxA < 0) continue;\n            int startA = posA.get(idxA);\n            \n            int idxC = Collections.binarySearch(posC, endB);\n            if (idxC < 0) idxC = -idxC - 1;\n            if (idxC >= posC.size()) continue;\n            int startC = posC.get(idxC);\n            int endC = startC + lenC;\n            \n            ans = Math.min(ans, endC - startA);\n        }\n        return ans == Integer.MAX_VALUE ? -1 : ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var shortestMatchingSubstring = function(s, p) {\n    const star1 = p.indexOf('*');\n    const star2 = p.indexOf('*', star1 + 1);\n    const a = p.slice(0, star1);\n    const b = p.slice(star1 + 1, star2);\n    const c = p.slice(star2 + 1);\n    \n    function findAll(sub) {\n        if (!sub) {\n            const res = [];\n            for (let i = 0; i <= s.length; i++) res.push(i);\n            return res;\n        }\n        const pi = new Int32Array(sub.length);\n        for (let i = 1; i < sub.length; i++) {\n            let j = pi[i - 1];\n            while (j > 0 && sub[i] !== sub[j]) j = pi[j - 1];\n            if (sub[i] === sub[j]) j++;\n            pi[i] = j;\n        }\n        const matches = [];\n        let j = 0;\n        for (let i = 0; i < s.length; i++) {\n            while (j > 0 && s[i] !== sub[j]) j = pi[j - 1];\n            if (s[i] === sub[j]) j++;\n            if (j === sub.length) {\n                matches.push(i - sub.length + 1);\n                j = pi[j - 1];\n            }\n        }\n        return matches;\n    }\n    \n    const posA = findAll(a);\n    const posB = findAll(b);\n    const posC = findAll(c);\n    \n    if (!posA.length || !posB.length || !posC.length) return -1;\n    \n    const lenA = a.length, lenB = b.length, lenC = c.length;\n    let ans = Infinity;\n    \n    function bisectRight(arr, x) {\n        let l = 0, r = arr.length;\n        while (l < r) {\n            const m = (l + r) >> 1;\n            if (arr[m] <= x) l = m + 1;\n            else r = m;\n        }\n        return l;\n    }\n    \n    function bisectLeft(arr, x) {\n        let l = 0, r = arr.length;\n        while (l < r) {\n            const m = (l + r) >> 1;\n            if (arr[m] < x) l = m + 1;\n            else r = m;\n        }\n        return l;\n    }\n    \n    for (const startB of posB) {\n        const endB = startB + lenB;\n        const idxA = bisectRight(posA, startB - lenA) - 1;\n        if (idxA < 0) continue;\n        const startA = posA[idxA];\n        \n        const idxC = bisectLeft(posC, endB);\n        if (idxC >= posC.length) continue;\n        const startC = posC[idxC];\n        const endC = startC + lenC;\n        \n        if (endC - startA < ans) ans = endC - startA;\n    }\n    \n    return ans === Infinity ? -1 : ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

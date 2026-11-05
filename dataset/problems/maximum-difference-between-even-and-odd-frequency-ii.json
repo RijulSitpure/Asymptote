@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-difference-between-even-and-odd-frequency-ii",
+  "number": 3445,
+  "category": "Algorithms",
+  "patterns": [
+    "two-pointers-window-dynamic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Alphabet Space Reduction",
+      "text": "Notice that the string consists only of digits from 0 to 4, yielding at most 20 character pairs."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Parity Mapping",
+      "text": "For each pair of characters a and b, maintain running counts and group left boundaries by their parity combinations."
+    },
+    {
+      "level": 3,
+      "title": "Two Pointer Invariant",
+      "text": "Advance the left pointer while the window length is at least k and both characters have appeared, updating the minimum prefix difference table."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maxDifference(self, s: str, k: int) -> int:\n        chars = sorted(list(set(s)))\n        ans = -float(\"inf\")\n        for a in chars:\n            for b in chars:\n                if a == b:\n                    continue\n                min_diff = [[float(\"inf\")] * 2 for _ in range(2)]\n                prefix_a = [0]\n                prefix_b = [0]\n                l = 0\n                for r in range(len(s)):\n                    prefix_a.append(prefix_a[-1] + (1 if s[r] == a else 0))\n                    prefix_b.append(prefix_b[-1] + (1 if s[r] == b else 0))\n                    while (r - l + 1 >= k and \n                           prefix_a[l] < prefix_a[-1] and \n                           prefix_b[l] < prefix_b[-1]):\n                        pa = prefix_a[l] % 2\n                        pb = prefix_b[l] % 2\n                        diff = prefix_a[l] - prefix_b[l]\n                        if diff < min_diff[pa][pb]:\n                            min_diff[pa][pb] = diff\n                        l += 1\n                    req_pa = 1 - (prefix_a[-1] % 2)\n                    req_pb = prefix_b[-1] % 2\n                    best_sub = min_diff[req_pa][req_pb]\n                    if best_sub != float(\"inf\"):\n                        cand = (prefix_a[-1] - prefix_b[-1]) - best_sub\n                        if cand > ans:\n                            ans = cand\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(20 * n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of string s",
+      "k: minimum window length"
+    ],
+    "notes": "Executes linear sliding window scans over at most 20 character pairs using prefix parity difference tables.",
+    "whyNaiveFails": "Testing all substrings of length at least k requires quadratic runtime which times out for large inputs.",
+    "spaceTimeTradeoff": "Prefix arrays store counts of targeted characters across the string.",
+    "interviewerExpectation": "Combines character pair iteration with two pointers and parity-indexed difference tracking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxDifference(self, s: str, k: int) -> int:\n        chars = sorted(list(set(s)))\n        ans = -float(\"inf\")\n        for a in chars:\n            for b in chars:\n                if a == b:\n                    continue\n                min_diff = [[float(\"inf\")] * 2 for _ in range(2)]\n                prefix_a = [0]\n                prefix_b = [0]\n                l = 0\n                for r in range(len(s)):\n                    prefix_a.append(prefix_a[-1] + (1 if s[r] == a else 0))\n                    prefix_b.append(prefix_b[-1] + (1 if s[r] == b else 0))\n                    while (r - l + 1 >= k and \n                           prefix_a[l] < prefix_a[-1] and \n                           prefix_b[l] < prefix_b[-1]):\n                        pa = prefix_a[l] % 2\n                        pb = prefix_b[l] % 2\n                        diff = prefix_a[l] - prefix_b[l]\n                        if diff < min_diff[pa][pb]:\n                            min_diff[pa][pb] = diff\n                        l += 1\n                    req_pa = 1 - (prefix_a[-1] % 2)\n                    req_pb = prefix_b[-1] % 2\n                    best_sub = min_diff[req_pa][req_pb]\n                    if best_sub != float(\"inf\"):\n                        cand = (prefix_a[-1] - prefix_b[-1]) - best_sub\n                        if cand > ans:\n                            ans = cand\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <set>\n#include <algorithm>\n#include <climits>\n\nclass Solution {\npublic:\n    int maxDifference(std::string s, int k) {\n        std::set<char> char_set(s.begin(), s.end());\n        std::vector<char> chars(char_set.begin(), char_set.end());\n        int ans = INT_MIN;\n        \n        for (char a : chars) {\n            for (char b : chars) {\n                if (a == b) continue;\n                \n                std::vector<std::vector<int>> min_diff(2, std::vector<int>(2, INT_MAX / 2));\n                std::vector<int> prefix_a = {0};\n                std::vector<int> prefix_b = {0};\n                int l = 0;\n                \n                for (int r = 0; r < (int)s.length(); ++r) {\n                    prefix_a.push_back(prefix_a.back() + (s[r] == a ? 1 : 0));\n                    prefix_b.push_back(prefix_b.back() + (s[r] == b ? 1 : 0));\n                    \n                    while (r - l + 1 >= k &&\n                           prefix_a[l] < prefix_a.back() &&\n                           prefix_b[l] < prefix_b.back()) {\n                        int pa = prefix_a[l] % 2;\n                        int pb = prefix_b[l] % 2;\n                        min_diff[pa][pb] = std::min(min_diff[pa][pb], prefix_a[l] - prefix_b[l]);\n                        l++;\n                    }\n                    \n                    int req_pa = 1 - (prefix_a.back() % 2);\n                    int req_pb = prefix_b.back() % 2;\n                    int best_sub = min_diff[req_pa][req_pb];\n                    if (best_sub < INT_MAX / 4) {\n                        int cand = (prefix_a.back() - prefix_b.back()) - best_sub;\n                        ans = std::max(ans, cand);\n                    }\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxDifference(String s, int k) {\n        Set<Character> charSet = new TreeSet<>();\n        for (char c : s.toCharArray()) charSet.add(c);\n        List<Character> chars = new ArrayList<>(charSet);\n        \n        int ans = Integer.MIN_VALUE;\n        int INF = Integer.MAX_VALUE / 2;\n        \n        for (char a : chars) {\n            for (char b : chars) {\n                if (a == b) continue;\n                \n                int[][] minDiff = new int[2][2];\n                for (int i = 0; i < 2; i++) Arrays.fill(minDiff[i], INF);\n                \n                int[] prefixA = new int[s.length() + 1];\n                int[] prefixB = new int[s.length() + 1];\n                int l = 0;\n                \n                for (int r = 0; r < s.length(); r++) {\n                    prefixA[r + 1] = prefixA[r] + (s.charAt(r) == a ? 1 : 0);\n                    prefixB[r + 1] = prefixB[r] + (s.charAt(r) == b ? 1 : 0);\n                    \n                    while (r - l + 1 >= k &&\n                           prefixA[l] < prefixA[r + 1] &&\n                           prefixB[l] < prefixB[r + 1]) {\n                        int pa = prefixA[l] % 2;\n                        int pb = prefixB[l] % 2;\n                        minDiff[pa][pb] = Math.min(minDiff[pa][pb], prefixA[l] - prefixB[l]);\n                        l++;\n                    }\n                    \n                    int reqPa = 1 - (prefixA[r + 1] % 2);\n                    int reqPb = prefixB[r + 1] % 2;\n                    int bestSub = minDiff[reqPa][reqPb];\n                    if (bestSub < INF / 2) {\n                        int cand = (prefixA[r + 1] - prefixB[r + 1]) - bestSub;\n                        ans = Math.max(ans, cand);\n                    }\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxDifference = function(s, k) {\n    const charSet = new Set(s);\n    const chars = Array.from(charSet).sort();\n    let ans = -Infinity;\n    const INF = 1e9;\n    \n    for (const a of chars) {\n        for (const b of chars) {\n            if (a === b) continue;\n            \n            const minDiff = [[INF, INF], [INF, INF]];\n            const prefixA = [0];\n            const prefixB = [0];\n            let l = 0;\n            \n            for (let r = 0; r < s.length; r++) {\n                prefixA.push(prefixA[prefixA.length - 1] + (s[r] === a ? 1 : 0));\n                prefixB.push(prefixB[prefixB.length - 1] + (s[r] === b ? 1 : 0));\n                \n                while (r - l + 1 >= k &&\n                       prefixA[l] < prefixA[prefixA.length - 1] &&\n                       prefixB[l] < prefixB[prefixB.length - 1]) {\n                    const pa = prefixA[l] % 2;\n                    const pb = prefixB[l] % 2;\n                    const diff = prefixA[l] - prefixB[l];\n                    if (diff < minDiff[pa][pb]) minDiff[pa][pb] = diff;\n                    l++;\n                }\n                \n                const reqPa = 1 - (prefixA[prefixA.length - 1] % 2);\n                const reqPb = prefixB[prefixB.length - 1] % 2;\n                const bestSub = minDiff[reqPa][reqPb];\n                if (bestSub < INF / 2) {\n                    const cand = (prefixA[prefixA.length - 1] - prefixB[prefixA.length - 1 < prefixB.length ? prefixA.length - 1 : prefixB.length - 1]) - bestSub;\n                    const actualDiff = (prefixA[prefixA.length - 1] - prefixB[prefixB.length - 1]) - bestSub;\n                    if (actualDiff > ans) ans = actualDiff;\n                }\n            }\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

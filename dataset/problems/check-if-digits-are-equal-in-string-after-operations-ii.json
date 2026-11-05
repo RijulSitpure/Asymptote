@@ -1,0 +1,78 @@
+{
+  "slug": "check-if-digits-are-equal-in-string-after-operations-ii",
+  "number": 3463,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Combinatorial Contribution Modeling",
+      "text": "Model the contribution of each digit as binomial coefficients modulo 10."
+    },
+    {
+      "level": 2,
+      "title": "Decomposition by Prime Moduli",
+      "text": "For a string of length n, the final two digits are formed by linear combinations weighted by binom(n - 2, i)."
+    },
+    {
+      "level": 3,
+      "title": "Chinese Remainder Reconstruction",
+      "text": "Compute binomial coefficients modulo 2 and modulo 5 separately using Lucas theorem, then combine them via Chinese remainder theorem."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def hasSameDigits(self, s: str) -> bool:\n        n = len(s)\n        m = n - 2\n        lookup = [[0, 6, 2, 8, 4], [5, 1, 7, 3, 9]]\n\n        def lucas(n_val: int, k_val: int, p: int) -> int:\n            res = 1\n            while n_val > 0 or k_val > 0:\n                ni, ki = n_val % p, k_val % p\n                if ni < ki:\n                    return 0\n                comb = 1\n                for i in range(ki):\n                    comb = comb * (ni - i) // (i + 1)\n                res = (res * (comb % p)) % p\n                n_val //= p\n                k_val //= p\n            return res\n\n        def nck_mod_10(n_val: int, k_val: int) -> int:\n            m2 = lucas(n_val, k_val, 2)\n            m5 = lucas(n_val, k_val, 5)\n            return lookup[m2][m5]\n\n        num1 = 0\n        num2 = 0\n        for i in range(m + 1):\n            c = nck_mod_10(m, i)\n            num1 = (num1 + c * int(s[i])) % 10\n            num2 = (num2 + c * int(s[i + 1])) % 10\n        return num1 == num2\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(1)",
+    "variables": [
+      "n: length of string s"
+    ],
+    "notes": "Evaluates Lucas theorem for prime moduli 2 and 5 to compute binomial coefficients modulo 10.",
+    "whyNaiveFails": "O(n^2) simulation times out because n can reach 10^5.",
+    "spaceTimeTradeoff": "Decomposing modulo 10 into prime moduli 2 and 5 allows O(log n) coefficient evaluation.",
+    "interviewerExpectation": "Recognize Pascal triangle coefficients modulo composite base 10 and apply Lucas theorem."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def hasSameDigits(self, s: str) -> bool:\n        n = len(s)\n        m = n - 2\n        lookup = [[0, 6, 2, 8, 4], [5, 1, 7, 3, 9]]\n\n        def lucas(n_val: int, k_val: int, p: int) -> int:\n            res = 1\n            while n_val > 0 or k_val > 0:\n                ni, ki = n_val % p, k_val % p\n                if ni < ki:\n                    return 0\n                comb = 1\n                for i in range(ki):\n                    comb = comb * (ni - i) // (i + 1)\n                res = (res * (comb % p)) % p\n                n_val //= p\n                k_val //= p\n            return res\n\n        def nck_mod_10(n_val: int, k_val: int) -> int:\n            m2 = lucas(n_val, k_val, 2)\n            m5 = lucas(n_val, k_val, 5)\n            return lookup[m2][m5]\n\n        num1 = 0\n        num2 = 0\n        for i in range(m + 1):\n            c = nck_mod_10(m, i)\n            num1 = (num1 + c * int(s[i])) % 10\n            num2 = (num2 + c * int(s[i + 1])) % 10\n        return num1 == num2",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n\nusing namespace std;\n\nclass Solution {\n    int lucas(int n, int k, int p) {\n        int res = 1;\n        while (n > 0 || k > 0) {\n            int ni = n % p, ki = k % p;\n            if (ni < ki) return 0;\n            int comb = 1;\n            for (int i = 0; i < ki; i++) {\n                comb = comb * (ni - i) / (i + 1);\n            }\n            res = (res * (comb % p)) % p;\n            n /= p;\n            k /= p;\n        }\n        return res;\n    }\n\n    int nckMod10(int n, int k) {\n        static const int lookup[2][5] = {\n            {0, 6, 2, 8, 4},\n            {5, 1, 7, 3, 9}\n        };\n        int m2 = lucas(n, k, 2);\n        int m5 = lucas(n, k, 5);\n        return lookup[m2][m5];\n    }\n\npublic:\n    bool hasSameDigits(string s) {\n        int n = s.size();\n        int m = n - 2;\n        int num1 = 0, num2 = 0;\n        for (int i = 0; i <= m; i++) {\n            int c = nckMod10(m, i);\n            num1 = (num1 + c * (s[i] - '0')) % 10;\n            num2 = (num2 + c * (s[i + 1] - '0')) % 10;\n        }\n        return num1 == num2;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    private int lucas(int n, int k, int p) {\n        int res = 1;\n        while (n > 0 || k > 0) {\n            int ni = n % p, ki = k % p;\n            if (ni < ki) return 0;\n            int comb = 1;\n            for (int i = 0; i < ki; i++) {\n                comb = comb * (ni - i) / (i + 1);\n            }\n            res = (res * (comb % p)) % p;\n            n /= p;\n            k /= p;\n        }\n        return res;\n    }\n\n    private int nckMod10(int n, int k) {\n        int[][] lookup = {\n            {0, 6, 2, 8, 4},\n            {5, 1, 7, 3, 9}\n        };\n        int m2 = lucas(n, k, 2);\n        int m5 = lucas(n, k, 5);\n        return lookup[m2][m5];\n    }\n\n    public boolean hasSameDigits(String s) {\n        int n = s.length();\n        int m = n - 2;\n        int num1 = 0, num2 = 0;\n        for (int i = 0; i <= m; i++) {\n            int c = nckMod10(m, i);\n            num1 = (num1 + c * (s.charAt(i) - '0')) % 10;\n            num2 = (num2 + c * (s.charAt(i + 1) - '0')) % 10;\n        }\n        return num1 == num2;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {string} s\n * @return {boolean}\n */\nvar hasSameDigits = function(s) {\n    const n = s.length;\n    const m = n - 2;\n    const lookup = [\n        [0, 6, 2, 8, 4],\n        [5, 1, 7, 3, 9]\n    ];\n\n    function lucas(nVal, kVal, p) {\n        let res = 1;\n        while (nVal > 0 || kVal > 0) {\n            const ni = nVal % p, ki = kVal % p;\n            if (ni < ki) return 0;\n            let comb = 1;\n            for (let i = 0; i < ki; i++) {\n                comb = Math.floor(comb * (ni - i) / (i + 1));\n            }\n            res = (res * (comb % p)) % p;\n            nVal = Math.floor(nVal / p);\n            kVal = Math.floor(kVal / p);\n        }\n        return res;\n    }\n\n    function nckMod10(nVal, kVal) {\n        const m2 = lucas(nVal, kVal, 2);\n        const m5 = lucas(nVal, kVal, 5);\n        return lookup[m2][m5];\n    }\n\n    let num1 = 0, num2 = 0;\n    for (let i = 0; i <= m; i++) {\n        const c = nckMod10(m, i);\n        num1 = (num1 + c * Number(s[i])) % 10;\n        num2 = (num2 + c * Number(s[i + 1])) % 10;\n    }\n    return num1 === num2;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

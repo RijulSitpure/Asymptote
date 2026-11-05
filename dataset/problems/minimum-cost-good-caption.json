@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-cost-good-caption",
+  "number": 3441,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Block Length Factorization",
+      "text": "Notice that every run of length at least 3 can be partitioned into smaller blocks of lengths 3, 4, and 5."
+    },
+    {
+      "level": 2,
+      "title": "Suffix State Formulation",
+      "text": "Let dp[i] represent the minimum cost to form a valid caption suffix starting at index i."
+    },
+    {
+      "level": 3,
+      "title": "Lexicographical Tie-Breaking",
+      "text": "For each block length in 3, 4, and 5 and character from a to z, transition from i + L and compare candidate suffixes lexicographically on equal costs."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def minCostGoodCaption(self, caption: str) -> str:\n        n = len(caption)\n        if n < 3:\n            return \"\"\n        \n        dp = [None] * (n + 1)\n        dp[n] = (0, 0, \"\")\n        \n        def get_char(idx, pos):\n            curr = idx\n            while curr < n:\n                _, l, c = dp[curr]\n                if pos < curr + l:\n                    return c\n                curr += l\n            return \"\"\n\n        def is_better(c1, l1, c2, l2, i):\n            if c1 != c2:\n                return c1 < c2\n            p1 = i + l1\n            p2 = i + l2\n            while p1 < n and p2 < n:\n                ch1 = get_char(p1, p1)\n                ch2 = get_char(p2, p2)\n                if ch1 != ch2:\n                    return ch1 < ch2\n                p1 += 1\n                p2 += 1\n            return False\n\n        for i in range(n - 1, -1, -1):\n            rem = n - i\n            if rem < 3:\n                dp[i] = (float(\"inf\"), 0, \"\")\n                continue\n                \n            best_cost = float(\"inf\")\n            best_l = 0\n            best_c = \"\"\n            \n            for L in (3, 4, 5):\n                if i + L <= n:\n                    if n - (i + L) in (1, 2):\n                        continue\n                    next_cost = dp[i + L][0]\n                    if next_cost == float(\"inf\"):\n                        continue\n                    \n                    for c_ord in range(ord(\"a\"), ord(\"z\") + 1):\n                        ch = chr(c_ord)\n                        cost = sum(abs(ord(caption[j]) - c_ord) for j in range(i, i + L))\n                        tot_cost = cost + next_cost\n                        if tot_cost < best_cost:\n                            best_cost = tot_cost\n                            best_l = L\n                            best_c = ch\n                        elif tot_cost == best_cost:\n                            if is_better(ch, L, best_c, best_l, i):\n                                best_cost = tot_cost\n                                best_l = L\n                                best_c = ch\n            dp[i] = (best_cost, best_l, best_c)\n            \n        res = []\n        curr = 0\n        while curr < n:\n            _, l, c = dp[curr]\n            res.append(c * l)\n            curr += l\n        return \"\".join(res)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of string caption"
+    ],
+    "notes": "Evaluates 3 block lengths across 26 lowercase characters per index in linear time.",
+    "whyNaiveFails": "Greedy assignment fails because small local changes prevent downstream block grouping constraints.",
+    "spaceTimeTradeoff": "Linear storage tracks parent pointers and optimal lengths for suffix reconstruction.",
+    "interviewerExpectation": "Decomposes runs of length at least 3 into base blocks of size 3, 4, and 5 with DP."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minCostGoodCaption(self, caption: str) -> str:\n        n = len(caption)\n        if n < 3:\n            return \"\"\n        \n        dp = [None] * (n + 1)\n        dp[n] = (0, 0, \"\")\n        \n        def get_char(idx, pos):\n            curr = idx\n            while curr < n:\n                _, l, c = dp[curr]\n                if pos < curr + l:\n                    return c\n                curr += l\n            return \"\"\n\n        def is_better(c1, l1, c2, l2, i):\n            if c1 != c2:\n                return c1 < c2\n            p1 = i + l1\n            p2 = i + l2\n            while p1 < n and p2 < n:\n                ch1 = get_char(p1, p1)\n                ch2 = get_char(p2, p2)\n                if ch1 != ch2:\n                    return ch1 < ch2\n                p1 += 1\n                p2 += 1\n            return False\n\n        for i in range(n - 1, -1, -1):\n            rem = n - i\n            if rem < 3:\n                dp[i] = (float(\"inf\"), 0, \"\")\n                continue\n                \n            best_cost = float(\"inf\")\n            best_l = 0\n            best_c = \"\"\n            \n            for L in (3, 4, 5):\n                if i + L <= n:\n                    if n - (i + L) in (1, 2):\n                        continue\n                    next_cost = dp[i + L][0]\n                    if next_cost == float(\"inf\"):\n                        continue\n                    \n                    for c_ord in range(ord(\"a\"), ord(\"z\") + 1):\n                        ch = chr(c_ord)\n                        cost = sum(abs(ord(caption[j]) - c_ord) for j in range(i, i + L))\n                        tot_cost = cost + next_cost\n                        if tot_cost < best_cost:\n                            best_cost = tot_cost\n                            best_l = L\n                            best_c = ch\n                        elif tot_cost == best_cost:\n                            if is_better(ch, L, best_c, best_l, i):\n                                best_cost = tot_cost\n                                best_l = L\n                                best_c = ch\n            dp[i] = (best_cost, best_l, best_c)\n            \n        res = []\n        curr = 0\n        while curr < n:\n            _, l, c = dp[curr]\n            res.append(c * l)\n            curr += l\n        return \"\".join(res)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <cmath>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::string minCostGoodCaption(std::string caption) {\n        int n = caption.length();\n        if (n < 3) return \"\";\n        \n        const long long INF = 1e18;\n        struct Node {\n            long long cost;\n            int len;\n            char ch;\n        };\n        std::vector<Node> dp(n + 1, {INF, 0, ' '});\n        dp[n] = {0, 0, ' '};\n        \n        auto get_char = [&](int idx, int pos) -> char {\n            int curr = idx;\n            while (curr < n) {\n                if (pos < curr + dp[curr].len) return dp[curr].ch;\n                curr += dp[curr].len;\n            }\n            return ' ';\n        };\n        \n        auto is_better = [&](char c1, int l1, char c2, int l2, int i) -> bool {\n            if (c1 != c2) return c1 < c2;\n            int p1 = i + l1;\n            int p2 = i + l2;\n            while (p1 < n && p2 < n) {\n                char ch1 = get_char(p1, p1);\n                char ch2 = get_char(p2, p2);\n                if (ch1 != ch2) return ch1 < ch2;\n                p1++;\n                p2++;\n            }\n            return false;\n        };\n        \n        for (int i = n - 1; i >= 0; --i) {\n            int rem = n - i;\n            if (rem < 3) continue;\n            \n            long long best_cost = INF;\n            int best_l = 0;\n            char best_c = ' ';\n            \n            for (int L : {3, 4, 5}) {\n                if (i + L <= n) {\n                    if (n - (i + L) == 1 || n - (i + L) == 2) continue;\n                    long long next_cost = dp[i + L].cost;\n                    if (next_cost == INF) continue;\n                    \n                    for (char ch = 'a'; ch <= 'z'; ++ch) {\n                        long long cost = 0;\n                        for (int j = i; j < i + L; ++j) cost += std::abs(caption[j] - ch);\n                        long long tot_cost = cost + next_cost;\n                        if (tot_cost < best_cost) {\n                            best_cost = tot_cost;\n                            best_l = L;\n                            best_c = ch;\n                        } else if (tot_cost == best_cost) {\n                            if (is_better(ch, L, best_c, best_l, i)) {\n                                best_cost = tot_cost;\n                                best_l = L;\n                                best_c = ch;\n                            }\n                        }\n                    }\n                }\n            }\n            dp[i] = {best_cost, best_l, best_c};\n        }\n        \n        std::string res = \"\";\n        int curr = 0;\n        while (curr < n) {\n            res.append(dp[curr].len, dp[curr].ch);\n            curr += dp[curr].len;\n        }\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public String minCostGoodCaption(String caption) {\n        int n = caption.length();\n        if (n < 3) return \"\";\n        \n        long INF = (long)1e18;\n        long[] cost = new long[n + 1];\n        int[] len = new int[n + 1];\n        char[] ch = new char[n + 1];\n        for (int i = 0; i < n; i++) cost[i] = INF;\n        cost[n] = 0;\n        \n        for (int i = n - 1; i >= 0; i--) {\n            int rem = n - i;\n            if (rem < 3) continue;\n            \n            long bestCost = INF;\n            int bestL = 0;\n            char bestC = ' ';\n            \n            for (int L = 3; L <= 5; L++) {\n                if (i + L <= n) {\n                    if (n - (i + L) == 1 || n - (i + L) == 2) continue;\n                    long nextCost = cost[i + L];\n                    if (nextCost == INF) continue;\n                    \n                    for (char c = 'a'; c <= 'z'; c++) {\n                        long curCost = 0;\n                        for (int j = i; j < i + L; j++) {\n                            curCost += Math.abs(caption.charAt(j) - c);\n                        }\n                        long totCost = curCost + nextCost;\n                        if (totCost < bestCost) {\n                            bestCost = totCost;\n                            bestL = L;\n                            bestC = c;\n                        } else if (totCost == bestCost) {\n                            if (isBetter(c, L, bestC, bestL, i, n, len, ch)) {\n                                bestCost = totCost;\n                                bestL = L;\n                                bestC = c;\n                            }\n                        }\n                    }\n                }\n            }\n            cost[i] = bestCost;\n            len[i] = bestL;\n            ch[i] = bestC;\n        }\n        \n        StringBuilder sb = new StringBuilder();\n        int curr = 0;\n        while (curr < n) {\n            for (int j = 0; j < len[curr]; j++) sb.append(ch[curr]);\n            curr += len[curr];\n        }\n        return sb.toString();\n    }\n    \n    private boolean isBetter(char c1, int l1, char c2, int l2, int i, int n, int[] len, char[] ch) {\n        if (c1 != c2) return c1 < c2;\n        int p1 = i + l1;\n        int p2 = i + l2;\n        while (p1 < n && p2 < n) {\n            char ch1 = getChar(p1, p1, n, len, ch);\n            char ch2 = getChar(p2, p2, n, len, ch);\n            if (ch1 != ch2) return ch1 < ch2;\n            p1++;\n            p2++;\n        }\n        return false;\n    }\n    \n    private char getChar(int idx, int pos, int n, int[] len, char[] ch) {\n        int curr = idx;\n        while (curr < n) {\n            if (pos < curr + len[curr]) return ch[curr];\n            curr += len[curr];\n        }\n        return ' ';\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minCostGoodCaption = function(caption) {\n    const n = caption.length;\n    if (n < 3) return \"\";\n    \n    const INF = Infinity;\n    const dpCost = new Float64Array(n + 1).fill(INF);\n    const dpLen = new Int32Array(n + 1);\n    const dpChar = new Array(n + 1).fill('');\n    dpCost[n] = 0;\n    \n    function getChar(idx, pos) {\n        let curr = idx;\n        while (curr < n) {\n            if (pos < curr + dpLen[curr]) return dpChar[curr];\n            curr += dpLen[curr];\n        }\n        return '';\n    }\n    \n    function isBetter(c1, l1, c2, l2, i) {\n        if (c1 !== c2) return c1 < c2;\n        let p1 = i + l1;\n        let p2 = i + l2;\n        while (p1 < n && p2 < n) {\n            const ch1 = getChar(p1, p1);\n            const ch2 = getChar(p2, p2);\n            if (ch1 !== ch2) return ch1 < ch2;\n            p1++;\n            p2++;\n        }\n        return false;\n    }\n    \n    for (let i = n - 1; i >= 0; i--) {\n        const rem = n - i;\n        if (rem < 3) continue;\n        \n        let bestCost = INF;\n        let bestL = 0;\n        let bestC = '';\n        \n        for (const L of [3, 4, 5]) {\n            if (i + L <= n) {\n                if (n - (i + L) === 1 || n - (i + L) === 2) continue;\n                const nextCost = dpCost[i + L];\n                if (nextCost === INF) continue;\n                \n                for (let cOrd = 97; cOrd <= 122; cOrd++) {\n                    const ch = String.fromCharCode(cOrd);\n                    let cost = 0;\n                    for (let j = i; j < i + L; j++) {\n                        cost += Math.abs(caption.charCodeAt(j) - cOrd);\n                    }\n                    const totCost = cost + nextCost;\n                    if (totCost < bestCost) {\n                        bestCost = totCost;\n                        bestL = L;\n                        bestC = ch;\n                    } else if (totCost === bestCost) {\n                        if (isBetter(ch, L, bestC, bestL, i)) {\n                            bestCost = totCost;\n                            bestL = L;\n                            bestC = ch;\n                        }\n                    }\n                }\n            }\n        }\n        dpCost[i] = bestCost;\n        dpLen[i] = bestL;\n        dpChar[i] = bestC;\n    }\n    \n    const res = [];\n    let curr = 0;\n    while (curr < n) {\n        res.push(dpChar[curr].repeat(dpLen[curr]));\n        curr += dpLen[curr];\n    }\n    return res.join('');\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

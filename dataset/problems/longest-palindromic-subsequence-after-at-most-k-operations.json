@@ -1,0 +1,79 @@
+{
+  "slug": "longest-palindromic-subsequence-after-at-most-k-operations",
+  "number": 3472,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Augmented Subsequence DP",
+      "text": "Consider how to form a symmetric sequence by either matching boundary characters or skipping characters while tracking remaining modification operations."
+    },
+    {
+      "level": 2,
+      "title": "Cyclic Alphabet Distance",
+      "text": "For a substring s[i..j], the cost to equate characters s[i] and s[j] cyclically is min(|s[i] - s[j]|, 26 - |s[i] - s[j]|)."
+    },
+    {
+      "level": 3,
+      "title": "State Transitions and Budget",
+      "text": "At state (i, j, rem_k), choose between skipping s[i], skipping s[j], or matching s[i] and s[j] if rem_k >= cost."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def longestPalindromeSubsequence(self, s: str, k: int) -> int:\n        memo = {}\n\n        def dfs(i: int, j: int, rem_k: int) -> int:\n            if i > j:\n                return 0\n            if i == j:\n                return 1\n            state = (i, j, rem_k)\n            if state in memo:\n                return memo[state]\n            res = max(dfs(i + 1, j, rem_k), dfs(i, j - 1, rem_k))\n            diff = abs(ord(s[i]) - ord(s[j]))\n            cost = min(diff, 26 - diff)\n            if rem_k >= cost:\n                res = max(res, 2 + dfs(i + 1, j - 1, rem_k - cost))\n            memo[state] = res\n            return res\n\n        return dfs(0, len(s) - 1, k)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2 * k)",
+    "space": "O(n^2 * k)",
+    "variables": [
+      "n: length of string s",
+      "k: maximum allowed character operations"
+    ],
+    "notes": "Interval DP augmented with operation budget tracking cyclic character distances.",
+    "whyNaiveFails": "Exhaustive branching over all subsequences and possible character shifts is exponential.",
+    "spaceTimeTradeoff": "Cyclic distance computation combined with interval DP caches repeated subproblems.",
+    "interviewerExpectation": "Formulate 3D state (i, j, rem_k) and handle alphabet wrap-around arithmetic."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def longestPalindromeSubsequence(self, s: str, k: int) -> int:\n        memo = {}\n\n        def dfs(i: int, j: int, rem_k: int) -> int:\n            if i > j:\n                return 0\n            if i == j:\n                return 1\n            state = (i, j, rem_k)\n            if state in memo:\n                return memo[state]\n            res = max(dfs(i + 1, j, rem_k), dfs(i, j - 1, rem_k))\n            diff = abs(ord(s[i]) - ord(s[j]))\n            cost = min(diff, 26 - diff)\n            if rem_k >= cost:\n                res = max(res, 2 + dfs(i + 1, j - 1, rem_k - cost))\n            memo[state] = res\n            return res\n\n        return dfs(0, len(s) - 1, k)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <algorithm>\n#include <cmath>\n#include <cstring>\n\nusing namespace std;\n\nclass Solution {\n    int memo[205][205][205];\n    string str;\n\n    int dfs(int i, int j, int remK) {\n        if (i > j) return 0;\n        if (i == j) return 1;\n        if (memo[i][j][remK] != -1) return memo[i][j][remK];\n\n        int res = max(dfs(i + 1, j, remK), dfs(i, j - 1, remK));\n        int diff = abs(str[i] - str[j]);\n        int cost = min(diff, 26 - diff);\n        if (remK >= cost) {\n            res = max(res, 2 + dfs(i + 1, j - 1, remK - cost));\n        }\n\n        return memo[i][j][remK] = res;\n    }\n\npublic:\n    int longestPalindromeSubsequence(string s, int k) {\n        str = s;\n        int n = s.size();\n        memset(memo, -1, sizeof(memo));\n        return dfs(0, n - 1, k);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    private int[][][] memo;\n    private String str;\n\n    private int dfs(int i, int j, int remK) {\n        if (i > j) return 0;\n        if (i == j) return 1;\n        if (memo[i][j][remK] != -1) return memo[i][j][remK];\n\n        int res = Math.max(dfs(i + 1, j, remK), dfs(i, j - 1, remK));\n        int diff = Math.abs(str.charAt(i) - str.charAt(j));\n        int cost = Math.min(diff, 26 - diff);\n        if (remK >= cost) {\n            res = Math.max(res, 2 + dfs(i + 1, j - 1, remK - cost));\n        }\n\n        return memo[i][j][remK] = res;\n    }\n\n    public int longestPalindromeSubsequence(String s, int k) {\n        str = s;\n        int n = s.length();\n        memo = new int[n][n][k + 1];\n        for (int[][] mat : memo) {\n            for (int[] row : mat) {\n                Arrays.fill(row, -1);\n            }\n        }\n        return dfs(0, n - 1, k);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {string} s\n * @param {number} k\n * @return {number}\n */\nvar longestPalindromeSubsequence = function(s, k) {\n    const n = s.length;\n    const memo = new Map();\n\n    function dfs(i, j, remK) {\n        if (i > j) return 0;\n        if (i === j) return 1;\n        const key = `${i},${j},${remK}`;\n        if (memo.has(key)) return memo.get(key);\n\n        let res = Math.max(dfs(i + 1, j, remK), dfs(i, j - 1, remK));\n        const diff = Math.abs(s.charCodeAt(i) - s.charCodeAt(j));\n        const cost = Math.min(diff, 26 - diff);\n        if (remK >= cost) {\n            res = Math.max(res, 2 + dfs(i + 1, j - 1, remK - cost));\n        }\n\n        memo.set(key, res);\n        return res;\n    }\n\n    return dfs(0, n - 1, k);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

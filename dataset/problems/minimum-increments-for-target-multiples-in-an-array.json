@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-increments-for-target-multiples-in-an-array",
+  "number": 3444,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bitmask State of Satisfied Multiples",
+      "text": "Notice that target has length at most 4, enabling a bitmask of up to 16 states."
+    },
+    {
+      "level": 2,
+      "title": "Subset Least Common Multiples",
+      "text": "Precompute the least common multiple for every non-empty subset of target elements."
+    },
+    {
+      "level": 3,
+      "title": "Knapsack Bitwise Transitions",
+      "text": "For each array element, evaluate increments required to achieve the multiple for every subset and transition DP states."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport math\n\nclass Solution:\n    def minimumIncrements(self, nums: list[int], target: list[int]) -> int:\n        m = len(target)\n        max_mask = 1 << m\n        \n        subset_lcm = {}\n        for mask in range(1, max_mask):\n            l = 1\n            for i in range(m):\n                if (mask >> i) & 1:\n                    l = math.lcm(l, target[i])\n            subset_lcm[mask] = l\n            \n        dp = [float(\"inf\")] * max_mask\n        dp[0] = 0\n        \n        for x in nums:\n            next_dp = list(dp)\n            for mask in range(max_mask):\n                if dp[mask] == float(\"inf\"):\n                    continue\n                for submask, lcm_val in subset_lcm.items():\n                    rem = x % lcm_val\n                    cost = 0 if rem == 0 else lcm_val - rem\n                    new_mask = mask | submask\n                    if dp[mask] + cost < next_dp[new_mask]:\n                        next_dp[new_mask] = dp[mask] + cost\n            dp = next_dp\n            \n        return dp[max_mask - 1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(2^m * n)",
+    "space": "O(2^m)",
+    "variables": [
+      "n: length of array nums",
+      "m: length of target array (<= 4)"
+    ],
+    "notes": "Transitions through 16 bitmask states per element with precomputed subset least common multiples.",
+    "whyNaiveFails": "Independently matching elements ignores shared common multiples that satisfy multiple targets simultaneously.",
+    "spaceTimeTradeoff": "Bitmask DP array has fixed size 16.",
+    "interviewerExpectation": "Combines number theory least common multiples with bitmask dynamic programming."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import math\n\nclass Solution:\n    def minimumIncrements(self, nums: list[int], target: list[int]) -> int:\n        m = len(target)\n        max_mask = 1 << m\n        \n        subset_lcm = {}\n        for mask in range(1, max_mask):\n            l = 1\n            for i in range(m):\n                if (mask >> i) & 1:\n                    l = math.lcm(l, target[i])\n            subset_lcm[mask] = l\n            \n        dp = [float(\"inf\")] * max_mask\n        dp[0] = 0\n        \n        for x in nums:\n            next_dp = list(dp)\n            for mask in range(max_mask):\n                if dp[mask] == float(\"inf\"):\n                    continue\n                for submask, lcm_val in subset_lcm.items():\n                    rem = x % lcm_val\n                    cost = 0 if rem == 0 else lcm_val - rem\n                    new_mask = mask | submask\n                    if dp[mask] + cost < next_dp[new_mask]:\n                        next_dp[new_mask] = dp[mask] + cost\n            dp = next_dp\n            \n        return dp[max_mask - 1]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <numeric>\n#include <algorithm>\n\nclass Solution {\n    long long lcm(long long a, long long b) {\n        return (a / std::gcd(a, b)) * b;\n    }\npublic:\n    int minimumIncrements(std::vector<int>& nums, std::vector<int>& target) {\n        int m = target.size();\n        int max_mask = 1 << m;\n        \n        std::vector<long long> subset_lcm(max_mask, 1);\n        for (int mask = 1; mask < max_mask; ++mask) {\n            long long l = 1;\n            for (int i = 0; i < m; ++i) {\n                if ((mask >> i) & 1) l = lcm(l, target[i]);\n            }\n            subset_lcm[mask] = l;\n        }\n        \n        const long long INF = 1e18;\n        std::vector<long long> dp(max_mask, INF);\n        dp[0] = 0;\n        \n        for (int x : nums) {\n            std::vector<long long> next_dp = dp;\n            for (int mask = 0; mask < max_mask; ++mask) {\n                if (dp[mask] == INF) continue;\n                for (int submask = 1; submask < max_mask; ++submask) {\n                    long long lcm_val = subset_lcm[submask];\n                    long long rem = x % lcm_val;\n                    long long cost = (rem == 0) ? 0 : lcm_val - rem;\n                    int new_mask = mask | submask;\n                    next_dp[new_mask] = std::min(next_dp[new_mask], dp[mask] + cost);\n                }\n            }\n            dp = next_dp;\n        }\n        return (int)dp[max_mask - 1];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    private long gcd(long a, long b) {\n        while (b != 0) {\n            long temp = b;\n            b = a % b;\n            a = temp;\n        }\n        return a;\n    }\n    \n    private long lcm(long a, long b) {\n        return (a / gcd(a, b)) * b;\n    }\n    \n    public int minimumIncrements(int[] nums, int[] target) {\n        int m = target.length;\n        int maxMask = 1 << m;\n        \n        long[] subsetLcm = new long[maxMask];\n        for (int mask = 1; mask < maxMask; mask++) {\n            long l = 1;\n            for (int i = 0; i < m; i++) {\n                if (((mask >> i) & 1) == 1) l = lcm(l, target[i]);\n            }\n            subsetLcm[mask] = l;\n        }\n        \n        long INF = (long)1e18;\n        long[] dp = new long[maxMask];\n        Arrays.fill(dp, INF);\n        dp[0] = 0;\n        \n        for (int x : nums) {\n            long[] nextDp = dp.clone();\n            for (int mask = 0; mask < maxMask; mask++) {\n                if (dp[mask] == INF) continue;\n                for (int submask = 1; submask < maxMask; submask++) {\n                    long lcmVal = subsetLcm[submask];\n                    long rem = x % lcmVal;\n                    long cost = (rem == 0) ? 0 : lcmVal - rem;\n                    int newMask = mask | submask;\n                    nextDp[newMask] = Math.min(nextDp[newMask], dp[mask] + cost);\n                }\n            }\n            dp = nextDp;\n        }\n        return (int)dp[maxMask - 1];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minimumIncrements = function(nums, target) {\n    const m = target.length;\n    const maxMask = 1 << m;\n    \n    function gcd(a, b) {\n        while (b !== 0n) {\n            const temp = b;\n            b = a % b;\n            a = temp;\n        }\n        return a;\n    }\n    \n    function lcm(a, b) {\n        return (a / gcd(a, b)) * b;\n    }\n    \n    const subsetLcm = new Array(maxMask).fill(1n);\n    for (let mask = 1; mask < maxMask; mask++) {\n        let l = 1n;\n        for (let i = 0; i < m; i++) {\n            if ((mask >> i) & 1) l = lcm(l, BigInt(target[i]));\n        }\n        subsetLcm[mask] = l;\n    }\n    \n    const INF = 1e18;\n    let dp = new Float64Array(maxMask).fill(INF);\n    dp[0] = 0;\n    \n    for (const x of nums) {\n        const nextDp = new Float64Array(dp);\n        const bx = BigInt(x);\n        for (let mask = 0; mask < maxMask; mask++) {\n            if (dp[mask] === INF) continue;\n            for (let submask = 1; submask < maxMask; submask++) {\n                const lcmVal = subsetLcm[submask];\n                const rem = Number(bx % lcmVal);\n                const cost = (rem === 0) ? 0 : Number(lcmVal) - rem;\n                const newMask = mask | submask;\n                if (dp[mask] + cost < nextDp[newMask]) {\n                    nextDp[newMask] = dp[mask] + cost;\n                }\n            }\n        }\n        dp = nextDp;\n    }\n    return dp[maxMask - 1];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

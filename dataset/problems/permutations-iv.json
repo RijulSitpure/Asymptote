@@ -1,0 +1,78 @@
+{
+  "slug": "permutations-iv",
+  "number": 3470,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Alternating Parity Invariant",
+      "text": "An alternating permutation requires adjacent numbers to have differing parity."
+    },
+    {
+      "level": 2,
+      "title": "Greedy Lexicographical Search",
+      "text": "Determine available candidate numbers position by position in ascending order to construct the lexicographical kth permutation."
+    },
+    {
+      "level": 3,
+      "title": "Factorial Counting and Clamping",
+      "text": "For each candidate, compute the number of valid alternating completions using factorials clamped to avoid overflow. Decrement k when skipping candidate blocks."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport math\n\nclass Solution:\n    def permute(self, n: int, k: int) -> list[int]:\n        odds = [i for i in range(1, n + 1) if i % 2 == 1]\n        evens = [i for i in range(1, n + 1) if i % 2 == 0]\n\n        def count_ways(num_need: int, num_other: int) -> int:\n            if num_need == num_other or num_need == num_other + 1:\n                return math.factorial(num_need) * math.factorial(num_other)\n            return 0\n\n        total_odd_start = count_ways(len(odds), len(evens))\n        total_even_start = count_ways(len(evens), len(odds))\n        if k > total_odd_start + total_even_start:\n            return []\n\n        ans = []\n        last_parity = -1\n        for _ in range(n):\n            candidates = []\n            if last_parity != 1:\n                candidates.extend(odds)\n            if last_parity != 0:\n                candidates.extend(evens)\n            candidates.sort()\n\n            placed = False\n            for c in candidates:\n                c_parity = c % 2\n                if c_parity == 1:\n                    ways = count_ways(len(evens), len(odds) - 1)\n                else:\n                    ways = count_ways(len(odds), len(evens) - 1)\n\n                if k <= ways:\n                    ans.append(c)\n                    if c_parity == 1:\n                        odds.remove(c)\n                    else:\n                        evens.remove(c)\n                    last_parity = c_parity\n                    placed = True\n                    break\n                else:\n                    k -= ways\n            if not placed:\n                return []\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of elements to permute"
+    ],
+    "notes": "Greedily builds permutation position by position using factorial counting with parity checks.",
+    "whyNaiveFails": "Generating all alternating permutations using backtracking times out for n > 12.",
+    "spaceTimeTradeoff": "Factorial counting avoids visiting branches outside the target index range.",
+    "interviewerExpectation": "Construct the permutation greedily using the factorial number system with parity balance checks."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import math\n\nclass Solution:\n    def permute(self, n: int, k: int) -> list[int]:\n        odds = [i for i in range(1, n + 1) if i % 2 == 1]\n        evens = [i for i in range(1, n + 1) if i % 2 == 0]\n\n        def count_ways(num_need: int, num_other: int) -> int:\n            if num_need == num_other or num_need == num_other + 1:\n                return math.factorial(num_need) * math.factorial(num_other)\n            return 0\n\n        total_odd_start = count_ways(len(odds), len(evens))\n        total_even_start = count_ways(len(evens), len(odds))\n        if k > total_odd_start + total_even_start:\n            return []\n\n        ans = []\n        last_parity = -1\n        for _ in range(n):\n            candidates = []\n            if last_parity != 1:\n                candidates.extend(odds)\n            if last_parity != 0:\n                candidates.extend(evens)\n            candidates.sort()\n\n            placed = False\n            for c in candidates:\n                c_parity = c % 2\n                if c_parity == 1:\n                    ways = count_ways(len(evens), len(odds) - 1)\n                else:\n                    ways = count_ways(len(odds), len(evens) - 1)\n\n                if k <= ways:\n                    ans.append(c)\n                    if c_parity == 1:\n                        odds.remove(c)\n                    else:\n                        evens.remove(c)\n                    last_parity = c_parity\n                    placed = True\n                    break\n                else:\n                    k -= ways\n            if not placed:\n                return []\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\n    long long countWays(int numNeed, int numOther) {\n        if (numNeed != numOther && numNeed != numOther + 1) return 0;\n        const long long INF = 2e18;\n        long long res = 1;\n        for (int i = 1; i <= numNeed; i++) {\n            if (res > INF / i) return INF;\n            res *= i;\n        }\n        for (int i = 1; i <= numOther; i++) {\n            if (res > INF / i) return INF;\n            res *= i;\n        }\n        return res;\n    }\n\npublic:\n    vector<int> permute(int n, long long k) {\n        vector<int> odds, evens;\n        for (int i = 1; i <= n; i++) {\n            if (i % 2 == 1) odds.push_back(i);\n            else evens.push_back(i);\n        }\n\n        long long totalOddStart = countWays(odds.size(), evens.size());\n        long long totalEvenStart = countWays(evens.size(), odds.size());\n        if (k > totalOddStart + totalEvenStart) return {};\n\n        vector<int> ans;\n        int lastParity = -1;\n\n        for (int step = 0; step < n; step++) {\n            vector<int> candidates;\n            if (lastParity != 1) candidates.insert(candidates.end(), odds.begin(), odds.end());\n            if (lastParity != 0) candidates.insert(candidates.end(), evens.begin(), evens.end());\n            sort(candidates.begin(), candidates.end());\n\n            bool placed = false;\n            for (int c : candidates) {\n                int cParity = c % 2;\n                long long ways = (cParity == 1) ? countWays(evens.size(), odds.size() - 1)\n                                                : countWays(odds.size(), evens.size() - 1);\n                if (k <= ways) {\n                    ans.push_back(c);\n                    if (cParity == 1) {\n                        odds.erase(find(odds.begin(), odds.end(), c));\n                    } else {\n                        evens.erase(find(evens.begin(), evens.end(), c));\n                    }\n                    lastParity = cParity;\n                    placed = true;\n                    break;\n                } else {\n                    k -= ways;\n                }\n            }\n            if (!placed) return {};\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Solution {\n    private long countWays(int numNeed, int numOther) {\n        if (numNeed != numOther && numNeed != numOther + 1) return 0;\n        final long INF = (long) 2e18;\n        long res = 1;\n        for (int i = 1; i <= numNeed; i++) {\n            if (res > INF / i) return INF;\n            res *= i;\n        }\n        for (int i = 1; i <= numOther; i++) {\n            if (res > INF / i) return INF;\n            res *= i;\n        }\n        return res;\n    }\n\n    public int[] permute(int n, long k) {\n        List<Integer> odds = new ArrayList<>();\n        List<Integer> evens = new ArrayList<>();\n        for (int i = 1; i <= n; i++) {\n            if (i % 2 == 1) odds.add(i);\n            else evens.add(i);\n        }\n\n        long totalOddStart = countWays(odds.size(), evens.size());\n        long totalEvenStart = countWays(evens.size(), odds.size());\n        if (k > totalOddStart + totalEvenStart) return new int[0];\n\n        int[] ans = new int[n];\n        int lastParity = -1;\n\n        for (int step = 0; step < n; step++) {\n            List<Integer> candidates = new ArrayList<>();\n            if (lastParity != 1) candidates.addAll(odds);\n            if (lastParity != 0) candidates.addAll(evens);\n            Collections.sort(candidates);\n\n            boolean placed = false;\n            for (int c : candidates) {\n                int cParity = c % 2;\n                long ways = (cParity == 1) ? countWays(evens.size(), odds.size() - 1)\n                                           : countWays(odds.size(), evens.size() - 1);\n                if (k <= ways) {\n                    ans[step] = c;\n                    if (cParity == 1) {\n                        odds.remove(Integer.valueOf(c));\n                    } else {\n                        evens.remove(Integer.valueOf(c));\n                    }\n                    lastParity = cParity;\n                    placed = true;\n                    break;\n                } else {\n                    k -= ways;\n                }\n            }\n            if (!placed) return new int[0];\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number} k\n * @return {number[]}\n */\nvar permute = function(n, k) {\n    let kBig = BigInt(k);\n    const odds = [];\n    const evens = [];\n    for (let i = 1; i <= n; i++) {\n        if (i % 2 === 1) odds.push(i);\n        else evens.push(i);\n    }\n\n    function countWays(numNeed, numOther) {\n        if (numNeed !== numOther && numNeed !== numOther + 1) return 0n;\n        let res = 1n;\n        for (let i = 1; i <= numNeed; i++) res *= BigInt(i);\n        for (let i = 1; i <= numOther; i++) res *= BigInt(i);\n        return res;\n    }\n\n    const totalOdd = countWays(odds.length, evens.length);\n    const totalEven = countWays(evens.length, odds.length);\n    if (kBig > totalOdd + totalEven) return [];\n\n    const ans = [];\n    let lastParity = -1;\n\n    for (let step = 0; step < n; step++) {\n        const candidates = [];\n        if (lastParity !== 1) candidates.push(...odds);\n        if (lastParity !== 0) candidates.push(...evens);\n        candidates.sort((a, b) => a - b);\n\n        let placed = false;\n        for (const c of candidates) {\n            const cParity = c % 2;\n            const ways = (cParity === 1) ? countWays(evens.length, odds.length - 1)\n                                         : countWays(odds.length, evens.length - 1);\n            if (kBig <= ways) {\n                ans.push(c);\n                if (cParity === 1) {\n                    odds.splice(odds.indexOf(c), 1);\n                } else {\n                    evens.splice(evens.indexOf(c), 1);\n                }\n                lastParity = cParity;\n                placed = true;\n                break;\n            } else {\n                kBig -= ways;\n            }\n        }\n        if (!placed) return [];\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}
