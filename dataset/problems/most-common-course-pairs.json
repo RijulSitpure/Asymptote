@@ -1,0 +1,72 @@
+{
+  "slug": "most-common-course-pairs",
+  "number": 3764,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Self-Joining Course Enrollments",
+      "text": "Join the enrollments table to itself on student identifier with the condition that course1 is strictly less than course2."
+    },
+    {
+      "level": 2,
+      "title": "Aggregate by Pair",
+      "text": "Group by course1_id and course2_id and count distinct student occurrences."
+    },
+    {
+      "level": 3,
+      "title": "Rank by Maximum Frequency",
+      "text": "Use a window ranking function or subquery to select all pairs tied for the maximum count."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```sql\nWITH PairCounts AS (\n    SELECT \n        e1.course_id AS course1_id,\n        e2.course_id AS course2_id,\n        COUNT(DISTINCT e1.student_id) AS pair_count\n    FROM Enrollments e1\n    JOIN Enrollments e2 \n      ON e1.student_id = e2.student_id \n     AND e1.course_id < e2.course_id\n    GROUP BY e1.course_id, e2.course_id\n),\nRanked AS (\n    SELECT \n        course1_id,\n        course2_id,\n        pair_count,\n        DENSE_RANK() OVER (ORDER BY pair_count DESC) AS rnk\n    FROM PairCounts\n)\nSELECT \n    course1_id,\n    course2_id,\n    pair_count\nFROM Ranked\nWHERE rnk = 1\nORDER BY course1_id ASC, course2_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * k)",
+    "space": "O(m * k)",
+    "variables": [
+      "m",
+      "k"
+    ],
+    "notes": "Here m is the number of enrollments and k is the average number of courses per student.",
+    "whyNaiveFails": "A cross join without self-joining on matching student IDs produces an infeasible Cartesian product.",
+    "spaceTimeTradeoff": "Materializing the pair counts in a CTE simplifies dense ranking for ties.",
+    "interviewerExpectation": "Expects understanding of self-joins with ordering filter e1.course_id < e2.course_id and handling ties using DENSE_RANK."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH PairCounts AS (\n    SELECT \n        e1.course_id AS course1_id,\n        e2.course_id AS course2_id,\n        COUNT(DISTINCT e1.student_id) AS pair_count\n    FROM Enrollments e1\n    JOIN Enrollments e2 \n      ON e1.student_id = e2.student_id \n     AND e1.course_id < e2.course_id\n    GROUP BY e1.course_id, e2.course_id\n),\nRanked AS (\n    SELECT \n        course1_id,\n        course2_id,\n        pair_count,\n        DENSE_RANK() OVER (ORDER BY pair_count DESC) AS rnk\n    FROM PairCounts\n)\nSELECT \n    course1_id,\n    course2_id,\n    pair_count\nFROM Ranked\nWHERE rnk = 1\nORDER BY course1_id ASC, course2_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH PairCounts AS (\n    SELECT \n        e1.course_id AS course1_id,\n        e2.course_id AS course2_id,\n        COUNT(DISTINCT e1.student_id) AS pair_count\n    FROM Enrollments e1\n    JOIN Enrollments e2 \n      ON e1.student_id = e2.student_id \n     AND e1.course_id < e2.course_id\n    GROUP BY e1.course_id, e2.course_id\n),\nRanked AS (\n    SELECT \n        course1_id,\n        course2_id,\n        pair_count,\n        DENSE_RANK() OVER (ORDER BY pair_count DESC) AS rnk\n    FROM PairCounts\n)\nSELECT \n    course1_id,\n    course2_id,\n    pair_count\nFROM Ranked\nWHERE rnk = 1\nORDER BY course1_id ASC, course2_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef most_common_course_pairs(enrollments: pd.DataFrame) -> pd.DataFrame:\n    merged = enrollments.merge(enrollments, on='student_id', suffixes=('_1', '_2'))\n    pairs = merged[merged['course_id_1'] < merged['course_id_2']]\n    grouped = pairs.groupby(['course_id_1', 'course_id_2'])['student_id'].nunique().reset_index()\n    grouped.columns = ['course1_id', 'course2_id', 'pair_count']\n    if grouped.empty:\n        return pd.DataFrame(columns=['course1_id', 'course2_id', 'pair_count'])\n    max_count = grouped['pair_count'].max()\n    res = grouped[grouped['pair_count'] == max_count]\n    return res.sort_values(by=['course1_id', 'course2_id'])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

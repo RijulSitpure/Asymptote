@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-balanced-integers-in-a-range",
+  "number": 3791,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Digit DP State Formulation",
+      "text": "Count balanced integers <= N using digit state tracking tracking position, difference between even and odd sums, and tight constraint."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Subtraction",
+      "text": "Answer for range [low, high] equals count(high) - count(low - 1)."
+    },
+    {
+      "level": 3,
+      "title": "Alternating Parity Sign",
+      "text": "In each step, add digit to difference if position is even, subtract if odd. Valid numbers have final difference 0."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def countBalanced(self, low: str, high: str) -> int:\n        MOD = 1_000_000_007\n        \n        def count_up_to(s: str) -> int:\n            memo = {}\n            def dfs(i: int, diff: int, is_tight: bool, started: bool) -> int:\n                if i == len(s):\n                    return 1 if started and diff == 0 else 0\n                state = (i, diff, is_tight, started)\n                if state in memo:\n                    return memo[state]\n                \n                limit = int(s[i]) if is_tight else 9\n                res = 0\n                for d in range(limit + 1):\n                    next_tight = is_tight and (d == limit)\n                    if not started and d == 0:\n                        res = (res + dfs(i + 1, diff, next_tight, False)) % MOD\n                    else:\n                        new_diff = diff + d if i % 2 == 0 else diff - d\n                        res = (res + dfs(i + 1, new_diff, next_tight, True)) % MOD\n                memo[state] = res\n                return res\n            return dfs(0, 0, True, False)\n        \n        ans = (count_up_to(high) - count_up_to(str(int(low) - 1))) % MOD\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(L * D)",
+    "space": "O(L * D)",
+    "variables": [
+      "L",
+      "D"
+    ],
+    "notes": "Here L is the number of digits and D is the maximum digit sum difference.",
+    "whyNaiveFails": "Enumerating every number in range takes up to O(high - low) time which is prohibitive.",
+    "spaceTimeTradeoff": "Digit DP memoization table uses O(L * D) space.",
+    "interviewerExpectation": "Expects standard digit DP with tight bounds and leading zero handling."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def countBalanced(self, low: str, high: str) -> int:\n        MOD = 1_000_000_007\n        \n        def count_up_to(s: str) -> int:\n            memo = {}\n            def dfs(i: int, diff: int, is_tight: bool, started: bool) -> int:\n                if i == len(s):\n                    return 1 if started and diff == 0 else 0\n                state = (i, diff, is_tight, started)\n                if state in memo:\n                    return memo[state]\n                \n                limit = int(s[i]) if is_tight else 9\n                res = 0\n                for d in range(limit + 1):\n                    next_tight = is_tight and (d == limit)\n                    if not started and d == 0:\n                        res = (res + dfs(i + 1, diff, next_tight, False)) % MOD\n                    else:\n                        new_diff = diff + d if i % 2 == 0 else diff - d\n                        res = (res + dfs(i + 1, new_diff, next_tight, True)) % MOD\n                memo[state] = res\n                return res\n            return dfs(0, 0, True, False)\n        \n        ans = (count_up_to(high) - count_up_to(str(int(low) - 1))) % MOD\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <map>\n#include <tuple>\nusing namespace std;\n\nclass Solution {\npublic:\n    int countBalanced(string low, string high) {\n        const int MOD = 1000000007;\n        auto countUpTo = [&](const string& s) -> int {\n            map<tuple<int, int, bool, bool>, int> memo;\n            auto dfs = [&](auto& self, int i, int diff, bool is_tight, bool started) -> int {\n                if (i == (int)s.size()) return (started && diff == 0) ? 1 : 0;\n                auto key = make_tuple(i, diff, is_tight, started);\n                if (memo.count(key)) return memo[key];\n                int limit = is_tight ? (s[i] - '0') : 9;\n                int res = 0;\n                for (int d = 0; d <= limit; d++) {\n                    bool next_tight = is_tight && (d == limit);\n                    if (!started && d == 0) {\n                        res = (res + self(self, i + 1, diff, next_tight, false)) % MOD;\n                    } else {\n                        int next_diff = (i % 2 == 0) ? diff + d : diff - d;\n                        res = (res + self(self, i + 1, next_diff, next_tight, true)) % MOD;\n                    }\n                }\n                return memo[key] = res;\n            };\n            return dfs(dfs, 0, 0, true, false);\n        };\n        auto decStr = [](string s) -> string {\n            int n = s.size();\n            for (int i = n - 1; i >= 0; i--) {\n                if (s[i] > '0') {\n                    s[i]--;\n                    break;\n                }\n                s[i] = '9';\n            }\n            int start = 0;\n            while (start < n - 1 && s[start] == '0') start++;\n            return s.substr(start);\n        };\n        int highCount = countUpTo(high);\n        int lowCount = countUpTo(decStr(low));\n        return (highCount - lowCount + MOD) % MOD;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private static final int MOD = 1_000_000_007;\n\n    public int countBalanced(String low, String high) {\n        int highCount = countUpTo(high);\n        int lowCount = countUpTo(decrement(low));\n        return (highCount - lowCount + MOD) % MOD;\n    }\n\n    private int countUpTo(String s) {\n        Map<String, Integer> memo = new HashMap<>();\n        return dfs(s, 0, 0, true, false, memo);\n    }\n\n    private int dfs(String s, int i, int diff, boolean isTight, boolean started, Map<String, Integer> memo) {\n        if (i == s.length()) return (started && diff == 0) ? 1 : 0;\n        String key = i + \",\" + diff + \",\" + isTight + \",\" + started;\n        if (memo.containsKey(key)) return memo.get(key);\n        int limit = isTight ? (s.charAt(i) - '0') : 9;\n        int res = 0;\n        for (int d = 0; d <= limit; d++) {\n            boolean nextTight = isTight && (d == limit);\n            if (!started && d == 0) {\n                res = (res + dfs(s, i + 1, diff, nextTight, false, memo)) % MOD;\n            } else {\n                int nextDiff = (i % 2 == 0) ? diff + d : diff - d;\n                res = (res + dfs(s, i + 1, nextDiff, nextTight, true, memo)) % MOD;\n            }\n        }\n        memo.put(key, res);\n        return res;\n    }\n\n    private String decrement(String s) {\n        char[] arr = s.toCharArray();\n        for (int i = arr.length - 1; i >= 0; i--) {\n            if (arr[i] > '0') {\n                arr[i]--;\n                break;\n            }\n            arr[i] = '9';\n        }\n        int start = 0;\n        while (start < arr.length - 1 && arr[start] == '0') start++;\n        return new String(arr, start, arr.length - start);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countBalanced = function(low, high) {\n    const MOD = 1000000007;\n    function countUpTo(s) {\n        const memo = new Map();\n        function dfs(i, diff, isTight, started) {\n            if (i === s.length) return started && diff === 0 ? 1 : 0;\n            const key = `${i},${diff},${isTight},${started}`;\n            if (memo.has(key)) return memo.get(key);\n            const limit = isTight ? parseInt(s[i], 10) : 9;\n            let res = 0;\n            for (let d = 0; d <= limit; d++) {\n                const nextTight = isTight && d === limit;\n                if (!started && d === 0) {\n                    res = (res + dfs(i + 1, diff, nextTight, false)) % MOD;\n                } else {\n                    const nextDiff = i % 2 === 0 ? diff + d : diff - d;\n                    res = (res + dfs(i + 1, nextDiff, nextTight, true)) % MOD;\n                }\n            }\n            memo.set(key, res);\n            return res;\n        }\n        return dfs(0, 0, true, false);\n    }\n    const decLow = String(BigInt(low) - 1n);\n    const highCount = countUpTo(high);\n    const lowCount = countUpTo(decLow);\n    return (highCount - lowCount + MOD) % MOD;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

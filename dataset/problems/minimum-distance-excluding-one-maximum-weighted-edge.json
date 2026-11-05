@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-distance-excluding-one-maximum-weighted-edge",
+  "number": 3778,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Expanded State Structural Analysis",
+      "text": "Track the shortest distance to each node using a state that indicates whether the free edge discount has already been used."
+    },
+    {
+      "level": 2,
+      "title": "Two State Levels",
+      "text": "For each node u, maintain dist[u][0] (no edge discounted yet) and dist[u][1] (one edge discounted)."
+    },
+    {
+      "level": 3,
+      "title": "Priority Queue Relaxation",
+      "text": "From state (d, u, 0), relax neighbor v with weight w to (d + w, v, 0) or to (d, v, 1) by waiving weight w."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def minDistanceExcludingMaxEdge(self, n: int, edges: list[list[int]]) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n        \n        dist = [[float('inf')] * 2 for _ in range(n)]\n        dist[0][0] = 0\n        pq = [(0, 0, 0)]\n        \n        while pq:\n            d, u, used = heapq.heappop(pq)\n            if d > dist[u][used]:\n                continue\n            if u == n - 1 and used == 1:\n                return d\n            \n            for v, w in adj[u]:\n                if d + w < dist[v][used]:\n                    dist[v][used] = d + w\n                    heapq.heappush(pq, (d + w, v, used))\n                if used == 0 and d < dist[v][1]:\n                    dist[v][1] = d\n                    heapq.heappush(pq, (d, v, 1))\n        \n        return min(dist[n - 1][0], dist[n - 1][1])\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((V + E) log V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V",
+      "E"
+    ],
+    "notes": "Here V is the number of vertices and E is the number of edges.",
+    "whyNaiveFails": "Running standard Dijkstra repeatedly while omitting every individual edge takes O(E * (V + E) log V).",
+    "spaceTimeTradeoff": "Expanding states to V * 2 takes minimal extra space and solves the problem in a single Dijkstra search.",
+    "interviewerExpectation": "Expects 2-layered graph representation or stateful Dijkstra."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\n\nclass Solution:\n    def minDistanceExcludingMaxEdge(self, n: int, edges: list[list[int]]) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n        \n        dist = [[float('inf')] * 2 for _ in range(n)]\n        dist[0][0] = 0\n        pq = [(0, 0, 0)]\n        \n        while pq:\n            d, u, used = heapq.heappop(pq)\n            if d > dist[u][used]:\n                continue\n            if u == n - 1 and used == 1:\n                return d\n            \n            for v, w in adj[u]:\n                if d + w < dist[v][used]:\n                    dist[v][used] = d + w\n                    heapq.heappush(pq, (d + w, v, used))\n                if used == 0 and d < dist[v][1]:\n                    dist[v][1] = d\n                    heapq.heappush(pq, (d, v, 1))\n        \n        return min(dist[n - 1][0], dist[n - 1][1])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <tuple>\n#include <climits>\nusing namespace std;\n\nclass Solution {\npublic:\n    int minDistanceExcludingMaxEdge(int n, vector<vector<int>>& edges) {\n        vector<vector<pair<int, int>>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            adj[e[1]].push_back({e[0], e[2]});\n        }\n        vector<vector<int>> dist(n, vector<int>(2, INT_MAX));\n        dist[0][0] = 0;\n        priority_queue<tuple<int, int, int>, vector<tuple<int, int, int>>, greater<>> pq;\n        pq.push({0, 0, 0});\n        while (!pq.empty()) {\n            auto [d, u, used] = pq.top();\n            pq.pop();\n            if (d > dist[u][used]) continue;\n            if (u == n - 1 && used == 1) return d;\n            for (auto [v, w] : adj[u]) {\n                if (d + w < dist[v][used]) {\n                    dist[v][used] = d + w;\n                    pq.push({d + w, v, used});\n                }\n                if (used == 0 && d < dist[v][1]) {\n                    dist[v][1] = d;\n                    pq.push({d, v, 1});\n                }\n            }\n        }\n        return min(dist[n - 1][0], dist[n - 1][1]);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minDistanceExcludingMaxEdge(int n, int[][] edges) {\n        List<List<int[]>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(new int[]{e[1], e[2]});\n            adj.get(e[1]).add(new int[]{e[0], e[2]});\n        }\n        int[][] dist = new int[n][2];\n        for (int[] row : dist) Arrays.fill(row, Integer.MAX_VALUE);\n        dist[0][0] = 0;\n        PriorityQueue<int[]> pq = new PriorityQueue<>(Comparator.comparingInt(a -> a[0]));\n        pq.offer(new int[]{0, 0, 0});\n        while (!pq.isEmpty()) {\n            int[] top = pq.poll();\n            int d = top[0], u = top[1], used = top[2];\n            if (d > dist[u][used]) continue;\n            if (u == n - 1 && used == 1) return d;\n            for (int[] edge : adj.get(u)) {\n                int v = edge[0], w = edge[1];\n                if (d + w < dist[v][used]) {\n                    dist[v][used] = d + w;\n                    pq.offer(new int[]{d + w, v, used});\n                }\n                if (used == 0 && d < dist[v][1]) {\n                    dist[v][1] = d;\n                    pq.offer(new int[]{d, v, 1});\n                }\n            }\n        }\n        return Math.min(dist[n - 1][0], dist[n - 1][1]);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minDistanceExcludingMaxEdge = function(n, edges) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        adj[u].push([v, w]);\n        adj[v].push([u, w]);\n    }\n    const dist = Array.from({ length: n }, () => [Infinity, Infinity]);\n    dist[0][0] = 0;\n    const pq = [[0, 0, 0]];\n    while (pq.length > 0) {\n        pq.sort((a, b) => a[0] - b[0]);\n        const [d, u, used] = pq.shift();\n        if (d > dist[u][used]) continue;\n        if (u === n - 1 && used === 1) return d;\n        for (const [v, w] of adj[u]) {\n            if (d + w < dist[v][used]) {\n                dist[v][used] = d + w;\n                pq.push([d + w, v, used]);\n            }\n            if (used === 0 && d < dist[v][1]) {\n                dist[v][1] = d;\n                pq.push([d, v, 1]);\n            }\n        }\n    }\n    return Math.min(dist[n - 1][0], dist[n - 1][1]);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

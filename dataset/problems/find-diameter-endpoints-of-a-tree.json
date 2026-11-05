@@ -1,0 +1,78 @@
+{
+  "slug": "find-diameter-endpoints-of-a-tree",
+  "number": 3787,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bfs-level-order"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Double Breadth-First Search",
+      "text": "Run a first breadth-first search from node 0 to find the farthest node u, then run a second search from u to find the farthest node v."
+    },
+    {
+      "level": 2,
+      "title": "Find All Diameter Pairs",
+      "text": "To handle ties for diameter endpoints and ensure lexicographical minimality, record distances from all diameter candidates."
+    },
+    {
+      "level": 3,
+      "title": "Sort Endpoints",
+      "text": "For the identified pair (u, v), ensure u <= v before returning [u, v]."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def findDiameterEndpoints(self, n: int, edges: list[list[int]]) -> list[int]:\n        if n == 1:\n            return [0, 0]\n        \n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        \n        def bfs(start: int) -> tuple[int, list[int]]:\n            dist = [-1] * n\n            dist[start] = 0\n            q = deque([start])\n            farthest = start\n            while q:\n                curr = q.popleft()\n                if dist[curr] > dist[farthest] or (dist[curr] == dist[farthest] and curr < farthest):\n                    farthest = curr\n                for nxt in adj[curr]:\n                    if dist[nxt] == -1:\n                        dist[nxt] = dist[curr] + 1\n                        q.append(nxt)\n            return farthest, dist\n        \n        u, _ = bfs(0)\n        v, _ = bfs(u)\n        return sorted([u, v])\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n"
+    ],
+    "notes": "Two BFS traversals visit every node and edge twice.",
+    "whyNaiveFails": "Running all-pairs shortest paths takes O(n^2) time.",
+    "spaceTimeTradeoff": "Distance array and queue take O(n) space.",
+    "interviewerExpectation": "Expects classic double-BFS tree diameter algorithm with linear time complexity."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import deque\n\nclass Solution:\n    def findDiameterEndpoints(self, n: int, edges: list[list[int]]) -> list[int]:\n        if n == 1:\n            return [0, 0]\n        \n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        \n        def bfs(start: int) -> tuple[int, list[int]]:\n            dist = [-1] * n\n            dist[start] = 0\n            q = deque([start])\n            farthest = start\n            while q:\n                curr = q.popleft()\n                if dist[curr] > dist[farthest] or (dist[curr] == dist[farthest] and curr < farthest):\n                    farthest = curr\n                for nxt in adj[curr]:\n                    if dist[nxt] == -1:\n                        dist[nxt] = dist[curr] + 1\n                        q.append(nxt)\n            return farthest, dist\n        \n        u, _ = bfs(0)\n        v, _ = bfs(u)\n        return sorted([u, v])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> findDiameterEndpoints(int n, vector<vector<int>>& edges) {\n        if (n == 1) return {0, 0};\n        vector<vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        auto bfs = [&](int start) -> pair<int, vector<int>> {\n            vector<int> dist(n, -1);\n            dist[start] = 0;\n            queue<int> q;\n            q.push(start);\n            int farthest = start;\n            while (!q.empty()) {\n                int curr = q.front();\n                q.pop();\n                if (dist[curr] > dist[farthest] || (dist[curr] == dist[farthest] && curr < farthest)) {\n                    farthest = curr;\n                }\n                for (int nxt : adj[curr]) {\n                    if (dist[nxt] == -1) {\n                        dist[nxt] = dist[curr] + 1;\n                        q.push(nxt);\n                    }\n                }\n            }\n            return {farthest, dist};\n        };\n        int u = bfs(0).first;\n        int v = bfs(u).first;\n        return {min(u, v), max(u, v)};\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] findDiameterEndpoints(int n, int[][] edges) {\n        if (n == 1) return new int[]{0, 0};\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        int u = bfs(0, n, adj);\n        int v = bfs(u, n, adj);\n        return new int[]{Math.min(u, v), Math.max(u, v)};\n    }\n\n    private int bfs(int start, int n, List<List<Integer>> adj) {\n        int[] dist = new int[n];\n        Arrays.fill(dist, -1);\n        dist[start] = 0;\n        Queue<Integer> q = new LinkedList<>();\n        q.offer(start);\n        int farthest = start;\n        while (!q.isEmpty()) {\n            int curr = q.poll();\n            if (dist[curr] > dist[farthest] || (dist[curr] == dist[farthest] && curr < farthest)) {\n                farthest = curr;\n            }\n            for (int nxt : adj.get(curr)) {\n                if (dist[nxt] == -1) {\n                    dist[nxt] = dist[curr] + 1;\n                    q.offer(nxt);\n                }\n            }\n        }\n        return farthest;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var findDiameterEndpoints = function(n, edges) {\n    if (n === 1) return [0, 0];\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    function bfs(start) {\n        const dist = new Array(n).fill(-1);\n        dist[start] = 0;\n        const q = [start];\n        let farthest = start;\n        while (q.length > 0) {\n            const curr = q.shift();\n            if (dist[curr] > dist[farthest] || (dist[curr] === dist[farthest] && curr < farthest)) {\n                farthest = curr;\n            }\n            for (const nxt of adj[curr]) {\n                if (dist[nxt] === -1) {\n                    dist[nxt] = dist[curr] + 1;\n                    q.push(nxt);\n                }\n            }\n        }\n        return farthest;\n    }\n    const u = bfs(0);\n    const v = bfs(u);\n    return [Math.min(u, v), Math.max(u, v)];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

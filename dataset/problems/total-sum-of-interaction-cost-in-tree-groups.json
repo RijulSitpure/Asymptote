@@ -1,0 +1,79 @@
+{
+  "slug": "total-sum-of-interaction-cost-in-tree-groups",
+  "number": 3786,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Edge Contribution by Group",
+      "text": "For any edge (u, v), removing it splits the structured search into two connected components T_u and T_v."
+    },
+    {
+      "level": 2,
+      "title": "Group Pair Multiplications",
+      "text": "For a fixed group g, if T_u contains c_g nodes of group g and the whole tree has total_g nodes of group g, then the edge separates c_g * (total_g - c_g) pairs in that group."
+    },
+    {
+      "level": 3,
+      "title": "Post-Order Tree Traversal",
+      "text": "Use a post-order tree DFS to count group members in each subtree, summing c_g * (total_g - c_g) across all groups and all edges."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import Counter, defaultdict\n\nclass Solution:\n    def totalInteractionCost(self, n: int, edges: list[list[int]], groups: list[int]) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        \n        total_counts = Counter(groups)\n        total_cost = 0\n        \n        def dfs(u: int, p: int) -> dict[int, int]:\n            nonlocal total_cost\n            sub_counts = defaultdict(int)\n            sub_counts[groups[u]] += 1\n            \n            for v in adj[u]:\n                if v != p:\n                    child_counts = dfs(v, u)\n                    for g, cnt in child_counts.items():\n                        total_cost += cnt * (total_counts[g] - cnt)\n                        sub_counts[g] += cnt\n            return sub_counts\n        \n        dfs(0, -1)\n        return total_cost\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * G)",
+    "space": "O(n * G)",
+    "variables": [
+      "n",
+      "G"
+    ],
+    "notes": "Here G is the number of distinct groups.",
+    "whyNaiveFails": "Computing all pairs shortest paths takes O(n^2) or O(n^3) time.",
+    "spaceTimeTradeoff": "Merges subtree frequency dictionaries during DFS.",
+    "interviewerExpectation": "Expects edge-centric contribution counting rather than path-centric counting."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import Counter, defaultdict\n\nclass Solution:\n    def totalInteractionCost(self, n: int, edges: list[list[int]], groups: list[int]) -> int:\n        adj = [[] for _ in range(n)]\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n        \n        total_counts = Counter(groups)\n        total_cost = 0\n        \n        def dfs(u: int, p: int) -> dict[int, int]:\n            nonlocal total_cost\n            sub_counts = defaultdict(int)\n            sub_counts[groups[u]] += 1\n            \n            for v in adj[u]:\n                if v != p:\n                    child_counts = dfs(v, u)\n                    for g, cnt in child_counts.items():\n                        total_cost += cnt * (total_counts[g] - cnt)\n                        sub_counts[g] += cnt\n            return sub_counts\n        \n        dfs(0, -1)\n        return total_cost",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\nusing namespace std;\n\nclass Solution {\npublic:\n    int totalInteractionCost(int n, vector<vector<int>>& edges, vector<int>& groups) {\n        vector<vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        unordered_map<int, int> total_counts;\n        for (int g : groups) total_counts[g]++;\n        int total_cost = 0;\n        auto dfs = [&](auto& self, int u, int p) -> unordered_map<int, int> {\n            unordered_map<int, int> sub_counts;\n            sub_counts[groups[u]] = 1;\n            for (int v : adj[u]) {\n                if (v != p) {\n                    auto child_counts = self(self, v, u);\n                    for (auto [g, cnt] : child_counts) {\n                        total_cost += cnt * (total_counts[g] - cnt);\n                        sub_counts[g] += cnt;\n                    }\n                }\n            }\n            return sub_counts;\n        };\n        dfs(dfs, 0, -1);\n        return total_cost;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int totalCost = 0;\n    private Map<Integer, Integer> totalCounts = new HashMap<>();\n\n    public int totalInteractionCost(int n, int[][] edges, int[] groups) {\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        totalCounts.clear();\n        for (int g : groups) totalCounts.put(g, totalCounts.getOrDefault(g, 0) + 1);\n        totalCost = 0;\n        dfs(0, -1, adj, groups);\n        return totalCost;\n    }\n\n    private Map<Integer, Integer> dfs(int u, int p, List<List<Integer>> adj, int[] groups) {\n        Map<Integer, Integer> subCounts = new HashMap<>();\n        subCounts.put(groups[u], 1);\n        for (int v : adj.get(u)) {\n            if (v != p) {\n                Map<Integer, Integer> childCounts = dfs(v, u, adj, groups);\n                for (var entry : childCounts.entrySet()) {\n                    int g = entry.getKey(), cnt = entry.getValue();\n                    totalCost += cnt * (totalCounts.get(g) - cnt);\n                    subCounts.put(g, subCounts.getOrDefault(g, 0) + cnt);\n                }\n            }\n        }\n        return subCounts;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var totalInteractionCost = function(n, edges, groups) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const totalCounts = new Map();\n    for (const g of groups) totalCounts.set(g, (totalCounts.get(g) || 0) + 1);\n    let totalCost = 0;\n    function dfs(u, p) {\n        const subCounts = new Map();\n        subCounts.set(groups[u], 1);\n        for (const v of adj[u]) {\n            if (v !== p) {\n                const childCounts = dfs(v, u);\n                for (const [g, cnt] of childCounts.entries()) {\n                    totalCost += cnt * (totalCounts.get(g) - cnt);\n                    subCounts.set(g, (subCounts.get(g) || 0) + cnt);\n                }\n            }\n        }\n        return subCounts;\n    }\n    dfs(0, -1);\n    return totalCost;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

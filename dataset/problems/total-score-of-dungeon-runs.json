@@ -1,0 +1,81 @@
+{
+  "slug": "total-score-of-dungeon-runs",
+  "number": 3771,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Simulation with State",
+      "text": "Track accumulated points and remaining health and shield at each room."
+    },
+    {
+      "level": 2,
+      "title": "Potion Boosts",
+      "text": "Use dynamic programming over (room_index, remaining_potions) to choose optimal room entries."
+    },
+    {
+      "level": 3,
+      "title": "State Transition",
+      "text": "At each room, either enter directly or consume a potion to boost health by hp_boost before absorbing damage."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def maxDungeonScore(self, damage: list[int], points: list[int], hp: int, shield: int, hp_boost: int, k: int) -> int:\n        memo = {}\n        n = len(damage)\n        \n        def dfs(i: int, cur_hp: int, cur_shield: int, rem_k: int) -> int:\n            if i == n:\n                return 0\n            state = (i, cur_hp, cur_shield, rem_k)\n            if state in memo:\n                return memo[state]\n            \n            res = 0\n            dmg = damage[i]\n            s_dmg = min(cur_shield, dmg)\n            h_dmg = dmg - s_dmg\n            if cur_hp - h_dmg > 0:\n                res = max(res, points[i] + dfs(i + 1, cur_hp - h_dmg, cur_shield - s_dmg, rem_k))\n            \n            if rem_k > 0:\n                boosted_hp = cur_hp + hp_boost\n                if boosted_hp - h_dmg > 0:\n                    res = max(res, points[i] + dfs(i + 1, boosted_hp - h_dmg, cur_shield - s_dmg, rem_k - 1))\n            \n            memo[state] = res\n            return res\n        \n        return dfs(0, hp, shield, k)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * k * H * S)",
+    "space": "O(n * k * H * S)",
+    "variables": [
+      "n",
+      "k",
+      "H",
+      "S"
+    ],
+    "notes": "Memoized states over room index, health, shield, and remaining potions.",
+    "whyNaiveFails": "Exploring all 2^n potion decisions without memoization causes exponential runtime.",
+    "spaceTimeTradeoff": "Memoization cache trades O(states) memory for polynomial search.",
+    "interviewerExpectation": "Expects clear recursive state transitions with memoization."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxDungeonScore(self, damage: list[int], points: list[int], hp: int, shield: int, hp_boost: int, k: int) -> int:\n        memo = {}\n        n = len(damage)\n        \n        def dfs(i: int, cur_hp: int, cur_shield: int, rem_k: int) -> int:\n            if i == n:\n                return 0\n            state = (i, cur_hp, cur_shield, rem_k)\n            if state in memo:\n                return memo[state]\n            \n            res = 0\n            dmg = damage[i]\n            s_dmg = min(cur_shield, dmg)\n            h_dmg = dmg - s_dmg\n            if cur_hp - h_dmg > 0:\n                res = max(res, points[i] + dfs(i + 1, cur_hp - h_dmg, cur_shield - s_dmg, rem_k))\n            \n            if rem_k > 0:\n                boosted_hp = cur_hp + hp_boost\n                if boosted_hp - h_dmg > 0:\n                    res = max(res, points[i] + dfs(i + 1, boosted_hp - h_dmg, cur_shield - s_dmg, rem_k - 1))\n            \n            memo[state] = res\n            return res\n        \n        return dfs(0, hp, shield, k)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n#include <map>\n#include <tuple>\nusing namespace std;\n\nclass Solution {\npublic:\n    int maxDungeonScore(vector<int>& damage, vector<int>& points, int hp, int shield, int hp_boost, int k) {\n        int n = damage.size();\n        map<tuple<int, int, int, int>, int> memo;\n        auto dfs = [&](auto& self, int i, int cur_hp, int cur_shield, int rem_k) -> int {\n            if (i == n) return 0;\n            auto key = make_tuple(i, cur_hp, cur_shield, rem_k);\n            if (memo.count(key)) return memo[key];\n            int res = 0;\n            int dmg = damage[i];\n            int s_dmg = min(cur_shield, dmg);\n            int h_dmg = dmg - s_dmg;\n            if (cur_hp - h_dmg > 0) {\n                res = max(res, points[i] + self(self, i + 1, cur_hp - h_dmg, cur_shield - s_dmg, rem_k));\n            }\n            if (rem_k > 0) {\n                int boosted = cur_hp + hp_boost;\n                if (boosted - h_dmg > 0) {\n                    res = max(res, points[i] + self(self, i + 1, boosted - h_dmg, cur_shield - s_dmg, rem_k - 1));\n                }\n            }\n            return memo[key] = res;\n        };\n        return dfs(dfs, 0, hp, shield, k);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private Map<String, Integer> memo = new HashMap<>();\n\n    public int maxDungeonScore(int[] damage, int[] points, int hp, int shield, int hp_boost, int k) {\n        memo.clear();\n        return dfs(damage, points, hp, shield, hp_boost, k, 0);\n    }\n\n    private int dfs(int[] damage, int[] points, int curHp, int curShield, int hpBoost, int remK, int i) {\n        if (i == damage.length) return 0;\n        String key = i + \",\" + curHp + \",\" + curShield + \",\" + remK;\n        if (memo.containsKey(key)) return memo.get(key);\n        int res = 0;\n        int dmg = damage[i];\n        int sDmg = Math.min(curShield, dmg);\n        int hDmg = dmg - sDmg;\n        if (curHp - hDmg > 0) {\n            res = Math.max(res, points[i] + dfs(damage, points, curHp - hDmg, curShield - sDmg, hpBoost, remK, i + 1));\n        }\n        if (remK > 0) {\n            int boosted = curHp + hpBoost;\n            if (boosted - hDmg > 0) {\n                res = Math.max(res, points[i] + dfs(damage, points, boosted - hDmg, curShield - sDmg, hpBoost, remK - 1, i + 1));\n            }\n        }\n        memo.put(key, res);\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxDungeonScore = function(damage, points, hp, shield, hp_boost, k) {\n    const memo = new Map();\n    const n = damage.length;\n    function dfs(i, curHp, curShield, remK) {\n        if (i === n) return 0;\n        const key = `${i},${curHp},${curShield},${remK}`;\n        if (memo.has(key)) return memo.get(key);\n        let res = 0;\n        const dmg = damage[i];\n        const sDmg = Math.min(curShield, dmg);\n        const hDmg = dmg - sDmg;\n        if (curHp - hDmg > 0) {\n            res = Math.max(res, points[i] + dfs(i + 1, curHp - hDmg, curShield - sDmg, remK));\n        }\n        if (remK > 0) {\n            const boosted = curHp + hp_boost;\n            if (boosted - hDmg > 0) {\n                res = Math.max(res, points[i] + dfs(i + 1, boosted - hDmg, curShield - sDmg, remK - 1));\n            }\n        }\n        memo.set(key, res);\n        return res;\n    }\n    return dfs(0, hp, shield, k);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
