@@ -1,0 +1,79 @@
+{
+  "slug": "maximize-sum-of-weights-after-edge-removals",
+  "number": 3367,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subtree State Formulation",
+      "text": "For each node, compute the best result if the edge to its parent is retained versus if the edge to its parent is removed."
+    },
+    {
+      "level": 2,
+      "title": "Marginal Gain Calculation",
+      "text": "For each child, compute the marginal gain of keeping the edge to that child compared to discarding it."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Child Selection",
+      "text": "Sort the positive marginal gains descendingly and select up to k edges (or k - 1 if the parent edge is kept)."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport sys\nsys.setrecursionlimit(300_000)\n\nclass Solution:\n    def maximizeSumOfWeights(self, edges: list[list[int]], k: int) -> int:\n        n = len(edges) + 1\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n            \n        def dfs(u: int, p: int) -> tuple[int, int]:\n            base_sum = 0\n            gains = []\n            for v, w in adj[u]:\n                if v == p:\n                    continue\n                v0, v1 = dfs(v, u)\n                base_sum += v0\n                gain = w + v1 - v0\n                if gain > 0:\n                    gains.append(gain)\n                    \n            gains.sort(reverse=True)\n            res0 = base_sum + sum(gains[:k])\n            res1 = base_sum + sum(gains[:max(0, k - 1)])\n            return res0, res1\n            \n        return dfs(0, -1)[0]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log(deg))",
+    "space": "O(n)",
+    "variables": [
+      "n: number of nodes in tree",
+      "deg: node degree"
+    ],
+    "notes": "Tree DP with greedy child edge selection based on marginal positive weight gains.",
+    "whyNaiveFails": "Checking all 2^(n-1) edge removal configurations is intractable.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for tree adjacency and DFS recursion stack.",
+    "interviewerExpectation": "Formulates tree DP state tracking whether the edge to the parent node is kept."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import sys\nsys.setrecursionlimit(300_000)\n\nclass Solution:\n    def maximizeSumOfWeights(self, edges: list[list[int]], k: int) -> int:\n        n = len(edges) + 1\n        adj = [[] for _ in range(n)]\n        for u, v, w in edges:\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n            \n        def dfs(u: int, p: int) -> tuple[int, int]:\n            base_sum = 0\n            gains = []\n            for v, w in adj[u]:\n                if v == p:\n                    continue\n                v0, v1 = dfs(v, u)\n                base_sum += v0\n                gain = w + v1 - v0\n                if gain > 0:\n                    gains.append(gain)\n                    \n            gains.sort(reverse=True)\n            res0 = base_sum + sum(gains[:k])\n            res1 = base_sum + sum(gains[:max(0, k - 1)])\n            return res0, res1\n            \n        return dfs(0, -1)[0]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    long long maximizeSumOfWeights(vector<vector<int>>& edges, int k) {\n        int n = edges.size() + 1;\n        vector<vector<pair<int, int>>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            adj[e[1]].push_back({e[0], e[2]});\n        }\n        \n        auto dfs = [&](auto& self, int u, int p) -> pair<long long, long long> {\n            long long baseSum = 0;\n            vector<long long> gains;\n            for (const auto& edge : adj[u]) {\n                int v = edge.first;\n                int w = edge.second;\n                if (v == p) continue;\n                auto [v0, v1] = self(self, v, u);\n                baseSum += v0;\n                long long gain = w + v1 - v0;\n                if (gain > 0) gains.push_back(gain);\n            }\n            sort(gains.rbegin(), gains.rend());\n            \n            long long res0 = baseSum;\n            for (int i = 0; i < min((int)gains.size(), k); ++i) res0 += gains[i];\n            \n            long long res1 = baseSum;\n            for (int i = 0; i < min((int)gains.size(), max(0, k - 1)); ++i) res1 += gains[i];\n            \n            return {res0, res1};\n        };\n        \n        return dfs(dfs, 0, -1).first;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public long maximizeSumOfWeights(int[][] edges, int k) {\n        int n = edges.length + 1;\n        List<int[]>[] adj = new ArrayList[n];\n        for (int i = 0; i < n; ++i) adj[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(new int[]{e[1], e[2]});\n            adj[e[1]].add(new int[]{e[0], e[2]});\n        }\n        return dfs(0, -1, adj, k)[0];\n    }\n    \n    private long[] dfs(int u, int p, List<int[]>[] adj, int k) {\n        long baseSum = 0;\n        List<Long> gains = new ArrayList<>();\n        for (int[] edge : adj[u]) {\n            int v = edge[0];\n            int w = edge[1];\n            if (v == p) continue;\n            long[] vRes = dfs(v, u, adj, k);\n            baseSum += vRes[0];\n            long gain = w + vRes[1] - vRes[0];\n            if (gain > 0) gains.add(gain);\n        }\n        Collections.sort(gains, Collections.reverseOrder());\n        \n        long res0 = baseSum;\n        for (int i = 0; i < Math.min(gains.size(), k); ++i) res0 += gains.get(i);\n        \n        long res1 = baseSum;\n        for (int i = 0; i < Math.min(gains.size(), Math.max(0, k - 1)); ++i) res1 += gains.get(i);\n        \n        return new long[]{res0, res1};\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maximizeSumOfWeights = function(edges, k) {\n    const n = edges.length + 1;\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        adj[u].push([v, w]);\n        adj[v].push([u, w]);\n    }\n    \n    const dfs = (u, p) => {\n        let baseSum = 0;\n        const gains = [];\n        for (const [v, w] of adj[u]) {\n            if (v === p) continue;\n            const [v0, v1] = dfs(v, u);\n            baseSum += v0;\n            const gain = w + v1 - v0;\n            if (gain > 0) gains.push(gain);\n        }\n        gains.sort((a, b) => b - a);\n        \n        let res0 = baseSum;\n        for (let i = 0; i < Math.min(gains.length, k); i++) res0 += gains[i];\n        \n        let res1 = baseSum;\n        for (let i = 0; i < Math.min(gains.length, Math.max(0, k - 1)); i++) res1 += gains[i];\n        \n        return [res0, res1];\n    };\n    \n    return dfs(0, -1)[0];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

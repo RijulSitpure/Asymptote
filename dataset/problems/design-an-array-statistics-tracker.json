@@ -1,0 +1,78 @@
+{
+  "slug": "design-an-array-statistics-tracker",
+  "number": 3369,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Composite Data Structures",
+      "text": "Track the original arrival order of elements for removals while independently recording values for middle and frequent occurrence queries."
+    },
+    {
+      "level": 2,
+      "title": "Median Access",
+      "text": "Keep all current elements in sorted order so median can be accessed at index n // 2."
+    },
+    {
+      "level": 3,
+      "title": "Lazy Mode Heap Maintenance",
+      "text": "Use a priority queue storing pairs of negative frequency and value, lazily discarding stale entries upon query."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport bisect\nfrom collections import deque, defaultdict\nimport heapq\n\nclass StatisticsTracker:\n    def __init__(self):\n        self.q = deque()\n        self.sorted_nums = []\n        self.total_sum = 0\n        self.freq = defaultdict(int)\n        self.mode_heap = []\n\n    def addNumber(self, number: int) -> None:\n        self.q.append(number)\n        bisect.insort(self.sorted_nums, number)\n        self.total_sum += number\n        self.freq[number] += 1\n        heapq.heappush(self.mode_heap, (-self.freq[number], number))\n\n    def removeFirstAddedNumber(self) -> None:\n        x = self.q.popleft()\n        idx = bisect.bisect_left(self.sorted_nums, x)\n        self.sorted_nums.pop(idx)\n        self.total_sum -= x\n        self.freq[x] -= 1\n        if self.freq[x] > 0:\n            heapq.heappush(self.mode_heap, (-self.freq[x], x))\n\n    def getMean(self) -> int:\n        return self.total_sum // len(self.q)\n\n    def getMedian(self) -> int:\n        return self.sorted_nums[len(self.sorted_nums) // 2]\n\n    def getMode(self) -> int:\n        while self.mode_heap:\n            neg_f, num = self.mode_heap[0]\n            if -neg_f == self.freq[num]:\n                return num\n            heapq.heappop(self.mode_heap)\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log n) for add/remove, O(1) for queries",
+    "space": "O(n)",
+    "variables": [
+      "n: current count of elements"
+    ],
+    "notes": "Maintains a FIFO queue, sorted array / bisect list, frequency hash map, and max-heap for mode.",
+    "whyNaiveFails": "Recalculating median or mode from scratch takes O(n log n) per query.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory stores elements across index and frequency structures.",
+    "interviewerExpectation": "Combines a queue, order-statistic collection, and frequency-tracking heap."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import bisect\nfrom collections import deque, defaultdict\nimport heapq\n\nclass StatisticsTracker:\n    def __init__(self):\n        self.q = deque()\n        self.sorted_nums = []\n        self.total_sum = 0\n        self.freq = defaultdict(int)\n        self.mode_heap = []\n\n    def addNumber(self, number: int) -> None:\n        self.q.append(number)\n        bisect.insort(self.sorted_nums, number)\n        self.total_sum += number\n        self.freq[number] += 1\n        heapq.heappush(self.mode_heap, (-self.freq[number], number))\n\n    def removeFirstAddedNumber(self) -> None:\n        x = self.q.popleft()\n        idx = bisect.bisect_left(self.sorted_nums, x)\n        self.sorted_nums.pop(idx)\n        self.total_sum -= x\n        self.freq[x] -= 1\n        if self.freq[x] > 0:\n            heapq.heappush(self.mode_heap, (-self.freq[x], x))\n\n    def getMean(self) -> int:\n        return self.total_sum // len(self.q)\n\n    def getMedian(self) -> int:\n        return self.sorted_nums[len(self.sorted_nums) // 2]\n\n    def getMode(self) -> int:\n        while self.mode_heap:\n            neg_f, num = self.mode_heap[0]\n            if -neg_f == self.freq[num]:\n                return num\n            heapq.heappop(self.mode_heap)\n        return -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class StatisticsTracker {\nprivate:\n    queue<int> q;\n    vector<int> sortedNums;\n    long long totalSum = 0;\n    unordered_map<int, int> freq;\n    priority_queue<pair<int, int>> modeHeap;\n\npublic:\n    StatisticsTracker() {}\n    \n    void addNumber(int number) {\n        q.push(number);\n        auto it = lower_bound(sortedNums.begin(), sortedNums.end(), number);\n        sortedNums.insert(it, number);\n        totalSum += number;\n        freq[number]++;\n        modeHeap.push({freq[number], -number});\n    }\n    \n    void removeFirstAddedNumber() {\n        int x = q.front();\n        q.pop();\n        auto it = lower_bound(sortedNums.begin(), sortedNums.end(), x);\n        sortedNums.erase(it);\n        totalSum -= x;\n        freq[x]--;\n        if (freq[x] > 0) {\n            modeHeap.push({freq[x], -x});\n        }\n    }\n    \n    int getMean() {\n        return totalSum / q.size();\n    }\n    \n    int getMedian() {\n        return sortedNums[sortedNums.size() / 2];\n    }\n    \n    int getMode() {\n        while (!modeHeap.empty()) {\n            auto [f, negNum] = modeHeap.top();\n            int num = -negNum;\n            if (f == freq[num]) return num;\n            modeHeap.pop();\n        }\n        return -1;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class StatisticsTracker {\n    private Queue<Integer> q;\n    private List<Integer> sortedNums;\n    private long totalSum = 0;\n    private Map<Integer, Integer> freq;\n    private PriorityQueue<int[]> modeHeap;\n\n    public StatisticsTracker() {\n        q = new ArrayDeque<>();\n        sortedNums = new ArrayList<>();\n        freq = new HashMap<>();\n        modeHeap = new PriorityQueue<>((a, b) -> {\n            if (a[0] != b[0]) return Integer.compare(b[0], a[0]);\n            return Integer.compare(a[1], b[1]);\n        });\n    }\n    \n    public void addNumber(int number) {\n        q.offer(number);\n        int idx = Collections.binarySearch(sortedNums, number);\n        if (idx < 0) idx = -(idx + 1);\n        sortedNums.add(idx, number);\n        totalSum += number;\n        int f = freq.getOrDefault(number, 0) + 1;\n        freq.put(number, f);\n        modeHeap.offer(new int[]{f, number});\n    }\n    \n    public void removeFirstAddedNumber() {\n        int x = q.poll();\n        int idx = Collections.binarySearch(sortedNums, x);\n        sortedNums.remove(idx);\n        totalSum -= x;\n        int f = freq.get(x) - 1;\n        if (f == 0) freq.remove(x);\n        else {\n            freq.put(x, f);\n            modeHeap.offer(new int[]{f, x});\n        }\n    }\n    \n    public int getMean() {\n        return (int) (totalSum / q.size());\n    }\n    \n    public int getMedian() {\n        return sortedNums.get(sortedNums.size() / 2);\n    }\n    \n    public int getMode() {\n        while (!modeHeap.isEmpty()) {\n            int[] top = modeHeap.peek();\n            int f = top[0];\n            int num = top[1];\n            if (freq.getOrDefault(num, 0) == f) return num;\n            modeHeap.poll();\n        }\n        return -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var StatisticsTracker = function() {\n    this.q = [];\n    this.sortedNums = [];\n    this.totalSum = 0;\n    this.freq = new Map();\n};\n\nStatisticsTracker.prototype.addNumber = function(number) {\n    this.q.push(number);\n    let l = 0, r = this.sortedNums.length;\n    while (l < r) {\n        const mid = (l + r) >> 1;\n        if (this.sortedNums[mid] < number) l = mid + 1;\n        else r = mid;\n    }\n    this.sortedNums.splice(l, 0, number);\n    this.totalSum += number;\n    this.freq.set(number, (this.freq.get(number) || 0) + 1);\n};\n\nStatisticsTracker.prototype.removeFirstAddedNumber = function() {\n    const x = this.q.shift();\n    let l = 0, r = this.sortedNums.length;\n    while (l < r) {\n        const mid = (l + r) >> 1;\n        if (this.sortedNums[mid] < x) l = mid + 1;\n        else r = mid;\n    }\n    this.sortedNums.splice(l, 1);\n    this.totalSum -= x;\n    const f = this.freq.get(x) - 1;\n    if (f === 0) this.freq.delete(x);\n    else this.freq.set(x, f);\n};\n\nStatisticsTracker.prototype.getMean = function() {\n    return Math.floor(this.totalSum / this.q.length);\n};\n\nStatisticsTracker.prototype.getMedian = function() {\n    return this.sortedNums[Math.floor(this.sortedNums.length / 2)];\n};\n\nStatisticsTracker.prototype.getMode = function() {\n    let bestFreq = 0;\n    let bestNum = Infinity;\n    for (const [num, f] of this.freq.entries()) {\n        if (f > bestFreq || (f === bestFreq && num < bestNum)) {\n            bestFreq = f;\n            bestNum = num;\n        }\n    }\n    return bestNum;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

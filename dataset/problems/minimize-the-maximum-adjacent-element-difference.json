@@ -1,0 +1,79 @@
+{
+  "slug": "minimize-the-maximum-adjacent-element-difference",
+  "number": 3357,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Fixed Differences Lower Bound",
+      "text": "Any pair of adjacent elements where neither is -1 has a fixed difference that cannot be altered. The answer is at least the maximum of these fixed differences."
+    },
+    {
+      "level": 2,
+      "title": "Boundary Collection",
+      "text": "Collect all known numbers that are adjacent to at least one -1. To minimize differences, the two chosen replacement numbers x and y should cover this range of boundary elements."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search Feasibility",
+      "text": "Binary search on candidate difference d. Verify whether all boundary elements can be covered by two intervals of radius d while connecting any adjacent -1 segments."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def minDifference(self, nums: list[int]) -> int:\n        n = len(nums)\n        min_diff = 0\n        for i in range(n - 1):\n            if nums[i] != -1 and nums[i + 1] != -1:\n                min_diff = max(min_diff, abs(nums[i] - nums[i + 1]))\n                \n        adj = []\n        for i in range(n):\n            if nums[i] == -1:\n                continue\n            if (i > 0 and nums[i - 1] == -1) or (i < n - 1 and nums[i + 1] == -1):\n                adj.append(nums[i])\n                \n        if not adj:\n            return min_diff\n            \n        min_v = min(adj)\n        max_v = max(adj)\n        \n        def check(d):\n            if d < min_diff:\n                return False\n            x = min_v + d\n            y = max_v - d\n            if x > y:\n                x = y = (min_v + max_v) // 2\n                \n            i = 0\n            while i < n:\n                if nums[i] == -1:\n                    start = i\n                    while i < n and nums[i] == -1:\n                        i += 1\n                    end = i\n                    left_val = nums[start - 1] if start > 0 else None\n                    right_val = nums[end] if end < n else None\n                    \n                    can_x = (left_val is None or abs(left_val - x) <= d) and (right_val is None or abs(right_val - x) <= d)\n                    can_y = (left_val is None or abs(left_val - y) <= d) and (right_val is None or abs(right_val - y) <= d)\n                    can_xy = (end - start >= 2) and (abs(x - y) <= d) and (\n                        ((left_val is None or abs(left_val - x) <= d) and (right_val is None or abs(right_val - y) <= d)) or\n                        ((left_val is None or abs(left_val - y) <= d) and (right_val is None or abs(right_val - x) <= d))\n                    )\n                    if not (can_x or can_y or can_xy):\n                        return False\n                else:\n                    i += 1\n            return True\n            \n        low = min_diff\n        high = max_v - min_v\n        ans = high\n        while low <= high:\n            mid = (low + high) // 2\n            if check(mid):\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n                \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log(max_val))",
+    "space": "O(1)",
+    "variables": [
+      "n: length of nums",
+      "max_val: range of values up to 10^9"
+    ],
+    "notes": "Binary search over maximum allowable difference with linear boundary interval feasibility checks.",
+    "whyNaiveFails": "Simulating all replacement value pairs (x, y) yields an impossible O(max_val^2) search space.",
+    "spaceTimeTradeoff": "O(1) auxiliary space performing on-the-fly interval updates.",
+    "interviewerExpectation": "Models known neighbors of -1 elements as interval constraints and binary searches the difference."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minDifference(self, nums: list[int]) -> int:\n        n = len(nums)\n        min_diff = 0\n        for i in range(n - 1):\n            if nums[i] != -1 and nums[i + 1] != -1:\n                min_diff = max(min_diff, abs(nums[i] - nums[i + 1]))\n                \n        adj = []\n        for i in range(n):\n            if nums[i] == -1:\n                continue\n            if (i > 0 and nums[i - 1] == -1) or (i < n - 1 and nums[i + 1] == -1):\n                adj.append(nums[i])\n                \n        if not adj:\n            return min_diff\n            \n        min_v = min(adj)\n        max_v = max(adj)\n        \n        def check(d):\n            if d < min_diff:\n                return False\n            x = min_v + d\n            y = max_v - d\n            if x > y:\n                x = y = (min_v + max_v) // 2\n                \n            i = 0\n            while i < n:\n                if nums[i] == -1:\n                    start = i\n                    while i < n and nums[i] == -1:\n                        i += 1\n                    end = i\n                    left_val = nums[start - 1] if start > 0 else None\n                    right_val = nums[end] if end < n else None\n                    \n                    can_x = (left_val is None or abs(left_val - x) <= d) and (right_val is None or abs(right_val - x) <= d)\n                    can_y = (left_val is None or abs(left_val - y) <= d) and (right_val is None or abs(right_val - y) <= d)\n                    can_xy = (end - start >= 2) and (abs(x - y) <= d) and (\n                        ((left_val is None or abs(left_val - x) <= d) and (right_val is None or abs(right_val - y) <= d)) or\n                        ((left_val is None or abs(left_val - y) <= d) and (right_val is None or abs(right_val - x) <= d))\n                    )\n                    if not (can_x or can_y or can_xy):\n                        return False\n                else:\n                    i += 1\n            return True\n            \n        low = min_diff\n        high = max_v - min_v\n        ans = high\n        while low <= high:\n            mid = (low + high) // 2\n            if check(mid):\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n                \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n#include <cmath>\n\nclass Solution {\npublic:\n    int minDifference(std::vector<int>& nums) {\n        int n = nums.size();\n        int min_diff = 0;\n        for (int i = 0; i < n - 1; ++i) {\n            if (nums[i] != -1 && nums[i + 1] != -1) {\n                min_diff = std::max(min_diff, std::abs(nums[i] - nums[i + 1]));\n            }\n        }\n        \n        std::vector<int> adj;\n        for (int i = 0; i < n; ++i) {\n            if (nums[i] == -1) continue;\n            if ((i > 0 && nums[i - 1] == -1) || (i < n - 1 && nums[i + 1] == -1)) {\n                adj.push_back(nums[i]);\n            }\n        }\n        \n        if (adj.empty()) return min_diff;\n        \n        int min_v = *std::min_element(adj.begin(), adj.end());\n        int max_v = *std::max_element(adj.begin(), adj.end());\n        \n        auto check = [&](int d) {\n            if (d < min_diff) return false;\n            int x = min_v + d;\n            int y = max_v - d;\n            if (x > y) x = y = (min_v + max_v) / 2;\n            \n            int i = 0;\n            while (i < n) {\n                if (nums[i] == -1) {\n                    int start = i;\n                    while (i < n && nums[i] == -1) ++i;\n                    int end = i;\n                    int left_val = (start > 0) ? nums[start - 1] : -1;\n                    int right_val = (end < n) ? nums[end] : -1;\n                    \n                    bool can_x = (left_val == -1 || std::abs(left_val - x) <= d) && (right_val == -1 || std::abs(right_val - x) <= d);\n                    bool can_y = (left_val == -1 || std::abs(left_val - y) <= d) && (right_val == -1 || std::abs(right_val - y) <= d);\n                    bool can_xy = (end - start >= 2) && (std::abs(x - y) <= d) && (\n                        ((left_val == -1 || std::abs(left_val - x) <= d) && (right_val == -1 || std::abs(right_val - y) <= d)) ||\n                        ((left_val == -1 || std::abs(left_val - y) <= d) && (right_val == -1 || std::abs(right_val - x) <= d))\n                    );\n                    if (!can_x && !can_y && !can_xy) return false;\n                } else {\n                    ++i;\n                }\n            }\n            return true;\n        };\n        \n        int low = min_diff, high = max_v - min_v, ans = high;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (check(mid)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minDifference(int[] nums) {\n        int n = nums.length;\n        int minDiff = 0;\n        for (int i = 0; i < n - 1; i++) {\n            if (nums[i] != -1 && nums[i + 1] != -1) {\n                minDiff = Math.max(minDiff, Math.abs(nums[i] - nums[i + 1]));\n            }\n        }\n        \n        List<Integer> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            if (nums[i] == -1) continue;\n            if ((i > 0 && nums[i - 1] == -1) || (i < n - 1 && nums[i + 1] == -1)) {\n                adj.add(nums[i]);\n            }\n        }\n        \n        if (adj.isEmpty()) return minDiff;\n        \n        int minV = Collections.min(adj);\n        int maxV = Collections.max(adj);\n        \n        int low = minDiff, high = maxV - minV, ans = high;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (check(mid, nums, n, minDiff, minV, maxV)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n    \n    private boolean check(int d, int[] nums, int n, int minDiff, int minV, int maxV) {\n        if (d < minDiff) return false;\n        int x = minV + d;\n        int y = maxV - d;\n        if (x > y) x = y = (minV + maxV) / 2;\n        \n        int i = 0;\n        while (i < n) {\n            if (nums[i] == -1) {\n                int start = i;\n                while (i < n && nums[i] == -1) i++;\n                int end = i;\n                int leftVal = (start > 0) ? nums[start - 1] : -1;\n                int rightVal = (end < n) ? nums[end] : -1;\n                \n                boolean canX = (leftVal == -1 || Math.abs(leftVal - x) <= d) && (rightVal == -1 || Math.abs(rightVal - x) <= d);\n                boolean canY = (leftVal == -1 || Math.abs(leftVal - y) <= d) && (rightVal == -1 || Math.abs(rightVal - y) <= d);\n                boolean canXY = (end - start >= 2) && (Math.abs(x - y) <= d) && (\n                    ((leftVal == -1 || Math.abs(leftVal - x) <= d) && (rightVal == -1 || Math.abs(rightVal - y) <= d)) ||\n                    ((leftVal == -1 || Math.abs(leftVal - y) <= d) && (rightVal == -1 || Math.abs(rightVal - x) <= d))\n                );\n                if (!canX && !canY && !canXY) return false;\n            } else {\n                i++;\n            }\n        }\n        return true;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minDifference = function(nums) {\n    const n = nums.length;\n    let minDiff = 0;\n    for (let i = 0; i < n - 1; i++) {\n        if (nums[i] !== -1 && nums[i + 1] !== -1) {\n            minDiff = Math.max(minDiff, Math.abs(nums[i] - nums[i + 1]));\n        }\n    }\n    \n    const adj = [];\n    for (let i = 0; i < n; i++) {\n        if (nums[i] === -1) continue;\n        if ((i > 0 && nums[i - 1] === -1) || (i < n - 1 && nums[i + 1] === -1)) {\n            adj.push(nums[i]);\n        }\n    }\n    \n    if (adj.length === 0) return minDiff;\n    \n    let minV = Math.min(...adj);\n    let maxV = Math.max(...adj);\n    \n    function check(d) {\n        if (d < minDiff) return false;\n        let x = minV + d;\n        let y = maxV - d;\n        if (x > y) x = y = Math.floor((minV + maxV) / 2);\n        \n        let i = 0;\n        while (i < n) {\n            if (nums[i] === -1) {\n                const start = i;\n                while (i < n && nums[i] === -1) i++;\n                const end = i;\n                const leftVal = (start > 0) ? nums[start - 1] : null;\n                const rightVal = (end < n) ? nums[end] : null;\n                \n                const canX = (leftVal === null || Math.abs(leftVal - x) <= d) && (rightVal === null || Math.abs(rightVal - x) <= d);\n                const canY = (leftVal === null || Math.abs(leftVal - y) <= d) && (rightVal === null || Math.abs(rightVal - y) <= d);\n                const canXY = (end - start >= 2) && (Math.abs(x - y) <= d) && (\n                    ((leftVal === null || Math.abs(leftVal - x) <= d) && (rightVal === null || Math.abs(rightVal - y) <= d)) ||\n                    ((leftVal === null || Math.abs(leftVal - y) <= d) && (rightVal === null || Math.abs(rightVal - x) <= d))\n                );\n                if (!canX && !canY && !canXY) return false;\n            } else {\n                i++;\n            }\n        }\n        return true;\n    }\n    \n    let low = minDiff, high = maxV - minV, ans = high;\n    while (low <= high) {\n        const mid = (low + high) >> 1;\n        if (check(mid)) {\n            ans = mid;\n            high = mid - 1;\n        } else {\n            low = mid + 1;\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

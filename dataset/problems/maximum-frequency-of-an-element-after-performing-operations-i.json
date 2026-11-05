@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-frequency-of-an-element-after-performing-operations-i",
+  "number": 3346,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Candidate Reduction",
+      "text": "Any element nums[i] can be modified into any value within [nums[i] - k, nums[i] + k]. The optimal target value will always coincide with nums[i], nums[i] - k, or nums[i] + k for some index i."
+    },
+    {
+      "level": 2,
+      "title": "Range Counting",
+      "text": "Sort nums. For any candidate target v, count how many elements already equal v, and how many elements fall within the reachable range [v - k, v + k]."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Operation Allocation",
+      "text": "The achievable count for target v is the number of exact matches plus min(numOperations, reachable - exact_matches)."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom bisect import bisect_left, bisect_right\n\nclass Solution:\n    def maxFrequency(self, nums: list[int], k: int, numOperations: int) -> int:\n        nums.sort()\n        candidates = set()\n        for x in nums:\n            candidates.add(x)\n            candidates.add(x - k)\n            candidates.add(x + k)\n            \n        ans = 0\n        for v in candidates:\n            left = bisect_left(nums, v - k)\n            right = bisect_right(nums, v + k)\n            total_in_range = right - left\n            exact = bisect_right(nums, v) - bisect_left(nums, v)\n            achievable = exact + min(numOperations, total_in_range - exact)\n            if achievable > ans:\n                ans = achievable\n                \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums"
+    ],
+    "notes": "Sorts nums and checks candidate targets at nums[i], nums[i]-k, and nums[i]+k with binary range queries.",
+    "whyNaiveFails": "Evaluating every possible target value from min to max across huge spans without sorting leads to excessive iterations.",
+    "spaceTimeTradeoff": "O(n) auxiliary space for sorted array queries.",
+    "interviewerExpectation": "Identifies that optimal target elements must coincide with existing numbers or their interval boundaries."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from bisect import bisect_left, bisect_right\n\nclass Solution:\n    def maxFrequency(self, nums: list[int], k: int, numOperations: int) -> int:\n        nums.sort()\n        candidates = set()\n        for x in nums:\n            candidates.add(x)\n            candidates.add(x - k)\n            candidates.add(x + k)\n            \n        ans = 0\n        for v in candidates:\n            left = bisect_left(nums, v - k)\n            right = bisect_right(nums, v + k)\n            total_in_range = right - left\n            exact = bisect_right(nums, v) - bisect_left(nums, v)\n            achievable = exact + min(numOperations, total_in_range - exact)\n            if achievable > ans:\n                ans = achievable\n                \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxFrequency(std::vector<int>& nums, int k, int numOperations) {\n        std::sort(nums.begin(), nums.end());\n        std::vector<int> candidates;\n        candidates.reserve(nums.size() * 3);\n        for (int x : nums) {\n            candidates.push_back(x);\n            candidates.push_back(x - k);\n            candidates.push_back(x + k);\n        }\n        std::sort(candidates.begin(), candidates.end());\n        candidates.erase(std::unique(candidates.begin(), candidates.end()), candidates.end());\n        \n        int ans = 0;\n        for (int v : candidates) {\n            auto it1 = std::lower_bound(nums.begin(), nums.end(), v - k);\n            auto it2 = std::upper_bound(nums.begin(), nums.end(), v + k);\n            int total_in_range = it2 - it1;\n            \n            auto eq1 = std::lower_bound(nums.begin(), nums.end(), v);\n            auto eq2 = std::upper_bound(nums.begin(), nums.end(), v);\n            int exact = eq2 - eq1;\n            \n            int achievable = exact + std::min(numOperations, total_in_range - exact);\n            ans = std::max(ans, achievable);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxFrequency(int[] nums, int k, int numOperations) {\n        Arrays.sort(nums);\n        TreeSet<Integer> set = new TreeSet<>();\n        for (int x : nums) {\n            set.add(x);\n            set.add(x - k);\n            set.add(x + k);\n        }\n        \n        int ans = 0;\n        for (int v : set) {\n            int left = lowerBound(nums, v - k);\n            int right = upperBound(nums, v + k);\n            int totalInRange = right - left;\n            \n            int eqLeft = lowerBound(nums, v);\n            int eqRight = upperBound(nums, v);\n            int exact = eqRight - eqLeft;\n            \n            int achievable = exact + Math.min(numOperations, totalInRange - exact);\n            ans = Math.max(ans, achievable);\n        }\n        return ans;\n    }\n    \n    private int lowerBound(int[] a, int target) {\n        int l = 0, r = a.length;\n        while (l < r) {\n            int m = (l + r) >>> 1;\n            if (a[m] >= target) r = m;\n            else l = m + 1;\n        }\n        return l;\n    }\n    \n    private int upperBound(int[] a, int target) {\n        int l = 0, r = a.length;\n        while (l < r) {\n            int m = (l + r) >>> 1;\n            if (a[m] > target) r = m;\n            else l = m + 1;\n        }\n        return l;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxFrequency = function(nums, k, numOperations) {\n    nums.sort((a, b) => a - b);\n    const candSet = new Set();\n    for (const x of nums) {\n        candSet.add(x);\n        candSet.add(x - k);\n        candSet.add(x + k);\n    }\n    \n    function lowerBound(target) {\n        let l = 0, r = nums.length;\n        while (l < r) {\n            const m = (l + r) >> 1;\n            if (nums[m] >= target) r = m;\n            else l = m + 1;\n        }\n        return l;\n    }\n    \n    function upperBound(target) {\n        let l = 0, r = nums.length;\n        while (l < r) {\n            const m = (l + r) >> 1;\n            if (nums[m] > target) r = m;\n            else l = m + 1;\n        }\n        return l;\n    }\n    \n    let ans = 0;\n    for (const v of candSet) {\n        const left = lowerBound(v - k);\n        const right = upperBound(v + k);\n        const totalInRange = right - left;\n        \n        const exact = upperBound(v) - lowerBound(v);\n        const achievable = exact + Math.min(numOperations, totalInRange - exact);\n        if (achievable > ans) ans = achievable;\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

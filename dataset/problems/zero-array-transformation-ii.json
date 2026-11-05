@@ -1,0 +1,79 @@
+{
+  "slug": "zero-array-transformation-ii",
+  "number": 3356,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monotonicity in Queries",
+      "text": "If a prefix of k queries is sufficient to reduce nums to all zeros, any larger prefix of queries >= k will also be sufficient."
+    },
+    {
+      "level": 2,
+      "title": "Binary Search Feasibility",
+      "text": "Binary search over the minimum prefix count k in [0, len(queries)]."
+    },
+    {
+      "level": 3,
+      "title": "Range Sum Validation",
+      "text": "For candidate k, construct a difference array adding val at l and subtracting val at r + 1 for each query in queries[:k]. Check if cumulative coverage >= nums[i] for all i."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def minZeroArray(self, nums: list[int], queries: list[list[int]]) -> int:\n        n = len(nums)\n        if all(x == 0 for x in nums):\n            return 0\n            \n        def check(k):\n            diff = [0] * (n + 1)\n            for i in range(k):\n                l, r, val = queries[i]\n                diff[l] += val\n                diff[r + 1] -= val\n            curr = 0\n            for i in range(n):\n                curr += diff[i]\n                if nums[i] > curr:\n                    return False\n            return True\n            \n        low, high = 1, len(queries)\n        ans = -1\n        while low <= high:\n            mid = (low + high) // 2\n            if check(mid):\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n                \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((n + q) log q)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums",
+      "q: number of queries"
+    ],
+    "notes": "Binary search on prefix query count k with linear difference array feasibility checking.",
+    "whyNaiveFails": "Evaluating queries one by one without binary search leads to O(n * q) worst-case time.",
+    "spaceTimeTradeoff": "O(n) auxiliary space for difference array per check.",
+    "interviewerExpectation": "Identifies monotonicity in query count k and uses binary search over prefix lengths."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minZeroArray(self, nums: list[int], queries: list[list[int]]) -> int:\n        n = len(nums)\n        if all(x == 0 for x in nums):\n            return 0\n            \n        def check(k):\n            diff = [0] * (n + 1)\n            for i in range(k):\n                l, r, val = queries[i]\n                diff[l] += val\n                diff[r + 1] -= val\n            curr = 0\n            for i in range(n):\n                curr += diff[i]\n                if nums[i] > curr:\n                    return False\n            return True\n            \n        low, high = 1, len(queries)\n        ans = -1\n        while low <= high:\n            mid = (low + high) // 2\n            if check(mid):\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n                \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minZeroArray(std::vector<int>& nums, std::vector<std::vector<int>>& queries) {\n        int n = nums.size();\n        bool all_zero = true;\n        for (int x : nums) if (x != 0) { all_zero = false; break; }\n        if (all_zero) return 0;\n        \n        auto check = [&](int k) {\n            std::vector<long long> diff(n + 1, 0);\n            for (int i = 0; i < k; ++i) {\n                diff[queries[i][0]] += queries[i][2];\n                diff[queries[i][1] + 1] -= queries[i][2];\n            }\n            long long curr = 0;\n            for (int i = 0; i < n; ++i) {\n                curr += diff[i];\n                if (nums[i] > curr) return false;\n            }\n            return true;\n        };\n        \n        int low = 1, high = queries.size(), ans = -1;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (check(mid)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int minZeroArray(int[] nums, int[][] queries) {\n        int n = nums.length;\n        boolean allZero = true;\n        for (int x : nums) if (x != 0) { allZero = false; break; }\n        if (allZero) return 0;\n        \n        int low = 1, high = queries.length, ans = -1;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (check(mid, nums, queries, n)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n    \n    private boolean check(int k, int[] nums, int[][] queries, int n) {\n        long[] diff = new long[n + 1];\n        for (int i = 0; i < k; i++) {\n            diff[queries[i][0]] += queries[i][2];\n            diff[queries[i][1] + 1] -= queries[i][2];\n        }\n        long curr = 0;\n        for (int i = 0; i < n; i++) {\n            curr += diff[i];\n            if (nums[i] > curr) return false;\n        }\n        return true;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minZeroArray = function(nums, queries) {\n    const n = nums.length;\n    if (nums.every(x => x === 0)) return 0;\n    \n    function check(k) {\n        const diff = new Float64Array(n + 1);\n        for (let i = 0; i < k; i++) {\n            diff[queries[i][0]] += queries[i][2];\n            diff[queries[i][1] + 1] -= queries[i][2];\n        }\n        let curr = 0;\n        for (let i = 0; i < n; i++) {\n            curr += diff[i];\n            if (nums[i] > curr) return false;\n        }\n        return true;\n    }\n    \n    let low = 1, high = queries.length, ans = -1;\n    while (low <= high) {\n        const mid = (low + high) >> 1;\n        if (check(mid)) {\n            ans = mid;\n            high = mid - 1;\n        } else {\n            low = mid + 1;\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

@@ -1,0 +1,72 @@
+{
+  "slug": "first-letter-capitalization-ii",
+  "number": 3374,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Multi-Delimiter Observation",
+      "text": "Tokens may contain hyphen delimiters requiring each component word to be capitalized independently."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Case Transformation",
+      "text": "If a token contains a hyphen, split and capitalize each part around the hyphen; otherwise, capitalize the whole word."
+    },
+    {
+      "level": 3,
+      "title": "Ordered String Aggregation",
+      "text": "Recombine the formatted word tokens back together separated by single spaces in their original order."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH RECURSIVE Words AS (\n    SELECT \n        content_id, \n        SUBSTRING_INDEX(content_text, ' ', 1) AS word, \n        SUBSTRING(content_text, LENGTH(SUBSTRING_INDEX(content_text, ' ', 1)) + 2) AS remaining_text, \n        1 AS token_index \n    FROM user_content \n    UNION ALL \n    SELECT \n        content_id, \n        SUBSTRING_INDEX(remaining_text, ' ', 1) AS word, \n        SUBSTRING(remaining_text, LENGTH(SUBSTRING_INDEX(remaining_text, ' ', 1)) + 2) AS remaining_text, \n        token_index + 1 AS token_index \n    FROM Words \n    WHERE remaining_text != ''\n), \nConverted AS (\n    SELECT \n        content_id, \n        GROUP_CONCAT( \n            IF(word LIKE '%-%', \n                CONCAT(\n                    UPPER(SUBSTRING(word, 1, 1)), \n                    LOWER(SUBSTRING(word, 2, LOCATE('-', word) - 2)), \n                    '-', \n                    UPPER(SUBSTRING(SUBSTRING_INDEX(word, '-', -1), 1, 1)), \n                    LOWER(SUBSTRING(SUBSTRING_INDEX(word, '-', -1), 2))\n                ), \n                CONCAT(UPPER(SUBSTRING(word, 1, 1)), LOWER(SUBSTRING(word, 2))) \n            ) \n            ORDER BY token_index \n            SEPARATOR ' '\n        ) AS converted_text \n    FROM Words \n    GROUP BY content_id\n) \nSELECT \n    uc.content_id, \n    uc.content_text AS original_text, \n    c.converted_text \nFROM user_content AS uc \nJOIN Converted AS c \n    ON uc.content_id = c.content_id\nORDER BY uc.content_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(w * l)",
+    "space": "O(w * l)",
+    "variables": [
+      "w: total words across rows",
+      "l: average word length"
+    ],
+    "notes": "Recursively splits text on space boundaries, handles hyphenated segments, and re-aggregates formatted tokens.",
+    "whyNaiveFails": "Hyphenated word segments require nested multi-delimiter string casing not handled by standard upper/lower.",
+    "spaceTimeTradeoff": "O(w * l) temporary recursion stack in memory.",
+    "interviewerExpectation": "Demonstrates conditional recursive tokenization and hyphen handling."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH RECURSIVE Words AS (\n    SELECT \n        content_id, \n        SUBSTRING_INDEX(content_text, ' ', 1) AS word, \n        SUBSTRING(content_text, LENGTH(SUBSTRING_INDEX(content_text, ' ', 1)) + 2) AS remaining_text, \n        1 AS token_index \n    FROM user_content \n    UNION ALL \n    SELECT \n        content_id, \n        SUBSTRING_INDEX(remaining_text, ' ', 1) AS word, \n        SUBSTRING(remaining_text, LENGTH(SUBSTRING_INDEX(remaining_text, ' ', 1)) + 2) AS remaining_text, \n        token_index + 1 AS token_index \n    FROM Words \n    WHERE remaining_text != ''\n), \nConverted AS (\n    SELECT \n        content_id, \n        GROUP_CONCAT( \n            IF(word LIKE '%-%', \n                CONCAT(\n                    UPPER(SUBSTRING(word, 1, 1)), \n                    LOWER(SUBSTRING(word, 2, LOCATE('-', word) - 2)), \n                    '-', \n                    UPPER(SUBSTRING(SUBSTRING_INDEX(word, '-', -1), 1, 1)), \n                    LOWER(SUBSTRING(SUBSTRING_INDEX(word, '-', -1), 2))\n                ), \n                CONCAT(UPPER(SUBSTRING(word, 1, 1)), LOWER(SUBSTRING(word, 2))) \n            ) \n            ORDER BY token_index \n            SEPARATOR ' '\n        ) AS converted_text \n    FROM Words \n    GROUP BY content_id\n) \nSELECT \n    uc.content_id, \n    uc.content_text AS original_text, \n    c.converted_text \nFROM user_content AS uc \nJOIN Converted AS c \n    ON uc.content_id = c.content_id\nORDER BY uc.content_id;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    content_id, \n    content_text AS original_text, \n    INITCAP(content_text) AS converted_text \nFROM user_content \nORDER BY content_id;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef capitalize_content(user_content: pd.DataFrame) -> pd.DataFrame:\n    def convert_word(word: str) -> str:\n        if '-' in word:\n            return '-'.join(p.capitalize() for p in word.split('-'))\n        return word.capitalize()\n    \n    def convert_text(text: str) -> str:\n        return ' '.join(convert_word(w) for w in text.split(' '))\n    \n    df = user_content.copy()\n    df['original_text'] = df['content_text']\n    df['converted_text'] = df['content_text'].apply(convert_text)\n    return df[['content_id', 'original_text', 'converted_text']].sort_values('content_id')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

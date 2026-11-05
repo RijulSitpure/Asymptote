@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-time-to-break-locks-i",
+  "number": 3376,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subset State Representation",
+      "text": "Notice that the energy increment factor x depends solely on the number of locks that have already been broken."
+    },
+    {
+      "level": 2,
+      "title": "Ceiling Time Calculation",
+      "text": "For a lock with strength s and current rate x, the minutes required is (s + x - 1) // x."
+    },
+    {
+      "level": 3,
+      "title": "Bitmask Transitions",
+      "text": "Represent broken locks as bitmask of length n, transitioning to any remaining unbroken lock and taking the minimum total time."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom functools import cache\n\nclass Solution:\n    def findMinimumTime(self, strength: list[int], k: int) -> int:\n        n = len(strength)\n        \n        @cache\n        def dfs(mask: int) -> int:\n            if mask == (1 << n) - 1:\n                return 0\n            cnt = mask.bit_count()\n            x = 1 + cnt * k\n            ans = float('inf')\n            for j in range(n):\n                if not (mask & (1 << j)):\n                    time_taken = (strength[j] + x - 1) // x\n                    ans = min(ans, time_taken + dfs(mask | (1 << j)))\n            return ans\n            \n        return dfs(0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * 2^n)",
+    "space": "O(2^n)",
+    "variables": [
+      "n: number of locks (at most 8)",
+      "k: sword factor increment"
+    ],
+    "notes": "Bitmask dynamic programming computes minimum minutes to break all locks across all permutations.",
+    "whyNaiveFails": "Evaluating all n! permutations sequentially is slower than memoized bitmask DP.",
+    "spaceTimeTradeoff": "O(2^n) states cached for fast lookup.",
+    "interviewerExpectation": "Observes that factor x depends only on the count of already broken locks, enabling bitmask DP."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from functools import cache\n\nclass Solution:\n    def findMinimumTime(self, strength: list[int], k: int) -> int:\n        n = len(strength)\n        \n        @cache\n        def dfs(mask: int) -> int:\n            if mask == (1 << n) - 1:\n                return 0\n            cnt = mask.bit_count()\n            x = 1 + cnt * k\n            ans = float('inf')\n            for j in range(n):\n                if not (mask & (1 << j)):\n                    time_taken = (strength[j] + x - 1) // x\n                    ans = min(ans, time_taken + dfs(mask | (1 << j)))\n            return ans\n            \n        return dfs(0)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    int findMinimumTime(vector<int>& strength, int k) {\n        int n = strength.size();\n        vector<int> memo(1 << n, -1);\n        \n        auto dfs = [&](auto& self, int mask) -> int {\n            if (mask == (1 << n) - 1) return 0;\n            if (memo[mask] != -1) return memo[mask];\n            \n            int cnt = __builtin_popcount(mask);\n            int x = 1 + cnt * k;\n            int ans = INT_MAX;\n            for (int j = 0; j < n; ++j) {\n                if (!(mask & (1 << j))) {\n                    int timeTaken = (strength[j] + x - 1) / x;\n                    ans = min(ans, timeTaken + self(self, mask | (1 << j)));\n                }\n            }\n            return memo[mask] = ans;\n        };\n        \n        return dfs(dfs, 0);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int findMinimumTime(List<Integer> strength, int k) {\n        int n = strength.size();\n        Integer[] memo = new Integer[1 << n];\n        return dfs(0, strength, k, n, memo);\n    }\n    \n    private int dfs(int mask, List<Integer> strength, int k, int n, Integer[] memo) {\n        if (mask == (1 << n) - 1) return 0;\n        if (memo[mask] != null) return memo[mask];\n        \n        int cnt = Integer.bitCount(mask);\n        int x = 1 + cnt * k;\n        int ans = Integer.MAX_VALUE;\n        for (int j = 0; j < n; ++j) {\n            if ((mask & (1 << j)) == 0) {\n                int timeTaken = (strength.get(j) + x - 1) / x;\n                ans = Math.min(ans, timeTaken + dfs(mask | (1 << j), strength, k, n, memo));\n            }\n        }\n        return memo[mask] = ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var findMinimumTime = function(strength, k) {\n    const n = strength.length;\n    const memo = new Int32Array(1 << n).fill(-1);\n    \n    const dfs = (mask) => {\n        if (mask === (1 << n) - 1) return 0;\n        if (memo[mask] !== -1) return memo[mask];\n        \n        let cnt = 0;\n        for (let b = 0; b < n; b++) if (mask & (1 << b)) cnt++;\n        const x = 1 + cnt * k;\n        let ans = Infinity;\n        for (let j = 0; j < n; j++) {\n            if (!(mask & (1 << j))) {\n                const timeTaken = Math.floor((strength[j] + x - 1) / x);\n                ans = Math.min(ans, timeTaken + dfs(mask | (1 << j)));\n            }\n        }\n        return memo[mask] = ans;\n    };\n    \n    return dfs(0);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

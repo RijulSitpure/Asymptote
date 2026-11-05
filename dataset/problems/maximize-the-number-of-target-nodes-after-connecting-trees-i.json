@@ -1,0 +1,80 @@
+{
+  "slug": "maximize-the-number-of-target-nodes-after-connecting-trees-i",
+  "number": 3372,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-bfs-level-order"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Independence of Bridge Choice",
+      "text": "Notice that connecting node u in tree 1 to node v in tree 2 allows reaching any node in tree 2 within distance k - 1 from v."
+    },
+    {
+      "level": 2,
+      "title": "Tree 2 Optimal Target Count",
+      "text": "Find the maximum number of nodes within distance k - 1 across all possible anchor nodes in tree 2."
+    },
+    {
+      "level": 3,
+      "title": "Tree 1 Reachability",
+      "text": "For each node in tree 1, count reachable nodes within distance k and add the optimal tree 2 contribution."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def maxTargetNodes(self, edges1: list[list[int]], edges2: list[list[int]], k: int) -> list[int]:\n        n, m = len(edges1) + 1, len(edges2) + 1\n        \n        def build_adj(edges, size):\n            adj = [[] for _ in range(size)]\n            for u, v in edges:\n                adj[u].append(v)\n                adj[v].append(u)\n            return adj\n            \n        adj1 = build_adj(edges1, n)\n        adj2 = build_adj(edges2, m)\n        \n        def count_within_dist(adj, start, limit):\n            if limit < 0:\n                return 0\n            visited = [False] * len(adj)\n            q = deque([(start, 0)])\n            visited[start] = True\n            cnt = 0\n            while q:\n                u, d = q.popleft()\n                cnt += 1\n                if d < limit:\n                    for v in adj[u]:\n                        if not visited[v]:\n                            visited[v] = True\n                            q.append((v, d + 1))\n            return cnt\n            \n        max_t2 = 0\n        if k > 0:\n            for j in range(m):\n                max_t2 = max(max_t2, count_within_dist(adj2, j, k - 1))\n                \n        return [count_within_dist(adj1, i, k) + max_t2 for i in range(n)]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2 + m^2)",
+    "space": "O(n + m)",
+    "variables": [
+      "n: nodes in tree 1",
+      "m: nodes in tree 2",
+      "k: distance threshold"
+    ],
+    "notes": "BFS from each node in tree 1 counts nodes within distance k; BFS in tree 2 finds maximum targets within distance k - 1.",
+    "whyNaiveFails": "Trying all n * m bridge edge pairings from scratch takes O(n * m * (n + m)).",
+    "spaceTimeTradeoff": "O(n + m) memory for adjacency representation and BFS queue.",
+    "interviewerExpectation": "Decomposes the problem into local reachability in tree 1 and optimal bridge entry into tree 2."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import deque\n\nclass Solution:\n    def maxTargetNodes(self, edges1: list[list[int]], edges2: list[list[int]], k: int) -> list[int]:\n        n, m = len(edges1) + 1, len(edges2) + 1\n        \n        def build_adj(edges, size):\n            adj = [[] for _ in range(size)]\n            for u, v in edges:\n                adj[u].append(v)\n                adj[v].append(u)\n            return adj\n            \n        adj1 = build_adj(edges1, n)\n        adj2 = build_adj(edges2, m)\n        \n        def count_within_dist(adj, start, limit):\n            if limit < 0:\n                return 0\n            visited = [False] * len(adj)\n            q = deque([(start, 0)])\n            visited[start] = True\n            cnt = 0\n            while q:\n                u, d = q.popleft()\n                cnt += 1\n                if d < limit:\n                    for v in adj[u]:\n                        if not visited[v]:\n                            visited[v] = True\n                            q.append((v, d + 1))\n            return cnt\n            \n        max_t2 = 0\n        if k > 0:\n            for j in range(m):\n                max_t2 = max(max_t2, count_within_dist(adj2, j, k - 1))\n                \n        return [count_within_dist(adj1, i, k) + max_t2 for i in range(n)]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    vector<int> maxTargetNodes(vector<vector<int>>& edges1, vector<vector<int>>& edges2, int k) {\n        int n = edges1.size() + 1;\n        int m = edges2.size() + 1;\n        \n        auto buildAdj = [](const vector<vector<int>>& edges, int size) {\n            vector<vector<int>> adj(size);\n            for (const auto& e : edges) {\n                adj[e[0]].push_back(e[1]);\n                adj[e[1]].push_back(e[0]);\n            }\n            return adj;\n        };\n        \n        auto adj1 = buildAdj(edges1, n);\n        auto adj2 = buildAdj(edges2, m);\n        \n        auto countWithin = [](const vector<vector<int>>& adj, int start, int limit) {\n            if (limit < 0) return 0;\n            int size = adj.size();\n            vector<bool> visited(size, false);\n            queue<pair<int, int>> q;\n            q.push({start, 0});\n            visited[start] = true;\n            int cnt = 0;\n            while (!q.empty()) {\n                auto [u, d] = q.front();\n                q.pop();\n                cnt++;\n                if (d < limit) {\n                    for (int v : adj[u]) {\n                        if (!visited[v]) {\n                            visited[v] = true;\n                            q.push({v, d + 1});\n                        }\n                    }\n                }\n            }\n            return cnt;\n        };\n        \n        int maxT2 = 0;\n        if (k > 0) {\n            for (int j = 0; j < m; ++j) {\n                maxT2 = max(maxT2, countWithin(adj2, j, k - 1));\n            }\n        }\n        \n        vector<int> ans(n);\n        for (int i = 0; i < n; ++i) {\n            ans[i] = countWithin(adj1, i, k) + maxT2;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int[] maxTargetNodes(int[][] edges1, int[][] edges2, int k) {\n        int n = edges1.length + 1;\n        int m = edges2.length + 1;\n        \n        List<Integer>[] adj1 = buildAdj(edges1, n);\n        List<Integer>[] adj2 = buildAdj(edges2, m);\n        \n        int maxT2 = 0;\n        if (k > 0) {\n            for (int j = 0; j < m; ++j) {\n                maxT2 = Math.max(maxT2, countWithin(adj2, j, k - 1));\n            }\n        }\n        \n        int[] ans = new int[n];\n        for (int i = 0; i < n; ++i) {\n            ans[i] = countWithin(adj1, i, k) + maxT2;\n        }\n        return ans;\n    }\n    \n    private List<Integer>[] buildAdj(int[][] edges, int size) {\n        List<Integer>[] adj = new ArrayList[size];\n        for (int i = 0; i < size; ++i) adj[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(e[1]);\n            adj[e[1]].add(e[0]);\n        }\n        return adj;\n    }\n    \n    private int countWithin(List<Integer>[] adj, int start, int limit) {\n        if (limit < 0) return 0;\n        boolean[] visited = new boolean[adj.length];\n        Queue<int[]> q = new ArrayDeque<>();\n        q.offer(new int[]{start, 0});\n        visited[start] = true;\n        int cnt = 0;\n        while (!q.isEmpty()) {\n            int[] curr = q.poll();\n            int u = curr[0], d = curr[1];\n            cnt++;\n            if (d < limit) {\n                for (int v : adj[u]) {\n                    if (!visited[v]) {\n                        visited[v] = true;\n                        q.offer(new int[]{v, d + 1});\n                    }\n                }\n            }\n        }\n        return cnt;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxTargetNodes = function(edges1, edges2, k) {\n    const n = edges1.length + 1;\n    const m = edges2.length + 1;\n    \n    const buildAdj = (edges, size) => {\n        const adj = Array.from({ length: size }, () => []);\n        for (const [u, v] of edges) {\n            adj[u].push(v);\n            adj[v].push(u);\n        }\n        return adj;\n    };\n    \n    const adj1 = buildAdj(edges1, n);\n    const adj2 = buildAdj(edges2, m);\n    \n    const countWithin = (adj, start, limit) => {\n        if (limit < 0) return 0;\n        const visited = new Uint8Array(adj.length);\n        const q = [[start, 0]];\n        visited[start] = 1;\n        let cnt = 0;\n        let head = 0;\n        while (head < q.length) {\n            const [u, d] = q[head++];\n            cnt++;\n            if (d < limit) {\n                for (const v of adj[u]) {\n                    if (!visited[v]) {\n                        visited[v] = 1;\n                        q.push([v, d + 1]);\n                    }\n                }\n            }\n        }\n        return cnt;\n    };\n    \n    let maxT2 = 0;\n    if (k > 0) {\n        for (let j = 0; j < m; j++) {\n            maxT2 = Math.max(maxT2, countWithin(adj2, j, k - 1));\n        }\n    }\n    \n    const ans = new Array(n);\n    for (let i = 0; i < n; i++) {\n        ans[i] = countWithin(adj1, i, k) + maxT2;\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

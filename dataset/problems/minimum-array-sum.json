@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-array-sum",
+  "number": 3366,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subproblem Identification",
+      "text": "For each element, you must decide whether to apply no operation, operation 1, operation 2, or both operations."
+    },
+    {
+      "level": 2,
+      "title": "Order of Combined Operations",
+      "text": "When both operations are applied, dividing then subtracting can produce a different result than subtracting then dividing."
+    },
+    {
+      "level": 3,
+      "title": "State Formulation",
+      "text": "Define state (index, remaining op1, remaining op2) and take the minimum across all valid choices for the current index."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom functools import cache\n\nclass Solution:\n    def minArraySum(self, nums: list[int], k: int, op1: int, op2: int) -> int:\n        n = len(nums)\n        \n        @cache\n        def dp(i: int, o1: int, o2: int) -> int:\n            if i == n:\n                return 0\n            x = nums[i]\n            # Choice 1: no operation\n            res = x + dp(i + 1, o1, o2)\n            \n            # Choice 2: op1 only\n            if o1 > 0:\n                res = min(res, (x + 1) // 2 + dp(i + 1, o1 - 1, o2))\n                \n            # Choice 3: op2 only\n            if o2 > 0 and x >= k:\n                res = min(res, (x - k) + dp(i + 1, o1, o2 - 1))\n                \n            # Choice 4: op1 then op2\n            if o1 > 0 and o2 > 0:\n                v1 = (x + 1) // 2\n                if v1 >= k:\n                    res = min(res, (v1 - k) + dp(i + 1, o1 - 1, o2 - 1))\n                    \n            # Choice 5: op2 then op1\n            if o1 > 0 and o2 > 0 and x >= k:\n                v2 = x - k\n                res = min(res, (v2 + 1) // 2 + dp(i + 1, o1 - 1, o2 - 1))\n                \n            return res\n            \n        return dp(0, op1, op2)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * op1 * op2)",
+    "space": "O(n * op1 * op2)",
+    "variables": [
+      "n: length of nums",
+      "op1: division operations budget",
+      "op2: subtraction operations budget"
+    ],
+    "notes": "Dynamic programming evaluates 5 choices per element: none, op1, op2, op1 then op2, or op2 then op1.",
+    "whyNaiveFails": "Greedy choices fail because the optimal ordering of operations depends on specific numeric thresholds.",
+    "spaceTimeTradeoff": "O(n * op1 * op2) states memoized.",
+    "interviewerExpectation": "Designs state transitions covering all five possible operation applications per index."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from functools import cache\n\nclass Solution:\n    def minArraySum(self, nums: list[int], k: int, op1: int, op2: int) -> int:\n        n = len(nums)\n        \n        @cache\n        def dp(i: int, o1: int, o2: int) -> int:\n            if i == n:\n                return 0\n            x = nums[i]\n            # Choice 1: no operation\n            res = x + dp(i + 1, o1, o2)\n            \n            # Choice 2: op1 only\n            if o1 > 0:\n                res = min(res, (x + 1) // 2 + dp(i + 1, o1 - 1, o2))\n                \n            # Choice 3: op2 only\n            if o2 > 0 and x >= k:\n                res = min(res, (x - k) + dp(i + 1, o1, o2 - 1))\n                \n            # Choice 4: op1 then op2\n            if o1 > 0 and o2 > 0:\n                v1 = (x + 1) // 2\n                if v1 >= k:\n                    res = min(res, (v1 - k) + dp(i + 1, o1 - 1, o2 - 1))\n                    \n            # Choice 5: op2 then op1\n            if o1 > 0 and o2 > 0 and x >= k:\n                v2 = x - k\n                res = min(res, (v2 + 1) // 2 + dp(i + 1, o1 - 1, o2 - 1))\n                \n            return res\n            \n        return dp(0, op1, op2)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    int minArraySum(vector<int>& nums, int k, int op1, int op2) {\n        int n = nums.size();\n        vector<vector<vector<int>>> memo(n, vector<vector<int>>(op1 + 1, vector<int>(op2 + 1, -1)));\n        \n        auto dp = [&](auto& self, int i, int o1, int o2) -> int {\n            if (i == n) return 0;\n            if (memo[i][o1][o2] != -1) return memo[i][o1][o2];\n            \n            int x = nums[i];\n            int res = x + self(self, i + 1, o1, o2);\n            \n            if (o1 > 0) {\n                res = min(res, (x + 1) / 2 + self(self, i + 1, o1 - 1, o2));\n            }\n            if (o2 > 0 && x >= k) {\n                res = min(res, (x - k) + self(self, i + 1, o1, o2 - 1));\n            }\n            if (o1 > 0 && o2 > 0) {\n                int v1 = (x + 1) / 2;\n                if (v1 >= k) {\n                    res = min(res, (v1 - k) + self(self, i + 1, o1 - 1, o2 - 1));\n                }\n                if (x >= k) {\n                    int v2 = x - k;\n                    res = min(res, (v2 + 1) / 2 + self(self, i + 1, o1 - 1, o2 - 1));\n                }\n            }\n            return memo[i][o1][o2] = res;\n        };\n        \n        return dp(dp, 0, op1, op2);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int minArraySum(int[] nums, int k, int op1, int op2) {\n        int n = nums.length;\n        Integer[][][] memo = new Integer[n][op1 + 1][op2 + 1];\n        return solve(nums, k, 0, op1, op2, memo);\n    }\n    \n    private int solve(int[] nums, int k, int i, int o1, int o2, Integer[][][] memo) {\n        if (i == nums.length) return 0;\n        if (memo[i][o1][o2] != null) return memo[i][o1][o2];\n        \n        int x = nums[i];\n        int res = x + solve(nums, k, i + 1, o1, o2, memo);\n        \n        if (o1 > 0) {\n            res = Math.min(res, (x + 1) / 2 + solve(nums, k, i + 1, o1 - 1, o2, memo));\n        }\n        if (o2 > 0 && x >= k) {\n            res = Math.min(res, (x - k) + solve(nums, k, i + 1, o1, o2 - 1, memo));\n        }\n        if (o1 > 0 && o2 > 0) {\n            int v1 = (x + 1) / 2;\n            if (v1 >= k) {\n                res = Math.min(res, (v1 - k) + solve(nums, k, i + 1, o1 - 1, o2 - 1, memo));\n            }\n            if (x >= k) {\n                int v2 = x - k;\n                res = Math.min(res, (v2 + 1) / 2 + solve(nums, k, i + 1, o1 - 1, o2 - 1, memo));\n            }\n        }\n        return memo[i][o1][o2] = res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minArraySum = function(nums, k, op1, op2) {\n    const n = nums.length;\n    const memo = new Map();\n    \n    const dp = (i, o1, o2) => {\n        if (i === n) return 0;\n        const key = (i * 105 + o1) * 105 + o2;\n        if (memo.has(key)) return memo.get(key);\n        \n        const x = nums[i];\n        let res = x + dp(i + 1, o1, o2);\n        \n        if (o1 > 0) {\n            res = Math.min(res, Math.floor((x + 1) / 2) + dp(i + 1, o1 - 1, o2));\n        }\n        if (o2 > 0 && x >= k) {\n            res = Math.min(res, (x - k) + dp(i + 1, o1, o2 - 1));\n        }\n        if (o1 > 0 && o2 > 0) {\n            const v1 = Math.floor((x + 1) / 2);\n            if (v1 >= k) {\n                res = Math.min(res, (v1 - k) + dp(i + 1, o1 - 1, o2 - 1));\n            }\n            if (x >= k) {\n                const v2 = x - k;\n                res = Math.min(res, Math.floor((v2 + 1) / 2) + dp(i + 1, o1 - 1, o2 - 1));\n            }\n        }\n        memo.set(key, res);\n        return res;\n    };\n    \n    return dp(0, op1, op2);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

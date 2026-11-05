@@ -1,0 +1,78 @@
+{
+  "slug": "find-the-maximum-number-of-fruits-collected",
+  "number": 3363,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-grid-2d"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Disjoint Trajectories",
+      "text": "Notice that Child 1 is strictly restricted to the main diagonal, while Child 2 and Child 3 stay strictly in the upper and lower triangles until meeting at the end."
+    },
+    {
+      "level": 2,
+      "title": "Independent Path Optimization",
+      "text": "Since paths only share the destination cell, you can solve for Child 2 and Child 3 independently using grid transitions."
+    },
+    {
+      "level": 3,
+      "title": "Boundary Clipping",
+      "text": "For Child 2 in row r, valid column c must satisfy c > r and c >= n - 1 - r so that destination (n-1, n-1) remains reachable."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maxCollectedFruits(self, fruits: list[list[int]]) -> int:\n        n = len(fruits)\n        child1 = sum(fruits[i][i] for i in range(n))\n        \n        def collect_upper(grid):\n            dp = [[-1] * n for _ in range(n)]\n            dp[0][n - 1] = grid[0][n - 1]\n            for r in range(n - 1):\n                for c in range(r + 1, n):\n                    if dp[r][c] == -1:\n                        continue\n                    for nc in (c - 1, c, c + 1):\n                        if nc > r + 1 and nc < n and nc >= n - 1 - (r + 1):\n                            if dp[r][c] + grid[r + 1][nc] > dp[r + 1][nc]:\n                                dp[r + 1][nc] = dp[r][c] + grid[r + 1][nc]\n                        elif r + 1 == n - 1 and nc == n - 1:\n                            if dp[r][c] + grid[r + 1][nc] > dp[r + 1][nc]:\n                                dp[r + 1][nc] = dp[r][c] + grid[r + 1][nc]\n            return dp[n - 1][n - 1]\n        \n        child2 = collect_upper(fruits)\n        transposed = [[fruits[c][r] for c in range(n)] for r in range(n)]\n        child3 = collect_upper(transposed)\n        \n        return child1 + child2 + child3 - 2 * fruits[n - 1][n - 1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2)",
+    "space": "O(n^2)",
+    "variables": [
+      "n: grid dimension"
+    ],
+    "notes": "Main diagonal path is fixed; upper and lower triangle paths are solved independently via DP transitions.",
+    "whyNaiveFails": "Evaluating 3^(n-1) paths for each child causes combinatorial explosion.",
+    "spaceTimeTradeoff": "O(n^2) DP tables cache optimal paths in each triangle.",
+    "interviewerExpectation": "Recognizes that the three paths are disjoint except at the destination cell."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxCollectedFruits(self, fruits: list[list[int]]) -> int:\n        n = len(fruits)\n        child1 = sum(fruits[i][i] for i in range(n))\n        \n        def collect_upper(grid):\n            dp = [[-1] * n for _ in range(n)]\n            dp[0][n - 1] = grid[0][n - 1]\n            for r in range(n - 1):\n                for c in range(r + 1, n):\n                    if dp[r][c] == -1:\n                        continue\n                    for nc in (c - 1, c, c + 1):\n                        if nc > r + 1 and nc < n and nc >= n - 1 - (r + 1):\n                            if dp[r][c] + grid[r + 1][nc] > dp[r + 1][nc]:\n                                dp[r + 1][nc] = dp[r][c] + grid[r + 1][nc]\n                        elif r + 1 == n - 1 and nc == n - 1:\n                            if dp[r][c] + grid[r + 1][nc] > dp[r + 1][nc]:\n                                dp[r + 1][nc] = dp[r][c] + grid[r + 1][nc]\n            return dp[n - 1][n - 1]\n        \n        child2 = collect_upper(fruits)\n        transposed = [[fruits[c][r] for c in range(n)] for r in range(n)]\n        child3 = collect_upper(transposed)\n        \n        return child1 + child2 + child3 - 2 * fruits[n - 1][n - 1]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    int maxCollectedFruits(vector<vector<int>>& fruits) {\n        int n = fruits.size();\n        int child1 = 0;\n        for (int i = 0; i < n; ++i) child1 += fruits[i][i];\n        \n        auto collectUpper = [&](const vector<vector<int>>& grid) {\n            vector<vector<int>> dp(n, vector<int>(n, -1));\n            dp[0][n - 1] = grid[0][n - 1];\n            for (int r = 0; r < n - 1; ++r) {\n                for (int c = r + 1; c < n; ++c) {\n                    if (dp[r][c] == -1) continue;\n                    for (int nc : {c - 1, c, c + 1}) {\n                        if (nc > r + 1 && nc < n && nc >= n - 1 - (r + 1)) {\n                            dp[r + 1][nc] = max(dp[r + 1][nc], dp[r][c] + grid[r + 1][nc]);\n                        } else if (r + 1 == n - 1 && nc == n - 1) {\n                            dp[r + 1][nc] = max(dp[r + 1][nc], dp[r][c] + grid[r + 1][nc]);\n                        }\n                    }\n                }\n            }\n            return dp[n - 1][n - 1];\n        };\n        \n        int child2 = collectUpper(fruits);\n        vector<vector<int>> transposed(n, vector<int>(n));\n        for (int r = 0; r < n; ++r)\n            for (int c = 0; c < n; ++c)\n                transposed[r][c] = fruits[c][r];\n        int child3 = collectUpper(transposed);\n        \n        return child1 + child2 + child3 - 2 * fruits[n - 1][n - 1];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int maxCollectedFruits(int[][] fruits) {\n        int n = fruits.length;\n        int child1 = 0;\n        for (int i = 0; i < n; ++i) child1 += fruits[i][i];\n        \n        int child2 = collectUpper(fruits);\n        int[][] transposed = new int[n][n];\n        for (int r = 0; r < n; ++r)\n            for (int c = 0; c < n; ++c)\n                transposed[r][c] = fruits[c][r];\n        int child3 = collectUpper(transposed);\n        \n        return child1 + child2 + child3 - 2 * fruits[n - 1][n - 1];\n    }\n    \n    private int collectUpper(int[][] grid) {\n        int n = grid.length;\n        int[][] dp = new int[n][n];\n        for (int[] row : dp) Arrays.fill(row, -1);\n        dp[0][n - 1] = grid[0][n - 1];\n        \n        for (int r = 0; r < n - 1; ++r) {\n            for (int c = r + 1; c < n; ++c) {\n                if (dp[r][c] == -1) continue;\n                for (int nc : new int[]{c - 1, c, c + 1}) {\n                    if (nc > r + 1 && nc < n && nc >= n - 1 - (r + 1)) {\n                        dp[r + 1][nc] = Math.max(dp[r + 1][nc], dp[r][c] + grid[r + 1][nc]);\n                    } else if (r + 1 == n - 1 && nc == n - 1) {\n                        dp[r + 1][nc] = Math.max(dp[r + 1][nc], dp[r][c] + grid[r + 1][nc]);\n                    }\n                }\n            }\n        }\n        return dp[n - 1][n - 1];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxCollectedFruits = function(fruits) {\n    const n = fruits.length;\n    let child1 = 0;\n    for (let i = 0; i < n; i++) child1 += fruits[i][i];\n    \n    const collectUpper = (grid) => {\n        const dp = Array.from({ length: n }, () => Array(n).fill(-1));\n        dp[0][n - 1] = grid[0][n - 1];\n        for (let r = 0; r < n - 1; r++) {\n            for (let c = r + 1; c < n; c++) {\n                if (dp[r][c] === -1) continue;\n                for (const nc of [c - 1, c, c + 1]) {\n                    if (nc > r + 1 && nc < n && nc >= n - 1 - (r + 1)) {\n                        dp[r + 1][nc] = Math.max(dp[r + 1][nc], dp[r][c] + grid[r + 1][nc]);\n                    } else if (r + 1 === n - 1 && nc === n - 1) {\n                        dp[r + 1][nc] = Math.max(dp[r + 1][nc], dp[r][c] + grid[r + 1][nc]);\n                    }\n                }\n            }\n        }\n        return dp[n - 1][n - 1];\n    };\n    \n    const child2 = collectUpper(fruits);\n    const transposed = Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => fruits[c][r]));\n    const child3 = collectUpper(transposed);\n    \n    return child1 + child2 + child3 - 2 * fruits[n - 1][n - 1];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}
