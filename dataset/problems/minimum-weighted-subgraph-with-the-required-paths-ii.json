@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-weighted-subgraph-with-the-required-paths-ii",
+  "number": 3553,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tree Path Union Property",
+      "text": "In a weighted tree, the minimum connected subtree spanning three vertices is the union of their pairwise paths."
+    },
+    {
+      "level": 2,
+      "title": "Pairwise Distance Division",
+      "text": "Every edge in the spanning subtree is covered exactly twice in the perimeter sum dist(u, v) + dist(v, w) + dist(u, w)."
+    },
+    {
+      "level": 3,
+      "title": "Binary Lifting Distance",
+      "text": "Precompute depths and binary lifting ancestor tables to evaluate tree path distances in O(log n) time per query."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import deque\n\nclass Solution:\n    def minimumWeight(self, edges: List[List[int]], queries: List[List[int]]) -> List[int]:\n        n = len(edges) + 1\n        graph = [[] for _ in range(n)]\n        for u, v, w in edges:\n            graph[u].append((v, w))\n            graph[v].append((u, w))\n\n        LOG = n.bit_length() + 1\n        up = [[0] * LOG for _ in range(n)]\n        depth = [0] * n\n        dist = [0] * n\n\n        q = deque([0])\n        visited = [False] * n\n        visited[0] = True\n\n        while q:\n            u = q.popleft()\n            for v, w in graph[u]:\n                if not visited[v]:\n                    visited[v] = True\n                    up[v][0] = u\n                    depth[v] = depth[u] + 1\n                    dist[v] = dist[u] + w\n                    q.append(v)\n\n        for j in range(1, LOG):\n            for i in range(n):\n                up[i][j] = up[up[i][j - 1]][j - 1]\n\n        def lca(u: int, v: int) -> int:\n            if depth[u] > depth[v]:\n                u, v = v, u\n            diff = depth[v] - depth[u]\n            for i in range(LOG):\n                if (diff >> i) & 1:\n                    v = up[v][i]\n            if u == v:\n                return u\n            for i in range(LOG - 1, -1, -1):\n                if up[u][i] != up[v][i]:\n                    u = up[u][i]\n                    v = up[v][i]\n            return up[u][0]\n\n        def distance(u: int, v: int) -> int:\n            return dist[u] + dist[v] - 2 * dist[lca(u, v)]\n\n        ans = []\n        for s1, s2, d in queries:\n            ans.append((distance(s1, s2) + distance(s1, d) + distance(s2, d)) // 2)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((n + q) log n)",
+    "space": "O(n log n)",
+    "variables": [
+      "n: number of tree nodes",
+      "q: number of queries"
+    ],
+    "notes": "Binary lifting enables O(log n) LCA queries.",
+    "whyNaiveFails": "Running individual path searches for each query takes O(n * q) time.",
+    "spaceTimeTradeoff": "O(n log n) sparse tables allow answering queries in logarithmic time.",
+    "interviewerExpectation": "Recognize the tree Steiner minimal tree perimeter identity and implement binary lifting."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import deque\n\nclass Solution:\n    def minimumWeight(self, edges: List[List[int]], queries: List[List[int]]) -> List[int]:\n        n = len(edges) + 1\n        graph = [[] for _ in range(n)]\n        for u, v, w in edges:\n            graph[u].append((v, w))\n            graph[v].append((u, w))\n\n        LOG = n.bit_length() + 1\n        up = [[0] * LOG for _ in range(n)]\n        depth = [0] * n\n        dist = [0] * n\n\n        q = deque([0])\n        visited = [False] * n\n        visited[0] = True\n\n        while q:\n            u = q.popleft()\n            for v, w in graph[u]:\n                if not visited[v]:\n                    visited[v] = True\n                    up[v][0] = u\n                    depth[v] = depth[u] + 1\n                    dist[v] = dist[u] + w\n                    q.append(v)\n\n        for j in range(1, LOG):\n            for i in range(n):\n                up[i][j] = up[up[i][j - 1]][j - 1]\n\n        def lca(u: int, v: int) -> int:\n            if depth[u] > depth[v]:\n                u, v = v, u\n            diff = depth[v] - depth[u]\n            for i in range(LOG):\n                if (diff >> i) & 1:\n                    v = up[v][i]\n            if u == v:\n                return u\n            for i in range(LOG - 1, -1, -1):\n                if up[u][i] != up[v][i]:\n                    u = up[u][i]\n                    v = up[v][i]\n            return up[u][0]\n\n        def distance(u: int, v: int) -> int:\n            return dist[u] + dist[v] - 2 * dist[lca(u, v)]\n\n        ans = []\n        for s1, s2, d in queries:\n            ans.append((distance(s1, s2) + distance(s1, d) + distance(s2, d)) // 2)\n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <cmath>\n\nclass Solution {\npublic:\n    std::vector<int> minimumWeight(std::vector<std::vector<int>>& edges, std::vector<std::vector<int>>& queries) {\n        int n = edges.size() + 1;\n        std::vector<std::vector<std::pair<int, int>>> graph(n);\n        for (const auto& e : edges) {\n            graph[e[0]].push_back({e[1], e[2]});\n            graph[e[1]].push_back({e[0], e[2]});\n        }\n\n        int LOG = 0;\n        while ((1 << LOG) <= n) LOG++;\n        LOG++;\n\n        std::vector<std::vector<int>> up(n, std::vector<int>(LOG, 0));\n        std::vector<int> depth(n, 0);\n        std::vector<long long> dist(n, 0);\n\n        std::queue<int> q;\n        std::vector<bool> visited(n, false);\n        q.push(0);\n        visited[0] = true;\n\n        while (!q.empty()) {\n            int u = q.front();\n            q.pop();\n            for (const auto& [v, w] : graph[u]) {\n                if (!visited[v]) {\n                    visited[v] = true;\n                    up[v][0] = u;\n                    depth[v] = depth[u] + 1;\n                    dist[v] = dist[u] + w;\n                    q.push(v);\n                }\n            }\n        }\n\n        for (int j = 1; j < LOG; ++j) {\n            for (int i = 0; i < n; ++i) {\n                up[i][j] = up[up[i][j - 1]][j - 1];\n            }\n        }\n\n        auto lca = [&](int u, int v) -> int {\n            if (depth[u] > depth[v]) std::swap(u, v);\n            int diff = depth[v] - depth[u];\n            for (int i = 0; i < LOG; ++i) {\n                if ((diff >> i) & 1) {\n                    v = up[v][i];\n                }\n            }\n            if (u == v) return u;\n            for (int i = LOG - 1; i >= 0; --i) {\n                if (up[u][i] != up[v][i]) {\n                    u = up[u][i];\n                    v = up[v][i];\n                }\n            }\n            return up[u][0];\n        };\n\n        auto distance = [&](int u, int v) -> long long {\n            return dist[u] + dist[v] - 2 * dist[lca(u, v)];\n        };\n\n        std::vector<int> ans;\n        ans.reserve(queries.size());\n        for (const auto& query : queries) {\n            int s1 = query[0], s2 = query[1], d = query[2];\n            long long total = distance(s1, s2) + distance(s1, d) + distance(s2, d);\n            ans.push_back((int)(total / 2));\n        }\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] minimumWeight(int[][] edges, int[][] queries) {\n        int n = edges.length + 1;\n        List<int[]>[] graph = new ArrayList[n];\n        for (int i = 0; i < n; ++i) graph[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            graph[e[0]].add(new int[]{e[1], e[2]});\n            graph[e[1]].add(new int[]{e[0], e[2]});\n        }\n\n        int LOG = 1;\n        while ((1 << LOG) <= n) LOG++;\n        LOG++;\n\n        int[][] up = new int[n][LOG];\n        int[] depth = new int[n];\n        long[] dist = new long[n];\n\n        Queue<Integer> q = new LinkedList<>();\n        boolean[] visited = new boolean[n];\n        q.offer(0);\n        visited[0] = true;\n\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            for (int[] edge : graph[u]) {\n                int v = edge[0], w = edge[1];\n                if (!visited[v]) {\n                    visited[v] = true;\n                    up[v][0] = u;\n                    depth[v] = depth[u] + 1;\n                    dist[v] = dist[u] + w;\n                    q.offer(v);\n                }\n            }\n        }\n\n        for (int j = 1; j < LOG; ++j) {\n            for (int i = 0; i < n; ++i) {\n                up[i][j] = up[up[i][j - 1]][j - 1];\n            }\n        }\n\n        int[] ans = new int[queries.length];\n        for (int i = 0; i < queries.length; ++i) {\n            int s1 = queries[i][0], s2 = queries[i][1], d = queries[i][2];\n            long d12 = getDistance(s1, s2, up, depth, dist, LOG);\n            long d1d = getDistance(s1, d, up, depth, dist, LOG);\n            long d2d = getDistance(s2, d, up, depth, dist, LOG);\n            ans[i] = (int)((d12 + d1d + d2d) / 2);\n        }\n        return ans;\n    }\n\n    private long getDistance(int u, int v, int[][] up, int[] depth, long[] dist, int LOG) {\n        return dist[u] + dist[v] - 2 * dist[getLca(u, v, up, depth, LOG)];\n    }\n\n    private int getLca(int u, int v, int[][] up, int[] depth, int LOG) {\n        if (depth[u] > depth[v]) {\n            int t = u; u = v; v = t;\n        }\n        int diff = depth[v] - depth[u];\n        for (int i = 0; i < LOG; ++i) {\n            if (((diff >> i) & 1) != 0) {\n                v = up[v][i];\n            }\n        }\n        if (u == v) return u;\n        for (int i = LOG - 1; i >= 0; --i) {\n            if (up[u][i] != up[v][i]) {\n                u = up[u][i];\n                v = up[v][i];\n            }\n        }\n        return up[u][0];\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[][]} edges\n * @param {number[][]} queries\n * @return {number[]}\n */\nvar minimumWeight = function(edges, queries) {\n    const n = edges.length + 1;\n    const graph = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        graph[u].push([v, w]);\n        graph[v].push([u, w]);\n    }\n\n    let LOG = 1;\n    while ((1 << LOG) <= n) LOG++;\n    LOG++;\n\n    const up = Array.from({ length: n }, () => new Array(LOG).fill(0));\n    const depth = new Array(n).fill(0);\n    const dist = new Array(n).fill(0);\n\n    const q = [0];\n    const visited = new Array(n).fill(false);\n    visited[0] = true;\n\n    while (q.length > 0) {\n        const u = q.shift();\n        for (const [v, w] of graph[u]) {\n            if (!visited[v]) {\n                visited[v] = true;\n                up[v][0] = u;\n                depth[v] = depth[u] + 1;\n                dist[v] = dist[u] + w;\n                q.push(v);\n            }\n        }\n    }\n\n    for (let j = 1; j < LOG; ++j) {\n        for (let i = 0; i < n; ++i) {\n            up[i][j] = up[up[i][j - 1]][j - 1];\n        }\n    }\n\n    function lca(u, v) {\n        if (depth[u] > depth[v]) [u, v] = [v, u];\n        let diff = depth[v] - depth[u];\n        for (let i = 0; i < LOG; ++i) {\n            if ((diff >> i) & 1) {\n                v = up[v][i];\n            }\n        }\n        if (u === v) return u;\n        for (let i = LOG - 1; i >= 0; --i) {\n            if (up[u][i] !== up[v][i]) {\n                u = up[u][i];\n                v = up[v][i];\n            }\n        }\n        return up[u][0];\n    }\n\n    function distance(u, v) {\n        return dist[u] + dist[v] - 2 * dist[lca(u, v)];\n    }\n\n    const ans = [];\n    for (const [s1, s2, d] of queries) {\n        const total = distance(s1, s2) + distance(s1, d) + distance(s2, d);\n        ans.push(Math.floor(total / 2));\n    }\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

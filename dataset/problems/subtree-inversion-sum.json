@@ -1,0 +1,79 @@
+{
+  "slug": "subtree-inversion-sum",
+  "number": 3544,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subtree Inversion Parity",
+      "text": "Determine how flipping signs at a node affects its entire downstream branch."
+    },
+    {
+      "level": 2,
+      "title": "Cooldown Tracking",
+      "text": "Inversion can only be applied when at least k steps have elapsed since the prior flip."
+    },
+    {
+      "level": 3,
+      "title": "Tree Recurrence",
+      "text": "Combine child returns under both active inversion states, choosing the maximum sum when cooldown is satisfied."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def subtreeInversionSum(self, edges: List[List[int]], nums: List[int], k: int) -> int:\n        n = len(edges) + 1\n        graph = [[] for _ in range(n)]\n        for u, v in edges:\n            graph[u].append(v)\n            graph[v].append(u)\n        parent = [-1] * n\n        memo = {}\n\n        def dfs(u: int, steps: int, inverted: bool) -> int:\n            state = (u, steps, inverted)\n            if state in memo:\n                return memo[state]\n            val = -nums[u] if inverted else nums[u]\n            neg_val = -val\n            for v in graph[u]:\n                if v != parent[u]:\n                    parent[v] = u\n                    val += dfs(v, min(k, steps + 1), inverted)\n                    if steps == k:\n                        neg_val += dfs(v, 1, not inverted)\n            res = max(val, neg_val) if steps == k else val\n            memo[state] = res\n            return res\n\n        return dfs(0, k, False)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * k)",
+    "space": "O(n * k)",
+    "variables": [
+      "n: number of tree nodes",
+      "k: minimum cooldown steps"
+    ],
+    "notes": "Memoized states track node, cooldown steps, and boolean parity.",
+    "whyNaiveFails": "Exponential branches arise when deciding independently at every node.",
+    "spaceTimeTradeoff": "Bounding cooldown at k keeps distinct memoized states to O(n * k).",
+    "interviewerExpectation": "Properly represent parity propagation down the tree structure."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def subtreeInversionSum(self, edges: List[List[int]], nums: List[int], k: int) -> int:\n        n = len(edges) + 1\n        graph = [[] for _ in range(n)]\n        for u, v in edges:\n            graph[u].append(v)\n            graph[v].append(u)\n        parent = [-1] * n\n        memo = {}\n\n        def dfs(u: int, steps: int, inverted: bool) -> int:\n            state = (u, steps, inverted)\n            if state in memo:\n                return memo[state]\n            val = -nums[u] if inverted else nums[u]\n            neg_val = -val\n            for v in graph[u]:\n                if v != parent[u]:\n                    parent[v] = u\n                    val += dfs(v, min(k, steps + 1), inverted)\n                    if steps == k:\n                        neg_val += dfs(v, 1, not inverted)\n            res = max(val, neg_val) if steps == k else val\n            memo[state] = res\n            return res\n\n        return dfs(0, k, False)\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <map>\n#include <tuple>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int subtreeInversionSum(std::vector<std::vector<int>>& edges, std::vector<int>& nums, int k) {\n        int n = edges.size() + 1;\n        std::vector<std::vector<int>> graph(n);\n        for (const auto& e : edges) {\n            graph[e[0]].push_back(e[1]);\n            graph[e[1]].push_back(e[0]);\n        }\n\n        std::vector<int> parent(n, -1);\n        std::map<std::tuple<int, int, bool>, int> memo;\n\n        auto dfs = [&](auto& self, int u, int steps, bool inverted) -> int {\n            auto key = std::make_tuple(u, steps, inverted);\n            if (memo.count(key)) return memo[key];\n\n            int val = inverted ? -nums[u] : nums[u];\n            int neg_val = -val;\n\n            for (int v : graph[u]) {\n                if (v != parent[u]) {\n                    parent[v] = u;\n                    val += self(self, v, std::min(k, steps + 1), inverted);\n                    if (steps == k) {\n                        neg_val += self(self, v, 1, !inverted);\n                    }\n                }\n            }\n            int res = (steps == k) ? std::max(val, neg_val) : val;\n            return memo[key] = res;\n        };\n\n        return dfs(dfs, 0, k, false);\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private List<Integer>[] graph;\n    private int[] parent;\n    private Map<String, Integer> memo;\n\n    public int subtreeInversionSum(int[][] edges, int[] nums, int k) {\n        int n = edges.length + 1;\n        graph = new ArrayList[n];\n        for (int i = 0; i < n; ++i) graph[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            graph[e[0]].add(e[1]);\n            graph[e[1]].add(e[0]);\n        }\n\n        parent = new int[n];\n        Arrays.fill(parent, -1);\n        memo = new HashMap<>();\n\n        return dfs(0, k, false, nums, k);\n    }\n\n    private int dfs(int u, int steps, boolean inverted, int[] nums, int k) {\n        String key = u + \",\" + steps + \",\" + inverted;\n        if (memo.containsKey(key)) return memo.get(key);\n\n        int val = inverted ? -nums[u] : nums[u];\n        int negVal = -val;\n\n        for (int v : graph[u]) {\n            if (v != parent[u]) {\n                parent[v] = u;\n                val += dfs(v, Math.min(k, steps + 1), inverted, nums, k);\n                if (steps == k) {\n                    negVal += dfs(v, 1, !inverted, nums, k);\n                }\n            }\n        }\n        int res = (steps == k) ? Math.max(val, negVal) : val;\n        memo.put(key, res);\n        return res;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[][]} edges\n * @param {number[]} nums\n * @param {number} k\n * @return {number}\n */\nvar subtreeInversionSum = function(edges, nums, k) {\n    const n = edges.length + 1;\n    const graph = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        graph[u].push(v);\n        graph[v].push(u);\n    }\n\n    const parent = new Array(n).fill(-1);\n    const memo = new Map();\n\n    function dfs(u, steps, inverted) {\n        const key = `${u},${steps},${inverted}`;\n        if (memo.has(key)) return memo.get(key);\n\n        let val = inverted ? -nums[u] : nums[u];\n        let negVal = -val;\n\n        for (const v of graph[u]) {\n            if (v !== parent[u]) {\n                parent[v] = u;\n                val += dfs(v, Math.min(k, steps + 1), inverted);\n                if (steps === k) {\n                    negVal += dfs(v, 1, !inverted);\n                }\n            }\n        }\n        const res = steps === k ? Math.max(val, negVal) : val;\n        memo.set(key, res);\n        return res;\n    }\n\n    return dfs(0, k, false);\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

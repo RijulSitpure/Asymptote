@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-sum-of-edge-values-in-a-graph",
+  "number": 3547,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path",
+    "greedy-general"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Component Topology Decomposition",
+      "text": "Partition the graph into connected components, distinguishing simple cycles from simple paths."
+    },
+    {
+      "level": 2,
+      "title": "Greedy Weight Allocation",
+      "text": "Assign the largest available values to components that generate the highest multiplication density, prioritizing cycles over paths."
+    },
+    {
+      "level": 3,
+      "title": "Alternating Value Arrangement",
+      "text": "Arrange assigned values in an alternating snake order around the cycle or path to maximize adjacent products."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import deque\n\nclass Solution:\n    def maxScore(self, n: int, edges: List[List[int]]) -> int:\n        graph = [[] for _ in range(n)]\n        for u, v in edges:\n            graph[u].append(v)\n            graph[v].append(u)\n        seen = [False] * n\n        cycle_sizes = []\n        path_sizes = []\n        for i in range(n):\n            if seen[i]:\n                continue\n            comp = [i]\n            seen[i] = True\n            for u in comp:\n                for v in graph[u]:\n                    if not seen[v]:\n                        seen[v] = True\n                        comp.append(v)\n            if all(len(graph[u]) == 2 for u in comp):\n                cycle_sizes.append(len(comp))\n            elif len(comp) > 1:\n                path_sizes.append(len(comp))\n\n        ans = 0\n        rem_n = n\n        for sz in cycle_sizes:\n            left, right = rem_n - sz + 1, rem_n\n            w = deque([right, right])\n            score = 0\n            for val in range(right - 1, left - 1, -1):\n                fv = w.popleft()\n                score += fv * val\n                w.append(val)\n            ans += score + w[0] * w[1]\n            rem_n -= sz\n\n        for sz in path_sizes:\n            left, right = rem_n - sz + 1, rem_n\n            w = deque([right, right])\n            score = 0\n            for val in range(right - 1, left - 1, -1):\n                fv = w.popleft()\n                score += fv * val\n                w.append(val)\n            ans += score\n            rem_n -= sz\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of graph vertices",
+      "E: number of graph edges"
+    ],
+    "notes": "Linear time traversal and component sorting.",
+    "whyNaiveFails": "Trying all vertex permutations yields factorial complexity O(V!).",
+    "spaceTimeTradeoff": "Component size grouping allows immediate greedy arithmetic.",
+    "interviewerExpectation": "Differentiate cycle components from path components and demonstrate greedy optimality."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import deque\n\nclass Solution:\n    def maxScore(self, n: int, edges: List[List[int]]) -> int:\n        graph = [[] for _ in range(n)]\n        for u, v in edges:\n            graph[u].append(v)\n            graph[v].append(u)\n        seen = [False] * n\n        cycle_sizes = []\n        path_sizes = []\n        for i in range(n):\n            if seen[i]:\n                continue\n            comp = [i]\n            seen[i] = True\n            for u in comp:\n                for v in graph[u]:\n                    if not seen[v]:\n                        seen[v] = True\n                        comp.append(v)\n            if all(len(graph[u]) == 2 for u in comp):\n                cycle_sizes.append(len(comp))\n            elif len(comp) > 1:\n                path_sizes.append(len(comp))\n\n        ans = 0\n        rem_n = n\n        for sz in cycle_sizes:\n            left, right = rem_n - sz + 1, rem_n\n            w = deque([right, right])\n            score = 0\n            for val in range(right - 1, left - 1, -1):\n                fv = w.popleft()\n                score += fv * val\n                w.append(val)\n            ans += score + w[0] * w[1]\n            rem_n -= sz\n\n        for sz in path_sizes:\n            left, right = rem_n - sz + 1, rem_n\n            w = deque([right, right])\n            score = 0\n            for val in range(right - 1, left - 1, -1):\n                fv = w.popleft()\n                score += fv * val\n                w.append(val)\n            ans += score\n            rem_n -= sz\n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <deque>\n#include <numeric>\n\nclass Solution {\npublic:\n    long long maxScore(int n, std::vector<std::vector<int>>& edges) {\n        std::vector<std::vector<int>> graph(n);\n        for (const auto& e : edges) {\n            graph[e[0]].push_back(e[1]);\n            graph[e[1]].push_back(e[0]);\n        }\n\n        std::vector<bool> seen(n, false);\n        std::vector<int> cycle_sizes;\n        std::vector<int> path_sizes;\n\n        for (int i = 0; i < n; ++i) {\n            if (seen[i]) continue;\n            std::vector<int> comp = {i};\n            seen[i] = true;\n            for (size_t idx = 0; idx < comp.size(); ++idx) {\n                int u = comp[idx];\n                for (int v : graph[u]) {\n                    if (!seen[v]) {\n                        seen[v] = true;\n                        comp.push_back(v);\n                    }\n                }\n            }\n\n            bool is_cycle = true;\n            for (int u : comp) {\n                if (graph[u].size() != 2) {\n                    is_cycle = false;\n                    break;\n                }\n            }\n\n            if (is_cycle) {\n                cycle_sizes.push_back(comp.size());\n            } else if (comp.size() > 1) {\n                path_sizes.push_back(comp.size());\n            }\n        }\n\n        long long ans = 0;\n        int rem_n = n;\n\n        for (int sz : cycle_sizes) {\n            int left = rem_n - sz + 1, right = rem_n;\n            std::deque<int> w = {right, right};\n            long long score = 0;\n            for (int val = right - 1; val >= left; --val) {\n                int fv = w.front();\n                w.pop_front();\n                score += 1LL * fv * val;\n                w.push_back(val);\n            }\n            ans += score + 1LL * w[0] * w[1];\n            rem_n -= sz;\n        }\n\n        for (int sz : path_sizes) {\n            int left = rem_n - sz + 1, right = rem_n;\n            std::deque<int> w = {right, right};\n            long long score = 0;\n            for (int val = right - 1; val >= left; --val) {\n                int fv = w.front();\n                w.pop_front();\n                score += 1LL * fv * val;\n                w.push_back(val);\n            }\n            ans += score;\n            rem_n -= sz;\n        }\n\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long maxScore(int n, int[][] edges) {\n        List<Integer>[] graph = new ArrayList[n];\n        for (int i = 0; i < n; ++i) graph[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            graph[e[0]].add(e[1]);\n            graph[e[1]].add(e[0]);\n        }\n\n        boolean[] seen = new boolean[n];\n        List<Integer> cycleSizes = new ArrayList<>();\n        List<Integer> pathSizes = new ArrayList<>();\n\n        for (int i = 0; i < n; ++i) {\n            if (seen[i]) continue;\n            List<Integer> comp = new ArrayList<>();\n            comp.add(i);\n            seen[i] = true;\n            for (int idx = 0; idx < comp.size(); ++idx) {\n                int u = comp.get(idx);\n                for (int v : graph[u]) {\n                    if (!seen[v]) {\n                        seen[v] = true;\n                        comp.add(v);\n                    }\n                }\n            }\n\n            boolean isCycle = true;\n            for (int u : comp) {\n                if (graph[u].size() != 2) {\n                    isCycle = false;\n                    break;\n                }\n            }\n\n            if (isCycle) {\n                cycleSizes.add(comp.size());\n            } else if (comp.size() > 1) {\n                pathSizes.add(comp.size());\n            }\n        }\n\n        long ans = 0;\n        int remN = n;\n\n        for (int sz : cycleSizes) {\n            int left = remN - sz + 1, right = remN;\n            Deque<Integer> w = new ArrayDeque<>();\n            w.add(right);\n            w.add(right);\n            long score = 0;\n            for (int val = right - 1; val >= left; --val) {\n                int fv = w.pollFirst();\n                score += (long) fv * val;\n                w.addLast(val);\n            }\n            int first = w.pollFirst();\n            int second = w.pollFirst();\n            ans += score + (long) first * second;\n            remN -= sz;\n        }\n\n        for (int sz : pathSizes) {\n            int left = remN - sz + 1, right = remN;\n            Deque<Integer> w = new ArrayDeque<>();\n            w.add(right);\n            w.add(right);\n            long score = 0;\n            for (int val = right - 1; val >= left; --val) {\n                int fv = w.pollFirst();\n                score += (long) fv * val;\n                w.addLast(val);\n            }\n            ans += score;\n            remN -= sz;\n        }\n\n        return ans;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @return {number}\n */\nvar maxScore = function(n, edges) {\n    const graph = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        graph[u].push(v);\n        graph[v].push(u);\n    }\n\n    const seen = new Array(n).fill(false);\n    const cycleSizes = [];\n    const pathSizes = [];\n\n    for (let i = 0; i < n; ++i) {\n        if (seen[i]) continue;\n        const comp = [i];\n        seen[i] = true;\n        for (let idx = 0; idx < comp.length; ++idx) {\n            const u = comp[idx];\n            for (const v of graph[u]) {\n                if (!seen[v]) {\n                    seen[v] = true;\n                    comp.push(v);\n                }\n            }\n        }\n\n        let isCycle = true;\n        for (const u of comp) {\n            if (graph[u].length !== 2) {\n                isCycle = false;\n                break;\n            }\n        }\n\n        if (isCycle) {\n            cycleSizes.push(comp.length);\n        } else if (comp.length > 1) {\n            pathSizes.push(comp.length);\n        }\n    }\n\n    let ans = 0;\n    let remN = n;\n\n    for (const sz of cycleSizes) {\n        const left = remN - sz + 1, right = remN;\n        const w = [right, right];\n        let score = 0;\n        for (let val = right - 1; val >= left; --val) {\n            const fv = w.shift();\n            score += fv * val;\n            w.push(val);\n        }\n        ans += score + w[0] * w[1];\n        remN -= sz;\n    }\n\n    for (const sz of pathSizes) {\n        const left = remN - sz + 1, right = remN;\n        const w = [right, right];\n        let score = 0;\n        for (let val = right - 1; val >= left; --val) {\n            const fv = w.shift();\n            score += fv * val;\n            w.push(val);\n        }\n        ans += score;\n        remN -= sz;\n    }\n\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

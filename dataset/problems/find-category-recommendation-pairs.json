@@ -1,0 +1,74 @@
+{
+  "slug": "find-category-recommendation-pairs",
+  "number": 3554,
+  "category": "Database",
+  "patterns": [
+    "join-filter",
+    "group-aggregate"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Distinct User Category Association",
+      "text": "Extract unique category purchases per customer before joining."
+    },
+    {
+      "level": 2,
+      "title": "Pairwise Category Comparison",
+      "text": "Join the distinct customer category dataset with itself on identical customer identifiers enforcing strictly ascending category ordering."
+    },
+    {
+      "level": 3,
+      "title": "Threshold Filtering and Ordering",
+      "text": "Count distinct customers per category pair, retain pairs with customer count at least 3, and order by count descending then category names ascending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH UserCategories AS (\n    SELECT DISTINCT \n        p.user_id, \n        i.category\n    FROM ProductPurchases p\n    JOIN ProductInfo i \n      ON p.product_id = i.product_id\n),\nCategoryPairs AS (\n    SELECT \n        uc1.user_id,\n        uc1.category AS category1,\n        uc2.category AS category2\n    FROM UserCategories uc1\n    JOIN UserCategories uc2 \n      ON uc1.user_id = uc2.user_id \n     AND uc1.category < uc2.category\n),\nPairCustomerCounts AS (\n    SELECT \n        category1, \n        category2, \n        COUNT(DISTINCT user_id) AS customer_count\n    FROM CategoryPairs\n    GROUP BY category1, category2\n)\nSELECT \n    category1, \n    category2, \n    customer_count\nFROM PairCustomerCounts\nWHERE customer_count >= 3\nORDER BY customer_count DESC, \n         category1 ASC, \n         category2 ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * K + P log P)",
+    "space": "O(N * K)",
+    "variables": [
+      "N: number of purchases",
+      "K: average categories per customer",
+      "P: number of candidate pairs"
+    ],
+    "notes": "Group aggregation with self-join on deduplicated customer categories.",
+    "whyNaiveFails": "Joining full purchase tables without category deduplication counts duplicate purchases by the same buyer multiple times.",
+    "spaceTimeTradeoff": "CTE deduplication minimizes rows fed into the self-join.",
+    "interviewerExpectation": "Use CTEs or subqueries to deduplicate categories per customer and avoid self-pairings."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH UserCategories AS (\n    SELECT DISTINCT \n        p.user_id, \n        i.category\n    FROM ProductPurchases p\n    JOIN ProductInfo i \n      ON p.product_id = i.product_id\n),\nCategoryPairs AS (\n    SELECT \n        uc1.user_id,\n        uc1.category AS category1,\n        uc2.category AS category2\n    FROM UserCategories uc1\n    JOIN UserCategories uc2 \n      ON uc1.user_id = uc2.user_id \n     AND uc1.category < uc2.category\n),\nPairCustomerCounts AS (\n    SELECT \n        category1, \n        category2, \n        COUNT(DISTINCT user_id) AS customer_count\n    FROM CategoryPairs\n    GROUP BY category1, category2\n)\nSELECT \n    category1, \n    category2, \n    customer_count\nFROM PairCustomerCounts\nWHERE customer_count >= 3\nORDER BY customer_count DESC, \n         category1 ASC, \n         category2 ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH UserCategories AS (\n    SELECT DISTINCT \n        p.user_id, \n        i.category\n    FROM ProductPurchases p\n    JOIN ProductInfo i \n      ON p.product_id = i.product_id\n),\nCategoryPairs AS (\n    SELECT \n        uc1.user_id,\n        uc1.category AS category1,\n        uc2.category AS category2\n    FROM UserCategories uc1\n    JOIN UserCategories uc2 \n      ON uc1.user_id = uc2.user_id \n     AND uc1.category < uc2.category\n),\nPairCustomerCounts AS (\n    SELECT \n        category1, \n        category2, \n        COUNT(DISTINCT user_id) AS customer_count\n    FROM CategoryPairs\n    GROUP BY category1, category2\n)\nSELECT \n    category1, \n    category2, \n    customer_count\nFROM PairCustomerCounts\nWHERE customer_count >= 3\nORDER BY customer_count DESC, \n         category1 ASC, \n         category2 ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_category_recommendation_pairs(product_purchases: pd.DataFrame, product_info: pd.DataFrame) -> pd.DataFrame:\n    merged = product_purchases.merge(product_info, on=\"product_id\", how=\"inner\")\n    user_cats = merged[[\"user_id\", \"category\"]].drop_duplicates()\n    pairs = user_cats.merge(user_cats, on=\"user_id\", suffixes=(\"1\", \"2\"))\n    pairs = pairs[pairs[\"category1\"] < pairs[\"category2\"]]\n    grouped = pairs.groupby([\"category1\", \"category2\"])[\"user_id\"].nunique().reset_index()\n    grouped.rename(columns={\"user_id\": \"customer_count\"}, inplace=True)\n    filtered = grouped[grouped[\"customer_count\"] >= 3]\n    return filtered.sort_values(by=[\"customer_count\", \"category1\", \"category2\"], ascending=[False, True, True])\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

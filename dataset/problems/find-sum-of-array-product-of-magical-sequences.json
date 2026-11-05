@@ -1,0 +1,80 @@
+{
+  "slug": "find-sum-of-array-product-of-magical-sequences",
+  "number": 3539,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Digit Sum by Base-2 Addition",
+      "text": "Represent each power assignment in binary and propagate carries sequentially across bit positions."
+    },
+    {
+      "level": 2,
+      "title": "Carry Propagation State",
+      "text": "At bit index i, assign t occurrences of 2 to the power of i, adding t to the incoming carry."
+    },
+    {
+      "level": 3,
+      "title": "Combinatorial Weighting",
+      "text": "Multiply subproblem solutions by combinations of choosing t items out of the remaining quota and nums[i] raised to t."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def magicalSum(self, m: int, k: int, nums: List[int]) -> int:\n        MOD = 1_000_000_007\n        comb = [[0] * (m + 1) for _ in range(m + 1)]\n        for i in range(m + 1):\n            comb[i][0] = 1\n            for j in range(1, i + 1):\n                comb[i][j] = (comb[i - 1][j - 1] + comb[i - 1][j]) % MOD\n\n        memo = {}\n\n        def dp(leftM: int, leftK: int, i: int, carry: int) -> int:\n            bits = bin(carry).count(\"1\")\n            if leftM < 0 or leftK < 0 or (bits + leftM < leftK):\n                return 0\n            if leftM == 0:\n                return 1 if leftK == bits else 0\n            if i == len(nums):\n                return 0\n            state = (leftM, leftK, i, carry)\n            if state in memo:\n                return memo[state]\n\n            res = 0\n            for t in range(leftM + 1):\n                ways = comb[leftM][t]\n                prod = pow(nums[i], t, MOD)\n                nCarry = (carry + t) >> 1\n                nBits = (carry + t) & 1\n                sub = dp(leftM - t, leftK - nBits, i + 1, nCarry)\n                res = (res + ways * prod % MOD * sub) % MOD\n            memo[state] = res\n            return res\n\n        return dp(m, k, 0, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * m^2 * k)",
+    "space": "O(n * m * k * carry)",
+    "variables": [
+      "n: length of nums array",
+      "m: sequence length requirement",
+      "k: set bits count"
+    ],
+    "notes": "Carry is strictly bounded by m.",
+    "whyNaiveFails": "Enumerating all sequences of length m from n elements grows as n^m.",
+    "spaceTimeTradeoff": "Precomputing Pascal triangle values avoids repeated factorial calculations.",
+    "interviewerExpectation": "Model the addition process bit-by-bit with carry handling and combinatorial distribution."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def magicalSum(self, m: int, k: int, nums: List[int]) -> int:\n        MOD = 1_000_000_007\n        comb = [[0] * (m + 1) for _ in range(m + 1)]\n        for i in range(m + 1):\n            comb[i][0] = 1\n            for j in range(1, i + 1):\n                comb[i][j] = (comb[i - 1][j - 1] + comb[i - 1][j]) % MOD\n\n        memo = {}\n\n        def dp(leftM: int, leftK: int, i: int, carry: int) -> int:\n            bits = bin(carry).count(\"1\")\n            if leftM < 0 or leftK < 0 or (bits + leftM < leftK):\n                return 0\n            if leftM == 0:\n                return 1 if leftK == bits else 0\n            if i == len(nums):\n                return 0\n            state = (leftM, leftK, i, carry)\n            if state in memo:\n                return memo[state]\n\n            res = 0\n            for t in range(leftM + 1):\n                ways = comb[leftM][t]\n                prod = pow(nums[i], t, MOD)\n                nCarry = (carry + t) >> 1\n                nBits = (carry + t) & 1\n                sub = dp(leftM - t, leftK - nBits, i + 1, nCarry)\n                res = (res + ways * prod % MOD * sub) % MOD\n            memo[state] = res\n            return res\n\n        return dp(m, k, 0, 0)\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <map>\n#include <tuple>\n\nclass Solution {\n    long long MOD = 1000000007;\n\n    long long power(long long base, long long exp) {\n        long long res = 1;\n        base %= MOD;\n        while (exp > 0) {\n            if (exp % 2 == 1) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp /= 2;\n        }\n        return res;\n    }\n\npublic:\n    int magicalSum(int m, int k, std::vector<int>& nums) {\n        std::vector<std::vector<int>> comb(m + 1, std::vector<int>(m + 1, 0));\n        for (int i = 0; i <= m; ++i) {\n            comb[i][0] = 1;\n            for (int j = 1; j <= i; ++j) {\n                comb[i][j] = (comb[i - 1][j - 1] + comb[i - 1][j]) % MOD;\n            }\n        }\n\n        std::map<std::tuple<int, int, int, int>, int> memo;\n\n        auto dp = [&](auto& self, int leftM, int leftK, int i, int carry) -> int {\n            int bits = __builtin_popcount(carry);\n            if (leftM < 0 || leftK < 0 || (bits + leftM < leftK)) return 0;\n            if (leftM == 0) return leftK == bits ? 1 : 0;\n            if (i == (int)nums.size()) return 0;\n\n            auto key = std::make_tuple(leftM, leftK, i, carry);\n            if (memo.count(key)) return memo[key];\n\n            long long res = 0;\n            for (int t = 0; t <= leftM; ++t) {\n                long long ways = comb[leftM][t];\n                long long prod = power(nums[i], t);\n                int nCarry = (carry + t) >> 1;\n                int nBits = (carry + t) & 1;\n                long long sub = self(self, leftM - t, leftK - nBits, i + 1, nCarry);\n                res = (res + (ways * prod % MOD) * sub) % MOD;\n            }\n            return memo[key] = res;\n        };\n\n        return dp(dp, m, k, 0, 0);\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private static final int MOD = 1_000_000_007;\n    private int[][] comb;\n    private Map<String, Integer> memo;\n\n    public int magicalSum(int m, int k, int[] nums) {\n        comb = new int[m + 1][m + 1];\n        for (int i = 0; i <= m; ++i) {\n            comb[i][0] = 1;\n            for (int j = 1; j <= i; ++j) {\n                comb[i][j] = (comb[i - 1][j - 1] + comb[i - 1][j]) % MOD;\n            }\n        }\n        memo = new HashMap<>();\n        return dp(m, k, 0, 0, nums);\n    }\n\n    private int dp(int leftM, int leftK, int i, int carry, int[] nums) {\n        int bits = Integer.bitCount(carry);\n        if (leftM < 0 || leftK < 0 || (bits + leftM < leftK)) return 0;\n        if (leftM == 0) return leftK == bits ? 1 : 0;\n        if (i == nums.length) return 0;\n\n        String key = leftM + \",\" + leftK + \",\" + i + \",\" + carry;\n        if (memo.containsKey(key)) return memo.get(key);\n\n        long res = 0;\n        for (int t = 0; t <= leftM; ++t) {\n            long ways = comb[leftM][t];\n            long prod = power(nums[i], t);\n            int nCarry = (carry + t) >> 1;\n            int nBits = (carry + t) & 1;\n            long sub = dp(leftM - t, leftK - nBits, i + 1, nCarry, nums);\n            res = (res + (ways * prod % MOD) * sub) % MOD;\n        }\n        memo.put(key, (int) res);\n        return (int) res;\n    }\n\n    private long power(long base, long exp) {\n        long res = 1;\n        base %= MOD;\n        while (exp > 0) {\n            if (exp % 2 == 1) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp /= 2;\n        }\n        return res;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} m\n * @param {number} k\n * @param {number[]} nums\n * @return {number}\n */\nvar magicalSum = function(m, k, nums) {\n    const MOD = 1000000007n;\n    const comb = Array.from({ length: m + 1 }, () => new Array(m + 1).fill(0n));\n    for (let i = 0; i <= m; ++i) {\n        comb[i][0] = 1n;\n        for (let j = 1; j <= i; ++j) {\n            comb[i][j] = (comb[i - 1][j - 1] + comb[i - 1][j]) % MOD;\n        }\n    }\n\n    const memo = new Map();\n\n    function power(base, exp) {\n        let res = 1n;\n        base = BigInt(base) % MOD;\n        exp = BigInt(exp);\n        while (exp > 0n) {\n            if (exp % 2n === 1n) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp /= 2n;\n        }\n        return res;\n    }\n\n    function popcount(x) {\n        let cnt = 0;\n        while (x > 0) {\n            cnt += x & 1;\n            x >>= 1;\n        }\n        return cnt;\n    }\n\n    function dp(leftM, leftK, i, carry) {\n        const bits = popcount(carry);\n        if (leftM < 0 || leftK < 0 || (bits + leftM < leftK)) return 0n;\n        if (leftM === 0) return leftK === bits ? 1n : 0n;\n        if (i === nums.length) return 0n;\n\n        const key = `${leftM},${leftK},${i},${carry}`;\n        if (memo.has(key)) return memo.get(key);\n\n        let res = 0n;\n        for (let t = 0; t <= leftM; ++t) {\n            const ways = comb[leftM][t];\n            const prod = power(nums[i], t);\n            const nCarry = (carry + t) >> 1;\n            const nBits = (carry + t) & 1;\n            const sub = dp(leftM - t, leftK - nBits, i + 1, nCarry);\n            res = (res + (ways * prod % MOD) * sub) % MOD;\n        }\n        memo.set(key, res);\n        return res;\n    }\n\n    return Number(dp(m, k, 0, 0));\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

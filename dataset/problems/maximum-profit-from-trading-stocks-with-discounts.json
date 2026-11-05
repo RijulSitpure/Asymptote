@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-profit-from-trading-stocks-with-discounts",
+  "number": 3562,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Hierarchical Purchase Discount",
+      "text": "Purchasing stock at a parent node unlocks a half-price discount for all its immediate subordinates."
+    },
+    {
+      "level": 2,
+      "title": "Subtree Budget Combination",
+      "text": "Combine child subtrees knapsack-style across allocated budget segments for each employee node."
+    },
+    {
+      "level": 3,
+      "title": "Discount Eligibility States",
+      "text": "Return two budget arrays per node: one assuming full cost purchase, and another assuming the parent unlocked discount pricing."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def maxProfit(\n        self,\n        n: int,\n        present: List[int],\n        future: List[int],\n        hierarchy: List[List[int]],\n        budget: int,\n    ) -> int:\n        tree = [[] for _ in range(n)]\n        for u, v in hierarchy:\n            tree[u - 1].append(v - 1)\n\n        def dfs(u: int):\n            no_disc = [0] * (budget + 1)\n            with_disc = [0] * (budget + 1)\n            for v in tree[u]:\n                c_no, c_with = dfs(v)\n                new_no = [0] * (budget + 1)\n                new_with = [0] * (budget + 1)\n                for b1 in range(budget + 1):\n                    for b2 in range(budget + 1 - b1):\n                        new_no[b1 + b2] = max(new_no[b1 + b2], no_disc[b1] + c_no[b2])\n                        new_with[b1 + b2] = max(\n                            new_with[b1 + b2], with_disc[b1] + c_with[b2]\n                        )\n                no_disc = new_no\n                with_disc = new_with\n\n            res0 = no_disc[:]\n            res1 = no_disc[:]\n\n            fc = present[u]\n            fp = future[u] - fc\n            for b in range(fc, budget + 1):\n                res0[b] = max(res0[b], with_disc[b - fc] + fp)\n\n            hc = present[u] // 2\n            hp = future[u] - hc\n            for b in range(hc, budget + 1):\n                res1[b] = max(res1[b], with_disc[b - hc] + hp)\n\n            return res0, res1\n\n        r0, _ = dfs(0)\n        return max(r0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * budget^2)",
+    "space": "O(n * budget)",
+    "variables": [
+      "n: number of employees",
+      "budget: monetary capacity"
+    ],
+    "notes": "Tree DP with bounded knapsack merging at each node.",
+    "whyNaiveFails": "Exhaustive binary choices across n employees require 2^n evaluations.",
+    "spaceTimeTradeoff": "Table memoization groups subtree decisions by allocated monetary units.",
+    "interviewerExpectation": "Formulate bottom-up tree DP with parent condition dependency."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def maxProfit(\n        self,\n        n: int,\n        present: List[int],\n        future: List[int],\n        hierarchy: List[List[int]],\n        budget: int,\n    ) -> int:\n        tree = [[] for _ in range(n)]\n        for u, v in hierarchy:\n            tree[u - 1].append(v - 1)\n\n        def dfs(u: int):\n            no_disc = [0] * (budget + 1)\n            with_disc = [0] * (budget + 1)\n            for v in tree[u]:\n                c_no, c_with = dfs(v)\n                new_no = [0] * (budget + 1)\n                new_with = [0] * (budget + 1)\n                for b1 in range(budget + 1):\n                    for b2 in range(budget + 1 - b1):\n                        new_no[b1 + b2] = max(new_no[b1 + b2], no_disc[b1] + c_no[b2])\n                        new_with[b1 + b2] = max(\n                            new_with[b1 + b2], with_disc[b1] + c_with[b2]\n                        )\n                no_disc = new_no\n                with_disc = new_with\n\n            res0 = no_disc[:]\n            res1 = no_disc[:]\n\n            fc = present[u]\n            fp = future[u] - fc\n            for b in range(fc, budget + 1):\n                res0[b] = max(res0[b], with_disc[b - fc] + fp)\n\n            hc = present[u] // 2\n            hp = future[u] - hc\n            for b in range(hc, budget + 1):\n                res1[b] = max(res1[b], with_disc[b - hc] + hp)\n\n            return res0, res1\n\n        r0, _ = dfs(0)\n        return max(r0)\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxProfit(int n, std::vector<int>& present, std::vector<int>& future, std::vector<std::vector<int>>& hierarchy, int budget) {\n        std::vector<std::vector<int>> tree(n);\n        for (const auto& edge : hierarchy) {\n            tree[edge[0] - 1].push_back(edge[1] - 1);\n        }\n\n        auto dfs = [&](auto& self, int u) -> std::pair<std::vector<int>, std::vector<int>> {\n            std::vector<int> no_disc(budget + 1, 0);\n            std::vector<int> with_disc(budget + 1, 0);\n\n            for (int v : tree[u]) {\n                auto [c_no, c_with] = self(self, v);\n                std::vector<int> new_no(budget + 1, 0);\n                std::vector<int> new_with(budget + 1, 0);\n                for (int b1 = 0; b1 <= budget; ++b1) {\n                    for (int b2 = 0; b1 + b2 <= budget; ++b2) {\n                        new_no[b1 + b2] = std::max(new_no[b1 + b2], no_disc[b1] + c_no[b2]);\n                        new_with[b1 + b2] = std::max(new_with[b1 + b2], with_disc[b1] + c_with[b2]);\n                    }\n                }\n                no_disc = std::move(new_no);\n                with_disc = std::move(new_with);\n            }\n\n            std::vector<int> res0 = no_disc;\n            std::vector<int> res1 = no_disc;\n\n            int fc = present[u];\n            int fp = future[u] - fc;\n            for (int b = fc; b <= budget; ++b) {\n                res0[b] = std::max(res0[b], with_disc[b - fc] + fp);\n            }\n\n            int hc = present[u] / 2;\n            int hp = future[u] - hc;\n            for (int b = hc; b <= budget; ++b) {\n                res1[b] = std::max(res1[b], with_disc[b - hc] + hp);\n            }\n\n            return {res0, res1};\n        };\n\n        auto [r0, r1] = dfs(dfs, 0);\n        int ans = 0;\n        for (int val : r0) ans = std::max(ans, val);\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxProfit(int n, int[] present, int[] future, int[][] hierarchy, int budget) {\n        List<Integer>[] tree = new ArrayList[n];\n        for (int i = 0; i < n; ++i) tree[i] = new ArrayList<>();\n        for (int[] edge : hierarchy) {\n            tree[edge[0] - 1].add(edge[1] - 1);\n        }\n\n        int[][] res = dfs(0, tree, present, future, budget);\n        int ans = 0;\n        for (int val : res[0]) ans = Math.max(ans, val);\n        return ans;\n    }\n\n    private int[][] dfs(int u, List<Integer>[] tree, int[] present, int[] future, int budget) {\n        int[] noDisc = new int[budget + 1];\n        int[] withDisc = new int[budget + 1];\n\n        for (int v : tree[u]) {\n            int[][] childRes = dfs(v, tree, present, future, budget);\n            int[] cNo = childRes[0];\n            int[] cWith = childRes[1];\n\n            int[] newNo = new int[budget + 1];\n            int[] newWith = new int[budget + 1];\n\n            for (int b1 = 0; b1 <= budget; ++b1) {\n                for (int b2 = 0; b1 + b2 <= budget; ++b2) {\n                    newNo[b1 + b2] = Math.max(newNo[b1 + b2], noDisc[b1] + cNo[b2]);\n                    newWith[b1 + b2] = Math.max(newWith[b1 + b2], withDisc[b1] + cWith[b2]);\n                }\n            }\n            noDisc = newNo;\n            withDisc = newWith;\n        }\n\n        int[] res0 = Arrays.copyOf(noDisc, budget + 1);\n        int[] res1 = Arrays.copyOf(noDisc, budget + 1);\n\n        int fc = present[u];\n        int fp = future[u] - fc;\n        for (int b = fc; b <= budget; ++b) {\n            res0[b] = Math.max(res0[b], withDisc[b - fc] + fp);\n        }\n\n        int hc = present[u] / 2;\n        int hp = future[u] - hc;\n        for (int b = hc; b <= budget; ++b) {\n            res1[b] = Math.max(res1[b], withDisc[b - hc] + hp);\n        }\n\n        return new int[][]{res0, res1};\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[]} present\n * @param {number[]} future\n * @param {number[][]} hierarchy\n * @param {number} budget\n * @return {number}\n */\nvar maxProfit = function(n, present, future, hierarchy, budget) {\n    const tree = Array.from({ length: n }, () => []);\n    for (const [u, v] of hierarchy) {\n        tree[u - 1].push(v - 1);\n    }\n\n    function dfs(u) {\n        let noDisc = new Array(budget + 1).fill(0);\n        let withDisc = new Array(budget + 1).fill(0);\n\n        for (const v of tree[u]) {\n            const [cNo, cWith] = dfs(v);\n            const newNo = new Array(budget + 1).fill(0);\n            const newWith = new Array(budget + 1).fill(0);\n\n            for (let b1 = 0; b1 <= budget; ++b1) {\n                for (let b2 = 0; b1 + b2 <= budget; ++b2) {\n                    newNo[b1 + b2] = Math.max(newNo[b1 + b2], noDisc[b1] + cNo[b2]);\n                    newWith[b1 + b2] = Math.max(newWith[b1 + b2], withDisc[b1] + cWith[b2]);\n                }\n            }\n            noDisc = newNo;\n            withDisc = newWith;\n        }\n\n        const res0 = [...noDisc];\n        const res1 = [...noDisc];\n\n        const fc = present[u];\n        const fp = future[u] - fc;\n        for (let b = fc; b <= budget; ++b) {\n            res0[b] = Math.max(res0[b], withDisc[b - fc] + fp);\n        }\n\n        const hc = Math.floor(present[u] / 2);\n        const hp = future[u] - hc;\n        for (let b = hc; b <= budget; ++b) {\n            res1[b] = Math.max(res1[b], withDisc[b - hc] + hp);\n        }\n\n        return [res0, res1];\n    }\n\n    const [r0] = dfs(0);\n    return Math.max(...r0);\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

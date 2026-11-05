@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-swaps-to-sort-by-digit-sum",
+  "number": 3551,
+  "category": "Algorithms",
+  "patterns": [
+    "hash-map-lookup"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Permutation Cycle Decomposition",
+      "text": "Sort the elements by digit sum with value tiebreakers to find each item destination index."
+    },
+    {
+      "level": 2,
+      "title": "Disjoint Cycle Counting",
+      "text": "Any permutation decomposes into disjoint directed cycles where each element points to its sorted target slot."
+    },
+    {
+      "level": 3,
+      "title": "Minimum Swap Formula",
+      "text": "A cycle of length L requires exactly L - 1 swaps to restore all elements to their sorted positions."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def minSwaps(self, nums: List[int]) -> int:\n        def digit_sum(x: int) -> int:\n            return sum(int(d) for d in str(x))\n\n        sorted_nums = sorted(nums, key=lambda x: (digit_sum(x), x))\n        num_to_idx = {v: i for i, v in enumerate(sorted_nums)}\n        seen = set()\n        ans = 0\n        for i in range(len(nums)):\n            if i in seen or num_to_idx[nums[i]] == i:\n                continue\n            cycle_sz = 0\n            j = i\n            while j not in seen:\n                seen.add(j)\n                j = num_to_idx[nums[j]]\n                cycle_sz += 1\n            ans += max(cycle_sz - 1, 0)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums array"
+    ],
+    "notes": "Sorting dominates running time; cycle traversal takes O(n).",
+    "whyNaiveFails": "Simulating arbitrary pairwise swaps searches over an exponential permutation graph.",
+    "spaceTimeTradeoff": "Index mapping array enables O(n) cycle identification.",
+    "interviewerExpectation": "Explain permutation cycle decomposition and justify the L - 1 formula."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def minSwaps(self, nums: List[int]) -> int:\n        def digit_sum(x: int) -> int:\n            return sum(int(d) for d in str(x))\n\n        sorted_nums = sorted(nums, key=lambda x: (digit_sum(x), x))\n        num_to_idx = {v: i for i, v in enumerate(sorted_nums)}\n        seen = set()\n        ans = 0\n        for i in range(len(nums)):\n            if i in seen or num_to_idx[nums[i]] == i:\n                continue\n            cycle_sz = 0\n            j = i\n            while j not in seen:\n                seen.add(j)\n                j = num_to_idx[nums[j]]\n                cycle_sz += 1\n            ans += max(cycle_sz - 1, 0)\n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n#include <unordered_map>\n#include <unordered_set>\n\nclass Solution {\n    static int digitSum(int x) {\n        int s = 0;\n        while (x > 0) {\n            s += x % 10;\n            x /= 10;\n        }\n        return s;\n    }\n\npublic:\n    int minSwaps(std::vector<int>& nums) {\n        int n = nums.size();\n        std::vector<int> sorted_nums = nums;\n        std::sort(sorted_nums.begin(), sorted_nums.end(), [](int a, int b) {\n            int da = digitSum(a), db = digitSum(b);\n            if (da != db) return da < db;\n            return a < b;\n        });\n\n        std::unordered_map<int, int> num_to_idx;\n        for (int i = 0; i < n; ++i) {\n            num_to_idx[sorted_nums[i]] = i;\n        }\n\n        std::vector<bool> seen(n, false);\n        int ans = 0;\n\n        for (int i = 0; i < n; ++i) {\n            if (seen[i] || num_to_idx[nums[i]] == i) continue;\n            int cycle_sz = 0;\n            int j = i;\n            while (!seen[j]) {\n                seen[j] = true;\n                j = num_to_idx[nums[j]];\n                cycle_sz++;\n            }\n            if (cycle_sz > 1) {\n                ans += cycle_sz - 1;\n            }\n        }\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int digitSum(int x) {\n        int s = 0;\n        while (x > 0) {\n            s += x % 10;\n            x /= 10;\n        }\n        return s;\n    }\n\n    public int minSwaps(int[] nums) {\n        int n = nums.length;\n        Integer[] sortedNums = new Integer[n];\n        for (int i = 0; i < n; ++i) sortedNums[i] = nums[i];\n\n        Arrays.sort(sortedNums, (a, b) -> {\n            int da = digitSum(a), db = digitSum(b);\n            if (da != db) return Integer.compare(da, db);\n            return Integer.compare(a, b);\n        });\n\n        Map<Integer, Integer> numToIdx = new HashMap<>();\n        for (int i = 0; i < n; ++i) {\n            numToIdx.put(sortedNums[i], i);\n        }\n\n        boolean[] seen = new boolean[n];\n        int ans = 0;\n\n        for (int i = 0; i < n; ++i) {\n            if (seen[i] || numToIdx.get(nums[i]) == i) continue;\n            int cycleSz = 0;\n            int j = i;\n            while (!seen[j]) {\n                seen[j] = true;\n                j = numToIdx.get(nums[j]);\n                cycleSz++;\n            }\n            if (cycleSz > 1) {\n                ans += cycleSz - 1;\n            }\n        }\n        return ans;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar minSwaps = function(nums) {\n    function digitSum(x) {\n        let s = 0;\n        while (x > 0) {\n            s += x % 10;\n            x = Math.floor(x / 10);\n        }\n        return s;\n    }\n\n    const sortedNums = [...nums].sort((a, b) => {\n        const da = digitSum(a), db = digitSum(b);\n        if (da !== db) return da - db;\n        return a - b;\n    });\n\n    const numToIdx = new Map();\n    sortedNums.forEach((v, i) => numToIdx.set(v, i));\n\n    const seen = new Set();\n    let ans = 0;\n\n    for (let i = 0; i < nums.length; ++i) {\n        if (seen.has(i) || numToIdx.get(nums[i]) === i) continue;\n        let cycleSz = 0;\n        let j = i;\n        while (!seen.has(j)) {\n            seen.add(j);\n            j = numToIdx.get(nums[j]);\n            cycleSz++;\n        }\n        if (cycleSz > 1) {\n            ans += cycleSz - 1;\n        }\n    }\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

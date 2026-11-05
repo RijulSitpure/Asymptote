@@ -1,0 +1,82 @@
+{
+  "slug": "minimum-moves-to-clean-the-classroom",
+  "number": 3568,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path",
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Energy Constrained Traversal",
+      "text": "Each movement step costs unit energy, while stepping onto an energy station replenishes capacity back to the maximum."
+    },
+    {
+      "level": 2,
+      "title": "Litter Bitmask Tracking",
+      "text": "Track collected litter locations using a bitmask of size k."
+    },
+    {
+      "level": 3,
+      "title": "Breadth-First State Search",
+      "text": "Search over tuples (r, c, energy, mask) to identify the minimal move count when the mask reaches zero."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import deque\n\nclass Solution:\n    def minMoves(self, classroom: List[str], energy: int) -> int:\n        m, n = len(classroom), len(classroom[0])\n        litter = []\n        sr, sc = 0, 0\n        for r in range(m):\n            for c in range(n):\n                if classroom[r][c] == \"S\":\n                    sr, sc = r, c\n                elif classroom[r][c] == \"L\":\n                    litter.append((r, c))\n\n        k = len(litter)\n        l_map = {pos: i for i, pos in enumerate(litter)}\n        init_mask = (1 << k) - 1\n\n        q = deque([(sr, sc, energy, init_mask)])\n        visited = {(sr, sc, energy, init_mask)}\n        moves = 0\n        dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]\n\n        while q:\n            for _ in range(len(q)):\n                r, c, ce, mask = q.popleft()\n                if mask == 0:\n                    return moves\n                if ce == 0:\n                    continue\n                for dr, dc in dirs:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < m and 0 <= nc < n and classroom[nr][nc] != \"X\":\n                        ne = energy if classroom[nr][nc] == \"R\" else ce - 1\n                        nm = mask\n                        if classroom[nr][nc] == \"L\" and (nr, nc) in l_map:\n                            nm &= ~(1 << l_map[(nr, nc)])\n                        st = (nr, nc, ne, nm)\n                        if st not in visited:\n                            visited.add(st)\n                            q.append(st)\n            moves += 1\n\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n * energy * 2^k)",
+    "space": "O(m * n * energy * 2^k)",
+    "variables": [
+      "m: grid rows",
+      "n: grid columns",
+      "energy: maximum capacity",
+      "k: number of litter items"
+    ],
+    "notes": "BFS guarantees shortest path in unweighted move space.",
+    "whyNaiveFails": "Ignoring energy states leads to premature cycles or unreachable litter.",
+    "spaceTimeTradeoff": "Bitmask and energy states uniquely define path progress.",
+    "interviewerExpectation": "Formulate 4D state space BFS with bitmask litter tracking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import deque\n\nclass Solution:\n    def minMoves(self, classroom: List[str], energy: int) -> int:\n        m, n = len(classroom), len(classroom[0])\n        litter = []\n        sr, sc = 0, 0\n        for r in range(m):\n            for c in range(n):\n                if classroom[r][c] == \"S\":\n                    sr, sc = r, c\n                elif classroom[r][c] == \"L\":\n                    litter.append((r, c))\n\n        k = len(litter)\n        l_map = {pos: i for i, pos in enumerate(litter)}\n        init_mask = (1 << k) - 1\n\n        q = deque([(sr, sc, energy, init_mask)])\n        visited = {(sr, sc, energy, init_mask)}\n        moves = 0\n        dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]\n\n        while q:\n            for _ in range(len(q)):\n                r, c, ce, mask = q.popleft()\n                if mask == 0:\n                    return moves\n                if ce == 0:\n                    continue\n                for dr, dc in dirs:\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < m and 0 <= nc < n and classroom[nr][nc] != \"X\":\n                        ne = energy if classroom[nr][nc] == \"R\" else ce - 1\n                        nm = mask\n                        if classroom[nr][nc] == \"L\" and (nr, nc) in l_map:\n                            nm &= ~(1 << l_map[(nr, nc)])\n                        st = (nr, nc, ne, nm)\n                        if st not in visited:\n                            visited.add(st)\n                            q.append(st)\n            moves += 1\n\n        return -1\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <string>\n#include <queue>\n#include <unordered_map>\n#include <unordered_set>\n#include <tuple>\n\nclass Solution {\npublic:\n    int minMoves(std::vector<std::string>& classroom, int energy) {\n        int m = classroom.size(), n = classroom[0].size();\n        int sr = 0, sc = 0;\n        std::vector<std::pair<int, int>> litter;\n\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (classroom[r][c] == 'S') {\n                    sr = r; sc = c;\n                } else if (classroom[r][c] == 'L') {\n                    litter.push_back({r, c});\n                }\n            }\n        }\n\n        int k = litter.size();\n        int init_mask = (1 << k) - 1;\n\n        // State: (r, c, energy, mask)\n        std::queue<std::tuple<int, int, int, int>> q;\n        q.push({sr, sc, energy, init_mask});\n\n        // Visited tracking using boolean 4D array or flattened array\n        int visited[21][21][51][1024];\n        std::memset(visited, 0, sizeof(visited));\n        visited[sr][sc][energy][init_mask] = 1;\n\n        int moves = 0;\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        while (!q.empty()) {\n            int sz = q.size();\n            for (int step = 0; step < sz; ++step) {\n                auto [r, c, ce, mask] = q.front();\n                q.pop();\n\n                if (mask == 0) return moves;\n                if (ce == 0) continue;\n\n                for (int d = 0; d < 4; ++d) {\n                    int nr = r + dirs[d][0], nc = c + dirs[d][1];\n                    if (nr >= 0 && nr < m && nc >= 0 && nc < n && classroom[nr][nc] != 'X') {\n                        int ne = (classroom[nr][nc] == 'R') ? energy : ce - 1;\n                        int nm = mask;\n                        if (classroom[nr][nc] == 'L') {\n                            for (int i = 0; i < k; ++i) {\n                                if (litter[i].first == nr && litter[i].second == nc) {\n                                    nm &= ~(1 << i);\n                                    break;\n                                }\n                            }\n                        }\n                        if (nr < 21 && nc < 21 && ne < 51 && nm < 1024 && !visited[nr][nc][ne][nm]) {\n                            visited[nr][nc][ne][nm] = 1;\n                            q.push({nr, nc, ne, nm});\n                        }\n                    }\n                }\n            }\n            moves++;\n        }\n\n        return -1;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minMoves(String[] classroom, int energy) {\n        int m = classroom.length, n = classroom[0].length();\n        int sr = 0, sc = 0;\n        List<int[]> litter = new ArrayList<>();\n\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                char ch = classroom[r].charAt(c);\n                if (ch == 'S') {\n                    sr = r; sc = c;\n                } else if (ch == 'L') {\n                    litter.add(new int[]{r, c});\n                }\n            }\n        }\n\n        int k = litter.size();\n        int initMask = (1 << k) - 1;\n\n        Queue<int[]> q = new LinkedList<>();\n        q.offer(new int[]{sr, sc, energy, initMask});\n\n        boolean[][][][] visited = new boolean[m][n][energy + 1][1 << k];\n        visited[sr][sc][energy][initMask] = true;\n\n        int moves = 0;\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        while (!q.isEmpty()) {\n            int sz = q.size();\n            for (int step = 0; step < sz; ++step) {\n                int[] curr = q.poll();\n                int r = curr[0], c = curr[1], ce = curr[2], mask = curr[3];\n\n                if (mask == 0) return moves;\n                if (ce == 0) continue;\n\n                for (int[] dir : dirs) {\n                    int nr = r + dir[0], nc = c + dir[1];\n                    if (nr >= 0 && nr < m && nc >= 0 && nc < n && classroom[nr].charAt(nc) != 'X') {\n                        char ch = classroom[nr].charAt(nc);\n                        int ne = (ch == 'R') ? energy : ce - 1;\n                        int nm = mask;\n                        if (ch == 'L') {\n                            for (int i = 0; i < k; ++i) {\n                                if (litter.get(i)[0] == nr && litter.get(i)[1] == nc) {\n                                    nm &= ~(1 << i);\n                                    break;\n                                }\n                            }\n                        }\n                        if (!visited[nr][nc][ne][nm]) {\n                            visited[nr][nc][ne][nm] = true;\n                            q.offer(new int[]{nr, nc, ne, nm});\n                        }\n                    }\n                }\n            }\n            moves++;\n        }\n\n        return -1;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {string[]} classroom\n * @param {number} energy\n * @return {number}\n */\nvar minMoves = function(classroom, energy) {\n    const m = classroom.length, n = classroom[0].length;\n    let sr = 0, sc = 0;\n    const litter = [];\n\n    for (let r = 0; r < m; ++r) {\n        for (let c = 0; c < n; ++c) {\n            const ch = classroom[r][c];\n            if (ch === 'S') {\n                sr = r; sc = c;\n            } else if (ch === 'L') {\n                litter.push([r, c]);\n            }\n        }\n    }\n\n    const k = litter.size || litter.length;\n    const initMask = (1 << k) - 1;\n\n    const q = [[sr, sc, energy, initMask]];\n    const visited = new Set();\n    visited.add(`${sr},${sc},${energy},${initMask}`);\n\n    let moves = 0;\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n\n    while (q.length > 0) {\n        const sz = q.length;\n        for (let step = 0; step < sz; ++step) {\n            const [r, c, ce, mask] = q.shift();\n\n            if (mask === 0) return moves;\n            if (ce === 0) continue;\n\n            for (const [dr, dc] of dirs) {\n                const nr = r + dr, nc = c + dc;\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n && classroom[nr][nc] !== 'X') {\n                    const ch = classroom[nr][nc];\n                    const ne = ch === 'R' ? energy : ce - 1;\n                    let nm = mask;\n                    if (ch === 'L') {\n                        for (let i = 0; i < k; ++i) {\n                            if (litter[i][0] === nr && litter[i][1] === nc) {\n                                nm &= ~(1 << i);\n                                break;\n                            }\n                        }\n                    }\n                    const key = `${nr},${nc},${ne},${nm}`;\n                    if (!visited.has(key)) {\n                        visited.add(key);\n                        q.push([nr, nc, ne, nm]);\n                    }\n                }\n            }\n        }\n        moves++;\n    }\n\n    return -1;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

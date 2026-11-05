@@ -1,0 +1,80 @@
+{
+  "slug": "merge-operations-for-minimum-travel-time",
+  "number": 3538,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap",
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Rate Accumulation",
+      "text": "Notice that merged segments accumulate consecutive travel times into effective segment speeds."
+    },
+    {
+      "level": 2,
+      "title": "State Formulation",
+      "text": "Track the current station index, the remaining number of merge skips, and the starting index of the active speed window."
+    },
+    {
+      "level": 3,
+      "title": "State Transitions",
+      "text": "At each station, branch on the next stop choice while deducting skipped intermediate stations from the quota."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def minTravelTime(self, l: int, n: int, k: int, position: List[int], time: List[int]) -> int:\n        prefix = [0] * (n + 1)\n        for i in range(n):\n            prefix[i + 1] = prefix[i] + time[i]\n\n        memo = {}\n\n        def dp(i: int, skips: int, last: int) -> int:\n            if i == n - 1:\n                return 0 if skips == 0 else float(\"inf\")\n            state = (i, skips, last)\n            if state in memo:\n                return memo[state]\n            res = float(\"inf\")\n            rate = prefix[i + 1] - prefix[last]\n            end = min(n - 1, i + skips + 1)\n            for j in range(i + 1, end + 1):\n                dist = position[j] - position[i]\n                res = min(res, dist * rate + dp(j, skips - (j - i - 1), i + 1))\n            memo[state] = res\n            return res\n\n        return dp(0, k, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2 * k)",
+    "space": "O(n^2 * k)",
+    "variables": [
+      "n: number of stations",
+      "k: number of merge operations"
+    ],
+    "notes": "Prefix sums provide instant O(1) query of speed sums.",
+    "whyNaiveFails": "Examining all combinations of k merges leads to exponential search spaces.",
+    "spaceTimeTradeoff": "Memoization records station positions and skip counts to prevent overlapping recomputation.",
+    "interviewerExpectation": "Recognize the optimal substructure and formulate the three-dimensional state space."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def minTravelTime(self, l: int, n: int, k: int, position: List[int], time: List[int]) -> int:\n        prefix = [0] * (n + 1)\n        for i in range(n):\n            prefix[i + 1] = prefix[i] + time[i]\n\n        memo = {}\n\n        def dp(i: int, skips: int, last: int) -> int:\n            if i == n - 1:\n                return 0 if skips == 0 else float(\"inf\")\n            state = (i, skips, last)\n            if state in memo:\n                return memo[state]\n            res = float(\"inf\")\n            rate = prefix[i + 1] - prefix[last]\n            end = min(n - 1, i + skips + 1)\n            for j in range(i + 1, end + 1):\n                dist = position[j] - position[i]\n                res = min(res, dist * rate + dp(j, skips - (j - i - 1), i + 1))\n            memo[state] = res\n            return res\n\n        return dp(0, k, 0)\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n#include <climits>\n#include <map>\n#include <tuple>\n\nclass Solution {\npublic:\n    int minTravelTime(int l, int n, int k, std::vector<int>& position, std::vector<int>& time) {\n        std::vector<int> prefix(n + 1, 0);\n        for (int i = 0; i < n; ++i) {\n            prefix[i + 1] = prefix[i] + time[i];\n        }\n\n        std::map<std::tuple<int, int, int>, long long> memo;\n\n        auto dp = [&](auto& self, int i, int skips, int last) -> long long {\n            if (i == n - 1) {\n                return skips == 0 ? 0 : 1e18;\n            }\n            auto key = std::make_tuple(i, skips, last);\n            if (memo.count(key)) return memo[key];\n\n            long long res = 1e18;\n            long long rate = prefix[i + 1] - prefix[last];\n            int end = std::min(n - 1, i + skips + 1);\n\n            for (int j = i + 1; j <= end; ++j) {\n                long long dist = position[j] - position[i];\n                res = std::min(res, dist * rate + self(self, j, skips - (j - i - 1), i + 1));\n            }\n            return memo[key] = res;\n        };\n\n        return dp(dp, 0, k, 0);\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private Map<String, Long> memo;\n    private int[] prefix;\n\n    public int minTravelTime(int l, int n, int k, int[] position, int[] time) {\n        prefix = new int[n + 1];\n        for (int i = 0; i < n; ++i) {\n            prefix[i + 1] = prefix[i] + time[i];\n        }\n        memo = new HashMap<>();\n        long ans = dp(0, k, 0, n, position);\n        return (int) ans;\n    }\n\n    private long dp(int i, int skips, int last, int n, int[] position) {\n        if (i == n - 1) {\n            return skips == 0 ? 0 : (long) 1e18;\n        }\n        String key = i + \",\" + skips + \",\" + last;\n        if (memo.containsKey(key)) return memo.get(key);\n\n        long res = (long) 1e18;\n        long rate = prefix[i + 1] - prefix[last];\n        int end = Math.min(n - 1, i + skips + 1);\n\n        for (int j = i + 1; j <= end; ++j) {\n            long dist = position[j] - position[i];\n            res = Math.min(res, dist * rate + dp(j, skips - (j - i - 1), i + 1, n, position));\n        }\n        memo.put(key, res);\n        return res;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} l\n * @param {number} n\n * @param {number} k\n * @param {number[]} position\n * @param {number[]} time\n * @return {number}\n */\nvar minTravelTime = function(l, n, k, position, time) {\n    const prefix = new Array(n + 1).fill(0);\n    for (let i = 0; i < n; ++i) {\n        prefix[i + 1] = prefix[i] + time[i];\n    }\n\n    const memo = new Map();\n\n    function dp(i, skips, last) {\n        if (i === n - 1) {\n            return skips === 0 ? 0 : Infinity;\n        }\n        const key = `${i},${skips},${last}`;\n        if (memo.has(key)) return memo.get(key);\n\n        let res = Infinity;\n        const rate = prefix[i + 1] - prefix[last];\n        const end = Math.min(n - 1, i + skips + 1);\n\n        for (let j = i + 1; j <= end; ++j) {\n            const dist = position[j] - position[i];\n            res = Math.min(res, dist * rate + dp(j, skips - (j - i - 1), i + 1));\n        }\n        memo.set(key, res);\n        return res;\n    }\n\n    return dp(0, k, 0);\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

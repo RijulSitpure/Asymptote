@@ -1,0 +1,79 @@
+{
+  "slug": "equal-sum-grid-partition-ii",
+  "number": 3548,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Flexible Boundary Cut",
+      "text": "Consider partitions with single cell offsets or boundary adjustments between two segments."
+    },
+    {
+      "level": 2,
+      "title": "Difference Target Matching",
+      "text": "When top and bottom partial sums differ, a single cell of value equal to the difference can balance the partition."
+    },
+    {
+      "level": 3,
+      "title": "Symmetry Reduction",
+      "text": "Check all four orientations by rotating and reversing rows/columns through transposed views."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def canPartitionGrid(self, grid: List[List[int]]) -> bool:\n        total = sum(sum(r) for r in grid)\n\n        def can(g: List[List[int]], s: int) -> bool:\n            top = 0\n            seen = set()\n            for i in range(len(g)):\n                top += sum(g[i])\n                bot = s - top\n                seen.update(g[i])\n                if top - bot == 0 or top - bot == g[0][0] or top - bot == g[0][-1] or top - bot == g[i][0]:\n                    return True\n                if len(g[0]) > 1 and i > 0 and (top - bot) in seen:\n                    return True\n            return False\n\n        transposed = [list(col) for col in zip(*grid)]\n        return (\n            can(grid, total)\n            or can(grid[::-1], total)\n            or can(transposed[::-1], total)\n            or can(transposed, total)\n        )\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n)",
+    "space": "O(m * n)",
+    "variables": [
+      "m: row count of grid",
+      "n: column count of grid"
+    ],
+    "notes": "Four directional checks using hash sets of encountered cell values.",
+    "whyNaiveFails": "Checking all possible cut shapes incurs exponential combinations.",
+    "spaceTimeTradeoff": "Set lookups verify difference balance in O(1) time.",
+    "interviewerExpectation": "Use symmetry transformations to reduce code redundancy."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def canPartitionGrid(self, grid: List[List[int]]) -> bool:\n        total = sum(sum(r) for r in grid)\n\n        def can(g: List[List[int]], s: int) -> bool:\n            top = 0\n            seen = set()\n            for i in range(len(g)):\n                top += sum(g[i])\n                bot = s - top\n                seen.update(g[i])\n                if top - bot == 0 or top - bot == g[0][0] or top - bot == g[0][-1] or top - bot == g[i][0]:\n                    return True\n                if len(g[0]) > 1 and i > 0 and (top - bot) in seen:\n                    return True\n            return False\n\n        transposed = [list(col) for col in zip(*grid)]\n        return (\n            can(grid, total)\n            or can(grid[::-1], total)\n            or can(transposed[::-1], total)\n            or can(transposed, total)\n        )\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_set>\n#include <numeric>\n\nclass Solution {\n    bool check(const std::vector<std::vector<int>>& g, long long s) {\n        long long top = 0;\n        std::unordered_set<int> seen;\n        int m = g.size(), n = g[0].size();\n        for (int i = 0; i < m; ++i) {\n            for (int val : g[i]) {\n                top += val;\n                seen.insert(val);\n            }\n            long long bot = s - top;\n            if (top - bot == 0 || top - bot == g[0][0] || top - bot == g[0][n - 1] || top - bot == g[i][0]) {\n                return true;\n            }\n            if (n > 1 && i > 0 && seen.count(top - bot)) {\n                return true;\n            }\n        }\n        return false;\n    }\n\npublic:\n    bool canPartitionGrid(std::vector<std::vector<int>>& grid) {\n        long long total = 0;\n        for (const auto& r : grid) {\n            for (int val : r) total += val;\n        }\n\n        int m = grid.size(), n = grid[0].size();\n        std::vector<std::vector<int>> revGrid = grid;\n        std::reverse(revGrid.begin(), revGrid.end());\n\n        std::vector<std::vector<int>> trans(n, std::vector<int>(m));\n        for (int i = 0; i < m; ++i) {\n            for (int j = 0; j < n; ++j) {\n                trans[j][i] = grid[i][j];\n            }\n        }\n\n        std::vector<std::vector<int>> revTrans = trans;\n        std::reverse(revTrans.begin(), revTrans.end());\n\n        return check(grid, total) || check(revGrid, total) || check(revTrans, total) || check(trans, total);\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private boolean check(int[][] g, long s) {\n        long top = 0;\n        Set<Integer> seen = new HashSet<>();\n        int m = g.length, n = g[0].length;\n        for (int i = 0; i < m; ++i) {\n            for (int val : g[i]) {\n                top += val;\n                seen.add(val);\n            }\n            long bot = s - top;\n            if (top - bot == 0 || top - bot == g[0][0] || top - bot == g[0][n - 1] || top - bot == g[i][0]) {\n                return true;\n            }\n            if (n > 1 && i > 0 && seen.contains((int)(top - bot))) {\n                return true;\n            }\n        }\n        return false;\n    }\n\n    public boolean canPartitionGrid(int[][] grid) {\n        long total = 0;\n        for (int[] r : grid) {\n            for (int val : r) total += val;\n        }\n\n        int m = grid.length, n = grid[0].length;\n        int[][] revGrid = new int[m][n];\n        for (int i = 0; i < m; ++i) revGrid[i] = grid[m - 1 - i];\n\n        int[][] trans = new int[n][m];\n        for (int i = 0; i < m; ++i) {\n            for (int j = 0; j < n; ++j) {\n                trans[j][i] = grid[i][j];\n            }\n        }\n\n        int[][] revTrans = new int[n][m];\n        for (int i = 0; i < n; ++i) revTrans[i] = trans[n - 1 - i];\n\n        return check(grid, total) || check(revGrid, total) || check(revTrans, total) || check(trans, total);\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[][]} grid\n * @return {boolean}\n */\nvar canPartitionGrid = function(grid) {\n    let total = 0;\n    for (const r of grid) {\n        for (const val of r) total += val;\n    }\n\n    function check(g, s) {\n        let top = 0;\n        const seen = new Set();\n        const m = g.length, n = g[0].length;\n        for (let i = 0; i < m; ++i) {\n            for (const val of g[i]) {\n                top += val;\n                seen.add(val);\n            }\n            const bot = s - top;\n            if (top - bot === 0 || top - bot === g[0][0] || top - bot === g[0][n - 1] || top - bot === g[i][0]) {\n                return true;\n            }\n            if (n > 1 && i > 0 && seen.has(top - bot)) {\n                return true;\n            }\n        }\n        return false;\n    }\n\n    const m = grid.length, n = grid[0].length;\n    const revGrid = [...grid].reverse();\n    const trans = Array.from({ length: n }, (_, j) => Array.from({ length: m }, (_, i) => grid[i][j]));\n    const revTrans = [...trans].reverse();\n\n    return check(grid, total) || check(revGrid, total) || check(revTrans, total) || check(trans, total);\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

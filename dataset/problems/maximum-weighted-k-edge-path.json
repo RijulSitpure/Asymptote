@@ -1,0 +1,82 @@
+{
+  "slug": "maximum-weighted-k-edge-path",
+  "number": 3543,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path",
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bounded Step Reachability",
+      "text": "Iterate level by level for k steps, recording all attainable path weights under the threshold t."
+    },
+    {
+      "level": 2,
+      "title": "Layered Transition",
+      "text": "At each step, advance each path weight along outgoing edges if the cumulative sum remains below t."
+    },
+    {
+      "level": 3,
+      "title": "Deduplicated Aggregation",
+      "text": "Maintain distinct reachable weights at each node using sets to prevent redundant state propagation."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def maxWeight(self, n: int, edges: List[List[int]], k: int, t: int) -> int:\n        graph = [[] for _ in range(n)]\n        for u, v, w in edges:\n            graph[u].append((v, w))\n        dp = [set() for _ in range(n)]\n        for u in range(n):\n            dp[u].add(0)\n        for _ in range(k):\n            new_dp = [set() for _ in range(n)]\n            for u in range(n):\n                for s in dp[u]:\n                    for v, w in graph[u]:\n                        if s + w < t:\n                            new_dp[v].add(s + w)\n            dp = new_dp\n        ans = -1\n        for u in range(n):\n            if dp[u]:\n                ans = max(ans, max(dp[u]))\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(k * E * t)",
+    "space": "O(V * t)",
+    "variables": [
+      "k: number of edges in path",
+      "E: number of graph edges",
+      "t: weight threshold upper bound",
+      "V: number of graph vertices"
+    ],
+    "notes": "Weights are strictly bounded above by t.",
+    "whyNaiveFails": "Path DFS encounters exponential permutations of graph cycles.",
+    "spaceTimeTradeoff": "Set deduplication limits state combinations to values below t.",
+    "interviewerExpectation": "Formulate layered state transitions and enforce the strict threshold."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def maxWeight(self, n: int, edges: List[List[int]], k: int, t: int) -> int:\n        graph = [[] for _ in range(n)]\n        for u, v, w in edges:\n            graph[u].append((v, w))\n        dp = [set() for _ in range(n)]\n        for u in range(n):\n            dp[u].add(0)\n        for _ in range(k):\n            new_dp = [set() for _ in range(n)]\n            for u in range(n):\n                for s in dp[u]:\n                    for v, w in graph[u]:\n                        if s + w < t:\n                            new_dp[v].add(s + w)\n            dp = new_dp\n        ans = -1\n        for u in range(n):\n            if dp[u]:\n                ans = max(ans, max(dp[u]))\n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_set>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxWeight(int n, std::vector<std::vector<int>>& edges, int k, int t) {\n        std::vector<std::vector<std::pair<int, int>>> graph(n);\n        for (const auto& e : edges) {\n            graph[e[0]].push_back({e[1], e[2]});\n        }\n\n        std::vector<std::unordered_set<int>> dp(n);\n        for (int u = 0; u < n; ++u) dp[u].insert(0);\n\n        for (int step = 0; step < k; ++step) {\n            std::vector<std::unordered_set<int>> next_dp(n);\n            for (int u = 0; u < n; ++u) {\n                for (int s : dp[u]) {\n                    for (const auto& edge : graph[u]) {\n                        int v = edge.first;\n                        int w = edge.second;\n                        if (s + w < t) {\n                            next_dp[v].insert(s + w);\n                        }\n                    }\n                }\n            }\n            dp = std::move(next_dp);\n        }\n\n        int ans = -1;\n        for (int u = 0; u < n; ++u) {\n            for (int s : dp[u]) {\n                ans = std::max(ans, s);\n            }\n        }\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxWeight(int n, int[][] edges, int k, int t) {\n        List<int[]>[] graph = new ArrayList[n];\n        for (int i = 0; i < n; ++i) graph[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            graph[e[0]].add(new int[]{e[1], e[2]});\n        }\n\n        Set<Integer>[] dp = new HashSet[n];\n        for (int i = 0; i < n; ++i) {\n            dp[i] = new HashSet<>();\n            dp[i].add(0);\n        }\n\n        for (int step = 0; step < k; ++step) {\n            Set<Integer>[] nextDp = new HashSet[n];\n            for (int i = 0; i < n; ++i) nextDp[i] = new HashSet<>();\n\n            for (int u = 0; u < n; ++u) {\n                for (int s : dp[u]) {\n                    for (int[] edge : graph[u]) {\n                        int v = edge[0];\n                        int w = edge[1];\n                        if (s + w < t) {\n                            nextDp[v].add(s + w);\n                        }\n                    }\n                }\n            }\n            dp = nextDp;\n        }\n\n        int ans = -1;\n        for (int u = 0; u < n; ++u) {\n            for (int s : dp[u]) {\n                if (s > ans) ans = s;\n            }\n        }\n        return ans;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number} k\n * @param {number} t\n * @return {number}\n */\nvar maxWeight = function(n, edges, k, t) {\n    const graph = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        graph[u].push([v, w]);\n    }\n\n    let dp = Array.from({ length: n }, () => new Set([0]));\n\n    for (let step = 0; step < k; ++step) {\n        const nextDp = Array.from({ length: n }, () => new Set());\n        for (let u = 0; u < n; ++u) {\n            for (const s of dp[u]) {\n                for (const [v, w] of graph[u]) {\n                    if (s + w < t) {\n                        nextDp[v].add(s + w);\n                    }\n                }\n            }\n        }\n        dp = nextDp;\n    }\n\n    let ans = -1;\n    for (let u = 0; u < n; ++u) {\n        for (const s of dp[u]) {\n            if (s > ans) ans = s;\n        }\n    }\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}
