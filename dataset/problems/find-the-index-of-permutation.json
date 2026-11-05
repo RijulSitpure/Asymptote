@@ -1,0 +1,78 @@
+{
+  "slug": "find-the-index-of-permutation",
+  "number": 3109,
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Calculate the lexicographical index by counting how many permutations of the same elements come strictly before the given permutation."
+    },
+    {
+      "level": 2,
+      "title": "Factorial Multiplication",
+      "text": "For each position i, any available unused number smaller than perm[i] can lead the suffix, contributing (smaller_count) * (n - 1 - i) factorial permutations."
+    },
+    {
+      "level": 3,
+      "title": "Fenwick Tree Tracking",
+      "text": "Use a binary indexed tree to query and update the count of already observed elements in O(log n) time per index."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def getPermutationIndex(self, perm: list[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(perm)\n        fact = [1] * (n + 1)\n        for i in range(1, n + 1):\n            fact[i] = (fact[i - 1] * i) % MOD\n\n        bit = [0] * (n + 2)\n\n        def add(idx, val):\n            while idx <= n + 1:\n                bit[idx] += val\n                idx += idx & (-idx)\n\n        def query(idx):\n            s = 0\n            while idx > 0:\n                s += bit[idx]\n                idx -= idx & (-idx)\n            return s\n\n        ans = 0\n        for i, x in enumerate(perm):\n            smaller_seen = query(x)\n            smaller_available = (x - 1) - smaller_seen\n            rem = n - 1 - i\n            ans = (ans + smaller_available * fact[rem]) % MOD\n            add(x, 1)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of permutation"
+    ],
+    "notes": "Fenwick tree operations combined with modular factorials.",
+    "whyNaiveFails": "O(n^2) linear scans per index cause time limit exceeded on large permutations.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for tree and factorial tables.",
+    "interviewerExpectation": "Use a Fenwick tree or segment tree to count smaller available elements in O(log n) time."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Binary Indexed Tree with Factorial Counting",
+      "code": "class Solution:\n    def getPermutationIndex(self, perm: list[int]) -> int:\n        MOD = 10**9 + 7\n        n = len(perm)\n        fact = [1] * (n + 1)\n        for i in range(1, n + 1):\n            fact[i] = (fact[i - 1] * i) % MOD\n\n        bit = [0] * (n + 2)\n\n        def add(idx, val):\n            while idx <= n + 1:\n                bit[idx] += val\n                idx += idx & (-idx)\n\n        def query(idx):\n            s = 0\n            while idx > 0:\n                s += bit[idx]\n                idx -= idx & (-idx)\n            return s\n\n        ans = 0\n        for i, x in enumerate(perm):\n            smaller_seen = query(x)\n            smaller_available = (x - 1) - smaller_seen\n            rem = n - 1 - i\n            ans = (ans + smaller_available * fact[rem]) % MOD\n            add(x, 1)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Binary Indexed Tree with Factorial Counting",
+      "code": "class Solution {\npublic:\n    int getPermutationIndex(vector<int>& perm) {\n        long long MOD = 1e9 + 7;\n        int n = perm.size();\n        vector<long long> fact(n + 1, 1);\n        for (int i = 1; i <= n; ++i) {\n            fact[i] = (fact[i - 1] * i) % MOD;\n        }\n\n        vector<int> bit(n + 2, 0);\n        auto add = [&](int idx, int val) {\n            for (; idx <= n + 1; idx += idx & -idx) bit[idx] += val;\n        };\n        auto query = [&](int idx) {\n            int s = 0;\n            for (; idx > 0; idx -= idx & -idx) s += bit[idx];\n            return s;\n        };\n\n        long long ans = 0;\n        for (int i = 0; i < n; ++i) {\n            int x = perm[i];\n            int smaller_seen = query(x);\n            int smaller_available = (x - 1) - smaller_seen;\n            int rem = n - 1 - i;\n            ans = (ans + 1LL * smaller_available * fact[rem]) % MOD;\n            add(x, 1);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Binary Indexed Tree with Factorial Counting",
+      "code": "class Solution {\n    public int getPermutationIndex(int[] perm) {\n        long MOD = 1_000_000_007L;\n        int n = perm.length;\n        long[] fact = new long[n + 1];\n        fact[0] = 1;\n        for (int i = 1; i <= n; i++) {\n            fact[i] = (fact[i - 1] * i) % MOD;\n        }\n\n        int[] bit = new int[n + 2];\n        long ans = 0;\n        for (int i = 0; i < n; i++) {\n            int x = perm[i];\n            int smallerSeen = 0;\n            for (int idx = x; idx > 0; idx -= idx & -idx) smallerSeen += bit[idx];\n            int smallerAvailable = (x - 1) - smallerSeen;\n            int rem = n - 1 - i;\n            ans = (ans + smallerAvailable * fact[rem]) % MOD;\n            for (int idx = x; idx <= n + 1; idx += idx & -idx) bit[idx] += 1;\n        }\n        return (int) ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Binary Indexed Tree with Factorial Counting",
+      "code": "var getPermutationIndex = function(perm) {\n    const MOD = 1000000007n;\n    const n = perm.length;\n    const fact = new Array(n + 1);\n    fact[0] = 1n;\n    for (let i = 1; i <= n; i++) {\n        fact[i] = (fact[i - 1] * BigInt(i)) % MOD;\n    }\n\n    const bit = new Array(n + 2).fill(0);\n    function add(idx, val) {\n        for (; idx <= n + 1; idx += idx & -idx) bit[idx] += val;\n    }\n    function query(idx) {\n        let s = 0;\n        for (; idx > 0; idx -= idx & -idx) s += bit[idx];\n        return s;\n    }\n\n    let ans = 0n;\n    for (let i = 0; i < n; i++) {\n        const x = perm[i];\n        const smallerSeen = query(x);\n        const smallerAvailable = BigInt((x - 1) - smallerSeen);\n        const rem = n - 1 - i;\n        ans = (ans + smallerAvailable * fact[rem]) % MOD;\n        add(x, 1);\n    }\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

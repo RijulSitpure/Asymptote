@@ -1,0 +1,71 @@
+{
+  "slug": "find-bursty-behavior",
+  "number": 3089,
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Analyze posting activity during February 2024 to identify users who exhibit sudden surges in activity."
+    },
+    {
+      "level": 2,
+      "title": "Rolling Interval Analysis",
+      "text": "For each post in February 2024, count subsequent posts by the same user within six additional days."
+    },
+    {
+      "level": 3,
+      "title": "Query Structure",
+      "text": "Compute weekly baseline average by dividing February posts by four. Compute maximum rolling count and retain users whose maximum equals or exceeds double their baseline."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH SevenDayPostCounts AS (\n    SELECT \n        p1.user_id, \n        COUNT(*) AS post_count \n    FROM Posts p1 \n    INNER JOIN Posts p2 \n        ON p1.user_id = p2.user_id\n    WHERE p2.post_date BETWEEN p1.post_date AND DATE_ADD(p1.post_date, INTERVAL 6 DAY)\n      AND p1.post_date BETWEEN '2024-02-01' AND '2024-02-28'\n      AND p2.post_date BETWEEN '2024-02-01' AND '2024-02-28'\n    GROUP BY p1.user_id, p1.post_id\n), \nAverageWeeklyPosts AS (\n    SELECT \n        user_id, \n        COUNT(*) / 4.0 AS avg_weekly_posts \n    FROM Posts \n    WHERE post_date BETWEEN '2024-02-01' AND '2024-02-28' \n    GROUP BY user_id\n) \nSELECT \n    SevenDayPostCounts.user_id, \n    MAX(SevenDayPostCounts.post_count) AS max_7day_posts, \n    AverageWeeklyPosts.avg_weekly_posts \nFROM SevenDayPostCounts \nINNER JOIN AverageWeeklyPosts \n    ON SevenDayPostCounts.user_id = AverageWeeklyPosts.user_id \nGROUP BY SevenDayPostCounts.user_id, AverageWeeklyPosts.avg_weekly_posts \nHAVING max_7day_posts >= avg_weekly_posts * 2 \nORDER BY user_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2)",
+    "space": "O(N)",
+    "variables": [
+      "N: total posts in February 2024"
+    ],
+    "notes": "Self join on user posts within 7 day windows and aggregation.",
+    "whyNaiveFails": "Full table scans without date bounds process irrelevant historical records.",
+    "spaceTimeTradeoff": "O(N) intermediate table for window aggregation.",
+    "interviewerExpectation": "Use 7 day intervals accurately and compute the 4-week average."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Rolling Seven Day Window Self Join",
+      "code": "WITH SevenDayPostCounts AS (\n    SELECT \n        p1.user_id, \n        COUNT(*) AS post_count \n    FROM Posts p1 \n    INNER JOIN Posts p2 \n        ON p1.user_id = p2.user_id\n    WHERE p2.post_date BETWEEN p1.post_date AND DATE_ADD(p1.post_date, INTERVAL 6 DAY)\n      AND p1.post_date BETWEEN '2024-02-01' AND '2024-02-28'\n      AND p2.post_date BETWEEN '2024-02-01' AND '2024-02-28'\n    GROUP BY p1.user_id, p1.post_id\n), \nAverageWeeklyPosts AS (\n    SELECT \n        user_id, \n        COUNT(*) / 4.0 AS avg_weekly_posts \n    FROM Posts \n    WHERE post_date BETWEEN '2024-02-01' AND '2024-02-28' \n    GROUP BY user_id\n) \nSELECT \n    SevenDayPostCounts.user_id, \n    MAX(SevenDayPostCounts.post_count) AS max_7day_posts, \n    AverageWeeklyPosts.avg_weekly_posts \nFROM SevenDayPostCounts \nINNER JOIN AverageWeeklyPosts \n    ON SevenDayPostCounts.user_id = AverageWeeklyPosts.user_id \nGROUP BY SevenDayPostCounts.user_id, AverageWeeklyPosts.avg_weekly_posts \nHAVING max_7day_posts >= avg_weekly_posts * 2 \nORDER BY user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Rolling Seven Day Window Self Join",
+      "code": "WITH SevenDayPostCounts AS (\n    SELECT \n        p1.user_id, \n        COUNT(*) AS post_count \n    FROM Posts p1 \n    INNER JOIN Posts p2 \n        ON p1.user_id = p2.user_id\n    WHERE p2.post_date BETWEEN p1.post_date AND (p1.post_date + INTERVAL '6 DAY')::DATE\n      AND p1.post_date BETWEEN '2024-02-01' AND '2024-02-28'\n      AND p2.post_date BETWEEN '2024-02-01' AND '2024-02-28'\n    GROUP BY p1.user_id, p1.post_id\n), \nAverageWeeklyPosts AS (\n    SELECT \n        user_id, \n        COUNT(*)::NUMERIC / 4.0 AS avg_weekly_posts \n    FROM Posts \n    WHERE post_date BETWEEN '2024-02-01' AND '2024-02-28' \n    GROUP BY user_id\n) \nSELECT \n    SevenDayPostCounts.user_id, \n    MAX(SevenDayPostCounts.post_count) AS max_7day_posts, \n    AverageWeeklyPosts.avg_weekly_posts \nFROM SevenDayPostCounts \nINNER JOIN AverageWeeklyPosts \n    ON SevenDayPostCounts.user_id = AverageWeeklyPosts.user_id \nGROUP BY SevenDayPostCounts.user_id, AverageWeeklyPosts.avg_weekly_posts \nHAVING MAX(SevenDayPostCounts.post_count) >= avg_weekly_posts * 2 \nORDER BY user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Rolling Seven Day Window Self Join",
+      "code": "import pandas as pd\n\ndef find_bursty_behavior(posts: pd.DataFrame) -> pd.DataFrame:\n    df = posts.copy()\n    df['post_date'] = pd.to_datetime(df['post_date'])\n    df = df[(df['post_date'] >= '2024-02-01') & (df['post_date'] <= '2024-02-28')]\n    if df.empty:\n        return pd.DataFrame(columns=['user_id', 'max_7day_posts', 'avg_weekly_posts'])\n    \n    # Calculate weekly averages\n    weekly = df.groupby('user_id').size().reset_index(name='total_posts')\n    weekly['avg_weekly_posts'] = weekly['total_posts'] / 4.0\n    \n    # Calculate rolling 7-day max\n    max_counts = []\n    for uid, group in df.groupby('user_id'):\n        dates = group['post_date'].sort_values().tolist()\n        m_count = 0\n        for d in dates:\n            cnt = sum(1 for d2 in dates if d <= d2 <= d + pd.Timedelta(days=6))\n            if cnt > m_count:\n                m_count = cnt\n        max_counts.append({'user_id': uid, 'max_7day_posts': m_count})\n        \n    m_df = pd.DataFrame(max_counts)\n    res = m_df.merge(weekly[['user_id', 'avg_weekly_posts']], on='user_id')\n    res = res[res['max_7day_posts'] >= res['avg_weekly_posts'] * 2]\n    return res.sort_values(by='user_id')[['user_id', 'max_7day_posts', 'avg_weekly_posts']]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

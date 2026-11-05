@@ -1,0 +1,79 @@
+{
+  "slug": "find-the-sum-of-subsequence-powers",
+  "number": 3098,
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Sort the array initially so that the minimum absolute difference in any chosen subset always occurs between adjacent elements."
+    },
+    {
+      "level": 2,
+      "title": "State Formulation",
+      "text": "Define a recursion tracking current element index, remaining elements to select, last selected index, and current minimum difference."
+    },
+    {
+      "level": 3,
+      "title": "Transitions and Modulo",
+      "text": "Branch on either skipping or choosing the current element. Update the running minimum gap and take results modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nfrom functools import lru_cache\n\nclass Solution:\n    def sumOfPowers(self, nums: list[int], k: int) -> int:\n        MOD = 10**9 + 7\n        nums.sort()\n        n = len(nums)\n\n        @lru_cache(None)\n        def dfs(i: int, rem: int, prev_idx: int, min_diff: int) -> int:\n            if rem == 0:\n                return min_diff if min_diff != float('inf') else 0\n            if i == n or n - i < rem:\n                return 0\n            # Option 1: skip\n            res = dfs(i + 1, rem, prev_idx, min_diff)\n            # Option 2: take\n            new_diff = min(min_diff, nums[i] - nums[prev_idx]) if prev_idx != -1 else float('inf')\n            res = (res + dfs(i + 1, rem - 1, i, new_diff)) % MOD\n            return res\n\n        return dfs(0, k, -1, float('inf'))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^4 * k)",
+    "space": "O(n^3 * k)",
+    "variables": [
+      "n: length of array nums",
+      "k: subsequence size"
+    ],
+    "notes": "State memoization over index, remaining count, previous element, and minimum gap.",
+    "whyNaiveFails": "Enumerating all combinations of length k takes exponential O(C(n, k)) time.",
+    "spaceTimeTradeoff": "O(n^3 * k) memoization cache table.",
+    "interviewerExpectation": "Sort first to constrain adjacent differences and apply memoized recursion."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Sorted Array Dynamic Programming with State Memoization",
+      "code": "from functools import lru_cache\n\nclass Solution:\n    def sumOfPowers(self, nums: list[int], k: int) -> int:\n        MOD = 10**9 + 7\n        nums.sort()\n        n = len(nums)\n\n        @lru_cache(None)\n        def dfs(i: int, rem: int, prev_idx: int, min_diff: int) -> int:\n            if rem == 0:\n                return min_diff if min_diff != float('inf') else 0\n            if i == n or n - i < rem:\n                return 0\n            # Option 1: skip\n            res = dfs(i + 1, rem, prev_idx, min_diff)\n            # Option 2: take\n            new_diff = min(min_diff, nums[i] - nums[prev_idx]) if prev_idx != -1 else float('inf')\n            res = (res + dfs(i + 1, rem - 1, i, new_diff)) % MOD\n            return res\n\n        return dfs(0, k, -1, float('inf'))",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Sorted Array Dynamic Programming with State Memoization",
+      "code": "class Solution {\npublic:\n    int sumOfPowers(vector<int>& nums, int k) {\n        int n = nums.size();\n        sort(nums.begin(), nums.end());\n        long long MOD = 1e9 + 7;\n        \n        map<tuple<int, int, int, int>, int> memo;\n\n        auto dfs = [&](auto& self, int i, int rem, int prev_idx, int min_diff) -> int {\n            if (rem == 0) return min_diff == 1e9 ? 0 : min_diff;\n            if (i == n || n - i < rem) return 0;\n            \n            auto key = make_tuple(i, rem, prev_idx, min_diff);\n            if (memo.count(key)) return memo[key];\n\n            long long res = self(self, i + 1, rem, prev_idx, min_diff);\n            int new_diff = (prev_idx != -1) ? min(min_diff, nums[i] - nums[prev_idx]) : 1e9;\n            res = (res + self(self, i + 1, rem - 1, i, new_diff)) % MOD;\n\n            return memo[key] = res;\n        };\n\n        return dfs(dfs, 0, k, -1, 1e9);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Sorted Array Dynamic Programming with State Memoization",
+      "code": "class Solution {\n    private static final int MOD = 1_000_000_007;\n\n    public int sumOfPowers(int[] nums, int k) {\n        Arrays.sort(nums);\n        int n = nums.length;\n        Map<String, Integer> memo = new HashMap<>();\n        return dfs(0, k, -1, Integer.MAX_VALUE, nums, memo);\n    }\n\n    private int dfs(int i, int rem, int prevIdx, int minDiff, int[] nums, Map<String, Integer> memo) {\n        if (rem == 0) return minDiff == Integer.MAX_VALUE ? 0 : minDiff;\n        if (i == nums.length || nums.length - i < rem) return 0;\n\n        String key = i + \",\" + rem + \",\" + prevIdx + \",\" + minDiff;\n        if (memo.containsKey(key)) return memo.get(key);\n\n        long res = dfs(i + 1, rem, prevIdx, minDiff, nums, memo);\n        int newDiff = (prevIdx != -1) ? Math.min(minDiff, nums[i] - nums[prevIdx]) : Integer.MAX_VALUE;\n        res = (res + dfs(i + 1, rem - 1, i, newDiff, nums, memo)) % MOD;\n\n        memo.put(key, (int) res);\n        return (int) res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Sorted Array Dynamic Programming with State Memoization",
+      "code": "var sumOfPowers = function(nums, k) {\n    const MOD = 1000000007;\n    nums.sort((a, b) => a - b);\n    const n = nums.length;\n    const memo = new Map();\n\n    function dfs(i, rem, prevIdx, minDiff) {\n        if (rem === 0) return minDiff === Infinity ? 0 : minDiff;\n        if (i === n || n - i < rem) return 0;\n\n        const key = `${i},${rem},${prevIdx},${minDiff}`;\n        if (memo.has(key)) return memo.get(key);\n\n        let res = dfs(i + 1, rem, prevIdx, minDiff);\n        const newDiff = (prevIdx !== -1) ? Math.min(minDiff, nums[i] - nums[prevIdx]) : Infinity;\n        res = (res + dfs(i + 1, rem - 1, i, newDiff)) % MOD;\n\n        memo.set(key, res);\n        return res;\n    }\n\n    return dfs(0, k, -1, Infinity);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

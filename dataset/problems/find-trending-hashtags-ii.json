@@ -1,0 +1,72 @@
+{
+  "slug": "find-trending-hashtags-ii",
+  "number": 3103,
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Extract all trending topic labels prefixed with the pound sign from tweets posted in February 2024 and rank them by frequency."
+    },
+    {
+      "level": 2,
+      "title": "Iterative Extraction",
+      "text": "Since a single tweet may contain multiple hashtags, iteratively isolate one hashtag at a time using string replacement."
+    },
+    {
+      "level": 3,
+      "title": "Recursive Structure",
+      "text": "Use a recursive CTE to pop hashtags matching regex pattern until no symbols remain. Group by hashtag, order descending by count, and return top three."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH RECURSIVE FebruaryTweets AS (\n    SELECT * \n    FROM Tweets \n    WHERE tweet_date BETWEEN '2024-02-01' AND '2024-02-29'\n),\nHashtagToTweet AS (\n    SELECT \n        REGEXP_SUBSTR(tweet, '#[^[:space:]]+') AS hashtag, \n        REGEXP_REPLACE(tweet, '#[^[:space:]]+', '', 1, 1) AS remaining_tweet \n    FROM FebruaryTweets\n    WHERE tweet LIKE '%#%'\n    \n    UNION ALL\n    \n    SELECT \n        REGEXP_SUBSTR(remaining_tweet, '#[^[:space:]]+') AS hashtag, \n        REGEXP_REPLACE(remaining_tweet, '#[^[:space:]]+', '', 1, 1) AS remaining_tweet \n    FROM HashtagToTweet \n    WHERE remaining_tweet LIKE '%#%'\n)\nSELECT \n    hashtag, \n    COUNT(*) AS count \nFROM HashtagToTweet \nWHERE hashtag IS NOT NULL\nGROUP BY hashtag \nORDER BY count DESC, hashtag DESC \nLIMIT 3;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * H)",
+    "space": "O(N * H)",
+    "variables": [
+      "N: total tweets in February 2024",
+      "H: maximum hashtags per tweet"
+    ],
+    "notes": "Recursive CTE tokenization followed by aggregation.",
+    "whyNaiveFails": "Single substring extraction ignores secondary hashtags in the same post.",
+    "spaceTimeTradeoff": "O(N * H) recursive result set.",
+    "interviewerExpectation": "Use recursive CTE or regex token extraction to parse arbitrary counts of hashtags."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Recursive Common Table Expression Regex Tokenizer",
+      "code": "WITH RECURSIVE FebruaryTweets AS (\n    SELECT * \n    FROM Tweets \n    WHERE tweet_date BETWEEN '2024-02-01' AND '2024-02-29'\n),\nHashtagToTweet AS (\n    SELECT \n        REGEXP_SUBSTR(tweet, '#[^[:space:]]+') AS hashtag, \n        REGEXP_REPLACE(tweet, '#[^[:space:]]+', '', 1, 1) AS remaining_tweet \n    FROM FebruaryTweets\n    WHERE tweet LIKE '%#%'\n    \n    UNION ALL\n    \n    SELECT \n        REGEXP_SUBSTR(remaining_tweet, '#[^[:space:]]+') AS hashtag, \n        REGEXP_REPLACE(remaining_tweet, '#[^[:space:]]+', '', 1, 1) AS remaining_tweet \n    FROM HashtagToTweet \n    WHERE remaining_tweet LIKE '%#%'\n)\nSELECT \n    hashtag, \n    COUNT(*) AS count \nFROM HashtagToTweet \nWHERE hashtag IS NOT NULL\nGROUP BY hashtag \nORDER BY count DESC, hashtag DESC \nLIMIT 3;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Recursive Common Table Expression Regex Tokenizer",
+      "code": "WITH FebruaryTweets AS (\n    SELECT \n        tweet_id,\n        (REGEXP_MATCHES(tweet, '#[^[:space:]]+', 'g'))[1] AS hashtag\n    FROM Tweets\n    WHERE tweet_date BETWEEN '2024-02-01' AND '2024-02-29'\n)\nSELECT \n    hashtag, \n    COUNT(*) AS count \nFROM FebruaryTweets\nWHERE hashtag IS NOT NULL\nGROUP BY hashtag \nORDER BY count DESC, hashtag DESC \nLIMIT 3;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Recursive Common Table Expression Regex Tokenizer",
+      "code": "import pandas as pd\n\ndef find_trending_hashtags_ii(tweets: pd.DataFrame) -> pd.DataFrame:\n    df = tweets.copy()\n    df['tweet_date'] = pd.to_datetime(df['tweet_date'])\n    df = df[(df['tweet_date'] >= '2024-02-01') & (df['tweet_date'] <= '2024-02-29')]\n    if df.empty:\n        return pd.DataFrame(columns=['hashtag', 'count'])\n    \n    tags = df['tweet'].str.findall(r'(#[^\\s]+)').explode().dropna()\n    if tags.empty:\n        return pd.DataFrame(columns=['hashtag', 'count'])\n        \n    res = tags.value_counts().reset_index()\n    res.columns = ['hashtag', 'count']\n    return res.sort_values(by=['count', 'hashtag'], ascending=[False, False]).head(3)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

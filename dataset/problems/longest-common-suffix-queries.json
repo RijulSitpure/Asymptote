@@ -1,0 +1,79 @@
+{
+  "slug": "longest-common-suffix-queries",
+  "number": 3093,
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Suffix matching corresponds to prefix matching on reversed strings."
+    },
+    {
+      "level": 2,
+      "title": "Node Metadata",
+      "text": "At each node in a prefix tree of reversed words, cache the index of the best candidate word: shortest length first, then smallest index."
+    },
+    {
+      "level": 3,
+      "title": "Query Traversal",
+      "text": "Reverse each query string and walk down the tree. At the deepest matching node, return the cached best index."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.best_idx = -1\n\nclass Solution:\n    def stringIndices(self, wordsContainer: list[str], wordsQuery: list[str]) -> list[int]:\n        root = TrieNode()\n        \n        def is_better(new_idx, old_idx):\n            if old_idx == -1:\n                return True\n            len_new, len_old = len(wordsContainer[new_idx]), len(wordsContainer[old_idx])\n            if len_new != len_old:\n                return len_new < len_old\n            return new_idx < old_idx\n\n        # Global best for empty match\n        for idx in range(len(wordsContainer)):\n            if is_better(idx, root.best_idx):\n                root.best_idx = idx\n\n        for idx, word in enumerate(wordsContainer):\n            curr = root\n            for ch in reversed(word):\n                if ch not in curr.children:\n                    curr.children[ch] = TrieNode()\n                curr = curr.children[ch]\n                if is_better(idx, curr.best_idx):\n                    curr.best_idx = idx\n\n        ans = []\n        for query in wordsQuery:\n            curr = root\n            for ch in reversed(query):\n                if ch in curr.children:\n                    curr = curr.children[ch]\n                else:\n                    break\n            ans.append(curr.best_idx)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(L_total)",
+    "space": "O(L_container * 26)",
+    "variables": [
+      "L_total: total character count across wordsContainer and wordsQuery",
+      "L_container: total characters in wordsContainer"
+    ],
+    "notes": "Linear time with respect to the total length of all words.",
+    "whyNaiveFails": "Pairwise suffix comparisons take O(N * Q * L) time, causing timeouts.",
+    "spaceTimeTradeoff": "O(26 * L) trie nodes for O(L_query) lookups.",
+    "interviewerExpectation": "Reverse strings to transform suffix queries into standard prefix tree lookups."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Reversed String Trie with Optimal Index Caching",
+      "code": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.best_idx = -1\n\nclass Solution:\n    def stringIndices(self, wordsContainer: list[str], wordsQuery: list[str]) -> list[int]:\n        root = TrieNode()\n        \n        def is_better(new_idx, old_idx):\n            if old_idx == -1:\n                return True\n            len_new, len_old = len(wordsContainer[new_idx]), len(wordsContainer[old_idx])\n            if len_new != len_old:\n                return len_new < len_old\n            return new_idx < old_idx\n\n        # Global best for empty match\n        for idx in range(len(wordsContainer)):\n            if is_better(idx, root.best_idx):\n                root.best_idx = idx\n\n        for idx, word in enumerate(wordsContainer):\n            curr = root\n            for ch in reversed(word):\n                if ch not in curr.children:\n                    curr.children[ch] = TrieNode()\n                curr = curr.children[ch]\n                if is_better(idx, curr.best_idx):\n                    curr.best_idx = idx\n\n        ans = []\n        for query in wordsQuery:\n            curr = root\n            for ch in reversed(query):\n                if ch in curr.children:\n                    curr = curr.children[ch]\n                else:\n                    break\n            ans.append(curr.best_idx)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Reversed String Trie with Optimal Index Caching",
+      "code": "struct TrieNode {\n    TrieNode* children[26] = {nullptr};\n    int best_idx = -1;\n};\n\nclass Solution {\npublic:\n    vector<int> stringIndices(vector<string>& wordsContainer, vector<string>& wordsQuery) {\n        TrieNode* root = new TrieNode();\n        \n        auto isBetter = [&](int new_idx, int old_idx) {\n            if (old_idx == -1) return true;\n            int lenNew = wordsContainer[new_idx].size();\n            int lenOld = wordsContainer[old_idx].size();\n            if (lenNew != lenOld) return lenNew < lenOld;\n            return new_idx < old_idx;\n        };\n\n        for (int i = 0; i < wordsContainer.size(); ++i) {\n            if (isBetter(i, root->best_idx)) root->best_idx = i;\n            TrieNode* curr = root;\n            string& w = wordsContainer[i];\n            for (int j = (int)w.size() - 1; j >= 0; --j) {\n                int c = w[j] - 'a';\n                if (!curr->children[c]) curr->children[c] = new TrieNode();\n                curr = curr->children[c];\n                if (isBetter(i, curr->best_idx)) curr->best_idx = i;\n            }\n        }\n\n        vector<int> ans;\n        for (const string& q : wordsQuery) {\n            TrieNode* curr = root;\n            for (int j = (int)q.size() - 1; j >= 0; --j) {\n                int c = q[j] - 'a';\n                if (!curr->children[c]) break;\n                curr = curr->children[c];\n            }\n            ans.push_back(curr->best_idx);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Reversed String Trie with Optimal Index Caching",
+      "code": "class Solution {\n    static class TrieNode {\n        TrieNode[] children = new TrieNode[26];\n        int bestIdx = -1;\n    }\n\n    public int[] stringIndices(String[] wordsContainer, String[] wordsQuery) {\n        TrieNode root = new TrieNode();\n\n        for (int i = 0; i < wordsContainer.length; i++) {\n            if (isBetter(wordsContainer, i, root.bestIdx)) {\n                root.bestIdx = i;\n            }\n            TrieNode curr = root;\n            String w = wordsContainer[i];\n            for (int j = w.length() - 1; j >= 0; j--) {\n                int c = w.charAt(j) - 'a';\n                if (curr.children[c] == null) {\n                    curr.children[c] = new TrieNode();\n                }\n                curr = curr.children[c];\n                if (isBetter(wordsContainer, i, curr.bestIdx)) {\n                    curr.bestIdx = i;\n                }\n            }\n        }\n\n        int[] ans = new int[wordsQuery.length];\n        for (int i = 0; i < wordsQuery.length; i++) {\n            TrieNode curr = root;\n            String q = wordsQuery[i];\n            for (int j = q.length() - 1; j >= 0; j--) {\n                int c = q.charAt(j) - 'a';\n                if (curr.children[c] == null) break;\n                curr = curr.children[c];\n            }\n            ans[i] = curr.bestIdx;\n        }\n        return ans;\n    }\n\n    private boolean isBetter(String[] words, int newIdx, int oldIdx) {\n        if (oldIdx == -1) return true;\n        if (words[newIdx].length() != words[oldIdx].length()) {\n            return words[newIdx].length() < words[oldIdx].length();\n        }\n        return newIdx < oldIdx;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Reversed String Trie with Optimal Index Caching",
+      "code": "var stringIndices = function(wordsContainer, wordsQuery) {\n    function TrieNode() {\n        this.children = {};\n        this.bestIdx = -1;\n    }\n\n    function isBetter(newIdx, oldIdx) {\n        if (oldIdx === -1) return true;\n        const lenNew = wordsContainer[newIdx].length;\n        const lenOld = wordsContainer[oldIdx].length;\n        if (lenNew !== lenOld) return lenNew < lenOld;\n        return newIdx < oldIdx;\n    }\n\n    const root = new TrieNode();\n    for (let i = 0; i < wordsContainer.length; i++) {\n        if (isBetter(i, root.bestIdx)) root.bestIdx = i;\n        let curr = root;\n        const w = wordsContainer[i];\n        for (let j = w.length - 1; j >= 0; j--) {\n            const ch = w[j];\n            if (!curr.children[ch]) curr.children[ch] = new TrieNode();\n            curr = curr.children[ch];\n            if (isBetter(i, curr.bestIdx)) curr.bestIdx = i;\n        }\n    }\n\n    const ans = [];\n    for (const q of wordsQuery) {\n        let curr = root;\n        for (let j = q.length - 1; j >= 0; j--) {\n            const ch = q[j];\n            if (!curr.children[ch]) break;\n            curr = curr.children[ch];\n        }\n        ans.push(curr.bestIdx);\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

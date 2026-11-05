@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-cost-walk-in-weighted-graph",
+  "number": 3108,
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Since edges can be traversed multiple times, any walk between connected vertices can include all edges within that connected component."
+    },
+    {
+      "level": 2,
+      "title": "Bitwise Invariant",
+      "text": "Traversing additional edges with bitwise and never increases the cost, so the minimum cost equals the bitwise and of all edges in the component."
+    },
+    {
+      "level": 3,
+      "title": "Component Queries",
+      "text": "Group vertices using disjoint set union while tracking the cumulative bitwise and for each component. If source equals target return zero; if disconnected return -1."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def minimumCost(self, n: int, edges: list[list[int]], query: list[list[int]]) -> list[int]:\n        parent = list(range(n))\n        and_val = [(1 << 30) - 1] * n\n\n        def find(i):\n            if parent[i] == i:\n                return i\n            parent[i] = find(parent[i])\n            return parent[i]\n\n        def union(i, j, w):\n            root_i = find(i)\n            root_j = find(j)\n            if root_i != root_j:\n                parent[root_i] = root_j\n                and_val[root_j] &= and_val[root_i] & w\n            else:\n                and_val[root_j] &= w\n\n        for u, v, w in edges:\n            union(u, v, w)\n\n        ans = []\n        for s, t in query:\n            if s == t:\n                ans.append(0)\n            else:\n                rs, rt = find(s), find(t)\n                if rs != rt:\n                    ans.append(-1)\n                else:\n                    ans.append(and_val[rs])\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((V + E + Q) * alpha(V))",
+    "space": "O(V)",
+    "variables": [
+      "V: number of vertices",
+      "E: number of edges",
+      "Q: number of queries"
+    ],
+    "notes": "Near-linear time with disjoint set union and cumulative bitwise tracking.",
+    "whyNaiveFails": "Path search on each query re-explores graphs taking O(Q * (V + E)) time.",
+    "spaceTimeTradeoff": "O(V) storage for parent and bitwise component values.",
+    "interviewerExpectation": "Realize that walks allow arbitrary edge traversals, making component-wide bitwise and optimal."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Disjoint Set Union with Component-Wide Bitwise AND",
+      "code": "class Solution:\n    def minimumCost(self, n: int, edges: list[list[int]], query: list[list[int]]) -> list[int]:\n        parent = list(range(n))\n        and_val = [(1 << 30) - 1] * n\n\n        def find(i):\n            if parent[i] == i:\n                return i\n            parent[i] = find(parent[i])\n            return parent[i]\n\n        def union(i, j, w):\n            root_i = find(i)\n            root_j = find(j)\n            if root_i != root_j:\n                parent[root_i] = root_j\n                and_val[root_j] &= and_val[root_i] & w\n            else:\n                and_val[root_j] &= w\n\n        for u, v, w in edges:\n            union(u, v, w)\n\n        ans = []\n        for s, t in query:\n            if s == t:\n                ans.append(0)\n            else:\n                rs, rt = find(s), find(t)\n                if rs != rt:\n                    ans.append(-1)\n                else:\n                    ans.append(and_val[rs])\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Disjoint Set Union with Component-Wide Bitwise AND",
+      "code": "class Solution {\npublic:\n    vector<int> minimumCost(int n, vector<vector<int>>& edges, vector<vector<int>>& query) {\n        vector<int> parent(n);\n        vector<int> and_val(n, (1 << 30) - 1);\n        iota(parent.begin(), parent.end(), 0);\n\n        auto find = [&](auto& self, int i) -> int {\n            if (parent[i] == i) return i;\n            return parent[i] = self(self, parent[i]);\n        };\n\n        auto unite = [&](int i, int j, int w) {\n            int root_i = find(find, i);\n            int root_j = find(find, j);\n            if (root_i != root_j) {\n                parent[root_i] = root_j;\n                and_val[root_j] &= and_val[root_i] & w;\n            } else {\n                and_val[root_j] &= w;\n            }\n        };\n\n        for (const auto& e : edges) {\n            unite(e[0], e[1], e[2]);\n        }\n\n        vector<int> ans;\n        for (const auto& q : query) {\n            int s = q[0], t = q[1];\n            if (s == t) {\n                ans.push_back(0);\n            } else {\n                int rs = find(find, s), rt = find(find, t);\n                if (rs != rt) ans.push_back(-1);\n                else ans.push_back(and_val[rs]);\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Disjoint Set Union with Component-Wide Bitwise AND",
+      "code": "class Solution {\n    public int[] minimumCost(int n, int[][] edges, int[][] query) {\n        int[] parent = new int[n];\n        int[] andVal = new int[n];\n        for (int i = 0; i < n; i++) {\n            parent[i] = i;\n            andVal[i] = (1 << 30) - 1;\n        }\n\n        for (int[] e : edges) {\n            int rootU = find(parent, e[0]);\n            int rootV = find(parent, e[1]);\n            if (rootU != rootV) {\n                parent[rootU] = rootV;\n                andVal[rootV] &= andVal[rootU] & e[2];\n            } else {\n                andVal[rootV] &= e[2];\n            }\n        }\n\n        int[] ans = new int[query.length];\n        for (int i = 0; i < query.length; i++) {\n            int s = query[i][0], t = query[i][1];\n            if (s == t) {\n                ans[i] = 0;\n            } else {\n                int rs = find(parent, s);\n                int rt = find(parent, t);\n                if (rs != rt) ans[i] = -1;\n                else ans[i] = andVal[rs];\n            }\n        }\n        return ans;\n    }\n\n    private int find(int[] parent, int i) {\n        if (parent[i] == i) return i;\n        return parent[i] = find(parent, parent[i]);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Disjoint Set Union with Component-Wide Bitwise AND",
+      "code": "var minimumCost = function(n, edges, query) {\n    const parent = Array.from({length: n}, (_, i) => i);\n    const andVal = new Array(n).fill((1 << 30) - 1);\n\n    function find(i) {\n        if (parent[i] === i) return i;\n        return parent[i] = find(parent[i]);\n    }\n\n    function unite(i, j, w) {\n        const rootI = find(i);\n        const rootJ = find(j);\n        if (rootI !== rootJ) {\n            parent[rootI] = rootJ;\n            andVal[rootJ] &= andVal[rootI] & w;\n        } else {\n            andVal[rootJ] &= w;\n        }\n    }\n\n    for (const [u, v, w] of edges) {\n        unite(u, v, w);\n    }\n\n    const ans = [];\n    for (const [s, t] of query) {\n        if (s === t) {\n            ans.push(0);\n        } else {\n            const rs = find(s), rt = find(t);\n            if (rs !== rt) ans.push(-1);\n            else ans.push(andVal[rs]);\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

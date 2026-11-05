@@ -1,0 +1,71 @@
+{
+  "slug": "friday-purchase-iii",
+  "number": 3118,
+  "patterns": [
+    "date-time"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Aggregate Friday purchases in November 2023 for Premium and vip memberships, preserving zeroes for inactive combinations."
+    },
+    {
+      "level": 2,
+      "title": "Grid Construction",
+      "text": "Generate all four Fridays in November 2023 and cross join with the target membership tiers to form complete pairs."
+    },
+    {
+      "level": 3,
+      "title": "Left Join and Aggregation",
+      "text": "Left join the calendar grid with filtered purchases and users. Replace null sums with zero and order by week of month and membership."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH RECURSIVE Fridays AS (\n    SELECT 1 AS week_of_month, '2023-11-03' AS purchase_date\n    UNION ALL\n    SELECT week_of_month + 1, DATE_ADD(purchase_date, INTERVAL 7 DAY) \n    FROM Fridays \n    WHERE week_of_month < 4\n), \nMemberships AS (\n    SELECT 'Premium' AS membership\n    UNION ALL \n    SELECT 'VIP' AS membership\n)\nSELECT \n    Fridays.week_of_month, \n    Memberships.membership, \n    IFNULL(SUM(Purchases.amount_spend), 0) AS total_amount \nFROM Fridays \nCROSS JOIN Memberships \nLEFT JOIN Users \n    ON Memberships.membership = Users.membership\nLEFT JOIN Purchases \n    ON Fridays.purchase_date = Purchases.purchase_date \n    AND Users.user_id = Purchases.user_id\nGROUP BY Fridays.week_of_month, Memberships.membership\nORDER BY Fridays.week_of_month, Memberships.membership;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total purchases in November 2023"
+    ],
+    "notes": "Fixed eight-row calendar cross join with aggregated purchase sums.",
+    "whyNaiveFails": "Inner joins omit Fridays and memberships where zero purchases occurred.",
+    "spaceTimeTradeoff": "O(1) extra space for the calendar grid.",
+    "interviewerExpectation": "Use cross join and left join to ensure all eight required output rows are present."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Recursive Calendar Cross Join and Aggregation",
+      "code": "WITH RECURSIVE Fridays AS (\n    SELECT 1 AS week_of_month, '2023-11-03' AS purchase_date\n    UNION ALL\n    SELECT week_of_month + 1, DATE_ADD(purchase_date, INTERVAL 7 DAY) \n    FROM Fridays \n    WHERE week_of_month < 4\n), \nMemberships AS (\n    SELECT 'Premium' AS membership\n    UNION ALL \n    SELECT 'VIP' AS membership\n)\nSELECT \n    Fridays.week_of_month, \n    Memberships.membership, \n    IFNULL(SUM(Purchases.amount_spend), 0) AS total_amount \nFROM Fridays \nCROSS JOIN Memberships \nLEFT JOIN Users \n    ON Memberships.membership = Users.membership\nLEFT JOIN Purchases \n    ON Fridays.purchase_date = Purchases.purchase_date \n    AND Users.user_id = Purchases.user_id\nGROUP BY Fridays.week_of_month, Memberships.membership\nORDER BY Fridays.week_of_month, Memberships.membership;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Recursive Calendar Cross Join and Aggregation",
+      "code": "WITH RECURSIVE Fridays AS (\n    SELECT 1 AS week_of_month, DATE '2023-11-03' AS purchase_date\n    UNION ALL\n    SELECT week_of_month + 1, (purchase_date + INTERVAL '7 DAY')::DATE \n    FROM Fridays \n    WHERE week_of_month < 4\n), \nMemberships AS (\n    SELECT 'Premium' AS membership\n    UNION ALL \n    SELECT 'VIP' AS membership\n)\nSELECT \n    Fridays.week_of_month, \n    Memberships.membership, \n    COALESCE(SUM(Purchases.amount_spend), 0)::INT AS total_amount \nFROM Fridays \nCROSS JOIN Memberships \nLEFT JOIN Users \n    ON Memberships.membership = Users.membership\nLEFT JOIN Purchases \n    ON Fridays.purchase_date = Purchases.purchase_date \n    AND Users.user_id = Purchases.user_id\nGROUP BY Fridays.week_of_month, Memberships.membership\nORDER BY Fridays.week_of_month, Memberships.membership;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Recursive Calendar Cross Join and Aggregation",
+      "code": "import pandas as pd\n\ndef friday_purchase_iii(purchases: pd.DataFrame, users: pd.DataFrame) -> pd.DataFrame:\n    fridays = [(1, '2023-11-03'), (2, '2023-11-10'), (3, '2023-11-17'), (4, '2023-11-24')]\n    memberships = ['Premium', 'VIP']\n    grid = []\n    for w, d in fridays:\n        for m in memberships:\n            grid.append({'week_of_month': w, 'purchase_date': d, 'membership': m})\n    base = pd.DataFrame(grid)\n\n    p = purchases.copy()\n    p['purchase_date'] = pd.to_datetime(p['purchase_date']).dt.strftime('%Y-%m-%d')\n    u = users.copy()\n    u = u[u['membership'].isin(['Premium', 'VIP'])]\n    merged_p = p.merge(u, on='user_id', how='inner')\n\n    agg = merged_p.groupby(['purchase_date', 'membership'])['amount_spend'].sum().reset_index()\n    res = base.merge(agg, on=['purchase_date', 'membership'], how='left')\n    res['total_amount'] = res['amount_spend'].fillna(0).astype(int)\n    return res[['week_of_month', 'membership', 'total_amount']].sort_values(by=['week_of_month', 'membership'])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

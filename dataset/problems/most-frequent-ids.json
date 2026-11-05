@@ -1,0 +1,78 @@
+{
+  "slug": "most-frequent-ids",
+  "number": 3092,
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Track the frequency of each identifier across dynamic updates and output the largest frequency at each step."
+    },
+    {
+      "level": 2,
+      "title": "Handling Stale Entries",
+      "text": "Store pairs of current frequency and identifier. When frequencies change, push new pairs and discard outdated entries upon retrieval."
+    },
+    {
+      "level": 3,
+      "title": "Algorithm Steps",
+      "text": "Update frequency dictionary. Push pair onto max collection. Lazily remove collection tops where stored frequency does not equal current dictionary count."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def mostFrequentIDs(self, nums: list[int], freq: list[int]) -> list[int]:\n        counts = {}\n        heap = []\n        ans = []\n        for x, f in zip(nums, freq):\n            new_f = counts.get(x, 0) + f\n            counts[x] = new_f\n            heapq.heappush(heap, (-new_f, x))\n            while heap and -heap[0][0] != counts.get(heap[0][1], 0):\n                heapq.heappop(heap)\n            ans.append(-heap[0][0] if heap else 0)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of operations"
+    ],
+    "notes": "Each query performs at most one push and amortized removals.",
+    "whyNaiveFails": "Scanning all frequencies on each update requires O(n^2) total time.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for frequency mapping and heap storage.",
+    "interviewerExpectation": "Use lazy heap invalidation to track running maximum frequencies efficiently."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Lazy Max-Heap with Frequency Table",
+      "code": "import heapq\n\nclass Solution:\n    def mostFrequentIDs(self, nums: list[int], freq: list[int]) -> list[int]:\n        counts = {}\n        heap = []\n        ans = []\n        for x, f in zip(nums, freq):\n            new_f = counts.get(x, 0) + f\n            counts[x] = new_f\n            heapq.heappush(heap, (-new_f, x))\n            while heap and -heap[0][0] != counts.get(heap[0][1], 0):\n                heapq.heappop(heap)\n            ans.append(-heap[0][0] if heap else 0)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Lazy Max-Heap with Frequency Table",
+      "code": "class Solution {\npublic:\n    vector<long long> mostFrequentIDs(vector<int>& nums, vector<int>& freq) {\n        unordered_map<int, long long> counts;\n        priority_queue<pair<long long, int>> pq;\n        vector<long long> ans;\n        int n = nums.size();\n        for (int i = 0; i < n; ++i) {\n            counts[nums[i]] += freq[i];\n            pq.push({counts[nums[i]], nums[i]});\n            while (!pq.empty() && pq.top().first != counts[pq.top().second]) {\n                pq.pop();\n            }\n            ans.push_back(pq.empty() ? 0 : pq.top().first);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Lazy Max-Heap with Frequency Table",
+      "code": "class Solution {\n    public long[] mostFrequentIDs(int[] nums, int[] freq) {\n        Map<Integer, Long> counts = new HashMap<>();\n        PriorityQueue<long[]> pq = new PriorityQueue<>((a, b) -> Long.compare(b[0], a[0]));\n        int n = nums.length;\n        long[] ans = new long[n];\n        for (int i = 0; i < n; i++) {\n            long newF = counts.getOrDefault(nums[i], 0L) + freq[i];\n            counts.put(nums[i], newF);\n            pq.offer(new long[]{newF, nums[i]});\n            while (!pq.isEmpty() && pq.peek()[0] != counts.getOrDefault((int) pq.peek()[1], 0L)) {\n                pq.poll();\n            }\n            ans[i] = pq.isEmpty() ? 0 : pq.peek()[0];\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Lazy Max-Heap with Frequency Table",
+      "code": "var mostFrequentIDs = function(nums, freq) {\n    const counts = new Map();\n    // Using a binary max heap implementation\n    const heap = [];\n    function push(val) {\n        heap.push(val);\n        let idx = heap.length - 1;\n        while (idx > 0) {\n            let p = Math.floor((idx - 1) / 2);\n            if (heap[p][0] < heap[idx][0]) {\n                [heap[p], heap[idx]] = [heap[idx], heap[p]];\n                idx = p;\n            } else break;\n        }\n    }\n    function pop() {\n        const top = heap[0];\n        const last = heap.pop();\n        if (heap.length > 0) {\n            heap[0] = last;\n            let idx = 0;\n            while (true) {\n                let left = 2 * idx + 1, right = 2 * idx + 2, best = idx;\n                if (left < heap.length && heap[left][0] > heap[best][0]) best = left;\n                if (right < heap.length && heap[right][0] > heap[best][0]) best = right;\n                if (best !== idx) {\n                    [heap[best], heap[idx]] = [heap[idx], heap[best]];\n                    idx = best;\n                } else break;\n            }\n        }\n        return top;\n    }\n    const ans = [];\n    for (let i = 0; i < nums.length; i++) {\n        const x = nums[i], f = freq[i];\n        const newF = (counts.get(x) || 0) + f;\n        counts.set(x, newF);\n        push([newF, x]);\n        while (heap.length > 0 && heap[0][0] !== (counts.get(heap[0][1]) || 0)) {\n            pop();\n        }\n        ans.push(heap.length > 0 ? heap[0][0] : 0);\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

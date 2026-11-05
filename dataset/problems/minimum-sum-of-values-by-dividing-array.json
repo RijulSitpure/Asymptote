@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-sum-of-values-by-dividing-array",
+  "number": 3117,
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Partition array into m contiguous subarrays such that the bitwise and of subarray j matches andValues[j]."
+    },
+    {
+      "level": 2,
+      "title": "Prefix AND Monotonicity",
+      "text": "As elements are accumulated into a subarray, bitwise and can only eliminate set bits, taking at most thirty distinct values."
+    },
+    {
+      "level": 3,
+      "title": "State Memoization",
+      "text": "State dfs(i, j, current_and) tracks array index, target segment index, and running bitwise and. If current_and equals andValues[j], optionally complete the segment."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nfrom functools import lru_cache\n\nclass Solution:\n    def minimumValueSum(self, nums: list[int], andValues: list[int]) -> int:\n        n = len(nums)\n        m = len(andValues)\n\n        @lru_cache(None)\n        def dfs(i: int, j: int, cur_and: int) -> int:\n            if i == n and j == m:\n                return 0\n            if i == n or j == m:\n                return float('inf')\n\n            cur_and = nums[i] if cur_and == -1 else (cur_and & nums[i])\n            if (cur_and & andValues[j]) != andValues[j]:\n                return float('inf')\n\n            ans = dfs(i + 1, j, cur_and)\n            if cur_and == andValues[j]:\n                ans = min(ans, nums[i] + dfs(i + 1, j + 1, -1))\n\n            return ans\n\n        res = dfs(0, 0, -1)\n        return res if res != float('inf') else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * m * log(max_A))",
+    "space": "O(n * m * log(max_A))",
+    "variables": [
+      "n: length of array nums",
+      "m: length of array andValues",
+      "max_A: maximum element in nums"
+    ],
+    "notes": "State space bounded by logarithm of maximum value.",
+    "whyNaiveFails": "Exponential subset branching without bitwise compression times out.",
+    "spaceTimeTradeoff": "O(n * m * log(max_A)) cache storage.",
+    "interviewerExpectation": "Leverage the logarithmic bound on distinct prefix bitwise and values."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Memoized Dynamic Programming with Bitwise AND Prefix Compression",
+      "code": "from functools import lru_cache\n\nclass Solution:\n    def minimumValueSum(self, nums: list[int], andValues: list[int]) -> int:\n        n = len(nums)\n        m = len(andValues)\n\n        @lru_cache(None)\n        def dfs(i: int, j: int, cur_and: int) -> int:\n            if i == n and j == m:\n                return 0\n            if i == n or j == m:\n                return float('inf')\n\n            cur_and = nums[i] if cur_and == -1 else (cur_and & nums[i])\n            if (cur_and & andValues[j]) != andValues[j]:\n                return float('inf')\n\n            ans = dfs(i + 1, j, cur_and)\n            if cur_and == andValues[j]:\n                ans = min(ans, nums[i] + dfs(i + 1, j + 1, -1))\n\n            return ans\n\n        res = dfs(0, 0, -1)\n        return res if res != float('inf') else -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Memoized Dynamic Programming with Bitwise AND Prefix Compression",
+      "code": "class Solution {\npublic:\n    int minimumValueSum(vector<int>& nums, vector<int>& andValues) {\n        int n = nums.size(), m = andValues.size();\n        map<tuple<int, int, int>, int> memo;\n\n        auto dfs = [&](auto& self, int i, int j, int cur_and) -> int {\n            if (i == n && j == m) return 0;\n            if (i == n || j == m) return 1e9;\n\n            cur_and = (cur_and == -1) ? nums[i] : (cur_and & nums[i]);\n            if ((cur_and & andValues[j]) != andValues[j]) return 1e9;\n\n            auto key = make_tuple(i, j, cur_and);\n            if (memo.count(key)) return memo[key];\n\n            int ans = self(self, i + 1, j, cur_and);\n            if (cur_and == andValues[j]) {\n                ans = min(ans, nums[i] + self(self, i + 1, j + 1, -1));\n            }\n\n            return memo[key] = ans;\n        };\n\n        int res = dfs(dfs, 0, 0, -1);\n        return res >= 1e9 ? -1 : res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Memoized Dynamic Programming with Bitwise AND Prefix Compression",
+      "code": "class Solution {\n    private static final int INF = 1_000_000_000;\n\n    public int minimumValueSum(int[] nums, int[] andValues) {\n        Map<String, Integer> memo = new HashMap<>();\n        int res = dfs(0, 0, -1, nums, andValues, memo);\n        return res >= INF ? -1 : res;\n    }\n\n    private int dfs(int i, int j, int curAnd, int[] nums, int[] andValues, Map<String, Integer> memo) {\n        int n = nums.length, m = andValues.length;\n        if (i == n && j == m) return 0;\n        if (i == n || j == m) return INF;\n\n        curAnd = (curAnd == -1) ? nums[i] : (curAnd & nums[i]);\n        if ((curAnd & andValues[j]) != andValues[j]) return INF;\n\n        String key = i + \",\" + j + \",\" + curAnd;\n        if (memo.containsKey(key)) return memo.get(key);\n\n        int ans = dfs(i + 1, j, curAnd, nums, andValues, memo);\n        if (curAnd == andValues[j]) {\n            ans = Math.min(ans, nums[i] + dfs(i + 1, j + 1, -1, nums, andValues, memo));\n        }\n\n        memo.put(key, ans);\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Memoized Dynamic Programming with Bitwise AND Prefix Compression",
+      "code": "var minimumValueSum = function(nums, andValues) {\n    const n = nums.length, m = andValues.length;\n    const memo = new Map();\n    const INF = 1000000000;\n\n    function dfs(i, j, curAnd) {\n        if (i === n && j === m) return 0;\n        if (i === n || j === m) return INF;\n\n        curAnd = (curAnd === -1) ? nums[i] : (curAnd & nums[i]);\n        if ((curAnd & andValues[j]) !== andValues[j]) return INF;\n\n        const key = `${i},${j},${curAnd}`;\n        if (memo.has(key)) return memo.get(key);\n\n        let ans = dfs(i + 1, j, curAnd);\n        if (curAnd === andValues[j]) {\n            ans = Math.min(ans, nums[i] + dfs(i + 1, j + 1, -1));\n        }\n\n        memo.set(key, ans);\n        return ans;\n    }\n\n    const res = dfs(0, 0, -1);\n    return res >= INF ? -1 : res;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "minimize-manhattan-distances",
+  "number": 3102,
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Transform Manhattan distance into maximum difference along rotated axes u = x + y and v = x - y."
+    },
+    {
+      "level": 2,
+      "title": "Candidate Reductions",
+      "text": "The pair of points with maximum distance must involve the minimum or maximum points in either the u or v dimension."
+    },
+    {
+      "level": 3,
+      "title": "Pruning Evaluation",
+      "text": "Identify the at most four unique candidate points achieving these extrema. Evaluate maximum distance omitting each candidate and return the minimum."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def minimumDistance(self, points: list[list[int]]) -> int:\n        u = [x + y for x, y in points]\n        v = [x - y for x, y in points]\n\n        candidates = set()\n        candidates.add(min(range(len(u)), key=lambda i: u[i]))\n        candidates.add(max(range(len(u)), key=lambda i: u[i]))\n        candidates.add(min(range(len(v)), key=lambda i: v[i]))\n        candidates.add(max(range(len(v)), key=lambda i: v[i]))\n\n        def max_dist_without(rem_idx):\n            max_u, min_u = -float('inf'), float('inf')\n            max_v, min_v = -float('inf'), float('inf')\n            for i in range(len(points)):\n                if i == rem_idx:\n                    continue\n                if u[i] > max_u: max_u = u[i]\n                if u[i] < min_u: min_u = u[i]\n                if v[i] > max_v: max_v = v[i]\n                if v[i] < min_v: min_v = v[i]\n            return max(max_u - min_u, max_v - min_v)\n\n        return min(max_dist_without(cand) for cand in candidates)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of points"
+    ],
+    "notes": "Testing at most four candidate exclusions in linear time each.",
+    "whyNaiveFails": "Evaluating all possible single point removals takes O(n^2) time.",
+    "spaceTimeTradeoff": "O(n) auxiliary arrays for rotated coordinates.",
+    "interviewerExpectation": "Apply the standard Manhattan coordinate rotation identity |x1 - x2| + |y1 - y2| = max(|u1 - u2|, |v1 - v2|)."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Coordinate Rotation and Critical Point Pruning",
+      "code": "class Solution:\n    def minimumDistance(self, points: list[list[int]]) -> int:\n        u = [x + y for x, y in points]\n        v = [x - y for x, y in points]\n\n        candidates = set()\n        candidates.add(min(range(len(u)), key=lambda i: u[i]))\n        candidates.add(max(range(len(u)), key=lambda i: u[i]))\n        candidates.add(min(range(len(v)), key=lambda i: v[i]))\n        candidates.add(max(range(len(v)), key=lambda i: v[i]))\n\n        def max_dist_without(rem_idx):\n            max_u, min_u = -float('inf'), float('inf')\n            max_v, min_v = -float('inf'), float('inf')\n            for i in range(len(points)):\n                if i == rem_idx:\n                    continue\n                if u[i] > max_u: max_u = u[i]\n                if u[i] < min_u: min_u = u[i]\n                if v[i] > max_v: max_v = v[i]\n                if v[i] < min_v: min_v = v[i]\n            return max(max_u - min_u, max_v - min_v)\n\n        return min(max_dist_without(cand) for cand in candidates)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Coordinate Rotation and Critical Point Pruning",
+      "code": "class Solution {\npublic:\n    int minimumDistance(vector<vector<int>>& points) {\n        int n = points.size();\n        vector<int> u(n), v(n);\n        for (int i = 0; i < n; ++i) {\n            u[i] = points[i][0] + points[i][1];\n            v[i] = points[i][0] - points[i][1];\n        }\n\n        set<int> candidates;\n        int min_u_idx = 0, max_u_idx = 0, min_v_idx = 0, max_v_idx = 0;\n        for (int i = 1; i < n; ++i) {\n            if (u[i] < u[min_u_idx]) min_u_idx = i;\n            if (u[i] > u[max_u_idx]) max_u_idx = i;\n            if (v[i] < v[min_v_idx]) min_v_idx = i;\n            if (v[i] > v[max_v_idx]) max_v_idx = i;\n        }\n        candidates.insert(min_u_idx);\n        candidates.insert(max_u_idx);\n        candidates.insert(min_v_idx);\n        candidates.insert(max_v_idx);\n\n        auto max_dist_without = [&](int rem) {\n            int max_u = INT_MIN, min_u = INT_MAX;\n            int max_v = INT_MIN, min_v = INT_MAX;\n            for (int i = 0; i < n; ++i) {\n                if (i == rem) continue;\n                max_u = max(max_u, u[i]);\n                min_u = min(min_u, u[i]);\n                max_v = max(max_v, v[i]);\n                min_v = min(min_v, v[i]);\n            }\n            return max(max_u - min_u, max_v - min_v);\n        };\n\n        int ans = INT_MAX;\n        for (int cand : candidates) {\n            ans = min(ans, max_dist_without(cand));\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Coordinate Rotation and Critical Point Pruning",
+      "code": "class Solution {\n    public int minimumDistance(int[][] points) {\n        int n = points.length;\n        int[] u = new int[n];\n        int[] v = new int[n];\n        int minU = 0, maxU = 0, minV = 0, maxV = 0;\n        for (int i = 0; i < n; i++) {\n            u[i] = points[i][0] + points[i][1];\n            v[i] = points[i][0] - points[i][1];\n            if (u[i] < u[minU]) minU = i;\n            if (u[i] > u[maxU]) maxU = i;\n            if (v[i] < v[minV]) minV = i;\n            if (v[i] > v[maxV]) maxV = i;\n        }\n\n        Set<Integer> candidates = new HashSet<>(Arrays.asList(minU, maxU, minV, maxV));\n        int ans = Integer.MAX_VALUE;\n        for (int cand : candidates) {\n            int mxU = Integer.MIN_VALUE, mnU = Integer.MAX_VALUE;\n            int mxV = Integer.MIN_VALUE, mnV = Integer.MAX_VALUE;\n            for (int i = 0; i < n; i++) {\n                if (i == cand) continue;\n                mxU = Math.max(mxU, u[i]);\n                mnU = Math.min(mnU, u[i]);\n                mxV = Math.max(mxV, v[i]);\n                mnV = Math.min(mnV, v[i]);\n            }\n            ans = Math.min(ans, Math.max(mxU - mnU, mxV - mnV));\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Coordinate Rotation and Critical Point Pruning",
+      "code": "var minimumDistance = function(points) {\n    const n = points.length;\n    const u = new Array(n), v = new Array(n);\n    let minU = 0, maxU = 0, minV = 0, maxV = 0;\n    for (let i = 0; i < n; i++) {\n        u[i] = points[i][0] + points[i][1];\n        v[i] = points[i][0] - points[i][1];\n        if (u[i] < u[minU]) minU = i;\n        if (u[i] > u[maxU]) maxU = i;\n        if (v[i] < v[minV]) minV = i;\n        if (v[i] > v[maxV]) maxV = i;\n    }\n\n    const candidates = new Set([minU, maxU, minV, maxV]);\n    let ans = Infinity;\n    for (const cand of candidates) {\n        let mxU = -Infinity, mnU = Infinity;\n        let mxV = -Infinity, mnV = Infinity;\n        for (let i = 0; i < n; i++) {\n            if (i === cand) continue;\n            if (u[i] > mxU) mxU = u[i];\n            if (u[i] < mnU) mnU = u[i];\n            if (v[i] > mxV) mxV = v[i];\n            if (v[i] < mnV) mnV = v[i];\n        }\n        ans = Math.min(ans, Math.max(mxU - mnU, mxV - mnV));\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

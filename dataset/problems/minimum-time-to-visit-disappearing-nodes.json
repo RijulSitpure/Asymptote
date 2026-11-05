@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-time-to-visit-disappearing-nodes",
+  "number": 3112,
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Model the traversal as finding shortest paths with time constraints on when vertices disappear."
+    },
+    {
+      "level": 2,
+      "title": "Pruning Invalid Paths",
+      "text": "When relaxing an edge to neighbor v, only proceed if the arrival time is strictly less than disappear[v]."
+    },
+    {
+      "level": 3,
+      "title": "Priority Queue Steps",
+      "text": "Extract the minimum arrival time vertex. Discard stale entries, and relax neighbors that remain accessible at the time of arrival."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def minimumTime(self, n: int, edges: list[list[int]], disappear: list[int]) -> list[int]:\n        adj = [[] for _ in range(n)]\n        for u, v, length in edges:\n            adj[u].append((v, length))\n            adj[v].append((u, length))\n\n        dist = [float('inf')] * n\n        dist[0] = 0\n        pq = [(0, 0)]\n\n        while pq:\n            d, u = heapq.heappop(pq)\n            if d > dist[u]:\n                continue\n            for v, length in adj[u]:\n                nxt_d = d + length\n                if nxt_d < disappear[v] and nxt_d < dist[v]:\n                    dist[v] = nxt_d\n                    heapq.heappush(pq, (nxt_d, v))\n\n        return [d if d != float('inf') else -1 for d in dist]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((V + E) log V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of vertices",
+      "E: number of edges"
+    ],
+    "notes": "Dijkstra algorithm using min-priority queue with expiration filtering.",
+    "whyNaiveFails": "Standard BFS cannot handle varied edge lengths and time constraints.",
+    "spaceTimeTradeoff": "O(V + E) memory for adjacency list and distance array.",
+    "interviewerExpectation": "Adapt Dijkstra algorithm to incorporate dynamic vertex availability thresholds."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Dijkstra Shortest Path with Vertex Expiration Check",
+      "code": "import heapq\n\nclass Solution:\n    def minimumTime(self, n: int, edges: list[list[int]], disappear: list[int]) -> list[int]:\n        adj = [[] for _ in range(n)]\n        for u, v, length in edges:\n            adj[u].append((v, length))\n            adj[v].append((u, length))\n\n        dist = [float('inf')] * n\n        dist[0] = 0\n        pq = [(0, 0)]\n\n        while pq:\n            d, u = heapq.heappop(pq)\n            if d > dist[u]:\n                continue\n            for v, length in adj[u]:\n                nxt_d = d + length\n                if nxt_d < disappear[v] and nxt_d < dist[v]:\n                    dist[v] = nxt_d\n                    heapq.heappush(pq, (nxt_d, v))\n\n        return [d if d != float('inf') else -1 for d in dist]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Dijkstra Shortest Path with Vertex Expiration Check",
+      "code": "class Solution {\npublic:\n    vector<int> minimumTime(int n, vector<vector<int>>& edges, vector<int>& disappear) {\n        vector<vector<pair<int, int>>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            adj[e[1]].push_back({e[0], e[2]});\n        }\n\n        vector<int> dist(n, INT_MAX);\n        dist[0] = 0;\n        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;\n        pq.push({0, 0});\n\n        while (!pq.empty()) {\n            auto [d, u] = pq.top();\n            pq.pop();\n            if (d > dist[u]) continue;\n\n            for (const auto& [v, len] : adj[u]) {\n                int nxt_d = d + len;\n                if (nxt_d < disappear[v] && nxt_d < dist[v]) {\n                    dist[v] = nxt_d;\n                    pq.push({nxt_d, v});\n                }\n            }\n        }\n\n        for (int i = 0; i < n; ++i) {\n            if (dist[i] == INT_MAX) dist[i] = -1;\n        }\n        return dist;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Dijkstra Shortest Path with Vertex Expiration Check",
+      "code": "class Solution {\n    public int[] minimumTime(int n, int[][] edges, int[] disappear) {\n        List<List<int[]>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(new int[]{e[1], e[2]});\n            adj.get(e[1]).add(new int[]{e[0], e[2]});\n        }\n\n        int[] dist = new int[n];\n        Arrays.fill(dist, Integer.MAX_VALUE);\n        dist[0] = 0;\n\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        pq.offer(new int[]{0, 0});\n\n        while (!pq.isEmpty()) {\n            int[] top = pq.poll();\n            int d = top[0], u = top[1];\n            if (d > dist[u]) continue;\n\n            for (int[] edge : adj.get(u)) {\n                int v = edge[0], len = edge[1];\n                int nxtD = d + len;\n                if (nxtD < disappear[v] && nxtD < dist[v]) {\n                    dist[v] = nxtD;\n                    pq.offer(new int[]{nxtD, v});\n                }\n            }\n        }\n\n        for (int i = 0; i < n; i++) {\n            if (dist[i] == Integer.MAX_VALUE) dist[i] = -1;\n        }\n        return dist;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Dijkstra Shortest Path with Vertex Expiration Check",
+      "code": "var minimumTime = function(n, edges, disappear) {\n    const adj = Array.from({length: n}, () => []);\n    for (const [u, v, len] of edges) {\n        adj[u].push([v, len]);\n        adj[v].push([u, len]);\n    }\n\n    const dist = new Array(n).fill(Infinity);\n    dist[0] = 0;\n\n    // Binary min-heap\n    const heap = [[0, 0]];\n    function push(val) {\n        heap.push(val);\n        let idx = heap.length - 1;\n        while (idx > 0) {\n            let p = Math.floor((idx - 1) / 2);\n            if (heap[idx][0] < heap[p][0]) {\n                [heap[idx], heap[p]] = [heap[p], heap[idx]];\n                idx = p;\n            } else break;\n        }\n    }\n    function pop() {\n        const top = heap[0];\n        const last = heap.pop();\n        if (heap.length > 0) {\n            heap[0] = last;\n            let idx = 0;\n            while (true) {\n                let left = 2 * idx + 1, right = 2 * idx + 2, best = idx;\n                if (left < heap.length && heap[left][0] < heap[best][0]) best = left;\n                if (right < heap.length && heap[right][0] < heap[best][0]) best = right;\n                if (best !== idx) {\n                    [heap[best], heap[idx]] = [heap[idx], heap[best]];\n                    idx = best;\n                } else break;\n            }\n        }\n        return top;\n    }\n\n    while (heap.length > 0) {\n        const [d, u] = pop();\n        if (d > dist[u]) continue;\n\n        for (const [v, len] of adj[u]) {\n            const nxtD = d + len;\n            if (nxtD < disappear[v] && nxtD < dist[v]) {\n                dist[v] = nxtD;\n                push([nxtD, v]);\n            }\n        }\n    }\n\n    return dist.map(d => d === Infinity ? -1 : d);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}
