@@ -1,0 +1,79 @@
+{
+  "slug": "sum-of-weighted-modes-in-subarrays",
+  "number": 3672,
+  "category": "Algorithms",
+  "patterns": [
+    "two-pointers-window-dynamic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sliding Window Frequency State",
+      "text": "Maintain the frequency of elements in a sliding window of length k using element counters."
+    },
+    {
+      "level": 2,
+      "title": "Mode Resolution",
+      "text": "Identify the element having maximal frequency in the active window breaking ties by minimum value."
+    },
+    {
+      "level": 3,
+      "title": "Running Window Summation",
+      "text": "Slide the window by incrementing the new element count, decrementing the leaving element, and adding the mode."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom collections import Counter\nfrom typing import List\n\nclass Solution:\n    def sumOfModes(self, nums: List[int], k: int) -> int:\n        n = len(nums)\n        ans = 0\n        counts = Counter()\n        \n        for i in range(k):\n            counts[nums[i]] += 1\n            \n        def get_mode() -> int:\n            max_f = max(counts.values())\n            # Return smallest value with max frequency\n            return min(val for val, f in counts.items() if f == max_f)\n            \n        ans += get_mode()\n        \n        for i in range(k, n):\n            counts[nums[i]] += 1\n            counts[nums[i - k]] -= 1\n            if counts[nums[i - k]] == 0:\n                del counts[nums[i - k]]\n            ans += get_mode()\n            \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * K)",
+    "space": "O(K)",
+    "variables": [
+      "N: length of array nums",
+      "K: size of sliding window"
+    ],
+    "notes": "Sliding window frequency tracking across all k-sized subarrays.",
+    "whyNaiveFails": "Recomputing frequencies from scratch for every window takes quadratic time.",
+    "spaceTimeTradeoff": "Maintains frequency map of size at most K.",
+    "interviewerExpectation": "Implement sliding window frequency transitions cleanly."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import Counter\nfrom typing import List\n\nclass Solution:\n    def sumOfModes(self, nums: List[int], k: int) -> int:\n        n = len(nums)\n        ans = 0\n        counts = Counter()\n        \n        for i in range(k):\n            counts[nums[i]] += 1\n            \n        def get_mode() -> int:\n            max_f = max(counts.values())\n            # Return smallest value with max frequency\n            return min(val for val, f in counts.items() if f == max_f)\n            \n        ans += get_mode()\n        \n        for i in range(k, n):\n            counts[nums[i]] += 1\n            counts[nums[i - k]] -= 1\n            if counts[nums[i - k]] == 0:\n                del counts[nums[i - k]]\n            ans += get_mode()\n            \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\n#include <climits>\n\nclass Solution {\npublic:\n    long long sumOfModes(std::vector<int>& nums, int k) {\n        int n = nums.size();\n        std::unordered_map<int, int> counts;\n        for (int i = 0; i < k; ++i) counts[nums[i]]++;\n        \n        auto get_mode = [&]() {\n            int max_f = 0, best_val = INT_MAX;\n            for (const auto& [val, f] : counts) {\n                if (f > max_f || (f == max_f && val < best_val)) {\n                    max_f = f;\n                    best_val = val;\n                }\n            }\n            return best_val;\n        };\n        \n        long long ans = get_mode();\n        for (int i = k; i < n; ++i) {\n            counts[nums[i]]++;\n            if (--counts[nums[i - k]] == 0) {\n                counts.erase(nums[i - k]);\n            }\n            ans += get_mode();\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long sumOfModes(int[] nums, int k) {\n        int n = nums.length;\n        Map<Integer, Integer> counts = new HashMap<>();\n        for (int i = 0; i < k; i++) {\n            counts.put(nums[i], counts.getOrDefault(nums[i], 0) + 1);\n        }\n        \n        long ans = getMode(counts);\n        for (int i = k; i < n; i++) {\n            counts.put(nums[i], counts.getOrDefault(nums[i], 0) + 1);\n            int prev = counts.get(nums[i - k]);\n            if (prev == 1) counts.remove(nums[i - k]);\n            else counts.put(nums[i - k], prev - 1);\n            ans += getMode(counts);\n        }\n        return ans;\n    }\n    \n    private int getMode(Map<Integer, Integer> counts) {\n        int maxF = 0, bestVal = Integer.MAX_VALUE;\n        for (Map.Entry<Integer, Integer> entry : counts.entrySet()) {\n            int val = entry.getKey(), f = entry.getValue();\n            if (f > maxF || (f == maxF && val < bestVal)) {\n                maxF = f;\n                bestVal = val;\n            }\n        }\n        return bestVal;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var sumOfModes = function(nums, k) {\n    const n = nums.length;\n    const counts = new Map();\n    for (let i = 0; i < k; i++) {\n        counts.set(nums[i], (counts.get(nums[i]) || 0) + 1);\n    }\n    \n    function getMode() {\n        let maxF = 0, bestVal = Infinity;\n        for (const [val, f] of counts.entries()) {\n            if (f > maxF || (f === maxF && val < bestVal)) {\n                maxF = f;\n                bestVal = val;\n            }\n        }\n        return bestVal;\n    }\n    \n    let ans = getMode();\n    for (let i = k; i < n; i++) {\n        counts.set(nums[i], (counts.get(nums[i]) || 0) + 1);\n        const prev = counts.get(nums[i - k]);\n        if (prev === 1) counts.delete(nums[i - k]);\n        else counts.set(nums[i - k], prev - 1);\n        ans += getMode();\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

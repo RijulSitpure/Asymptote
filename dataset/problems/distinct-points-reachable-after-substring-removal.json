@@ -1,0 +1,79 @@
+{
+  "slug": "distinct-points-reachable-after-substring-removal",
+  "number": 3694,
+  "category": "Algorithms",
+  "patterns": [
+    "two-pointers-window-dynamic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Displacement Equivalence",
+      "text": "Removing a window of length k changes the final coordinate by subtracting that window's net displacement."
+    },
+    {
+      "level": 2,
+      "title": "Sliding Vector Window",
+      "text": "Maintain the net delta (dx, dy) of the k-length window as it slides along the string."
+    },
+    {
+      "level": 3,
+      "title": "Distinct Coordinates Count",
+      "text": "Insert each unique window displacement into a hash set and return its size."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def countDistinctPoints(self, s: str, k: int) -> int:\n        # Move directions: U, D, L, R\n        delta = {'U': (0, 1), 'D': (0, -1), 'L': (-1, 0), 'R': (1, 0)}\n        n = len(s)\n        \n        # Total displacement of entire string\n        total_dx = sum(delta[c][0] for c in s)\n        total_dy = sum(delta[c][1] for c in s)\n        \n        # When removing a substring s[i..i+k-1], the final position is (total_dx - win_dx, total_dy - win_dy)\n        # Distinct final points corresponds to distinct window displacements of length k\n        cur_dx = sum(delta[s[i]][0] for i in range(k))\n        cur_dy = sum(delta[s[i]][1] for i in range(k))\n        distinct_displacements = {(cur_dx, cur_dy)}\n        \n        for i in range(k, n):\n            cur_dx += delta[s[i]][0] - delta[s[i - k]][0]\n            cur_dy += delta[s[i]][1] - delta[s[i - k]][1]\n            distinct_displacements.add((cur_dx, cur_dy))\n            \n        return len(distinct_displacements)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of move string s",
+      "K: length of removed substring"
+    ],
+    "notes": "Sliding window tracking net displacement vectors in linear time.",
+    "whyNaiveFails": "Simulating the entire movement path from scratch for each window takes O(N * K) time.",
+    "spaceTimeTradeoff": "Hash set stores up to N distinct coordinate pairs.",
+    "interviewerExpectation": "Notice that subtracting window displacement preserves final coordinate uniqueness."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def countDistinctPoints(self, s: str, k: int) -> int:\n        # Move directions: U, D, L, R\n        delta = {'U': (0, 1), 'D': (0, -1), 'L': (-1, 0), 'R': (1, 0)}\n        n = len(s)\n        \n        # Total displacement of entire string\n        total_dx = sum(delta[c][0] for c in s)\n        total_dy = sum(delta[c][1] for c in s)\n        \n        # When removing a substring s[i..i+k-1], the final position is (total_dx - win_dx, total_dy - win_dy)\n        # Distinct final points corresponds to distinct window displacements of length k\n        cur_dx = sum(delta[s[i]][0] for i in range(k))\n        cur_dy = sum(delta[s[i]][1] for i in range(k))\n        distinct_displacements = {(cur_dx, cur_dy)}\n        \n        for i in range(k, n):\n            cur_dx += delta[s[i]][0] - delta[s[i - k]][0]\n            cur_dy += delta[s[i]][1] - delta[s[i - k]][1]\n            distinct_displacements.add((cur_dx, cur_dy))\n            \n        return len(distinct_displacements)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <set>\n\nclass Solution {\npublic:\n    int countDistinctPoints(std::string s, int k) {\n        int n = s.size();\n        auto get_d = [](char c) -> std::pair<int, int> {\n            if (c == 'U') return {0, 1};\n            if (c == 'D') return {0, -1};\n            if (c == 'L') return {-1, 0};\n            return {1, 0};\n        };\n        \n        int cur_x = 0, cur_y = 0;\n        for (int i = 0; i < k; ++i) {\n            auto [dx, dy] = get_d(s[i]);\n            cur_x += dx;\n            cur_y += dy;\n        }\n        \n        std::set<std::pair<int, int>> distinct;\n        distinct.insert({cur_x, cur_y});\n        \n        for (int i = k; i < n; ++i) {\n            auto [add_x, add_y] = get_d(s[i]);\n            auto [sub_x, sub_y] = get_d(s[i - k]);\n            cur_x += add_x - sub_x;\n            cur_y += add_y - sub_y;\n            distinct.insert({cur_x, cur_y});\n        }\n        return distinct.size();\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int countDistinctPoints(String s, int k) {\n        int n = s.length();\n        int curX = 0, curY = 0;\n        for (int i = 0; i < k; i++) {\n            int[] d = getDelta(s.charAt(i));\n            curX += d[0];\n            curY += d[1];\n        }\n        \n        Set<String> distinct = new HashSet<>();\n        distinct.add(curX + \",\" + curY);\n        \n        for (int i = k; i < n; i++) {\n            int[] add = getDelta(s.charAt(i));\n            int[] sub = getDelta(s.charAt(i - k));\n            curX += add[0] - sub[0];\n            curY += add[1] - sub[1];\n            distinct.add(curX + \",\" + curY);\n        }\n        return distinct.size();\n    }\n    \n    private int[] getDelta(char c) {\n        if (c == 'U') return new int[]{0, 1};\n        if (c == 'D') return new int[]{0, -1};\n        if (c == 'L') return new int[]{-1, 0};\n        return new int[]{1, 0};\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countDistinctPoints = function(s, k) {\n    const n = s.length;\n    function getDelta(c) {\n        if (c === 'U') return [0, 1];\n        if (c === 'D') return [0, -1];\n        if (c === 'L') return [-1, 0];\n        return [1, 0];\n    }\n    \n    let curX = 0, curY = 0;\n    for (let i = 0; i < k; i++) {\n        const [dx, dy] = getDelta(s[i]);\n        curX += dx;\n        curY += dy;\n    }\n    \n    const distinct = new Set();\n    distinct.add(`${curX},${curY}`);\n    \n    for (let i = k; i < n; i++) {\n        const [addX, addY] = getDelta(s[i]);\n        const [subX, subY] = getDelta(s[i - k]);\n        curX += addX - subX;\n        curY += addY - subY;\n        distinct.add(`${curX},${curY}`);\n    }\n    return distinct.size;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "maximize-alternating-sum-using-swaps",
+  "number": 3695,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Connected Component Grouping",
+      "text": "Any pair of indices connected directly or indirectly via swap pairs can exchange values freely."
+    },
+    {
+      "level": 2,
+      "title": "Alternating Sign Contributions",
+      "text": "Even indices carry positive weights while odd indices carry negative weights in the alternating sum."
+    },
+    {
+      "level": 3,
+      "title": "Component Greedy Assignment",
+      "text": "Within each component, assign the largest numbers to positive even indices and smallest numbers to odd indices."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def maxAlternatingSum(self, nums: List[int], pairs: List[List[int]]) -> int:\n        n = len(nums)\n        parent = list(range(n))\n        \n        def find(x):\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n            \n        def union(x, y):\n            root_x, root_y = find(x), find(y)\n            if root_x != root_y:\n                parent[root_x] = root_y\n                \n        for u, v in pairs:\n            union(u, v)\n            \n        components = defaultdict(list)\n        for i in range(n):\n            components[find(i)].append(i)\n            \n        # Reconstruct optimal placement in each component\n        # Alternating sum: sum(nums[i] * (-1)^i)\n        # Even indices are positive (+), odd indices are negative (-)\n        res = list(nums)\n        for comp, indices in components.items():\n            vals = sorted([nums[i] for i in indices], reverse=True)\n            # Count even indices and odd indices in this component\n            even_indices = [i for i in indices if i % 2 == 0]\n            odd_indices = [i for i in indices if i % 2 == 1]\n            \n            # Place largest values at even indices, smallest values at odd indices\n            for i, idx in enumerate(even_indices):\n                res[idx] = vals[i]\n            for i, idx in enumerate(odd_indices):\n                res[idx] = vals[len(even_indices) + len(odd_indices) - 1 - i]\n                \n        return sum(res[i] if i % 2 == 0 else -res[i] for i in range(n))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N + P)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of array nums",
+      "P: number of swap pairs"
+    ],
+    "notes": "Union-find connectivity clustering followed by component sorting.",
+    "whyNaiveFails": "Simulating individual swap sequences leads to factorial permutations.",
+    "spaceTimeTradeoff": "Maintains parent and component arrays of size N.",
+    "interviewerExpectation": "Use disjoint set union to identify swap equivalence classes and sort greedily."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def maxAlternatingSum(self, nums: List[int], pairs: List[List[int]]) -> int:\n        n = len(nums)\n        parent = list(range(n))\n        \n        def find(x):\n            if parent[x] != x:\n                parent[x] = find(parent[x])\n            return parent[x]\n            \n        def union(x, y):\n            root_x, root_y = find(x), find(y)\n            if root_x != root_y:\n                parent[root_x] = root_y\n                \n        for u, v in pairs:\n            union(u, v)\n            \n        components = defaultdict(list)\n        for i in range(n):\n            components[find(i)].append(i)\n            \n        # Reconstruct optimal placement in each component\n        # Alternating sum: sum(nums[i] * (-1)^i)\n        # Even indices are positive (+), odd indices are negative (-)\n        res = list(nums)\n        for comp, indices in components.items():\n            vals = sorted([nums[i] for i in indices], reverse=True)\n            # Count even indices and odd indices in this component\n            even_indices = [i for i in indices if i % 2 == 0]\n            odd_indices = [i for i in indices if i % 2 == 1]\n            \n            # Place largest values at even indices, smallest values at odd indices\n            for i, idx in enumerate(even_indices):\n                res[idx] = vals[i]\n            for i, idx in enumerate(odd_indices):\n                res[idx] = vals[len(even_indices) + len(odd_indices) - 1 - i]\n                \n        return sum(res[i] if i % 2 == 0 else -res[i] for i in range(n))",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\n#include <numeric>\n\nclass Solution {\n    struct DSU {\n        std::vector<int> parent;\n        DSU(int n) : parent(n) {\n            std::iota(parent.begin(), parent.end(), 0);\n        }\n        int find(int x) {\n            if (parent[x] != x) parent[x] = find(parent[x]);\n            return parent[x];\n        }\n        void unite(int x, int y) {\n            int rx = find(x), ry = find(y);\n            if (rx != ry) parent[rx] = ry;\n        }\n    };\n\npublic:\n    long long maxAlternatingSum(std::vector<int>& nums, std::vector<std::vector<int>>& pairs) {\n        int n = nums.size();\n        DSU dsu(n);\n        for (const auto& p : pairs) {\n            dsu.unite(p[0], p[1]);\n        }\n        \n        std::unordered_map<int, std::vector<int>> comp;\n        for (int i = 0; i < n; ++i) {\n            comp[dsu.find(i)].push_back(i);\n        }\n        \n        std::vector<int> res = nums;\n        for (auto& [root, indices] : comp) {\n            std::vector<int> vals;\n            std::vector<int> evens, odds;\n            for (int idx : indices) {\n                vals.push_back(nums[idx]);\n                if (idx % 2 == 0) evens.push_back(idx);\n                else odds.push_back(idx);\n            }\n            std::sort(vals.begin(), vals.end(), std::greater<int>());\n            \n            for (size_t i = 0; i < evens.size(); ++i) {\n                res[evens[i]] = vals[i];\n            }\n            for (size_t i = 0; i < odds.size(); ++i) {\n                res[odds[i]] = vals[evens.size() + odds.size() - 1 - i];\n            }\n        }\n        \n        long long ans = 0;\n        for (int i = 0; i < n; ++i) {\n            ans += (i % 2 == 0 ? res[i] : -res[i]);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long maxAlternatingSum(int[] nums, int[][] pairs) {\n        int n = nums.length;\n        int[] parent = new int[n];\n        for (int i = 0; i < n; i++) parent[i] = i;\n        \n        for (int[] p : pairs) {\n            union(parent, p[0], p[1]);\n        }\n        \n        Map<Integer, List<Integer>> comp = new HashMap<>();\n        for (int i = 0; i < n; i++) {\n            comp.computeIfAbsent(find(parent, i), k -> new ArrayList<>()).add(i);\n        }\n        \n        int[] res = nums.clone();\n        for (List<Integer> indices : comp.values()) {\n            List<Integer> vals = new ArrayList<>();\n            List<Integer> evens = new ArrayList<>();\n            List<Integer> odds = new ArrayList<>();\n            \n            for (int idx : indices) {\n                vals.add(nums[idx]);\n                if (idx % 2 == 0) evens.add(idx);\n                else odds.add(idx);\n            }\n            vals.sort(Collections.reverseOrder());\n            \n            for (int i = 0; i < evens.size(); i++) {\n                res[evens.get(i)] = vals.get(i);\n            }\n            for (int i = 0; i < odds.size(); i++) {\n                res[odds.get(i)] = vals.get(evens.size() + odds.size() - 1 - i);\n            }\n        }\n        \n        long ans = 0;\n        for (int i = 0; i < n; i++) {\n            ans += (i % 2 == 0 ? res[i] : -res[i]);\n        }\n        return ans;\n    }\n    \n    private int find(int[] parent, int x) {\n        if (parent[x] != x) parent[x] = find(parent, parent[x]);\n        return parent[x];\n    }\n    \n    private void union(int[] parent, int x, int y) {\n        int rx = find(parent, x), ry = find(parent, y);\n        if (rx != ry) parent[rx] = ry;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxAlternatingSum = function(nums, pairs) {\n    const n = nums.length;\n    const parent = Array.from({ length: n }, (_, i) => i);\n    \n    function find(x) {\n        if (parent[x] !== x) parent[x] = find(parent[x]);\n        return parent[x];\n    }\n    \n    function union(x, y) {\n        const rx = find(x), ry = find(y);\n        if (rx !== ry) parent[rx] = ry;\n    }\n    \n    for (const [u, v] of pairs) union(u, v);\n    \n    const comp = new Map();\n    for (let i = 0; i < n; i++) {\n        const root = find(i);\n        if (!comp.has(root)) comp.set(root, []);\n        comp.get(root).push(i);\n    }\n    \n    const res = nums.slice();\n    for (const indices of comp.values()) {\n        const vals = indices.map(i => nums[i]).sort((a, b) => b - a);\n        const evens = indices.filter(i => i % 2 === 0);\n        const odds = indices.filter(i => i % 2 === 1);\n        \n        for (let i = 0; i < evens.length; i++) {\n            res[evens[i]] = vals[i];\n        }\n        for (let i = 0; i < odds.length; i++) {\n            res[odds[i]] = vals[evens.length + odds.length - 1 - i];\n        }\n    }\n    \n    let ans = 0;\n    for (let i = 0; i < n; i++) {\n        ans += (i % 2 === 0 ? res[i] : -res[i]);\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
