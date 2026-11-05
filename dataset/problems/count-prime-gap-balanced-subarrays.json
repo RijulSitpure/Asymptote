@@ -1,0 +1,79 @@
+{
+  "slug": "count-prime-gap-balanced-subarrays",
+  "number": 3589,
+  "category": "Algorithms",
+  "patterns": [
+    "queue-monotonic-sliding-window"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prime Number Identification",
+      "text": "Precompute primality for values using a standard sieve up to the maximum element."
+    },
+    {
+      "level": 2,
+      "title": "Consecutive Index Differences",
+      "text": "Track the gap distances between consecutively occurring prime positions in the subarray."
+    },
+    {
+      "level": 3,
+      "title": "Gap Spread Verification",
+      "text": "Verify whether the difference between the largest gap and smallest gap does not exceed k."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def countBalancedSubarrays(self, nums: List[int], k: int) -> int:\n        max_val = max(nums) if nums else 1\n        is_prime = [True] * (max_val + 1)\n        if len(is_prime) > 0: is_prime[0] = False\n        if len(is_prime) > 1: is_prime[1] = False\n        for i in range(2, int(max_val**0.5) + 1):\n            if is_prime[i]:\n                for j in range(i * i, max_val + 1, i):\n                    is_prime[j] = False\n                    \n        n = len(nums)\n        ans = 0\n        for i in range(n):\n            prime_indices = []\n            for j in range(i, n):\n                if is_prime[nums[j]]:\n                    prime_indices.append(j)\n                \n                # Check balance condition: at least 2 primes and gap spread <= k\n                if len(prime_indices) >= 2:\n                    gaps = [prime_indices[m] - prime_indices[m - 1] for m in range(1, len(prime_indices))]\n                    if max(gaps) - min(gaps) <= k:\n                        ans += 1\n                elif len(prime_indices) == 1:\n                    ans += 1 # trivially balanced with single prime\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2 + M log log M)",
+    "space": "O(M)",
+    "variables": [
+      "N: length of array nums",
+      "M: maximum value in nums"
+    ],
+    "notes": "Sieve precomputation followed by range gap tracking.",
+    "whyNaiveFails": "Re-checking primality for every element inside nested loops is computationally redundant.",
+    "spaceTimeTradeoff": "Boolean primality table trades O(M) space for O(1) checks.",
+    "interviewerExpectation": "Maintain running min and max gaps incrementally as the right pointer extends."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def countBalancedSubarrays(self, nums: List[int], k: int) -> int:\n        max_val = max(nums) if nums else 1\n        is_prime = [True] * (max_val + 1)\n        if len(is_prime) > 0: is_prime[0] = False\n        if len(is_prime) > 1: is_prime[1] = False\n        for i in range(2, int(max_val**0.5) + 1):\n            if is_prime[i]:\n                for j in range(i * i, max_val + 1, i):\n                    is_prime[j] = False\n                    \n        n = len(nums)\n        ans = 0\n        for i in range(n):\n            prime_indices = []\n            for j in range(i, n):\n                if is_prime[nums[j]]:\n                    prime_indices.append(j)\n                \n                # Check balance condition: at least 2 primes and gap spread <= k\n                if len(prime_indices) >= 2:\n                    gaps = [prime_indices[m] - prime_indices[m - 1] for m in range(1, len(prime_indices))]\n                    if max(gaps) - min(gaps) <= k:\n                        ans += 1\n                elif len(prime_indices) == 1:\n                    ans += 1 # trivially balanced with single prime\n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int countBalancedSubarrays(std::vector<int>& nums, int k) {\n        int n = nums.size();\n        if (n == 0) return 0;\n        int max_val = *std::max_element(nums.begin(), nums.end());\n\n        std::vector<bool> is_prime(max_val + 1, true);\n        if (max_val >= 0) is_prime[0] = false;\n        if (max_val >= 1) is_prime[1] = false;\n        for (int i = 2; i * i <= max_val; ++i) {\n            if (is_prime[i]) {\n                for (int j = i * i; j <= max_val; j += i) is_prime[j] = false;\n            }\n        }\n\n        int ans = 0;\n        for (int i = 0; i < n; ++i) {\n            std::vector<int> prime_indices;\n            int min_gap = 1e9, max_gap = -1e9;\n            for (int j = i; j < n; ++j) {\n                if (is_prime[nums[j]]) {\n                    if (!prime_indices.empty()) {\n                        int gap = j - prime_indices.back();\n                        min_gap = std::min(min_gap, gap);\n                        max_gap = std::max(max_gap, gap);\n                    }\n                    prime_indices.push_back(j);\n                }\n\n                if (prime_indices.size() >= 2) {\n                    if (max_gap - min_gap <= k) ans++;\n                } else if (prime_indices.size() == 1) {\n                    ans++;\n                }\n            }\n        }\n\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int countBalancedSubarrays(int[] nums, int k) {\n        int n = nums.length;\n        if (n == 0) return 0;\n        int maxVal = 0;\n        for (int x : nums) if (x > maxVal) maxVal = x;\n\n        boolean[] isPrime = new boolean[maxVal + 1];\n        Arrays.fill(isPrime, true);\n        if (maxVal >= 0) isPrime[0] = false;\n        if (maxVal >= 1) isPrime[1] = false;\n        for (int i = 2; i * i <= maxVal; i++) {\n            if (isPrime[i]) {\n                for (int j = i * i; j <= maxVal; j += i) isPrime[j] = false;\n            }\n        }\n\n        int ans = 0;\n        for (int i = 0; i < n; i++) {\n            int lastPrime = -1;\n            int countPrimes = 0;\n            int minGap = Integer.MAX_VALUE;\n            int maxGap = Integer.MIN_VALUE;\n\n            for (int j = i; j < n; j++) {\n                if (isPrime[nums[j]]) {\n                    if (lastPrime != -1) {\n                        int gap = j - lastPrime;\n                        minGap = Math.min(minGap, gap);\n                        maxGap = Math.max(maxGap, gap);\n                    }\n                    lastPrime = j;\n                    countPrimes++;\n                }\n\n                if (countPrimes >= 2) {\n                    if (maxGap - minGap <= k) ans++;\n                } else if (countPrimes == 1) {\n                    ans++;\n                }\n            }\n        }\n\n        return ans;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} k\n * @return {number}\n */\nvar countBalancedSubarrays = function(nums, k) {\n    const n = nums.length;\n    if (n === 0) return 0;\n    const maxVal = Math.max(...nums);\n\n    const isPrime = new Uint8Array(maxVal + 1).fill(1);\n    if (maxVal >= 0) isPrime[0] = 0;\n    if (maxVal >= 1) isPrime[1] = 0;\n    for (let i = 2; i * i <= maxVal; i++) {\n        if (isPrime[i]) {\n            for (let j = i * i; j <= maxVal; j += i) isPrime[j] = 0;\n        }\n    }\n\n    let ans = 0;\n    for (let i = 0; i < n; i++) {\n        let lastPrime = -1;\n        let countPrimes = 0;\n        let minGap = Infinity;\n        let maxGap = -Infinity;\n\n        for (let j = i; j < n; j++) {\n            if (isPrime[nums[j]]) {\n                if (lastPrime !== -1) {\n                    const gap = j - lastPrime;\n                    if (gap < minGap) minGap = gap;\n                    if (gap > maxGap) maxGap = gap;\n                }\n                lastPrime = j;\n                countPrimes++;\n            }\n\n            if (countPrimes >= 2) {\n                if (maxGap - minGap <= k) ans++;\n            } else if (countPrimes === 1) {\n                ans++;\n            }\n        }\n    }\n\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

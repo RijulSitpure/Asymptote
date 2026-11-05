@@ -1,0 +1,72 @@
+{
+  "slug": "find-covid-recovery-patients",
+  "number": 3586,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Earliest Positive Date",
+      "text": "Locate the earliest positive test date for each patient using group aggregation with minimum date."
+    },
+    {
+      "level": 2,
+      "title": "Subsequent Negative Match",
+      "text": "Join subsequent negative tests occurring strictly after the initial positive diagnosis date."
+    },
+    {
+      "level": 3,
+      "title": "Date Difference Calculation",
+      "text": "Compute the difference in days between the first negative recovery test and the initial positive test."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH first_positive AS (\n    SELECT \n        patient_id,\n        MIN(test_date) AS pos_date\n    FROM covid_tests\n    WHERE result = 'Positive'\n    GROUP BY patient_id\n),\nfirst_subsequent_negative AS (\n    SELECT \n        fp.patient_id,\n        fp.pos_date,\n        MIN(ct.test_date) AS neg_date\n    FROM first_positive fp\n    JOIN covid_tests ct ON fp.patient_id = ct.patient_id\n    WHERE ct.result = 'Negative' AND ct.test_date > fp.pos_date\n    GROUP BY fp.patient_id, fp.pos_date\n)\nSELECT \n    p.patient_id,\n    p.patient_name,\n    p.age,\n    DATEDIFF(fn.neg_date, fn.pos_date) AS recovery_days\nFROM first_subsequent_negative fn\nJOIN patients p ON fn.patient_id = p.patient_id\nORDER BY recovery_days ASC, p.patient_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(T log T + P)",
+    "space": "O(T + P)",
+    "variables": [
+      "T: count of covid test records",
+      "P: count of patients"
+    ],
+    "notes": "Two-stage group aggregation followed by date difference calculation and patient details join.",
+    "whyNaiveFails": "Cross-joining all tests without date filtering creates quadratic intermediate tables.",
+    "spaceTimeTradeoff": "Aggregating minimum dates in CTEs prunes redundant intermediate tests.",
+    "interviewerExpectation": "Use common table expressions to filter earliest positive and subsequent negative test dates."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH first_positive AS (\n    SELECT \n        patient_id,\n        MIN(test_date) AS pos_date\n    FROM covid_tests\n    WHERE result = 'Positive'\n    GROUP BY patient_id\n),\nfirst_subsequent_negative AS (\n    SELECT \n        fp.patient_id,\n        fp.pos_date,\n        MIN(ct.test_date) AS neg_date\n    FROM first_positive fp\n    JOIN covid_tests ct ON fp.patient_id = ct.patient_id\n    WHERE ct.result = 'Negative' AND ct.test_date > fp.pos_date\n    GROUP BY fp.patient_id, fp.pos_date\n)\nSELECT \n    p.patient_id,\n    p.patient_name,\n    p.age,\n    DATEDIFF(fn.neg_date, fn.pos_date) AS recovery_days\nFROM first_subsequent_negative fn\nJOIN patients p ON fn.patient_id = p.patient_id\nORDER BY recovery_days ASC, p.patient_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH first_positive AS (\n    SELECT \n        patient_id,\n        MIN(test_date) AS pos_date\n    FROM covid_tests\n    WHERE result = 'Positive'\n    GROUP BY patient_id\n),\nfirst_subsequent_negative AS (\n    SELECT \n        fp.patient_id,\n        fp.pos_date,\n        MIN(ct.test_date) AS neg_date\n    FROM first_positive fp\n    JOIN covid_tests ct ON fp.patient_id = ct.patient_id\n    WHERE ct.result = 'Negative' AND ct.test_date > fp.pos_date\n    GROUP BY fp.patient_id, fp.pos_date\n)\nSELECT \n    p.patient_id,\n    p.patient_name,\n    p.age,\n    (fn.neg_date - fn.pos_date) AS recovery_days\nFROM first_subsequent_negative fn\nJOIN patients p ON fn.patient_id = p.patient_id\nORDER BY recovery_days ASC, p.patient_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_covid_recovery_patients(patients: pd.DataFrame, covid_tests: pd.DataFrame) -> pd.DataFrame:\n    positives = covid_tests[covid_tests['result'] == 'Positive']\n    first_pos = positives.groupby('patient_id')['test_date'].min().reset_index(name='pos_date')\n    \n    negatives = covid_tests[covid_tests['result'] == 'Negative']\n    merged_tests = first_pos.merge(negatives, on='patient_id', how='inner')\n    subsequent_neg = merged_tests[merged_tests['test_date'] > merged_tests['pos_date']]\n    \n    first_neg = subsequent_neg.groupby(['patient_id', 'pos_date'])['test_date'].min().reset_index(name='neg_date')\n    first_neg['recovery_days'] = (pd.to_datetime(first_neg['neg_date']) - pd.to_datetime(first_neg['pos_date'])).dt.days\n    \n    res = first_neg.merge(patients, on='patient_id', how='inner')\n    res = res.sort_values(by=['recovery_days', 'patient_id'], ascending=[True, True])\n    return res[['patient_id', 'patient_name', 'age', 'recovery_days']]\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

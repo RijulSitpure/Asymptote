@@ -1,0 +1,72 @@
+{
+  "slug": "find-consistently-improving-employees",
+  "number": 3580,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Window Function Ranking",
+      "text": "Rank performance evaluations for each staff member partitioned by worker and ordered descending by date."
+    },
+    {
+      "level": 2,
+      "title": "Pivot Recent Ratings",
+      "text": "Filter to the most recent three evaluations and pivot or aggregate their scores into separate columns."
+    },
+    {
+      "level": 3,
+      "title": "Monotonic Strict Increase Filter",
+      "text": "Verify that all three scores are present and satisfy the strictly increasing condition r3 < r2 < r1."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH ranked_reviews AS (\n    SELECT \n        employee_id,\n        review_date,\n        rating,\n        ROW_NUMBER() OVER (PARTITION BY employee_id ORDER BY review_date DESC) AS rn\n    FROM performance_reviews\n),\nrecent_three AS (\n    SELECT \n        employee_id,\n        MAX(CASE WHEN rn = 1 THEN rating END) AS r1,\n        MAX(CASE WHEN rn = 2 THEN rating END) AS r2,\n        MAX(CASE WHEN rn = 3 THEN rating END) AS r3,\n        COUNT(rn) AS cnt\n    FROM ranked_reviews\n    WHERE rn <= 3\n    GROUP BY employee_id\n)\nSELECT \n    e.employee_id,\n    e.name,\n    e.department,\n    r.r1 AS latest_rating\nFROM recent_three r\nJOIN employees e ON r.employee_id = e.employee_id\nWHERE r.cnt = 3 AND r.r3 < r.r2 AND r.r2 < r.r1\nORDER BY e.employee_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R log R + E)",
+    "space": "O(R + E)",
+    "variables": [
+      "R: count of performance reviews",
+      "E: count of employees"
+    ],
+    "notes": "Window partition ranking over review dates followed by condition evaluation.",
+    "whyNaiveFails": "Correlated three-way self joins degrade quadratically with review volume.",
+    "spaceTimeTradeoff": "Window ranking filters to top 3 reviews per employee before joining employee details.",
+    "interviewerExpectation": "Use window functions with conditional aggregation to extract and compare recent ratings."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH ranked_reviews AS (\n    SELECT \n        employee_id,\n        review_date,\n        rating,\n        ROW_NUMBER() OVER (PARTITION BY employee_id ORDER BY review_date DESC) AS rn\n    FROM performance_reviews\n),\nrecent_three AS (\n    SELECT \n        employee_id,\n        MAX(CASE WHEN rn = 1 THEN rating END) AS r1,\n        MAX(CASE WHEN rn = 2 THEN rating END) AS r2,\n        MAX(CASE WHEN rn = 3 THEN rating END) AS r3,\n        COUNT(rn) AS cnt\n    FROM ranked_reviews\n    WHERE rn <= 3\n    GROUP BY employee_id\n)\nSELECT \n    e.employee_id,\n    e.name,\n    e.department,\n    r.r1 AS latest_rating\nFROM recent_three r\nJOIN employees e ON r.employee_id = e.employee_id\nWHERE r.cnt = 3 AND r.r3 < r.r2 AND r.r2 < r.r1\nORDER BY e.employee_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH ranked_reviews AS (\n    SELECT \n        employee_id,\n        review_date,\n        rating,\n        ROW_NUMBER() OVER (PARTITION BY employee_id ORDER BY review_date DESC) AS rn\n    FROM performance_reviews\n),\nrecent_three AS (\n    SELECT \n        employee_id,\n        MAX(CASE WHEN rn = 1 THEN rating END) AS r1,\n        MAX(CASE WHEN rn = 2 THEN rating END) AS r2,\n        MAX(CASE WHEN rn = 3 THEN rating END) AS r3,\n        COUNT(rn) AS cnt\n    FROM ranked_reviews\n    WHERE rn <= 3\n    GROUP BY employee_id\n)\nSELECT \n    e.employee_id,\n    e.name,\n    e.department,\n    r.r1 AS latest_rating\nFROM recent_three r\nJOIN employees e ON r.employee_id = e.employee_id\nWHERE r.cnt = 3 AND r.r3 < r.r2 AND r.r2 < r.r1\nORDER BY e.employee_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_consistently_improving_employees(employees: pd.DataFrame, performance_reviews: pd.DataFrame) -> pd.DataFrame:\n    sorted_reviews = performance_reviews.sort_values(by=['employee_id', 'review_date'], ascending=[True, False])\n    sorted_reviews['rn'] = sorted_reviews.groupby('employee_id').cumcount() + 1\n    recent = sorted_reviews[sorted_reviews['rn'] <= 3]\n    \n    pivoted = recent.pivot(index='employee_id', columns='rn', values='rating').reset_index()\n    if 1 not in pivoted.columns or 2 not in pivoted.columns or 3 not in pivoted.columns:\n        return pd.DataFrame(columns=['employee_id', 'name', 'department', 'latest_rating'])\n        \n    valid = pivoted.dropna(subset=[1, 2, 3])\n    improving = valid[(valid[3] < valid[2]) & (valid[2] < valid[1])]\n    \n    merged = improving.merge(employees, on='employee_id', how='inner')\n    merged['latest_rating'] = merged[1].astype(int)\n    res = merged[['employee_id', 'name', 'department', 'latest_rating']].sort_values('employee_id')\n    return res\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

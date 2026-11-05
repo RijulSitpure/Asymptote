@@ -1,0 +1,79 @@
+{
+  "slug": "find-weighted-median-node-in-tree",
+  "number": 3585,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tree Path Extraction",
+      "text": "Trace the unique simple path connecting the source node and destination node in the tree."
+    },
+    {
+      "level": 2,
+      "title": "Path Weight Accumulation",
+      "text": "Compute the sum of vertex weights along the extracted path to find the midpoint threshold."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Threshold Scanning",
+      "text": "Walk from source to destination and return the first vertex whose cumulative weight reaches or exceeds half the total."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import defaultdict\n\nclass Solution:\n    def findWeightedMedian(self, n: int, edges: List[List[int]], weights: List[int], queries: List[List[int]]) -> List[int]:\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        def get_path(start: int, target: int) -> List[int]:\n            parent = {start: None}\n            queue = [start]\n            visited = {start}\n            for u in queue:\n                if u == target:\n                    break\n                for v in adj[u]:\n                    if v not in visited:\n                        visited.add(v)\n                        parent[v] = u\n                        queue.append(v)\n            path = []\n            curr = target\n            while curr is not None:\n                path.append(curr)\n                curr = parent[curr]\n            return path[::-1]\n\n        ans = []\n        for u, v in queries:\n            path = get_path(u, v)\n            total_weight = sum(weights[node] for node in path)\n            half = (total_weight + 1) // 2\n            running = 0\n            median_node = path[-1]\n            for node in path:\n                running += weights[node]\n                if running >= half:\n                    median_node = node\n                    break\n            ans.append(median_node)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(Q * N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in tree",
+      "Q: number of path queries"
+    ],
+    "notes": "Breadth-first path retrieval and linear threshold evaluation per query.",
+    "whyNaiveFails": "Full tree scans without pruning path vertices waste quadratic steps per query.",
+    "spaceTimeTradeoff": "Direct parent pointers reconstruct path sequence without redundant graph copies.",
+    "interviewerExpectation": "Identify that the weighted median is the first prefix sum reaching half the total path weight."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import defaultdict\n\nclass Solution:\n    def findWeightedMedian(self, n: int, edges: List[List[int]], weights: List[int], queries: List[List[int]]) -> List[int]:\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        def get_path(start: int, target: int) -> List[int]:\n            parent = {start: None}\n            queue = [start]\n            visited = {start}\n            for u in queue:\n                if u == target:\n                    break\n                for v in adj[u]:\n                    if v not in visited:\n                        visited.add(v)\n                        parent[v] = u\n                        queue.append(v)\n            path = []\n            curr = target\n            while curr is not None:\n                path.append(curr)\n                curr = parent[curr]\n            return path[::-1]\n\n        ans = []\n        for u, v in queries:\n            path = get_path(u, v)\n            total_weight = sum(weights[node] for node in path)\n            half = (total_weight + 1) // 2\n            running = 0\n            median_node = path[-1]\n            for node in path:\n                running += weights[node]\n                if running >= half:\n                    median_node = node\n                    break\n            ans.append(median_node)\n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<int> findWeightedMedian(int n, std::vector<std::vector<int>>& edges, std::vector<int>& weights, std::vector<std::vector<int>>& queries) {\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n\n        std::vector<int> ans;\n        ans.reserve(queries.size());\n\n        for (const auto& q : queries) {\n            int start = q[0], target = q[1];\n            std::vector<int> parent(n, -2);\n            parent[start] = -1;\n            std::queue<int> qu;\n            qu.push(start);\n\n            while (!qu.empty()) {\n                int u = qu.front();\n                qu.pop();\n                if (u == target) break;\n                for (int v : adj[u]) {\n                    if (parent[v] == -2) {\n                        parent[v] = u;\n                        qu.push(v);\n                    }\n                }\n            }\n\n            std::vector<int> path;\n            int curr = target;\n            while (curr != -1) {\n                path.push_back(curr);\n                curr = parent[curr];\n            }\n            std::reverse(path.begin(), path.end());\n\n            long long total_weight = 0;\n            for (int node : path) total_weight += weights[node];\n            long long half = (total_weight + 1) / 2;\n\n            long long running = 0;\n            int median_node = path.back();\n            for (int node : path) {\n                running += weights[node];\n                if (running >= half) {\n                    median_node = node;\n                    break;\n                }\n            }\n            ans.push_back(median_node);\n        }\n\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] findWeightedMedian(int n, int[][] edges, int[] weights, int[][] queries) {\n        List<List<Integer>> adj = new ArrayList<>(n);\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n\n        int[] ans = new int[queries.length];\n        for (int qIdx = 0; qIdx < queries.length; qIdx++) {\n            int start = queries[qIdx][0], target = queries[qIdx][1];\n            int[] parent = new int[n];\n            Arrays.fill(parent, -2);\n            parent[start] = -1;\n\n            Queue<Integer> queue = new ArrayDeque<>();\n            queue.add(start);\n\n            while (!queue.isEmpty()) {\n                int u = queue.poll();\n                if (u == target) break;\n                for (int v : adj.get(u)) {\n                    if (parent[v] == -2) {\n                        parent[v] = u;\n                        queue.add(v);\n                    }\n                }\n            }\n\n            List<Integer> path = new ArrayList<>();\n            int curr = target;\n            while (curr != -1) {\n                path.add(curr);\n                curr = parent[curr];\n            }\n            Collections.reverse(path);\n\n            long totalWeight = 0;\n            for (int node : path) totalWeight += weights[node];\n            long half = (totalWeight + 1) / 2;\n\n            long running = 0;\n            int medianNode = path.get(path.size() - 1);\n            for (int node : path) {\n                running += weights[node];\n                if (running >= half) {\n                    medianNode = node;\n                    break;\n                }\n            }\n            ans[qIdx] = medianNode;\n        }\n\n        return ans;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number[]} weights\n * @param {number[][]} queries\n * @return {number[]}\n */\nvar findWeightedMedian = function(n, edges, weights, queries) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n\n    const ans = [];\n    for (const [start, target] of queries) {\n        const parent = new Int32Array(n).fill(-2);\n        parent[start] = -1;\n        const queue = [start];\n\n        let head = 0;\n        while (head < queue.length) {\n            const u = queue[head++];\n            if (u === target) break;\n            for (const v of adj[u]) {\n                if (parent[v] === -2) {\n                    parent[v] = u;\n                    queue.push(v);\n                }\n            }\n        }\n\n        const path = [];\n        let curr = target;\n        while (curr !== -1) {\n            path.push(curr);\n            curr = parent[curr];\n        }\n        path.reverse();\n\n        let totalWeight = 0;\n        for (const node of path) totalWeight += weights[node];\n        const half = Math.floor((totalWeight + 1) / 2);\n\n        let running = 0;\n        let medianNode = path[path.length - 1];\n        for (const node of path) {\n            running += weights[node];\n            if (running >= half) {\n                medianNode = node;\n                break;\n            }\n        }\n        ans.push(medianNode);\n    }\n\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

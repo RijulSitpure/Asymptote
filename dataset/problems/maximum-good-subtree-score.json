@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-good-subtree-score",
+  "number": 3575,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Digit Mask Representation",
+      "text": "Represent the set of unique decimal digits in each node value as a 10-bit integer mask."
+    },
+    {
+      "level": 2,
+      "title": "Subtree DP State",
+      "text": "For each node, compute a mapping from combined digit masks to the maximum accumulated score in its subtree."
+    },
+    {
+      "level": 3,
+      "title": "Disjoint Mask Merging",
+      "text": "When combining child subtree results, verify that the bitwise intersection of digit masks is empty."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import defaultdict\n\nclass Solution:\n    def maxGoodSubtreeScore(self, values: List[int], edges: List[List[int]]) -> int:\n        n = len(values)\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        def get_mask(val: int) -> int:\n            mask = 0\n            s = str(abs(val))\n            for ch in s:\n                mask |= (1 << (ord(ch) - ord('0')))\n            return mask\n\n        node_mask = [get_mask(v) for v in values]\n        best_overall = max(0, max(values)) if values else 0\n\n        # Subtree DP: dp[u] maps digit_mask -> max sum\n        def dfs(u: int, p: int) -> dict:\n            nonlocal best_overall\n            dp = {node_mask[u]: values[u]}\n            if values[u] > best_overall:\n                best_overall = values[u]\n                \n            for v in adj[u]:\n                if v == p:\n                    continue\n                child_dp = dfs(v, u)\n                new_dp = dict(dp)\n                for m1, s1 in dp.items():\n                    for m2, s2 in child_dp.items():\n                        if (m1 & m2) == 0:\n                            combined_mask = m1 | m2\n                            combined_sum = s1 + s2\n                            if combined_mask not in new_dp or combined_sum > new_dp[combined_mask]:\n                                new_dp[combined_mask] = combined_sum\n                                if combined_sum > best_overall:\n                                    best_overall = combined_sum\n                dp = new_dp\n            return dp\n\n        dfs(0, -1)\n        return best_overall\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * 4^D)",
+    "space": "O(N * 2^D)",
+    "variables": [
+      "N: number of nodes in tree",
+      "D: number of distinct decimal digits (D <= 10)"
+    ],
+    "notes": "Tree DP combining disjoint bitmasks with maximum 1024 states per node.",
+    "whyNaiveFails": "Evaluating all combinations of connected subgraphs without digit state compression is intractable.",
+    "spaceTimeTradeoff": "Storing best sums per digit mask prunes redundant lower-value subtree subsets.",
+    "interviewerExpectation": "Formulate subtree DP combining disjoint digit masks using bitwise operations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import defaultdict\n\nclass Solution:\n    def maxGoodSubtreeScore(self, values: List[int], edges: List[List[int]]) -> int:\n        n = len(values)\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        def get_mask(val: int) -> int:\n            mask = 0\n            s = str(abs(val))\n            for ch in s:\n                mask |= (1 << (ord(ch) - ord('0')))\n            return mask\n\n        node_mask = [get_mask(v) for v in values]\n        best_overall = max(0, max(values)) if values else 0\n\n        # Subtree DP: dp[u] maps digit_mask -> max sum\n        def dfs(u: int, p: int) -> dict:\n            nonlocal best_overall\n            dp = {node_mask[u]: values[u]}\n            if values[u] > best_overall:\n                best_overall = values[u]\n                \n            for v in adj[u]:\n                if v == p:\n                    continue\n                child_dp = dfs(v, u)\n                new_dp = dict(dp)\n                for m1, s1 in dp.items():\n                    for m2, s2 in child_dp.items():\n                        if (m1 & m2) == 0:\n                            combined_mask = m1 | m2\n                            combined_sum = s1 + s2\n                            if combined_mask not in new_dp or combined_sum > new_dp[combined_mask]:\n                                new_dp[combined_mask] = combined_sum\n                                if combined_sum > best_overall:\n                                    best_overall = combined_sum\n                dp = new_dp\n            return dp\n\n        dfs(0, -1)\n        return best_overall\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <string>\n#include <algorithm>\n\nclass Solution {\n    int best_overall = 0;\npublic:\n    int maxGoodSubtreeScore(std::vector<int>& values, std::vector<std::vector<int>>& edges) {\n        int n = values.size();\n        best_overall = 0;\n        for (int v : values) best_overall = std::max(best_overall, v);\n\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n\n        std::vector<int> node_mask(n);\n        for (int i = 0; i < n; ++i) {\n            std::string s = std::to_string(std::abs(values[i]));\n            int m = 0;\n            for (char ch : s) m |= (1 << (ch - '0'));\n            node_mask[i] = m;\n        }\n\n        auto dfs = [&](auto& self, int u, int p) -> std::unordered_map<int, int> {\n            std::unordered_map<int, int> dp;\n            dp[node_mask[u]] = values[u];\n\n            for (int v : adj[u]) {\n                if (v == p) continue;\n                auto child_dp = self(self, v, u);\n                auto next_dp = dp;\n                for (const auto& [m1, s1] : dp) {\n                    for (const auto& [m2, s2] : child_dp) {\n                        if ((m1 & m2) == 0) {\n                            int comb_mask = m1 | m2;\n                            int comb_sum = s1 + s2;\n                            if (next_dp.find(comb_mask) == next_dp.end() || comb_sum > next_dp[comb_mask]) {\n                                next_dp[comb_mask] = comb_sum;\n                                best_overall = std::max(best_overall, comb_sum);\n                            }\n                        }\n                    }\n                }\n                dp = std::move(next_dp);\n            }\n            return dp;\n        };\n\n        dfs(dfs, 0, -1);\n        return best_overall;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int bestOverall = 0;\n\n    public int maxGoodSubtreeScore(int[] values, int[][] edges) {\n        int n = values.length;\n        bestOverall = 0;\n        for (int v : values) bestOverall = Math.max(bestOverall, v);\n\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n\n        int[] nodeMask = new int[n];\n        for (int i = 0; i < n; i++) {\n            String s = String.valueOf(Math.abs(values[i]));\n            int m = 0;\n            for (int j = 0; j < s.length(); j++) {\n                m |= (1 << (s.charAt(j) - '0'));\n            }\n            nodeMask[i] = m;\n        }\n\n        dfs(0, -1, adj, nodeMask, values);\n        return bestOverall;\n    }\n\n    private Map<Integer, Integer> dfs(int u, int p, List<List<Integer>> adj, int[] nodeMask, int[] values) {\n        Map<Integer, Integer> dp = new HashMap<>();\n        dp.put(nodeMask[u], values[u]);\n\n        for (int v : adj.get(u)) {\n            if (v == p) continue;\n            Map<Integer, Integer> childDp = dfs(v, u, adj, nodeMask, values);\n            Map<Integer, Integer> nextDp = new HashMap<>(dp);\n            for (var e1 : dp.entrySet()) {\n                int m1 = e1.getKey(), s1 = e1.getValue();\n                for (var e2 : childDp.entrySet()) {\n                    int m2 = e2.getKey(), s2 = e2.getValue();\n                    if ((m1 & m2) == 0) {\n                        int combMask = m1 | m2;\n                        int combSum = s1 + s2;\n                        if (!nextDp.containsKey(combMask) || combSum > nextDp.get(combMask)) {\n                            nextDp.put(combMask, combSum);\n                            bestOverall = Math.max(bestOverall, combSum);\n                        }\n                    }\n                }\n            }\n            dp = nextDp;\n        }\n        return dp;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} values\n * @param {number[][]} edges\n * @return {number}\n */\nvar maxGoodSubtreeScore = function(values, edges) {\n    const n = values.length;\n    let bestOverall = 0;\n    for (const v of values) {\n        if (v > bestOverall) bestOverall = v;\n    }\n\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n\n    const nodeMask = new Int32Array(n);\n    for (let i = 0; i < n; i++) {\n        const s = String(Math.abs(values[i]));\n        let m = 0;\n        for (let j = 0; j < s.length; j++) {\n            m |= (1 << (s.charCodeAt(j) - 48));\n        }\n        nodeMask[i] = m;\n    }\n\n    const dfs = (u, p) => {\n        let dp = new Map();\n        dp.set(nodeMask[u], values[u]);\n\n        for (const v of adj[u]) {\n            if (v === p) continue;\n            const childDp = dfs(v, u);\n            const nextDp = new Map(dp);\n            for (const [m1, s1] of dp) {\n                for (const [m2, s2] of childDp) {\n                    if ((m1 & m2) === 0) {\n                        const combMask = m1 | m2;\n                        const combSum = s1 + s2;\n                        if (!nextDp.has(combMask) || combSum > nextDp.get(combMask)) {\n                            nextDp.set(combMask, combSum);\n                            if (combSum > bestOverall) bestOverall = combSum;\n                        }\n                    }\n                }\n            }\n            dp = nextDp;\n        }\n        return dp;\n    };\n\n    dfs(0, -1);\n    return bestOverall;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

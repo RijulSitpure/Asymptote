@@ -1,0 +1,79 @@
+{
+  "slug": "partition-array-to-minimize-xor",
+  "number": 3599,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Bitwise Array",
+      "text": "Precompute prefix cumulative bitwise exclusive or values to evaluate subarray ranges in constant time."
+    },
+    {
+      "level": 2,
+      "title": "Partition State DP",
+      "text": "Define dynamic programming state dp[i][p] as the minimum maximum subarray value partitioning the first i elements into p segments."
+    },
+    {
+      "level": 3,
+      "title": "Segment Boundary Iteration",
+      "text": "Iterate through previous partition boundaries j and minimize the maximum between dp[j][p - 1] and the range value."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def minXorSum(self, nums: List[int], k: int) -> int:\n        n = len(nums)\n        pref = [0] * (n + 1)\n        for i in range(n):\n            pref[i + 1] = pref[i] ^ nums[i]\n            \n        def range_xor(i: int, j: int) -> int:\n            return pref[j + 1] ^ pref[i]\n\n        # dp[i][p]: min max-xor partitioning nums[:i] into p segments\n        dp = [[float('inf')] * (k + 1) for _ in range(n + 1)]\n        dp[0][0] = 0\n        \n        for p in range(1, k + 1):\n            for i in range(p, n + 1):\n                best = float('inf')\n                for j in range(p - 1, i):\n                    cost = max(dp[j][p - 1], range_xor(j, i - 1))\n                    if cost < best:\n                        best = cost\n                dp[i][p] = best\n                \n        return dp[n][k]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(K * N^2)",
+    "space": "O(N * K)",
+    "variables": [
+      "N: length of array nums",
+      "K: number of partitions"
+    ],
+    "notes": "Dynamic programming partitioning table with constant time prefix range queries.",
+    "whyNaiveFails": "Brute-force testing of all combinations of k - 1 partition splits is combinatorial.",
+    "spaceTimeTradeoff": "DP table of size N x K caches optimal sub-partition costs.",
+    "interviewerExpectation": "Formulate DP state minimizing the maximum subarray range XOR."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def minXorSum(self, nums: List[int], k: int) -> int:\n        n = len(nums)\n        pref = [0] * (n + 1)\n        for i in range(n):\n            pref[i + 1] = pref[i] ^ nums[i]\n            \n        def range_xor(i: int, j: int) -> int:\n            return pref[j + 1] ^ pref[i]\n\n        # dp[i][p]: min max-xor partitioning nums[:i] into p segments\n        dp = [[float('inf')] * (k + 1) for _ in range(n + 1)]\n        dp[0][0] = 0\n        \n        for p in range(1, k + 1):\n            for i in range(p, n + 1):\n                best = float('inf')\n                for j in range(p - 1, i):\n                    cost = max(dp[j][p - 1], range_xor(j, i - 1))\n                    if cost < best:\n                        best = cost\n                dp[i][p] = best\n                \n        return dp[n][k]\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minXorSum(std::vector<int>& nums, int k) {\n        int n = nums.size();\n        std::vector<int> pref(n + 1, 0);\n        for (int i = 0; i < n; ++i) pref[i + 1] = pref[i] ^ nums[i];\n\n        auto range_xor = [&](int i, int j) {\n            return pref[j + 1] ^ pref[i];\n        };\n\n        std::vector<std::vector<int>> dp(n + 1, std::vector<int>(k + 1, 1e9));\n        dp[0][0] = 0;\n\n        for (int p = 1; p <= k; ++p) {\n            for (int i = p; i <= n; ++i) {\n                int best = 1e9;\n                for (int j = p - 1; j < i; ++j) {\n                    int cost = std::max(dp[j][p - 1], range_xor(j, i - 1));\n                    if (cost < best) best = cost;\n                }\n                dp[i][p] = best;\n            }\n        }\n\n        return dp[n][k];\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minXorSum(int[] nums, int k) {\n        int n = nums.length;\n        int[] pref = new int[n + 1];\n        for (int i = 0; i < n; i++) pref[i + 1] = pref[i] ^ nums[i];\n\n        int[][] dp = new int[n + 1][k + 1];\n        for (int i = 0; i <= n; i++) Arrays.fill(dp[i], 1000000000);\n        dp[0][0] = 0;\n\n        for (int p = 1; p <= k; p++) {\n            for (int i = p; i <= n; i++) {\n                int best = 1000000000;\n                for (int j = p - 1; j < i; j++) {\n                    int cost = Math.max(dp[j][p - 1], pref[i] ^ pref[j]);\n                    if (cost < best) best = cost;\n                }\n                dp[i][p] = best;\n            }\n        }\n\n        return dp[n][k];\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} k\n * @return {number}\n */\nvar minXorSum = function(nums, k) {\n    const n = nums.length;\n    const pref = new Int32Array(n + 1);\n    for (let i = 0; i < n; i++) pref[i + 1] = pref[i] ^ nums[i];\n\n    const dp = Array.from({ length: n + 1 }, () => new Int32Array(k + 1).fill(1e9));\n    dp[0][0] = 0;\n\n    for (let p = 1; p <= k; p++) {\n        for (let i = p; i <= n; i++) {\n            let best = 1e9;\n            for (let j = p - 1; j < i; j++) {\n                const cost = Math.max(dp[j][p - 1], pref[i] ^ pref[j]);\n                if (cost < best) best = cost;\n            }\n            dp[i][p] = best;\n        }\n    }\n\n    return dp[n][k];\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "count-partitions-with-max-min-difference-at-most-k",
+  "number": 3578,
+  "category": "Algorithms",
+  "patterns": [
+    "queue-monotonic-sliding-window"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Maintain Valid Subarray Boundaries",
+      "text": "Maintain the leftmost boundary index such that the difference between maximum and minimum does not exceed k."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Sum DP Transitions",
+      "text": "Each valid partition ending at index right can start at any valid left index; use running sums of previous answers."
+    },
+    {
+      "level": 3,
+      "title": "Monotonic Boundary Updates",
+      "text": "As the right pointer advances, the minimum valid left pointer moves rightward monotonically."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import deque\n\nclass Solution:\n    def countPartitions(self, nums: List[int], k: int) -> int:\n        n = len(nums)\n        MOD = 1_000_000_007\n        \n        dp = [0] * (n + 1)\n        dp[0] = 1\n        pref = [0] * (n + 2)\n        pref[1] = 1\n        \n        max_dq = deque()\n        min_dq = deque()\n        left = 0\n        \n        for right in range(n):\n            while max_dq and nums[max_dq[-1]] <= nums[right]:\n                max_dq.pop()\n            max_dq.append(right)\n            \n            while min_dq and nums[min_dq[-1]] >= nums[right]:\n                min_dq.pop()\n            min_dq.append(right)\n            \n            while max_dq and min_dq and (nums[max_dq[0]] - nums[min_dq[0]]) > k:\n                if max_dq[0] == left:\n                    max_dq.popleft()\n                if min_dq[0] == left:\n                    min_dq.popleft()\n                left += 1\n                \n            # valid partition starts from left to right\n            # sum dp[left ... right] = pref[right + 1] - pref[left]\n            ways = (pref[right + 1] - pref[left]) % MOD\n            dp[right + 1] = ways\n            pref[right + 2] = (pref[right + 1] + ways) % MOD\n            \n        return dp[n]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of array nums"
+    ],
+    "notes": "Amortized linear time with sliding window monotonic queues and prefix sum array.",
+    "whyNaiveFails": "Checking all partition intervals results in O(N^2) or exponential states.",
+    "spaceTimeTradeoff": "Maintaining DP prefix sums computes range transitions in O(1) time.",
+    "interviewerExpectation": "Combine monotonic sliding window boundaries with prefix sum dynamic programming."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import deque\n\nclass Solution:\n    def countPartitions(self, nums: List[int], k: int) -> int:\n        n = len(nums)\n        MOD = 1_000_000_007\n        \n        dp = [0] * (n + 1)\n        dp[0] = 1\n        pref = [0] * (n + 2)\n        pref[1] = 1\n        \n        max_dq = deque()\n        min_dq = deque()\n        left = 0\n        \n        for right in range(n):\n            while max_dq and nums[max_dq[-1]] <= nums[right]:\n                max_dq.pop()\n            max_dq.append(right)\n            \n            while min_dq and nums[min_dq[-1]] >= nums[right]:\n                min_dq.pop()\n            min_dq.append(right)\n            \n            while max_dq and min_dq and (nums[max_dq[0]] - nums[min_dq[0]]) > k:\n                if max_dq[0] == left:\n                    max_dq.popleft()\n                if min_dq[0] == left:\n                    min_dq.popleft()\n                left += 1\n                \n            # valid partition starts from left to right\n            # sum dp[left ... right] = pref[right + 1] - pref[left]\n            ways = (pref[right + 1] - pref[left]) % MOD\n            dp[right + 1] = ways\n            pref[right + 2] = (pref[right + 1] + ways) % MOD\n            \n        return dp[n]\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <deque>\n\nclass Solution {\npublic:\n    int countPartitions(std::vector<int>& nums, int k) {\n        int n = nums.size();\n        long long MOD = 1000000007;\n        std::vector<long long> dp(n + 1, 0), pref(n + 2, 0);\n        dp[0] = 1;\n        pref[1] = 1;\n\n        std::deque<int> max_dq, min_dq;\n        int left = 0;\n\n        for (int right = 0; right < n; ++right) {\n            while (!max_dq.empty() && nums[max_dq.back()] <= nums[right]) max_dq.pop_back();\n            max_dq.push_back(right);\n\n            while (!min_dq.empty() && nums[min_dq.back()] >= nums[right]) min_dq.pop_back();\n            min_dq.push_back(right);\n\n            while (!max_dq.empty() && !min_dq.empty() && (nums[max_dq.front()] - nums[min_dq.front()]) > k) {\n                if (max_dq.front() == left) max_dq.pop_front();\n                if (min_dq.front() == left) min_dq.pop_front();\n                left++;\n            }\n\n            long long ways = (pref[right + 1] - pref[left] + MOD) % MOD;\n            dp[right + 1] = ways;\n            pref[right + 2] = (pref[right + 1] + ways) % MOD;\n        }\n\n        return dp[n];\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int countPartitions(int[] nums, int k) {\n        int n = nums.length;\n        long mod = 1000000007L;\n        long[] dp = new long[n + 1];\n        long[] pref = new long[n + 2];\n        dp[0] = 1;\n        pref[1] = 1;\n\n        Deque<Integer> maxDq = new ArrayDeque<>();\n        Deque<Integer> minDq = new ArrayDeque<>();\n        int left = 0;\n\n        for (int right = 0; right < n; right++) {\n            while (!maxDq.isEmpty() && nums[maxDq.peekLast()] <= nums[right]) maxDq.pollLast();\n            maxDq.addLast(right);\n\n            while (!minDq.isEmpty() && nums[minDq.peekLast()] >= nums[right]) minDq.pollLast();\n            minDq.addLast(right);\n\n            while (!maxDq.isEmpty() && !minDq.isEmpty() && (nums[maxDq.peekFirst()] - nums[minDq.peekFirst()]) > k) {\n                if (maxDq.peekFirst() == left) maxDq.pollFirst();\n                if (minDq.peekFirst() == left) minDq.pollFirst();\n                left++;\n            }\n\n            long ways = (pref[right + 1] - pref[left] + mod) % mod;\n            dp[right + 1] = ways;\n            pref[right + 2] = (pref[right + 1] + ways) % mod;\n        }\n\n        return (int) dp[n];\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} k\n * @return {number}\n */\nvar countPartitions = function(nums, k) {\n    const n = nums.length;\n    const MOD = 1000000007n;\n    const dp = new BigInt64Array(n + 1);\n    const pref = new BigInt64Array(n + 2);\n    dp[0] = 1n;\n    pref[1] = 1n;\n\n    const maxDq = [];\n    const minDq = [];\n    let left = 0;\n\n    for (let right = 0; right < n; right++) {\n        while (maxDq.length > 0 && nums[maxDq[maxDq.length - 1]] <= nums[right]) maxDq.pop();\n        maxDq.push(right);\n\n        while (minDq.length > 0 && nums[minDq[minDq.length - 1]] >= nums[right]) minDq.pop();\n        minDq.push(right);\n\n        while (maxDq.length > 0 && minDq.length > 0 && (nums[maxDq[0]] - nums[minDq[0]]) > k) {\n            if (maxDq[0] === left) maxDq.shift();\n            if (minDq[0] === left) minDq.shift();\n            left++;\n        }\n\n        let ways = (pref[right + 1] - pref[left]) % MOD;\n        if (ways < 0n) ways += MOD;\n        dp[right + 1] = ways;\n        pref[right + 2] = (pref[right + 1] + ways) % MOD;\n    }\n\n    return Number(dp[n]);\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,72 @@
+{
+  "slug": "find-books-with-no-available-copies",
+  "number": 3570,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Active Loans Filtering",
+      "text": "Filter borrowing events to consider only items currently checked out where return date is unrecorded."
+    },
+    {
+      "level": 2,
+      "title": "Group Count Aggregation",
+      "text": "Aggregate unreturned records per title to tally current active borrowings."
+    },
+    {
+      "level": 3,
+      "title": "Capacity Comparison",
+      "text": "Keep only titles whose active loan count equals their total inventory quantity, sorting by copies descending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    b.book_id,\n    b.title,\n    b.author,\n    b.total_copies\nFROM library_books b\nJOIN borrowing_records r ON b.book_id = r.book_id\nWHERE r.return_date IS NULL\nGROUP BY b.book_id, b.title, b.author, b.total_copies\nHAVING COUNT(r.record_id) = b.total_copies\nORDER BY b.total_copies DESC, b.book_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(B + R log B)",
+    "space": "O(B + R)",
+    "variables": [
+      "B: count of library books",
+      "R: count of borrowing records"
+    ],
+    "notes": "Joining active borrowing events with book inventories followed by grouping and equality filtering.",
+    "whyNaiveFails": "Correlated subqueries per book recalculate unreturned counts repeatedly.",
+    "spaceTimeTradeoff": "Filtering return date prior to grouping reduces aggregation volume.",
+    "interviewerExpectation": "Use group filtering with HAVING equality to match total inventory count."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    b.book_id,\n    b.title,\n    b.author,\n    b.total_copies\nFROM library_books b\nJOIN borrowing_records r ON b.book_id = r.book_id\nWHERE r.return_date IS NULL\nGROUP BY b.book_id, b.title, b.author, b.total_copies\nHAVING COUNT(r.record_id) = b.total_copies\nORDER BY b.total_copies DESC, b.book_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    b.book_id,\n    b.title,\n    b.author,\n    b.total_copies\nFROM library_books b\nJOIN borrowing_records r ON b.book_id = r.book_id\nWHERE r.return_date IS NULL\nGROUP BY b.book_id, b.title, b.author, b.total_copies\nHAVING COUNT(r.record_id) = b.total_copies\nORDER BY b.total_copies DESC, b.book_id ASC;\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_books_with_no_available_copies(library_books: pd.DataFrame, borrowing_records: pd.DataFrame) -> pd.DataFrame:\n    active = borrowing_records[borrowing_records['return_date'].isna()]\n    borrowed_counts = active.groupby('book_id').size().reset_index(name='active_borrowed')\n    merged = library_books.merge(borrowed_counts, on='book_id', how='inner')\n    res = merged[merged['active_borrowed'] == merged['total_copies']]\n    res = res.sort_values(by=['total_copies', 'book_id'], ascending=[False, True])\n    return res[['book_id', 'title', 'author', 'total_copies']]\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

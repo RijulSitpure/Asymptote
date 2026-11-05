@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-steps-to-convert-string-with-operations",
+  "number": 3579,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Mismatch Pair Classification",
+      "text": "Count all character positions where source differs from target, categorizing by the character transition needed."
+    },
+    {
+      "level": 2,
+      "title": "Greedy Reciprocal Swapping",
+      "text": "Pair opposite transitions such as a to b with b to a to fix two characters in a single operation."
+    },
+    {
+      "level": 3,
+      "title": "Remaining Replacements",
+      "text": "Any leftover mismatches cannot be resolved in two-for-one pairs and require one individual operation each."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def minOperations(self, source: str, target: str) -> int:\n        if len(source) != len(target):\n            return -1\n        \n        count = defaultdict(int)\n        total_mismatches = 0\n        for s, t in zip(source, target):\n            if s != t:\n                count[(s, t)] += 1\n                total_mismatches += 1\n                \n        saved = 0\n        chars = list(set([u for u, v in count.keys()] + [v for u, v in count.keys()]))\n        \n        # 2-cycles\n        for i in range(len(chars)):\n            for j in range(i + 1, len(chars)):\n                u, v = chars[i], chars[j]\n                k = min(count[(u, v)], count[(v, u)])\n                saved += k\n                count[(u, v)] -= k\n                count[(v, u)] -= k\n                \n        # 3-cycles\n        for i in range(len(chars)):\n            for j in range(len(chars)):\n                if i == j: continue\n                for m in range(len(chars)):\n                    if m == i or m == j: continue\n                    u, v, w = chars[i], chars[j], chars[m]\n                    k = min(count[(u, v)], count[(v, w)], count[(w, u)])\n                    if k > 0:\n                        saved += k\n                        count[(u, v)] -= k\n                        count[(v, w)] -= k\n                        count[(w, u)] -= k\n                        \n        return total_mismatches - saved\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N + Sigma^2)",
+    "space": "O(Sigma^2)",
+    "variables": [
+      "N: string length",
+      "Sigma: alphabet size (26)"
+    ],
+    "notes": "Constant alphabet size matrix tracking transitions and pairing reciprocals.",
+    "whyNaiveFails": "Simulating all permutations of swap choices leads to factorial complexity.",
+    "spaceTimeTradeoff": "Using a fixed 26x26 array provides instantaneous lookups for character transitions.",
+    "interviewerExpectation": "Identify that 2-cycles save one operation per pair over naive replacements."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def minOperations(self, source: str, target: str) -> int:\n        if len(source) != len(target):\n            return -1\n        \n        count = defaultdict(int)\n        total_mismatches = 0\n        for s, t in zip(source, target):\n            if s != t:\n                count[(s, t)] += 1\n                total_mismatches += 1\n                \n        saved = 0\n        chars = list(set([u for u, v in count.keys()] + [v for u, v in count.keys()]))\n        \n        # 2-cycles\n        for i in range(len(chars)):\n            for j in range(i + 1, len(chars)):\n                u, v = chars[i], chars[j]\n                k = min(count[(u, v)], count[(v, u)])\n                saved += k\n                count[(u, v)] -= k\n                count[(v, u)] -= k\n                \n        # 3-cycles\n        for i in range(len(chars)):\n            for j in range(len(chars)):\n                if i == j: continue\n                for m in range(len(chars)):\n                    if m == i or m == j: continue\n                    u, v, w = chars[i], chars[j], chars[m]\n                    k = min(count[(u, v)], count[(v, w)], count[(w, u)])\n                    if k > 0:\n                        saved += k\n                        count[(u, v)] -= k\n                        count[(v, w)] -= k\n                        count[(w, u)] -= k\n                        \n        return total_mismatches - saved\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minOperations(std::string source, std::string target) {\n        if (source.size() != target.size()) return -1;\n        int n = source.size();\n\n        int count[26][26] = {0};\n        int total = 0;\n        for (int i = 0; i < n; ++i) {\n            if (source[i] != target[i]) {\n                count[source[i] - 'a'][target[i] - 'a']++;\n                total++;\n            }\n        }\n\n        int saved = 0;\n        for (int i = 0; i < 26; ++i) {\n            for (int j = i + 1; j < 26; ++j) {\n                int k = std::min(count[i][j], count[j][i]);\n                saved += k;\n                count[i][j] -= k;\n                count[j][i] -= k;\n            }\n        }\n\n        for (int i = 0; i < 26; ++i) {\n            for (int j = 0; j < 26; ++j) {\n                if (i == j) continue;\n                for (int m = 0; m < 26; ++m) {\n                    if (m == i || m == j) continue;\n                    int k = std::min({count[i][j], count[j][m], count[m][i]});\n                    if (k > 0) {\n                        saved += k;\n                        count[i][j] -= k;\n                        count[j][m] -= k;\n                        count[m][i] -= k;\n                    }\n                }\n            }\n        }\n\n        return total - saved;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int minOperations(String source, String target) {\n        if (source.length() != target.length()) return -1;\n        int n = source.length();\n\n        int[][] count = new int[26][26];\n        int total = 0;\n        for (int i = 0; i < n; i++) {\n            char s = source.charAt(i), t = target.charAt(i);\n            if (s != t) {\n                count[s - 'a'][t - 'a']++;\n                total++;\n            }\n        }\n\n        int saved = 0;\n        for (int i = 0; i < 26; i++) {\n            for (int j = i + 1; j < 26; j++) {\n                int k = Math.min(count[i][j], count[j][i]);\n                saved += k;\n                count[i][j] -= k;\n                count[j][i] -= k;\n            }\n        }\n\n        for (int i = 0; i < 26; i++) {\n            for (int j = 0; j < 26; j++) {\n                if (i == j) continue;\n                for (int m = 0; m < 26; m++) {\n                    if (m == i || m == j) continue;\n                    int k = Math.min(count[i][j], Math.min(count[j][m], count[m][i]));\n                    if (k > 0) {\n                        saved += k;\n                        count[i][j] -= k;\n                        count[j][m] -= k;\n                        count[m][i] -= k;\n                    }\n                }\n            }\n        }\n\n        return total - saved;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {string} source\n * @param {string} target\n * @return {number}\n */\nvar minOperations = function(source, target) {\n    if (source.length !== target.length) return -1;\n    const n = source.length;\n\n    const count = Array.from({ length: 26 }, () => new Int32Array(26));\n    let total = 0;\n    for (let i = 0; i < n; i++) {\n        const s = source.charCodeAt(i) - 97;\n        const t = target.charCodeAt(i) - 97;\n        if (s !== t) {\n            count[s][t]++;\n            total++;\n        }\n    }\n\n    let saved = 0;\n    for (let i = 0; i < 26; i++) {\n        for (let j = i + 1; j < 26; j++) {\n            const k = Math.min(count[i][j], count[j][i]);\n            saved += k;\n            count[i][j] -= k;\n            count[j][i] -= k;\n        }\n    }\n\n    for (let i = 0; i < 26; i++) {\n        for (let j = 0; j < 26; j++) {\n            if (i === j) continue;\n            for (let m = 0; m < 26; m++) {\n                if (m === i || m === j) continue;\n                const k = Math.min(count[i][j], count[j][m], count[m][i]);\n                if (k > 0) {\n                    saved += k;\n                    count[i][j] -= k;\n                    count[j][m] -= k;\n                    count[m][i] -= k;\n                }\n            }\n        }\n    }\n\n    return total - saved;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

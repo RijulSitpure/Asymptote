@@ -1,0 +1,80 @@
+{
+  "slug": "maximize-count-of-distinct-primes-after-split",
+  "number": 3569,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prime Divisor Precomputation",
+      "text": "Determine the unique prime divisors present in each element before analyzing split boundaries."
+    },
+    {
+      "level": 2,
+      "title": "Prefix and Suffix Accumulation",
+      "text": "Accumulate distinct prime factors in a leftward prefix pass and a rightward suffix pass."
+    },
+    {
+      "level": 3,
+      "title": "Boundary Evaluation",
+      "text": "For each valid split position, sum the prefix unique prime count and the suffix unique prime count to find the optimal result."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def maxDistinctPrimeCount(self, nums: List[int]) -> int:\n        max_val = max(nums) if nums else 1\n        spf = list(range(max_val + 1))\n        for i in range(2, int(max_val**0.5) + 1):\n            if spf[i] == i:\n                for j in range(i * i, max_val + 1, i):\n                    if spf[j] == j:\n                        spf[j] = i\n        \n        def get_factors(x: int) -> set:\n            factors = set()\n            while x > 1:\n                p = spf[x]\n                factors.add(p)\n                while x % p == 0:\n                    x //= p\n            return factors\n\n        num_factors = [get_factors(x) for x in nums]\n        n = len(nums)\n        if n < 2:\n            return 0\n        \n        pref_sets = [set() for _ in range(n)]\n        running = set()\n        for i in range(n):\n            running = running | num_factors[i]\n            pref_sets[i] = set(running)\n            \n        suff_sets = [set() for _ in range(n)]\n        running = set()\n        for i in range(n - 1, -1, -1):\n            running = running | num_factors[i]\n            suff_sets[i] = set(running)\n            \n        best = 0\n        for i in range(n - 1):\n            best = max(best, len(pref_sets[i]) + len(suff_sets[i + 1]))\n        return best\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M log log M + N * P)",
+    "space": "O(M + N * P)",
+    "variables": [
+      "M: maximum element in nums",
+      "N: length of array nums",
+      "P: maximum distinct prime factors per element"
+    ],
+    "notes": "Precomputing smallest prime factors allows fast factor extraction followed by linear prefix and suffix accumulations.",
+    "whyNaiveFails": "Factoring and reconstructing prime sets from scratch for every split index causes quadratic overhead.",
+    "spaceTimeTradeoff": "Storing prefix and suffix set sizes avoids repeated set unions.",
+    "interviewerExpectation": "Recognize that prefix and suffix prime collections can be precomputed independently."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def maxDistinctPrimeCount(self, nums: List[int]) -> int:\n        max_val = max(nums) if nums else 1\n        spf = list(range(max_val + 1))\n        for i in range(2, int(max_val**0.5) + 1):\n            if spf[i] == i:\n                for j in range(i * i, max_val + 1, i):\n                    if spf[j] == j:\n                        spf[j] = i\n        \n        def get_factors(x: int) -> set:\n            factors = set()\n            while x > 1:\n                p = spf[x]\n                factors.add(p)\n                while x % p == 0:\n                    x //= p\n            return factors\n\n        num_factors = [get_factors(x) for x in nums]\n        n = len(nums)\n        if n < 2:\n            return 0\n        \n        pref_sets = [set() for _ in range(n)]\n        running = set()\n        for i in range(n):\n            running = running | num_factors[i]\n            pref_sets[i] = set(running)\n            \n        suff_sets = [set() for _ in range(n)]\n        running = set()\n        for i in range(n - 1, -1, -1):\n            running = running | num_factors[i]\n            suff_sets[i] = set(running)\n            \n        best = 0\n        for i in range(n - 1):\n            best = max(best, len(pref_sets[i]) + len(suff_sets[i + 1]))\n        return best\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_set>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxDistinctPrimeCount(std::vector<int>& nums) {\n        int n = nums.size();\n        if (n < 2) return 0;\n        int max_val = *std::max_element(nums.begin(), nums.end());\n        std::vector<int> spf(max_val + 1);\n        for (int i = 0; i <= max_val; ++i) spf[i] = i;\n        for (int i = 2; i * i <= max_val; ++i) {\n            if (spf[i] == i) {\n                for (int j = i * i; j <= max_val; j += i) {\n                    if (spf[j] == j) spf[j] = i;\n                }\n            }\n        }\n        std::vector<std::unordered_set<int>> factors(n);\n        for (int i = 0; i < n; ++i) {\n            int x = nums[i];\n            while (x > 1) {\n                int p = spf[x];\n                factors[i].insert(p);\n                while (x % p == 0) x /= p;\n            }\n        }\n        std::vector<int> pref_count(n), suff_count(n);\n        std::unordered_set<int> run;\n        for (int i = 0; i < n; ++i) {\n            run.insert(factors[i].begin(), factors[i].end());\n            pref_count[i] = run.size();\n        }\n        run.clear();\n        for (int i = n - 1; i >= 0; --i) {\n            run.insert(factors[i].begin(), factors[i].end());\n            suff_count[i] = run.size();\n        }\n        int best = 0;\n        for (int i = 0; i < n - 1; ++i) {\n            best = std::max(best, pref_count[i] + suff_count[i + 1]);\n        }\n        return best;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxDistinctPrimeCount(int[] nums) {\n        int n = nums.length;\n        if (n < 2) return 0;\n        int maxVal = 0;\n        for (int x : nums) if (x > maxVal) maxVal = x;\n        int[] spf = new int[maxVal + 1];\n        for (int i = 0; i <= maxVal; i++) spf[i] = i;\n        for (int i = 2; i * i <= maxVal; i++) {\n            if (spf[i] == i) {\n                for (int j = i * i; j <= maxVal; j += i) {\n                    if (spf[j] == j) spf[j] = i;\n                }\n            }\n        }\n        List<Set<Integer>> factors = new ArrayList<>(n);\n        for (int i = 0; i < n; i++) {\n            Set<Integer> set = new HashSet<>();\n            int x = nums[i];\n            while (x > 1) {\n                int p = spf[x];\n                set.add(p);\n                while (x % p == 0) x /= p;\n            }\n            factors.add(set);\n        }\n        int[] prefCount = new int[n];\n        int[] suffCount = new int[n];\n        Set<Integer> run = new HashSet<>();\n        for (int i = 0; i < n; i++) {\n            run.addAll(factors.get(i));\n            prefCount[i] = run.size();\n        }\n        run.clear();\n        for (int i = n - 1; i >= 0; i--) {\n            run.addAll(factors.get(i));\n            suffCount[i] = run.size();\n        }\n        int best = 0;\n        for (int i = 0; i < n - 1; i++) {\n            best = Math.max(best, prefCount[i] + suffCount[i + 1]);\n        }\n        return best;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @return {number}\n */\nvar maxDistinctPrimeCount = function(nums) {\n    const n = nums.length;\n    if (n < 2) return 0;\n    const maxVal = Math.max(...nums);\n    const spf = new Int32Array(maxVal + 1);\n    for (let i = 0; i <= maxVal; i++) spf[i] = i;\n    for (let i = 2; i * i <= maxVal; i++) {\n        if (spf[i] === i) {\n            for (let j = i * i; j <= maxVal; j += i) {\n                if (spf[j] === j) spf[j] = i;\n            }\n        }\n    }\n    const factors = new Array(n);\n    for (let i = 0; i < n; i++) {\n        const s = new Set();\n        let x = nums[i];\n        while (x > 1) {\n            const p = spf[x];\n            s.add(p);\n            while (x % p === 0) x = Math.floor(x / p);\n        }\n        factors[i] = s;\n    }\n    const prefCount = new Int32Array(n);\n    const suffCount = new Int32Array(n);\n    let run = new Set();\n    for (let i = 0; i < n; i++) {\n        for (const p of factors[i]) run.add(p);\n        prefCount[i] = run.size;\n    }\n    run = new Set();\n    for (let i = n - 1; i >= 0; i--) {\n        for (const p of factors[i]) run.add(p);\n        suffCount[i] = run.size;\n    }\n    let best = 0;\n    for (let i = 0; i < n - 1; i++) {\n        const total = prefCount[i] + suffCount[i + 1];\n        if (total > best) best = total;\n    }\n    return best;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-increments-to-equalize-leaf-paths",
+  "number": 3593,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subtree Post-Order Processing",
+      "text": "Evaluate leaf distances in a bottom-up traversal starting from the leaves up to the root."
+    },
+    {
+      "level": 2,
+      "title": "Child Branch Equalization",
+      "text": "At each internal vertex, all child branches must match the length of the longest child branch."
+    },
+    {
+      "level": 3,
+      "title": "Increment Minimization",
+      "text": "Add the difference between the maximal child branch and each sibling branch to the global increment tally."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import defaultdict\n\nclass Solution:\n    def minIncrements(self, n: int, edges: List[List[int]], weights: List[int]) -> int:\n        adj = defaultdict(list)\n        for i, (u, v) in enumerate(edges):\n            w = weights[i]\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n            \n        total_increments = 0\n        \n        # Returns max path length from u to any leaf in its subtree\n        def dfs(u: int, p: int) -> int:\n            nonlocal total_increments\n            child_branch_lens = []\n            \n            for v, w in adj[u]:\n                if v == p:\n                    continue\n                branch_len = w + dfs(v, u)\n                child_branch_lens.append(branch_len)\n                \n            if not child_branch_lens:\n                return 0\n                \n            max_len = max(child_branch_lens)\n            for l in child_branch_lens:\n                total_increments += (max_len - l)\n            return max_len\n\n        dfs(0, -1)\n        return total_increments\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in tree"
+    ],
+    "notes": "Single depth-first traversal calculating subtree depths and increments.",
+    "whyNaiveFails": "Top-down trial modifications fail to identify global bottlenecks optimally.",
+    "spaceTimeTradeoff": "Call stack uses O(N) space in the worst-case skewed tree.",
+    "interviewerExpectation": "Use bottom-up dynamic programming on trees to equalize child branches locally."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import defaultdict\n\nclass Solution:\n    def minIncrements(self, n: int, edges: List[List[int]], weights: List[int]) -> int:\n        adj = defaultdict(list)\n        for i, (u, v) in enumerate(edges):\n            w = weights[i]\n            adj[u].append((v, w))\n            adj[v].append((u, w))\n            \n        total_increments = 0\n        \n        # Returns max path length from u to any leaf in its subtree\n        def dfs(u: int, p: int) -> int:\n            nonlocal total_increments\n            child_branch_lens = []\n            \n            for v, w in adj[u]:\n                if v == p:\n                    continue\n                branch_len = w + dfs(v, u)\n                child_branch_lens.append(branch_len)\n                \n            if not child_branch_lens:\n                return 0\n                \n            max_len = max(child_branch_lens)\n            for l in child_branch_lens:\n                total_increments += (max_len - l)\n            return max_len\n\n        dfs(0, -1)\n        return total_increments\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\n    long long total_increments = 0;\npublic:\n    int minIncrements(int n, std::vector<std::vector<int>>& edges, std::vector<int>& weights) {\n        total_increments = 0;\n        std::vector<std::vector<std::pair<int, int>>> adj(n);\n        for (size_t i = 0; i < edges.size(); ++i) {\n            int u = edges[i][0], v = edges[i][1], w = weights[i];\n            adj[u].push_back({v, w});\n            adj[v].push_back({u, w});\n        }\n\n        auto dfs = [&](auto& self, int u, int p) -> long long {\n            std::vector<long long> branch_lens;\n            for (const auto& [v, w] : adj[u]) {\n                if (v == p) continue;\n                branch_lens.push_back(w + self(self, v, u));\n            }\n            if (branch_lens.empty()) return 0;\n\n            long long max_len = *std::max_element(branch_lens.begin(), branch_lens.end());\n            for (long long l : branch_lens) {\n                total_increments += (max_len - l);\n            }\n            return max_len;\n        };\n\n        dfs(dfs, 0, -1);\n        return (int)total_increments;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private long totalIncrements = 0;\n\n    public int minIncrements(int n, int[][] edges, int[] weights) {\n        totalIncrements = 0;\n        List<List<int[]>> adj = new ArrayList<>(n);\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int i = 0; i < edges.length; i++) {\n            int u = edges[i][0], v = edges[i][1], w = weights[i];\n            adj.get(u).add(new int[]{v, w});\n            adj.get(v).add(new int[]{u, w});\n        }\n\n        dfs(0, -1, adj);\n        return (int) totalIncrements;\n    }\n\n    private long dfs(int u, int p, List<List<int[]>> adj) {\n        List<Long> branchLens = new ArrayList<>();\n        for (int[] edge : adj.get(u)) {\n            int v = edge[0], w = edge[1];\n            if (v == p) continue;\n            branchLens.add(w + dfs(v, u, adj));\n        }\n        if (branchLens.isEmpty()) return 0;\n\n        long maxLen = Collections.max(branchLens);\n        for (long l : branchLens) {\n            totalIncrements += (maxLen - l);\n        }\n        return maxLen;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number[]} weights\n * @return {number}\n */\nvar minIncrements = function(n, edges, weights) {\n    let totalIncrements = 0;\n    const adj = Array.from({ length: n }, () => []);\n    for (let i = 0; i < edges.length; i++) {\n        const [u, v] = edges[i];\n        const w = weights[i];\n        adj[u].push([v, w]);\n        adj[v].push([u, w]);\n    }\n\n    const dfs = (u, p) => {\n        const branchLens = [];\n        for (const [v, w] of adj[u]) {\n            if (v === p) continue;\n            branchLens.push(w + dfs(v, u));\n        }\n        if (branchLens.length === 0) return 0;\n\n        const maxLen = Math.max(...branchLens);\n        for (const l of branchLens) {\n            totalIncrements += (maxLen - l);\n        }\n        return maxLen;\n    };\n\n    dfs(0, -1);\n    return totalIncrements;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

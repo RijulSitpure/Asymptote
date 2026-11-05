@@ -1,0 +1,80 @@
+{
+  "slug": "kth-smallest-path-xor-sum",
+  "number": 3590,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Tree Path Extraction",
+      "text": "Trace the unique simple path between the query endpoints in the undirected tree."
+    },
+    {
+      "level": 2,
+      "title": "Contiguous Subpath Bitwise Evaluation",
+      "text": "Enumerate the bitwise exclusive or sum for every contiguous subpath along the linear path sequence."
+    },
+    {
+      "level": 3,
+      "title": "Kth Element Selection",
+      "text": "Sort the collected subpath values in ascending order and select the kth 1-indexed entry."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\nfrom collections import defaultdict\n\nclass Solution:\n    def kthSmallestPathXor(self, n: int, edges: List[List[int]], values: List[int], queries: List[List[int]]) -> List[int]:\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        def get_path(start: int, target: int) -> List[int]:\n            parent = {start: None}\n            queue = [start]\n            visited = {start}\n            for u in queue:\n                if u == target:\n                    break\n                for v in adj[u]:\n                    if v not in visited:\n                        visited.add(v)\n                        parent[v] = u\n                        queue.append(v)\n            path = []\n            curr = target\n            while curr is not None:\n                path.append(curr)\n                curr = parent[curr]\n            return path[::-1]\n\n        ans = []\n        for u, v, k in queries:\n            path = get_path(u, v)\n            m = len(path)\n            xor_sums = []\n            for i in range(m):\n                curr = 0\n                for j in range(i, m):\n                    curr ^= values[path[j]]\n                    xor_sums.append(curr)\n            xor_sums.sort()\n            if k <= len(xor_sums):\n                ans.append(xor_sums[k - 1])\n            else:\n                ans.append(-1)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(Q * (N + L^2 log L))",
+    "space": "O(N + L^2)",
+    "variables": [
+      "N: number of nodes in tree",
+      "Q: number of queries",
+      "L: maximum path length"
+    ],
+    "notes": "Breadth-first path extraction followed by subpath enumeration and sorting.",
+    "whyNaiveFails": "Examining non-path tree branches causes exponential redundant state generation.",
+    "spaceTimeTradeoff": "Linearizing the path vertices allows simple triangular loops for subpath sums.",
+    "interviewerExpectation": "Isolate the path between nodes and generate subpath XOR sums iteratively."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\nfrom collections import defaultdict\n\nclass Solution:\n    def kthSmallestPathXor(self, n: int, edges: List[List[int]], values: List[int], queries: List[List[int]]) -> List[int]:\n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        def get_path(start: int, target: int) -> List[int]:\n            parent = {start: None}\n            queue = [start]\n            visited = {start}\n            for u in queue:\n                if u == target:\n                    break\n                for v in adj[u]:\n                    if v not in visited:\n                        visited.add(v)\n                        parent[v] = u\n                        queue.append(v)\n            path = []\n            curr = target\n            while curr is not None:\n                path.append(curr)\n                curr = parent[curr]\n            return path[::-1]\n\n        ans = []\n        for u, v, k in queries:\n            path = get_path(u, v)\n            m = len(path)\n            xor_sums = []\n            for i in range(m):\n                curr = 0\n                for j in range(i, m):\n                    curr ^= values[path[j]]\n                    xor_sums.append(curr)\n            xor_sums.sort()\n            if k <= len(xor_sums):\n                ans.append(xor_sums[k - 1])\n            else:\n                ans.append(-1)\n        return ans\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<int> kthSmallestPathXor(int n, std::vector<std::vector<int>>& edges, std::vector<int>& values, std::vector<std::vector<int>>& queries) {\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n\n        std::vector<int> ans;\n        ans.reserve(queries.size());\n\n        for (const auto& q : queries) {\n            int start = q[0], target = q[1], k = q[2];\n            std::vector<int> parent(n, -2);\n            parent[start] = -1;\n            std::queue<int> qu;\n            qu.push(start);\n\n            while (!qu.empty()) {\n                int u = qu.front();\n                qu.pop();\n                if (u == target) break;\n                for (int v : adj[u]) {\n                    if (parent[v] == -2) {\n                        parent[v] = u;\n                        qu.push(v);\n                    }\n                }\n            }\n\n            std::vector<int> path;\n            int curr = target;\n            while (curr != -1) {\n                path.push_back(curr);\n                curr = parent[curr];\n            }\n            std::reverse(path.begin(), path.end());\n\n            int m = path.size();\n            std::vector<int> xor_sums;\n            xor_sums.reserve(m * (m + 1) / 2);\n\n            for (int i = 0; i < m; ++i) {\n                int run = 0;\n                for (int j = i; j < m; ++j) {\n                    run ^= values[path[j]];\n                    xor_sums.push_back(run);\n                }\n            }\n\n            std::sort(xor_sums.begin(), xor_sums.end());\n            if (k <= (int)xor_sums.size()) {\n                ans.push_back(xor_sums[k - 1]);\n            } else {\n                ans.push_back(-1);\n            }\n        }\n\n        return ans;\n    }\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] kthSmallestPathXor(int n, int[][] edges, int[] values, int[][] queries) {\n        List<List<Integer>> adj = new ArrayList<>(n);\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n\n        int[] ans = new int[queries.length];\n        for (int qIdx = 0; qIdx < queries.length; qIdx++) {\n            int start = queries[qIdx][0], target = queries[qIdx][1], k = queries[qIdx][2];\n            int[] parent = new int[n];\n            Arrays.fill(parent, -2);\n            parent[start] = -1;\n\n            Queue<Integer> queue = new ArrayDeque<>();\n            queue.add(start);\n\n            while (!queue.isEmpty()) {\n                int u = queue.poll();\n                if (u == target) break;\n                for (int v : adj.get(u)) {\n                    if (parent[v] == -2) {\n                        parent[v] = u;\n                        queue.add(v);\n                    }\n                }\n            }\n\n            List<Integer> path = new ArrayList<>();\n            int curr = target;\n            while (curr != -1) {\n                path.add(curr);\n                curr = parent[curr];\n            }\n            Collections.reverse(path);\n\n            int m = path.size();\n            List<Integer> xorSums = new ArrayList<>(m * (m + 1) / 2);\n\n            for (int i = 0; i < m; i++) {\n                int run = 0;\n                for (int j = i; j < m; j++) {\n                    run ^= values[path.get(j)];\n                    xorSums.add(run);\n                }\n            }\n\n            Collections.sort(xorSums);\n            if (k <= xorSums.size()) {\n                ans[qIdx] = xorSums.get(k - 1);\n            } else {\n                ans[qIdx] = -1;\n            }\n        }\n\n        return ans;\n    }\n}\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} edges\n * @param {number[]} values\n * @param {number[][]} queries\n * @return {number[]}\n */\nvar kthSmallestPathXor = function(n, edges, values, queries) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n\n    const ans = [];\n    for (const [start, target, k] of queries) {\n        const parent = new Int32Array(n).fill(-2);\n        parent[start] = -1;\n        const queue = [start];\n\n        let head = 0;\n        while (head < queue.length) {\n            const u = queue[head++];\n            if (u === target) break;\n            for (const v of adj[u]) {\n                if (parent[v] === -2) {\n                    parent[v] = u;\n                    queue.push(v);\n                }\n            }\n        }\n\n        const path = [];\n        let curr = target;\n        while (curr !== -1) {\n            path.push(curr);\n            curr = parent[curr];\n        }\n        path.reverse();\n\n        const m = path.length;\n        const xorSums = [];\n\n        for (let i = 0; i < m; i++) {\n            let run = 0;\n            for (let j = i; j < m; j++) {\n                run ^= values[path[j]];\n                xorSums.push(run);\n            }\n        }\n\n        xorSums.sort((a, b) => a - b);\n        if (k <= xorSums.length) {\n            ans.push(xorSums[k - 1]);\n        } else {\n            ans.push(-1);\n        }\n    }\n\n    return ans;\n};\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}
