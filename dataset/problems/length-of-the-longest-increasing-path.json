@@ -1,0 +1,79 @@
+{
+  "slug": "length-of-the-longest-increasing-path",
+  "number": 3288,
+  "patterns": [
+    "dp-lis",
+    "sorting-quickselect"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Pivot Decomposition",
+      "text": "Any valid increasing path passing through coordinates[k] consists of points strictly dominated by coordinates[k], followed by coordinates[k] itself, followed by points strictly dominating coordinates[k]."
+    },
+    {
+      "level": 2,
+      "title": "Russian Doll Envelope Reduction",
+      "text": "To find the longest strictly increasing 2D chain, sort points by x ascending and y descending. Sorting y descending prevents selecting multiple points with identical x coordinates."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search Patience Sorting",
+      "text": "Run standard 1D longest increasing chain on the y coordinates using binary search (patience sorting) for both the left and right subsets independently."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maxPathLength(self, coordinates: list[list[int]], k: int) -> int:\n        from bisect import bisect_left\n        \n        kx, ky = coordinates[k]\n        \n        # Partition into points strictly smaller (both x and y) and strictly larger\n        left_pts = [p for p in coordinates if p[0] < kx and p[1] < ky]\n        right_pts = [p for p in coordinates if p[0] > kx and p[1] > ky]\n        \n        def lis_2d(pts):\n            if not pts:\n                return 0\n            # Sort by x ascending, and by y descending to avoid same-x sharing\n            pts.sort(key=lambda p: (p[0], -p[1]))\n            tails = []\n            for _, y in pts:\n                idx = bisect_left(tails, y)\n                if idx == len(tails):\n                    tails.append(y)\n                else:\n                    tails[idx] = y\n            return len(tails)\n            \n        return lis_2d(left_pts) + 1 + lis_2d(right_pts)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of coordinates array"
+    ],
+    "notes": "Sorting takes O(n log n) and patience sorting binary searches take O(n log n).",
+    "whyNaiveFails": "Standard O(n^2) DP or DAG traversal times out for n up to 10^5.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for partitioned arrays and tails array.",
+    "interviewerExpectation": "Decomposes around pivot coordinates[k] and reduces to 2D LIS with x-asc, y-desc sorting."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxPathLength(self, coordinates: list[list[int]], k: int) -> int:\n        from bisect import bisect_left\n        \n        kx, ky = coordinates[k]\n        \n        # Partition into points strictly smaller (both x and y) and strictly larger\n        left_pts = [p for p in coordinates if p[0] < kx and p[1] < ky]\n        right_pts = [p for p in coordinates if p[0] > kx and p[1] > ky]\n        \n        def lis_2d(pts):\n            if not pts:\n                return 0\n            # Sort by x ascending, and by y descending to avoid same-x sharing\n            pts.sort(key=lambda p: (p[0], -p[1]))\n            tails = []\n            for _, y in pts:\n                idx = bisect_left(tails, y)\n                if idx == len(tails):\n                    tails.append(y)\n                else:\n                    tails[idx] = y\n            return len(tails)\n            \n        return lis_2d(left_pts) + 1 + lis_2d(right_pts)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\n    int lis_2d(std::vector<std::vector<int>>& pts) {\n        if (pts.empty()) return 0;\n        std::sort(pts.begin(), pts.end(), [](const auto& a, const auto& b) {\n            if (a[0] != b[0]) return a[0] < b[0];\n            return a[1] > b[1];\n        });\n        std::vector<int> tails;\n        for (const auto& p : pts) {\n            int y = p[1];\n            auto it = std::lower_bound(tails.begin(), tails.end(), y);\n            if (it == tails.end()) tails.push_back(y);\n            else *it = y;\n        }\n        return tails.size();\n    }\npublic:\n    int maxPathLength(std::vector<std::vector<int>>& coordinates, int k) {\n        int kx = coordinates[k][0], ky = coordinates[k][1];\n        std::vector<std::vector<int>> left_pts, right_pts;\n        for (const auto& p : coordinates) {\n            if (p[0] < kx && p[1] < ky) left_pts.push_back(p);\n            else if (p[0] > kx && p[1] > ky) right_pts.push_back(p);\n        }\n        return lis_2d(left_pts) + 1 + lis_2d(right_pts);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxPathLength(int[][] coordinates, int k) {\n        int kx = coordinates[k][0], ky = coordinates[k][1];\n        List<int[]> leftPts = new ArrayList<>();\n        List<int[]> rightPts = new ArrayList<>();\n\n        for (int[] p : coordinates) {\n            if (p[0] < kx && p[1] < ky) leftPts.add(p);\n            else if (p[0] > kx && p[1] > ky) rightPts.add(p);\n        }\n\n        return lis2D(leftPts) + 1 + lis2D(rightPts);\n    }\n\n    private int lis2D(List<int[]> pts) {\n        if (pts.isEmpty()) return 0;\n        pts.sort((a, b) -> {\n            if (a[0] != b[0]) return Integer.compare(a[0], b[0]);\n            return Integer.compare(b[1], a[1]);\n        });\n\n        List<Integer> tails = new ArrayList<>();\n        for (int[] p : pts) {\n            int y = p[1];\n            int idx = Collections.binarySearch(tails, y);\n            if (idx < 0) idx = -(idx + 1);\n            if (idx == tails.size()) tails.add(y);\n            else tails.set(idx, y);\n        }\n        return tails.size();\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxPathLength = function(coordinates, k) {\n    const [kx, ky] = coordinates[k];\n    const leftPts = [];\n    const rightPts = [];\n\n    for (const p of coordinates) {\n        if (p[0] < kx && p[1] < ky) leftPts.push(p);\n        else if (p[0] > kx && p[1] > ky) rightPts.push(p);\n    }\n\n    function lis2D(pts) {\n        if (pts.length === 0) return 0;\n        pts.sort((a, b) => {\n            if (a[0] !== b[0]) return a[0] - b[0];\n            return b[1] - a[1];\n        });\n\n        const tails = [];\n        for (const p of pts) {\n            const y = p[1];\n            let low = 0, high = tails.length;\n            while (low < high) {\n                const mid = (low + high) >> 1;\n                if (tails[mid] < y) low = mid + 1;\n                else high = mid;\n            }\n            if (low === tails.length) tails.push(y);\n            else tails[low] = y;\n        }\n        return tails.length;\n    }\n\n    return lis2D(leftPts) + 1 + lis2D(rightPts);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

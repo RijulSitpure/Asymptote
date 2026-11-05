@@ -1,0 +1,78 @@
+{
+  "slug": "construct-2d-grid-matching-graph-layout",
+  "number": 3311,
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Degree Structural Properties",
+      "text": "Corner nodes have minimum degree min_d (degree 1 in a 1D grid, or degree 2 in a 2D grid). Boundary nodes have degree 3, and internal nodes have degree 4."
+    },
+    {
+      "level": 2,
+      "title": "Boundary Path Traversal",
+      "text": "Start at a corner node and traverse along the boundary by repeatedly advancing to an unvisited neighbor with minimum degree until reaching the opposing corner."
+    },
+    {
+      "level": 3,
+      "title": "Row-by-Row Propagation",
+      "text": "With the first row of width cols determined, fill each subsequent row by choosing the unvisited neighbor of the cell directly above."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def constructGridLayout(self, n: int, edges: list[list[int]]) -> list[list[int]]:\n        from collections import defaultdict\n        \n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        deg = {i: len(adj[i]) for i in range(n)}\n        min_d = min(deg.values())\n        \n        # Corner starting node has minimum degree (1 for 1xN, 2 for MxN)\n        corners = [i for i in range(n) if deg[i] == min_d]\n        start = corners[0]\n        \n        # Reconstruct first row\n        row = [start]\n        visited = {start}\n        \n        # For next element in first row, choose neighbor with smallest degree\n        curr = min(adj[start], key=lambda x: deg[x])\n        row.append(curr)\n        visited.add(curr)\n        \n        while deg[curr] > min_d:\n            # Pick neighbor of curr not in visited with smallest degree\n            nxt = min([v for v in adj[curr] if v not in visited], key=lambda x: deg[x])\n            row.append(nxt)\n            visited.add(nxt)\n            curr = nxt\n            \n        cols = len(row)\n        rows = n // cols\n        grid = [[0] * cols for _ in range(rows)]\n        grid[0] = row\n        \n        for r in range(1, rows):\n            for c in range(cols):\n                top = grid[r - 1][c]\n                for v in adj[top]:\n                    if v not in visited:\n                        grid[r][c] = v\n                        visited.add(v)\n                        break\n                        \n        return grid\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of vertices in grid graph"
+    ],
+    "notes": "Grid graph edges E <= 2n. Degree counting, first row path, and row propagation all run in linear time.",
+    "whyNaiveFails": "General graph isomorphism is NP-intermediate. Using degree constraints on grid topology achieves O(n).",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for adjacency lists and visited flags.",
+    "interviewerExpectation": "Uses degree analysis to trace first row followed by deterministic vertical propagation."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def constructGridLayout(self, n: int, edges: list[list[int]]) -> list[list[int]]:\n        from collections import defaultdict\n        \n        adj = defaultdict(list)\n        for u, v in edges:\n            adj[u].append(v)\n            adj[v].append(u)\n            \n        deg = {i: len(adj[i]) for i in range(n)}\n        min_d = min(deg.values())\n        \n        # Corner starting node has minimum degree (1 for 1xN, 2 for MxN)\n        corners = [i for i in range(n) if deg[i] == min_d]\n        start = corners[0]\n        \n        # Reconstruct first row\n        row = [start]\n        visited = {start}\n        \n        # For next element in first row, choose neighbor with smallest degree\n        curr = min(adj[start], key=lambda x: deg[x])\n        row.append(curr)\n        visited.add(curr)\n        \n        while deg[curr] > min_d:\n            # Pick neighbor of curr not in visited with smallest degree\n            nxt = min([v for v in adj[curr] if v not in visited], key=lambda x: deg[x])\n            row.append(nxt)\n            visited.add(nxt)\n            curr = nxt\n            \n        cols = len(row)\n        rows = n // cols\n        grid = [[0] * cols for _ in range(rows)]\n        grid[0] = row\n        \n        for r in range(1, rows):\n            for c in range(cols):\n                top = grid[r - 1][c]\n                for v in adj[top]:\n                    if v not in visited:\n                        grid[r][c] = v\n                        visited.add(v)\n                        break\n                        \n        return grid",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<std::vector<int>> constructGridLayout(int n, std::vector<std::vector<int>>& edges) {\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        \n        std::vector<int> deg(n);\n        int min_d = n;\n        for (int i = 0; i < n; ++i) {\n            deg[i] = adj[i].size();\n            min_d = std::min(min_d, deg[i]);\n        }\n        \n        int start = -1;\n        for (int i = 0; i < n; ++i) {\n            if (deg[i] == min_d) {\n                start = i;\n                break;\n            }\n        }\n        \n        std::vector<int> row = {start};\n        std::vector<bool> visited(n, false);\n        visited[start] = true;\n        \n        int curr = adj[start][0];\n        for (int v : adj[start]) {\n            if (deg[v] < deg[curr]) curr = v;\n        }\n        row.push_back(curr);\n        visited[curr] = true;\n        \n        while (deg[curr] > min_d) {\n            int nxt = -1;\n            for (int v : adj[curr]) {\n                if (!visited[v]) {\n                    if (nxt == -1 || deg[v] < deg[nxt]) nxt = v;\n                }\n            }\n            row.push_back(nxt);\n            visited[nxt] = true;\n            curr = nxt;\n        }\n        \n        int cols = row.size();\n        int rows = n / cols;\n        std::vector<std::vector<int>> grid(rows, std::vector<int>(cols));\n        grid[0] = row;\n        \n        for (int r = 1; r < rows; ++r) {\n            for (int c = 0; c < cols; ++c) {\n                int top = grid[r - 1][c];\n                for (int v : adj[top]) {\n                    if (!visited[v]) {\n                        grid[r][c] = v;\n                        visited[v] = true;\n                        break;\n                    }\n                }\n            }\n        }\n        return grid;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[][] constructGridLayout(int n, int[][] edges) {\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n\n        int[] deg = new int[n];\n        int minD = n;\n        for (int i = 0; i < n; i++) {\n            deg[i] = adj.get(i).size();\n            minD = Math.min(minD, deg[i]);\n        }\n\n        int start = -1;\n        for (int i = 0; i < n; i++) {\n            if (deg[i] == minD) {\n                start = i;\n                break;\n            }\n        }\n\n        List<Integer> row = new ArrayList<>();\n        row.add(start);\n        boolean[] visited = new boolean[n];\n        visited[start] = true;\n\n        int curr = adj.get(start).get(0);\n        for (int v : adj.get(start)) {\n            if (deg[v] < deg[curr]) curr = v;\n        }\n        row.add(curr);\n        visited[curr] = true;\n\n        while (deg[curr] > minD) {\n            int nxt = -1;\n            for (int v : adj.get(curr)) {\n                if (!visited[v]) {\n                    if (nxt == -1 || deg[v] < deg[nxt]) nxt = v;\n                }\n            }\n            row.add(nxt);\n            visited[nxt] = true;\n            curr = nxt;\n        }\n\n        int cols = row.size();\n        int rows = n / cols;\n        int[][] grid = new int[rows][cols];\n        for (int c = 0; c < cols; c++) grid[0][c] = row.get(c);\n\n        for (int r = 1; r < rows; r++) {\n            for (int c = 0; c < cols; c++) {\n                int top = grid[r - 1][c];\n                for (int v : adj.get(top)) {\n                    if (!visited[v]) {\n                        grid[r][c] = v;\n                        visited[v] = true;\n                        break;\n                    }\n                }\n            }\n        }\n        return grid;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var constructGridLayout = function(n, edges) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n\n    const deg = new Int32Array(n);\n    let minD = n;\n    for (let i = 0; i < n; i++) {\n        deg[i] = adj[i].length;\n        if (deg[i] < minD) minD = deg[i];\n    }\n\n    let start = -1;\n    for (let i = 0; i < n; i++) {\n        if (deg[i] === minD) {\n            start = i;\n            break;\n        }\n    }\n\n    const row = [start];\n    const visited = new Uint8Array(n);\n    visited[start] = 1;\n\n    let curr = adj[start][0];\n    for (const v of adj[start]) {\n        if (deg[v] < deg[curr]) curr = v;\n    }\n    row.push(curr);\n    visited[curr] = 1;\n\n    while (deg[curr] > minD) {\n        let nxt = -1;\n        for (const v of adj[curr]) {\n            if (!visited[v]) {\n                if (nxt === -1 || deg[v] < deg[nxt]) nxt = v;\n            }\n        }\n        row.push(nxt);\n        visited[nxt] = 1;\n        curr = nxt;\n    }\n\n    const cols = row.length;\n    const rows = Math.floor(n / cols);\n    const grid = Array.from({ length: rows }, () => new Int32Array(cols));\n    for (let c = 0; c < cols; c++) grid[0][c] = row[c];\n\n    for (let r = 1; r < rows; r++) {\n        for (let c = 0; c < cols; c++) {\n            const top = grid[r - 1][c];\n            for (const v of adj[top]) {\n                if (!visited[v]) {\n                    grid[r][c] = v;\n                    visited[v] = 1;\n                    break;\n                }\n            }\n        }\n    }\n    return grid.map(r => Array.from(r));\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

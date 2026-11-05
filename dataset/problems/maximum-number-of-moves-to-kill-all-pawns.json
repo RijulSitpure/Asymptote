@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-number-of-moves-to-kill-all-pawns",
+  "number": 3283,
+  "patterns": [
+    "graph-bfs-shortest-path",
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Knight Distance Precomputation",
+      "text": "Run breadth-first search from each pawn location and starting knight coordinate on the 50x50 chessboard to compute pairwise knight move distances."
+    },
+    {
+      "level": 2,
+      "title": "Game State Representation",
+      "text": "Since the number of pawns p is at most 15, represent the subset of captured pawns as a bitmask."
+    },
+    {
+      "level": 3,
+      "title": "Minimax Dynamic Programming",
+      "text": "Define state (current_node, captured_mask, is_alice). Alice chooses the remaining pawn to maximize total moves, while Bob chooses the remaining pawn to minimize moves."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maxMoves(self, kx: int, ky: int, positions: list[list[int]]) -> int:\n        from collections import deque\n        from functools import lru_cache\n        \n        pts = [(kx, ky)] + [(x, y) for x, y in positions]\n        p = len(positions)\n        \n        # Precompute BFS knight shortest paths\n        knight_moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]\n        dist = [[0] * (p + 1) for _ in range(p + 1)]\n        \n        for i in range(p + 1):\n            sx, sy = pts[i]\n            d_grid = [[-1] * 50 for _ in range(50)]\n            d_grid[sx][sy] = 0\n            q = deque([(sx, sy)])\n            while q:\n                x, y = q.popleft()\n                for dx, dy in knight_moves:\n                    nx, ny = x + dx, y + dy\n                    if 0 <= nx < 50 and 0 <= ny < 50 and d_grid[nx][ny] == -1:\n                        d_grid[nx][ny] = d_grid[x][y] + 1\n                        q.append((nx, ny))\n            for j in range(p + 1):\n                tx, ty = pts[j]\n                dist[i][j] = d_grid[tx][ty]\n                \n        # Game theory bitmask DP: Alice maximizes, Bob minimizes\n        @lru_cache(None)\n        def minimax(u: int, mask: int, is_alice: bool) -> int:\n            if mask == (1 << p) - 1:\n                return 0\n            if is_alice:\n                best = 0\n                for nxt in range(p):\n                    if not (mask & (1 << nxt)):\n                        d = dist[u][nxt + 1]\n                        best = max(best, d + minimax(nxt + 1, mask | (1 << nxt), False))\n                return best\n            else:\n                best = float('inf')\n                for nxt in range(p):\n                    if not (mask & (1 << nxt)):\n                        d = dist[u][nxt + 1]\n                        best = min(best, d + minimax(nxt + 1, mask | (1 << nxt), True))\n                return best\n                \n        return minimax(0, 0, True)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(p * 50^2 + p^2 * 2^p)",
+    "space": "O(p * 2^p)",
+    "variables": [
+      "p: number of pawns (at most 15)"
+    ],
+    "notes": "BFS computes all pairwise distances in O(p * 2500). Minimax memoization explores p * 2^p states.",
+    "whyNaiveFails": "Simulating all move paths without precomputed shortest paths and bitmask memoization leads to infinite knight branching.",
+    "spaceTimeTradeoff": "Bitmask table of size 16 * 2^15 fits easily in memory.",
+    "interviewerExpectation": "Combines BFS grid shortest paths with bitmask DP minimax game tree."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxMoves(self, kx: int, ky: int, positions: list[list[int]]) -> int:\n        from collections import deque\n        from functools import lru_cache\n        \n        pts = [(kx, ky)] + [(x, y) for x, y in positions]\n        p = len(positions)\n        \n        # Precompute BFS knight shortest paths\n        knight_moves = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]\n        dist = [[0] * (p + 1) for _ in range(p + 1)]\n        \n        for i in range(p + 1):\n            sx, sy = pts[i]\n            d_grid = [[-1] * 50 for _ in range(50)]\n            d_grid[sx][sy] = 0\n            q = deque([(sx, sy)])\n            while q:\n                x, y = q.popleft()\n                for dx, dy in knight_moves:\n                    nx, ny = x + dx, y + dy\n                    if 0 <= nx < 50 and 0 <= ny < 50 and d_grid[nx][ny] == -1:\n                        d_grid[nx][ny] = d_grid[x][y] + 1\n                        q.append((nx, ny))\n            for j in range(p + 1):\n                tx, ty = pts[j]\n                dist[i][j] = d_grid[tx][ty]\n                \n        # Game theory bitmask DP: Alice maximizes, Bob minimizes\n        @lru_cache(None)\n        def minimax(u: int, mask: int, is_alice: bool) -> int:\n            if mask == (1 << p) - 1:\n                return 0\n            if is_alice:\n                best = 0\n                for nxt in range(p):\n                    if not (mask & (1 << nxt)):\n                        d = dist[u][nxt + 1]\n                        best = max(best, d + minimax(nxt + 1, mask | (1 << nxt), False))\n                return best\n            else:\n                best = float('inf')\n                for nxt in range(p):\n                    if not (mask & (1 << nxt)):\n                        d = dist[u][nxt + 1]\n                        best = min(best, d + minimax(nxt + 1, mask | (1 << nxt), True))\n                return best\n                \n        return minimax(0, 0, True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n#include <cstring>\n\nclass Solution {\n    int dist[16][16];\n    int memo[16][1 << 15][2];\n    int p;\n    \n    int minimax(int u, int mask, int is_alice) {\n        if (mask == (1 << p) - 1) return 0;\n        if (memo[u][mask][is_alice] != -1) return memo[u][mask][is_alice];\n        \n        if (is_alice) {\n            int best = 0;\n            for (int nxt = 0; nxt < p; ++nxt) {\n                if (!(mask & (1 << nxt))) {\n                    int d = dist[u][nxt + 1];\n                    best = std::max(best, d + minimax(nxt + 1, mask | (1 << nxt), 0));\n                }\n            }\n            return memo[u][mask][is_alice] = best;\n        } else {\n            int best = 1e9;\n            for (int nxt = 0; nxt < p; ++nxt) {\n                if (!(mask & (1 << nxt))) {\n                    int d = dist[u][nxt + 1];\n                    best = std::min(best, d + minimax(nxt + 1, mask | (1 << nxt), 1));\n                }\n            }\n            return memo[u][mask][is_alice] = best;\n        }\n    }\n    \npublic:\n    int maxMoves(int kx, int ky, std::vector<std::vector<int>>& positions) {\n        p = positions.size();\n        std::vector<std::pair<int, int>> pts = {{kx, ky}};\n        for (const auto& pos : positions) pts.push_back({pos[0], pos[1]});\n        \n        int moves[8][2] = {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}};\n        for (int i = 0; i <= p; ++i) {\n            int d_grid[50][50];\n            std::memset(d_grid, -1, sizeof(d_grid));\n            std::queue<std::pair<int, int>> q;\n            q.push(pts[i]);\n            d_grid[pts[i].first][pts[i].second] = 0;\n            while (!q.empty()) {\n                auto [x, y] = q.front(); q.pop();\n                for (int m = 0; m < 8; ++m) {\n                    int nx = x + moves[m][0], ny = y + moves[m][1];\n                    if (nx >= 0 && nx < 50 && ny >= 0 && ny < 50 && d_grid[nx][ny] == -1) {\n                        d_grid[nx][ny] = d_grid[x][y] + 1;\n                        q.push({nx, ny});\n                    }\n                }\n            }\n            for (int j = 0; j <= p; ++j) {\n                dist[i][j] = d_grid[pts[j].first][pts[j].second];\n            }\n        }\n        \n        std::memset(memo, -1, sizeof(memo));\n        return minimax(0, 0, 1);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int[][] dist = new int[16][16];\n    private int[][][] memo;\n    private int p;\n\n    public int maxMoves(int kx, int ky, int[][] positions) {\n        p = positions.length;\n        List<int[]> pts = new ArrayList<>();\n        pts.add(new int[]{kx, ky});\n        for (int[] pos : positions) pts.add(pos);\n\n        int[][] moves = {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}};\n        for (int i = 0; i <= p; i++) {\n            int[][] dGrid = new int[50][50];\n            for (int[] row : dGrid) Arrays.fill(row, -1);\n            Queue<int[]> q = new LinkedList<>();\n            int[] start = pts.get(i);\n            dGrid[start[0]][start[1]] = 0;\n            q.offer(start);\n\n            while (!q.isEmpty()) {\n                int[] curr = q.poll();\n                int x = curr[0], y = curr[1];\n                for (int[] m : moves) {\n                    int nx = x + m[0], ny = y + m[1];\n                    if (nx >= 0 && nx < 50 && ny >= 0 && ny < 50 && dGrid[nx][ny] == -1) {\n                        dGrid[nx][ny] = dGrid[x][y] + 1;\n                        q.offer(new int[]{nx, ny});\n                    }\n                }\n            }\n\n            for (int j = 0; j <= p; j++) {\n                int[] target = pts.get(j);\n                dist[i][j] = dGrid[target[0]][target[1]];\n            }\n        }\n\n        memo = new int[16][1 << p][2];\n        for (int[][] m1 : memo) {\n            for (int[] m2 : m1) Arrays.fill(m2, -1);\n        }\n\n        return minimax(0, 0, 1);\n    }\n\n    private int minimax(int u, int mask, int isAlice) {\n        if (mask == (1 << p) - 1) return 0;\n        if (memo[u][mask][isAlice] != -1) return memo[u][mask][isAlice];\n\n        if (isAlice == 1) {\n            int best = 0;\n            for (int nxt = 0; nxt < p; nxt++) {\n                if ((mask & (1 << nxt)) == 0) {\n                    int d = dist[u][nxt + 1];\n                    best = Math.max(best, d + minimax(nxt + 1, mask | (1 << nxt), 0));\n                }\n            }\n            return memo[u][mask][isAlice] = best;\n        } else {\n            int best = Integer.MAX_VALUE;\n            for (int nxt = 0; nxt < p; nxt++) {\n                if ((mask & (1 << nxt)) == 0) {\n                    int d = dist[u][nxt + 1];\n                    best = Math.min(best, d + minimax(nxt + 1, mask | (1 << nxt), 1));\n                }\n            }\n            return memo[u][mask][isAlice] = best;\n        }\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxMoves = function(kx, ky, positions) {\n    const p = positions.length;\n    const pts = [[kx, ky], ...positions];\n    const dist = Array.from({ length: p + 1 }, () => new Int32Array(p + 1));\n    const moves = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];\n\n    for (let i = 0; i <= p; i++) {\n        const dGrid = Array.from({ length: 50 }, () => new Int32Array(50).fill(-1));\n        const [sx, sy] = pts[i];\n        dGrid[sx][sy] = 0;\n        const q = [[sx, sy]];\n        let head = 0;\n\n        while (head < q.length) {\n            const [x, y] = q[head++];\n            const curDist = dGrid[x][y];\n            for (let m = 0; m < 8; m++) {\n                const nx = x + moves[m][0], ny = y + moves[m][1];\n                if (nx >= 0 && nx < 50 && ny >= 0 && ny < 50 && dGrid[nx][ny] === -1) {\n                    dGrid[nx][ny] = curDist + 1;\n                    q.push([nx, ny]);\n                }\n            }\n        }\n\n        for (let j = 0; j <= p; j++) {\n            const [tx, ty] = pts[j];\n            dist[i][j] = dGrid[tx][ty];\n        }\n    }\n\n    const memo = Array.from({ length: p + 1 }, () => \n        Array.from({ length: 1 << p }, () => new Int32Array(2).fill(-1))\n    );\n\n    function minimax(u, mask, isAlice) {\n        if (mask === (1 << p) - 1) return 0;\n        if (memo[u][mask][isAlice] !== -1) return memo[u][mask][isAlice];\n\n        if (isAlice === 1) {\n            let best = 0;\n            for (let nxt = 0; nxt < p; nxt++) {\n                if (!(mask & (1 << nxt))) {\n                    const d = dist[u][nxt + 1];\n                    const val = d + minimax(nxt + 1, mask | (1 << nxt), 0);\n                    if (val > best) best = val;\n                }\n            }\n            return memo[u][mask][isAlice] = best;\n        } else {\n            let best = 1e9;\n            for (let nxt = 0; nxt < p; nxt++) {\n                if (!(mask & (1 << nxt))) {\n                    const d = dist[u][nxt + 1];\n                    const val = d + minimax(nxt + 1, mask | (1 << nxt), 1);\n                    if (val < best) best = val;\n                }\n            }\n            return memo[u][mask][isAlice] = best;\n        }\n    }\n\n    return minimax(0, 0, 1);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-number-of-valid-strings-to-form-target-ii",
+  "number": 3292,
+  "patterns": [
+    "string-matching",
+    "greedy-general"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Function Matching",
+      "text": "For each word, concatenate word + '#' + target and compute the prefix function prefix function pi. This discovers the longest prefix of word ending at each character of target in linear time."
+    },
+    {
+      "level": 2,
+      "title": "Shifted Prefix Propagation",
+      "text": "If a prefix match of length L starts at index i, a valid prefix match of length at least L - 1 exists starting at index i + 1. Propagate this forward in one linear scan."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Jump Intervals",
+      "text": "With maximum forward reach known for every position, apply Jump Game II greedy interval expansion to find the minimum number of jumps to reach the end."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def minValidStrings(self, words: list[str], target: str) -> int:\n        n = len(target)\n        max_jump = [0] * n\n        \n        # For each word, compute KMP pi-array of (word + '#' + target)\n        # to find longest prefix of word matching starting at each position in target\n        for w in words:\n            s = w + '#' + target\n            m = len(w)\n            total_len = len(s)\n            pi = [0] * total_len\n            j = 0\n            for i in range(1, total_len):\n                while j > 0 and s[i] != s[j]:\n                    j = pi[j - 1]\n                if s[i] == s[j]:\n                    j += 1\n                pi[i] = j\n                \n            # For characters in target, update max_jump for the start index\n            # s[m + 1 + k] corresponds to target[k]\n            # pi[m + 1 + k] is match length ending at target[k]\n            # So start index is k - match_len + 1\n            for k in range(n):\n                match_len = pi[m + 1 + k]\n                if match_len > 0:\n                    start_idx = k - match_len + 1\n                    if match_len > max_jump[start_idx]:\n                        max_jump[start_idx] = match_len\n                        \n        # Propagate: if at start_idx we have match_len, then at start_idx + 1 we can match at least match_len - 1\n        for i in range(n - 1):\n            if max_jump[i] - 1 > max_jump[i + 1]:\n                max_jump[i + 1] = max_jump[i] - 1\n                \n        # Jump Game BFS greedy traversal\n        jumps = 0\n        curr_end = 0\n        farthest = 0\n        \n        for i in range(n):\n            if i + max_jump[i] > farthest:\n                farthest = i + max_jump[i]\n            if i == curr_end:\n                if farthest == curr_end:\n                    return -1\n                jumps += 1\n                curr_end = farthest\n                if curr_end >= n:\n                    return jumps\n                    \n        return jumps if curr_end >= n else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(sum(|words|) + |words| * |target|)",
+    "space": "O(max(|words|) + |target|)",
+    "variables": [
+      "|words|: number of words",
+      "|target|: length of target string"
+    ],
+    "notes": "KMP runs in linear time for each word string concatenated with target.",
+    "whyNaiveFails": "O(|target|^2) trie traversals encounter TLE when |target| reaches 5 * 10^4.",
+    "spaceTimeTradeoff": "Linear prefix function arrays reused per word.",
+    "interviewerExpectation": "Uses KMP prefix function or Aho-Corasick with Jump Game interval expansion."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minValidStrings(self, words: list[str], target: str) -> int:\n        n = len(target)\n        max_jump = [0] * n\n        \n        # For each word, compute KMP pi-array of (word + '#' + target)\n        # to find longest prefix of word matching starting at each position in target\n        for w in words:\n            s = w + '#' + target\n            m = len(w)\n            total_len = len(s)\n            pi = [0] * total_len\n            j = 0\n            for i in range(1, total_len):\n                while j > 0 and s[i] != s[j]:\n                    j = pi[j - 1]\n                if s[i] == s[j]:\n                    j += 1\n                pi[i] = j\n                \n            # For characters in target, update max_jump for the start index\n            # s[m + 1 + k] corresponds to target[k]\n            # pi[m + 1 + k] is match length ending at target[k]\n            # So start index is k - match_len + 1\n            for k in range(n):\n                match_len = pi[m + 1 + k]\n                if match_len > 0:\n                    start_idx = k - match_len + 1\n                    if match_len > max_jump[start_idx]:\n                        max_jump[start_idx] = match_len\n                        \n        # Propagate: if at start_idx we have match_len, then at start_idx + 1 we can match at least match_len - 1\n        for i in range(n - 1):\n            if max_jump[i] - 1 > max_jump[i + 1]:\n                max_jump[i + 1] = max_jump[i] - 1\n                \n        # Jump Game BFS greedy traversal\n        jumps = 0\n        curr_end = 0\n        farthest = 0\n        \n        for i in range(n):\n            if i + max_jump[i] > farthest:\n                farthest = i + max_jump[i]\n            if i == curr_end:\n                if farthest == curr_end:\n                    return -1\n                jumps += 1\n                curr_end = farthest\n                if curr_end >= n:\n                    return jumps\n                    \n        return jumps if curr_end >= n else -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <string>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minValidStrings(std::vector<std::string>& words, std::string target) {\n        int n = target.size();\n        std::vector<int> max_jump(n, 0);\n        \n        for (const auto& w : words) {\n            std::string s = w + '#' + target;\n            int m = w.size();\n            int total_len = s.size();\n            std::vector<int> pi(total_len, 0);\n            int j = 0;\n            for (int i = 1; i < total_len; ++i) {\n                while (j > 0 && s[i] != s[j]) j = pi[j - 1];\n                if (s[i] == s[j]) j++;\n                pi[i] = j;\n            }\n            \n            for (int k = 0; k < n; ++k) {\n                int match_len = pi[m + 1 + k];\n                if (match_len > 0) {\n                    int start_idx = k - match_len + 1;\n                    if (match_len > max_jump[start_idx]) {\n                        max_jump[start_idx] = match_len;\n                    }\n                }\n            }\n        }\n        \n        for (int i = 0; i < n - 1; ++i) {\n            if (max_jump[i] - 1 > max_jump[i + 1]) {\n                max_jump[i + 1] = max_jump[i] - 1;\n            }\n        }\n        \n        int jumps = 0, curr_end = 0, farthest = 0;\n        for (int i = 0; i < n; ++i) {\n            farthest = std::max(farthest, i + max_jump[i]);\n            if (i == curr_end) {\n                if (farthest == curr_end) return -1;\n                jumps++;\n                curr_end = farthest;\n                if (curr_end >= n) return jumps;\n            }\n        }\n        return curr_end >= n ? jumps : -1;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minValidStrings(String[] words, String target) {\n        int n = target.length();\n        int[] maxJump = new int[n];\n\n        for (String w : words) {\n            String s = w + \"#\" + target;\n            int m = w.length();\n            int totalLen = s.length();\n            int[] pi = new int[totalLen];\n            int j = 0;\n            for (int i = 1; i < totalLen; i++) {\n                while (j > 0 && s.charAt(i) != s.charAt(j)) j = pi[j - 1];\n                if (s.charAt(i) == s.charAt(j)) j++;\n                pi[i] = j;\n            }\n\n            for (int k = 0; k < n; k++) {\n                int matchLen = pi[m + 1 + k];\n                if (matchLen > 0) {\n                    int startIdx = k - matchLen + 1;\n                    if (matchLen > maxJump[startIdx]) {\n                        maxJump[startIdx] = matchLen;\n                    }\n                }\n            }\n        }\n\n        for (int i = 0; i < n - 1; i++) {\n            if (maxJump[i] - 1 > maxJump[i + 1]) {\n                maxJump[i + 1] = maxJump[i] - 1;\n            }\n        }\n\n        int jumps = 0, currEnd = 0, farthest = 0;\n        for (int i = 0; i < n; i++) {\n            farthest = Math.max(farthest, i + maxJump[i]);\n            if (i == currEnd) {\n                if (farthest == currEnd) return -1;\n                jumps++;\n                currEnd = farthest;\n                if (currEnd >= n) return jumps;\n            }\n        }\n        return currEnd >= n ? jumps : -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minValidStrings = function(words, target) {\n    const n = target.length;\n    const maxJump = new Int32Array(n);\n\n    for (const w of words) {\n        const s = w + '#' + target;\n        const m = w.length;\n        const totalLen = s.length;\n        const pi = new Int32Array(totalLen);\n        let j = 0;\n        for (let i = 1; i < totalLen; i++) {\n            while (j > 0 && s[i] !== s[j]) j = pi[j - 1];\n            if (s[i] === s[j]) j++;\n            pi[i] = j;\n        }\n\n        for (let k = 0; k < n; k++) {\n            const matchLen = pi[m + 1 + k];\n            if (matchLen > 0) {\n                const startIdx = k - matchLen + 1;\n                if (matchLen > maxJump[startIdx]) {\n                    maxJump[startIdx] = matchLen;\n                }\n            }\n        }\n    }\n\n    for (let i = 0; i < n - 1; i++) {\n        if (maxJump[i] - 1 > maxJump[i + 1]) {\n            maxJump[i + 1] = maxJump[i] - 1;\n        }\n    }\n\n    let jumps = 0, currEnd = 0, farthest = 0;\n    for (let i = 0; i < n; i++) {\n        if (i + maxJump[i] > farthest) farthest = i + maxJump[i];\n        if (i === currEnd) {\n            if (farthest === currEnd) return -1;\n            jumps++;\n            currEnd = farthest;\n            if (currEnd >= n) return jumps;\n        }\n    }\n    return currEnd >= n ? jumps : -1;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

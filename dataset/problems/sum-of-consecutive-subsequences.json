@@ -1,0 +1,79 @@
+{
+  "slug": "sum-of-consecutive-subsequences",
+  "number": 3299,
+  "patterns": [
+    "dp-1d-fib-linear",
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subsequence Decomposition",
+      "text": "Decompose the sum into strictly increasing subsequences of length at least 2, strictly decreasing subsequences of length at least 2, and single-element subsequences."
+    },
+    {
+      "level": 2,
+      "title": "Symmetry via Reversal",
+      "text": "Decreasing subsequences in nums correspond exactly to increasing subsequences in the reversed array nums[::-1], allowing reuse of the same transition logic."
+    },
+    {
+      "level": 3,
+      "title": "Dynamic Contribution Updates",
+      "text": "Maintain f[v] for the count of sequences ending at v and g[v] for their sum. When processing v, extend all sequences ending at v - 1 and record the newly formed sums."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def getSum(self, nums: list[int]) -> int:\n        MOD = 1_000_000_007\n        \n        def calc(arr: list[int]) -> int:\n            f = {}\n            g = {}\n            ans = 0\n            for v in arr:\n                # Sequences of length >= 2 ending at v by extending v - 1\n                cnt = f.get(v - 1, 0)\n                sum_val = (g.get(v - 1, 0) + cnt * v) % MOD\n                ans = (ans + sum_val) % MOD\n                \n                # Update tables for v: include sequences extending v - 1, plus single element v\n                f[v] = (f.get(v, 0) + cnt + 1) % MOD\n                g[v] = (g.get(v, 0) + sum_val + v) % MOD\n            return ans\n            \n        x = calc(nums)\n        y = calc(nums[::-1])\n        s = sum(nums) % MOD\n        \n        return (x + y + s) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums array"
+    ],
+    "notes": "Two linear scans with hash map frequency lookups.",
+    "whyNaiveFails": "Generating all 2^n subsequences leads to immediate exponential TLE.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for count and sum hash maps.",
+    "interviewerExpectation": "Applies contribution technique and array reversal to unify increasing and decreasing subsequence DP."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def getSum(self, nums: list[int]) -> int:\n        MOD = 1_000_000_007\n        \n        def calc(arr: list[int]) -> int:\n            f = {}\n            g = {}\n            ans = 0\n            for v in arr:\n                # Sequences of length >= 2 ending at v by extending v - 1\n                cnt = f.get(v - 1, 0)\n                sum_val = (g.get(v - 1, 0) + cnt * v) % MOD\n                ans = (ans + sum_val) % MOD\n                \n                # Update tables for v: include sequences extending v - 1, plus single element v\n                f[v] = (f.get(v, 0) + cnt + 1) % MOD\n                g[v] = (g.get(v, 0) + sum_val + v) % MOD\n            return ans\n            \n        x = calc(nums)\n        y = calc(nums[::-1])\n        s = sum(nums) % MOD\n        \n        return (x + y + s) % MOD",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int getSum(std::vector<int>& nums) {\n        long long MOD = 1000000007;\n        \n        auto calc = [&](const std::vector<int>& arr) {\n            std::unordered_map<int, long long> f, g;\n            long long ans = 0;\n            for (int v : arr) {\n                long long cnt = f.count(v - 1) ? f[v - 1] : 0;\n                long long sum_val = ((g.count(v - 1) ? g[v - 1] : 0) + cnt * v) % MOD;\n                ans = (ans + sum_val) % MOD;\n                \n                f[v] = (f[v] + cnt + 1) % MOD;\n                g[v] = (g[v] + sum_val + v) % MOD;\n            }\n            return ans;\n        };\n        \n        long long x = calc(nums);\n        std::vector<int> rev_nums = nums;\n        std::reverse(rev_nums.begin(), rev_nums.end());\n        long long y = calc(rev_nums);\n        \n        long long s = 0;\n        for (int v : nums) s = (s + v) % MOD;\n        \n        return (x + y + s) % MOD;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private final int MOD = 1_000_000_007;\n\n    public int getSum(int[] nums) {\n        long x = calc(nums);\n        int n = nums.length;\n        int[] rev = new int[n];\n        for (int i = 0; i < n; i++) rev[i] = nums[n - 1 - i];\n        long y = calc(rev);\n\n        long s = 0;\n        for (int v : nums) s = (s + v) % MOD;\n\n        return (int) ((x + y + s) % MOD);\n    }\n\n    private long calc(int[] arr) {\n        Map<Integer, Long> f = new HashMap<>();\n        Map<Integer, Long> g = new HashMap<>();\n        long ans = 0;\n\n        for (int v : arr) {\n            long cnt = f.getOrDefault(v - 1, 0L);\n            long sumVal = (g.getOrDefault(v - 1, 0L) + cnt * v) % MOD;\n            ans = (ans + sumVal) % MOD;\n\n            f.put(v, (f.getOrDefault(v, 0L) + cnt + 1) % MOD);\n            g.put(v, (g.getOrDefault(v, 0L) + sumVal + v) % MOD);\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var getSum = function(nums) {\n    const MOD = 1000000007n;\n\n    function calc(arr) {\n        const f = new Map();\n        const g = new Map();\n        let ans = 0n;\n\n        for (const val of arr) {\n            const v = BigInt(val);\n            const prev = Number(v - 1n);\n            const currKey = Number(v);\n\n            const cnt = f.get(prev) || 0n;\n            const prevSum = g.get(prev) || 0n;\n            const sumVal = (prevSum + cnt * v) % MOD;\n            ans = (ans + sumVal) % MOD;\n\n            f.set(currKey, ((f.get(currKey) || 0n) + cnt + 1n) % MOD);\n            g.set(currKey, ((g.get(currKey) || 0n) + sumVal + v) % MOD);\n        }\n        return ans;\n    }\n\n    const x = calc(nums);\n    const rev = [...nums].reverse();\n    const y = calc(rev);\n\n    let s = 0n;\n    for (const v of nums) s = (s + BigInt(v)) % MOD;\n\n    return Number((x + y + s) % MOD);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

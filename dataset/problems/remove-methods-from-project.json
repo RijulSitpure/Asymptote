@@ -1,0 +1,79 @@
+{
+  "slug": "remove-methods-from-project",
+  "number": 3310,
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Suspicious Reachability Component",
+      "text": "Run breadth-first search from method k to identify all methods directly or indirectly invoked by k."
+    },
+    {
+      "level": 2,
+      "title": "External Invocation Check",
+      "text": "Check all invocation edges (u, v). If an edge exists where u is not suspicious but v is suspicious, no methods can be removed."
+    },
+    {
+      "level": 3,
+      "title": "Filtering Output",
+      "text": "If no external invocation enters the suspicious group, return all non-suspicious methods. Otherwise return all n methods."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def remainingMethods(self, n: int, k: int, invocations: list[list[int]]) -> list[int]:\n        from collections import deque\n        adj = [[] for _ in range(n)]\n        for u, v in invocations:\n            adj[u].append(v)\n            \n        # BFS to find all methods reachable from suspicious method k\n        suspicious = set()\n        q = deque([k])\n        suspicious.add(k)\n        while q:\n            u = q.popleft()\n            for v in adj[u]:\n                if v not in suspicious:\n                    suspicious.add(v)\n                    q.append(v)\n                    \n        # Check if any external method invokes a suspicious method\n        for u, v in invocations:\n            if u not in suspicious and v in suspicious:\n                return list(range(n))\n                \n        return [i for i in range(n) if i not in suspicious]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(V + E)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of methods (n)",
+      "E: number of invocations"
+    ],
+    "notes": "BFS explores reachable nodes in O(V + E). Edge inspection takes O(E) time.",
+    "whyNaiveFails": "Repeated full graph searches per node cause quadratic slowdown.",
+    "spaceTimeTradeoff": "O(V + E) memory for adjacency list and visited boolean array.",
+    "interviewerExpectation": "Models method dependency as a directed graph reachable component with boundary cross-edge verification."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def remainingMethods(self, n: int, k: int, invocations: list[list[int]]) -> list[int]:\n        from collections import deque\n        adj = [[] for _ in range(n)]\n        for u, v in invocations:\n            adj[u].append(v)\n            \n        # BFS to find all methods reachable from suspicious method k\n        suspicious = set()\n        q = deque([k])\n        suspicious.add(k)\n        while q:\n            u = q.popleft()\n            for v in adj[u]:\n                if v not in suspicious:\n                    suspicious.add(v)\n                    q.append(v)\n                    \n        # Check if any external method invokes a suspicious method\n        for u, v in invocations:\n            if u not in suspicious and v in suspicious:\n                return list(range(n))\n                \n        return [i for i in range(n) if i not in suspicious]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <unordered_set>\n#include <numeric>\n\nclass Solution {\npublic:\n    std::vector<int> remainingMethods(int n, int k, std::vector<std::vector<int>>& invocations) {\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& edge : invocations) {\n            adj[edge[0]].push_back(edge[1]);\n        }\n        \n        std::vector<bool> suspicious(n, false);\n        std::queue<int> q;\n        q.push(k);\n        suspicious[k] = true;\n        \n        while (!q.empty()) {\n            int u = q.front(); q.pop();\n            for (int v : adj[u]) {\n                if (!suspicious[v]) {\n                    suspicious[v] = true;\n                    q.push(v);\n                }\n            }\n        }\n        \n        for (const auto& edge : invocations) {\n            if (!suspicious[edge[0]] && suspicious[edge[1]]) {\n                std::vector<int> all(n);\n                std::iota(all.begin(), all.end(), 0);\n                return all;\n            }\n        }\n        \n        std::vector<int> res;\n        for (int i = 0; i < n; ++i) {\n            if (!suspicious[i]) res.push_back(i);\n        }\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public List<Integer> remainingMethods(int n, int k, int[][] invocations) {\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] edge : invocations) {\n            adj.get(edge[0]).add(edge[1]);\n        }\n\n        boolean[] suspicious = new boolean[n];\n        Queue<Integer> q = new LinkedList<>();\n        q.offer(k);\n        suspicious[k] = true;\n\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            for (int v : adj.get(u)) {\n                if (!suspicious[v]) {\n                    suspicious[v] = true;\n                    q.offer(v);\n                }\n            }\n        }\n\n        for (int[] edge : invocations) {\n            if (!suspicious[edge[0]] && suspicious[edge[1]]) {\n                List<Integer> all = new ArrayList<>();\n                for (int i = 0; i < n; i++) all.add(i);\n                return all;\n            }\n        }\n\n        List<Integer> res = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            if (!suspicious[i]) res.add(i);\n        }\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var remainingMethods = function(n, k, invocations) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of invocations) {\n        adj[u].push(v);\n    }\n\n    const suspicious = new Uint8Array(n);\n    const q = [k];\n    suspicious[k] = 1;\n\n    let head = 0;\n    while (head < q.length) {\n        const u = q[head++];\n        for (const v of adj[u]) {\n            if (!suspicious[v]) {\n                suspicious[v] = 1;\n                q.push(v);\n            }\n        }\n    }\n\n    for (const [u, v] of invocations) {\n        if (!suspicious[u] && suspicious[v]) {\n            const all = [];\n            for (let i = 0; i < n; i++) all.push(i);\n            return all;\n        }\n    }\n\n    const res = [];\n    for (let i = 0; i < n; i++) {\n        if (!suspicious[i]) res.push(i);\n    }\n    return res;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-number-of-valid-strings-to-form-target-i",
+  "number": 3291,
+  "patterns": [
+    "tree-trie-prefix",
+    "greedy-general"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Matching via Trie",
+      "text": "Store all word prefixes in a trie. For each starting index i in target, traverse the trie to find the maximum contiguous length that forms a valid prefix."
+    },
+    {
+      "level": 2,
+      "title": "Interval Reachability",
+      "text": "If at index i the longest valid prefix has length L, we can transition from index i to any index up to i + L."
+    },
+    {
+      "level": 3,
+      "title": "Jump Game Greedy Transition",
+      "text": "Convert this into Jump Game II: greedily track the farthest reachable boundary and increment jump count whenever reaching the current interval end."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def minValidStrings(self, words: list[str], target: str) -> int:\n        n = len(target)\n        \n        # Build Trie of all word prefixes\n        trie = {}\n        for w in words:\n            curr = trie\n            for ch in w:\n                if ch not in curr:\n                    curr[ch] = {}\n                curr = curr[ch]\n                \n        # For each index i, find max match length\n        max_jump = [0] * n\n        for i in range(n):\n            curr = trie\n            length = 0\n            for j in range(i, n):\n                ch = target[j]\n                if ch not in curr:\n                    break\n                curr = curr[ch]\n                length += 1\n            max_jump[i] = length\n            \n        # Jump Game BFS to find min jumps to reach n\n        jumps = 0\n        curr_end = 0\n        farthest = 0\n        \n        for i in range(n):\n            if i + max_jump[i] > farthest:\n                farthest = i + max_jump[i]\n            if i == curr_end:\n                if farthest == curr_end:\n                    return -1\n                jumps += 1\n                curr_end = farthest\n                if curr_end >= n:\n                    return jumps\n                    \n        return jumps if curr_end >= n else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(W + |target|^2)",
+    "space": "O(W + |target|)",
+    "variables": [
+      "W: total characters in words",
+      "|target|: length of target string"
+    ],
+    "notes": "Building trie takes O(W). For Version I with |target| <= 5000, checking trie takes O(|target|^2). Jump game takes O(|target|).",
+    "whyNaiveFails": "Recursive branch exploration without greedy jump game leads to exponential paths.",
+    "spaceTimeTradeoff": "Trie stores up to W nodes.",
+    "interviewerExpectation": "Combines trie prefix exploration with Jump Game greedy interval advancement."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minValidStrings(self, words: list[str], target: str) -> int:\n        n = len(target)\n        \n        # Build Trie of all word prefixes\n        trie = {}\n        for w in words:\n            curr = trie\n            for ch in w:\n                if ch not in curr:\n                    curr[ch] = {}\n                curr = curr[ch]\n                \n        # For each index i, find max match length\n        max_jump = [0] * n\n        for i in range(n):\n            curr = trie\n            length = 0\n            for j in range(i, n):\n                ch = target[j]\n                if ch not in curr:\n                    break\n                curr = curr[ch]\n                length += 1\n            max_jump[i] = length\n            \n        # Jump Game BFS to find min jumps to reach n\n        jumps = 0\n        curr_end = 0\n        farthest = 0\n        \n        for i in range(n):\n            if i + max_jump[i] > farthest:\n                farthest = i + max_jump[i]\n            if i == curr_end:\n                if farthest == curr_end:\n                    return -1\n                jumps += 1\n                curr_end = farthest\n                if curr_end >= n:\n                    return jumps\n                    \n        return jumps if curr_end >= n else -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <string>\n#include <unordered_map>\n#include <algorithm>\n\nstruct TrieNode {\n    std::unordered_map<char, TrieNode*> next;\n};\n\nclass Solution {\npublic:\n    int minValidStrings(std::vector<std::string>& words, std::string target) {\n        TrieNode* root = new TrieNode();\n        for (const auto& w : words) {\n            TrieNode* curr = root;\n            for (char ch : w) {\n                if (!curr->next.count(ch)) curr->next[ch] = new TrieNode();\n                curr = curr->next[ch];\n            }\n        }\n        \n        int n = target.size();\n        std::vector<int> max_jump(n, 0);\n        for (int i = 0; i < n; ++i) {\n            TrieNode* curr = root;\n            int len = 0;\n            for (int j = i; j < n; ++j) {\n                char ch = target[j];\n                if (!curr->next.count(ch)) break;\n                curr = curr->next[ch];\n                len++;\n            }\n            max_jump[i] = len;\n        }\n        \n        int jumps = 0, curr_end = 0, farthest = 0;\n        for (int i = 0; i < n; ++i) {\n            farthest = std::max(farthest, i + max_jump[i]);\n            if (i == curr_end) {\n                if (farthest == curr_end) return -1;\n                jumps++;\n                curr_end = farthest;\n                if (curr_end >= n) return jumps;\n            }\n        }\n        return curr_end >= n ? jumps : -1;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class TrieNode {\n        Map<Character, TrieNode> next = new HashMap<>();\n    }\n\n    public int minValidStrings(String[] words, String target) {\n        TrieNode root = new TrieNode();\n        for (String w : words) {\n            TrieNode curr = root;\n            for (char ch : w.toCharArray()) {\n                curr.next.putIfAbsent(ch, new TrieNode());\n                curr = curr.next.get(ch);\n            }\n        }\n\n        int n = target.length();\n        int[] maxJump = new int[n];\n        for (int i = 0; i < n; i++) {\n            TrieNode curr = root;\n            int len = 0;\n            for (int j = i; j < n; j++) {\n                char ch = target.charAt(j);\n                if (!curr.next.containsKey(ch)) break;\n                curr = curr.next.get(ch);\n                len++;\n            }\n            maxJump[i] = len;\n        }\n\n        int jumps = 0, currEnd = 0, farthest = 0;\n        for (int i = 0; i < n; i++) {\n            farthest = Math.max(farthest, i + maxJump[i]);\n            if (i == currEnd) {\n                if (farthest == currEnd) return -1;\n                jumps++;\n                currEnd = farthest;\n                if (currEnd >= n) return jumps;\n            }\n        }\n        return currEnd >= n ? jumps : -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minValidStrings = function(words, target) {\n    const root = {};\n    for (const w of words) {\n        let curr = root;\n        for (let i = 0; i < w.length; i++) {\n            const ch = w[i];\n            if (!curr[ch]) curr[ch] = {};\n            curr = curr[ch];\n        }\n    }\n\n    const n = target.length;\n    const maxJump = new Int32Array(n);\n    for (let i = 0; i < n; i++) {\n        let curr = root;\n        let len = 0;\n        for (let j = i; j < n; j++) {\n            const ch = target[j];\n            if (!curr[ch]) break;\n            curr = curr[ch];\n            len++;\n        }\n        maxJump[i] = len;\n    }\n\n    let jumps = 0, currEnd = 0, farthest = 0;\n    for (let i = 0; i < n; i++) {\n        if (i + maxJump[i] > farthest) farthest = i + maxJump[i];\n        if (i === currEnd) {\n            if (farthest === currEnd) return -1;\n            jumps++;\n            currEnd = farthest;\n            if (currEnd >= n) return jumps;\n        }\n    }\n    return currEnd >= n ? jumps : -1;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

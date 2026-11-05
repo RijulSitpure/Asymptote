@@ -1,0 +1,79 @@
+{
+  "slug": "sum-of-consecutive-subarrays",
+  "number": 3284,
+  "patterns": [
+    "prefix-sum-hashmap",
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Separating Directions",
+      "text": "A consecutive subarray either has common adjacent difference +1 (strictly increasing) or -1 (strictly decreasing)."
+    },
+    {
+      "level": 2,
+      "title": "Contribution Technique",
+      "text": "For a contiguous run of length L with step diff, maintain the running sum of all ending subarrays at index i by multiplying each incoming element by its count of extensions."
+    },
+    {
+      "level": 3,
+      "title": "Inclusion-Exclusion on Singletons",
+      "text": "Subarrays of length 1 are consecutive under both difference +1 and difference -1 definitions. Subtract the sum of all individual elements to avoid double counting."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def getSum(self, nums: list[int]) -> int:\n        MOD = 1_000_000_007\n        n = len(nums)\n        if n == 0:\n            return 0\n            \n        def sum_consecutive(diff: int) -> int:\n            total = 0\n            curr_sum = nums[0]\n            curr_cnt = 1\n            total = (total + curr_sum) % MOD\n            \n            for i in range(1, n):\n                if nums[i] - nums[i - 1] == diff:\n                    curr_sum = (curr_sum + nums[i] * (curr_cnt + 1)) % MOD\n                    curr_cnt += 1\n                else:\n                    curr_sum = nums[i]\n                    curr_cnt = 1\n                total = (total + curr_sum) % MOD\n            return total\n            \n        inc_sum = sum_consecutive(1)\n        dec_sum = sum_consecutive(-1)\n        single_elements_sum = sum(nums) % MOD\n        \n        # Single element subarrays were counted in both inc_sum and dec_sum\n        return (inc_sum + dec_sum - single_elements_sum) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(1)",
+    "variables": [
+      "n: length of nums array"
+    ],
+    "notes": "Two linear scans compute increasing and decreasing run sums in O(n) total time.",
+    "whyNaiveFails": "Evaluating all O(n^2) subarrays directly leads to TLE on large arrays.",
+    "spaceTimeTradeoff": "Maintains running totals in O(1) auxiliary memory.",
+    "interviewerExpectation": "Decomposes the condition into increasing and decreasing passes and avoids double-counting single elements."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def getSum(self, nums: list[int]) -> int:\n        MOD = 1_000_000_007\n        n = len(nums)\n        if n == 0:\n            return 0\n            \n        def sum_consecutive(diff: int) -> int:\n            total = 0\n            curr_sum = nums[0]\n            curr_cnt = 1\n            total = (total + curr_sum) % MOD\n            \n            for i in range(1, n):\n                if nums[i] - nums[i - 1] == diff:\n                    curr_sum = (curr_sum + nums[i] * (curr_cnt + 1)) % MOD\n                    curr_cnt += 1\n                else:\n                    curr_sum = nums[i]\n                    curr_cnt = 1\n                total = (total + curr_sum) % MOD\n            return total\n            \n        inc_sum = sum_consecutive(1)\n        dec_sum = sum_consecutive(-1)\n        single_elements_sum = sum(nums) % MOD\n        \n        # Single element subarrays were counted in both inc_sum and dec_sum\n        return (inc_sum + dec_sum - single_elements_sum) % MOD",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n\nclass Solution {\npublic:\n    int getSum(std::vector<int>& nums) {\n        long long MOD = 1000000007;\n        int n = nums.size();\n        if (n == 0) return 0;\n        \n        auto sum_consecutive = [&](int diff) {\n            long long total = 0;\n            long long curr_sum = nums[0];\n            long long curr_cnt = 1;\n            total = (total + curr_sum) % MOD;\n            \n            for (int i = 1; i < n; ++i) {\n                if (nums[i] - nums[i - 1] == diff) {\n                    curr_sum = (curr_sum + (long long)nums[i] * (curr_cnt + 1)) % MOD;\n                    curr_cnt++;\n                } else {\n                    curr_sum = nums[i];\n                    curr_cnt = 1;\n                }\n                total = (total + curr_sum) % MOD;\n            }\n            return total;\n        };\n        \n        long long inc_sum = sum_consecutive(1);\n        long long dec_sum = sum_consecutive(-1);\n        long long singles = 0;\n        for (int x : nums) singles = (singles + x) % MOD;\n        \n        long long ans = (inc_sum + dec_sum - singles) % MOD;\n        if (ans < 0) ans += MOD;\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int getSum(int[] nums) {\n        long MOD = 1_000_000_007L;\n        int n = nums.length;\n        if (n == 0) return 0;\n\n        long incSum = sumConsecutive(nums, 1, MOD);\n        long decSum = sumConsecutive(nums, -1, MOD);\n        long singles = 0;\n        for (int x : nums) singles = (singles + x) % MOD;\n\n        long ans = (incSum + decSum - singles) % MOD;\n        if (ans < 0) ans += MOD;\n        return (int) ans;\n    }\n\n    private long sumConsecutive(int[] nums, int diff, long MOD) {\n        long total = 0;\n        long currSum = nums[0];\n        long currCnt = 1;\n        total = (total + currSum) % MOD;\n\n        for (int i = 1; i < nums.length; i++) {\n            if (nums[i] - nums[i - 1] == diff) {\n                currSum = (currSum + (long) nums[i] * (currCnt + 1)) % MOD;\n                currCnt++;\n            } else {\n                currSum = nums[i];\n                currCnt = 1;\n            }\n            total = (total + currSum) % MOD;\n        }\n        return total;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var getSum = function(nums) {\n    const MOD = 1000000007n;\n    const n = nums.length;\n    if (n === 0) return 0;\n\n    function sumConsecutive(diff) {\n        let total = 0n;\n        let currSum = BigInt(nums[0]);\n        let currCnt = 1n;\n        total = (total + currSum) % MOD;\n\n        for (let i = 1; i < n; i++) {\n            if (nums[i] - nums[i - 1] === diff) {\n                currSum = (currSum + BigInt(nums[i]) * (currCnt + 1n)) % MOD;\n                currCnt += 1n;\n            } else {\n                currSum = BigInt(nums[i]);\n                currCnt = 1n;\n            }\n            total = (total + currSum) % MOD;\n        }\n        return total;\n    }\n\n    const incSum = sumConsecutive(1);\n    const decSum = sumConsecutive(-1);\n    let singles = 0n;\n    for (const x of nums) singles = (singles + BigInt(x)) % MOD;\n\n    let ans = (incSum + decSum - singles) % MOD;\n    if (ans < 0n) ans += MOD;\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

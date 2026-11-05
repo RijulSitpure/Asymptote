@@ -1,0 +1,80 @@
+{
+  "slug": "find-a-safe-walk-through-a-grid",
+  "number": 3286,
+  "patterns": [
+    "graph-01-bfs",
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Shortest Path Equivalent",
+      "text": "Entering a cell with 1 reduces health by 1, while entering a cell with 0 costs 0. The goal is to find a path that minimizes total health loss."
+    },
+    {
+      "level": 2,
+      "title": "Zero-One BFS Structure",
+      "text": "Because all edge weights are either 0 or 1, a double-ended queue (0-1 BFS) finds the minimum damage in linear time without priority queue overhead."
+    },
+    {
+      "level": 3,
+      "title": "Health Condition",
+      "text": "Health must remain at least 1 upon reaching (m-1, n-1), which means total health loss from start to target must be strictly less than initial health."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def findSafeWalk(self, grid: list[list[int]], health: int) -> bool:\n        from collections import deque\n        m, n = len(grid), len(grid[0])\n        \n        # 0-1 BFS to find minimum health damage to reach (m-1, n-1)\n        dist = [[float('inf')] * n for _ in range(m)]\n        dist[0][0] = grid[0][0]\n        q = deque([(0, 0)])\n        \n        while q:\n            r, c = q.popleft()\n            if r == m - 1 and c == n - 1:\n                break\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    cost = grid[nr][nc]\n                    if dist[r][c] + cost < dist[nr][nc]:\n                        dist[nr][nc] = dist[r][c] + cost\n                        if cost == 0:\n                            q.appendleft((nr, nc))\n                        else:\n                            q.append((nr, nc))\n                            \n        return dist[m - 1][n - 1] < health\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n)",
+    "space": "O(m * n)",
+    "variables": [
+      "m: row count of grid",
+      "n: column count of grid"
+    ],
+    "notes": "0-1 BFS visits each cell at most a constant number of times.",
+    "whyNaiveFails": "Standard DFS backtracks over exponential paths without visiting order optimality.",
+    "spaceTimeTradeoff": "Distance table and deque require O(m * n) space.",
+    "interviewerExpectation": "Models grid traversal as 0-1 BFS shortest path to minimize damage."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def findSafeWalk(self, grid: list[list[int]], health: int) -> bool:\n        from collections import deque\n        m, n = len(grid), len(grid[0])\n        \n        # 0-1 BFS to find minimum health damage to reach (m-1, n-1)\n        dist = [[float('inf')] * n for _ in range(m)]\n        dist[0][0] = grid[0][0]\n        q = deque([(0, 0)])\n        \n        while q:\n            r, c = q.popleft()\n            if r == m - 1 and c == n - 1:\n                break\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < m and 0 <= nc < n:\n                    cost = grid[nr][nc]\n                    if dist[r][c] + cost < dist[nr][nc]:\n                        dist[nr][nc] = dist[r][c] + cost\n                        if cost == 0:\n                            q.appendleft((nr, nc))\n                        else:\n                            q.append((nr, nc))\n                            \n        return dist[m - 1][n - 1] < health",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <deque>\n\nclass Solution {\npublic:\n    bool findSafeWalk(std::vector<std::vector<int>>& grid, int health) {\n        int m = grid.size(), n = grid[0].size();\n        std::vector<std::vector<int>> dist(m, std::vector<int>(n, 1e9));\n        dist[0][0] = grid[0][0];\n        \n        std::deque<std::pair<int, int>> q;\n        q.push_back({0, 0});\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        \n        while (!q.empty()) {\n            auto [r, c] = q.front();\n            q.pop_front();\n            \n            for (int d = 0; d < 4; ++d) {\n                int nr = r + dirs[d][0], nc = c + dirs[d][1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int cost = grid[nr][nc];\n                    if (dist[r][c] + cost < dist[nr][nc]) {\n                        dist[nr][nc] = dist[r][c] + cost;\n                        if (cost == 0) q.push_front({nr, nc});\n                        else q.push_back({nr, nc});\n                    }\n                }\n            }\n        }\n        \n        return dist[m - 1][n - 1] < health;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public boolean findSafeWalk(List<List<Integer>> grid, int health) {\n        int m = grid.size(), n = grid.get(0).size();\n        int[][] dist = new int[m][n];\n        for (int[] row : dist) Arrays.fill(row, Integer.MAX_VALUE);\n        dist[0][0] = grid.get(0).get(0);\n\n        Deque<int[]> q = new ArrayDeque<>();\n        q.offer(new int[]{0, 0});\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n\n        while (!q.isEmpty()) {\n            int[] curr = q.pollFirst();\n            int r = curr[0], c = curr[1];\n\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int cost = grid.get(nr).get(nc);\n                    if (dist[r][c] + cost < dist[nr][nc]) {\n                        dist[nr][nc] = dist[r][c] + cost;\n                        if (cost == 0) q.offerFirst(new int[]{nr, nc});\n                        else q.offerLast(new int[]{nr, nc});\n                    }\n                }\n            }\n        }\n\n        return dist[m - 1][n - 1] < health;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var findSafeWalk = function(grid, health) {\n    const m = grid.length, n = grid[0].length;\n    const dist = Array.from({ length: m }, () => new Int32Array(n).fill(1e9));\n    dist[0][0] = grid[0][0];\n\n    const q = [[0, 0]];\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n\n    while (q.length > 0) {\n        const [r, c] = q.shift();\n        const curDist = dist[r][c];\n\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                const cost = grid[nr][nc];\n                if (curDist + cost < dist[nr][nc]) {\n                    dist[nr][nc] = curDist + cost;\n                    if (cost === 0) {\n                        q.unshift([nr, nc]);\n                    } else {\n                        q.push([nr, nc]);\n                    }\n                }\n            }\n        }\n    }\n\n    return dist[m - 1][n - 1] < health;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

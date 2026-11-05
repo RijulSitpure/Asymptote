@@ -1,0 +1,74 @@
+{
+  "slug": "find-top-performing-driver",
+  "number": 3308,
+  "patterns": [
+    "window-ranking",
+    "group-aggregate"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Metric Aggregation per Driver",
+      "text": "Join Vehicles, Trips, and Drivers. Group by fuel_type and driver_id to compute total distance and average rating rounded to 2 decimal places."
+    },
+    {
+      "level": 2,
+      "title": "Multi-Criteria Window Ranking",
+      "text": "Partition by fuel_type using window ranking ordered by rating descending, distance descending, and accidents ascending."
+    },
+    {
+      "level": 3,
+      "title": "Top Rank Filtering",
+      "text": "Filter for rows where rnk = 1 and order the final output by fuel_type ascending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH DriverStats AS (\n    SELECT \n        v.fuel_type,\n        d.driver_id,\n        ROUND(AVG(t.rating), 2) AS rating,\n        SUM(t.distance) AS distance,\n        d.accidents\n    FROM Vehicles v\n    JOIN Trips t ON v.vehicle_id = t.vehicle_id\n    JOIN Drivers d ON v.driver_id = d.driver_id\n    GROUP BY v.fuel_type, d.driver_id, d.accidents\n),\nRanked AS (\n    SELECT \n        fuel_type,\n        driver_id,\n        rating,\n        distance,\n        RANK() OVER (\n            PARTITION BY fuel_type \n            ORDER BY rating DESC, distance DESC, accidents ASC\n        ) AS rnk\n    FROM DriverStats\n)\nSELECT fuel_type, driver_id, rating, distance\nFROM Ranked\nWHERE rnk = 1\nORDER BY fuel_type ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(T + V + D log D)",
+    "space": "O(T + V + D)",
+    "variables": [
+      "T: trips rows",
+      "V: vehicles rows",
+      "D: drivers rows"
+    ],
+    "notes": "Hash join between tables, grouping by fuel type and driver, followed by window ranking.",
+    "whyNaiveFails": "Correlated subqueries for multi-criterion tie-breaking become slow and error-prone.",
+    "spaceTimeTradeoff": "O(T + V + D) memory for intermediate hash joins.",
+    "interviewerExpectation": "Uses CTE with multi-tier tie-breaking window ranking partitioned by fuel type."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH DriverStats AS (\n    SELECT \n        v.fuel_type,\n        d.driver_id,\n        ROUND(AVG(t.rating), 2) AS rating,\n        SUM(t.distance) AS distance,\n        d.accidents\n    FROM Vehicles v\n    JOIN Trips t ON v.vehicle_id = t.vehicle_id\n    JOIN Drivers d ON v.driver_id = d.driver_id\n    GROUP BY v.fuel_type, d.driver_id, d.accidents\n),\nRanked AS (\n    SELECT \n        fuel_type,\n        driver_id,\n        rating,\n        distance,\n        RANK() OVER (\n            PARTITION BY fuel_type \n            ORDER BY rating DESC, distance DESC, accidents ASC\n        ) AS rnk\n    FROM DriverStats\n)\nSELECT fuel_type, driver_id, rating, distance\nFROM Ranked\nWHERE rnk = 1\nORDER BY fuel_type ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH DriverStats AS (\n    SELECT \n        v.fuel_type,\n        d.driver_id,\n        ROUND(AVG(t.rating)::numeric, 2) AS rating,\n        SUM(t.distance) AS distance,\n        d.accidents\n    FROM Vehicles v\n    JOIN Trips t ON v.vehicle_id = t.vehicle_id\n    JOIN Drivers d ON v.driver_id = d.driver_id\n    GROUP BY v.fuel_type, d.driver_id, d.accidents\n),\nRanked AS (\n    SELECT \n        fuel_type,\n        driver_id,\n        rating,\n        distance,\n        RANK() OVER (\n            PARTITION BY fuel_type \n            ORDER BY rating DESC, distance DESC, accidents ASC\n        ) AS rnk\n    FROM DriverStats\n)\nSELECT fuel_type, driver_id, rating, distance\nFROM Ranked\nWHERE rnk = 1\nORDER BY fuel_type ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef get_top_performing_drivers(drivers: pd.DataFrame, vehicles: pd.DataFrame, trips: pd.DataFrame) -> pd.DataFrame:\n    df = trips.merge(vehicles, on='vehicle_id').merge(drivers, on='driver_id')\n    stats = df.groupby(['fuel_type', 'driver_id', 'accidents'], as_index=False).agg(\n        rating=('rating', lambda x: round(x.mean(), 2)),\n        distance=('distance', 'sum')\n    )\n    stats['rnk'] = stats.groupby('fuel_type').apply(\n        lambda g: g.assign(\n            rnk=g.sort_values(['rating', 'distance', 'accidents'], ascending=[False, False, True])['rating'].rank(method='min', ascending=False)\n        )\n    ).reset_index(drop=True)['rnk']\n    \n    # Sort and rank properly\n    stats = stats.sort_values(by=['fuel_type', 'rating', 'distance', 'accidents'], ascending=[True, False, False, True])\n    stats['rnk'] = stats.groupby('fuel_type').cumcount() + 1\n    return stats[stats['rnk'] == 1][['fuel_type', 'driver_id', 'rating', 'distance']].sort_values('fuel_type')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

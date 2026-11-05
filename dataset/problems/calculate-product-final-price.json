@@ -1,0 +1,72 @@
+{
+  "slug": "calculate-product-final-price",
+  "number": 3293,
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Left Outer Join Requirement",
+      "text": "Products without an entry in Discounts must still appear in the output with their original prices unchanged."
+    },
+    {
+      "level": 2,
+      "title": "Coalescing Missing Discounts",
+      "text": "Use coalesce(d.discount, 0) so categories with NULL discounts evaluate to a zero percentage discount."
+    },
+    {
+      "level": 3,
+      "title": "Discount Arithmetic and Ordering",
+      "text": "Calculate final_price as p.price * (1 - coalesce(d.discount, 0) / 100.0) rounded to 2 decimal places and order by product_id ascending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    p.product_id,\n    ROUND(p.price * (1 - COALESCE(d.discount, 0) / 100.0), 2) AS final_price,\n    p.category\nFROM Products p\nLEFT JOIN Discounts d ON p.category = d.category\nORDER BY p.product_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(P log P + D)",
+    "space": "O(P + D)",
+    "variables": [
+      "P: number of products",
+      "D: number of discount categories"
+    ],
+    "notes": "Hash join between Products and Discounts followed by sorting by product_id.",
+    "whyNaiveFails": "Inner join would discard products whose categories have no discount.",
+    "spaceTimeTradeoff": "O(D) memory for joining category discount table.",
+    "interviewerExpectation": "Applies LEFT JOIN and COALESCE to handle unmatched discount categories."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    p.product_id,\n    ROUND(p.price * (1 - COALESCE(d.discount, 0) / 100.0), 2) AS final_price,\n    p.category\nFROM Products p\nLEFT JOIN Discounts d ON p.category = d.category\nORDER BY p.product_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    p.product_id,\n    ROUND(p.price * (1 - COALESCE(d.discount, 0) / 100.0), 2) AS final_price,\n    p.category\nFROM Products p\nLEFT JOIN Discounts d ON p.category = d.category\nORDER BY p.product_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef calculate_final_prices(products: pd.DataFrame, discounts: pd.DataFrame) -> pd.DataFrame:\n    merged = pd.merge(products, discounts, on='category', how='left')\n    merged['discount'] = merged['discount'].fillna(0)\n    merged['final_price'] = (merged['price'] * (1 - merged['discount'] / 100.0)).round(2)\n    return merged[['product_id', 'final_price', 'category']].sort_values('product_id')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

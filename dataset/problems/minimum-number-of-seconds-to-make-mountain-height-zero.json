@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-number-of-seconds-to-make-mountain-height-zero",
+  "number": 3296,
+  "patterns": [
+    "binary-search-answer",
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monotonic Work Feasibility",
+      "text": "If all workers can reduce the mountain to height 0 within T seconds, they can also do so in any time greater than T."
+    },
+    {
+      "level": 2,
+      "title": "Quadratic Work Closed Form",
+      "text": "A worker with base speed t can reduce x height units in t * x * (x + 1) / 2 seconds. Given T seconds, solve the quadratic inequality to find maximum x = floor((-1 + sqrt(1 + 8T/t)) / 2)."
+    },
+    {
+      "level": 3,
+      "title": "Binary Search Bound",
+      "text": "Set search range between 1 and min(workerTimes) * mountainHeight * (mountainHeight + 1) / 2. In each iteration, sum x across all workers and adjust binary search boundaries."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def minNumberOfSeconds(self, mountainHeight: int, workerTimes: list[int]) -> int:\n        import math\n        \n        def check(seconds: int) -> bool:\n            total_height = 0\n            for t in workerTimes:\n                # t * x * (x + 1) / 2 <= seconds\n                # x * (x + 1) <= 2 * seconds / t\n                # x^2 + x - 2 * seconds / t <= 0\n                val = (2 * seconds) // t\n                x = int((-1 + math.isqrt(1 + 4 * val)) // 2)\n                total_height += x\n                if total_height >= mountainHeight:\n                    return True\n            return False\n            \n        low = 1\n        # Upper bound: fastest worker does all work\n        min_w = min(workerTimes)\n        high = min_w * mountainHeight * (mountainHeight + 1) // 2\n        ans = high\n        \n        while low <= high:\n            mid = (low + high) // 2\n            if check(mid):\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n                \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(W log(max_time))",
+    "space": "O(1)",
+    "variables": [
+      "W: number of workers",
+      "max_time: upper bound time"
+    ],
+    "notes": "Each binary search step evaluates W workers in O(1) time using closed-form square roots.",
+    "whyNaiveFails": "Simulating second-by-second reductions or min-heap simulation takes too long for large mountain heights.",
+    "spaceTimeTradeoff": "O(1) auxiliary space without extra arrays.",
+    "interviewerExpectation": "Formulates binary search on answer using quadratic root formula for individual worker reduction."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minNumberOfSeconds(self, mountainHeight: int, workerTimes: list[int]) -> int:\n        import math\n        \n        def check(seconds: int) -> bool:\n            total_height = 0\n            for t in workerTimes:\n                # t * x * (x + 1) / 2 <= seconds\n                # x * (x + 1) <= 2 * seconds / t\n                # x^2 + x - 2 * seconds / t <= 0\n                val = (2 * seconds) // t\n                x = int((-1 + math.isqrt(1 + 4 * val)) // 2)\n                total_height += x\n                if total_height >= mountainHeight:\n                    return True\n            return False\n            \n        low = 1\n        # Upper bound: fastest worker does all work\n        min_w = min(workerTimes)\n        high = min_w * mountainHeight * (mountainHeight + 1) // 2\n        ans = high\n        \n        while low <= high:\n            mid = (low + high) // 2\n            if check(mid):\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n                \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <cmath>\n#include <algorithm>\n\nclass Solution {\npublic:\n    long long minNumberOfSeconds(int mountainHeight, std::vector<int>& workerTimes) {\n        auto check = [&](long long seconds) {\n            long long total_h = 0;\n            for (int t : workerTimes) {\n                long long val = (2 * seconds) / t;\n                long long x = (std::sqrt(1 + 4.0 * val) - 1) / 2;\n                total_h += x;\n                if (total_h >= mountainHeight) return true;\n            }\n            return false;\n        };\n        \n        long long low = 1;\n        long long min_w = *std::min_element(workerTimes.begin(), workerTimes.end());\n        long long high = min_w * (long long)mountainHeight * (mountainHeight + 1) / 2;\n        long long ans = high;\n        \n        while (low <= high) {\n            long long mid = low + (high - low) / 2;\n            if (check(mid)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long minNumberOfSeconds(int mountainHeight, int[] workerTimes) {\n        long minW = workerTimes[0];\n        for (int t : workerTimes) minW = Math.min(minW, t);\n\n        long low = 1;\n        long high = minW * (long) mountainHeight * (mountainHeight + 1) / 2;\n        long ans = high;\n\n        while (low <= high) {\n            long mid = low + (high - low) / 2;\n            if (check(mid, mountainHeight, workerTimes)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n\n    private boolean check(long seconds, int mountainHeight, int[] workerTimes) {\n        long totalH = 0;\n        for (int t : workerTimes) {\n            long val = (2 * seconds) / t;\n            long x = (long) ((Math.sqrt(1 + 4.0 * val) - 1) / 2);\n            totalH += x;\n            if (totalH >= mountainHeight) return true;\n        }\n        return false;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minNumberOfSeconds = function(mountainHeight, workerTimes) {\n    function check(seconds) {\n        let totalH = 0n;\n        const target = BigInt(mountainHeight);\n        for (const t of workerTimes) {\n            const val = (2n * seconds) / BigInt(t);\n            // Integer square root\n            let s = 0n, e = 2000000000n, x = 0n;\n            while (s <= e) {\n                const m = (s + e) / 2n;\n                if (m * (m + 1n) <= val) {\n                    x = m;\n                    s = m + 1n;\n                } else {\n                    e = m - 1n;\n                }\n            }\n            totalH += x;\n            if (totalH >= target) return true;\n        }\n        return false;\n    }\n\n    let minW = BigInt(workerTimes[0]);\n    for (const t of workerTimes) {\n        const bt = BigInt(t);\n        if (bt < minW) minW = bt;\n    }\n\n    const mh = BigInt(mountainHeight);\n    let low = 1n;\n    let high = minW * mh * (mh + 1n) / 2n;\n    let ans = high;\n\n    while (low <= high) {\n        const mid = (low + high) / 2n;\n        if (check(mid)) {\n            ans = mid;\n            high = mid - 1n;\n        } else {\n            low = mid + 1n;\n        }\n    }\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

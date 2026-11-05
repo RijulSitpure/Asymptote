@@ -1,0 +1,80 @@
+{
+  "slug": "find-the-maximum-sequence-value-of-array",
+  "number": 3287,
+  "patterns": [
+    "dp-bitmask",
+    "bit-manipulation-tricks"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Bounded Value Domain",
+      "text": "Each number is bounded below 128 (less than 2^7), so any bitwise OR combination cannot exceed 127."
+    },
+    {
+      "level": 2,
+      "title": "Prefix and Suffix States",
+      "text": "Compute left_dp[i][c][v] indicating whether an OR value of v can be achieved by choosing c elements from the prefix nums[0..i-1]. Similarly compute right_dp[i][c][v] for suffixes."
+    },
+    {
+      "level": 3,
+      "title": "Split Point Optimization",
+      "text": "Iterate over all valid split indices i between k and n - k. For each split, examine pairs (left_or, right_or) of size k and maximize left_or xor right_or."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maxValue(self, nums: list[int], k: int) -> int:\n        n = len(nums)\n        MAX_V = 128\n        \n        # left_dp[i][c] = set of reachable OR values choosing c elements from nums[:i]\n        # We can represent sets as boolean arrays or bitsets\n        left_dp = [[[False] * MAX_V for _ in range(k + 1)] for _ in range(n + 1)]\n        left_dp[0][0][0] = True\n        \n        for i in range(n):\n            val = nums[i]\n            for c in range(k + 1):\n                for v in range(MAX_V):\n                    if left_dp[i][c][v]:\n                        left_dp[i + 1][c][v] = True\n                        if c + 1 <= k:\n                            left_dp[i + 1][c + 1][v | val] = True\n                            \n        # right_dp[i][c] = set of reachable OR values choosing c elements from nums[i:]\n        right_dp = [[[False] * MAX_V for _ in range(k + 1)] for _ in range(n + 1)]\n        right_dp[n][0][0] = True\n        \n        for i in range(n - 1, -1, -1):\n            val = nums[i]\n            for c in range(k + 1):\n                for v in range(MAX_V):\n                    if right_dp[i + 1][c][v]:\n                        right_dp[i][c][v] = True\n                        if c + 1 <= k:\n                            right_dp[i][c + 1][v | val] = True\n                            \n        ans = 0\n        for i in range(k, n - k + 1):\n            left_vals = [v for v in range(MAX_V) if left_dp[i][k][v]]\n            right_vals = [v for v in range(MAX_V) if right_dp[i][k][v]]\n            for lv in left_vals:\n                for rv in right_vals:\n                    ans = max(ans, lv ^ rv)\n                    \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * k * 128 + n * 128^2)",
+    "space": "O(n * k * 128)",
+    "variables": [
+      "n: length of nums array",
+      "k: number of chosen elements in each half"
+    ],
+    "notes": "DP table updates take O(n * k * 128). Cross XOR comparisons take O(n * 128^2) operations.",
+    "whyNaiveFails": "Combinatorial enumeration of subsequences of length 2k is intractable for n up to 400.",
+    "spaceTimeTradeoff": "DP table tracks bitset states bounded by 128 values.",
+    "interviewerExpectation": "Recognizes value boundedness (< 128) and applies prefix/suffix DP split techniques."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxValue(self, nums: list[int], k: int) -> int:\n        n = len(nums)\n        MAX_V = 128\n        \n        # left_dp[i][c] = set of reachable OR values choosing c elements from nums[:i]\n        # We can represent sets as boolean arrays or bitsets\n        left_dp = [[[False] * MAX_V for _ in range(k + 1)] for _ in range(n + 1)]\n        left_dp[0][0][0] = True\n        \n        for i in range(n):\n            val = nums[i]\n            for c in range(k + 1):\n                for v in range(MAX_V):\n                    if left_dp[i][c][v]:\n                        left_dp[i + 1][c][v] = True\n                        if c + 1 <= k:\n                            left_dp[i + 1][c + 1][v | val] = True\n                            \n        # right_dp[i][c] = set of reachable OR values choosing c elements from nums[i:]\n        right_dp = [[[False] * MAX_V for _ in range(k + 1)] for _ in range(n + 1)]\n        right_dp[n][0][0] = True\n        \n        for i in range(n - 1, -1, -1):\n            val = nums[i]\n            for c in range(k + 1):\n                for v in range(MAX_V):\n                    if right_dp[i + 1][c][v]:\n                        right_dp[i][c][v] = True\n                        if c + 1 <= k:\n                            right_dp[i][c + 1][v | val] = True\n                            \n        ans = 0\n        for i in range(k, n - k + 1):\n            left_vals = [v for v in range(MAX_V) if left_dp[i][k][v]]\n            right_vals = [v for v in range(MAX_V) if right_dp[i][k][v]]\n            for lv in left_vals:\n                for rv in right_vals:\n                    ans = max(ans, lv ^ rv)\n                    \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxValue(std::vector<int>& nums, int k) {\n        int n = nums.size();\n        const int MAX_V = 128;\n        \n        std::vector<std::vector<std::vector<bool>>> left_dp(n + 1, std::vector<std::vector<bool>>(k + 1, std::vector<bool>(MAX_V, false)));\n        left_dp[0][0][0] = true;\n        for (int i = 0; i < n; ++i) {\n            int val = nums[i];\n            for (int c = 0; c <= k; ++c) {\n                for (int v = 0; v < MAX_V; ++v) {\n                    if (left_dp[i][c][v]) {\n                        left_dp[i + 1][c][v] = true;\n                        if (c + 1 <= k) left_dp[i + 1][c + 1][v | val] = true;\n                    }\n                }\n            }\n        }\n        \n        std::vector<std::vector<std::vector<bool>>> right_dp(n + 1, std::vector<std::vector<bool>>(k + 1, std::vector<bool>(MAX_V, false)));\n        right_dp[n][0][0] = true;\n        for (int i = n - 1; i >= 0; --i) {\n            int val = nums[i];\n            for (int c = 0; c <= k; ++c) {\n                for (int v = 0; v < MAX_V; ++v) {\n                    if (right_dp[i + 1][c][v]) {\n                        right_dp[i][c][v] = true;\n                        if (c + 1 <= k) right_dp[i][c + 1][v | val] = true;\n                    }\n                }\n            }\n        }\n        \n        int ans = 0;\n        for (int i = k; i <= n - k; ++i) {\n            std::vector<int> left_vals, right_vals;\n            for (int v = 0; v < MAX_V; ++v) {\n                if (left_dp[i][k][v]) left_vals.push_back(v);\n                if (right_dp[i][k][v]) right_vals.push_back(v);\n            }\n            for (int lv : left_vals) {\n                for (int rv : right_vals) {\n                    ans = std::max(ans, lv ^ rv);\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxValue(int[] nums, int k) {\n        int n = nums.length;\n        int MAX_V = 128;\n\n        boolean[][][] leftDp = new boolean[n + 1][k + 1][MAX_V];\n        leftDp[0][0][0] = true;\n        for (int i = 0; i < n; i++) {\n            int val = nums[i];\n            for (int c = 0; c <= k; c++) {\n                for (int v = 0; v < MAX_V; v++) {\n                    if (leftDp[i][c][v]) {\n                        leftDp[i + 1][c][v] = true;\n                        if (c + 1 <= k) leftDp[i + 1][c + 1][v | val] = true;\n                    }\n                }\n            }\n        }\n\n        boolean[][][] rightDp = new boolean[n + 1][k + 1][MAX_V];\n        rightDp[n][0][0] = true;\n        for (int i = n - 1; i >= 0; i--) {\n            int val = nums[i];\n            for (int c = 0; c <= k; c++) {\n                for (int v = 0; v < MAX_V; v++) {\n                    if (rightDp[i + 1][c][v]) {\n                        rightDp[i][c][v] = true;\n                        if (c + 1 <= k) rightDp[i][c + 1][v | val] = true;\n                    }\n                }\n            }\n        }\n\n        int ans = 0;\n        for (int i = k; i <= n - k; i++) {\n            List<Integer> leftVals = new ArrayList<>();\n            List<Integer> rightVals = new ArrayList<>();\n            for (int v = 0; v < MAX_V; v++) {\n                if (leftDp[i][k][v]) leftVals.add(v);\n                if (rightDp[i][k][v]) rightVals.add(v);\n            }\n            for (int lv : leftVals) {\n                for (int rv : rightVals) {\n                    ans = Math.max(ans, lv ^ rv);\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxValue = function(nums, k) {\n    const n = nums.length;\n    const MAX_V = 128;\n\n    const leftDp = Array.from({ length: n + 1 }, () =>\n        Array.from({ length: k + 1 }, () => new Uint8Array(MAX_V))\n    );\n    leftDp[0][0][0] = 1;\n    for (let i = 0; i < n; i++) {\n        const val = nums[i];\n        for (let c = 0; c <= k; c++) {\n            for (let v = 0; v < MAX_V; v++) {\n                if (leftDp[i][c][v]) {\n                    leftDp[i + 1][c][v] = 1;\n                    if (c + 1 <= k) leftDp[i + 1][c + 1][v | val] = 1;\n                }\n            }\n        }\n    }\n\n    const rightDp = Array.from({ length: n + 1 }, () =>\n        Array.from({ length: k + 1 }, () => new Uint8Array(MAX_V))\n    );\n    rightDp[n][0][0] = 1;\n    for (let i = n - 1; i >= 0; i--) {\n        const val = nums[i];\n        for (let c = 0; c <= k; c++) {\n            for (let v = 0; v < MAX_V; v++) {\n                if (rightDp[i + 1][c][v]) {\n                    rightDp[i][c][v] = 1;\n                    if (c + 1 <= k) rightDp[i][c + 1][v | val] = 1;\n                }\n            }\n        }\n    }\n\n    let ans = 0;\n    for (let i = k; i <= n - k; i++) {\n        const leftVals = [];\n        const rightVals = [];\n        for (let v = 0; v < MAX_V; v++) {\n            if (leftDp[i][k][v]) leftVals.push(v);\n            if (rightDp[i][k][v]) rightVals.push(v);\n        }\n        for (const lv of leftVals) {\n            for (const rv of rightVals) {\n                const x = lv ^ rv;\n                if (x > ans) ans = x;\n            }\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}
