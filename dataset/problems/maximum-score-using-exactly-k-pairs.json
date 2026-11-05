@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-score-using-exactly-k-pairs",
+  "number": 3836,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "We need to select ordered pairs of elements from both arrays to maximize product sum."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Formulate a state recording how many elements from each array and how many pairs have been formed so far."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Optimize transitions by maintaining the best previous score when extending to the next pair."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef maxScore(nums1: list[int], nums2: list[int], k: int) -> int:\n    n1, n2 = len(nums1), len(nums2)\n    # dp[p][i][j] = max score using p pairs from nums1[:i] and nums2[:j]\n    # Space-optimized to 2D: dp[p][j] max score with p pairs using a prefix of nums2\n    prev = [[-float('inf')] * (n2 + 1) for _ in range(k + 1)]\n    for j in range(n2 + 1):\n        prev[0][j] = 0\n    for i in range(1, n1 + 1):\n        cur = [row[:] for row in prev]\n        v1 = nums1[i - 1]\n        for p in range(1, min(k, i) + 1):\n            for j in range(p, n2 + 1):\n                v2 = nums2[j - 1]\n                if prev[p - 1][j - 1] != -float('inf'):\n                    cur[p][j] = max(cur[p][j], prev[p - 1][j - 1] + v1 * v2)\n                cur[p][j] = max(cur[p][j], cur[p][j - 1])\n        prev = cur\n    return prev[k][n2]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(k * n * m)",
+    "space": "O(k * m)",
+    "variables": [
+      "n",
+      "m",
+      "k"
+    ],
+    "notes": "Evaluates transition choices for each of the k pairs across arrays of size n and m.",
+    "whyNaiveFails": "A brute force approach would exceed time limits by redundantly reprocessing states.",
+    "spaceTimeTradeoff": "Balances linear traversal with auxiliary tracking structures.",
+    "interviewerExpectation": "Expects an optimal linear or logarithmic solution with edge-case handling."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def maxScore(nums1: list[int], nums2: list[int], k: int) -> int:\n    n1, n2 = len(nums1), len(nums2)\n    # dp[p][i][j] = max score using p pairs from nums1[:i] and nums2[:j]\n    # Space-optimized to 2D: dp[p][j] max score with p pairs using a prefix of nums2\n    prev = [[-float('inf')] * (n2 + 1) for _ in range(k + 1)]\n    for j in range(n2 + 1):\n        prev[0][j] = 0\n    for i in range(1, n1 + 1):\n        cur = [row[:] for row in prev]\n        v1 = nums1[i - 1]\n        for p in range(1, min(k, i) + 1):\n            for j in range(p, n2 + 1):\n                v2 = nums2[j - 1]\n                if prev[p - 1][j - 1] != -float('inf'):\n                    cur[p][j] = max(cur[p][j], prev[p - 1][j - 1] + v1 * v2)\n                cur[p][j] = max(cur[p][j], cur[p][j - 1])\n        prev = cur\n    return prev[k][n2]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n#include <climits>\n\nclass Solution {\npublic:\n    long long maxScore(std::vector<int>& nums1, std::vector<int>& nums2, int k) {\n        int n1 = nums1.size(), n2 = nums2.size();\n        std::vector<std::vector<long long>> prev(k + 1, std::vector<long long>(n2 + 1, -1e18));\n        for (int j = 0; j <= n2; ++j) prev[0][j] = 0;\n        for (int i = 1; i <= n1; ++i) {\n            auto cur = prev;\n            long long v1 = nums1[i - 1];\n            for (int p = 1; p <= std::min(k, i); ++p) {\n                for (int j = p; j <= n2; ++j) {\n                    long long v2 = nums2[j - 1];\n                    if (prev[p - 1][j - 1] > -1e17) {\n                        cur[p][j] = std::max(cur[p][j], prev[p - 1][j - 1] + v1 * v2);\n                    }\n                    cur[p][j] = std::max(cur[p][j], cur[p][j - 1]);\n                }\n            }\n            prev = cur;\n        }\n        return prev[k][n2];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long maxScore(int[] nums1, int[] nums2, int k) {\n        int n1 = nums1.length, n2 = nums2.length;\n        long[][] prev = new long[k + 1][n2 + 1];\n        for (int p = 1; p <= k; p++) Arrays.fill(prev[p], (long)-1e18);\n        for (int i = 1; i <= n1; i++) {\n            long[][] cur = new long[k + 1][n2 + 1];\n            for (int p = 0; p <= k; p++) cur[p] = prev[p].clone();\n            long v1 = nums1[i - 1];\n            for (int p = 1; p <= Math.min(k, i); p++) {\n                for (int j = p; j <= n2; j++) {\n                    long v2 = nums2[j - 1];\n                    if (prev[p - 1][j - 1] > -1e17) {\n                        cur[p][j] = Math.max(cur[p][j], prev[p - 1][j - 1] + v1 * v2);\n                    }\n                    cur[p][j] = Math.max(cur[p][j], cur[p][j - 1]);\n                }\n            }\n            prev = cur;\n        }\n        return prev[k][n2];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function maxScore(nums1, nums2, k) {\n    const n1 = nums1.length, n2 = nums2.length;\n    let prev = Array.from({length: k + 1}, () => new Array(n2 + 1).fill(-Infinity));\n    for (let j = 0; j <= n2; j++) prev[0][j] = 0;\n    for (let i = 1; i <= n1; i++) {\n        const cur = prev.map(row => [...row]);\n        const v1 = nums1[i - 1];\n        for (let p = 1; p <= Math.min(k, i); p++) {\n            for (let j = p; j <= n2; j++) {\n                const v2 = nums2[j - 1];\n                if (prev[p - 1][j - 1] !== -Infinity) {\n                    cur[p][j] = Math.max(cur[p][j], prev[p - 1][j - 1] + v1 * v2);\n                }\n                cur[p][j] = Math.max(cur[p][j], cur[p][j - 1]);\n            }\n        }\n        prev = cur;\n    }\n    return prev[k][n2];\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,71 @@
+{
+  "slug": "find-users-with-persistent-behavior-patterns",
+  "number": 3832,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Group the logged actions by user and action date to eliminate duplicate events within the same day."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Use window ranking over activity dates partitioned by user to form consecutive island groups."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Filter for users who achieved the persistence threshold and present their identifiers in ascending order."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```sql\nWITH RankedActions AS (\n    SELECT\n        user_id,\n        action_date,\n        DATEDIFF(action_date, '2000-01-01') - \n        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY action_date) AS grp\n    FROM (\n        SELECT DISTINCT user_id, action_date\n        FROM UserActions\n    ) distinct_actions\n),\nGroupCounts AS (\n    SELECT\n        user_id,\n        COUNT(*) AS streak_days\n    FROM RankedActions\n    GROUP BY user_id, grp\n)\nSELECT DISTINCT user_id\nFROM GroupCounts\nWHERE streak_days >= 3\nORDER BY user_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n"
+    ],
+    "notes": "Sorting and window partitioning by user and date completes in O(n log n) time.",
+    "whyNaiveFails": "A brute force approach would exceed time limits by redundantly reprocessing states.",
+    "spaceTimeTradeoff": "Balances linear traversal with auxiliary tracking structures.",
+    "interviewerExpectation": "Expects an optimal linear or logarithmic solution with edge-case handling."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH RankedActions AS (\n    SELECT\n        user_id,\n        action_date,\n        DATEDIFF(action_date, '2000-01-01') - \n        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY action_date) AS grp\n    FROM (\n        SELECT DISTINCT user_id, action_date\n        FROM UserActions\n    ) distinct_actions\n),\nGroupCounts AS (\n    SELECT\n        user_id,\n        COUNT(*) AS streak_days\n    FROM RankedActions\n    GROUP BY user_id, grp\n)\nSELECT DISTINCT user_id\nFROM GroupCounts\nWHERE streak_days >= 3\nORDER BY user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH RankedActions AS (\n    SELECT\n        user_id,\n        action_date,\n        (action_date - DATE '2000-01-01') - \n        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY action_date) AS grp\n    FROM (\n        SELECT DISTINCT user_id, action_date\n        FROM UserActions\n    ) distinct_actions\n),\nGroupCounts AS (\n    SELECT\n        user_id,\n        COUNT(*) AS streak_days\n    FROM RankedActions\n    GROUP BY user_id, grp\n)\nSELECT DISTINCT user_id\nFROM GroupCounts\nWHERE streak_days >= 3\nORDER BY user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_persistent_users(user_actions: pd.DataFrame) -> pd.DataFrame:\n    if user_actions.empty:\n        return pd.DataFrame({'user_id': []})\n    df = user_actions[['user_id', 'action_date']].drop_duplicates()\n    df['action_date'] = pd.to_datetime(df['action_date'])\n    df = df.sort_values(['user_id', 'action_date'])\n    df['day_diff'] = (df['action_date'] - pd.to_datetime('2000-01-01')).dt.days\n    df['rn'] = df.groupby('user_id').cumcount()\n    df['grp'] = df['day_diff'] - df['rn']\n    streak = df.groupby(['user_id', 'grp']).size().reset_index(name='streak_days')\n    qualifying = streak[streak['streak_days'] >= 3]['user_id'].drop_duplicates().sort_values()\n    return pd.DataFrame({'user_id': qualifying})",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

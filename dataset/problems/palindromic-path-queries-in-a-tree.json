@@ -1,0 +1,79 @@
+{
+  "slug": "palindromic-path-queries-in-a-tree",
+  "number": 3841,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "A sequence of characters can be rearranged into a palindrome if and only if at most one character occurs an odd number of times."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Represent the character counts along the path using binary parity flags for each of the 26 letters."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Calculate the path parity state using prefix parity masks from the root to each node and their lowest common ancestor."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef canMakePalindromeQueries(n: int, edges: list[list[int]], s: str, queries: list[list[int]]) -> list[bool]:\n    adj = [[] for _ in range(n)]\n    for u, v in edges:\n        adj[u].append(v)\n        adj[v].append(u)\n    \n    parent = [0] * n\n    depth = [0] * n\n    mask = [0] * n\n    \n    visited = [False] * n\n    visited[0] = True\n    mask[0] = 1 << (ord(s[0]) - ord('a'))\n    \n    q = [0]\n    head = 0\n    while head < len(q):\n        u = q[head]\n        head += 1\n        for v in adj[u]:\n            if not visited[v]:\n                visited[v] = True\n                parent[v] = u\n                depth[v] = depth[u] + 1\n                mask[v] = mask[u] ^ (1 << (ord(s[v]) - ord('a')))\n                q.append(v)\n                \n    def get_lca(u: int, v: int) -> int:\n        while depth[u] > depth[v]:\n            u = parent[u]\n        while depth[v] > depth[u]:\n            v = parent[v]\n        while u != v:\n            u = parent[u]\n            v = parent[v]\n        return u\n        \n    ans = []\n    for u, v in queries:\n        lca = get_lca(u, v)\n        path_mask = mask[u] ^ mask[v] ^ (1 << (ord(s[lca]) - ord('a')))\n        ans.append((path_mask & (path_mask - 1)) == 0)\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + q * n)",
+    "space": "O(n)",
+    "variables": [
+      "n",
+      "q"
+    ],
+    "notes": "Breadth traversal sets up depth and prefix masks in O(n) time, and ancestor searches process each query.",
+    "whyNaiveFails": "A brute force approach would exceed time limits by redundantly reprocessing states.",
+    "spaceTimeTradeoff": "Balances linear traversal with auxiliary tracking structures.",
+    "interviewerExpectation": "Expects an optimal linear or logarithmic solution with edge-case handling."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def canMakePalindromeQueries(n: int, edges: list[list[int]], s: str, queries: list[list[int]]) -> list[bool]:\n    adj = [[] for _ in range(n)]\n    for u, v in edges:\n        adj[u].append(v)\n        adj[v].append(u)\n    \n    parent = [0] * n\n    depth = [0] * n\n    mask = [0] * n\n    \n    visited = [False] * n\n    visited[0] = True\n    mask[0] = 1 << (ord(s[0]) - ord('a'))\n    \n    q = [0]\n    head = 0\n    while head < len(q):\n        u = q[head]\n        head += 1\n        for v in adj[u]:\n            if not visited[v]:\n                visited[v] = True\n                parent[v] = u\n                depth[v] = depth[u] + 1\n                mask[v] = mask[u] ^ (1 << (ord(s[v]) - ord('a')))\n                q.append(v)\n                \n    def get_lca(u: int, v: int) -> int:\n        while depth[u] > depth[v]:\n            u = parent[u]\n        while depth[v] > depth[u]:\n            v = parent[v]\n        while u != v:\n            u = parent[u]\n            v = parent[v]\n        return u\n        \n    ans = []\n    for u, v in queries:\n        lca = get_lca(u, v)\n        path_mask = mask[u] ^ mask[v] ^ (1 << (ord(s[lca]) - ord('a')))\n        ans.append((path_mask & (path_mask - 1)) == 0)\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <string>\n\nclass Solution {\npublic:\n    std::vector<bool> canMakePalindromeQueries(int n, std::vector<std::vector<int>>& edges, std::string s, std::vector<std::vector<int>>& queries) {\n        std::vector<std::vector<int>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        std::vector<int> parent(n, 0), depth(n, 0), mask(n, 0);\n        std::vector<bool> visited(n, false);\n        visited[0] = true;\n        mask[0] = 1 << (s[0] - 'a');\n        std::vector<int> q = {0};\n        int head = 0;\n        while (head < (int)q.size()) {\n            int u = q[head++];\n            for (int v : adj[u]) {\n                if (!visited[v]) {\n                    visited[v] = true;\n                    parent[v] = u;\n                    depth[v] = depth[u] + 1;\n                    mask[v] = mask[u] ^ (1 << (s[v] - 'a'));\n                    q.push_back(v);\n                }\n            }\n        }\n        auto getLca = [&](int u, int v) {\n            while (depth[u] > depth[v]) u = parent[u];\n            while (depth[v] > depth[u]) v = parent[v];\n            while (u != v) {\n                u = parent[u];\n                v = parent[v];\n            }\n            return u;\n        };\n        std::vector<bool> ans;\n        for (const auto& qry : queries) {\n            int u = qry[0], v = qry[1];\n            int lca = getLca(u, v);\n            int path_mask = mask[u] ^ mask[v] ^ (1 << (s[lca] - 'a'));\n            ans.push_back((path_mask & (path_mask - 1)) == 0);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public boolean[] canMakePalindromeQueries(int n, int[][] edges, String s, int[][] queries) {\n        List<Integer>[] adj = new ArrayList[n];\n        for (int i = 0; i < n; i++) adj[i] = new ArrayList<>();\n        for (int[] e : edges) {\n            adj[e[0]].add(e[1]);\n            adj[e[1]].add(e[0]);\n        }\n        int[] parent = new int[n];\n        int[] depth = new int[n];\n        int[] mask = new int[n];\n        boolean[] visited = new boolean[n];\n        visited[0] = true;\n        mask[0] = 1 << (s.charAt(0) - 'a');\n        Queue<Integer> q = new LinkedList<>();\n        q.offer(0);\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            for (int v : adj[u]) {\n                if (!visited[v]) {\n                    visited[v] = true;\n                    parent[v] = u;\n                    depth[v] = depth[u] + 1;\n                    mask[v] = mask[u] ^ (1 << (s.charAt(v) - 'a'));\n                    q.offer(v);\n                }\n            }\n        }\n        boolean[] ans = new boolean[queries.length];\n        for (int i = 0; i < queries.length; i++) {\n            int u = queries[i][0], v = queries[i][1];\n            int a = u, b = v;\n            while (depth[a] > depth[b]) a = parent[a];\n            while (depth[b] > depth[a]) b = parent[b];\n            while (a != b) { a = parent[a]; b = parent[b]; }\n            int lca = a;\n            int pathMask = mask[u] ^ mask[v] ^ (1 << (s.charAt(lca) - 'a'));\n            ans[i] = (pathMask & (pathMask - 1)) == 0;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function canMakePalindromeQueries(n, edges, s, queries) {\n    const adj = Array.from({length: n}, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const parent = new Array(n).fill(0);\n    const depth = new Array(n).fill(0);\n    const mask = new Array(n).fill(0);\n    const visited = new Array(n).fill(false);\n    visited[0] = true;\n    mask[0] = 1 << (s.charCodeAt(0) - 97);\n    const q = [0];\n    let head = 0;\n    while (head < q.length) {\n        const u = q[head++];\n        for (const v of adj[u]) {\n            if (!visited[v]) {\n                visited[v] = true;\n                parent[v] = u;\n                depth[v] = depth[u] + 1;\n                mask[v] = mask[u] ^ (1 << (s.charCodeAt(v) - 97));\n                q.push(v);\n            }\n        }\n    }\n    const getLca = (u, v) => {\n        while (depth[u] > depth[v]) u = parent[u];\n        while (depth[v] > depth[u]) v = parent[v];\n        while (u !== v) {\n            u = parent[u];\n            v = parent[v];\n        }\n        return u;\n    };\n    const ans = [];\n    for (const [u, v] of queries) {\n        const lca = getLca(u, v);\n        const pathMask = mask[u] ^ mask[v] ^ (1 << (s.charCodeAt(lca) - 97));\n        ans.push((pathMask & (pathMask - 1)) === 0);\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

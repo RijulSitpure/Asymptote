@@ -1,0 +1,78 @@
+{
+  "slug": "design-ride-sharing-system",
+  "number": 3829,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Store available drivers by their identifier and location, and track busy rides in an active status dictionary."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "For each ride request, calculate the Manhattan distance to all free drivers and select the closest one."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Break distance ties by choosing the driver with the numerically smallest identifier."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass RideSharingSystem:\n    def __init__(self):\n        self.drivers = {}\n        self.active_rides = {}\n\n    def addDriver(self, driverId: int, x: int, y: int) -> None:\n        self.drivers[driverId] = (x, y)\n\n    def requestRide(self, riderId: int, x: int, y: int) -> int:\n        if not self.drivers:\n            return -1\n        best_d = float('inf')\n        best_id = -1\n        for d_id, (dx, dy) in self.drivers.items():\n            dist = abs(dx - x) + abs(dy - y)\n            if dist < best_d or (dist == best_d and (best_id == -1 or d_id < best_id)):\n                best_d = dist\n                best_id = d_id\n        if best_id != -1:\n            del self.drivers[best_id]\n            self.active_rides[riderId] = best_id\n        return best_id\n\n    def completeRide(self, riderId: int, x: int, y: int) -> None:\n        if riderId in self.active_rides:\n            d_id = self.active_rides.pop(riderId)\n            self.drivers[d_id] = (x, y)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(d)",
+    "space": "O(d)",
+    "variables": [
+      "d"
+    ],
+    "notes": "Requesting a ride takes O(d) to scan through available drivers, while add and complete take O(1) time.",
+    "whyNaiveFails": "A brute force approach would exceed time limits by redundantly reprocessing states.",
+    "spaceTimeTradeoff": "Balances linear traversal with auxiliary tracking structures.",
+    "interviewerExpectation": "Expects an optimal linear or logarithmic solution with edge-case handling."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class RideSharingSystem:\n    def __init__(self):\n        self.drivers = {}\n        self.active_rides = {}\n\n    def addDriver(self, driverId: int, x: int, y: int) -> None:\n        self.drivers[driverId] = (x, y)\n\n    def requestRide(self, riderId: int, x: int, y: int) -> int:\n        if not self.drivers:\n            return -1\n        best_d = float('inf')\n        best_id = -1\n        for d_id, (dx, dy) in self.drivers.items():\n            dist = abs(dx - x) + abs(dy - y)\n            if dist < best_d or (dist == best_d and (best_id == -1 or d_id < best_id)):\n                best_d = dist\n                best_id = d_id\n        if best_id != -1:\n            del self.drivers[best_id]\n            self.active_rides[riderId] = best_id\n        return best_id\n\n    def completeRide(self, riderId: int, x: int, y: int) -> None:\n        if riderId in self.active_rides:\n            d_id = self.active_rides.pop(riderId)\n            self.drivers[d_id] = (x, y)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <unordered_map>\n#include <cmath>\n#include <climits>\n\nclass RideSharingSystem {\n    std::unordered_map<int, std::pair<int, int>> drivers;\n    std::unordered_map<int, int> activeRides;\npublic:\n    RideSharingSystem() {}\n\n    void addDriver(int driverId, int x, int y) {\n        drivers[driverId] = {x, y};\n    }\n\n    int requestRide(int riderId, int x, int y) {\n        if (drivers.empty()) return -1;\n        int bestDist = INT_MAX;\n        int bestId = -1;\n        for (const auto& [dId, pos] : drivers) {\n            int d = std::abs(pos.first - x) + std::abs(pos.second - y);\n            if (d < bestDist || (d == bestDist && (bestId == -1 || dId < bestId))) {\n                bestDist = d;\n                bestId = dId;\n            }\n        }\n        if (bestId != -1) {\n            drivers.erase(bestId);\n            activeRides[riderId] = bestId;\n        }\n        return bestId;\n    }\n\n    void completeRide(int riderId, int x, int y) {\n        if (activeRides.count(riderId)) {\n            int dId = activeRides[riderId];\n            activeRides.erase(riderId);\n            drivers[dId] = {x, y};\n        }\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass RideSharingSystem {\n    private Map<Integer, int[]> drivers = new HashMap<>();\n    private Map<Integer, Integer> activeRides = new HashMap<>();\n\n    public RideSharingSystem() {}\n\n    public void addDriver(int driverId, int x, int y) {\n        drivers.put(driverId, new int[]{x, y});\n    }\n\n    public int requestRide(int riderId, int x, int y) {\n        if (drivers.isEmpty()) return -1;\n        int bestDist = Integer.MAX_VALUE;\n        int bestId = -1;\n        for (var entry : drivers.entrySet()) {\n            int dId = entry.getKey();\n            int[] pos = entry.getValue();\n            int d = Math.abs(pos[0] - x) + Math.abs(pos[1] - y);\n            if (d < bestDist || (d == bestDist && (bestId == -1 || dId < bestId))) {\n                bestDist = d;\n                bestId = dId;\n            }\n        }\n        if (bestId != -1) {\n            drivers.remove(bestId);\n            activeRides.put(riderId, bestId);\n        }\n        return bestId;\n    }\n\n    public void completeRide(int riderId, int x, int y) {\n        if (activeRides.containsKey(riderId)) {\n            int dId = activeRides.remove(riderId);\n            drivers.put(dId, new int[]{x, y});\n        }\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "class RideSharingSystem {\n    constructor() {\n        this.drivers = new Map();\n        this.activeRides = new Map();\n    }\n\n    addDriver(driverId, x, y) {\n        this.drivers.set(driverId, [x, y]);\n    }\n\n    requestRide(riderId, x, y) {\n        if (this.drivers.size === 0) return -1;\n        let bestDist = Infinity;\n        let bestId = -1;\n        for (const [dId, pos] of this.drivers.entries()) {\n            const d = Math.abs(pos[0] - x) + Math.abs(pos[1] - y);\n            if (d < bestDist || (d === bestDist && (bestId === -1 || dId < bestId))) {\n                bestDist = d;\n                bestId = dId;\n            }\n        }\n        if (bestId !== -1) {\n            this.drivers.delete(bestId);\n            this.activeRides.set(riderId, bestId);\n        }\n        return bestId;\n    }\n\n    completeRide(riderId, x, y) {\n        if (this.activeRides.has(riderId)) {\n            const dId = this.activeRides.get(riderId);\n            this.activeRides.delete(riderId);\n            this.drivers.set(dId, [x, y]);\n        }\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
