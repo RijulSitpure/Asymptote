@@ -1,0 +1,79 @@
+{
+  "slug": "apply-substitutions",
+  "number": 3481,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Placeholder Parsing",
+      "text": "Locate bracketed placeholders demarcated by percent symbols and extract their variable keys."
+    },
+    {
+      "level": 2,
+      "title": "Recursive Expansion",
+      "text": "A replacement value can contain other placeholders. Expand variables recursively since the dependency graph is guaranteed acyclic."
+    },
+    {
+      "level": 3,
+      "title": "Memoized Evaluation",
+      "text": "Cache the fully expanded string for each variable key to avoid repeated evaluations of identical placeholders."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def applySubstitutions(self, replacements: list[list[str]], text: str) -> str:\n        rep_map = {k: v for k, v in replacements}\n        memo = {}\n\n        def resolve(s: str) -> str:\n            res = []\n            i = 0\n            n = len(s)\n            while i < n:\n                if s[i] == '%':\n                    j = s.find('%', i + 1)\n                    key = s[i + 1:j]\n                    if key not in memo:\n                        memo[key] = resolve(rep_map[key])\n                    res.append(memo[key])\n                    i = j + 1\n                else:\n                    res.append(s[i])\n                    i += 1\n            return \"\".join(res)\n\n        return resolve(text)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m + L)",
+    "space": "O(m + L)",
+    "variables": [
+      "m: number of replacement rules",
+      "L: length of the final expanded text"
+    ],
+    "notes": "Memoization ensures each replacement key is fully expanded once.",
+    "whyNaiveFails": "Repeated string search-and-replace without memoization leads to exponential string copying.",
+    "spaceTimeTradeoff": "Caching resolved variable strings avoids re-expanding shared nested variables.",
+    "interviewerExpectation": "Use recursion with memoization to evaluate acyclic grammar substitutions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def applySubstitutions(self, replacements: list[list[str]], text: str) -> str:\n        rep_map = {k: v for k, v in replacements}\n        memo = {}\n\n        def resolve(s: str) -> str:\n            res = []\n            i = 0\n            n = len(s)\n            while i < n:\n                if s[i] == '%':\n                    j = s.find('%', i + 1)\n                    key = s[i + 1:j]\n                    if key not in memo:\n                        memo[key] = resolve(rep_map[key])\n                    res.append(memo[key])\n                    i = j + 1\n                else:\n                    res.append(s[i])\n                    i += 1\n            return \"\".join(res)\n\n        return resolve(text)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <unordered_map>\n\nusing namespace std;\n\nclass Solution {\n    unordered_map<string, string> repMap;\n    unordered_map<string, string> memo;\n\n    string resolve(const string& s) {\n        string res = \"\";\n        int i = 0, n = s.size();\n        while (i < n) {\n            if (s[i] == '%') {\n                int j = s.find('%', i + 1);\n                string key = s.substr(i + 1, j - i - 1);\n                if (!memo.count(key)) {\n                    memo[key] = resolve(repMap[key]);\n                }\n                res += memo[key];\n                i = j + 1;\n            } else {\n                res += s[i++];\n            }\n        }\n        return res;\n    }\n\npublic:\n    string applySubstitutions(vector<vector<string>>& replacements, string text) {\n        for (const auto& rep : replacements) {\n            repMap[rep[0]] = rep[1];\n        }\n        return resolve(text);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\nclass Solution {\n    private Map<String, String> repMap = new HashMap<>();\n    private Map<String, String> memo = new HashMap<>();\n\n    private String resolve(String s) {\n        StringBuilder sb = new StringBuilder();\n        int i = 0, n = s.length();\n        while (i < n) {\n            if (s.charAt(i) == '%') {\n                int j = s.indexOf('%', i + 1);\n                String key = s.substring(i + 1, j);\n                if (!memo.containsKey(key)) {\n                    memo.put(key, resolve(repMap.get(key)));\n                }\n                sb.append(memo.get(key));\n                i = j + 1;\n            } else {\n                sb.append(s.charAt(i++));\n            }\n        }\n        return sb.toString();\n    }\n\n    public String applySubstitutions(List<List<String>> replacements, String text) {\n        for (List<String> rep : replacements) {\n            repMap.put(rep.get(0), rep.get(1));\n        }\n        return resolve(text);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {string[][]} replacements\n * @param {string} text\n * @return {string}\n */\nvar applySubstitutions = function(replacements, text) {\n    const repMap = new Map();\n    for (const [k, v] of replacements) {\n        repMap.set(k, v);\n    }\n    const memo = new Map();\n\n    function resolve(s) {\n        let res = [];\n        let i = 0, n = s.length;\n        while (i < n) {\n            if (s[i] === '%') {\n                const j = s.indexOf('%', i + 1);\n                const key = s.substring(i + 1, j);\n                if (!memo.has(key)) {\n                    memo.set(key, resolve(repMap.get(key)));\n                }\n                res.push(memo.get(key));\n                i = j + 1;\n            } else {\n                res.push(s[i++]);\n            }\n        }\n        return res.join('');\n    }\n\n    return resolve(text);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

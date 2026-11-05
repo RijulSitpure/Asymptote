@@ -1,0 +1,72 @@
+{
+  "slug": "analyze-organization-hierarchy",
+  "number": 3482,
+  "category": "Database",
+  "patterns": [
+    "recursive-cte"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Top-Down Hierarchy Level",
+      "text": "Use a recursive CTE starting with the top-level chief executive where manager_id is NULL to establish depth level for each employee."
+    },
+    {
+      "level": 2,
+      "title": "Bottom-Up Subordinate Aggregation",
+      "text": "Trace all direct and indirect reports using a second recursive CTE to count total managed team size."
+    },
+    {
+      "level": 3,
+      "title": "Budget Rollup and Ordering",
+      "text": "Sum the salaries of all subordinates and add the manager own salary, ordering by level ascending, budget descending, and name ascending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH RECURSIVE EmployeeHierarchy AS (\n    SELECT employee_id, employee_name, manager_id, salary, 1 AS level\n    FROM Employees\n    WHERE manager_id IS NULL\n    UNION ALL\n    SELECT Employees.employee_id, Employees.employee_name, Employees.manager_id, Employees.salary, EmployeeHierarchy.level + 1\n    FROM Employees\n    INNER JOIN EmployeeHierarchy ON Employees.manager_id = EmployeeHierarchy.employee_id\n),\nTeamSizeAndBudget AS (\n    WITH RECURSIVE Subordinates AS (\n        SELECT manager_id, employee_id, salary\n        FROM Employees\n        WHERE manager_id IS NOT NULL\n        UNION ALL\n        SELECT Subordinates.manager_id, Employees.employee_id, Employees.salary\n        FROM Employees\n        INNER JOIN Subordinates ON Employees.manager_id = Subordinates.employee_id\n    )\n    SELECT \n        Employees.employee_id, \n        COUNT(DISTINCT Subordinates.employee_id) AS team_size, \n        IFNULL(SUM(Subordinates.salary), 0) + Employees.salary AS total_budget \n    FROM Employees\n    LEFT JOIN Subordinates ON Employees.employee_id = Subordinates.manager_id\n    GROUP BY Employees.employee_id, Employees.salary\n)\nSELECT \n    EmployeeHierarchy.employee_id, \n    EmployeeHierarchy.employee_name, \n    EmployeeHierarchy.level, \n    IFNULL(TeamSizeAndBudget.team_size, 0) AS team_size, \n    IFNULL(TeamSizeAndBudget.total_budget, EmployeeHierarchy.salary) AS budget \nFROM EmployeeHierarchy \nLEFT JOIN TeamSizeAndBudget USING (employee_id)\nORDER BY \n    EmployeeHierarchy.level ASC, \n    budget DESC, \n    EmployeeHierarchy.employee_name ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * d)",
+    "space": "O(n * d)",
+    "variables": [
+      "n: number of employees",
+      "d: maximum hierarchy depth"
+    ],
+    "notes": "Recursive CTE traverses tree hierarchy to compute levels and subordinate closures.",
+    "whyNaiveFails": "Self-referencing tree structures of arbitrary depth cannot be resolved with fixed-depth joins.",
+    "spaceTimeTradeoff": "Recursive CTE maps transitive subordinate relationships before group-by aggregation.",
+    "interviewerExpectation": "Write recursive Common Table Expressions to calculate tree depth and rollup aggregations."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH RECURSIVE EmployeeHierarchy AS (\n    SELECT employee_id, employee_name, manager_id, salary, 1 AS level\n    FROM Employees\n    WHERE manager_id IS NULL\n    UNION ALL\n    SELECT Employees.employee_id, Employees.employee_name, Employees.manager_id, Employees.salary, EmployeeHierarchy.level + 1\n    FROM Employees\n    INNER JOIN EmployeeHierarchy ON Employees.manager_id = EmployeeHierarchy.employee_id\n),\nTeamSizeAndBudget AS (\n    WITH RECURSIVE Subordinates AS (\n        SELECT manager_id, employee_id, salary\n        FROM Employees\n        WHERE manager_id IS NOT NULL\n        UNION ALL\n        SELECT Subordinates.manager_id, Employees.employee_id, Employees.salary\n        FROM Employees\n        INNER JOIN Subordinates ON Employees.manager_id = Subordinates.employee_id\n    )\n    SELECT \n        Employees.employee_id, \n        COUNT(DISTINCT Subordinates.employee_id) AS team_size, \n        IFNULL(SUM(Subordinates.salary), 0) + Employees.salary AS total_budget \n    FROM Employees\n    LEFT JOIN Subordinates ON Employees.employee_id = Subordinates.manager_id\n    GROUP BY Employees.employee_id, Employees.salary\n)\nSELECT \n    EmployeeHierarchy.employee_id, \n    EmployeeHierarchy.employee_name, \n    EmployeeHierarchy.level, \n    IFNULL(TeamSizeAndBudget.team_size, 0) AS team_size, \n    IFNULL(TeamSizeAndBudget.total_budget, EmployeeHierarchy.salary) AS budget \nFROM EmployeeHierarchy \nLEFT JOIN TeamSizeAndBudget USING (employee_id)\nORDER BY \n    EmployeeHierarchy.level ASC, \n    budget DESC, \n    EmployeeHierarchy.employee_name ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH RECURSIVE EmployeeHierarchy AS (\n    SELECT employee_id, employee_name, manager_id, salary, 1 AS level\n    FROM Employees\n    WHERE manager_id IS NULL\n    UNION ALL\n    SELECT Employees.employee_id, Employees.employee_name, Employees.manager_id, Employees.salary, EmployeeHierarchy.level + 1\n    FROM Employees\n    INNER JOIN EmployeeHierarchy ON Employees.manager_id = EmployeeHierarchy.employee_id\n),\nSubordinates AS (\n    SELECT manager_id, employee_id, salary\n    FROM Employees\n    WHERE manager_id IS NOT NULL\n    UNION ALL\n    SELECT Subordinates.manager_id, Employees.employee_id, Employees.salary\n    FROM Employees\n    INNER JOIN Subordinates ON Employees.manager_id = Subordinates.employee_id\n),\nTeamSizeAndBudget AS (\n    SELECT \n        Employees.employee_id, \n        COUNT(DISTINCT Subordinates.employee_id) AS team_size, \n        COALESCE(SUM(Subordinates.salary), 0) + Employees.salary AS total_budget \n    FROM Employees\n    LEFT JOIN Subordinates ON Employees.employee_id = Subordinates.manager_id\n    GROUP BY Employees.employee_id, Employees.salary\n)\nSELECT \n    EmployeeHierarchy.employee_id, \n    EmployeeHierarchy.employee_name, \n    EmployeeHierarchy.level, \n    COALESCE(TeamSizeAndBudget.team_size, 0) AS team_size, \n    COALESCE(TeamSizeAndBudget.total_budget, EmployeeHierarchy.salary) AS budget \nFROM EmployeeHierarchy \nLEFT JOIN TeamSizeAndBudget USING (employee_id)\nORDER BY \n    EmployeeHierarchy.level ASC, \n    budget DESC, \n    EmployeeHierarchy.employee_name ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\nfrom collections import defaultdict\n\ndef analyze_hierarchy(employees: pd.DataFrame) -> pd.DataFrame:\n    children = defaultdict(list)\n    salaries = {}\n    names = {}\n    ceo_id = None\n    for _, row in employees.iterrows():\n        eid = int(row['employee_id'])\n        mid = row['manager_id']\n        salaries[eid] = int(row['salary'])\n        names[eid] = row['employee_name']\n        if pd.isna(mid) or mid is None:\n            ceo_id = eid\n        else:\n            children[int(mid)].append(eid)\n            \n    levels = {}\n    if ceo_id is not None:\n        q = [(ceo_id, 1)]\n        while q:\n            curr, lvl = q.pop(0)\n            levels[curr] = lvl\n            for ch in children[curr]:\n                q.append((ch, lvl + 1))\n            \n    sub_count = {}\n    budgets = {}\n    def dfs(u):\n        cnt = 0\n        total_sal = salaries[u]\n        for v in children[u]:\n            c, s = dfs(v)\n            cnt += 1 + c\n            total_sal += s\n        sub_count[u] = cnt\n        budgets[u] = total_sal\n        return cnt, total_sal\n\n    if ceo_id is not None:\n        dfs(ceo_id)\n\n    records = []\n    for eid in salaries:\n        records.append({\n            'employee_id': eid,\n            'employee_name': names[eid],\n            'level': levels.get(eid, 1),\n            'team_size': sub_count.get(eid, 0),\n            'budget': budgets.get(eid, salaries[eid])\n        })\n    res_df = pd.DataFrame(records)\n    return res_df.sort_values(\n        by=['level', 'budget', 'employee_name'],\n        ascending=[True, False, True]\n    ).reset_index(drop=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

@@ -1,0 +1,72 @@
+{
+  "slug": "dna-pattern-recognition",
+  "number": 3475,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Pattern Criteria Mapping",
+      "text": "Analyze each of the four required boolean conditions on the sequence: start codon prefix, stop codon suffix, repeating dinucleotide substring, and triple guanine substring."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Flag Generation",
+      "text": "Use conditional statements with string pattern functions or regular expressions to produce binary indicator flags."
+    },
+    {
+      "level": 3,
+      "title": "Ascending Identifier Order",
+      "text": "Project the original identifier, sequence, species, and the four flags ordered by sample_id ascending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    sample_id, \n    dna_sequence, \n    species,\n    CASE WHEN dna_sequence LIKE 'ATG%' THEN 1 ELSE 0 END AS has_start,\n    CASE WHEN dna_sequence REGEXP 'TAA$|TAG$|TGA$' THEN 1 ELSE 0 END AS has_stop,\n    CASE WHEN dna_sequence LIKE '%ATAT%' THEN 1 ELSE 0 END AS has_atat,\n    CASE WHEN dna_sequence LIKE '%GGG%' THEN 1 ELSE 0 END AS has_ggg\nFROM Samples\nORDER BY sample_id;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * L)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of rows in Samples table",
+      "L: length of DNA sequence string"
+    ],
+    "notes": "Scans each sequence and checks string patterns and regular expression markers.",
+    "whyNaiveFails": "Full table scan is required as string contents cannot use index lookups for internal substrings.",
+    "spaceTimeTradeoff": "Direct conditional pattern evaluations avoid multi-table joins.",
+    "interviewerExpectation": "Use concise SQL expressions to evaluate multiple distinct pattern flags simultaneously."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    sample_id, \n    dna_sequence, \n    species,\n    CASE WHEN dna_sequence LIKE 'ATG%' THEN 1 ELSE 0 END AS has_start,\n    CASE WHEN dna_sequence REGEXP 'TAA$|TAG$|TGA$' THEN 1 ELSE 0 END AS has_stop,\n    CASE WHEN dna_sequence LIKE '%ATAT%' THEN 1 ELSE 0 END AS has_atat,\n    CASE WHEN dna_sequence LIKE '%GGG%' THEN 1 ELSE 0 END AS has_ggg\nFROM Samples\nORDER BY sample_id;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    sample_id, \n    dna_sequence, \n    species,\n    CASE WHEN dna_sequence LIKE 'ATG%' THEN 1 ELSE 0 END AS has_start,\n    CASE WHEN dna_sequence ~ '(TAA|TAG|TGA)$' THEN 1 ELSE 0 END AS has_stop,\n    CASE WHEN dna_sequence LIKE '%ATAT%' THEN 1 ELSE 0 END AS has_atat,\n    CASE WHEN dna_sequence LIKE '%GGG%' THEN 1 ELSE 0 END AS has_ggg\nFROM Samples\nORDER BY sample_id;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef dna_pattern_recognition(samples: pd.DataFrame) -> pd.DataFrame:\n    df = samples.copy()\n    df['has_start'] = df['dna_sequence'].str.startswith('ATG').astype(int)\n    df['has_stop'] = df['dna_sequence'].str.contains(r'(?:TAA|TAG|TGA)$', regex=True).astype(int)\n    df['has_atat'] = df['dna_sequence'].str.contains('ATAT', regex=False).astype(int)\n    df['has_ggg'] = df['dna_sequence'].str.contains('GGG', regex=False).astype(int)\n    return df.sort_values(by='sample_id', ascending=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

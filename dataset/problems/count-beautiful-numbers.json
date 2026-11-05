@@ -1,0 +1,79 @@
+{
+  "slug": "count-beautiful-numbers",
+  "number": 3490,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Range Counting",
+      "text": "Express the count of numbers in [l, r] as count(r) minus count(l - 1). Notice that any number with digit zero automatically has a product of zero, which is divisible by any positive digit sum."
+    },
+    {
+      "level": 2,
+      "title": "Digit State Tracking",
+      "text": "Construct numbers digit-by-digit from left to right, maintaining the digit index, tight upper bound constraint, leading zero flag, whether a zero was chosen, the sum of digits, and the product of non-zero digits."
+    },
+    {
+      "level": 3,
+      "title": "State Memoization",
+      "text": "Because digits are drawn from 1 to 9, non-zero digit products have prime factors limited to 2, 3, 5, and 7, resulting in very few distinct product states across up to 9 digits."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom functools import lru_cache\n\nclass Solution:\n    def beautifulNumbers(self, l: int, r: int) -> int:\n        def count(val: int) -> int:\n            if val <= 0:\n                return 0\n            s = str(val)\n\n            @lru_cache(None)\n            def dp(idx: int, tight: bool, is_leading: bool, has_zero: bool, digit_sum: int, prod: int) -> int:\n                if idx == len(s):\n                    if is_leading:\n                        return 0\n                    return 1 if (has_zero or (digit_sum > 0 and prod % digit_sum == 0)) else 0\n\n                limit = int(s[idx]) if tight else 9\n                res = 0\n                for d in range(limit + 1):\n                    nxt_tight = tight and (d == limit)\n                    if is_leading and d == 0:\n                        res += dp(idx + 1, nxt_tight, True, False, 0, 1)\n                    else:\n                        nxt_has_zero = has_zero or (d == 0)\n                        nxt_sum = digit_sum + d\n                        nxt_prod = 0 if nxt_has_zero else prod * d\n                        res += dp(idx + 1, nxt_tight, False, nxt_has_zero, nxt_sum, nxt_prod)\n                return res\n\n            return dp(0, True, True, False, 0, 1)\n\n        return count(r) - count(l - 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log10(R) * S)",
+    "space": "O(log10(R) * S)",
+    "variables": [
+      "R: upper bound integer",
+      "S: number of distinct reachable (sum, prod) states"
+    ],
+    "notes": "Digit DP memoizes over the small set of reachable factorizations for single-digit products.",
+    "whyNaiveFails": "Iterating through every integer up to 10^9 exceeds the time limit.",
+    "spaceTimeTradeoff": "Caching state transitions enables evaluation in sub-second time.",
+    "interviewerExpectation": "Use digit dynamic programming with state memoization to avoid brute-force iteration."
+  },
+  "solutions": [
+    {
+      "code": "from functools import lru_cache\n\nclass Solution:\n    def beautifulNumbers(self, l: int, r: int) -> int:\n        def count(val: int) -> int:\n            if val <= 0:\n                return 0\n            s = str(val)\n\n            @lru_cache(None)\n            def dp(idx: int, tight: bool, is_leading: bool, has_zero: bool, digit_sum: int, prod: int) -> int:\n                if idx == len(s):\n                    if is_leading:\n                        return 0\n                    return 1 if (has_zero or (digit_sum > 0 and prod % digit_sum == 0)) else 0\n\n                limit = int(s[idx]) if tight else 9\n                res = 0\n                for d in range(limit + 1):\n                    nxt_tight = tight and (d == limit)\n                    if is_leading and d == 0:\n                        res += dp(idx + 1, nxt_tight, True, False, 0, 1)\n                    else:\n                        nxt_has_zero = has_zero or (d == 0)\n                        nxt_sum = digit_sum + d\n                        nxt_prod = 0 if nxt_has_zero else prod * d\n                        res += dp(idx + 1, nxt_tight, False, nxt_has_zero, nxt_sum, nxt_prod)\n                return res\n\n            return dp(0, True, True, False, 0, 1)\n\n        return count(r) - count(l - 1)",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "python3"
+    },
+    {
+      "code": "#include <string>\n#include <vector>\n#include <unordered_map>\n\nusing namespace std;\n\nclass Solution {\n    unordered_map<long long, int> memo;\n\n    int dp(const string& s, int idx, bool tight, bool isLeading, bool hasZero, int sum, int prod) {\n        if (idx == (int)s.size()) {\n            if (isLeading) return 0;\n            return (hasZero || (sum > 0 && prod % sum == 0)) ? 1 : 0;\n        }\n\n        long long stateKey = ((long long)idx << 36) |\n                             ((long long)tight << 35) |\n                             ((long long)isLeading << 34) |\n                             ((long long)hasZero << 33) |\n                             ((long long)sum << 24) |\n                             (long long)prod;\n\n        if (memo.count(stateKey)) return memo[stateKey];\n\n        int limit = tight ? (s[idx] - '0') : 9;\n        int total = 0;\n\n        for (int d = 0; d <= limit; ++d) {\n            bool nxtTight = tight && (d == limit);\n            if (isLeading && d == 0) {\n                total += dp(s, idx + 1, nxtTight, true, false, 0, 1);\n            } else {\n                bool nxtHasZero = hasZero || (d == 0);\n                int nxtSum = sum + d;\n                int nxtProd = nxtHasZero ? 0 : prod * d;\n                total += dp(s, idx + 1, nxtTight, false, nxtHasZero, nxtSum, nxtProd);\n            }\n        }\n\n        return memo[stateKey] = total;\n    }\n\n    int count(int val) {\n        if (val <= 0) return 0;\n        memo.clear();\n        return dp(to_string(val), 0, true, true, false, 0, 1);\n    }\n\npublic:\n    int beautifulNumbers(int l, int r) {\n        return count(r) - count(l - 1);\n    }\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "cpp"
+    },
+    {
+      "code": "import java.util.*;\n\nclass Solution {\n    private Map<Long, Integer> memo = new HashMap<>();\n\n    private int dp(String s, int idx, boolean tight, boolean isLeading, boolean hasZero, int sum, int prod) {\n        if (idx == s.length()) {\n            if (isLeading) return 0;\n            return (hasZero || (sum > 0 && prod % sum == 0)) ? 1 : 0;\n        }\n\n        long key = ((long) idx << 36) |\n                   ((long) (tight ? 1 : 0) << 35) |\n                   ((long) (isLeading ? 1 : 0) << 34) |\n                   ((long) (hasZero ? 1 : 0) << 33) |\n                   ((long) sum << 24) |\n                   (long) prod;\n\n        if (memo.containsKey(key)) return memo.get(key);\n\n        int limit = tight ? (s.charAt(idx) - '0') : 9;\n        int total = 0;\n\n        for (int d = 0; d <= limit; d++) {\n            boolean nxtTight = tight && (d == limit);\n            if (isLeading && d == 0) {\n                total += dp(s, idx + 1, nxtTight, true, false, 0, 1);\n            } else {\n                boolean nxtHasZero = hasZero || (d == 0);\n                int nxtSum = sum + d;\n                int nxtProd = nxtHasZero ? 0 : prod * d;\n                total += dp(s, idx + 1, nxtTight, false, nxtHasZero, nxtSum, nxtProd);\n            }\n        }\n\n        memo.put(key, total);\n        return total;\n    }\n\n    private int count(int val) {\n        if (val <= 0) return 0;\n        memo.clear();\n        return dp(String.valueOf(val), 0, true, true, false, 0, 1);\n    }\n\n    public int beautifulNumbers(int l, int r) {\n        return count(r) - count(l - 1);\n    }\n}",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "java"
+    },
+    {
+      "code": "var beautifulNumbers = function(l, r) {\n    function count(val) {\n        if (val <= 0) return 0;\n        const s = String(val);\n        const memo = new Map();\n\n        function dp(idx, tight, isLeading, hasZero, sum, prod) {\n            if (idx === s.length) {\n                if (isLeading) return 0;\n                return (hasZero || (sum > 0 && prod % sum === 0)) ? 1 : 0;\n            }\n\n            const key = `${idx}_${tight ? 1 : 0}_${isLeading ? 1 : 0}_${hasZero ? 1 : 0}_${sum}_${prod}`;\n            if (memo.has(key)) return memo.get(key);\n\n            const limit = tight ? Number(s[idx]) : 9;\n            let total = 0;\n\n            for (let d = 0; d <= limit; d++) {\n                const nxtTight = tight && (d === limit);\n                if (isLeading && d === 0) {\n                    total += dp(idx + 1, nxtTight, true, false, 0, 1);\n                } else {\n                    const nxtHasZero = hasZero || (d === 0);\n                    const nxtSum = sum + d;\n                    const nxtProd = nxtHasZero ? 0 : prod * d;\n                    total += dp(idx + 1, nxtTight, false, nxtHasZero, nxtSum, nxtProd);\n                }\n            }\n\n            memo.set(key, total);\n            return total;\n        }\n\n        return dp(0, true, true, false, 0, 1);\n    }\n\n    return count(r) - count(l - 1);\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "javascript"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

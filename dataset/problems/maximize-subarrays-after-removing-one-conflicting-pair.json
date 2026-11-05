@@ -1,0 +1,79 @@
+{
+  "slug": "maximize-subarrays-after-removing-one-conflicting-pair",
+  "number": 3480,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Boundary Conflict Mapping",
+      "text": "Group each pair by its larger element max(a, b) and track the most restrictive smaller elements min(a, b)."
+    },
+    {
+      "level": 2,
+      "title": "Tracking Primary and Secondary Left Bounds",
+      "text": "At each right endpoint, track the largest left bound max_left and the second largest second_max_left."
+    },
+    {
+      "level": 3,
+      "title": "Single Restriction Removal Gain",
+      "text": "Removing the most restrictive constraint max_left expands valid subarrays by max_left - second_max_left. Accumulate gains per restricting index."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maxSubarrays(self, n: int, conflictingPairs: list[list[int]]) -> int:\n        valid_subarrays = 0\n        max_left = 0\n        second_max_left = 0\n        gains = [0] * (n + 1)\n        conflicts = [[] for _ in range(n + 1)]\n\n        for a, b in conflictingPairs:\n            conflicts[max(a, b)].append(min(a, b))\n\n        for right in range(1, n + 1):\n            for left in conflicts[right]:\n                if left > max_left:\n                    second_max_left = max_left\n                    max_left = left\n                elif left > second_max_left:\n                    second_max_left = left\n                    \n            valid_subarrays += right - max_left\n            gains[max_left] += max_left - second_max_left\n\n        max_gain = 0\n        for i in range(1, n + 1):\n            if gains[i] > max_gain:\n                max_gain = gains[i]\n                \n        return valid_subarrays + max_gain\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + m)",
+    "space": "O(n + m)",
+    "variables": [
+      "n: array size",
+      "m: number of conflicting pairs"
+    ],
+    "notes": "Single pass from right = 1 to n updating the top 2 maximum left bounds and aggregating gains.",
+    "whyNaiveFails": "Simulating the removal of each of the m pairs takes O(m * n) time.",
+    "spaceTimeTradeoff": "Tracking top 2 left bounds simultaneously determines the marginal gain of removing any critical constraint.",
+    "interviewerExpectation": "Recognize that only the primary restricting left bound limits the window and its removal delegates the bound to the secondary left."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxSubarrays(self, n: int, conflictingPairs: list[list[int]]) -> int:\n        valid_subarrays = 0\n        max_left = 0\n        second_max_left = 0\n        gains = [0] * (n + 1)\n        conflicts = [[] for _ in range(n + 1)]\n\n        for a, b in conflictingPairs:\n            conflicts[max(a, b)].append(min(a, b))\n\n        for right in range(1, n + 1):\n            for left in conflicts[right]:\n                if left > max_left:\n                    second_max_left = max_left\n                    max_left = left\n                elif left > second_max_left:\n                    second_max_left = left\n                    \n            valid_subarrays += right - max_left\n            gains[max_left] += max_left - second_max_left\n\n        max_gain = 0\n        for i in range(1, n + 1):\n            if gains[i] > max_gain:\n                max_gain = gains[i]\n                \n        return valid_subarrays + max_gain",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    long long maxSubarrays(int n, vector<vector<int>>& conflictingPairs) {\n        long long validSubarrays = 0;\n        int maxLeft = 0;\n        int secondMaxLeft = 0;\n        vector<long long> gains(n + 1, 0);\n        vector<vector<int>> conflicts(n + 1);\n\n        for (const auto& pair : conflictingPairs) {\n            int a = pair[0], b = pair[1];\n            conflicts[max(a, b)].push_back(min(a, b));\n        }\n\n        for (int right = 1; right <= n; ++right) {\n            for (int left : conflicts[right]) {\n                if (left > maxLeft) {\n                    secondMaxLeft = maxLeft;\n                    maxLeft = left;\n                } else if (left > secondMaxLeft) {\n                    secondMaxLeft = left;\n                }\n            }\n            validSubarrays += right - maxLeft;\n            gains[maxLeft] += maxLeft - secondMaxLeft;\n        }\n\n        long long maxGain = 0;\n        for (int i = 1; i <= n; i++) {\n            maxGain = max(maxGain, gains[i]);\n        }\n        return validSubarrays + maxGain;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Solution {\n    public long maxSubarrays(int n, int[][] conflictingPairs) {\n        long validSubarrays = 0;\n        int maxLeft = 0;\n        int secondMaxLeft = 0;\n        long[] gains = new long[n + 1];\n        List<Integer>[] conflicts = new ArrayList[n + 1];\n        for (int i = 0; i <= n; i++) conflicts[i] = new ArrayList<>();\n\n        for (int[] pair : conflictingPairs) {\n            int a = pair[0], b = pair[1];\n            conflicts[Math.max(a, b)].add(Math.min(a, b));\n        }\n\n        for (int right = 1; right <= n; right++) {\n            for (int left : conflicts[right]) {\n                if (left > maxLeft) {\n                    secondMaxLeft = maxLeft;\n                    maxLeft = left;\n                } else if (left > secondMaxLeft) {\n                    secondMaxLeft = left;\n                }\n            }\n            validSubarrays += (right - maxLeft);\n            gains[maxLeft] += (maxLeft - secondMaxLeft);\n        }\n\n        long maxGain = 0;\n        for (int i = 1; i <= n; i++) {\n            maxGain = Math.max(maxGain, gains[i]);\n        }\n        return validSubarrays + maxGain;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number} n\n * @param {number[][]} conflictingPairs\n * @return {number}\n */\nvar maxSubarrays = function(n, conflictingPairs) {\n    let validSubarrays = 0;\n    let maxLeft = 0;\n    let secondMaxLeft = 0;\n    const gains = new Array(n + 1).fill(0);\n    const conflicts = Array.from({ length: n + 1 }, () => []);\n\n    for (const [a, b] of conflictingPairs) {\n        conflicts[Math.max(a, b)].push(Math.min(a, b));\n    }\n\n    for (let right = 1; right <= n; right++) {\n        for (const left of conflicts[right]) {\n            if (left > maxLeft) {\n                secondMaxLeft = maxLeft;\n                maxLeft = left;\n            } else if (left > secondMaxLeft) {\n                secondMaxLeft = left;\n            }\n        }\n        validSubarrays += right - maxLeft;\n        gains[maxLeft] += maxLeft - secondMaxLeft;\n    }\n\n    let maxGain = 0;\n    for (let i = 1; i <= n; i++) {\n        if (gains[i] > maxGain) maxGain = gains[i];\n    }\n    return validSubarrays + maxGain;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

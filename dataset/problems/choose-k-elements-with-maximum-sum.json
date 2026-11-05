@@ -1,0 +1,79 @@
+{
+  "slug": "choose-k-elements-with-maximum-sum",
+  "number": 3478,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Strict Inequality Sorting",
+      "text": "Sort the elements primarily by nums1 while preserving original indices to easily isolate indices with smaller nums1 values."
+    },
+    {
+      "level": 2,
+      "title": "Batching Equal Values",
+      "text": "Because the inequality nums1[j] < nums1[i] is strict, process all equal nums1 values in a single batch before adding their nums2 values to the pool."
+    },
+    {
+      "level": 3,
+      "title": "Top-K Sum Tracking",
+      "text": "Maintain the k largest seen nums2 elements in a min-priority queue and keep their running sum."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def findMaxSum(self, nums1: list[int], nums2: list[int], k: int) -> list[int]:\n        n = len(nums1)\n        arr = sorted(zip(nums1, nums2, range(n)))\n        ans = [0] * n\n        min_heap = []\n        current_sum = 0\n        \n        i = 0\n        while i < n:\n            j = i\n            while j < n and arr[j][0] == arr[i][0]:\n                j += 1\n            for idx in range(i, j):\n                ans[arr[idx][2]] = current_sum\n            for idx in range(i, j):\n                val2 = arr[idx][1]\n                current_sum += val2\n                heapq.heappush(min_heap, val2)\n                if len(min_heap) > k:\n                    current_sum -= heapq.heappop(min_heap)\n            i = j\n            \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of arrays nums1 and nums2",
+      "k: maximum elements chosen"
+    ],
+    "notes": "Sorting takes O(n log n) time and each element is pushed/popped from a priority queue of size at most k.",
+    "whyNaiveFails": "Examining all pairs takes O(n^2) which times out for n up to 10^5.",
+    "spaceTimeTradeoff": "Sorting by nums1 converts multi-criteria filtering into linear prefix processing with a priority queue.",
+    "interviewerExpectation": "Handle strict inequality via batching and maintain top-k elements using a bounded min-heap."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\n\nclass Solution:\n    def findMaxSum(self, nums1: list[int], nums2: list[int], k: int) -> list[int]:\n        n = len(nums1)\n        arr = sorted(zip(nums1, nums2, range(n)))\n        ans = [0] * n\n        min_heap = []\n        current_sum = 0\n        \n        i = 0\n        while i < n:\n            j = i\n            while j < n and arr[j][0] == arr[i][0]:\n                j += 1\n            for idx in range(i, j):\n                ans[arr[idx][2]] = current_sum\n            for idx in range(i, j):\n                val2 = arr[idx][1]\n                current_sum += val2\n                heapq.heappush(min_heap, val2)\n                if len(min_heap) > k:\n                    current_sum -= heapq.heappop(min_heap)\n            i = j\n            \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n#include <tuple>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<long long> findMaxSum(vector<int>& nums1, vector<int>& nums2, int k) {\n        int n = nums1.size();\n        vector<tuple<int, int, int>> arr(n);\n        for (int i = 0; i < n; i++) {\n            arr[i] = {nums1[i], nums2[i], i};\n        }\n        sort(arr.begin(), arr.end());\n\n        vector<long long> ans(n, 0);\n        priority_queue<int, vector<int>, greater<int>> minHeap;\n        long long currentSum = 0;\n\n        int i = 0;\n        while (i < n) {\n            int j = i;\n            while (j < n && get<0>(arr[j]) == get<0>(arr[i])) {\n                j++;\n            }\n            for (int idx = i; idx < j; idx++) {\n                ans[get<2>(arr[idx])] = currentSum;\n            }\n            for (int idx = i; idx < j; idx++) {\n                int val2 = get<1>(arr[idx]);\n                currentSum += val2;\n                minHeap.push(val2);\n                if ((int)minHeap.size() > k) {\n                    currentSum -= minHeap.top();\n                    minHeap.pop();\n                }\n            }\n            i = j;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.Arrays;\nimport java.util.PriorityQueue;\n\nclass Solution {\n    public long[] findMaxSum(int[] nums1, int[] nums2, int k) {\n        int n = nums1.length;\n        Integer[] order = new Integer[n];\n        for (int i = 0; i < n; i++) order[i] = i;\n        Arrays.sort(order, (a, b) -> Integer.compare(nums1[a], nums1[b]));\n\n        long[] ans = new long[n];\n        PriorityQueue<Integer> minHeap = new PriorityQueue<>();\n        long currentSum = 0;\n\n        int i = 0;\n        while (i < n) {\n            int j = i;\n            while (j < n && nums1[order[j]] == nums1[order[i]]) {\n                j++;\n            }\n            for (int idx = i; idx < j; idx++) {\n                ans[order[idx]] = currentSum;\n            }\n            for (int idx = i; idx < j; idx++) {\n                int val2 = nums2[order[idx]];\n                currentSum += val2;\n                minHeap.offer(val2);\n                if (minHeap.size() > k) {\n                    currentSum -= minHeap.poll();\n                }\n            }\n            i = j;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums1\n * @param {number[]} nums2\n * @param {number} k\n * @return {number[]}\n */\nvar findMaxSum = function(nums1, nums2, k) {\n    const n = nums1.length;\n    const order = Array.from({ length: n }, (_, i) => i);\n    order.sort((a, b) => nums1[a] - nums1[b]);\n\n    const ans = new Array(n).fill(0);\n    const minHeap = [];\n    let currentSum = 0;\n\n    function pushHeap(val) {\n        minHeap.push(val);\n        minHeap.sort((a, b) => a - b);\n    }\n\n    intLoop:\n    for (let i = 0; i < n; ) {\n        let j = i;\n        while (j < n && nums1[order[j]] === nums1[order[i]]) {\n            j++;\n        }\n        for (let idx = i; idx < j; idx++) {\n            ans[order[idx]] = currentSum;\n        }\n        for (let idx = i; idx < j; idx++) {\n            const val2 = nums2[order[idx]];\n            currentSum += val2;\n            pushHeap(val2);\n            if (minHeap.length > k) {\n                currentSum -= minHeap.shift();\n            }\n        }\n        i = j;\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "zero-array-transformation-iv",
+  "number": 3489,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Exact Subset Sum Formulation",
+      "text": "For each index, selecting queries that overlap with it allows subtracting exact query values. The array becomes all zeros precisely when each element can be represented as an exact subset sum of its overlapping query values."
+    },
+    {
+      "level": 2,
+      "title": "Sequential Bitmask Representation",
+      "text": "Maintain a bitset or bitmask for each index representing the subset sums formed by the queries seen so far."
+    },
+    {
+      "level": 3,
+      "title": "Bitwise Left Shift Updates",
+      "text": "For each query with range [l, r] and value, shift the bitmask of each index in that range by value and perform bitwise OR with itself. Check if every target value bit is set."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def minZeroArray(self, nums: list[int], queries: list[list[int]]) -> int:\n        if all(x == 0 for x in nums):\n            return 0\n\n        n = len(nums)\n        # Use bitmask to track reachable subset sums for each index\n        masks = [1] * n\n\n        for k, (l, r, val) in enumerate(queries):\n            for i in range(l, r + 1):\n                masks[i] |= (masks[i] << val)\n\n            if all((masks[i] >> nums[i]) & 1 for i in range(n)):\n                return k + 1\n\n        return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(Q * N)",
+    "space": "O(N)",
+    "variables": [
+      "Q: number of queries",
+      "N: length of array nums"
+    ],
+    "notes": "Bitwise shift operations evaluate reachable sums in parallel for each query.",
+    "whyNaiveFails": "Recursive subset sum evaluation per index takes exponential time.",
+    "spaceTimeTradeoff": "Bitmasks store subset sums efficiently in linear auxiliary space.",
+    "interviewerExpectation": "Recognize the knapsack subset sum equivalence and optimize it using bitwise shifts."
+  },
+  "solutions": [
+    {
+      "code": "class Solution:\n    def minZeroArray(self, nums: list[int], queries: list[list[int]]) -> int:\n        if all(x == 0 for x in nums):\n            return 0\n\n        n = len(nums)\n        # Use bitmask to track reachable subset sums for each index\n        masks = [1] * n\n\n        for k, (l, r, val) in enumerate(queries):\n            for i in range(l, r + 1):\n                masks[i] |= (masks[i] << val)\n\n            if all((masks[i] >> nums[i]) & 1 for i in range(n)):\n                return k + 1\n\n        return -1",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "python3"
+    },
+    {
+      "code": "#include <vector>\n#include <bitset>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int minZeroArray(vector<int>& nums, vector<vector<int>>& queries) {\n        if (all_of(nums.begin(), nums.end(), [](int x) { return x == 0; })) {\n            return 0;\n        }\n\n        int n = nums.size();\n        vector<bitset<1001>> masks(n);\n        for (int i = 0; i < n; ++i) {\n            masks[i].set(0);\n        }\n\n        for (int k = 0; k < (int)queries.size(); ++k) {\n            int l = queries[k][0];\n            int r = queries[k][1];\n            int val = queries[k][2];\n\n            for (int i = l; i <= r; ++i) {\n                masks[i] |= (masks[i] << val);\n            }\n\n            bool allReached = true;\n            for (int i = 0; i < n; ++i) {\n                if (nums[i] > 1000 || !masks[i].test(nums[i])) {\n                    allReached = false;\n                    break;\n                }\n            }\n            if (allReached) return k + 1;\n        }\n\n        return -1;\n    }\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "cpp"
+    },
+    {
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minZeroArray(int[] nums, int[][] queries) {\n        boolean allZero = true;\n        for (int x : nums) {\n            if (x != 0) {\n                allZero = false;\n                break;\n            }\n        }\n        if (allZero) return 0;\n\n        int n = nums.length;\n        BitSet[] masks = new BitSet[n];\n        for (int i = 0; i < n; i++) {\n            masks[i] = new BitSet(1005);\n            masks[i].set(0);\n        }\n\n        for (int k = 0; k < queries.length; k++) {\n            int l = queries[k][0];\n            int r = queries[k][1];\n            int val = queries[k][2];\n\n            for (int i = l; i <= r; i++) {\n                BitSet next = new BitSet(1005);\n                for (int b = masks[i].nextSetBit(0); b >= 0 && b + val <= 1000; b = masks[i].nextSetBit(b + 1)) {\n                    next.set(b + val);\n                }\n                masks[i].or(next);\n            }\n\n            boolean allReached = true;\n            for (int i = 0; i < n; i++) {\n                if (!masks[i].get(nums[i])) {\n                    allReached = false;\n                    break;\n                }\n            }\n            if (allReached) return k + 1;\n        }\n\n        return -1;\n    }\n}",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "java"
+    },
+    {
+      "code": "var minZeroArray = function(nums, queries) {\n    if (nums.every(x => x === 0)) return 0;\n\n    const n = nums.length;\n    const masks = new Array(n).fill(1n);\n\n    for (let k = 0; k < queries.length; k++) {\n        const [l, r, val] = queries[k];\n        const shift = BigInt(val);\n\n        for (let i = l; i <= r; i++) {\n            masks[i] |= (masks[i] << shift);\n        }\n\n        let allReached = true;\n        for (let i = 0; i < n; i++) {\n            const target = BigInt(nums[i]);\n            if (!((masks[i] >> target) & 1n)) {\n                allReached = false;\n                break;\n            }\n        }\n        if (allReached) return k + 1;\n    }\n\n    return -1;\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "javascript"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

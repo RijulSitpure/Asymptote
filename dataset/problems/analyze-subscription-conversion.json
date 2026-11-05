@@ -1,0 +1,72 @@
+{
+  "slug": "analyze-subscription-conversion",
+  "number": 3497,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Filter for Paid Conversion",
+      "text": "Only users who have at least one record with activity type paid are considered converted and eligible for reporting."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Aggregation",
+      "text": "Use conditional statements within aggregate functions to compute average duration separately for free trial and paid periods."
+    },
+    {
+      "level": 3,
+      "title": "Rounding and Sorting",
+      "text": "Round both averages to two decimal places and order the final output by user identifier in ascending order."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```sql\nSELECT \n    user_id,\n    ROUND(AVG(CASE WHEN activity_type = 'free_trial' THEN activity_duration END), 2) AS trial_avg_duration,\n    ROUND(AVG(CASE WHEN activity_type = 'paid' THEN activity_duration END), 2) AS paid_avg_duration\nFROM UserActivity\nWHERE user_id IN (\n    SELECT user_id \n    FROM UserActivity \n    WHERE activity_type = 'paid'\n)\nGROUP BY user_id\nORDER BY user_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(U)",
+    "variables": [
+      "N: number of activity records",
+      "U: number of converted users"
+    ],
+    "notes": "Single table scan with hash aggregation per user.",
+    "whyNaiveFails": "Joining the full table on itself repeatedly produces an unnecessary Cartesian product.",
+    "spaceTimeTradeoff": "Grouping directly avoids temporary join tables.",
+    "interviewerExpectation": "Use conditional aggregation inside AVG to handle multiple lifecycle stages cleanly."
+  },
+  "solutions": [
+    {
+      "code": "SELECT \n    user_id,\n    ROUND(AVG(CASE WHEN activity_type = 'free_trial' THEN activity_duration END), 2) AS trial_avg_duration,\n    ROUND(AVG(CASE WHEN activity_type = 'paid' THEN activity_duration END), 2) AS paid_avg_duration\nFROM UserActivity\nWHERE user_id IN (\n    SELECT user_id \n    FROM UserActivity \n    WHERE activity_type = 'paid'\n)\nGROUP BY user_id\nORDER BY user_id ASC;",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "mysql"
+    },
+    {
+      "code": "SELECT \n    user_id,\n    ROUND(AVG(CASE WHEN activity_type = 'free_trial' THEN activity_duration END)::numeric, 2) AS trial_avg_duration,\n    ROUND(AVG(CASE WHEN activity_type = 'paid' THEN activity_duration END)::numeric, 2) AS paid_avg_duration\nFROM UserActivity\nWHERE user_id IN (\n    SELECT user_id \n    FROM UserActivity \n    WHERE activity_type = 'paid'\n)\nGROUP BY user_id\nORDER BY user_id ASC;",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "postgresql"
+    },
+    {
+      "code": "import pandas as pd\n\ndef analyze_subscription_conversion(user_activity: pd.DataFrame) -> pd.DataFrame:\n    paid_users = set(user_activity[user_activity['activity_type'] == 'paid']['user_id'])\n    filtered = user_activity[user_activity['user_id'].isin(paid_users)]\n    if filtered.empty:\n        return pd.DataFrame(columns=['user_id', 'trial_avg_duration', 'paid_avg_duration'])\n\n    trial = filtered[filtered['activity_type'] == 'free_trial'].groupby('user_id')['activity_duration'].mean().round(2).reset_index()\n    trial.rename(columns={'activity_duration': 'trial_avg_duration'}, inplace=True)\n\n    paid = filtered[filtered['activity_type'] == 'paid'].groupby('user_id')['activity_duration'].mean().round(2).reset_index()\n    paid.rename(columns={'activity_duration': 'paid_avg_duration'}, inplace=True)\n\n    res = pd.DataFrame({'user_id': sorted(list(paid_users))})\n    res = res.merge(trial, on='user_id', how='left').merge(paid, on='user_id', how='left')\n    return res.sort_values(by='user_id')",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "pythondata"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

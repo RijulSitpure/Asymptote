@@ -1,0 +1,79 @@
+{
+  "slug": "longest-palindrome-after-substring-concatenation-i",
+  "number": 3503,
+  "category": "Algorithms",
+  "patterns": [
+    "two-pointers-opposite"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Palindrome Decomposition",
+      "text": "A palindrome formed by concatenating sub_s and sub_t has matching outer characters from s and t, with an optional pure palindrome center from either s or t."
+    },
+    {
+      "level": 2,
+      "title": "Center Palindrome Precomputation",
+      "text": "Precompute the longest palindrome prefixes of t and palindrome suffixes of s using center expansion."
+    },
+    {
+      "level": 3,
+      "title": "Matching Outer Characters",
+      "text": "Use dynamic programming where dp[i][j] tracks matching characters ending at s[i] and starting at t[j], then add the longest central extension."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def longestPalindrome(self, s: str, t: str) -> int:\n        m, n = len(s), len(t)\n\n        def get_palindrome_lengths(string: str, is_suffix: bool) -> list[int]:\n            length = len(string)\n            dp = [[False] * length for _ in range(length)]\n            lengths = [0] * length\n            for i in range(length - 1, -1, -1):\n                for j in range(i, length):\n                    if string[i] == string[j] and (j - i < 2 or dp[i + 1][j - 1]):\n                        dp[i][j] = True\n                        idx = i if is_suffix else j\n                        if j - i + 1 > lengths[idx]:\n                            lengths[idx] = j - i + 1\n            return lengths\n\n        suffix = get_palindrome_lengths(s, True)\n        prefix = get_palindrome_lengths(t, False)\n        ans = max(max(suffix, default=0), max(prefix, default=0))\n\n        dp = [[0] * n for _ in range(m)]\n        for i in range(m):\n            for j in range(n - 1, -1, -1):\n                if s[i] == t[j]:\n                    dp[i][j] = 2 + (dp[i - 1][j + 1] if i > 0 and j < n - 1 else 0)\n                    extend = max(\n                        (suffix[i + 1] if i + 1 < m else 0),\n                        (prefix[j - 1] if j > 0 else 0)\n                    )\n                    ans = max(ans, dp[i][j] + extend)\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(M * N + M^2 + N^2)",
+    "space": "O(M * N)",
+    "variables": [
+      "M: length of string s",
+      "N: length of string t"
+    ],
+    "notes": "Expansion computes palindrome prefixes/suffixes and 2D DP matches outer characters.",
+    "whyNaiveFails": "Checking all substring pairs takes O(M^2 * N^2 * (M + N)), which times out.",
+    "spaceTimeTradeoff": "DP table of size M by N caches matching character lengths.",
+    "interviewerExpectation": "Decompose the concatenated palindrome into matching outer characters and a central palindrome."
+  },
+  "solutions": [
+    {
+      "code": "class Solution:\n    def longestPalindrome(self, s: str, t: str) -> int:\n        m, n = len(s), len(t)\n\n        def get_palindrome_lengths(string: str, is_suffix: bool) -> list[int]:\n            length = len(string)\n            dp = [[False] * length for _ in range(length)]\n            lengths = [0] * length\n            for i in range(length - 1, -1, -1):\n                for j in range(i, length):\n                    if string[i] == string[j] and (j - i < 2 or dp[i + 1][j - 1]):\n                        dp[i][j] = True\n                        idx = i if is_suffix else j\n                        if j - i + 1 > lengths[idx]:\n                            lengths[idx] = j - i + 1\n            return lengths\n\n        suffix = get_palindrome_lengths(s, True)\n        prefix = get_palindrome_lengths(t, False)\n        ans = max(max(suffix, default=0), max(prefix, default=0))\n\n        dp = [[0] * n for _ in range(m)]\n        for i in range(m):\n            for j in range(n - 1, -1, -1):\n                if s[i] == t[j]:\n                    dp[i][j] = 2 + (dp[i - 1][j + 1] if i > 0 and j < n - 1 else 0)\n                    extend = max(\n                        (suffix[i + 1] if i + 1 < m else 0),\n                        (prefix[j - 1] if j > 0 else 0)\n                    )\n                    ans = max(ans, dp[i][j] + extend)\n\n        return ans",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "python3"
+    },
+    {
+      "code": "#include <vector>\n#include <string>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\n    vector<int> getPalindromeLengths(const string& str, bool isSuffix) {\n        int len = str.length();\n        vector<vector<bool>> dp(len, vector<bool>(len, false));\n        vector<int> lengths(len, 0);\n        for (int i = len - 1; i >= 0; --i) {\n            for (int j = i; j < len; ++j) {\n                if (str[i] == str[j] && (j - i < 2 || dp[i + 1][j - 1])) {\n                    dp[i][j] = true;\n                    int idx = isSuffix ? i : j;\n                    lengths[idx] = max(lengths[idx], j - i + 1);\n                }\n            }\n        }\n        return lengths;\n    }\n\npublic:\n    int longestPalindrome(string s, string t) {\n        int m = s.length(), n = t.length();\n        vector<int> suffix = getPalindromeLengths(s, true);\n        vector<int> prefix = getPalindromeLengths(t, false);\n\n        int ans = 0;\n        for (int x : suffix) ans = max(ans, x);\n        for (int x : prefix) ans = max(ans, x);\n\n        vector<vector<int>> dp(m, vector<int>(n, 0));\n        for (int i = 0; i < m; ++i) {\n            for (int j = n - 1; j >= 0; --j) {\n                if (s[i] == t[j]) {\n                    dp[i][j] = 2 + (i > 0 && j < n - 1 ? dp[i - 1][j + 1] : 0);\n                    int extend = max(i + 1 < m ? suffix[i + 1] : 0, j > 0 ? prefix[j - 1] : 0);\n                    ans = max(ans, dp[i][j] + extend);\n                }\n            }\n        }\n\n        return ans;\n    }\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "cpp"
+    },
+    {
+      "code": "import java.util.*;\n\nclass Solution {\n    private int[] getPalindromeLengths(String str, boolean isSuffix) {\n        int len = str.length();\n        boolean[][] dp = new boolean[len][len];\n        int[] lengths = new int[len];\n        for (int i = len - 1; i >= 0; i--) {\n            for (int j = i; j < len; j++) {\n                if (str.charAt(i) == str.charAt(j) && (j - i < 2 || dp[i + 1][j - 1])) {\n                    dp[i][j] = true;\n                    int idx = isSuffix ? i : j;\n                    lengths[idx] = Math.max(lengths[idx], j - i + 1);\n                }\n            }\n        }\n        return lengths;\n    }\n\n    public int longestPalindrome(String s, String t) {\n        int m = s.length(), n = t.length();\n        int[] suffix = getPalindromeLengths(s, true);\n        int[] prefix = getPalindromeLengths(t, false);\n\n        int ans = 0;\n        for (int x : suffix) ans = Math.max(ans, x);\n        for (int x : prefix) ans = Math.max(ans, x);\n\n        int[][] dp = new int[m][n];\n        for (int i = 0; i < m; i++) {\n            for (int j = n - 1; j >= 0; j--) {\n                if (s.charAt(i) == t.charAt(j)) {\n                    dp[i][j] = 2 + (i > 0 && j < n - 1 ? dp[i - 1][j + 1] : 0);\n                    int extend = Math.max(i + 1 < m ? suffix[i + 1] : 0, j > 0 ? prefix[j - 1] : 0);\n                    ans = Math.max(ans, dp[i][j] + extend);\n                }\n            }\n        }\n\n        return ans;\n    }\n}",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "java"
+    },
+    {
+      "code": "var longestPalindrome = function(s, t) {\n    const m = s.length, n = t.length;\n\n    function getPalindromeLengths(str, isSuffix) {\n        const len = str.length;\n        const dp = Array.from({ length: len }, () => new Array(len).fill(false));\n        const lengths = new Array(len).fill(0);\n        for (let i = len - 1; i >= 0; i--) {\n            for (let j = i; j < len; j++) {\n                if (str[i] === str[j] && (j - i < 2 || dp[i + 1][j - 1])) {\n                    dp[i][j] = true;\n                    const idx = isSuffix ? i : j;\n                    if (j - i + 1 > lengths[idx]) {\n                        lengths[idx] = j - i + 1;\n                    }\n                }\n            }\n        }\n        return lengths;\n    }\n\n    const suffix = getPalindromeLengths(s, true);\n    const prefix = getPalindromeLengths(t, false);\n\n    let ans = 0;\n    for (const x of suffix) if (x > ans) ans = x;\n    for (const x of prefix) if (x > ans) ans = x;\n\n    const dp = Array.from({ length: m }, () => new Array(n).fill(0));\n    for (let i = 0; i < m; i++) {\n        for (let j = n - 1; j >= 0; j--) {\n            if (s[i] === t[j]) {\n                dp[i][j] = 2 + (i > 0 && j < n - 1 ? dp[i - 1][j + 1] : 0);\n                const extend = Math.max(i + 1 < m ? suffix[i + 1] : 0, j > 0 ? prefix[j - 1] : 0);\n                ans = Math.max(ans, dp[i][j] + extend);\n            }\n        }\n    }\n\n    return ans;\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "javascript"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "longest-common-prefix-of-k-strings-after-removal",
+  "number": 3485,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Shared Prefix Lengths",
+      "text": "Notice that removing one word only alters the counts of prefixes that belong to that specific word. Precomputing shared prefix counts across all words allows swift updates when removing one item."
+    },
+    {
+      "level": 2,
+      "title": "Trie Prefix Counting",
+      "text": "Build a prefix tree with all words, counting how many words pass through each node. Also maintain how many nodes at each depth have a visit count of at least k."
+    },
+    {
+      "level": 3,
+      "title": "Simulate Removal and Revert",
+      "text": "For each word, walk down its nodes, decrement each node visit count, and track when a count drops below k to adjust valid depths. Record the maximum depth with count at least k, then restore the node counts before proceeding."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def longestCommonPrefix(self, words: list[str], k: int) -> list[int]:\n        n = len(words)\n        if k > n - 1:\n            return [0] * n\n\n        trie = [{}]\n        node_counts = [0]\n        node_depths = [0]\n\n        for w in words:\n            curr = 0\n            for ch in w:\n                if ch not in trie[curr]:\n                    trie[curr][ch] = len(trie)\n                    trie.append({})\n                    node_counts.append(0)\n                    node_depths.append(node_depths[curr] + 1)\n                curr = trie[curr][ch]\n                node_counts[curr] += 1\n\n        max_d = max(node_depths) if node_depths else 0\n        depth_counts = [0] * (max_d + 1)\n        for i in range(1, len(node_counts)):\n            if node_counts[i] >= k:\n                depth_counts[node_depths[i]] += 1\n\n        initial_max_d = 0\n        for d in range(max_d, -1, -1):\n            if depth_counts[d] > 0:\n                initial_max_d = d\n                break\n\n        ans = [0] * n\n        for idx, w in enumerate(words):\n            path = []\n            curr = 0\n            for ch in w:\n                curr = trie[curr][ch]\n                path.append(curr)\n\n            for node in path:\n                if node_counts[node] == k:\n                    depth_counts[node_depths[node]] -= 1\n                node_counts[node] -= 1\n\n            if initial_max_d > len(w):\n                ans[idx] = initial_max_d\n            else:\n                cur = initial_max_d\n                while cur > 0 and depth_counts[cur] == 0:\n                    cur -= 1\n                ans[idx] = cur\n\n            for node in path:\n                node_counts[node] += 1\n                if node_counts[node] == k:\n                    depth_counts[node_depths[node]] += 1\n\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * L)",
+    "space": "O(N * L)",
+    "variables": [
+      "N: number of words",
+      "L: maximum length of a word"
+    ],
+    "notes": "Each word traverses its prefix path twice per query for removal and restoration.",
+    "whyNaiveFails": "Rebuilding the prefix tree from scratch for every removal takes O(N^2 * L) which exceeds the time limit.",
+    "spaceTimeTradeoff": "Storing the prefix tree in memory enables constant amortized depth lookups.",
+    "interviewerExpectation": "Use a prefix tree with rollback and depth-bucket tracking to process queries in linear time."
+  },
+  "solutions": [
+    {
+      "code": "class Solution:\n    def longestCommonPrefix(self, words: list[str], k: int) -> list[int]:\n        n = len(words)\n        if k > n - 1:\n            return [0] * n\n\n        trie = [{}]\n        node_counts = [0]\n        node_depths = [0]\n\n        for w in words:\n            curr = 0\n            for ch in w:\n                if ch not in trie[curr]:\n                    trie[curr][ch] = len(trie)\n                    trie.append({})\n                    node_counts.append(0)\n                    node_depths.append(node_depths[curr] + 1)\n                curr = trie[curr][ch]\n                node_counts[curr] += 1\n\n        max_d = max(node_depths) if node_depths else 0\n        depth_counts = [0] * (max_d + 1)\n        for i in range(1, len(node_counts)):\n            if node_counts[i] >= k:\n                depth_counts[node_depths[i]] += 1\n\n        initial_max_d = 0\n        for d in range(max_d, -1, -1):\n            if depth_counts[d] > 0:\n                initial_max_d = d\n                break\n\n        ans = [0] * n\n        for idx, w in enumerate(words):\n            path = []\n            curr = 0\n            for ch in w:\n                curr = trie[curr][ch]\n                path.append(curr)\n\n            for node in path:\n                if node_counts[node] == k:\n                    depth_counts[node_depths[node]] -= 1\n                node_counts[node] -= 1\n\n            if initial_max_d > len(w):\n                ans[idx] = initial_max_d\n            else:\n                cur = initial_max_d\n                while cur > 0 and depth_counts[cur] == 0:\n                    cur -= 1\n                ans[idx] = cur\n\n            for node in path:\n                node_counts[node] += 1\n                if node_counts[node] == k:\n                    depth_counts[node_depths[node]] += 1\n\n        return ans",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "python3"
+    },
+    {
+      "code": "#include <vector>\n#include <string>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\n    struct TrieNode {\n        int next[26] = {0};\n        int count = 0;\n        int depth = 0;\n    };\n\npublic:\n    vector<int> longestCommonPrefix(vector<string>& words, int k) {\n        int n = words.size();\n        if (k > n - 1) return vector<int>(n, 0);\n\n        vector<TrieNode> trie;\n        trie.push_back(TrieNode());\n\n        for (const string& w : words) {\n            int curr = 0;\n            for (char ch : w) {\n                int c = ch - 'a';\n                if (!trie[curr].next[c]) {\n                    trie[curr].next[c] = trie.size();\n                    TrieNode newNode;\n                    newNode.depth = trie[curr].depth + 1;\n                    trie.push_back(newNode);\n                }\n                curr = trie[curr].next[c];\n                trie[curr].count++;\n            }\n        }\n\n        int max_d = 0;\n        for (const auto& node : trie) {\n            max_d = max(max_d, node.depth);\n        }\n\n        vector<int> depth_counts(max_d + 1, 0);\n        for (size_t i = 1; i < trie.size(); ++i) {\n            if (trie[i].count >= k) {\n                depth_counts[trie[i].depth]++;\n            }\n        }\n\n        int initial_max_d = 0;\n        for (int d = max_d; d >= 0; --d) {\n            if (depth_counts[d] > 0) {\n                initial_max_d = d;\n                break;\n            }\n        }\n\n        vector<int> ans(n, 0);\n        vector<int> path;\n        for (int idx = 0; idx < n; ++idx) {\n            path.clear();\n            int curr = 0;\n            for (char ch : words[idx]) {\n                curr = trie[curr].next[ch - 'a'];\n                path.push_back(curr);\n            }\n\n            for (int node : path) {\n                if (trie[node].count == k) {\n                    depth_counts[trie[node].depth]--;\n                }\n                trie[node].count--;\n            }\n\n            if (initial_max_d > (int)words[idx].size()) {\n                ans[idx] = initial_max_d;\n            } else {\n                int cur = initial_max_d;\n                while (cur > 0 && depth_counts[cur] == 0) {\n                    cur--;\n                }\n                ans[idx] = cur;\n            }\n\n            for (int node : path) {\n                trie[node].count++;\n                if (trie[node].count == k) {\n                    depth_counts[trie[node].depth]++;\n                }\n            }\n        }\n\n        return ans;\n    }\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "cpp"
+    },
+    {
+      "code": "import java.util.*;\n\nclass Solution {\n    static class TrieNode {\n        int[] next = new int[26];\n        int count = 0;\n        int depth = 0;\n    }\n\n    public int[] longestCommonPrefix(String[] words, int k) {\n        int n = words.length;\n        if (k > n - 1) return new int[n];\n\n        List<TrieNode> trie = new ArrayList<>();\n        trie.add(new TrieNode());\n\n        for (String w : words) {\n            int curr = 0;\n            for (int j = 0; j < w.length(); j++) {\n                int c = w.charAt(j) - 'a';\n                if (trie.get(curr).next[c] == 0) {\n                    trie.get(curr).next[c] = trie.size();\n                    TrieNode newNode = new TrieNode();\n                    newNode.depth = trie.get(curr).depth + 1;\n                    trie.add(newNode);\n                }\n                curr = trie.get(curr).next[c];\n                trie.get(curr).count++;\n            }\n        }\n\n        int maxD = 0;\n        for (TrieNode node : trie) {\n            maxD = Math.max(maxD, node.depth);\n        }\n\n        int[] depthCounts = new int[maxD + 1];\n        for (int i = 1; i < trie.size(); i++) {\n            if (trie.get(i).count >= k) {\n                depthCounts[trie.get(i).depth]++;\n            }\n        }\n\n        int initialMaxD = 0;\n        for (int d = maxD; d >= 0; d--) {\n            if (depthCounts[d] > 0) {\n                initialMaxD = d;\n                break;\n            }\n        }\n\n        int[] ans = new int[n];\n        List<Integer> path = new ArrayList<>();\n        for (int idx = 0; idx < n; idx++) {\n            path.clear();\n            int curr = 0;\n            String w = words[idx];\n            for (int j = 0; j < w.length(); j++) {\n                curr = trie.get(curr).next[w.charAt(j) - 'a'];\n                path.add(curr);\n            }\n\n            for (int node : path) {\n                if (trie.get(node).count == k) {\n                    depthCounts[trie.get(node).depth]--;\n                }\n                trie.get(node).count--;\n            }\n\n            if (initialMaxD > w.length()) {\n                ans[idx] = initialMaxD;\n            } else {\n                int cur = initialMaxD;\n                while (cur > 0 && depthCounts[cur] == 0) {\n                    cur--;\n                }\n                ans[idx] = cur;\n            }\n\n            for (int node : path) {\n                trie.get(node).count++;\n                if (trie.get(node).count == k) {\n                    depthCounts[trie.get(node).depth]++;\n                }\n            }\n        }\n\n        return ans;\n    }\n}",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "java"
+    },
+    {
+      "code": "var longestCommonPrefix = function(words, k) {\n    const n = words.length;\n    if (k > n - 1) return new Array(n).fill(0);\n\n    const next = [new Map()];\n    const count = [0];\n    const depth = [0];\n\n    for (const w of words) {\n        let curr = 0;\n        for (let j = 0; j < w.length; j++) {\n            const ch = w[j];\n            if (!next[curr].has(ch)) {\n                const nextIdx = next.length;\n                next[curr].set(ch, nextIdx);\n                next.push(new Map());\n                count.push(0);\n                depth.push(depth[curr] + 1);\n            }\n            curr = next[curr].get(ch);\n            count[curr]++;\n        }\n    }\n\n    let maxD = 0;\n    for (let i = 0; i < depth.length; i++) {\n        if (depth[i] > maxD) maxD = depth[i];\n    }\n\n    const depthCounts = new Array(maxD + 1).fill(0);\n    for (let i = 1; i < count.length; i++) {\n        if (count[i] >= k) {\n            depthCounts[depth[i]]++;\n        }\n    }\n\n    let initialMaxD = 0;\n    for (let d = maxD; d >= 0; d--) {\n        if (depthCounts[d] > 0) {\n            initialMaxD = d;\n            break;\n        }\n    }\n\n    const ans = new Array(n).fill(0);\n    for (let idx = 0; idx < n; idx++) {\n        const w = words[idx];\n        const path = [];\n        let curr = 0;\n        for (let j = 0; j < w.length; j++) {\n            curr = next[curr].get(w[j]);\n            path.push(curr);\n        }\n\n        for (const node of path) {\n            if (count[node] === k) {\n                depthCounts[depth[node]]--;\n            }\n            count[node]--;\n        }\n\n        if (initialMaxD > w.length) {\n            ans[idx] = initialMaxD;\n        } else {\n            let cur = initialMaxD;\n            while (cur > 0 && depthCounts[cur] === 0) {\n                cur--;\n            }\n            ans[idx] = cur;\n        }\n\n        for (const node of path) {\n            count[node]++;\n            if (count[node] === k) {\n                depthCounts[depth[node]]++;\n            }\n        }\n    }\n\n    return ans;\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "javascript"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

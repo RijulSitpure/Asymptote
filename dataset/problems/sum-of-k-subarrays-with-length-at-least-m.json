@@ -1,0 +1,79 @@
+{
+  "slug": "sum-of-k-subarrays-with-length-at-least-m",
+  "number": 3473,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subarray Decomposition",
+      "text": "Consider decomposing the problem into choosing j non-overlapping segments from the prefix up to index i."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Sum Optimization",
+      "text": "The sum of a segment nums[p..i-1] can be computed as prefix[i] - prefix[p] with length at least m implying p <= i - m."
+    },
+    {
+      "level": 3,
+      "title": "Running Best Offset",
+      "text": "Maintain max_val tracking max(dp[p][j - 1] - prefix[p]) to perform O(1) state transitions instead of re-scanning previous boundaries."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maxSum(self, nums: list[int], k: int, m: int) -> int:\n        n = len(nums)\n        dp = [[-float('inf')] * (k + 1) for _ in range(n + 1)]\n        for i in range(n + 1):\n            dp[i][0] = 0\n            \n        prefix_sum = [0] * (n + 1)\n        for i in range(n):\n            prefix_sum[i + 1] = prefix_sum[i] + nums[i]\n            \n        for j in range(1, k + 1):\n            max_val = -float('inf')\n            for i in range(1, n + 1):\n                if i >= m:\n                    max_val = max(max_val, dp[i - m][j - 1] - prefix_sum[i - m])\n                dp[i][j] = dp[i - 1][j]\n                if max_val != -float('inf'):\n                    dp[i][j] = max(dp[i][j], max_val + prefix_sum[i])\n                    \n        return dp[n][k]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * k)",
+    "space": "O(n * k)",
+    "variables": [
+      "n: length of array nums",
+      "k: number of non-overlapping subarrays"
+    ],
+    "notes": "Iterates through n elements across k layers with O(1) running prefix maximum transitions.",
+    "whyNaiveFails": "Re-scanning all candidate start indices p for each subarray takes O(n^2 * k) time.",
+    "spaceTimeTradeoff": "Maintaining the optimal prefix difference offset eliminates the nested loop over p.",
+    "interviewerExpectation": "Formulate 2D state (i, j) and optimize transition using prefix sum difference tracking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxSum(self, nums: list[int], k: int, m: int) -> int:\n        n = len(nums)\n        dp = [[-float('inf')] * (k + 1) for _ in range(n + 1)]\n        for i in range(n + 1):\n            dp[i][0] = 0\n            \n        prefix_sum = [0] * (n + 1)\n        for i in range(n):\n            prefix_sum[i + 1] = prefix_sum[i] + nums[i]\n            \n        for j in range(1, k + 1):\n            max_val = -float('inf')\n            for i in range(1, n + 1):\n                if i >= m:\n                    max_val = max(max_val, dp[i - m][j - 1] - prefix_sum[i - m])\n                dp[i][j] = dp[i - 1][j]\n                if max_val != -float('inf'):\n                    dp[i][j] = max(dp[i][j], max_val + prefix_sum[i])\n                    \n        return dp[n][k]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int maxSum(vector<int>& nums, int k, int m) {\n        int n = nums.size();\n        const int INF = 1e9;\n        vector<vector<int>> dp(n + 1, vector<int>(k + 1, -INF));\n        for (int i = 0; i <= n; i++) dp[i][0] = 0;\n\n        vector<int> prefix(n + 1, 0);\n        for (int i = 0; i < n; i++) prefix[i + 1] = prefix[i] + nums[i];\n\n        for (int j = 1; j <= k; j++) {\n            int maxVal = -INF;\n            for (int i = 1; i <= n; i++) {\n                if (i >= m && dp[i - m][j - 1] != -INF) {\n                    maxVal = max(maxVal, dp[i - m][j - 1] - prefix[i - m]);\n                }\n                dp[i][j] = dp[i - 1][j];\n                if (maxVal != -INF) {\n                    dp[i][j] = max(dp[i][j], maxVal + prefix[i]);\n                }\n            }\n        }\n        return dp[n][k];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.Arrays;\n\nclass Solution {\n    public int maxSum(int[] nums, int k, int m) {\n        int n = nums.length;\n        final int INF = (int) 1e9;\n        int[][] dp = new int[n + 1][k + 1];\n        for (int[] row : dp) Arrays.fill(row, -INF);\n        for (int i = 0; i <= n; i++) dp[i][0] = 0;\n\n        int[] prefix = new int[n + 1];\n        for (int i = 0; i < n; i++) prefix[i + 1] = prefix[i] + nums[i];\n\n        for (int j = 1; j <= k; j++) {\n            int maxVal = -INF;\n            for (int i = 1; i <= n; i++) {\n                if (i >= m && dp[i - m][j - 1] != -INF) {\n                    maxVal = Math.max(maxVal, dp[i - m][j - 1] - prefix[i - m]);\n                }\n                dp[i][j] = dp[i - 1][j];\n                if (maxVal != -INF) {\n                    dp[i][j] = Math.max(dp[i][j], maxVal + prefix[i]);\n                }\n            }\n        }\n        return dp[n][k];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} nums\n * @param {number} k\n * @param {number} m\n * @return {number}\n */\nvar maxSum = function(nums, k, m) {\n    const n = nums.length;\n    const INF = 1e9;\n    const dp = Array.from({ length: n + 1 }, () => new Array(k + 1).fill(-INF));\n    for (let i = 0; i <= n; i++) dp[i][0] = 0;\n\n    const prefix = new Array(n + 1).fill(0);\n    for (let i = 0; i < n; i++) prefix[i + 1] = prefix[i] + nums[i];\n\n    for (let j = 1; j <= k; j++) {\n        let maxVal = -INF;\n        for (let i = 1; i <= n; i++) {\n            if (i >= m && dp[i - m][j - 1] !== -INF) {\n                maxVal = Math.max(maxVal, dp[i - m][j - 1] - prefix[i - m]);\n            }\n            dp[i][j] = dp[i - 1][j];\n            if (maxVal !== -INF) {\n                dp[i][j] = Math.max(dp[i][j], maxVal + prefix[i]);\n            }\n        }\n    }\n    return dp[n][k];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

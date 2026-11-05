@@ -1,0 +1,78 @@
+{
+  "slug": "longest-special-path-ii",
+  "number": 3486,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Downward Path Constraints",
+      "text": "Any valid path from an ancestor to a descendant may contain at most one duplicate value. Tracking the depths where each value was seen helps identify where valid downward segments begin."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Sums and Depth Map",
+      "text": "Perform a recursive traversal while maintaining the cumulative edge weights along the path. Store the depth of previous occurrences of each node value."
+    },
+    {
+      "level": 3,
+      "title": "Boundary Maintenance",
+      "text": "Keep track of the two largest previous duplicate depths. The path start index must be at least the smaller of the two largest conflict depths to ensure at most one duplicated value exists."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport sys\n\nsys.setrecursionlimit(200000)\n\nclass Solution:\n    def longestSpecialPath(self, edges: list[list[int]], nums: list[int]) -> list[int]:\n        n = len(nums)\n        graph = [[] for _ in range(n)]\n        for u, v, w in edges:\n            graph[u].append((v, w))\n            graph[v].append((u, w))\n\n        max_length = 0\n        min_nodes = 1\n\n        prefix = [0]\n        last_seen = {}\n\n        def dfs(u: int, prev: int, left_boundary: list[int]) -> None:\n            nonlocal max_length, min_nodes\n\n            val = nums[u]\n            prev_depth = last_seen.get(val, 0)\n            last_seen[val] = len(prefix)\n\n            if prev_depth != 0:\n                left_boundary.append(prev_depth)\n                left_boundary.sort()\n                left_boundary = [left_boundary[-2], left_boundary[-1]]\n\n            start_idx = left_boundary[0]\n            length = prefix[-1] - prefix[start_idx]\n            nodes = len(prefix) - start_idx\n\n            if length > max_length:\n                max_length = length\n                min_nodes = nodes\n            elif length == max_length:\n                min_nodes = min(min_nodes, nodes)\n\n            for v, w in graph[u]:\n                if v != prev:\n                    prefix.append(prefix[-1] + w)\n                    dfs(v, u, list(left_boundary))\n                    prefix.pop()\n\n            last_seen[val] = prev_depth\n\n        dfs(0, -1, [0, 0])\n        return [max_length, min_nodes]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in the tree"
+    ],
+    "notes": "Each tree node and edge is visited once with constant-time boundary updates.",
+    "whyNaiveFails": "Checking all ancestor pairs naively requires O(N^2) operations, which times out for large trees.",
+    "spaceTimeTradeoff": "Maintaining recursion state and boundary pairs uses linear space for linear execution time.",
+    "interviewerExpectation": "Recognize that maintaining the top two conflict depths enables constant-time window bounds during tree traversal."
+  },
+  "solutions": [
+    {
+      "code": "import sys\n\nsys.setrecursionlimit(200000)\n\nclass Solution:\n    def longestSpecialPath(self, edges: list[list[int]], nums: list[int]) -> list[int]:\n        n = len(nums)\n        graph = [[] for _ in range(n)]\n        for u, v, w in edges:\n            graph[u].append((v, w))\n            graph[v].append((u, w))\n\n        max_length = 0\n        min_nodes = 1\n\n        prefix = [0]\n        last_seen = {}\n\n        def dfs(u: int, prev: int, left_boundary: list[int]) -> None:\n            nonlocal max_length, min_nodes\n\n            val = nums[u]\n            prev_depth = last_seen.get(val, 0)\n            last_seen[val] = len(prefix)\n\n            if prev_depth != 0:\n                left_boundary.append(prev_depth)\n                left_boundary.sort()\n                left_boundary = [left_boundary[-2], left_boundary[-1]]\n\n            start_idx = left_boundary[0]\n            length = prefix[-1] - prefix[start_idx]\n            nodes = len(prefix) - start_idx\n\n            if length > max_length:\n                max_length = length\n                min_nodes = nodes\n            elif length == max_length:\n                min_nodes = min(min_nodes, nodes)\n\n            for v, w in graph[u]:\n                if v != prev:\n                    prefix.append(prefix[-1] + w)\n                    dfs(v, u, list(left_boundary))\n                    prefix.pop()\n\n            last_seen[val] = prev_depth\n\n        dfs(0, -1, [0, 0])\n        return [max_length, min_nodes]",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "python3"
+    },
+    {
+      "code": "#include <vector>\n#include <algorithm>\n#include <unordered_map>\n\nusing namespace std;\n\nclass Solution {\n    int maxLength = 0;\n    int minNodes = 1;\n    vector<vector<pair<int, int>>> graph;\n    vector<int> prefix;\n    unordered_map<int, int> lastSeen;\n\n    void dfs(int u, int prev, vector<int> leftBoundary, const vector<int>& nums) {\n        int val = nums[u];\n        int prevDepth = lastSeen.count(val) ? lastSeen[val] : 0;\n        lastSeen[val] = (int)prefix.size();\n\n        if (prevDepth != 0) {\n            leftBoundary.push_back(prevDepth);\n            sort(leftBoundary.begin(), leftBoundary.end());\n            leftBoundary = {leftBoundary[leftBoundary.size() - 2], leftBoundary.back()};\n        }\n\n        int startIdx = leftBoundary[0];\n        int length = prefix.back() - prefix[startIdx];\n        int nodes = (int)prefix.size() - startIdx;\n\n        if (length > maxLength) {\n            maxLength = length;\n            minNodes = nodes;\n        } else if (length == maxLength) {\n            minNodes = min(minNodes, nodes);\n        }\n\n        for (const auto& edge : graph[u]) {\n            int v = edge.first;\n            int w = edge.second;\n            if (v != prev) {\n                prefix.push_back(prefix.back() + w);\n                dfs(v, u, leftBoundary, nums);\n                prefix.pop_back();\n            }\n        }\n\n        lastSeen[val] = prevDepth;\n    }\n\npublic:\n    vector<int> longestSpecialPath(vector<vector<int>>& edges, vector<int>& nums) {\n        int n = nums.size();\n        graph.assign(n, vector<pair<int, int>>());\n        for (const auto& e : edges) {\n            graph[e[0]].emplace_back(e[1], e[2]);\n            graph[e[1]].emplace_back(e[0], e[2]);\n        }\n\n        maxLength = 0;\n        minNodes = 1;\n        prefix = {0};\n        lastSeen.clear();\n\n        dfs(0, -1, {0, 0}, nums);\n        return {maxLength, minNodes};\n    }\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "cpp"
+    },
+    {
+      "code": "import java.util.*;\n\nclass Solution {\n    private int maxLength = 0;\n    private int minNodes = 1;\n    private List<List<int[]>> graph;\n    private List<Integer> prefix;\n    private Map<Integer, Integer> lastSeen;\n\n    private void dfs(int u, int prev, int[] leftBoundary, int[] nums) {\n        int val = nums[u];\n        int prevDepth = lastSeen.getOrDefault(val, 0);\n        lastSeen.put(val, prefix.size());\n\n        int[] nextBoundary = leftBoundary;\n        if (prevDepth != 0) {\n            int[] cand = new int[]{leftBoundary[0], leftBoundary[1], prevDepth};\n            Arrays.sort(cand);\n            nextBoundary = new int[]{cand[1], cand[2]};\n        }\n\n        int startIdx = nextBoundary[0];\n        int length = prefix.get(prefix.size() - 1) - prefix.get(startIdx);\n        int nodes = prefix.size() - startIdx;\n\n        if (length > maxLength) {\n            maxLength = length;\n            minNodes = nodes;\n        } else if (length == maxLength) {\n            minNodes = Math.min(minNodes, nodes);\n        }\n\n        for (int[] edge : graph.get(u)) {\n            int v = edge[0];\n            int w = edge[1];\n            if (v != prev) {\n                prefix.add(prefix.get(prefix.size() - 1) + w);\n                dfs(v, u, nextBoundary, nums);\n                prefix.remove(prefix.size() - 1);\n            }\n        }\n\n        lastSeen.put(val, prevDepth);\n    }\n\n    public int[] longestSpecialPath(int[][] edges, int[] nums) {\n        int n = nums.length;\n        graph = new ArrayList<>();\n        for (int i = 0; i < n; i++) graph.add(new ArrayList<>());\n        for (int[] e : edges) {\n            graph.get(e[0]).add(new int[]{e[1], e[2]});\n            graph.get(e[1]).add(new int[]{e[0], e[2]});\n        }\n\n        maxLength = 0;\n        minNodes = 1;\n        prefix = new ArrayList<>();\n        prefix.add(0);\n        lastSeen = new HashMap<>();\n\n        dfs(0, -1, new int[]{0, 0}, nums);\n        return new int[]{maxLength, minNodes};\n    }\n}",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "java"
+    },
+    {
+      "code": "var longestSpecialPath = function(edges, nums) {\n    const n = nums.length;\n    const graph = Array.from({ length: n }, () => []);\n    for (const [u, v, w] of edges) {\n        graph[u].push([v, w]);\n        graph[v].push([u, w]);\n    }\n\n    let maxLength = 0;\n    let minNodes = 1;\n    const prefix = [0];\n    const lastSeen = new Map();\n\n    function dfs(u, prev, leftBoundary) {\n        const val = nums[u];\n        const prevDepth = lastSeen.has(val) ? lastSeen.get(val) : 0;\n        lastSeen.set(val, prefix.length);\n\n        let nextBoundary = leftBoundary;\n        if (prevDepth !== 0) {\n            const arr = [leftBoundary[0], leftBoundary[1], prevDepth];\n            arr.sort((a, b) => a - b);\n            nextBoundary = [arr[1], arr[2]];\n        }\n\n        const startIdx = nextBoundary[0];\n        const length = prefix[prefix.length - 1] - prefix[startIdx];\n        const nodes = prefix.length - startIdx;\n\n        if (length > maxLength) {\n            maxLength = length;\n            minNodes = nodes;\n        } else if (length === maxLength) {\n            minNodes = Math.min(minNodes, nodes);\n        }\n\n        for (const [v, w] of graph[u]) {\n            if (v !== prev) {\n                prefix.push(prefix[prefix.length - 1] + w);\n                dfs(v, u, nextBoundary);\n                prefix.pop();\n            }\n        }\n\n        lastSeen.set(val, prevDepth);\n    }\n\n    dfs(0, -1, [0, 0]);\n    return [maxLength, minNodes];\n};",
+      "approach": "Optimal",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05",
+      "lang": "javascript"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}

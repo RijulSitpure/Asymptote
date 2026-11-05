@@ -1,0 +1,78 @@
+{
+  "slug": "fruits-into-baskets-iii",
+  "number": 3479,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Leftmost Sufficient Capacity",
+      "text": "We need to quickly locate the first index j where basket capacity is at least the current fruit requirement."
+    },
+    {
+      "level": 2,
+      "title": "Range Maximum Representation",
+      "text": "Represent basket capacities in a range maximum segment tree so child subtrees can be queried for sufficient maximum value."
+    },
+    {
+      "level": 3,
+      "title": "Binary Descent on Tree",
+      "text": "Traverse down to the left child if its maximum capacity is sufficient, otherwise go right. Update the leaf to -1 upon placement."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def numOfUnplacedFruits(self, fruits: list[int], baskets: list[int]) -> int:\n        n = len(baskets)\n        tree = [0] * (4 * n)\n\n        def build(node, start, end):\n            if start == end:\n                tree[node] = baskets[start]\n                return\n            mid = (start + end) // 2\n            build(2 * node + 1, start, mid)\n            build(2 * node + 2, mid + 1, end)\n            tree[node] = max(tree[2 * node + 1], tree[2 * node + 2])\n\n        def query_and_update(node, start, end, target):\n            if tree[node] < target:\n                return -1\n            if start == end:\n                tree[node] = -1\n                return start\n            mid = (start + end) // 2\n            if tree[2 * node + 1] >= target:\n                res = query_and_update(2 * node + 1, start, mid, target)\n            else:\n                res = query_and_update(2 * node + 2, mid + 1, end, target)\n            tree[node] = max(tree[2 * node + 1], tree[2 * node + 2])\n            return res\n\n        build(0, 0, n - 1)\n        unplaced = 0\n        for fruit in fruits:\n            idx = query_and_update(0, 0, n - 1, fruit)\n            if idx == -1:\n                unplaced += 1\n        return unplaced\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of fruits and baskets"
+    ],
+    "notes": "Building tree takes O(n) and each of the n queries and point updates takes O(log n).",
+    "whyNaiveFails": "O(n^2) linear searching times out when n reaches 10^5.",
+    "spaceTimeTradeoff": "Segment tree stores range maximums allowing logarithmic leftmost search.",
+    "interviewerExpectation": "Use range maximum segment tree with tree traversal to find the first valid element."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def numOfUnplacedFruits(self, fruits: list[int], baskets: list[int]) -> int:\n        n = len(baskets)\n        tree = [0] * (4 * n)\n\n        def build(node, start, end):\n            if start == end:\n                tree[node] = baskets[start]\n                return\n            mid = (start + end) // 2\n            build(2 * node + 1, start, mid)\n            build(2 * node + 2, mid + 1, end)\n            tree[node] = max(tree[2 * node + 1], tree[2 * node + 2])\n\n        def query_and_update(node, start, end, target):\n            if tree[node] < target:\n                return -1\n            if start == end:\n                tree[node] = -1\n                return start\n            mid = (start + end) // 2\n            if tree[2 * node + 1] >= target:\n                res = query_and_update(2 * node + 1, start, mid, target)\n            else:\n                res = query_and_update(2 * node + 2, mid + 1, end, target)\n            tree[node] = max(tree[2 * node + 1], tree[2 * node + 2])\n            return res\n\n        build(0, 0, n - 1)\n        unplaced = 0\n        for fruit in fruits:\n            idx = query_and_update(0, 0, n - 1, fruit)\n            if idx == -1:\n                unplaced += 1\n        return unplaced",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\n    vector<int> tree;\n    int n;\n\n    void build(const vector<int>& baskets, int node, int start, int end) {\n        if (start == end) {\n            tree[node] = baskets[start];\n            return;\n        }\n        int mid = (start + end) / 2;\n        build(baskets, 2 * node + 1, start, mid);\n        build(baskets, 2 * node + 2, mid + 1, end);\n        tree[node] = max(tree[2 * node + 1], tree[2 * node + 2]);\n    }\n\n    int queryAndUpdate(int node, int start, int end, int target) {\n        if (tree[node] < target) return -1;\n        if (start == end) {\n            tree[node] = -1;\n            return start;\n        }\n        int mid = (start + end) / 2;\n        int res = -1;\n        if (tree[2 * node + 1] >= target) {\n            res = queryAndUpdate(2 * node + 1, start, mid, target);\n        } else {\n            res = queryAndUpdate(2 * node + 2, mid + 1, end, target);\n        }\n        tree[node] = max(tree[2 * node + 1], tree[2 * node + 2]);\n        return res;\n    }\n\npublic:\n    int numOfUnplacedFruits(vector<int>& fruits, vector<int>& baskets) {\n        n = baskets.size();\n        tree.assign(4 * n, 0);\n        build(baskets, 0, 0, n - 1);\n\n        int unplaced = 0;\n        for (int fruit : fruits) {\n            int idx = queryAndUpdate(0, 0, n - 1, fruit);\n            if (idx == -1) unplaced++;\n        }\n        return unplaced;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    private int[] tree;\n\n    private void build(int[] baskets, int node, int start, int end) {\n        if (start == end) {\n            tree[node] = baskets[start];\n            return;\n        }\n        int mid = (start + end) / 2;\n        build(baskets, 2 * node + 1, start, mid);\n        build(baskets, 2 * node + 2, mid + 1, end);\n        tree[node] = Math.max(tree[2 * node + 1], tree[2 * node + 2]);\n    }\n\n    private int queryAndUpdate(int node, int start, int end, int target) {\n        if (tree[node] < target) return -1;\n        if (start == end) {\n            tree[node] = -1;\n            return start;\n        }\n        int mid = (start + end) / 2;\n        int res;\n        if (tree[2 * node + 1] >= target) {\n            res = queryAndUpdate(2 * node + 1, start, mid, target);\n        } else {\n            res = queryAndUpdate(2 * node + 2, mid + 1, end, target);\n        }\n        tree[node] = Math.max(tree[2 * node + 1], tree[2 * node + 2]);\n        return res;\n    }\n\n    public int numOfUnplacedFruits(int[] fruits, int[] baskets) {\n        int n = baskets.length;\n        tree = new int[4 * n];\n        build(baskets, 0, 0, n - 1);\n\n        int unplaced = 0;\n        for (int fruit : fruits) {\n            int idx = queryAndUpdate(0, 0, n - 1, fruit);\n            if (idx == -1) unplaced++;\n        }\n        return unplaced;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "/**\n * @param {number[]} fruits\n * @param {number[]} baskets\n * @return {number}\n */\nvar numOfUnplacedFruits = function(fruits, baskets) {\n    const n = baskets.length;\n    const tree = new Array(4 * n).fill(0);\n\n    function build(node, start, end) {\n        if (start === end) {\n            tree[node] = baskets[start];\n            return;\n        }\n        const mid = (start + end) >> 1;\n        build(2 * node + 1, start, mid);\n        build(2 * node + 2, mid + 1, end);\n        tree[node] = Math.max(tree[2 * node + 1], tree[2 * node + 2]);\n    }\n\n    function queryAndUpdate(node, start, end, target) {\n        if (tree[node] < target) return -1;\n        if (start === end) {\n            tree[node] = -1;\n            return start;\n        }\n        const mid = (start + end) >> 1;\n        let res;\n        if (tree[2 * node + 1] >= target) {\n            res = queryAndUpdate(2 * node + 1, start, mid, target);\n        } else {\n            res = queryAndUpdate(2 * node + 2, mid + 1, end, target);\n        }\n        tree[node] = Math.max(tree[2 * node + 1], tree[2 * node + 2]);\n        return res;\n    }\n\n    build(0, 0, n - 1);\n    let unplaced = 0;\n    for (const fruit of fruits) {\n        const idx = queryAndUpdate(0, 0, n - 1, fruit);\n        if (idx === -1) unplaced++;\n    }\n    return unplaced;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-05"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05"
+}
