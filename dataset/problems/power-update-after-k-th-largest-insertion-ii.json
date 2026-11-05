@@ -1,0 +1,79 @@
+{
+  "slug": "power-update-after-k-th-largest-insertion-ii",
+  "number": 3930,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Insert the incoming stream value into an ordered data collection."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Retrieve the element residing at index minus k from the sorted sequence."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Apply fast modular exponentiation to update accumulator p modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom bisect import insort\n\ndef powerUpdatesII(nums: list[int], p: int, queries: list[list[int]]) -> list[int]:\n    MOD = 1_000_000_007\n    sorted_nums = sorted(nums)\n    ans = []\n    cur_p = p\n    for val, k in queries:\n        insort(sorted_nums, val)\n        x = sorted_nums[-k]\n        cur_p = pow(cur_p, x, MOD)\n        ans.append(cur_p)\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "q"
+    ],
+    "time": "O(q * (n + q))",
+    "space": "O(n + q)",
+    "notes": "Maintains stream sorted order and performs modular power exponentiation per query.",
+    "whyNaiveFails": "Full sorting from scratch on every insertion takes O(q * n log n).",
+    "spaceTimeTradeoff": "Retains continuous dynamic sorted buffer.",
+    "interviewerExpectation": "Maintains dynamic rank order with modular binary exponentiation."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from bisect import insort\n\ndef powerUpdatesII(nums: list[int], p: int, queries: list[list[int]]) -> list[int]:\n    MOD = 1_000_000_007\n    sorted_nums = sorted(nums)\n    ans = []\n    cur_p = p\n    for val, k in queries:\n        insort(sorted_nums, val)\n        x = sorted_nums[-k]\n        cur_p = pow(cur_p, x, MOD)\n        ans.append(cur_p)\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<int> powerUpdatesII(std::vector<int>& nums, int p, std::vector<std::vector<int>>& queries) {\n        const int MOD = 1e9 + 7;\n        std::vector<int> sortedNums = nums;\n        std::sort(sortedNums.begin(), sortedNums.end());\n        std::vector<int> ans;\n        long long curP = p;\n        \n        auto power = [&](long long base, long long exp) -> long long {\n            long long res = 1;\n            base %= MOD;\n            while (exp > 0) {\n                if (exp & 1) res = (res * base) % MOD;\n                base = (base * base) % MOD;\n                exp >>= 1;\n            }\n            return res;\n        };\n        \n        for (const auto& q : queries) {\n            int val = q[0], k = q[1];\n            auto it = std::lower_bound(sortedNums.begin(), sortedNums.end(), val);\n            sortedNums.insert(it, val);\n            int x = sortedNums[sortedNums.size() - k];\n            curP = power(curP, x);\n            ans.push_back(curP);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] powerUpdatesII(int[] nums, int p, int[][] queries) {\n        int MOD = 1_000_000_007;\n        List<Integer> list = new ArrayList<>();\n        for (int x : nums) list.add(x);\n        Collections.sort(list);\n        int[] ans = new int[queries.length];\n        long curP = p;\n        \n        for (int i = 0; i < queries.length; i++) {\n            int val = queries[i][0], k = queries[i][1];\n            int idx = Collections.binarySearch(list, val);\n            if (idx < 0) idx = -idx - 1;\n            list.add(idx, val);\n            int x = list.get(list.size() - k);\n            curP = power(curP, x, MOD);\n            ans[i] = (int)curP;\n        }\n        return ans;\n    }\n    \n    private long power(long base, long exp, int mod) {\n        long res = 1;\n        base %= mod;\n        while (exp > 0) {\n            if ((exp & 1) == 1) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp >>= 1;\n        }\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function powerUpdatesII(nums, p, queries) {\n    const MOD = 1000000007n;\n    const sorted = [...nums].sort((a, b) => a - b);\n    const ans = [];\n    let curP = BigInt(p);\n    \n    function power(base, exp) {\n        let res = 1n;\n        base = base % MOD;\n        exp = BigInt(exp);\n        while (exp > 0n) {\n            if (exp % 2n === 1n) res = (res * base) % MOD;\n            base = (base * base) % MOD;\n            exp /= 2n;\n        }\n        return res;\n    }\n    \n    function insort(arr, target) {\n        let low = 0, high = arr.length;\n        while (low < high) {\n            const mid = (low + high) >> 1;\n            if (arr[mid] < target) low = mid + 1;\n            else high = mid;\n        }\n        arr.splice(low, 0, target);\n    }\n    \n    for (const [val, k] of queries) {\n        insort(sorted, val);\n        const x = sorted[sorted.length - k];\n        curP = power(curP, x);\n        ans.push(Number(curP));\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "count-non-adjacent-subsets-in-a-rooted-tree",
+  "number": 3939,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Post-order depth-first traversal evaluates subtree states from leaves upward."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Track two remainder frequency arrays representing whether the current node is included or excluded."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Combine child branch combinations using modular convolution over remainder states."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef countNonAdjacentSubsets(parent: list[int], nums: list[int], k: int) -> int:\n    MOD = 1_000_000_007\n    n = len(nums)\n    children = [[] for _ in range(n)]\n    for i in range(1, n):\n        children[parent[i]].append(i)\n\n    def dfs(u: int):\n        dp0 = [0] * k\n        dp0[0] = 1\n        dp1 = [0] * k\n        dp1[nums[u] % k] = 1\n        for v in children[u]:\n            c0, c1 = dfs(v)\n            c_comb = [(c0[r] + c1[r]) % MOD for r in range(k)]\n            next_dp0 = [0] * k\n            for r1 in range(k):\n                if dp0[r1]:\n                    for r2 in range(k):\n                        if c_comb[r2]:\n                            nr = (r1 + r2) % k\n                            next_dp0[nr] = (next_dp0[nr] + dp0[r1] * c_comb[r2]) % MOD\n            dp0 = next_dp0\n            next_dp1 = [0] * k\n            for r1 in range(k):\n                if dp1[r1]:\n                    for r2 in range(k):\n                        if c0[r2]:\n                            nr = (r1 + r2) % k\n                            next_dp1[nr] = (next_dp1[nr] + dp1[r1] * c0[r2]) % MOD\n            dp1 = next_dp1\n        return dp0, dp1\n\n    root_dp0, root_dp1 = dfs(0)\n    ans = (root_dp0[0] + root_dp1[0] - 1 + MOD) % MOD\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "k"
+    ],
+    "time": "O(n * k^2)",
+    "space": "O(n * k)",
+    "notes": "Tree DP convolves child remainder combinations modulo k at each vertex.",
+    "whyNaiveFails": "Exhaustive subset generation takes 2^n time which is prohibitive.",
+    "spaceTimeTradeoff": "Retains DP remainder arrays of size k along recursion call stack.",
+    "interviewerExpectation": "Models tree non-adjacency with 2-state modular knapsack DP."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def countNonAdjacentSubsets(parent: list[int], nums: list[int], k: int) -> int:\n    MOD = 1_000_000_007\n    n = len(nums)\n    children = [[] for _ in range(n)]\n    for i in range(1, n):\n        children[parent[i]].append(i)\n\n    def dfs(u: int):\n        dp0 = [0] * k\n        dp0[0] = 1\n        dp1 = [0] * k\n        dp1[nums[u] % k] = 1\n        for v in children[u]:\n            c0, c1 = dfs(v)\n            c_comb = [(c0[r] + c1[r]) % MOD for r in range(k)]\n            next_dp0 = [0] * k\n            for r1 in range(k):\n                if dp0[r1]:\n                    for r2 in range(k):\n                        if c_comb[r2]:\n                            nr = (r1 + r2) % k\n                            next_dp0[nr] = (next_dp0[nr] + dp0[r1] * c_comb[r2]) % MOD\n            dp0 = next_dp0\n            next_dp1 = [0] * k\n            for r1 in range(k):\n                if dp1[r1]:\n                    for r2 in range(k):\n                        if c0[r2]:\n                            nr = (r1 + r2) % k\n                            next_dp1[nr] = (next_dp1[nr] + dp1[r1] * c0[r2]) % MOD\n            dp1 = next_dp1\n        return dp0, dp1\n\n    root_dp0, root_dp1 = dfs(0)\n    ans = (root_dp0[0] + root_dp1[0] - 1 + MOD) % MOD\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n\nclass Solution {\npublic:\n    int countNonAdjacentSubsets(std::vector<int>& parent, std::vector<int>& nums, int k) {\n        const int MOD = 1e9 + 7;\n        int n = nums.size();\n        std::vector<std::vector<int>> children(n);\n        for (int i = 1; i < n; ++i) children[parent[i]].push_back(i);\n        \n        auto dfs = [&](auto& self, int u) -> std::pair<std::vector<int>, std::vector<int>> {\n            std::vector<int> dp0(k, 0), dp1(k, 0);\n            dp0[0] = 1;\n            dp1[nums[u] % k] = 1;\n            for (int v : children[u]) {\n                auto [c0, c1] = self(self, v);\n                std::vector<int> cComb(k, 0);\n                for (int r = 0; r < k; ++r) cComb[r] = (c0[r] + c1[r]) % MOD;\n                std::vector<int> nextDp0(k, 0), nextDp1(k, 0);\n                for (int r1 = 0; r1 < k; ++r1) {\n                    if (!dp0[r1]) continue;\n                    for (int r2 = 0; r2 < k; ++r2) {\n                        if (!cComb[r2]) continue;\n                        int nr = (r1 + r2) % k;\n                        nextDp0[nr] = (nextDp0[nr] + 1LL * dp0[r1] * cComb[r2]) % MOD;\n                    }\n                }\n                for (int r1 = 0; r1 < k; ++r1) {\n                    if (!dp1[r1]) continue;\n                    for (int r2 = 0; r2 < k; ++r2) {\n                        if (!c0[r2]) continue;\n                        int nr = (r1 + r2) % k;\n                        nextDp1[nr] = (nextDp1[nr] + 1LL * dp1[r1] * c0[r2]) % MOD;\n                    }\n                }\n                dp0 = std::move(nextDp0);\n                dp1 = std::move(nextDp1);\n            }\n            return {dp0, dp1};\n        };\n        \n        auto [rootDp0, rootDp1] = dfs(dfs, 0);\n        int ans = (rootDp0[0] + rootDp1[0] - 1 + MOD) % MOD;\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int countNonAdjacentSubsets(int[] parent, int[] nums, int k) {\n        int MOD = 1_000_000_007;\n        int n = nums.length;\n        List<List<Integer>> children = new ArrayList<>();\n        for (int i = 0; i < n; i++) children.add(new ArrayList<>());\n        for (int i = 1; i < n; i++) children.get(parent[i]).add(i);\n        \n        long[][] res = dfs(0, children, nums, k, MOD);\n        long ans = (res[0][0] + res[1][0] - 1 + MOD) % MOD;\n        return (int)ans;\n    }\n    \n    private long[][] dfs(int u, List<List<Integer>> children, int[] nums, int k, int MOD) {\n        long[] dp0 = new long[k];\n        dp0[0] = 1;\n        long[] dp1 = new long[k];\n        dp1[nums[u] % k] = 1;\n        for (int v : children.get(u)) {\n            long[][] childRes = dfs(v, children, nums, k, MOD);\n            long[] c0 = childRes[0];\n            long[] c1 = childRes[1];\n            long[] cComb = new long[k];\n            for (int r = 0; r < k; r++) cComb[r] = (c0[r] + c1[r]) % MOD;\n            long[] nextDp0 = new long[k];\n            long[] nextDp1 = new long[k];\n            for (int r1 = 0; r1 < k; r1++) {\n                if (dp0[r1] == 0) continue;\n                for (int r2 = 0; r2 < k; r2++) {\n                    if (cComb[r2] == 0) continue;\n                    int nr = (r1 + r2) % k;\n                    nextDp0[nr] = (nextDp0[nr] + dp0[r1] * cComb[r2]) % MOD;\n                }\n            }\n            for (int r1 = 0; r1 < k; r1++) {\n                if (dp1[r1] == 0) continue;\n                for (int r2 = 0; r2 < k; r2++) {\n                    if (c0[r2] == 0) continue;\n                    int nr = (r1 + r2) % k;\n                    nextDp1[nr] = (nextDp1[nr] + dp1[r1] * c0[r2]) % MOD;\n                }\n            }\n            dp0 = nextDp0;\n            dp1 = nextDp1;\n        }\n        return new long[][]{dp0, dp1};\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function countNonAdjacentSubsets(parent, nums, k) {\n    const MOD = 1000000007n;\n    const n = nums.length;\n    const children = Array.from({ length: n }, () => []);\n    for (let i = 1; i < n; i++) children[parent[i]].push(i);\n    \n    function dfs(u) {\n        let dp0 = new Array(k).fill(0n);\n        dp0[0] = 1n;\n        let dp1 = new Array(k).fill(0n);\n        dp1[nums[u] % k] = 1n;\n        for (const v of children[u]) {\n            const [c0, c1] = dfs(v);\n            const cComb = new Array(k).fill(0n);\n            for (let r = 0; r < k; r++) cComb[r] = (c0[r] + c1[r]) % MOD;\n            const nextDp0 = new Array(k).fill(0n);\n            const nextDp1 = new Array(k).fill(0n);\n            for (let r1 = 0; r1 < k; r1++) {\n                if (dp0[r1] === 0n) continue;\n                for (let r2 = 0; r2 < k; r2++) {\n                    if (cComb[r2] === 0n) continue;\n                    const nr = (r1 + r2) % k;\n                    nextDp0[nr] = (nextDp0[nr] + dp0[r1] * cComb[r2]) % MOD;\n                }\n            }\n            for (let r1 = 0; r1 < k; r1++) {\n                if (dp1[r1] === 0n) continue;\n                for (let r2 = 0; r2 < k; r2++) {\n                    if (c0[r2] === 0n) continue;\n                    const nr = (r1 + r2) % k;\n                    nextDp1[nr] = (nextDp1[nr] + dp1[r1] * c0[r2]) % MOD;\n                }\n            }\n            dp0 = nextDp0;\n            dp1 = nextDp1;\n        }\n        return [dp0, dp1];\n    }\n    \n    const [rootDp0, rootDp1] = dfs(0);\n    const ans = (rootDp0[0] + rootDp1[0] - 1n + MOD) % MOD;\n    return Number(ans);\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

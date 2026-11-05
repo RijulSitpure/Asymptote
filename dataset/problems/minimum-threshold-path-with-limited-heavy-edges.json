@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-threshold-path-with-limited-heavy-edges",
+  "number": 3924,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Edges strictly exceeding the threshold candidate contribute to the heavy edge budget."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Check feasibility of reaching target using at most k heavy edges via zero-one breadth search."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Binary search over unique edge weights to determine the minimal valid threshold."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\ndef minThresholdPath(n: int, edges: list[list[int]], source: int, target: int, k: int) -> int:\n    g = [[] for _ in range(n)]\n    weights = [0]\n    for u, v, w in edges:\n        g[u].append((v, w))\n        g[v].append((u, w))\n        weights.append(w)\n    weights = sorted(set(weights))\n    \n    def can_reach(threshold: int) -> bool:\n        dist = [float('inf')] * n\n        dist[source] = 0\n        q = deque([source])\n        while q:\n            u = q.popleft()\n            if u == target:\n                return dist[u] <= k\n            d = dist[u]\n            for v, w in g[u]:\n                cost = 1 if w > threshold else 0\n                if d + cost < dist[v] and d + cost <= k:\n                    dist[v] = d + cost\n                    if cost == 0:\n                        q.appendleft(v)\n                    else:\n                        q.append(v)\n        return dist[target] <= k\n\n    if not can_reach(weights[-1]):\n        return -1\n    low = 0\n    high = len(weights) - 1\n    ans = weights[-1]\n    while low <= high:\n        mid = (low + high) // 2\n        cand = weights[mid]\n        if can_reach(cand):\n            ans = cand\n            high = mid - 1\n        else:\n            low = mid + 1\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "e"
+    ],
+    "time": "O((n + e) log e)",
+    "space": "O(n + e)",
+    "notes": "Binary search on distinct edge weights paired with 0-1 BFS connectivity verification.",
+    "whyNaiveFails": "Testing all possible paths or threshold values sequentially is far too slow.",
+    "spaceTimeTradeoff": "Maintains adjacency graph and 0-1 distance array for reachability.",
+    "interviewerExpectation": "Recognizes monotonic predicate and combines binary search with 0-1 BFS."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import deque\n\ndef minThresholdPath(n: int, edges: list[list[int]], source: int, target: int, k: int) -> int:\n    g = [[] for _ in range(n)]\n    weights = [0]\n    for u, v, w in edges:\n        g[u].append((v, w))\n        g[v].append((u, w))\n        weights.append(w)\n    weights = sorted(set(weights))\n    \n    def can_reach(threshold: int) -> bool:\n        dist = [float('inf')] * n\n        dist[source] = 0\n        q = deque([source])\n        while q:\n            u = q.popleft()\n            if u == target:\n                return dist[u] <= k\n            d = dist[u]\n            for v, w in g[u]:\n                cost = 1 if w > threshold else 0\n                if d + cost < dist[v] and d + cost <= k:\n                    dist[v] = d + cost\n                    if cost == 0:\n                        q.appendleft(v)\n                    else:\n                        q.append(v)\n        return dist[target] <= k\n\n    if not can_reach(weights[-1]):\n        return -1\n    low = 0\n    high = len(weights) - 1\n    ans = weights[-1]\n    while low <= high:\n        mid = (low + high) // 2\n        cand = weights[mid]\n        if can_reach(cand):\n            ans = cand\n            high = mid - 1\n        else:\n            low = mid + 1\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <deque>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minThresholdPath(int n, std::vector<std::vector<int>>& edges, int source, int target, int k) {\n        std::vector<std::vector<std::pair<int, int>>> g(n);\n        std::vector<int> weights = {0};\n        for (const auto& e : edges) {\n            g[e[0]].push_back({e[1], e[2]});\n            g[e[1]].push_back({e[0], e[2]});\n            weights.push_back(e[2]);\n        }\n        std::sort(weights.begin(), weights.end());\n        weights.erase(std::unique(weights.begin(), weights.end()), weights.end());\n        \n        auto canReach = [&](int threshold) -> bool {\n            std::vector<int> dist(n, 1e9);\n            dist[source] = 0;\n            std::deque<int> q;\n            q.push_back(source);\n            while (!q.empty()) {\n                int u = q.front();\n                q.pop_front();\n                if (u == target) return dist[u] <= k;\n                int d = dist[u];\n                for (const auto& [v, w] : g[u]) {\n                    int cost = (w > threshold) ? 1 : 0;\n                    if (d + cost < dist[v] && d + cost <= k) {\n                        dist[v] = d + cost;\n                        if (cost == 0) q.push_front(v);\n                        else q.push_back(v);\n                    }\n                }\n            }\n            return dist[target] <= k;\n        };\n        \n        if (!canReach(weights.back())) return -1;\n        int low = 0, high = weights.size() - 1, ans = weights.back();\n        while (low <= high) {\n            int mid = (low + high) / 2;\n            if (canReach(weights[mid])) {\n                ans = weights[mid];\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minThresholdPath(int n, int[][] edges, int source, int target, int k) {\n        List<List<int[]>> g = new ArrayList<>();\n        for (int i = 0; i < n; i++) g.add(new ArrayList<>());\n        TreeSet<Integer> weightSet = new TreeSet<>();\n        weightSet.add(0);\n        for (int[] e : edges) {\n            g.get(e[0]).add(new int[]{e[1], e[2]});\n            g.get(e[1]).add(new int[]{e[0], e[2]});\n            weightSet.add(e[2]);\n        }\n        List<Integer> weights = new ArrayList<>(weightSet);\n        \n        if (!canReach(n, g, source, target, k, weights.get(weights.size() - 1))) return -1;\n        int low = 0, high = weights.size() - 1, ans = weights.get(weights.size() - 1);\n        while (low <= high) {\n            int mid = (low + high) / 2;\n            if (canReach(n, g, source, target, k, weights.get(mid))) {\n                ans = weights.get(mid);\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n    \n    private boolean canReach(int n, List<List<int[]>> g, int source, int target, int k, int threshold) {\n        int[] dist = new int[n];\n        Arrays.fill(dist, Integer.MAX_VALUE);\n        dist[source] = 0;\n        Deque<Integer> q = new ArrayDeque<>();\n        q.add(source);\n        while (!q.isEmpty()) {\n            int u = q.pollFirst();\n            if (u == target) return dist[u] <= k;\n            int d = dist[u];\n            for (int[] edge : g.get(u)) {\n                int v = edge[0], w = edge[1];\n                int cost = (w > threshold) ? 1 : 0;\n                if (d + cost < dist[v] && d + cost <= k) {\n                    dist[v] = d + cost;\n                    if (cost == 0) q.addFirst(v);\n                    else q.addLast(v);\n                }\n            }\n        }\n        return dist[target] <= k;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minThresholdPath(n, edges, source, target, k) {\n    const g = Array.from({ length: n }, () => []);\n    const weightSet = new Set([0]);\n    for (const [u, v, w] of edges) {\n        g[u].push([v, w]);\n        g[v].push([u, w]);\n        weightSet.add(w);\n    }\n    const weights = Array.from(weightSet).sort((a, b) => a - b);\n    \n    function canReach(threshold) {\n        const dist = new Array(n).fill(Infinity);\n        dist[source] = 0;\n        const q = [source];\n        let head = 0;\n        while (head < q.length) {\n            const u = q[head++];\n            if (u === target) return dist[u] <= k;\n            const d = dist[u];\n            for (const [v, w] of g[u]) {\n                const cost = (w > threshold) ? 1 : 0;\n                if (d + cost < dist[v] && d + cost <= k) {\n                    dist[v] = d + cost;\n                    if (cost === 0) {\n                        q.splice(head, 0, v);\n                    } else {\n                        q.push(v);\n                    }\n                }\n            }\n        }\n        return dist[target] <= k;\n    }\n    \n    if (!canReach(weights[weights.length - 1])) return -1;\n    let low = 0, high = weights.length - 1, ans = weights[weights.length - 1];\n    while (low <= high) {\n        const mid = (low + high) >> 1;\n        if (canReach(weights[mid])) {\n            ans = weights[mid];\n            high = mid - 1;\n        } else {\n            low = mid + 1;\n        }\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

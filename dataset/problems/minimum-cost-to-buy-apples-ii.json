@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-cost-to-buy-apples-ii",
+  "number": 3928,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "The trip consists of an empty forward route and a loaded return route under multiplier tax."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Shortest path algorithms determine minimal empty and apple-loaded distances between all node pairs."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Combine directional costs with baseline store prices to identify optimal purchase nodes."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\ndef minCostToBuyApples(n: int, prices: list[int], roads: list[list[int]]) -> list[int]:\n    g_empty = [[] for _ in range(n)]\n    g_apples = [[] for _ in range(n)]\n    for u, v, cost, tax in roads:\n        g_empty[u].append((v, cost))\n        g_empty[v].append((u, cost))\n        g_apples[u].append((v, cost * tax))\n        g_apples[v].append((u, cost * tax))\n\n    def dijkstra(start: int, g: list) -> list[int]:\n        dist = [float('inf')] * n\n        dist[start] = 0\n        pq = [(0, start)]\n        while pq:\n            d, u = heapq.heappop(pq)\n            if d > dist[u]:\n                continue\n            for v, w in g[u]:\n                if d + w < dist[v]:\n                    dist[v] = d + w\n                    heapq.heappush(pq, (d + w, v))\n        return dist\n\n    ans = [0] * n\n    for i in range(n):\n        d_emp = dijkstra(i, g_empty)\n        d_app = dijkstra(i, g_apples)\n        best = prices[i]\n        for j in range(n):\n            if d_emp[j] != float('inf') and d_app[j] != float('inf'):\n                best = min(best, d_emp[j] + prices[j] + d_app[j])\n        ans[i] = best\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "m"
+    ],
+    "time": "O(n * (m + n log n))",
+    "space": "O(n + m)",
+    "notes": "Runs priority queue relaxation per vertex to evaluate combined round trip costs.",
+    "whyNaiveFails": "Enumerating paths without shortest distance relaxations leads to exponential complexity.",
+    "spaceTimeTradeoff": "Retains dual graph representations for empty and loaded traversals.",
+    "interviewerExpectation": "Decouples forward and return trips into separate shortest path queries."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\n\ndef minCostToBuyApples(n: int, prices: list[int], roads: list[list[int]]) -> list[int]:\n    g_empty = [[] for _ in range(n)]\n    g_apples = [[] for _ in range(n)]\n    for u, v, cost, tax in roads:\n        g_empty[u].append((v, cost))\n        g_empty[v].append((u, cost))\n        g_apples[u].append((v, cost * tax))\n        g_apples[v].append((u, cost * tax))\n\n    def dijkstra(start: int, g: list) -> list[int]:\n        dist = [float('inf')] * n\n        dist[start] = 0\n        pq = [(0, start)]\n        while pq:\n            d, u = heapq.heappop(pq)\n            if d > dist[u]:\n                continue\n            for v, w in g[u]:\n                if d + w < dist[v]:\n                    dist[v] = d + w\n                    heapq.heappush(pq, (d + w, v))\n        return dist\n\n    ans = [0] * n\n    for i in range(n):\n        d_emp = dijkstra(i, g_empty)\n        d_app = dijkstra(i, g_apples)\n        best = prices[i]\n        for j in range(n):\n            if d_emp[j] != float('inf') and d_app[j] != float('inf'):\n                best = min(best, d_emp[j] + prices[j] + d_app[j])\n        ans[i] = best\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<long long> minCostToBuyApples(int n, std::vector<int>& prices, std::vector<std::vector<int>>& roads) {\n        std::vector<std::vector<std::pair<int, int>>> gEmpty(n), gApples(n);\n        for (const auto& r : roads) {\n            int u = r[0], v = r[1], c = r[2], t = r[3];\n            gEmpty[u].push_back({v, c});\n            gEmpty[v].push_back({u, c});\n            gApples[u].push_back({v, c * t});\n            gApples[v].push_back({u, c * t});\n        }\n        \n        auto dijkstra = [&](int start, const std::vector<std::vector<std::pair<int, int>>>& g) -> std::vector<long long> {\n            std::vector<long long> dist(n, 1e18);\n            dist[start] = 0;\n            std::priority_queue<std::pair<long long, int>, std::vector<std::pair<long long, int>>, std::greater<>> pq;\n            pq.push({0, start});\n            while (!pq.empty()) {\n                auto [d, u] = pq.top();\n                pq.pop();\n                if (d > dist[u]) continue;\n                for (const auto& [v, w] : g[u]) {\n                    if (d + w < dist[v]) {\n                        dist[v] = d + w;\n                        pq.push({d + w, v});\n                    }\n                }\n            }\n            return dist;\n        };\n        \n        std::vector<long long> ans(n);\n        for (int i = 0; i < n; ++i) {\n            auto dEmp = dijkstra(i, gEmpty);\n            auto dApp = dijkstra(i, gApples);\n            long long best = prices[i];\n            for (int j = 0; j < n; ++j) {\n                if (dEmp[j] < 1e18 && dApp[j] < 1e18) {\n                    best = std::min(best, dEmp[j] + prices[j] + dApp[j]);\n                }\n            }\n            ans[i] = best;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long[] minCostToBuyApples(int n, int[] prices, int[][] roads) {\n        List<List<int[]>> gEmpty = new ArrayList<>();\n        List<List<int[]>> gApples = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            gEmpty.add(new ArrayList<>());\n            gApples.add(new ArrayList<>());\n        }\n        for (int[] r : roads) {\n            int u = r[0], v = r[1], c = r[2], t = r[3];\n            gEmpty.get(u).add(new int[]{v, c});\n            gEmpty.get(v).add(new int[]{u, c});\n            gApples.get(u).add(new int[]{v, c * t});\n            gApples.get(v).add(new int[]{u, c * t});\n        }\n        long[] ans = new long[n];\n        for (int i = 0; i < n; i++) {\n            long[] dEmp = dijkstra(n, i, gEmpty);\n            long[] dApp = dijkstra(n, i, gApples);\n            long best = prices[i];\n            for (int j = 0; j < n; j++) {\n                if (dEmp[j] < Long.MAX_VALUE && dApp[j] < Long.MAX_VALUE) {\n                    best = Math.min(best, dEmp[j] + prices[j] + dApp[j]);\n                }\n            }\n            ans[i] = best;\n        }\n        return ans;\n    }\n    \n    private long[] dijkstra(int n, int start, List<List<int[]>> g) {\n        long[] dist = new long[n];\n        Arrays.fill(dist, Long.MAX_VALUE);\n        dist[start] = 0;\n        PriorityQueue<long[]> pq = new PriorityQueue<>(Comparator.comparingLong(a -> a[0]));\n        pq.offer(new long[]{0, start});\n        while (!pq.isEmpty()) {\n            long[] top = pq.poll();\n            long d = top[0];\n            int u = (int)top[1];\n            if (d > dist[u]) continue;\n            for (int[] edge : g.get(u)) {\n                int v = edge[0], w = edge[1];\n                if (d + w < dist[v]) {\n                    dist[v] = d + w;\n                    pq.offer(new long[]{d + w, v});\n                }\n            }\n        }\n        return dist;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minCostToBuyApples(n, prices, roads) {\n    const gEmpty = Array.from({ length: n }, () => []);\n    const gApples = Array.from({ length: n }, () => []);\n    for (const [u, v, c, t] of roads) {\n        gEmpty[u].push([v, c]);\n        gEmpty[v].push([u, c]);\n        gApples[u].push([v, c * t]);\n        gApples[v].push([u, c * t]);\n    }\n    \n    function dijkstra(start, g) {\n        const dist = new Array(n).fill(Infinity);\n        dist[start] = 0;\n        const pq = [[0, start]];\n        while (pq.length > 0) {\n            pq.sort((a, b) => a[0] - b[0]);\n            const [d, u] = pq.shift();\n            if (d > dist[u]) continue;\n            for (const [v, w] of g[u]) {\n                if (d + w < dist[v]) {\n                    dist[v] = d + w;\n                    pq.push([d + w, v]);\n                }\n            }\n        }\n        return dist;\n    }\n    \n    const ans = new Array(n);\n    for (let i = 0; i < n; i++) {\n        const dEmp = dijkstra(i, gEmpty);\n        const dApp = dijkstra(i, gApples);\n        let best = prices[i];\n        for (let j = 0; j < n; j++) {\n            if (dEmp[j] < Infinity && dApp[j] < Infinity) {\n                best = Math.min(best, dEmp[j] + prices[j] + dApp[j]);\n            }\n        }\n        ans[i] = best;\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

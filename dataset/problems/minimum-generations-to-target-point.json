@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-generations-to-target-point",
+  "number": 3923,
+  "category": "Algorithms",
+  "patterns": [
+    "matrix-simulation"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Check whether the destination point is already present among the initial coordinates."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "In each generation step, compute pairwise integer division midpoints of all distinct known points."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Store points in a set to avoid redundant expansion and terminate when target is generated."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef minGenerations(points: list[list[int]], target: list[int]) -> int:\n    target_tuple = tuple(target)\n    current_set = set(tuple(p) for p in points)\n    if target_tuple in current_set:\n        return 0\n    all_points = list(current_set)\n    for gen in range(1, 10):\n        new_set = set()\n        m = len(all_points)\n        for i in range(m):\n            p1 = all_points[i]\n            for j in range(i + 1, m):\n                p2 = all_points[j]\n                mid = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2, (p1[2] + p2[2]) // 2)\n                if mid == target_tuple:\n                    return gen\n                if mid not in current_set:\n                    new_set.add(mid)\n        if not new_set:\n            break\n        current_set.update(new_set)\n        all_points.extend(new_set)\n    return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(g * n^2)",
+    "space": "O(p)",
+    "notes": "Expands coordinates level by level until convergence or target discovery.",
+    "whyNaiveFails": "Unbounded tree search without deduplication explodes exponentially.",
+    "spaceTimeTradeoff": "Set stores unique points to prune identical descendants.",
+    "interviewerExpectation": "Generates midpoints level by level with early exit on target detection."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def minGenerations(points: list[list[int]], target: list[int]) -> int:\n    target_tuple = tuple(target)\n    current_set = set(tuple(p) for p in points)\n    if target_tuple in current_set:\n        return 0\n    all_points = list(current_set)\n    for gen in range(1, 10):\n        new_set = set()\n        m = len(all_points)\n        for i in range(m):\n            p1 = all_points[i]\n            for j in range(i + 1, m):\n                p2 = all_points[j]\n                mid = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2, (p1[2] + p2[2]) // 2)\n                if mid == target_tuple:\n                    return gen\n                if mid not in current_set:\n                    new_set.add(mid)\n        if not new_set:\n            break\n        current_set.update(new_set)\n        all_points.extend(new_set)\n    return -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <set>\n#include <tuple>\n\nclass Solution {\npublic:\n    int minGenerations(std::vector<std::vector<int>>& points, std::vector<int>& target) {\n        std::tuple<int, int, int> tgt = {target[0], target[1], target[2]};\n        std::set<std::tuple<int, int, int>> curSet;\n        std::vector<std::tuple<int, int, int>> allPoints;\n        for (const auto& p : points) {\n            auto pt = std::make_tuple(p[0], p[1], p[2]);\n            if (!curSet.count(pt)) {\n                curSet.insert(pt);\n                allPoints.push_back(pt);\n            }\n        }\n        if (curSet.count(tgt)) return 0;\n        for (int gen = 1; gen < 10; ++gen) {\n            std::vector<std::tuple<int, int, int>> newPoints;\n            int m = allPoints.size();\n            for (int i = 0; i < m; ++i) {\n                const auto& [x1, y1, z1] = allPoints[i];\n                for (int j = i + 1; j < m; ++j) {\n                    const auto& [x2, y2, z2] = allPoints[j];\n                    auto mid = std::make_tuple((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2);\n                    if (mid == tgt) return gen;\n                    if (!curSet.count(mid)) {\n                        curSet.insert(mid);\n                        newPoints.push_back(mid);\n                    }\n                }\n            }\n            if (newPoints.empty()) break;\n            allPoints.insert(allPoints.end(), newPoints.begin(), newPoints.end());\n        }\n        return -1;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minGenerations(int[][] points, int[] target) {\n        String tgt = target[0] + \",\" + target[1] + \",\" + target[2];\n        Set<String> curSet = new HashSet<>();\n        List<int[]> allPoints = new ArrayList<>();\n        for (int[] p : points) {\n            String key = p[0] + \",\" + p[1] + \",\" + p[2];\n            if (curSet.add(key)) {\n                allPoints.add(p);\n            }\n        }\n        if (curSet.contains(tgt)) return 0;\n        for (int gen = 1; gen < 10; gen++) {\n            List<int[]> newPoints = new ArrayList<>();\n            int m = allPoints.size();\n            for (int i = 0; i < m; i++) {\n                int[] p1 = allPoints.get(i);\n                for (int j = i + 1; j < m; j++) {\n                    int[] p2 = allPoints.get(j);\n                    int[] mid = new int[]{(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2, (p1[2] + p2[2]) / 2};\n                    String key = mid[0] + \",\" + mid[1] + \",\" + mid[2];\n                    if (key.equals(tgt)) return gen;\n                    if (curSet.add(key)) {\n                        newPoints.add(mid);\n                    }\n                }\n            }\n            if (newPoints.isEmpty()) break;\n            allPoints.addAll(newPoints);\n        }\n        return -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minGenerations(points, target) {\n    const tgt = `${target[0]},${target[1]},${target[2]}`;\n    const curSet = new Set();\n    const allPoints = [];\n    for (const p of points) {\n        const key = `${p[0]},${p[1]},${p[2]}`;\n        if (!curSet.has(key)) {\n            curSet.add(key);\n            allPoints.push(p);\n        }\n    }\n    if (curSet.has(tgt)) return 0;\n    for (let gen = 1; gen < 10; gen++) {\n        const newPoints = [];\n        const m = allPoints.length;\n        for (let i = 0; i < m; i++) {\n            const p1 = allPoints[i];\n            for (let j = i + 1; j < m; j++) {\n                const p2 = allPoints[j];\n                const mid = [\n                    Math.floor((p1[0] + p2[0]) / 2),\n                    Math.floor((p1[1] + p2[1]) / 2),\n                    Math.floor((p1[2] + p2[2]) / 2)\n                ];\n                const key = `${mid[0]},${mid[1]},${mid[2]}`;\n                if (key === tgt) return gen;\n                if (!curSet.has(key)) {\n                    curSet.add(key);\n                    newPoints.push(mid);\n                }\n            }\n        }\n        if (newPoints.length === 0) break;\n        allPoints.push(...newPoints);\n    }\n    return -1;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

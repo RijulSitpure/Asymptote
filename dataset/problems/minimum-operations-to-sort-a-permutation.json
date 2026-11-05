@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-operations-to-sort-a-permutation",
+  "number": 3942,
+  "category": "Algorithms",
+  "patterns": [
+    "hash-map-lookup"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Reversal and left rotation generate only cyclic shifts of original and reversed configurations."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Check whether the array represents a cyclic shift of sorted order or reversed sorted order."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Shortest path search across the 2n state graph returns the minimal operation count."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\ndef minOperationsToSort(nums: list[int]) -> int:\n    n = len(nums)\n    if n <= 1:\n        return 0\n    is_fwd = all(nums[i] == (nums[0] + i) % n for i in range(n))\n    is_bwd = all(nums[i] == (nums[0] - i + n) % n for i in range(n))\n    if not is_fwd and not is_bwd:\n        return -1\n    pos0 = nums.index(0)\n    start_rev = 1 if (is_bwd and not is_fwd) else 0\n    start_state = (pos0, start_rev)\n    target_state = (0, 0)\n    q = deque([(pos0, start_rev, 0)])\n    vis = set([start_state])\n    while q:\n        p, rev, dist = q.popleft()\n        if (p, rev) == target_state:\n            return dist\n        nxt1 = (n - 1 - p, 1 - rev)\n        if nxt1 not in vis:\n            vis.add(nxt1)\n            q.append((nxt1[0], nxt1[1], dist + 1))\n        nxt2 = ((p - 1 + n) % n, rev)\n        if nxt2 not in vis:\n            vis.add(nxt2)\n            q.append((nxt2[0], nxt2[1], dist + 1))\n    return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(n)",
+    "space": "O(n)",
+    "notes": "Breadth-first search traverses the 2n state graph in linear time.",
+    "whyNaiveFails": "Simulating arbitrary permutation branching exceeds factorial complexity.",
+    "spaceTimeTradeoff": "Maintains visited set over 2n states.",
+    "interviewerExpectation": "Recognizes cyclic shift invariant and applies BFS over the 2n state transition graph."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import deque\n\ndef minOperationsToSort(nums: list[int]) -> int:\n    n = len(nums)\n    if n <= 1:\n        return 0\n    is_fwd = all(nums[i] == (nums[0] + i) % n for i in range(n))\n    is_bwd = all(nums[i] == (nums[0] - i + n) % n for i in range(n))\n    if not is_fwd and not is_bwd:\n        return -1\n    pos0 = nums.index(0)\n    start_rev = 1 if (is_bwd and not is_fwd) else 0\n    start_state = (pos0, start_rev)\n    target_state = (0, 0)\n    q = deque([(pos0, start_rev, 0)])\n    vis = set([start_state])\n    while q:\n        p, rev, dist = q.popleft()\n        if (p, rev) == target_state:\n            return dist\n        nxt1 = (n - 1 - p, 1 - rev)\n        if nxt1 not in vis:\n            vis.add(nxt1)\n            q.append((nxt1[0], nxt1[1], dist + 1))\n        nxt2 = ((p - 1 + n) % n, rev)\n        if nxt2 not in vis:\n            vis.add(nxt2)\n            q.append((nxt2[0], nxt2[1], dist + 1))\n    return -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minOperationsToSort(std::vector<int>& nums) {\n        int n = nums.size();\n        if (n <= 1) return 0;\n        bool isFwd = true, isBwd = true;\n        for (int i = 0; i < n; ++i) {\n            if (nums[i] != (nums[0] + i) % n) isFwd = false;\n            if (nums[i] != (nums[0] - i + n) % n) isBwd = false;\n        }\n        if (!isFwd && !isBwd) return -1;\n        int pos0 = std::find(nums.begin(), nums.end(), 0) - nums.begin();\n        int startRev = (isBwd && !isFwd) ? 1 : 0;\n        \n        std::vector<std::vector<int>> dist(n, std::vector<int>(2, -1));\n        std::queue<std::pair<int, int>> q;\n        q.push({pos0, startRev});\n        dist[pos0][startRev] = 0;\n        while (!q.empty()) {\n            auto [p, rev] = q.front();\n            q.pop();\n            int d = dist[p][rev];\n            if (p == 0 && rev == 0) return d;\n            int nxtP1 = n - 1 - p, nxtRev1 = 1 - rev;\n            if (dist[nxtP1][nxtRev1] == -1) {\n                dist[nxtP1][nxtRev1] = d + 1;\n                q.push({nxtP1, nxtRev1});\n            }\n            int nxtP2 = (p - 1 + n) % n, nxtRev2 = rev;\n            if (dist[nxtP2][nxtRev2] == -1) {\n                dist[nxtP2][nxtRev2] = d + 1;\n                q.push({nxtP2, nxtRev2});\n            }\n        }\n        return -1;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minOperationsToSort(int[] nums) {\n        int n = nums.length;\n        if (n <= 1) return 0;\n        boolean isFwd = true, isBwd = true;\n        for (int i = 0; i < n; i++) {\n            if (nums[i] != (nums[0] + i) % n) isFwd = false;\n            if (nums[i] != (nums[0] - i + n) % n) isBwd = false;\n        }\n        if (!isFwd && !isBwd) return -1;\n        int pos0 = 0;\n        for (int i = 0; i < n; i++) {\n            if (nums[i] == 0) { pos0 = i; break; }\n        }\n        int startRev = (isBwd && !isFwd) ? 1 : 0;\n        int[][] dist = new int[n][2];\n        for (int[] row : dist) Arrays.fill(row, -1);\n        Queue<int[]> q = new LinkedList<>();\n        q.offer(new int[]{pos0, startRev});\n        dist[pos0][startRev] = 0;\n        while (!q.isEmpty()) {\n            int[] top = q.poll();\n            int p = top[0], rev = top[1];\n            int d = dist[p][rev];\n            if (p == 0 && rev == 0) return d;\n            int np1 = n - 1 - p, nr1 = 1 - rev;\n            if (dist[np1][nr1] == -1) {\n                dist[np1][nr1] = d + 1;\n                q.offer(new int[]{np1, nr1});\n            }\n            int np2 = (p - 1 + n) % n, nr2 = rev;\n            if (dist[np2][nr2] == -1) {\n                dist[np2][nr2] = d + 1;\n                q.offer(new int[]{np2, nr2});\n            }\n        }\n        return -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minOperationsToSort(nums) {\n    const n = nums.length;\n    if (n <= 1) return 0;\n    let isFwd = true, isBwd = true;\n    for (let i = 0; i < n; i++) {\n        if (nums[i] !== (nums[0] + i) % n) isFwd = false;\n        if (nums[i] !== (nums[0] - i + n) % n) isBwd = false;\n    }\n    if (!isFwd && !isBwd) return -1;\n    const pos0 = nums.indexOf(0);\n    const startRev = (isBwd && !isFwd) ? 1 : 0;\n    const dist = Array.from({ length: n }, () => [-1, -1]);\n    const q = [[pos0, startRev]];\n    dist[pos0][startRev] = 0;\n    let head = 0;\n    while (head < q.length) {\n        const [p, rev] = q[head++];\n        const d = dist[p][rev];\n        if (p === 0 && rev === 0) return d;\n        const np1 = n - 1 - p, nr1 = 1 - rev;\n        if (dist[np1][nr1] === -1) {\n            dist[np1][nr1] = d + 1;\n            q.push([np1, nr1]);\n        }\n        const np2 = (p - 1 + n) % n, nr2 = rev;\n        if (dist[np2][nr2] === -1) {\n            dist[np2][nr2] = d + 1;\n            q.push([np2, nr2]);\n        }\n    }\n    return -1;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
