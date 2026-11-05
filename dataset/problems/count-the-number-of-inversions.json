@@ -1,0 +1,80 @@
+{
+  "slug": "count-the-number-of-inversions",
+  "number": 3193,
+  "patterns": [
+    "dp-1d-fib-linear",
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Permutation Construction",
+      "text": "When appending the i-th element (0-indexed) into a permutation of length i, it can contribute any number of new inversions from 0 to i."
+    },
+    {
+      "level": 2,
+      "title": "DP State with Constraints",
+      "text": "Let dp[k] be the number of permutations with k inversions. If a requirement is specified for index i, zero out all dp[k] where k does not equal the required count."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Sum Optimization",
+      "text": "Transitions dp_next[k] = sum_{j=0}^i dp[k - j] can be calculated in O(1) per state using running prefix sums."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def numberOfPermutations(self, n: int, requirements: list[list[int]]) -> int:\n        MOD = 10**9 + 7\n        req_map = {end: cnt for end, cnt in requirements}\n        if 0 in req_map and req_map[0] != 0:\n            return 0\n            \n        max_k = max(req_map.values())\n        dp = [0] * (max_k + 1)\n        dp[0] = 1\n        \n        for i in range(1, n):\n            new_dp = [0] * (max_k + 1)\n            pref = [0] * (max_k + 2)\n            for k in range(max_k + 1):\n                pref[k + 1] = (pref[k] + dp[k]) % MOD\n            for k in range(max_k + 1):\n                low = max(0, k - i)\n                new_dp[k] = (pref[k + 1] - pref[low]) % MOD\n            if i in req_map:\n                target = req_map[i]\n                for k in range(max_k + 1):\n                    if k != target:\n                        new_dp[k] = 0\n            dp = new_dp\n            \n        return dp[req_map[n - 1]]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * max_k)",
+    "space": "O(max_k)",
+    "variables": [
+      "n: permutation size",
+      "max_k: maximum required inversions"
+    ],
+    "notes": "Prefix sum DP transitions run in O(1) per inversion state.",
+    "whyNaiveFails": "Generating all n! permutations causes factorial timeout.",
+    "spaceTimeTradeoff": "O(max_k) rolling DP arrays.",
+    "interviewerExpectation": "Model the Mahonian distribution DP with prefix sum acceleration and constraint pruning."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Prefix-Sum Accelerated Mahonian DP",
+      "code": "class Solution:\n    def numberOfPermutations(self, n: int, requirements: list[list[int]]) -> int:\n        MOD = 10**9 + 7\n        req_map = {end: cnt for end, cnt in requirements}\n        if 0 in req_map and req_map[0] != 0:\n            return 0\n            \n        max_k = max(req_map.values())\n        dp = [0] * (max_k + 1)\n        dp[0] = 1\n        \n        for i in range(1, n):\n            new_dp = [0] * (max_k + 1)\n            pref = [0] * (max_k + 2)\n            for k in range(max_k + 1):\n                pref[k + 1] = (pref[k] + dp[k]) % MOD\n            for k in range(max_k + 1):\n                low = max(0, k - i)\n                new_dp[k] = (pref[k + 1] - pref[low]) % MOD\n            if i in req_map:\n                target = req_map[i]\n                for k in range(max_k + 1):\n                    if k != target:\n                        new_dp[k] = 0\n            dp = new_dp\n            \n        return dp[req_map[n - 1]]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Prefix-Sum Accelerated Mahonian DP",
+      "code": "class Solution {\npublic:\n    int numberOfPermutations(int n, vector<vector<int>>& requirements) {\n        long long MOD = 1e9 + 7;\n        unordered_map<int, int> req_map;\n        int max_k = 0;\n        for (const auto& r : requirements) {\n            req_map[r[0]] = r[1];\n            max_k = max(max_k, r[1]);\n        }\n        if (req_map.count(0) && req_map[0] != 0) return 0;\n        vector<long long> dp(max_k + 1, 0);\n        dp[0] = 1;\n        for (int i = 1; i < n; ++i) {\n            vector<long long> new_dp(max_k + 1, 0);\n            vector<long long> pref(max_k + 2, 0);\n            for (int k = 0; k <= max_k; ++k) {\n                pref[k + 1] = (pref[k] + dp[k]) % MOD;\n            }\n            for (int k = 0; k <= max_k; ++k) {\n                int low = max(0, k - i);\n                new_dp[k] = (pref[k + 1] - pref[low] + MOD) % MOD;\n            }\n            if (req_map.count(i)) {\n                int target = req_map[i];\n                for (int k = 0; k <= max_k; ++k) {\n                    if (k != target) new_dp[k] = 0;\n                }\n            }\n            dp = move(new_dp);\n        }\n        return dp[req_map[n - 1]];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Prefix-Sum Accelerated Mahonian DP",
+      "code": "class Solution {\n    public int numberOfPermutations(int n, int[][] requirements) {\n        long MOD = 1_000_000_007L;\n        Map<Integer, Integer> reqMap = new HashMap<>();\n        int maxK = 0;\n        for (int[] r : requirements) {\n            reqMap.put(r[0], r[1]);\n            maxK = Math.max(maxK, r[1]);\n        }\n        if (reqMap.containsKey(0) && reqMap.get(0) != 0) return 0;\n        long[] dp = new long[maxK + 1];\n        dp[0] = 1;\n        for (int i = 1; i < n; ++i) {\n            long[] newDp = new long[maxK + 1];\n            long[] pref = new long[maxK + 2];\n            for (int k = 0; k <= maxK; ++k) {\n                pref[k + 1] = (pref[k] + dp[k]) % MOD;\n            }\n            for (int k = 0; k <= maxK; ++k) {\n                int low = Math.max(0, k - i);\n                newDp[k] = (pref[k + 1] - pref[low] + MOD) % MOD;\n            }\n            if (reqMap.containsKey(i)) {\n                int target = reqMap.get(i);\n                for (int k = 0; k <= maxK; ++k) {\n                    if (k != target) newDp[k] = 0;\n                }\n            }\n            dp = newDp;\n        }\n        return (int) dp[reqMap.get(n - 1)];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Prefix-Sum Accelerated Mahonian DP",
+      "code": "var numberOfPermutations = function(n, requirements) {\n    const MOD = 1000000007n;\n    const reqMap = new Map();\n    let maxK = 0;\n    for (const [end, cnt] of requirements) {\n        reqMap.set(end, cnt);\n        if (cnt > maxK) maxK = cnt;\n    }\n    if (reqMap.has(0) && reqMap.get(0) !== 0) return 0;\n    let dp = new BigInt64Array(maxK + 1);\n    dp[0] = 1n;\n    for (let i = 1; i < n; ++i) {\n        const newDp = new BigInt64Array(maxK + 1);\n        const pref = new BigInt64Array(maxK + 2);\n        for (let k = 0; k <= maxK; ++k) {\n            pref[k + 1] = (pref[k] + dp[k]) % MOD;\n        }\n        for (let k = 0; k <= maxK; ++k) {\n            const low = Math.max(0, k - i);\n            newDp[k] = (pref[k + 1] - pref[low] + MOD) % MOD;\n        }\n        if (reqMap.has(i)) {\n            const target = reqMap.get(i);\n            for (let k = 0; k <= maxK; ++k) {\n                if (k !== target) newDp[k] = 0n;\n            }\n        }\n        dp = newDp;\n    }\n    return Number(dp[reqMap.get(n - 1)]);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

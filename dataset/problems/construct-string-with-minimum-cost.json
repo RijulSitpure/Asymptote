@@ -1,0 +1,80 @@
+{
+  "slug": "construct-string-with-minimum-cost",
+  "number": 3213,
+  "patterns": [
+    "tree-trie-prefix",
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subproblem Structure",
+      "text": "Let optimal prefix cost state[i] be the minimum cost to construct the target prefix of length i."
+    },
+    {
+      "level": 2,
+      "title": "Word Length Bucketing",
+      "text": "The number of unique word lengths in words is bounded by sqrt(total_word_length) <= 220."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Transitions",
+      "text": "For each distinct length L, look up the target suffix target[i - L : i] in a hash map of minimal costs for words of length L."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def minimumCost(self, target: str, words: list[str], costs: list[int]) -> int:\n        by_len = {}\n        for w, c in zip(words, costs):\n            L = len(w)\n            if L not in by_len:\n                by_len[L] = {}\n            if w not in by_len[L] or c < by_len[L][w]:\n                by_len[L][w] = c\n                \n        n = len(target)\n        dp = [float('inf')] * (n + 1)\n        dp[0] = 0\n        lens = sorted(by_len.keys())\n        \n        for i in range(1, n + 1):\n            if dp[i - 1] == float('inf') and all(dp[i - L] == float('inf') for L in lens if i >= L):\n                continue\n            for L in lens:\n                if i < L:\n                    break\n                if dp[i - L] != float('inf'):\n                    sub = target[i - L:i]\n                    if sub in by_len[L]:\n                        cost = dp[i - L] + by_len[L][sub]\n                        if cost < dp[i]:\n                            dp[i] = cost\n                            \n        return dp[n] if dp[n] != float('inf') else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * sqrt(W))",
+    "space": "O(W + n)",
+    "variables": [
+      "n: length of target",
+      "W: total length of words"
+    ],
+    "notes": "Grouping by length bounds transitions to sqrt(W) per prefix position.",
+    "whyNaiveFails": "Checking all words at every index takes O(n * len(words)) causing TLE.",
+    "spaceTimeTradeoff": "O(W) hash map storage for words.",
+    "interviewerExpectation": "Recognize the square root bound on distinct word lengths and optimize suffix transitions."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Square-Root Word-Length Partitioned DP",
+      "code": "class Solution:\n    def minimumCost(self, target: str, words: list[str], costs: list[int]) -> int:\n        by_len = {}\n        for w, c in zip(words, costs):\n            L = len(w)\n            if L not in by_len:\n                by_len[L] = {}\n            if w not in by_len[L] or c < by_len[L][w]:\n                by_len[L][w] = c\n                \n        n = len(target)\n        dp = [float('inf')] * (n + 1)\n        dp[0] = 0\n        lens = sorted(by_len.keys())\n        \n        for i in range(1, n + 1):\n            if dp[i - 1] == float('inf') and all(dp[i - L] == float('inf') for L in lens if i >= L):\n                continue\n            for L in lens:\n                if i < L:\n                    break\n                if dp[i - L] != float('inf'):\n                    sub = target[i - L:i]\n                    if sub in by_len[L]:\n                        cost = dp[i - L] + by_len[L][sub]\n                        if cost < dp[i]:\n                            dp[i] = cost\n                            \n        return dp[n] if dp[n] != float('inf') else -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Square-Root Word-Length Partitioned DP",
+      "code": "class Solution {\npublic:\n    int minimumCost(string target, vector<string>& words, vector<int>& costs) {\n        unordered_map<int, unordered_map<string, int>> by_len;\n        for (size_t i = 0; i < words.size(); ++i) {\n            int L = words[i].size();\n            if (!by_len[L].count(words[i]) || costs[i] < by_len[L][words[i]]) {\n                by_len[L][words[i]] = costs[i];\n            }\n        }\n        int n = target.size();\n        vector<long long> dp(n + 1, 1e18);\n        dp[0] = 0;\n        vector<int> lens;\n        for (const auto& [L, _] : by_len) lens.push_back(L);\n        sort(lens.begin(), lens.end());\n        for (int i = 1; i <= n; ++i) {\n            for (int L : lens) {\n                if (i < L) break;\n                if (dp[i - L] != 1e18) {\n                    string sub = target.substr(i - L, L);\n                    auto it = by_len[L].find(sub);\n                    if (it != by_len[L].end()) {\n                        dp[i] = min(dp[i], dp[i - L] + it->second);\n                    }\n                }\n            }\n        }\n        return dp[n] >= 1e18 ? -1 : dp[n];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Square-Root Word-Length Partitioned DP",
+      "code": "class Solution {\n    public int minimumCost(String target, String[] words, int[] costs) {\n        Map<Integer, Map<String, Integer>> byLen = new HashMap<>();\n        for (int i = 0; i < words.length; ++i) {\n            int L = words[i].length();\n            byLen.putIfAbsent(L, new HashMap<>());\n            Map<String, Integer> m = byLen.get(L);\n            if (!m.containsKey(words[i]) || costs[i] < m.get(words[i])) {\n                m.put(words[i], costs[i]);\n            }\n        }\n        int n = target.length();\n        long[] dp = new long[n + 1];\n        Arrays.fill(dp, (long) 1e18);\n        dp[0] = 0;\n        List<Integer> lens = new ArrayList<>(byLen.keySet());\n        Collections.sort(lens);\n        for (int i = 1; i <= n; ++i) {\n            for (int L : lens) {\n                if (i < L) break;\n                if (dp[i - L] != (long) 1e18) {\n                    String sub = target.substring(i - L, i);\n                    Map<String, Integer> m = byLen.get(L);\n                    if (m.containsKey(sub)) {\n                        dp[i] = Math.min(dp[i], dp[i - L] + m.get(sub));\n                    }\n                }\n            }\n        }\n        return dp[n] >= (long) 1e18 ? -1 : (int) dp[n];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Square-Root Word-Length Partitioned DP",
+      "code": "var minimumCost = function(target, words, costs) {\n    const byLen = new Map();\n    for (let i = 0; i < words.length; ++i) {\n        const L = words[i].length;\n        if (!byLen.has(L)) byLen.set(L, new Map());\n        const m = byLen.get(L);\n        if (!m.has(words[i]) || costs[i] < m.get(words[i])) {\n            m.set(words[i], costs[i]);\n        }\n    }\n    const n = target.length;\n    const dp = new Float64Array(n + 1).fill(Infinity);\n    dp[0] = 0;\n    const lens = Array.from(byLen.keys()).sort((a, b) => a - b);\n    for (let i = 1; i <= n; ++i) {\n        for (const L of lens) {\n            if (i < L) break;\n            if (dp[i - L] !== Infinity) {\n                const sub = target.slice(i - L, i);\n                const m = byLen.get(L);\n                if (m.has(sub)) {\n                    const c = dp[i - L] + m.get(sub);\n                    if (c < dp[i]) dp[i] = c;\n                }\n            }\n        }\n    }\n    return dp[n] === Infinity ? -1 : dp[n];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

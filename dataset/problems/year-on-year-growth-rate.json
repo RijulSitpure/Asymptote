@@ -1,0 +1,72 @@
+{
+  "slug": "year-on-year-growth-rate",
+  "number": 3214,
+  "patterns": [
+    "window-offset",
+    "group-aggregate"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Yearly Product Aggregate",
+      "text": "Calculate the total yearly spend for each product by grouping by product_id and transaction year."
+    },
+    {
+      "level": 2,
+      "title": "Lagged Annual Spend",
+      "text": "Use the lag window function partitioned by product_id and ordered by year to retrieve prev_year_spend."
+    },
+    {
+      "level": 3,
+      "title": "Growth Rate Computation",
+      "text": "Compute round((curr_year_spend - prev_year_spend) * 100.0 / prev_year_spend, 2) as yoy_rate."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```sql\nWITH YearlySpend AS (\n    SELECT \n        YEAR(transaction_date) AS year,\n        product_id,\n        SUM(spend) AS curr_year_spend\n    FROM user_transactions\n    GROUP BY product_id, YEAR(transaction_date)\n)\nSELECT \n    year,\n    product_id,\n    curr_year_spend,\n    LAG(curr_year_spend, 1) OVER (PARTITION BY product_id ORDER BY year ASC) AS prev_year_spend,\n    ROUND(\n        (curr_year_spend - LAG(curr_year_spend, 1) OVER (PARTITION BY product_id ORDER BY year ASC)) * 100.0 \n        / LAG(curr_year_spend, 1) OVER (PARTITION BY product_id ORDER BY year ASC),\n        2\n    ) AS yoy_rate\nFROM YearlySpend\nORDER BY product_id ASC, year ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of transactions"
+    ],
+    "notes": "Aggregation and window LAG sorting over years.",
+    "whyNaiveFails": "Self-joining transactions without grouping by year first creates duplicate product-year rows.",
+    "spaceTimeTradeoff": "O(product * year) intermediate CTE rows.",
+    "interviewerExpectation": "Use CTE aggregation and window LAG to compute time-series growth rates."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "CTE Annual Aggregation and Window LAG",
+      "code": "WITH YearlySpend AS (\n    SELECT \n        YEAR(transaction_date) AS year,\n        product_id,\n        SUM(spend) AS curr_year_spend\n    FROM user_transactions\n    GROUP BY product_id, YEAR(transaction_date)\n)\nSELECT \n    year,\n    product_id,\n    curr_year_spend,\n    LAG(curr_year_spend, 1) OVER (PARTITION BY product_id ORDER BY year ASC) AS prev_year_spend,\n    ROUND(\n        (curr_year_spend - LAG(curr_year_spend, 1) OVER (PARTITION BY product_id ORDER BY year ASC)) * 100.0 \n        / LAG(curr_year_spend, 1) OVER (PARTITION BY product_id ORDER BY year ASC),\n        2\n    ) AS yoy_rate\nFROM YearlySpend\nORDER BY product_id ASC, year ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "CTE Annual Aggregation and Window LAG",
+      "code": "WITH YearlySpend AS (\n    SELECT \n        EXTRACT(YEAR FROM transaction_date)::INT AS year,\n        product_id,\n        SUM(spend) AS curr_year_spend\n    FROM user_transactions\n    GROUP BY product_id, EXTRACT(YEAR FROM transaction_date)\n)\nSELECT \n    year,\n    product_id,\n    curr_year_spend,\n    LAG(curr_year_spend, 1) OVER (PARTITION BY product_id ORDER BY year ASC) AS prev_year_spend,\n    ROUND(\n        ((curr_year_spend - LAG(curr_year_spend, 1) OVER (PARTITION BY product_id ORDER BY year ASC)) * 100.0 \n        / LAG(curr_year_spend, 1) OVER (PARTITION BY product_id ORDER BY year ASC))::numeric,\n        2\n    ) AS yoy_rate\nFROM YearlySpend\nORDER BY product_id ASC, year ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas GroupBy and Shift Metric",
+      "code": "import pandas as pd\n\ndef calculate_yoy_growth(user_transactions: pd.DataFrame) -> pd.DataFrame:\n    if user_transactions.empty:\n        return pd.DataFrame(columns=['year', 'product_id', 'curr_year_spend', 'prev_year_spend', 'yoy_rate'])\n    \n    user_transactions['year'] = pd.to_datetime(user_transactions['transaction_date']).dt.year\n    yearly = user_transactions.groupby(['product_id', 'year'])['spend'].sum().reset_index()\n    yearly = yearly.rename(columns={'spend': 'curr_year_spend'})\n    yearly = yearly.sort_values(by=['product_id', 'year'])\n    \n    yearly['prev_year_spend'] = yearly.groupby('product_id')['curr_year_spend'].shift(1)\n    yearly['yoy_rate'] = ((yearly['curr_year_spend'] - yearly['prev_year_spend']) * 100.0 / yearly['prev_year_spend']).round(2)\n    \n    res = yearly[['year', 'product_id', 'curr_year_spend', 'prev_year_spend', 'yoy_rate']]\n    return res.sort_values(by=['product_id', 'year']).reset_index(drop=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

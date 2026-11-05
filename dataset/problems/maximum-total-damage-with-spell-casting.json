@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-total-damage-with-spell-casting",
+  "number": 3186,
+  "patterns": [
+    "dp-1d-fib-linear",
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Frequency Grouping",
+      "text": "If a power value v is selected, all instances of v should be taken together for a total of v * count[v] damage."
+    },
+    {
+      "level": 2,
+      "title": "Damage Incompatibility",
+      "text": "Taking value v precludes taking spells with power v - 1, v - 2, v + 1, or v + 2."
+    },
+    {
+      "level": 3,
+      "title": "Linear Subproblem Transition",
+      "text": "Sort distinct values. For index i, binary search for the largest index p where val[p] < val[i] - 2, and transition dp[i] = max(dp[i - 1], dp[p] + val[i] * count[val[i]])."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nimport bisect\nfrom collections import Counter\n\nclass Solution:\n    def maximumTotalDamage(self, power: list[int]) -> int:\n        cnt = Counter(power)\n        vals = sorted(cnt.keys())\n        m = len(vals)\n        dp = [0] * (m + 1)\n        \n        for i in range(m):\n            v = vals[i]\n            gain = v * cnt[v]\n            idx = bisect.bisect_left(vals, v - 2)\n            dp[i + 1] = max(dp[i], dp[idx] + gain)\n            \n        return dp[m]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m log m)",
+    "space": "O(m)",
+    "variables": [
+      "m: number of distinct spell powers"
+    ],
+    "notes": "Sorting distinct values and binary search queries take O(m log m).",
+    "whyNaiveFails": "Recursive branch search takes exponential O(2^m) time.",
+    "spaceTimeTradeoff": "O(m) table stores maximum damage prefix DP.",
+    "interviewerExpectation": "Aggregate identical values and formulate non-adjacent House Robber dynamic programming."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Frequency Map Sorting and Binary Search DP",
+      "code": "import bisect\nfrom collections import Counter\n\nclass Solution:\n    def maximumTotalDamage(self, power: list[int]) -> int:\n        cnt = Counter(power)\n        vals = sorted(cnt.keys())\n        m = len(vals)\n        dp = [0] * (m + 1)\n        \n        for i in range(m):\n            v = vals[i]\n            gain = v * cnt[v]\n            idx = bisect.bisect_left(vals, v - 2)\n            dp[i + 1] = max(dp[i], dp[idx] + gain)\n            \n        return dp[m]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Frequency Map Sorting and Binary Search DP",
+      "code": "class Solution {\npublic:\n    long long maximumTotalDamage(vector<int>& power) {\n        map<int, int> cnt;\n        for (int p : power) cnt[p]++;\n        vector<long long> vals;\n        vector<long long> total_gain;\n        for (const auto& [v, c] : cnt) {\n            vals.push_back(v);\n            total_gain.push_back(1LL * v * c);\n        }\n        int m = vals.size();\n        vector<long long> dp(m + 1, 0);\n        for (int i = 0; i < m; ++i) {\n            int idx = lower_bound(vals.begin(), vals.end(), vals[i] - 2) - vals.begin();\n            dp[i + 1] = max(dp[i], dp[idx] + total_gain[i]);\n        }\n        return dp[m];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Frequency Map Sorting and Binary Search DP",
+      "code": "class Solution {\n    public long maximumTotalDamage(int[] power) {\n        Map<Integer, Integer> cnt = new TreeMap<>();\n        for (int p : power) cnt.put(p, cnt.getOrDefault(p, 0) + 1);\n        int m = cnt.size();\n        long[] vals = new long[m];\n        long[] totalGain = new long[m];\n        int ptr = 0;\n        for (Map.Entry<Integer, Integer> e : cnt.entrySet()) {\n            vals[ptr] = e.getKey();\n            totalGain[ptr] = vals[ptr] * e.getValue();\n            ptr++;\n        }\n        long[] dp = new long[m + 1];\n        for (int i = 0; i < m; ++i) {\n            int low = 0, high = i, best = 0;\n            while (low < high) {\n                int mid = (low + high) / 2;\n                if (vals[mid] >= vals[i] - 2) high = mid;\n                else low = mid + 1;\n            }\n            dp[i + 1] = Math.max(dp[i], dp[low] + totalGain[i]);\n        }\n        return dp[m];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Frequency Map Sorting and Binary Search DP",
+      "code": "var maximumTotalDamage = function(power) {\n    const cnt = new Map();\n    for (const p of power) cnt.set(p, (cnt.get(p) || 0) + 1);\n    const vals = Array.from(cnt.keys()).sort((a, b) => a - b);\n    const m = vals.length;\n    const dp = new BigInt64Array(m + 1);\n    for (let i = 0; i < m; ++i) {\n        const v = vals[i];\n        const gain = BigInt(v) * BigInt(cnt.get(v));\n        let low = 0, high = i;\n        while (low < high) {\n            const mid = (low + high) >> 1;\n            if (vals[mid] >= v - 2) high = mid;\n            else low = mid + 1;\n        }\n        const take = dp[low] + gain;\n        dp[i + 1] = dp[i] > take ? dp[i] : take;\n    }\n    return Number(dp[m]);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

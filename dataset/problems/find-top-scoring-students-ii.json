@@ -1,0 +1,74 @@
+{
+  "slug": "find-top-scoring-students-ii",
+  "number": 3188,
+  "patterns": [
+    "join-filter",
+    "having-filter",
+    "group-aggregate"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Mandatory Requirement Aggregate",
+      "text": "Count the number of mandatory courses required for each major."
+    },
+    {
+      "level": 2,
+      "title": "Student Performance Metrics",
+      "text": "Aggregate student grades in their major mandatory courses, elective courses, and overall weighted grade point average."
+    },
+    {
+      "level": 3,
+      "title": "Eligibility Filtering",
+      "text": "Filter students who earned an 'A' in all mandatory major courses, took at least two major electives with grade 'A' or 'B', and achieved an overall average grade point average >= 2.5."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH MandatoryMajors AS (\n    SELECT major, COUNT(course_id) AS mandatory_count\n    FROM courses\n    WHERE mandatory = 'Yes'\n    GROUP BY major\n),\nStudentStats AS (\n    SELECT \n        s.student_id,\n        s.major,\n        SUM(CASE WHEN s.major = c.major AND c.mandatory = 'Yes' AND e.grade = 'A' THEN 1 ELSE 0 END) AS mandatory_a_count,\n        SUM(CASE WHEN s.major = c.major AND c.mandatory = 'No' AND e.grade IN ('A', 'B') THEN 1 ELSE 0 END) AS elective_count,\n        ROUND(SUM(e.gpa * c.credits) / SUM(c.credits), 2) AS avg_gpa\n    FROM students s\n    JOIN enrollments e ON s.student_id = e.student_id\n    JOIN courses c ON e.course_id = c.course_id\n    GROUP BY s.student_id, s.major\n)\nSELECT ss.student_id\nFROM StudentStats ss\nJOIN MandatoryMajors mm \n  ON ss.major = mm.major \n AND ss.mandatory_a_count = mm.mandatory_count\nWHERE ss.elective_count >= 2\n  AND ss.avg_gpa >= 2.5\nORDER BY ss.student_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + m)",
+    "space": "O(n + m)",
+    "variables": [
+      "n: number of enrollments",
+      "m: number of courses"
+    ],
+    "notes": "CTE aggregation followed by join filter on required counts.",
+    "whyNaiveFails": "Single join without CTE cannot compare individual student counts against major-wide course totals.",
+    "spaceTimeTradeoff": "O(students) intermediate aggregated CTE rows.",
+    "interviewerExpectation": "Structure multi-faceted eligibility criteria cleanly using CTEs and conditional aggregations."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "CTE Multi-Criteria Aggregation",
+      "code": "WITH MandatoryMajors AS (\n    SELECT major, COUNT(course_id) AS mandatory_count\n    FROM courses\n    WHERE mandatory = 'Yes'\n    GROUP BY major\n),\nStudentStats AS (\n    SELECT \n        s.student_id,\n        s.major,\n        SUM(CASE WHEN s.major = c.major AND c.mandatory = 'Yes' AND e.grade = 'A' THEN 1 ELSE 0 END) AS mandatory_a_count,\n        SUM(CASE WHEN s.major = c.major AND c.mandatory = 'No' AND e.grade IN ('A', 'B') THEN 1 ELSE 0 END) AS elective_count,\n        ROUND(SUM(e.gpa * c.credits) / SUM(c.credits), 2) AS avg_gpa\n    FROM students s\n    JOIN enrollments e ON s.student_id = e.student_id\n    JOIN courses c ON e.course_id = c.course_id\n    GROUP BY s.student_id, s.major\n)\nSELECT ss.student_id\nFROM StudentStats ss\nJOIN MandatoryMajors mm \n  ON ss.major = mm.major \n AND ss.mandatory_a_count = mm.mandatory_count\nWHERE ss.elective_count >= 2\n  AND ss.avg_gpa >= 2.5\nORDER BY ss.student_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "CTE Multi-Criteria Aggregation",
+      "code": "WITH MandatoryMajors AS (\n    SELECT major, COUNT(course_id) AS mandatory_count\n    FROM courses\n    WHERE mandatory = 'Yes'\n    GROUP BY major\n),\nStudentStats AS (\n    SELECT \n        s.student_id,\n        s.major,\n        SUM(CASE WHEN s.major = c.major AND c.mandatory = 'Yes' AND e.grade = 'A' THEN 1 ELSE 0 END) AS mandatory_a_count,\n        SUM(CASE WHEN s.major = c.major AND c.mandatory = 'No' AND e.grade IN ('A', 'B') THEN 1 ELSE 0 END) AS elective_count,\n        ROUND((SUM(e.gpa * c.credits) / SUM(c.credits))::numeric, 2) AS avg_gpa\n    FROM students s\n    JOIN enrollments e ON s.student_id = e.student_id\n    JOIN courses c ON e.course_id = c.course_id\n    GROUP BY s.student_id, s.major\n)\nSELECT ss.student_id\nFROM StudentStats ss\nJOIN MandatoryMajors mm \n  ON ss.major = mm.major \n AND ss.mandatory_a_count = mm.mandatory_count\nWHERE ss.elective_count >= 2\n  AND ss.avg_gpa >= 2.5\nORDER BY ss.student_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Pandas Multi-table Metric Aggregations",
+      "code": "import pandas as pd\n\ndef find_top_scoring_students_ii(students: pd.DataFrame, courses: pd.DataFrame, enrollments: pd.DataFrame) -> pd.DataFrame:\n    if students.empty or courses.empty or enrollments.empty:\n        return pd.DataFrame(columns=['student_id'])\n    \n    mand_counts = courses[courses['mandatory'] == 'Yes'].groupby('major')['course_id'].count().to_dict()\n    \n    merged = students.merge(enrollments, on='student_id').merge(courses, on='course_id', suffixes=('_student', '_course'))\n    \n    qualified = []\n    for sid, group in merged.groupby('student_id'):\n        major = group['major_student'].iloc[0]\n        req_mand = mand_counts.get(major, 0)\n        \n        mand_a = len(group[(group['major_course'] == major) & (group['mandatory'] == 'Yes') & (group['grade'] == 'A')])\n        if mand_a < req_mand:\n            continue\n            \n        elec_cnt = len(group[(group['major_course'] == major) & (group['mandatory'] == 'No') & (group['grade'].isin(['A', 'B']))])\n        if elec_cnt < 2:\n            continue\n            \n        total_weighted_gpa = (group['gpa'] * group['credits']).sum()\n        total_credits = group['credits'].sum()\n        avg_gpa = round(total_weighted_gpa / total_credits, 2)\n        if avg_gpa >= 2.5:\n            qualified.append(sid)\n            \n    res = pd.DataFrame({'student_id': sorted(qualified)})\n    return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}
