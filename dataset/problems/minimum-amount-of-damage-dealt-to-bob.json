@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-amount-of-damage-dealt-to-bob",
+  "number": 3273,
+  "patterns": [
+    "greedy-general"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Turn Consumption per Enemy",
+      "text": "Each enemy requires ceil(health[i] / power) attacks to eliminate."
+    },
+    {
+      "level": 2,
+      "title": "Exchange Ratio Comparator",
+      "text": "By exchange argument, eliminating enemy A before B is strictly optimal if damage[A] * turns[B] > damage[B] * turns[A]."
+    },
+    {
+      "level": 3,
+      "title": "Simultaneous Damage Accumulation",
+      "text": "Sort enemies using the cross-multiplication comparator and accumulate damage across each enemy's active rounds."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def minDamage(self, power: int, damage: list[int], health: list[int]) -> int:\n        import math\n        # Turns to defeat enemy i\n        turns = [math.ceil(h / power) for h in health]\n        # Greedy exchange argument:\n        # If we defeat enemy A then B: damage taken is turns_A * d_A + (turns_A + turns_B) * d_B\n        # If we defeat enemy B then A: damage taken is turns_B * d_B + (turns_A + turns_B) * d_A\n        # A then B is better if turns_A * d_B < turns_B * d_A, i.e., d_A / turns_A > d_B / turns_B\n        n = len(damage)\n        order = list(range(n))\n        from functools import cmp_to_key\n        def compare(i, j):\n            # i before j if damage[i] * turns[j] > damage[j] * turns[i]\n            val1 = damage[i] * turns[j]\n            val2 = damage[j] * turns[i]\n            if val1 > val2: return -1\n            if val1 < val2: return 1\n            return 0\n        order.sort(key=cmp_to_key(compare))\n        \n        total_damage = 0\n        total_d = sum(damage)\n        for idx in order:\n            total_damage += total_d * turns[idx]\n            total_d -= damage[idx]\n        return total_damage\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of enemies"
+    ],
+    "notes": "Sorting by exchange argument comparator dominates.",
+    "whyNaiveFails": "Exhaustive permutation checks take factorial O(n!) time.",
+    "spaceTimeTradeoff": "O(n) index array.",
+    "interviewerExpectation": "Proves greedy exchange argument using cross-product comparator."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minDamage(self, power: int, damage: list[int], health: list[int]) -> int:\n        import math\n        # Turns to defeat enemy i\n        turns = [math.ceil(h / power) for h in health]\n        # Greedy exchange argument:\n        # If we defeat enemy A then B: damage taken is turns_A * d_A + (turns_A + turns_B) * d_B\n        # If we defeat enemy B then A: damage taken is turns_B * d_B + (turns_A + turns_B) * d_A\n        # A then B is better if turns_A * d_B < turns_B * d_A, i.e., d_A / turns_A > d_B / turns_B\n        n = len(damage)\n        order = list(range(n))\n        from functools import cmp_to_key\n        def compare(i, j):\n            # i before j if damage[i] * turns[j] > damage[j] * turns[i]\n            val1 = damage[i] * turns[j]\n            val2 = damage[j] * turns[i]\n            if val1 > val2: return -1\n            if val1 < val2: return 1\n            return 0\n        order.sort(key=cmp_to_key(compare))\n        \n        total_damage = 0\n        total_d = sum(damage)\n        for idx in order:\n            total_damage += total_d * turns[idx]\n            total_d -= damage[idx]\n        return total_damage",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    long long minDamage(int power, vector<int>& damage, vector<int>& health) {\n        int n = damage.size();\n        vector<int> turns(n);\n        for (int i = 0; i < n; ++i) {\n            turns[i] = (health[i] + power - 1) / power;\n        }\n        vector<int> order(n);\n        iota(order.begin(), order.end(), 0);\n        sort(order.begin(), order.end(), [&](int i, int j) {\n            return 1LL * damage[i] * turns[j] > 1LL * damage[j] * turns[i];\n        });\n        \n        long long total_damage = 0;\n        long long total_d = 0;\n        for (int d : damage) total_d += d;\n        for (int idx : order) {\n            total_damage += total_d * turns[idx];\n            total_d -= damage[idx];\n        }\n        return total_damage;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public long minDamage(int power, int[] damage, int[] health) {\n        int n = damage.length;\n        int[] turns = new int[n];\n        for (int i = 0; i < n; ++i) {\n            turns[i] = (health[i] + power - 1) / power;\n        }\n        Integer[] order = new Integer[n];\n        for (int i = 0; i < n; ++i) order[i] = i;\n        Arrays.sort(order, (i, j) -> {\n            long val1 = (long) damage[i] * turns[j];\n            long val2 = (long) damage[j] * turns[i];\n            return Long.compare(val2, val1);\n        });\n        \n        long totalDamage = 0;\n        long totalD = 0;\n        for (int d : damage) totalD += d;\n        for (int idx : order) {\n            totalDamage += totalD * turns[idx];\n            totalD -= damage[idx];\n        }\n        return totalDamage;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minDamage = function(power, damage, health) {\n    const n = damage.length;\n    const turns = health.map(h => Math.ceil(h / power));\n    const order = Array.from({ length: n }, (_, i) => i);\n    order.sort((i, j) => {\n        const val1 = BigInt(damage[i]) * BigInt(turns[j]);\n        const val2 = BigInt(damage[j]) * BigInt(turns[i]);\n        return val1 > val2 ? -1 : val1 < val2 ? 1 : 0;\n    });\n    \n    let totalDamage = 0n;\n    let totalD = damage.reduce((acc, d) => acc + BigInt(d), 0n);\n    for (const idx of order) {\n        totalDamage += totalD * BigInt(turns[idx]);\n        totalD -= BigInt(damage[idx]);\n    }\n    return Number(totalDamage);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

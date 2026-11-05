@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-value-sum-by-placing-three-rooks-i",
+  "number": 3256,
+  "patterns": [
+    "dp-grid-2d",
+    "greedy-general"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Top-Three Column Selection",
+      "text": "Because only three rooks are placed, at most two other rooks can conflict with any chosen column. Therefore, keeping the top three values in each row guarantees finding an optimal conflict-free candidate."
+    },
+    {
+      "level": 2,
+      "title": "Row Triplet Combination",
+      "text": "For each row, extract its three largest values with column indices."
+    },
+    {
+      "level": 3,
+      "title": "Exhaustive Conflict-Free Search",
+      "text": "Iterate through all unique combinations of three rows and combine their top-three entries, discarding choices with matching column indices."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maximumValueSum(self, board: list[list[int]]) -> int:\n        m, n = len(board), len(board[0])\n        # Find top 3 (val, col) for each row\n        row_top3 = []\n        for r in range(m):\n            row = [(board[r][c], c) for c in range(n)]\n            row.sort(reverse=True)\n            row_top3.append(row[:3])\n            \n        max_sum = -float('inf')\n        for r1 in range(m):\n            for r2 in range(r1 + 1, m):\n                for r3 in range(r2 + 1, m):\n                    for v1, c1 in row_top3[r1]:\n                        for v2, c2 in row_top3[r2]:\n                            if c2 == c1:\n                                continue\n                            for v3, c3 in row_top3[r3]:\n                                if c3 == c1 or c3 == c2:\n                                    continue\n                                max_sum = max(max_sum, v1 + v2 + v3)\n        return max_sum\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n log n + m^3)",
+    "space": "O(m)",
+    "variables": [
+      "m: board row count",
+      "n: board column count"
+    ],
+    "notes": "Sorting each row takes O(m * n log n), and combining top 3 elements takes 27 * C(m, 3).",
+    "whyNaiveFails": "Examining all (m*n)^3 rook triplets takes unacceptable execution time.",
+    "spaceTimeTradeoff": "O(m) memory stores top three cells per row.",
+    "interviewerExpectation": "Recognizes that maintaining only top 3 candidates per row avoids column collision bottlenecks."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maximumValueSum(self, board: list[list[int]]) -> int:\n        m, n = len(board), len(board[0])\n        # Find top 3 (val, col) for each row\n        row_top3 = []\n        for r in range(m):\n            row = [(board[r][c], c) for c in range(n)]\n            row.sort(reverse=True)\n            row_top3.append(row[:3])\n            \n        max_sum = -float('inf')\n        for r1 in range(m):\n            for r2 in range(r1 + 1, m):\n                for r3 in range(r2 + 1, m):\n                    for v1, c1 in row_top3[r1]:\n                        for v2, c2 in row_top3[r2]:\n                            if c2 == c1:\n                                continue\n                            for v3, c3 in row_top3[r3]:\n                                if c3 == c1 or c3 == c2:\n                                    continue\n                                max_sum = max(max_sum, v1 + v2 + v3)\n        return max_sum",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    long long maximumValueSum(vector<vector<int>>& board) {\n        int m = board.size();\n        int n = board[0].size();\n        vector<vector<pair<int, int>>> row_top3(m);\n        for (int r = 0; r < m; ++r) {\n            vector<pair<int, int>> row;\n            for (int c = 0; c < n; ++c) {\n                row.push_back({board[r][c], c});\n            }\n            sort(row.rbegin(), row.rend());\n            row.resize(3);\n            row_top3[r] = row;\n        }\n        long long max_sum = -1e18;\n        for (int r1 = 0; r1 < m; ++r1) {\n            for (int r2 = r1 + 1; r2 < m; ++r2) {\n                for (int r3 = r2 + 1; r3 < m; ++r3) {\n                    for (const auto& [v1, c1] : row_top3[r1]) {\n                        for (const auto& [v2, c2] : row_top3[r2]) {\n                            if (c2 == c1) continue;\n                            for (const auto& [v3, c3] : row_top3[r3]) {\n                                if (c3 == c1 || c3 == c2) continue;\n                                max_sum = max(max_sum, 1LL * v1 + v2 + v3);\n                            }\n                        }\n                    }\n                }\n            }\n        }\n        return max_sum;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public long maximumValueSum(int[][] board) {\n        int m = board.length;\n        int n = board[0].length;\n        int[][][] rowTop3 = new int[m][3][2];\n        for (int r = 0; r < m; ++r) {\n            List<int[]> row = new ArrayList<>();\n            for (int c = 0; c < n; ++c) {\n                row.add(new int[]{board[r][c], c});\n            }\n            row.sort((a, b) -> Integer.compare(b[0], a[0]));\n            for (int i = 0; i < 3; ++i) {\n                rowTop3[r][i] = row.get(i);\n            }\n        }\n        long maxSum = Long.MIN_VALUE;\n        for (int r1 = 0; r1 < m; ++r1) {\n            for (int r2 = r1 + 1; r2 < m; ++r2) {\n                for (int r3 = r2 + 1; r3 < m; ++r3) {\n                    for (int[] p1 : rowTop3[r1]) {\n                        for (int[] p2 : rowTop3[r2]) {\n                            if (p2[1] == p1[1]) continue;\n                            for (int[] p3 : rowTop3[r3]) {\n                                if (p3[1] == p1[1] || p3[1] == p2[1]) continue;\n                                maxSum = Math.max(maxSum, (long) p1[0] + p2[0] + p3[0]);\n                            }\n                        }\n                    }\n                }\n            }\n        }\n        return maxSum;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maximumValueSum = function(board) {\n    const m = board.length;\n    const n = board[0].length;\n    const rowTop3 = [];\n    for (let r = 0; r < m; r++) {\n        const row = [];\n        for (let c = 0; c < n; c++) {\n            row.push([board[r][c], c]);\n        }\n        row.sort((a, b) => b[0] - a[0]);\n        rowTop3.push(row.slice(0, 3));\n    }\n    let maxSum = -Infinity;\n    for (let r1 = 0; r1 < m; r1++) {\n        for (let r2 = r1 + 1; r2 < m; r2++) {\n            for (let r3 = r2 + 1; r3 < m; r3++) {\n                for (const [v1, c1] of rowTop3[r1]) {\n                    for (const [v2, c2] of rowTop3[r2]) {\n                        if (c2 === c1) continue;\n                        for (const [v3, c3] of rowTop3[r3]) {\n                            if (c3 === c1 || c3 === c2) continue;\n                            const sum = v1 + v2 + v3;\n                            if (sum > maxSum) maxSum = sum;\n                        }\n                    }\n                }\n            }\n        }\n    }\n    return maxSum;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

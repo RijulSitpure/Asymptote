@@ -1,0 +1,80 @@
+{
+  "slug": "maximum-value-sum-by-placing-three-rooks-ii",
+  "number": 3257,
+  "patterns": [
+    "dp-grid-2d",
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Middle Row Pivot",
+      "text": "Fix the row for the middle rook. The other two rooks must then come from preceding rows and succeeding rows respectively."
+    },
+    {
+      "level": 2,
+      "title": "Prefix and Suffix Merging",
+      "text": "Precompute prefix top-three candidates for rows before r and suffix top-three candidates for rows after r."
+    },
+    {
+      "level": 3,
+      "title": "Constant-Time Middle Sweep",
+      "text": "For each middle row r, evaluate 3 * 3 * 3 = 27 combinations using prefix[r-1] and suffix[r+1], running in linear time O(m)."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maximumValueSum(self, board: list[list[int]]) -> int:\n        m, n = len(board), len(board[0])\n        row_top3 = []\n        for r in range(m):\n            row = [(board[r][c], c) for c in range(n)]\n            row.sort(reverse=True)\n            row_top3.append(row[:3])\n            \n        def merge_top3(a, b):\n            combined = a + b\n            combined.sort(reverse=True)\n            res = []\n            seen_cols = set()\n            for v, c in combined:\n                if c not in seen_cols:\n                    seen_cols.add(c)\n                    res.append((v, c))\n                    if len(res) == 3:\n                        break\n            return res\n            \n        pref = [None] * m\n        pref[0] = row_top3[0]\n        for r in range(1, m):\n            pref[r] = merge_top3(pref[r - 1], row_top3[r])\n            \n        suff = [None] * m\n        suff[-1] = row_top3[-1]\n        for r in range(m - 2, -1, -1):\n            suff[r] = merge_top3(suff[r + 1], row_top3[r])\n            \n        max_sum = -float('inf')\n        for r in range(1, m - 1):\n            for v2, c2 in row_top3[r]:\n                for v1, c1 in pref[r - 1]:\n                    if c1 == c2:\n                        continue\n                    for v3, c3 in suff[r + 1]:\n                        if c3 == c1 or c3 == c2:\n                            continue\n                        max_sum = max(max_sum, v1 + v2 + v3)\n        return max_sum\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n log n + m)",
+    "space": "O(m)",
+    "variables": [
+      "m: board row count",
+      "n: board column count"
+    ],
+    "notes": "Prefix and suffix merging reduces 3-row exploration to O(m).",
+    "whyNaiveFails": "O(m^3) combinations timeout for m = 500.",
+    "spaceTimeTradeoff": "O(m) prefix and suffix arrays.",
+    "interviewerExpectation": "Uses middle element pivoting with prefix and suffix extrema."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maximumValueSum(self, board: list[list[int]]) -> int:\n        m, n = len(board), len(board[0])\n        row_top3 = []\n        for r in range(m):\n            row = [(board[r][c], c) for c in range(n)]\n            row.sort(reverse=True)\n            row_top3.append(row[:3])\n            \n        def merge_top3(a, b):\n            combined = a + b\n            combined.sort(reverse=True)\n            res = []\n            seen_cols = set()\n            for v, c in combined:\n                if c not in seen_cols:\n                    seen_cols.add(c)\n                    res.append((v, c))\n                    if len(res) == 3:\n                        break\n            return res\n            \n        pref = [None] * m\n        pref[0] = row_top3[0]\n        for r in range(1, m):\n            pref[r] = merge_top3(pref[r - 1], row_top3[r])\n            \n        suff = [None] * m\n        suff[-1] = row_top3[-1]\n        for r in range(m - 2, -1, -1):\n            suff[r] = merge_top3(suff[r + 1], row_top3[r])\n            \n        max_sum = -float('inf')\n        for r in range(1, m - 1):\n            for v2, c2 in row_top3[r]:\n                for v1, c1 in pref[r - 1]:\n                    if c1 == c2:\n                        continue\n                    for v3, c3 in suff[r + 1]:\n                        if c3 == c1 or c3 == c2:\n                            continue\n                        max_sum = max(max_sum, v1 + v2 + v3)\n        return max_sum\n",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    long long maximumValueSum(vector<vector<int>>& board) {\n        int m = board.size();\n        int n = board[0].size();\n        vector<vector<pair<int, int>>> row_top3(m);\n        for (int r = 0; r < m; ++r) {\n            vector<pair<int, int>> row;\n            for (int c = 0; c < n; ++c) {\n                row.push_back({board[r][c], c});\n            }\n            sort(row.rbegin(), row.rend());\n            row.resize(3);\n            row_top3[r] = row;\n        }\n        \n        auto merge_top3 = [](const vector<pair<int, int>>& a, const vector<pair<int, int>>& b) {\n            vector<pair<int, int>> combined = a;\n            combined.insert(combined.end(), b.begin(), b.end());\n            sort(combined.rbegin(), combined.rend());\n            vector<pair<int, int>> res;\n            unordered_set<int> seen;\n            for (const auto& p : combined) {\n                if (!seen.count(p.second)) {\n                    seen.insert(p.second);\n                    res.push_back(p);\n                    if (res.size() == 3) break;\n                }\n            }\n            return res;\n        };\n        \n        vector<vector<pair<int, int>>> pref(m);\n        pref[0] = row_top3[0];\n        for (int r = 1; r < m; ++r) {\n            pref[r] = merge_top3(pref[r - 1], row_top3[r]);\n        }\n        \n        vector<vector<pair<int, int>>> suff(m);\n        suff[m - 1] = row_top3[m - 1];\n        for (int r = m - 2; r >= 0; --r) {\n            suff[r] = merge_top3(suff[r + 1], row_top3[r]);\n        }\n        \n        long long max_sum = -1e18;\n        for (int r = 1; r < m - 1; ++r) {\n            for (const auto& [v2, c2] : row_top3[r]) {\n                for (const auto& [v1, c1] : pref[r - 1]) {\n                    if (c1 == c2) continue;\n                    for (const auto& [v3, c3] : suff[r + 1]) {\n                        if (c3 == c1 || c3 == c2) continue;\n                        max_sum = max(max_sum, 1LL * v1 + v2 + v3);\n                    }\n                }\n            }\n        }\n        return max_sum;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public long maximumValueSum(int[][] board) {\n        int m = board.length;\n        int n = board[0].length;\n        int[][][] rowTop3 = new int[m][3][2];\n        for (int r = 0; r < m; ++r) {\n            List<int[]> row = new ArrayList<>();\n            for (int c = 0; c < n; ++c) {\n                row.add(new int[]{board[r][c], c});\n            }\n            row.sort((a, b) -> Integer.compare(b[0], a[0]));\n            for (int i = 0; i < 3; ++i) {\n                rowTop3[r][i] = row.get(i);\n            }\n        }\n        \n        int[][][] pref = new int[m][3][2];\n        pref[0] = rowTop3[0];\n        for (int r = 1; r < m; ++r) {\n            pref[r] = mergeTop3(pref[r - 1], rowTop3[r]);\n        }\n        \n        int[][][] suff = new int[m][3][2];\n        suff[m - 1] = rowTop3[m - 1];\n        for (int r = m - 2; r >= 0; --r) {\n            suff[r] = mergeTop3(suff[r + 1], rowTop3[r]);\n        }\n        \n        long maxSum = Long.MIN_VALUE;\n        for (int r = 1; r < m - 1; ++r) {\n            for (int[] p2 : rowTop3[r]) {\n                for (int[] p1 : pref[r - 1]) {\n                    if (p1[1] == p2[1]) continue;\n                    for (int[] p3 : suff[r + 1]) {\n                        if (p3[1] == p1[1] || p3[1] == p2[1]) continue;\n                        maxSum = Math.max(maxSum, (long) p1[0] + p2[0] + p3[0]);\n                    }\n                }\n            }\n        }\n        return maxSum;\n    }\n    \n    private int[][] mergeTop3(int[][] a, int[][] b) {\n        List<int[]> combined = new ArrayList<>();\n        for (int[] x : a) combined.add(x);\n        for (int[] x : b) combined.add(x);\n        combined.sort((x, y) -> Integer.compare(y[0], x[0]));\n        int[][] res = new int[3][2];\n        Set<Integer> seen = new HashSet<>();\n        int idx = 0;\n        for (int[] p : combined) {\n            if (!seen.contains(p[1])) {\n                seen.add(p[1]);\n                res[idx++] = p;\n                if (idx == 3) break;\n            }\n        }\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maximumValueSum = function(board) {\n    const m = board.length;\n    const n = board[0].length;\n    const rowTop3 = [];\n    for (let r = 0; r < m; r++) {\n        const row = [];\n        for (let c = 0; c < n; c++) {\n            row.push([board[r][c], c]);\n        }\n        row.sort((a, b) => b[0] - a[0]);\n        rowTop3.push(row.slice(0, 3));\n    }\n    \n    const mergeTop3 = (a, b) => {\n        const combined = [...a, ...b];\n        combined.sort((x, y) => y[0] - x[0]);\n        const res = [];\n        const seen = new Set();\n        for (const [v, c] of combined) {\n            if (!seen.has(c)) {\n                seen.add(c);\n                res.push([v, c]);\n                if (res.length === 3) break;\n            }\n        }\n        return res;\n    };\n    \n    const pref = new Array(m);\n    pref[0] = rowTop3[0];\n    for (let r = 1; r < m; r++) {\n        pref[r] = mergeTop3(pref[r - 1], rowTop3[r]);\n    }\n    \n    const suff = new Array(m);\n    suff[m - 1] = rowTop3[m - 1];\n    for (let r = m - 2; r >= 0; r--) {\n        suff[r] = mergeTop3(suff[r + 1], rowTop3[r]);\n    }\n    \n    let maxSum = -Infinity;\n    for (let r = 1; r < m - 1; r++) {\n        for (const [v2, c2] of rowTop3[r]) {\n            for (const [v1, c1] of pref[r - 1]) {\n                if (c1 === c2) continue;\n                for (const [v3, c3] of suff[r + 1]) {\n                    if (c3 === c1 || c3 === c2) continue;\n                    const sum = v1 + v2 + v3;\n                    if (sum > maxSum) maxSum = sum;\n                }\n            }\n        }\n    }\n    return maxSum;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

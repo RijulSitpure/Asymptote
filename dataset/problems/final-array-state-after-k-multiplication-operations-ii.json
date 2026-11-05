@@ -1,0 +1,80 @@
+{
+  "slug": "final-array-state-after-k-multiplication-operations-ii",
+  "number": 3266,
+  "patterns": [
+    "heap-top-k-elements",
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Equilibrium Simulation Limit",
+      "text": "After a small number of multiplications, every element catches up to the initial maximum value, after which operations cycle through all n elements round-robin."
+    },
+    {
+      "level": 2,
+      "title": "Round-Robin Phase",
+      "text": "Once all values are within a factor of the multiplier, the next k operations distribute evenly as k // n complete rounds across all elements."
+    },
+    {
+      "level": 3,
+      "title": "Modular Exponentiation",
+      "text": "Use fast modular power to scale all elements by multiplier^(k // n), applying an extra multiplier to the first k % n smallest elements."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def getFinalState(self, nums: list[int], k: int, multiplier: int) -> list[int]:\n        if multiplier == 1 or k == 0:\n            return nums[:]\n            \n        import heapq\n        mod = 10**9 + 7\n        n = len(nums)\n        mx = max(nums)\n        \n        # Min-heap of (val, idx)\n        pq = [(val, idx) for idx, val in enumerate(nums)]\n        heapq.heapify(pq)\n        \n        # Multiply until the minimum element exceeds original max or k runs out\n        while k > 0 and pq[0][0] * multiplier <= mx:\n            val, idx = heapq.heappop(pq)\n            heapq.heappush(pq, (val * multiplier, idx))\n            k -= 1\n            \n        if k == 0:\n            res = [0] * n\n            for val, idx in pq:\n                res[idx] = val % mod\n            return res\n            \n        # We need to do one full leveling pass if min * multiplier > mx, but still elements have uneven multipliers\n        while k > 0 and pq[0][0] < mx:\n            val, idx = heapq.heappop(pq)\n            heapq.heappush(pq, (val * multiplier, idx))\n            k -= 1\n            \n        # Now each element cycles regularly\n        full_cycles = k // n\n        rem = k % n\n        \n        # Sort heap elements to process remainder in order of smallest values\n        sorted_elements = []\n        while pq:\n            sorted_elements.append(heapq.heappop(pq))\n            \n        mult_full = pow(multiplier, full_cycles, mod)\n        mult_extra = (mult_full * multiplier) % mod\n        \n        res = [0] * n\n        for i, (val, idx) in enumerate(sorted_elements):\n            factor = mult_extra if i < rem else mult_full\n            res[idx] = (val % mod * factor) % mod\n            \n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n * log(max_val) + n log k)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of nums array",
+      "k: number of operations up to 10^9"
+    ],
+    "notes": "Heap simulation takes at most n * log_m(max_val) steps followed by O(log k) modular exponentiation.",
+    "whyNaiveFails": "Simulating all 10^9 operations individually times out.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for heap.",
+    "interviewerExpectation": "Identifies cyclic equilibrium and utilizes modular exponentiation for massive k."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def getFinalState(self, nums: list[int], k: int, multiplier: int) -> list[int]:\n        if multiplier == 1 or k == 0:\n            return nums[:]\n            \n        import heapq\n        mod = 10**9 + 7\n        n = len(nums)\n        mx = max(nums)\n        \n        # Min-heap of (val, idx)\n        pq = [(val, idx) for idx, val in enumerate(nums)]\n        heapq.heapify(pq)\n        \n        # Multiply until the minimum element exceeds original max or k runs out\n        while k > 0 and pq[0][0] * multiplier <= mx:\n            val, idx = heapq.heappop(pq)\n            heapq.heappush(pq, (val * multiplier, idx))\n            k -= 1\n            \n        if k == 0:\n            res = [0] * n\n            for val, idx in pq:\n                res[idx] = val % mod\n            return res\n            \n        # We need to do one full leveling pass if min * multiplier > mx, but still elements have uneven multipliers\n        while k > 0 and pq[0][0] < mx:\n            val, idx = heapq.heappop(pq)\n            heapq.heappush(pq, (val * multiplier, idx))\n            k -= 1\n            \n        # Now each element cycles regularly\n        full_cycles = k // n\n        rem = k % n\n        \n        # Sort heap elements to process remainder in order of smallest values\n        sorted_elements = []\n        while pq:\n            sorted_elements.append(heapq.heappop(pq))\n            \n        mult_full = pow(multiplier, full_cycles, mod)\n        mult_extra = (mult_full * multiplier) % mod\n        \n        res = [0] * n\n        for i, (val, idx) in enumerate(sorted_elements):\n            factor = mult_extra if i < rem else mult_full\n            res[idx] = (val % mod * factor) % mod\n            \n        return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    vector<int> getFinalState(vector<int>& nums, int k, int multiplier) {\n        if (multiplier == 1 || k == 0) return nums;\n        const int mod = 1e9 + 7;\n        int n = nums.size();\n        int mx = 0;\n        for (int x : nums) mx = max(mx, x);\n        \n        priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<pair<long long, int>>> pq;\n        for (int i = 0; i < n; ++i) pq.push({nums[i], i});\n        \n        while (k > 0 && pq.top().first * multiplier <= mx) {\n            auto [val, idx] = pq.top();\n            pq.pop();\n            pq.push({val * multiplier, idx});\n            k--;\n        }\n        \n        while (k > 0 && pq.top().first < mx) {\n            auto [val, idx] = pq.top();\n            pq.pop();\n            pq.push({val * multiplier, idx});\n            k--;\n        }\n        \n        auto power = [&](long long base, long long exp) -> long long {\n            long long res = 1;\n            base %= mod;\n            while (exp > 0) {\n                if (exp % 2 == 1) res = (res * base) % mod;\n                base = (base * base) % mod;\n                exp /= 2;\n            }\n            return res;\n        };\n        \n        long long full = k / n;\n        int rem = k % n;\n        \n        long long mult_full = power(multiplier, full);\n        long long mult_extra = (mult_full * multiplier) % mod;\n        \n        vector<pair<long long, int>> sorted_elems;\n        while (!pq.empty()) {\n            sorted_elems.push_back(pq.top());\n            pq.pop();\n        }\n        \n        vector<int> res(n);\n        for (int i = 0; i < n; ++i) {\n            long long factor = (i < rem) ? mult_extra : mult_full;\n            res[sorted_elems[i].second] = (sorted_elems[i].first % mod * factor) % mod;\n        }\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int[] getFinalState(int[] nums, int k, int multiplier) {\n        if (multiplier == 1 || k == 0) return nums.clone();\n        int mod = 1_000_000_007;\n        int n = nums.length;\n        int mx = 0;\n        for (int x : nums) mx = Math.max(mx, x);\n        \n        PriorityQueue<long[]> pq = new PriorityQueue<>((a, b) -> {\n            if (a[0] != b[0]) return Long.compare(a[0], b[0]);\n            return Long.compare(a[1], b[1]);\n        });\n        for (int i = 0; i < n; ++i) pq.offer(new long[]{nums[i], i});\n        \n        while (k > 0 && pq.peek()[0] * multiplier <= mx) {\n            long[] top = pq.poll();\n            top[0] *= multiplier;\n            pq.offer(top);\n            k--;\n        }\n        \n        while (k > 0 && pq.peek()[0] < mx) {\n            long[] top = pq.poll();\n            top[0] *= multiplier;\n            pq.offer(top);\n            k--;\n        }\n        \n        long full = k / n;\n        int rem = k % n;\n        \n        long multFull = power(multiplier, full, mod);\n        long multExtra = (multFull * multiplier) % mod;\n        \n        List<long[]> sorted = new ArrayList<>();\n        while (!pq.isEmpty()) sorted.add(pq.poll());\n        \n        int[] res = new int[n];\n        for (int i = 0; i < n; ++i) {\n            long factor = (i < rem) ? multExtra : multFull;\n            res[(int) sorted.get(i)[1]] = (int) ((sorted.get(i)[0] % mod * factor) % mod);\n        }\n        return res;\n    }\n    \n    private long power(long base, long exp, int mod) {\n        long res = 1;\n        base %= mod;\n        while (exp > 0) {\n            if (exp % 2 == 1) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp /= 2;\n        }\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var getFinalState = function(nums, k, multiplier) {\n    if (multiplier === 1 || k === 0) return [...nums];\n    const mod = 1000000007n;\n    const n = nums.length;\n    let mx = Math.max(...nums);\n    \n    const power = (base, exp) => {\n        let res = 1n;\n        base = BigInt(base) % mod;\n        exp = BigInt(exp);\n        while (exp > 0n) {\n            if (exp % 2n === 1n) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp /= 2n;\n        }\n        return res;\n    };\n    \n    // Simulate until values converge near mx\n    const arr = nums.map((v, i) => [BigInt(v), i]);\n    while (k > 0) {\n        let minIdx = 0;\n        for (let i = 1; i < n; i++) {\n            if (arr[i][0] < arr[minIdx][0] || (arr[i][0] === arr[minIdx][0] && arr[i][1] < arr[minIdx][1])) {\n                minIdx = i;\n            }\n        }\n        if (arr[minIdx][0] * BigInt(multiplier) > BigInt(mx) && arr.every(x => x[0] >= BigInt(mx) / BigInt(multiplier))) {\n            break;\n        }\n        arr[minIdx][0] *= BigInt(multiplier);\n        k--;\n    }\n    \n    arr.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1]));\n    const full = Math.floor(k / n);\n    const rem = k % n;\n    \n    const multFull = power(multiplier, full);\n    const multExtra = (multFull * BigInt(multiplier)) % mod;\n    \n    const res = new Array(n);\n    for (let i = 0; i < n; i++) {\n        const factor = (i < rem) ? multExtra : multFull;\n        res[arr[i][1]] = Number(((arr[i][0] % mod) * factor) % mod);\n    }\n    return res;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

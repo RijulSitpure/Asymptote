@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-total-area-occupied-by-pistons",
+  "number": 3279,
+  "patterns": [
+    "prefix-sum-hashmap",
+    "greedy-interval-scheduling"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Periodic Motion Events",
+      "text": "Each piston bounces periodically off boundaries zero and height, reversing its vertical velocity contribution between +1 and -1."
+    },
+    {
+      "level": 2,
+      "title": "Boundary Collision Timestamps",
+      "text": "Compute exact collision moments for each piston over one complete bounce cycle."
+    },
+    {
+      "level": 3,
+      "title": "Sweep-Line Velocity Tracking",
+      "text": "Sort collision events by timestamp and update area linearly between consecutive collisions, flipping velocities by plus or minus two on bounce."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def maxArea(self, height: int, positions: list[int], directions: str) -> int:\n        from collections import defaultdict\n        area = sum(positions)\n        ans = area\n        diff = 0\n        \n        events = defaultdict(list)\n        dirs = list(directions)\n        \n        for i, (p, d) in enumerate(zip(positions, dirs)):\n            if d == 'U':\n                events[height - p].append(i)\n                events[height - p + height].append(i)\n                diff += 1\n            else:\n                events[p].append(i)\n                events[p + height].append(i)\n                diff -= 1\n                \n        sorted_times = sorted(events.keys())\n        prev_time = 0\n        for t in sorted_times:\n            area += (t - prev_time) * diff\n            ans = max(ans, area)\n            prev_time = t\n            for idx in events[t]:\n                if dirs[idx] == 'U':\n                    dirs[idx] = 'D'\n                    diff -= 2\n                else:\n                    dirs[idx] = 'U'\n                    diff += 2\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: number of pistons"
+    ],
+    "notes": "Sorting bounce collision timestamps dominates.",
+    "whyNaiveFails": "Second-by-second simulation times out when height is large.",
+    "spaceTimeTradeoff": "O(n) events map.",
+    "interviewerExpectation": "Converts periodic motion into discrete sweep-line event simulation."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxArea(self, height: int, positions: list[int], directions: str) -> int:\n        from collections import defaultdict\n        area = sum(positions)\n        ans = area\n        diff = 0\n        \n        events = defaultdict(list)\n        dirs = list(directions)\n        \n        for i, (p, d) in enumerate(zip(positions, dirs)):\n            if d == 'U':\n                events[height - p].append(i)\n                events[height - p + height].append(i)\n                diff += 1\n            else:\n                events[p].append(i)\n                events[p + height].append(i)\n                diff -= 1\n                \n        sorted_times = sorted(events.keys())\n        prev_time = 0\n        for t in sorted_times:\n            area += (t - prev_time) * diff\n            ans = max(ans, area)\n            prev_time = t\n            for idx in events[t]:\n                if dirs[idx] == 'U':\n                    dirs[idx] = 'D'\n                    diff -= 2\n                else:\n                    dirs[idx] = 'U'\n                    diff += 2\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    long long maxArea(int height, vector<int>& positions, string directions) {\n        long long area = 0;\n        for (int p : positions) area += p;\n        long long ans = area;\n        long long diff = 0;\n        \n        map<int, vector<int>> events;\n        for (int i = 0; i < positions.size(); ++i) {\n            if (directions[i] == 'U') {\n                events[height - positions[i]].push_back(i);\n                events[height - positions[i] + height].push_back(i);\n                diff++;\n            } else {\n                events[positions[i]].push_back(i);\n                events[positions[i] + height].push_back(i);\n                diff--;\n            }\n        }\n        \n        int prev_time = 0;\n        for (const auto& [t, indices] : events) {\n            area += 1LL * (t - prev_time) * diff;\n            ans = max(ans, area);\n            prev_time = t;\n            for (int idx : indices) {\n                if (directions[idx] == 'U') {\n                    directions[idx] = 'D';\n                    diff -= 2;\n                } else {\n                    directions[idx] = 'U';\n                    diff += 2;\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public long maxArea(int height, int[] positions, String directions) {\n        long area = 0;\n        for (int p : positions) area += p;\n        long ans = area;\n        long diff = 0;\n        \n        TreeMap<Integer, List<Integer>> events = new TreeMap<>();\n        char[] dirs = directions.toCharArray();\n        for (int i = 0; i < positions.length; ++i) {\n            if (dirs[i] == 'U') {\n                events.computeIfAbsent(height - positions[i], k -> new ArrayList<>()).add(i);\n                events.computeIfAbsent(height - positions[i] + height, k -> new ArrayList<>()).add(i);\n                diff++;\n            } else {\n                events.computeIfAbsent(positions[i], k -> new ArrayList<>()).add(i);\n                events.computeIfAbsent(positions[i] + height, k -> new ArrayList<>()).add(i);\n                diff--;\n            }\n        }\n        \n        int prevTime = 0;\n        for (Map.Entry<Integer, List<Integer>> entry : events.entrySet()) {\n            int t = entry.getKey();\n            area += (long) (t - prevTime) * diff;\n            ans = Math.max(ans, area);\n            prevTime = t;\n            for (int idx : entry.getValue()) {\n                if (dirs[idx] == 'U') {\n                    dirs[idx] = 'D';\n                    diff -= 2;\n                } else {\n                    dirs[idx] = 'U';\n                    diff += 2;\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxArea = function(height, positions, directions) {\n    let area = BigInt(positions.reduce((a, b) => a + b, 0));\n    let ans = area;\n    let diff = 0n;\n    \n    const events = new Map();\n    const dirs = directions.split('');\n    \n    for (let i = 0; i < positions.length; i++) {\n        if (dirs[i] === 'U') {\n            const t1 = height - positions[i];\n            const t2 = height - positions[i] + height;\n            if (!events.has(t1)) events.set(t1, []);\n            if (!events.has(t2)) events.set(t2, []);\n            events.get(t1).push(i);\n            events.get(t2).push(i);\n            diff += 1n;\n        } else {\n            const t1 = positions[i];\n            const t2 = positions[i] + height;\n            if (!events.has(t1)) events.set(t1, []);\n            if (!events.has(t2)) events.set(t2, []);\n            events.get(t1).push(i);\n            events.get(t2).push(i);\n            diff -= 1n;\n        }\n    }\n    \n    const sortedTimes = Array.from(events.keys()).sort((a, b) => a - b);\n    let prevTime = 0;\n    for (const t of sortedTimes) {\n        area += BigInt(t - prevTime) * diff;\n        if (area > ans) ans = area;\n        prevTime = t;\n        for (const idx of events.get(t)) {\n            if (dirs[idx] === 'U') {\n                dirs[idx] = 'D';\n                diff -= 2n;\n            } else {\n                dirs[idx] = 'U';\n                diff += 2n;\n            }\n        }\n    }\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

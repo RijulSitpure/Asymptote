@@ -1,0 +1,80 @@
+{
+  "slug": "count-substrings-that-satisfy-k-constraint-ii",
+  "number": 3261,
+  "patterns": [
+    "binary-search-basic",
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Left Bound Array",
+      "text": "Precompute left_bound[r] which stores the minimum valid starting index for substrings ending at r."
+    },
+    {
+      "level": 2,
+      "title": "Query Range Splitting",
+      "text": "For a query [ql, qr], if left_bound[i] < ql, all substrings ending at i starting within [ql, i] are valid. Otherwise, exactly i - left_bound[i] + 1 substrings are valid."
+    },
+    {
+      "level": 3,
+      "title": "Bisection and Prefix Sum",
+      "text": "Binary search finds the boundary where left_bound becomes at least ql. Arithmetic progression counts valid substrings for the left portion and prefix sums answer the right portion."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def countKConstraintSubstrings(self, s: str, k: int, queries: list[list[int]]) -> list[int]:\n        n = len(s)\n        # For each right end, find min left start that satisfies k-constraint\n        left_bound = [0] * n\n        l = 0\n        z, o = 0, 0\n        for r in range(n):\n            if s[r] == '0': z += 1\n            else: o += 1\n            while z > k and o > k:\n                if s[l] == '0': z -= 1\n                else: o -= 1\n                l += 1\n            left_bound[r] = l\n            \n        # pref[r + 1] = sum of (r - left_bound[r] + 1)\n        pref = [0] * (n + 1)\n        for r in range(n):\n            pref[r + 1] = pref[r] + (r - left_bound[r] + 1)\n            \n        ans = []\n        for ql, qr in queries:\n            import bisect\n            # Find first index where left_bound[i] >= ql\n            idx = bisect.bisect_left(left_bound, ql, ql, qr + 1)\n            # For i in [ql, idx - 1], full subsegment length is (i - ql + 1)\n            # sum_{i=ql}^{idx-1} (i - ql + 1) = len * (len + 1) // 2\n            cnt1 = idx - ql\n            res1 = cnt1 * (cnt1 + 1) // 2\n            # For i in [idx, qr], left_bound[i] >= ql, so we use pref\n            res2 = pref[qr + 1] - pref[idx]\n            ans.append(res1 + res2)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n + q log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of binary string s",
+      "q: number of queries"
+    ],
+    "notes": "Two-pointer precomputation in O(n) followed by logarithmic query resolution.",
+    "whyNaiveFails": "Evaluating queries independently takes O(q * n) resulting in timeout.",
+    "spaceTimeTradeoff": "O(n) auxiliary memory for left bound and prefix arrays.",
+    "interviewerExpectation": "Combines sliding window precomputation with binary search and prefix sum range queries."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def countKConstraintSubstrings(self, s: str, k: int, queries: list[list[int]]) -> list[int]:\n        n = len(s)\n        # For each right end, find min left start that satisfies k-constraint\n        left_bound = [0] * n\n        l = 0\n        z, o = 0, 0\n        for r in range(n):\n            if s[r] == '0': z += 1\n            else: o += 1\n            while z > k and o > k:\n                if s[l] == '0': z -= 1\n                else: o -= 1\n                l += 1\n            left_bound[r] = l\n            \n        # pref[r + 1] = sum of (r - left_bound[r] + 1)\n        pref = [0] * (n + 1)\n        for r in range(n):\n            pref[r + 1] = pref[r] + (r - left_bound[r] + 1)\n            \n        ans = []\n        for ql, qr in queries:\n            import bisect\n            # Find first index where left_bound[i] >= ql\n            idx = bisect.bisect_left(left_bound, ql, ql, qr + 1)\n            # For i in [ql, idx - 1], full subsegment length is (i - ql + 1)\n            # sum_{i=ql}^{idx-1} (i - ql + 1) = len * (len + 1) // 2\n            cnt1 = idx - ql\n            res1 = cnt1 * (cnt1 + 1) // 2\n            # For i in [idx, qr], left_bound[i] >= ql, so we use pref\n            res2 = pref[qr + 1] - pref[idx]\n            ans.append(res1 + res2)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    vector<long long> countKConstraintSubstrings(string s, int k, vector<vector<int>>& queries) {\n        int n = s.size();\n        vector<int> left_bound(n, 0);\n        int l = 0, z = 0, o = 0;\n        for (int r = 0; r < n; ++r) {\n            if (s[r] == '0') z++;\n            else o++;\n            while (z > k && o > k) {\n                if (s[l] == '0') z--;\n                else o--;\n                l++;\n            }\n            left_bound[r] = l;\n        }\n        vector<long long> pref(n + 1, 0);\n        for (int r = 0; r < n; ++r) {\n            pref[r + 1] = pref[r] + (r - left_bound[r] + 1);\n        }\n        vector<long long> ans;\n        for (const auto& q : queries) {\n            int ql = q[0], qr = q[1];\n            int idx = lower_bound(left_bound.begin() + ql, left_bound.begin() + qr + 1, ql) - left_bound.begin();\n            long long cnt1 = idx - ql;\n            long long res1 = cnt1 * (cnt1 + 1) / 2;\n            long long res2 = pref[qr + 1] - pref[idx];\n            ans.push_back(res1 + res2);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public long[] countKConstraintSubstrings(String s, int k, int[][] queries) {\n        int n = s.length();\n        int[] leftBound = new int[n];\n        int l = 0, z = 0, o = 0;\n        for (int r = 0; r < n; ++r) {\n            if (s.charAt(r) == '0') z++;\n            else o++;\n            while (z > k && o > k) {\n                if (s.charAt(l) == '0') z--;\n                else o--;\n                l++;\n            }\n            leftBound[r] = l;\n        }\n        long[] pref = new long[n + 1];\n        for (int r = 0; r < n; ++r) {\n            pref[r + 1] = pref[r] + (r - leftBound[r] + 1);\n        }\n        long[] ans = new long[queries.length];\n        for (int i = 0; i < queries.length; ++i) {\n            int ql = queries[i][0], qr = queries[i][1];\n            int low = ql, high = qr + 1;\n            while (low < high) {\n                int mid = (low + high) / 2;\n                if (leftBound[mid] >= ql) high = mid;\n                else low = mid + 1;\n            }\n            int idx = low;\n            long cnt1 = idx - ql;\n            long res1 = cnt1 * (cnt1 + 1) / 2;\n            long res2 = pref[qr + 1] - pref[idx];\n            ans[i] = res1 + res2;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countKConstraintSubstrings = function(s, k, queries) {\n    const n = s.length;\n    const leftBound = new Array(n);\n    let l = 0, z = 0, o = 0;\n    for (let r = 0; r < n; r++) {\n        if (s[r] === '0') z++;\n        else o++;\n        while (z > k && o > k) {\n            if (s[l] === '0') z--;\n            else o--;\n            l++;\n        }\n        leftBound[r] = l;\n    }\n    const pref = new Array(n + 1).fill(0n);\n    for (let r = 0; r < n; r++) {\n        pref[r + 1] = pref[r] + BigInt(r - leftBound[r] + 1);\n    }\n    const ans = [];\n    for (const [ql, qr] of queries) {\n        let low = ql, high = qr + 1;\n        while (low < high) {\n            const mid = Math.floor((low + high) / 2);\n            if (leftBound[mid] >= ql) high = mid;\n            else low = mid + 1;\n        }\n        const idx = low;\n        const cnt1 = BigInt(idx - ql);\n        const res1 = cnt1 * (cnt1 + 1n) / 2n;\n        const res2 = pref[qr + 1] - pref[idx];\n        ans.push(Number(res1 + res2));\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

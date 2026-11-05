@@ -1,0 +1,71 @@
+{
+  "slug": "premier-league-table-ranking-ii",
+  "number": 3252,
+  "patterns": [
+    "window-ranking"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Point Ranking",
+      "text": "Compute total points as wins times three plus draws. Rank teams descending using standard competition ranking with rank window function."
+    },
+    {
+      "level": 2,
+      "title": "Total Teams Counting Window",
+      "text": "Obtain total team count using count window function without partition to calculate relative tier thresholds."
+    },
+    {
+      "level": 3,
+      "title": "Ceiling Percentage Tiers",
+      "text": "Apply case conditions comparing position against ceil(total_teams * 0.33) for Tier 1 and ceil(total_teams * 0.66) for Tier 2."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH RankedTeams AS (\n    SELECT\n        team_id,\n        team_name,\n        wins * 3 + draws * 1 AS points,\n        RANK() OVER (ORDER BY wins * 3 + draws * 1 DESC) AS position,\n        COUNT(*) OVER () AS total_teams\n    FROM TeamStats\n)\nSELECT\n    team_id,\n    team_name,\n    points,\n    position,\n    CASE\n        WHEN position <= CEIL(total_teams * 0.33) THEN 'Tier 1'\n        WHEN position <= CEIL(total_teams * 0.66) THEN 'Tier 2'\n        ELSE 'Tier 3'\n    END AS tier\nFROM RankedTeams\nORDER BY points DESC, team_name ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(t log t)",
+    "space": "O(t)",
+    "variables": [
+      "t: count of teams"
+    ],
+    "notes": "Sorting by points and window rank plus count calculation.",
+    "whyNaiveFails": "Subqueries per row for count and rank cause quadratic overhead.",
+    "spaceTimeTradeoff": "O(t) intermediate window buffer.",
+    "interviewerExpectation": "Applies analytic window functions for rank and count with conditional tier classification."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH RankedTeams AS (\n    SELECT\n        team_id,\n        team_name,\n        wins * 3 + draws * 1 AS points,\n        RANK() OVER (ORDER BY wins * 3 + draws * 1 DESC) AS position,\n        COUNT(*) OVER () AS total_teams\n    FROM TeamStats\n)\nSELECT\n    team_id,\n    team_name,\n    points,\n    position,\n    CASE\n        WHEN position <= CEIL(total_teams * 0.33) THEN 'Tier 1'\n        WHEN position <= CEIL(total_teams * 0.66) THEN 'Tier 2'\n        ELSE 'Tier 3'\n    END AS tier\nFROM RankedTeams\nORDER BY points DESC, team_name ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH RankedTeams AS (\n    SELECT\n        team_id,\n        team_name,\n        wins * 3 + draws * 1 AS points,\n        RANK() OVER (ORDER BY wins * 3 + draws * 1 DESC) AS position,\n        COUNT(*) OVER () AS total_teams\n    FROM TeamStats\n)\nSELECT\n    team_id,\n    team_name,\n    points,\n    position,\n    CASE\n        WHEN position <= CEIL(total_teams * 0.33) THEN 'Tier 1'\n        WHEN position <= CEIL(total_teams * 0.66) THEN 'Tier 2'\n        ELSE 'Tier 3'\n    END AS tier\nFROM RankedTeams\nORDER BY points DESC, team_name ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\nimport numpy as np\n\ndef calculate_team_tiers(team_stats: pd.DataFrame) -> pd.DataFrame:\n    if team_stats.empty:\n        return pd.DataFrame(columns=['team_id', 'team_name', 'points', 'position', 'tier'])\n        \n    team_stats['points'] = team_stats['wins'] * 3 + team_stats['draws'] * 1\n    team_stats['position'] = team_stats['points'].rank(method='min', ascending=False).astype(int)\n    \n    total = len(team_stats)\n    t1_bound = np.ceil(total * 0.33)\n    t2_bound = np.ceil(total * 0.66)\n    \n    def get_tier(pos):\n        if pos <= t1_bound:\n            return 'Tier 1'\n        elif pos <= t2_bound:\n            return 'Tier 2'\n        else:\n            return 'Tier 3'\n            \n    team_stats['tier'] = team_stats['position'].apply(get_tier)\n    result = team_stats[['team_id', 'team_name', 'points', 'position', 'tier']]\n    return result.sort_values(by=['points', 'team_name'], ascending=[False, True])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

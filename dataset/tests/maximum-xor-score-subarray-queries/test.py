@@ -1,0 +1,5 @@
+from solution import Solution
+sol = Solution()
+assert sol.maximumSubarrayXor([2, 8, 4, 32, 16, 1], [[0, 2], [1, 4], [0, 5]]) == [12, 60, 60]
+assert sol.maximumSubarrayXor([0, 7, 3, 2, 8, 5, 1], [[0, 3], [1, 5], [2, 4], [2, 6], [5, 6]]) == [7, 14, 11, 14, 5]
+print("All tests passed successfully.")

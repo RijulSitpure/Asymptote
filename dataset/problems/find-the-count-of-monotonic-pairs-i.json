@@ -1,0 +1,80 @@
+{
+  "slug": "find-the-count-of-monotonic-pairs-i",
+  "number": 3250,
+  "patterns": [
+    "dp-1d-fib-linear",
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Coupled Monotonicity Invariant",
+      "text": "Because arr2[i] = nums[i] - arr1[i], non-increasing arr2 implies arr1[i] must be at least arr1[i-1] + max(0, nums[i] - nums[i-1])."
+    },
+    {
+      "level": 2,
+      "title": "State Definition",
+      "text": "Let dp[v] be the number of valid prefix assignments where arr1[i] equals v."
+    },
+    {
+      "level": 3,
+      "title": "Prefix Sum Speedup",
+      "text": "The transition sums dp[u] over all valid previous values u. Precomputing prefix sums enables constant-time transition per state."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def countOfPairs(self, nums: list[int]) -> int:\n        mod = 10**9 + 7\n        n = len(nums)\n        max_val = max(nums)\n        # dp[v] = ways where arr1[i] = v\n        dp = [1 if v <= nums[0] else 0 for v in range(max_val + 1)]\n        \n        for i in range(1, n):\n            # compute prefix sums of dp\n            pref = [0] * (max_val + 2)\n            for v in range(max_val + 1):\n                pref[v + 1] = (pref[v] + dp[v]) % mod\n            \n            next_dp = [0] * (max_val + 1)\n            diff = max(0, nums[i] - nums[i - 1])\n            for v in range(nums[i] + 1):\n                # arr1[i-1] <= min(v, v - diff)\n                limit = min(v, v - diff)\n                if limit >= 0:\n                    next_dp[v] = pref[limit + 1]\n            dp = next_dp\n            \n        return sum(dp) % mod\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * M)",
+    "space": "O(M)",
+    "variables": [
+      "n: length of nums array",
+      "M: maximum value in nums"
+    ],
+    "notes": "Prefix sum enables O(1) state transitions.",
+    "whyNaiveFails": "Evaluating all combinations takes exponential time.",
+    "spaceTimeTradeoff": "O(M) memory stores rolling state arrays.",
+    "interviewerExpectation": "Formulates monotonicity bounds on arr1 and uses prefix sum DP optimization."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def countOfPairs(self, nums: list[int]) -> int:\n        mod = 10**9 + 7\n        n = len(nums)\n        max_val = max(nums)\n        # dp[v] = ways where arr1[i] = v\n        dp = [1 if v <= nums[0] else 0 for v in range(max_val + 1)]\n        \n        for i in range(1, n):\n            # compute prefix sums of dp\n            pref = [0] * (max_val + 2)\n            for v in range(max_val + 1):\n                pref[v + 1] = (pref[v] + dp[v]) % mod\n            \n            next_dp = [0] * (max_val + 1)\n            diff = max(0, nums[i] - nums[i - 1])\n            for v in range(nums[i] + 1):\n                # arr1[i-1] <= min(v, v - diff)\n                limit = min(v, v - diff)\n                if limit >= 0:\n                    next_dp[v] = pref[limit + 1]\n            dp = next_dp\n            \n        return sum(dp) % mod",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    int countOfPairs(vector<int>& nums) {\n        const int mod = 1e9 + 7;\n        int n = nums.size();\n        int max_val = 0;\n        for (int x : nums) max_val = max(max_val, x);\n        vector<long long> dp(max_val + 1, 0);\n        for (int v = 0; v <= nums[0]; ++v) dp[v] = 1;\n        \n        for (int i = 1; i < n; ++i) {\n            vector<long long> pref(max_val + 2, 0);\n            for (int v = 0; v <= max_val; ++v) {\n                pref[v + 1] = (pref[v] + dp[v]) % mod;\n            }\n            vector<long long> next_dp(max_val + 1, 0);\n            int diff = max(0, nums[i] - nums[i - 1]);\n            for (int v = 0; v <= nums[i]; ++v) {\n                int limit = min(v, v - diff);\n                if (limit >= 0) {\n                    next_dp[v] = pref[limit + 1];\n                }\n            }\n            dp = move(next_dp);\n        }\n        long long ans = 0;\n        for (long long v : dp) ans = (ans + v) % mod;\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int countOfPairs(int[] nums) {\n        int mod = 1_000_000_007;\n        int n = nums.length;\n        int maxVal = 0;\n        for (int x : nums) maxVal = Math.max(maxVal, x);\n        long[] dp = new long[maxVal + 1];\n        for (int v = 0; v <= nums[0]; ++v) dp[v] = 1;\n        \n        for (int i = 1; i < n; ++i) {\n            long[] pref = new long[maxVal + 2];\n            for (int v = 0; v <= maxVal; ++v) {\n                pref[v + 1] = (pref[v] + dp[v]) % mod;\n            }\n            long[] nextDp = new long[maxVal + 1];\n            int diff = Math.max(0, nums[i] - nums[i - 1]);\n            for (int v = 0; v <= nums[i]; ++v) {\n                int limit = Math.min(v, v - diff);\n                if (limit >= 0) {\n                    nextDp[v] = pref[limit + 1];\n                }\n            }\n            dp = nextDp;\n        }\n        long ans = 0;\n        for (long v : dp) ans = (ans + v) % mod;\n        return (int) ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countOfPairs = function(nums) {\n    const mod = 1000000007n;\n    const n = nums.length;\n    let maxVal = Math.max(...nums);\n    let dp = new Array(maxVal + 1).fill(0n);\n    for (let v = 0; v <= nums[0]; v++) dp[v] = 1n;\n    \n    for (let i = 1; i < n; i++) {\n        const pref = new Array(maxVal + 2).fill(0n);\n        for (let v = 0; v <= maxVal; v++) {\n            pref[v + 1] = (pref[v] + dp[v]) % mod;\n        }\n        const nextDp = new Array(maxVal + 1).fill(0n);\n        const diff = Math.max(0, nums[i] - nums[i - 1]);\n        for (let v = 0; v <= nums[i]; v++) {\n            const limit = Math.min(v, v - diff);\n            if (limit >= 0) {\n                nextDp[v] = pref[limit + 1];\n            }\n        }\n        dp = nextDp;\n    }\n    let ans = 0n;\n    for (const v of dp) ans = (ans + v) % mod;\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

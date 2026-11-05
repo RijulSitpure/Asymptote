@@ -1,0 +1,73 @@
+{
+  "slug": "find-candidates-for-data-scientist-position-ii",
+  "number": 3278,
+  "patterns": [
+    "join-filter",
+    "window-ranking"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Full Skill Set Requirement",
+      "text": "Candidates must match all required skills for a given project, verifiable by checking matched count equals total project skills."
+    },
+    {
+      "level": 2,
+      "title": "Base Score Point Adjustment",
+      "text": "Start at 100 points, adding 10 if proficiency exceeds importance and deducting 5 if proficiency is below importance."
+    },
+    {
+      "level": 3,
+      "title": "Rank Filtering",
+      "text": "Rank eligible candidates per project using row number descending by score and ascending by candidate id, filtering for rank 1."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH ProjectSkills AS (\n    SELECT project_id, COUNT(*) AS req_count\n    FROM Projects\n    GROUP BY project_id\n),\nCandidateScores AS (\n    SELECT \n        p.project_id,\n        c.candidate_id,\n        COUNT(c.skill) AS matched_skills,\n        100 + SUM(\n            CASE \n                WHEN c.proficiency > p.importance THEN 10\n                WHEN c.proficiency < p.importance THEN -5\n                ELSE 0\n            END\n        ) AS score\n    FROM Projects p\n    JOIN Candidates c ON p.skill = c.skill\n    GROUP BY p.project_id, c.candidate_id\n),\nRankedCandidates AS (\n    SELECT \n        cs.project_id,\n        cs.candidate_id,\n        cs.score,\n        ROW_NUMBER() OVER (\n            PARTITION BY cs.project_id \n            ORDER BY cs.score DESC, cs.candidate_id ASC\n        ) AS rnk\n    FROM CandidateScores cs\n    JOIN ProjectSkills ps ON cs.project_id = ps.project_id\n    WHERE cs.matched_skills = ps.req_count\n)\nSELECT \n    project_id,\n    candidate_id,\n    score\nFROM RankedCandidates\nWHERE rnk = 1\nORDER BY project_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O((p + c) log (p + c))",
+    "space": "O(p + c)",
+    "variables": [
+      "p: number of project requirements",
+      "c: number of candidate skills"
+    ],
+    "notes": "Hash join on skill followed by project-level window ranking.",
+    "whyNaiveFails": "Correlated subqueries per project candidate pair degrade performance.",
+    "spaceTimeTradeoff": "O(p + c) intermediate join table.",
+    "interviewerExpectation": "Applies group aggregation with having clause or join match count and window row_number."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH ProjectSkills AS (\n    SELECT project_id, COUNT(*) AS req_count\n    FROM Projects\n    GROUP BY project_id\n),\nCandidateScores AS (\n    SELECT \n        p.project_id,\n        c.candidate_id,\n        COUNT(c.skill) AS matched_skills,\n        100 + SUM(\n            CASE \n                WHEN c.proficiency > p.importance THEN 10\n                WHEN c.proficiency < p.importance THEN -5\n                ELSE 0\n            END\n        ) AS score\n    FROM Projects p\n    JOIN Candidates c ON p.skill = c.skill\n    GROUP BY p.project_id, c.candidate_id\n),\nRankedCandidates AS (\n    SELECT \n        cs.project_id,\n        cs.candidate_id,\n        cs.score,\n        ROW_NUMBER() OVER (\n            PARTITION BY cs.project_id \n            ORDER BY cs.score DESC, cs.candidate_id ASC\n        ) AS rnk\n    FROM CandidateScores cs\n    JOIN ProjectSkills ps ON cs.project_id = ps.project_id\n    WHERE cs.matched_skills = ps.req_count\n)\nSELECT \n    project_id,\n    candidate_id,\n    score\nFROM RankedCandidates\nWHERE rnk = 1\nORDER BY project_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH ProjectSkills AS (\n    SELECT project_id, COUNT(*) AS req_count\n    FROM Projects\n    GROUP BY project_id\n),\nCandidateScores AS (\n    SELECT \n        p.project_id,\n        c.candidate_id,\n        COUNT(c.skill) AS matched_skills,\n        100 + SUM(\n            CASE \n                WHEN c.proficiency > p.importance THEN 10\n                WHEN c.proficiency < p.importance THEN -5\n                ELSE 0\n            END\n        ) AS score\n    FROM Projects p\n    JOIN Candidates c ON p.skill = c.skill\n    GROUP BY p.project_id, c.candidate_id\n),\nRankedCandidates AS (\n    SELECT \n        cs.project_id,\n        cs.candidate_id,\n        cs.score,\n        ROW_NUMBER() OVER (\n            PARTITION BY cs.project_id \n            ORDER BY cs.score DESC, cs.candidate_id ASC\n        ) AS rnk\n    FROM CandidateScores cs\n    JOIN ProjectSkills ps ON cs.project_id = ps.project_id\n    WHERE cs.matched_skills = ps.req_count\n)\nSELECT \n    project_id,\n    candidate_id,\n    score\nFROM RankedCandidates\nWHERE rnk = 1\nORDER BY project_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_best_candidates(candidates: pd.DataFrame, projects: pd.DataFrame) -> pd.DataFrame:\n    if candidates.empty or projects.empty:\n        return pd.DataFrame(columns=['project_id', 'candidate_id', 'score'])\n        \n    req_counts = projects.groupby('project_id')['skill'].count().reset_index(name='req_count')\n    merged = projects.merge(candidates, on='skill')\n    \n    def score_diff(row):\n        if row['proficiency'] > row['importance']:\n            return 10\n        elif row['proficiency'] < row['importance']:\n            return -5\n        return 0\n        \n    merged['pts'] = merged.apply(score_diff, axis=1)\n    \n    grouped = merged.groupby(['project_id', 'candidate_id']).agg(\n        matched_skills=('skill', 'count'),\n        total_pts=('pts', 'sum')\n    ).reset_index()\n    \n    eligible = grouped.merge(req_counts, on='project_id')\n    eligible = eligible[eligible['matched_skills'] == eligible['req_count']].copy()\n    if eligible.empty:\n        return pd.DataFrame(columns=['project_id', 'candidate_id', 'score'])\n        \n    eligible['score'] = 100 + eligible['total_pts']\n    \n    # Pick top candidate per project\n    eligible = eligible.sort_values(by=['project_id', 'score', 'candidate_id'], ascending=[True, False, True])\n    best = eligible.drop_duplicates(subset=['project_id'], keep='first')\n    \n    res = best[['project_id', 'candidate_id', 'score']]\n    return res.sort_values(by='project_id', ascending=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

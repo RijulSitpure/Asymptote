@@ -1,0 +1,72 @@
+{
+  "slug": "find-overlapping-shifts-ii",
+  "number": 3268,
+  "patterns": [
+    "window-offset",
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Time Discretization Sweep",
+      "text": "Collect all shift start times and end times to form atomic disjoint time segments using the lead window function."
+    },
+    {
+      "level": 2,
+      "title": "Concurrency Measurement",
+      "text": "Join each atomic segment against shifts covering it to determine concurrent shift count k during that slice."
+    },
+    {
+      "level": 3,
+      "title": "Pairwise Duration Summation",
+      "text": "Each slice with k concurrent shifts contributes k * (k - 1) / 2 times its duration in minutes to the cumulative overlap total."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nWITH EmployeeTimes AS (\n    SELECT DISTINCT employee_id, start_time AS event_time FROM EmployeeShifts\n    UNION DISTINCT\n    SELECT DISTINCT employee_id, end_time AS event_time FROM EmployeeShifts\n),\nSegments AS (\n    SELECT \n        employee_id, \n        event_time AS start_time, \n        LEAD(event_time) OVER(PARTITION BY employee_id ORDER BY event_time) AS end_time \n    FROM EmployeeTimes\n),\nSegmentsCount AS (\n    SELECT \n        s.employee_id,\n        s.start_time,\n        s.end_time,\n        COUNT(*) AS concurrent_count\n    FROM Segments s\n    JOIN EmployeeShifts es ON s.employee_id = es.employee_id\n    WHERE s.start_time >= es.start_time \n      AND s.end_time <= es.end_time\n    GROUP BY s.employee_id, s.start_time, s.end_time\n)\nSELECT \n    employee_id,\n    MAX(concurrent_count) AS max_overlapping_shifts,\n    COALESCE(SUM(\n        FLOOR(concurrent_count * (concurrent_count - 1) / 2) * TIMESTAMPDIFF(MINUTE, start_time, end_time)\n    ), 0) AS total_overlap_duration\nFROM SegmentsCount\nGROUP BY employee_id\nORDER BY employee_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(s log s)",
+    "space": "O(s)",
+    "variables": [
+      "s: total number of shift records"
+    ],
+    "notes": "Time point union, lead window segmentation, and interval containment join.",
+    "whyNaiveFails": "Minute-by-minute continuous simulation creates massive intermediate tables.",
+    "spaceTimeTradeoff": "O(s) boundary segments accurately capture all continuous state changes.",
+    "interviewerExpectation": "Models interval concurrency using boundary discretization and window lead."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "WITH EmployeeTimes AS (\n    SELECT DISTINCT employee_id, start_time AS event_time FROM EmployeeShifts\n    UNION DISTINCT\n    SELECT DISTINCT employee_id, end_time AS event_time FROM EmployeeShifts\n),\nSegments AS (\n    SELECT \n        employee_id, \n        event_time AS start_time, \n        LEAD(event_time) OVER(PARTITION BY employee_id ORDER BY event_time) AS end_time \n    FROM EmployeeTimes\n),\nSegmentsCount AS (\n    SELECT \n        s.employee_id,\n        s.start_time,\n        s.end_time,\n        COUNT(*) AS concurrent_count\n    FROM Segments s\n    JOIN EmployeeShifts es ON s.employee_id = es.employee_id\n    WHERE s.start_time >= es.start_time \n      AND s.end_time <= es.end_time\n    GROUP BY s.employee_id, s.start_time, s.end_time\n)\nSELECT \n    employee_id,\n    MAX(concurrent_count) AS max_overlapping_shifts,\n    COALESCE(SUM(\n        FLOOR(concurrent_count * (concurrent_count - 1) / 2) * TIMESTAMPDIFF(MINUTE, start_time, end_time)\n    ), 0) AS total_overlap_duration\nFROM SegmentsCount\nGROUP BY employee_id\nORDER BY employee_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "WITH EmployeeTimes AS (\n    SELECT DISTINCT employee_id, start_time AS event_time FROM EmployeeShifts\n    UNION DISTINCT\n    SELECT DISTINCT employee_id, end_time AS event_time FROM EmployeeShifts\n),\nSegments AS (\n    SELECT \n        employee_id, \n        event_time AS start_time, \n        LEAD(event_time) OVER(PARTITION BY employee_id ORDER BY event_time) AS end_time \n    FROM EmployeeTimes\n),\nSegmentsCount AS (\n    SELECT \n        s.employee_id,\n        s.start_time,\n        s.end_time,\n        COUNT(*) AS concurrent_count\n    FROM Segments s\n    JOIN EmployeeShifts es ON s.employee_id = es.employee_id\n    WHERE s.start_time >= es.start_time \n      AND s.end_time <= es.end_time\n    GROUP BY s.employee_id, s.start_time, s.end_time\n)\nSELECT \n    employee_id,\n    MAX(concurrent_count) AS max_overlapping_shifts,\n    COALESCE(SUM(\n        FLOOR(concurrent_count * (concurrent_count - 1) / 2) * EXTRACT(EPOCH FROM (end_time - start_time)) / 60\n    ), 0) AS total_overlap_duration\nFROM SegmentsCount\nGROUP BY employee_id\nORDER BY employee_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_overlapping_shifts(employee_shifts: pd.DataFrame) -> pd.DataFrame:\n    if employee_shifts.empty:\n        return pd.DataFrame(columns=['employee_id', 'max_overlapping_shifts', 'total_overlap_duration'])\n        \n    employee_shifts['start_time'] = pd.to_datetime(employee_shifts['start_time'])\n    employee_shifts['end_time'] = pd.to_datetime(employee_shifts['end_time'])\n    \n    results = []\n    for emp_id, group in employee_shifts.groupby('employee_id'):\n        times = sorted(list(set(group['start_time'].tolist() + group['end_time'].tolist())))\n        max_overlap = 1\n        total_duration = 0\n        for i in range(len(times) - 1):\n            t_start = times[i]\n            t_end = times[i + 1]\n            dur_mins = (t_end - t_start).total_seconds() / 60.0\n            cnt = sum((group['start_time'] <= t_start) & (group['end_time'] >= t_end))\n            if cnt > max_overlap:\n                max_overlap = cnt\n            pairs = cnt * (cnt - 1) // 2\n            total_duration += pairs * dur_mins\n        results.append({\n            'employee_id': emp_id,\n            'max_overlapping_shifts': max_overlap,\n            'total_overlap_duration': int(total_duration)\n        })\n        \n    res_df = pd.DataFrame(results)\n    return res_df.sort_values(by='employee_id', ascending=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

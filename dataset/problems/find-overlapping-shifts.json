@@ -1,0 +1,72 @@
+{
+  "slug": "find-overlapping-shifts",
+  "number": 3262,
+  "patterns": [
+    "join-filter",
+    "self-join"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Same-Employee Shift Pairing",
+      "text": "Two shifts belong to the same employee and overlap if the second starts after the first starts but before the first ends."
+    },
+    {
+      "level": 2,
+      "title": "Strict Inequality for Deduplication",
+      "text": "Imposing Shift1.start_time < Shift2.start_time ensures each pair of overlapping shifts is counted exactly once and self-matches are excluded."
+    },
+    {
+      "level": 3,
+      "title": "Count Aggregation",
+      "text": "Group by employee id and count the number of matching join records, ordering output by employee id ascending."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    Shift1.employee_id, \n    COUNT(*) AS overlapping_shifts \nFROM EmployeeShifts AS Shift1\nINNER JOIN EmployeeShifts AS Shift2 \n    ON Shift1.employee_id = Shift2.employee_id\n    AND Shift1.start_time < Shift2.start_time \n    AND Shift2.start_time < Shift1.end_time\nGROUP BY Shift1.employee_id\nORDER BY Shift1.employee_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "query-notes",
+    "time": "O(s log s)",
+    "space": "O(s)",
+    "variables": [
+      "s: total number of shift records"
+    ],
+    "notes": "Self-join on indexed employee id with range filter.",
+    "whyNaiveFails": "Cartesian cross joins across distinct employees degrade performance.",
+    "spaceTimeTradeoff": "O(s) temporary hash join space.",
+    "interviewerExpectation": "Uses self-join with strict inequality to avoid double counting overlapping intervals."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    Shift1.employee_id, \n    COUNT(*) AS overlapping_shifts \nFROM EmployeeShifts AS Shift1\nINNER JOIN EmployeeShifts AS Shift2 \n    ON Shift1.employee_id = Shift2.employee_id\n    AND Shift1.start_time < Shift2.start_time \n    AND Shift2.start_time < Shift1.end_time\nGROUP BY Shift1.employee_id\nORDER BY Shift1.employee_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    Shift1.employee_id, \n    COUNT(*) AS overlapping_shifts \nFROM EmployeeShifts AS Shift1\nINNER JOIN EmployeeShifts AS Shift2 \n    ON Shift1.employee_id = Shift2.employee_id\n    AND Shift1.start_time < Shift2.start_time \n    AND Shift2.start_time < Shift1.end_time\nGROUP BY Shift1.employee_id\nORDER BY Shift1.employee_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_overlapping_shifts(employee_shifts: pd.DataFrame) -> pd.DataFrame:\n    if employee_shifts.empty:\n        return pd.DataFrame(columns=['employee_id', 'overlapping_shifts'])\n        \n    merged = employee_shifts.merge(employee_shifts, on='employee_id', suffixes=('_1', '_2'))\n    overlapping = merged[\n        (merged['start_time_1'] < merged['start_time_2']) &\n        (merged['start_time_2'] < merged['end_time_1'])\n    ]\n    \n    res = overlapping.groupby('employee_id', as_index=False).size()\n    res.rename(columns={'size': 'overlapping_shifts'}, inplace=True)\n    return res.sort_values(by='employee_id', ascending=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

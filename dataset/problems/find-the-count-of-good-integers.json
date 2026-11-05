@@ -1,0 +1,78 @@
+{
+  "slug": "find-the-count-of-good-integers",
+  "number": 3272,
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Canonical Palindrome Search",
+      "text": "Every good integer has digits that can be rearranged into a palindrome divisible by k. We only need to enumerate palindromes directly by iterating their first half."
+    },
+    {
+      "level": 2,
+      "title": "Unique Digit Multiset Deduplication",
+      "text": "Whenever a palindrome is divisible by k, register its sorted digit frequency multiset to prevent duplicate counting across permutations."
+    },
+    {
+      "level": 3,
+      "title": "Combinatorial Permutation Counting",
+      "text": "For each valid multiset, compute multinomial permutations using factorials while subtracting invalid configurations starting with zero."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def countGoodIntegers(self, n: int, k: int) -> int:\n        from collections import Counter\n        import math\n        \n        half = (n + 1) // 2\n        start = 10 ** (half - 1)\n        end = 10 ** half\n        \n        valid_multisets = set()\n        \n        for num in range(start, end):\n            s = str(num)\n            if n % 2 == 1:\n                pal_str = s + s[-2::-1]\n            else:\n                pal_str = s + s[::-1]\n            if int(pal_str) % k == 0:\n                digit_counts = tuple(sorted(Counter(pal_str).items()))\n                valid_multisets.add(digit_counts)\n                \n        def permutations_for_multiset(counts_dict):\n            total_digits = sum(counts_dict.values())\n            # Total arrangements\n            total = math.factorial(total_digits)\n            for cnt in counts_dict.values():\n                total //= math.factorial(cnt)\n            # Subtract arrangements starting with 0\n            if counts_dict.get('0', 0) > 0:\n                with_zero = math.factorial(total_digits - 1)\n                for d, cnt in counts_dict.items():\n                    if d == '0':\n                        with_zero //= math.factorial(cnt - 1)\n                    else:\n                        with_zero //= math.factorial(cnt)\n                total -= with_zero\n            return total\n            \n        ans = 0\n        for items in valid_multisets:\n            c = dict(items)\n            ans += permutations_for_multiset(c)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(10^(n/2) * n)",
+    "space": "O(10^(n/2))",
+    "variables": [
+      "n: number of digits (<= 10)"
+    ],
+    "notes": "Enumerate first half of palindromes up to 10^5 followed by multinomial formulas.",
+    "whyNaiveFails": "Examining all 10^n integers times out.",
+    "spaceTimeTradeoff": "O(10^(n/2)) hash set stores valid digit multisets.",
+    "interviewerExpectation": "Generates base palindromes and applies multinomial coefficient combinatorics."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def countGoodIntegers(self, n: int, k: int) -> int:\n        from collections import Counter\n        import math\n        \n        half = (n + 1) // 2\n        start = 10 ** (half - 1)\n        end = 10 ** half\n        \n        valid_multisets = set()\n        \n        for num in range(start, end):\n            s = str(num)\n            if n % 2 == 1:\n                pal_str = s + s[-2::-1]\n            else:\n                pal_str = s + s[::-1]\n            if int(pal_str) % k == 0:\n                digit_counts = tuple(sorted(Counter(pal_str).items()))\n                valid_multisets.add(digit_counts)\n                \n        def permutations_for_multiset(counts_dict):\n            total_digits = sum(counts_dict.values())\n            # Total arrangements\n            total = math.factorial(total_digits)\n            for cnt in counts_dict.values():\n                total //= math.factorial(cnt)\n            # Subtract arrangements starting with 0\n            if counts_dict.get('0', 0) > 0:\n                with_zero = math.factorial(total_digits - 1)\n                for d, cnt in counts_dict.items():\n                    if d == '0':\n                        with_zero //= math.factorial(cnt - 1)\n                    else:\n                        with_zero //= math.factorial(cnt)\n                total -= with_zero\n            return total\n            \n        ans = 0\n        for items in valid_multisets:\n            c = dict(items)\n            ans += permutations_for_multiset(c)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "class Solution {\npublic:\n    long long countGoodIntegers(int n, int k) {\n        int half = (n + 1) / 2;\n        int start = 1;\n        for (int i = 0; i < half - 1; ++i) start *= 10;\n        int end = start * 10;\n        \n        set<vector<int>> valid_multisets;\n        for (int num = start; num < end; ++num) {\n            string s = to_string(num);\n            string pal = s;\n            if (n % 2 == 1) {\n                for (int i = (int)s.size() - 2; i >= 0; --i) pal += s[i];\n            } else {\n                for (int i = (int)s.size() - 1; i >= 0; --i) pal += s[i];\n            }\n            if (stoll(pal) % k == 0) {\n                vector<int> counts(10, 0);\n                for (char c : pal) counts[c - '0']++;\n                valid_multisets.insert(counts);\n            }\n        }\n        \n        vector<long long> fact(n + 1, 1);\n        for (int i = 2; i <= n; ++i) fact[i] = fact[i - 1] * i;\n        \n        long long ans = 0;\n        for (const auto& counts : valid_multisets) {\n            long long total = fact[n];\n            for (int d = 0; d < 10; ++d) {\n                total /= fact[counts[d]];\n            }\n            if (counts[0] > 0) {\n                long long with_zero = fact[n - 1];\n                with_zero /= fact[counts[0] - 1];\n                for (int d = 1; d < 10; ++d) {\n                    with_zero /= fact[counts[d]];\n                }\n                total -= with_zero;\n            }\n            ans += total;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public long countGoodIntegers(int n, int k) {\n        int half = (n + 1) / 2;\n        int start = 1;\n        for (int i = 0; i < half - 1; ++i) start *= 10;\n        int end = start * 10;\n        \n        Set<String> validMultisets = new HashSet<>();\n        for (int num = start; num < end; ++num) {\n            String s = Integer.toString(num);\n            StringBuilder pal = new StringBuilder(s);\n            if (n % 2 == 1) {\n                for (int i = s.length() - 2; i >= 0; --i) pal.append(s.charAt(i));\n            } else {\n                for (int i = s.length() - 1; i >= 0; --i) pal.append(s.charAt(i));\n            }\n            if (Long.parseLong(pal.toString()) % k == 0) {\n                int[] counts = new int[10];\n                for (int i = 0; i < pal.length(); ++i) counts[pal.charAt(i) - '0']++;\n                validMultisets.add(Arrays.toString(counts));\n            }\n        }\n        \n        long[] fact = new long[n + 1];\n        fact[0] = 1;\n        for (int i = 1; i <= n; ++i) fact[i] = fact[i - 1] * i;\n        \n        long ans = 0;\n        for (String m : validMultisets) {\n            String[] parts = m.substring(1, m.length() - 1).split(\", \");\n            int[] counts = new int[10];\n            for (int i = 0; i < 10; ++i) counts[i] = Integer.parseInt(parts[i]);\n            long total = fact[n];\n            for (int d = 0; d < 10; ++d) total /= fact[counts[d]];\n            if (counts[0] > 0) {\n                long withZero = fact[n - 1];\n                withZero /= fact[counts[0] - 1];\n                for (int d = 1; d < 10; ++d) withZero /= fact[counts[d]];\n                total -= withZero;\n            }\n            ans += total;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countGoodIntegers = function(n, k) {\n    const half = Math.floor((n + 1) / 2);\n    const start = Math.pow(10, half - 1);\n    const end = Math.pow(10, half);\n    \n    const validMultisets = new Set();\n    for (let num = start; num < end; num++) {\n        const s = String(num);\n        let pal = s;\n        if (n % 2 === 1) {\n            for (let i = s.length - 2; i >= 0; i--) pal += s[i];\n        } else {\n            for (let i = s.length - 1; i >= 0; i--) pal += s[i];\n        }\n        if (BigInt(pal) % BigInt(k) === 0n) {\n            const counts = new Array(10).fill(0);\n            for (let i = 0; i < pal.length; i++) counts[Number(pal[i])]++;\n            validMultisets.add(counts.join(','));\n        }\n    }\n    \n    const fact = new Array(n + 1).fill(1n);\n    for (let i = 1; i <= n; i++) fact[i] = fact[i - 1] * BigInt(i);\n    \n    let ans = 0n;\n    for (const m of validMultisets) {\n        const counts = m.split(',').map(Number);\n        let total = fact[n];\n        for (let d = 0; d < 10; d++) total /= fact[counts[d]];\n        if (counts[0] > 0) {\n            let withZero = fact[n - 1];\n            withZero /= fact[counts[0] - 1];\n            for (let d = 1; d < 10; d++) withZero /= fact[counts[d]];\n            total -= withZero;\n        }\n        ans += total;\n    }\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}
