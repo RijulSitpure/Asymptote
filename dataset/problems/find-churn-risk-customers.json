@@ -1,0 +1,71 @@
+{
+  "slug": "find-churn-risk-customers",
+  "number": 3716,
+  "category": "Database",
+  "patterns": [
+    "date-time"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Join and Filter",
+      "text": "Combine customer accounts with their subscription records on matching customer identifiers."
+    },
+    {
+      "level": 2,
+      "title": "Auto-Renewal Status",
+      "text": "Isolate subscriptions where auto renewal flag is turned off."
+    },
+    {
+      "level": 3,
+      "title": "Date Window Matching",
+      "text": "Filter for end dates falling within the target calendar expiration window."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    c.customer_id,\n    c.name,\n    s.end_date\nFROM Customers c\nJOIN Subscriptions s ON c.customer_id = s.customer_id\nWHERE s.auto_renew = 0\n  AND s.end_date BETWEEN '2026-11-01' AND '2026-11-30'\nORDER BY c.customer_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of subscriptions"
+    ],
+    "notes": "Index-assisted date range scan and primary key join.",
+    "whyNaiveFails": "Full table scans without date predicates scale poorly with large subscription histories.",
+    "spaceTimeTradeoff": "O(N) memory for matched join output.",
+    "interviewerExpectation": "Use range comparison on dates and equality filter on boolean flags."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    c.customer_id,\n    c.name,\n    s.end_date\nFROM Customers c\nJOIN Subscriptions s ON c.customer_id = s.customer_id\nWHERE s.auto_renew = 0\n  AND s.end_date BETWEEN '2026-11-01' AND '2026-11-30'\nORDER BY c.customer_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    c.customer_id,\n    c.name,\n    s.end_date\nFROM Customers c\nJOIN Subscriptions s ON c.customer_id = s.customer_id\nWHERE s.auto_renew = 0\n  AND s.end_date BETWEEN '2026-11-01' AND '2026-11-30'\nORDER BY c.customer_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_churn_risk_customers(customers: pd.DataFrame, subscriptions: pd.DataFrame) -> pd.DataFrame:\n    subscriptions['end_date'] = pd.to_datetime(subscriptions['end_date'])\n    mask = (subscriptions['auto_renew'] == 0) & (subscriptions['end_date'] >= '2026-11-01') & (subscriptions['end_date'] <= '2026-11-30')\n    filtered = subscriptions[mask]\n    merged = customers.merge(filtered, on='customer_id')\n    merged['end_date'] = merged['end_date'].dt.strftime('%Y-%m-%d')\n    return merged[['customer_id', 'name', 'end_date']].sort_values('customer_id')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

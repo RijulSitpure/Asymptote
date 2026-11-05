@@ -1,0 +1,79 @@
+{
+  "slug": "number-of-zigzag-arrays-i",
+  "number": 3699,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-state-machine"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Alternating Direction States",
+      "text": "Decompose the problem by tracking the last chosen value and whether the preceding transition stepped upwards or downwards."
+    },
+    {
+      "level": 2,
+      "title": "Prefix Sum Optimization",
+      "text": "To step up to value v, sum over all previous states with value u < v that stepped down. This corresponds to running prefix sums."
+    },
+    {
+      "level": 3,
+      "title": "Suffix Sum Optimization",
+      "text": "Similarly, to step down to value v, sum over all previous states with value u > v that stepped up via running suffix sums."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def numberOfZigzagArrays(self, n: int, m: int) -> int:\n        MOD = 1_000_000_007\n        if n == 1:\n            return m % MOD\n        # dp_up[v]: number of zigzag prefixes of length i ending with value v where last step was UP\n        # dp_down[v]: number of zigzag prefixes of length i ending with value v where last step was DOWN\n        # Base case length 2:\n        dp_up = [0] * (m + 1)\n        dp_down = [0] * (m + 1)\n        for v in range(1, m + 1):\n            dp_up[v] = v - 1 # previous element was smaller (1 .. v-1)\n            dp_down[v] = m - v # previous element was larger (v+1 .. m)\n            \n        for _ in range(3, n + 1):\n            next_up = [0] * (m + 1)\n            next_down = [0] * (m + 1)\n            # To step up to v, previous step had to be down to u < v\n            # sum(dp_down[u] for u in 1..v-1)\n            pref = 0\n            for v in range(1, m + 1):\n                next_up[v] = pref\n                pref = (pref + dp_down[v]) % MOD\n            # To step down to v, previous step had to be up to u > v\n            # sum(dp_up[u] for u in v+1..m)\n            suff = 0\n            for v in range(m, 0, -1):\n                next_down[v] = suff\n                suff = (suff + dp_up[v]) % MOD\n            dp_up, dp_down = next_up, next_down\n            \n        return (sum(dp_up) + sum(dp_down)) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * M)",
+    "space": "O(M)",
+    "variables": [
+      "N: length of array",
+      "M: maximum allowed value"
+    ],
+    "notes": "State transitions optimized with running prefix and suffix sums.",
+    "whyNaiveFails": "Enumerating transitions naively costs O(N * M^2), which times out for large bounds.",
+    "spaceTimeTradeoff": "Rolling 1D arrays of size M avoid allocating an N x M grid.",
+    "interviewerExpectation": "Use running sums to eliminate the inner summation loop across values."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def numberOfZigzagArrays(self, n: int, m: int) -> int:\n        MOD = 1_000_000_007\n        if n == 1:\n            return m % MOD\n        # dp_up[v]: number of zigzag prefixes of length i ending with value v where last step was UP\n        # dp_down[v]: number of zigzag prefixes of length i ending with value v where last step was DOWN\n        # Base case length 2:\n        dp_up = [0] * (m + 1)\n        dp_down = [0] * (m + 1)\n        for v in range(1, m + 1):\n            dp_up[v] = v - 1 # previous element was smaller (1 .. v-1)\n            dp_down[v] = m - v # previous element was larger (v+1 .. m)\n            \n        for _ in range(3, n + 1):\n            next_up = [0] * (m + 1)\n            next_down = [0] * (m + 1)\n            # To step up to v, previous step had to be down to u < v\n            # sum(dp_down[u] for u in 1..v-1)\n            pref = 0\n            for v in range(1, m + 1):\n                next_up[v] = pref\n                pref = (pref + dp_down[v]) % MOD\n            # To step down to v, previous step had to be up to u > v\n            # sum(dp_up[u] for u in v+1..m)\n            suff = 0\n            for v in range(m, 0, -1):\n                next_down[v] = suff\n                suff = (suff + dp_up[v]) % MOD\n            dp_up, dp_down = next_up, next_down\n            \n        return (sum(dp_up) + sum(dp_down)) % MOD",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <numeric>\nusing namespace std;\n\nclass Solution {\npublic:\n    int numberOfZigzagArrays(int n, int m) {\n        long long MOD = 1000000007;\n        if (n == 1) return m % MOD;\n        vector<long long> dp_up(m + 1, 0), dp_down(m + 1, 0);\n        for (int v = 1; v <= m; ++v) {\n            dp_up[v] = v - 1;\n            dp_down[v] = m - v;\n        }\n        for (int step = 3; step <= n; ++step) {\n            vector<long long> next_up(m + 1, 0), next_down(m + 1, 0);\n            long long pref = 0;\n            for (int v = 1; v <= m; ++v) {\n                next_up[v] = pref;\n                pref = (pref + dp_down[v]) % MOD;\n            }\n            long long suff = 0;\n            for (int v = m; v >= 1; --v) {\n                next_down[v] = suff;\n                suff = (suff + dp_up[v]) % MOD;\n            }\n            dp_up = move(next_up);\n            dp_down = move(next_down);\n        }\n        long long ans = 0;\n        for (int v = 1; v <= m; ++v) {\n            ans = (ans + dp_up[v] + dp_down[v]) % MOD;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int numberOfZigzagArrays(int n, int m) {\n        long MOD = 1000000007;\n        if (n == 1) return (int)(m % MOD);\n        long[] dpUp = new long[m + 1];\n        long[] dpDown = new long[m + 1];\n        for (int v = 1; v <= m; v++) {\n            dpUp[v] = v - 1;\n            dpDown[v] = m - v;\n        }\n        for (int step = 3; step <= n; step++) {\n            long[] nextUp = new long[m + 1];\n            long[] nextDown = new long[m + 1];\n            long pref = 0;\n            for (int v = 1; v <= m; v++) {\n                nextUp[v] = pref;\n                pref = (pref + dpDown[v]) % MOD;\n            }\n            long suff = 0;\n            for (int v = m; v >= 1; v--) {\n                nextDown[v] = suff;\n                suff = (suff + dpUp[v]) % MOD;\n            }\n            dpUp = nextUp;\n            dpDown = nextDown;\n        }\n        long ans = 0;\n        for (int v = 1; v <= m; v++) {\n            ans = (ans + dpUp[v] + dpDown[v]) % MOD;\n        }\n        return (int)ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var numberOfZigzagArrays = function(n, m) {\n    const MOD = 1000000007n;\n    if (n === 1) return m % 1000000007;\n    let dpUp = new Array(m + 1).fill(0n);\n    let dpDown = new Array(m + 1).fill(0n);\n    for (let v = 1; v <= m; v++) {\n        dpUp[v] = BigInt(v - 1);\n        dpDown[v] = BigInt(m - v);\n    }\n    for (let step = 3; step <= n; step++) {\n        const nextUp = new Array(m + 1).fill(0n);\n        const nextDown = new Array(m + 1).fill(0n);\n        let pref = 0n;\n        for (let v = 1; v <= m; v++) {\n            nextUp[v] = pref;\n            pref = (pref + dpDown[v]) % MOD;\n        }\n        let suff = 0n;\n        for (let v = m; v >= 1; v--) {\n            nextDown[v] = suff;\n            suff = (suff + dpUp[v]) % MOD;\n        }\n        dpUp = nextUp;\n        dpDown = nextDown;\n    }\n    let ans = 0n;\n    for (let v = 1; v <= m; v++) {\n        ans = (ans + dpUp[v] + dpDown[v]) % MOD;\n    }\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

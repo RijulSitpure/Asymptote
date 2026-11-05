@@ -1,0 +1,79 @@
+{
+  "slug": "maximize-sum-of-squares-of-digits",
+  "number": 3723,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Marginal Gain Formula",
+      "text": "Notice that incrementing a digit d to d + 1 yields a marginal increase in squared sum of (d + 1)^2 - d^2 = 2d + 1."
+    },
+    {
+      "level": 2,
+      "title": "Greedy Selection",
+      "text": "Because 2d + 1 is strictly increasing with d, larger digits yield greater marginal gains than smaller digits."
+    },
+    {
+      "level": 3,
+      "title": "Heap Maintenance",
+      "text": "Use a priority queue to greedily increment the digit offering the maximum marginal gain up to the bound of 9."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def maximizeSumOfSquares(self, digits: list[int], k: int) -> int:\n        # Each operation increments a digit d (d < 9) to d + 1\n        # Marginal gain in square: (d + 1)^2 - d^2 = 2d + 1\n        # Max-heap based on marginal gain\n        pq = []\n        for i, d in enumerate(digits):\n            if d < 9:\n                heapq.heappush(pq, (-(2 * d + 1), d, i))\n                \n        d_vals = list(digits)\n        for _ in range(k):\n            if not pq:\n                break\n            neg_gain, d, idx = heapq.heappop(pq)\n            d_vals[idx] += 1\n            new_d = d_vals[idx]\n            if new_d < 9:\n                heapq.heappush(pq, (-(2 * new_d + 1), new_d, idx))\n                \n        return sum(x * x for x in d_vals)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((N + K) log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of digits",
+      "K: available increment operations"
+    ],
+    "notes": "Priority queue extracts maximal marginal gain digit per operation.",
+    "whyNaiveFails": "Exhaustive combinatorial allocation takes exponential time.",
+    "spaceTimeTradeoff": "O(N) memory for max-priority queue.",
+    "interviewerExpectation": "Compute marginal difference formula and apply greedy priority queue."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\n\nclass Solution:\n    def maximizeSumOfSquares(self, digits: list[int], k: int) -> int:\n        # Each operation increments a digit d (d < 9) to d + 1\n        # Marginal gain in square: (d + 1)^2 - d^2 = 2d + 1\n        # Max-heap based on marginal gain\n        pq = []\n        for i, d in enumerate(digits):\n            if d < 9:\n                heapq.heappush(pq, (-(2 * d + 1), d, i))\n                \n        d_vals = list(digits)\n        for _ in range(k):\n            if not pq:\n                break\n            neg_gain, d, idx = heapq.heappop(pq)\n            d_vals[idx] += 1\n            new_d = d_vals[idx]\n            if new_d < 9:\n                heapq.heappush(pq, (-(2 * new_d + 1), new_d, idx))\n                \n        return sum(x * x for x in d_vals)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\nusing namespace std;\n\nclass Solution {\npublic:\n    long long maximizeSumOfSquares(vector<int>& digits, int k) {\n        priority_queue<pair<int, int>> pq; // {gain, index}\n        vector<int> d_vals = digits;\n        for (int i = 0; i < (int)d_vals.size(); ++i) {\n            if (d_vals[i] < 9) {\n                pq.push({2 * d_vals[i] + 1, i});\n            }\n        }\n        while (k > 0 && !pq.empty()) {\n            auto [gain, idx] = pq.top();\n            pq.pop();\n            d_vals[idx]++;\n            k--;\n            if (d_vals[idx] < 9) {\n                pq.push({2 * d_vals[idx] + 1, idx});\n            }\n        }\n        long long total = 0;\n        for (int x : d_vals) total += 1LL * x * x;\n        return total;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long maximizeSumOfSquares(int[] digits, int k) {\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> b[0] - a[0]); // [gain, idx]\n        int[] dVals = digits.clone();\n        for (int i = 0; i < dVals.length; i++) {\n            if (dVals[i] < 9) {\n                pq.offer(new int[]{2 * dVals[i] + 1, i});\n            }\n        }\n        while (k > 0 && !pq.isEmpty()) {\n            int[] top = pq.poll();\n            int idx = top[1];\n            dVals[idx]++;\n            k--;\n            if (dVals[idx] < 9) {\n                pq.offer(new int[]{2 * dVals[idx] + 1, idx});\n            }\n        }\n        long total = 0;\n        for (int x : dVals) total += (long)x * x;\n        return total;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maximizeSumOfSquares = function(digits, k) {\n    const dVals = [...digits];\n    for (let step = 0; step < k; step++) {\n        let bestGain = -1;\n        let bestIdx = -1;\n        for (let i = 0; i < dVals.length; i++) {\n            if (dVals[i] < 9) {\n                const gain = 2 * dVals[i] + 1;\n                if (gain > bestGain) {\n                    bestGain = gain;\n                    bestIdx = i;\n                }\n            }\n        }\n        if (bestIdx === -1) break;\n        dVals[bestIdx]++;\n    }\n    return dVals.reduce((sum, x) => sum + x * x, 0);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

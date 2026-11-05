@@ -1,0 +1,78 @@
+{
+  "slug": "count-no-zero-pairs-that-sum-to-n",
+  "number": 3704,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Least to Most Significant Digit Transition",
+      "text": "Process digits from right to left, keeping track of the incoming carry and whether each number has started."
+    },
+    {
+      "level": 2,
+      "title": "Digit Validity Rules",
+      "text": "Once a number has started, its subsequent digits cannot be zero. Leading zeros are permitted before a number begins."
+    },
+    {
+      "level": 3,
+      "title": "Carry Propagation",
+      "text": "At each position, ensure (digit_a + digit_b + carry) % 10 equals the target digit of n, propagating integer division to next carry."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def countNoZeroPairs(self, n: int) -> int:\n        digits = [int(c) for c in str(n)][::-1]\n        from functools import lru_cache\n        \n        @lru_cache(None)\n        def dp(idx: int, carry: int, active_a: bool, active_b: bool) -> int:\n            if idx == len(digits):\n                return 1 if carry == 0 else 0\n            target = digits[idx]\n            ans = 0\n            choices_a = [0] if not active_a else ([0] + list(range(1, 10)) if idx > 0 else list(range(1, 10)))\n            choices_b = [0] if not active_b else ([0] + list(range(1, 10)) if idx > 0 else list(range(1, 10)))\n            for da in choices_a:\n                next_a = active_a and (da > 0)\n                for db in choices_b:\n                    next_b = active_b and (db > 0)\n                    tot = da + db + carry\n                    if tot % 10 == target:\n                        ans += dp(idx + 1, tot // 10, next_a, next_b)\n            return ans\n            \n        return dp(0, 0, True, True)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log10(N))",
+    "space": "O(log10(N))",
+    "variables": [
+      "N: target sum integer"
+    ],
+    "notes": "Digit DP with constant 10x10 transitions per digit.",
+    "whyNaiveFails": "Enumerating all positive integers up to N costs O(N) which times out for large N.",
+    "spaceTimeTradeoff": "Memoization state table of size log10(N) * 2 * 2 * 2.",
+    "interviewerExpectation": "Right-to-left digit DP tracking carry and leading zero flags."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def countNoZeroPairs(self, n: int) -> int:\n        digits = [int(c) for c in str(n)][::-1]\n        from functools import lru_cache\n        \n        @lru_cache(None)\n        def dp(idx: int, carry: int, active_a: bool, active_b: bool) -> int:\n            if idx == len(digits):\n                return 1 if carry == 0 else 0\n            target = digits[idx]\n            ans = 0\n            choices_a = [0] if not active_a else ([0] + list(range(1, 10)) if idx > 0 else list(range(1, 10)))\n            choices_b = [0] if not active_b else ([0] + list(range(1, 10)) if idx > 0 else list(range(1, 10)))\n            for da in choices_a:\n                next_a = active_a and (da > 0)\n                for db in choices_b:\n                    next_b = active_b and (db > 0)\n                    tot = da + db + carry\n                    if tot % 10 == target:\n                        ans += dp(idx + 1, tot // 10, next_a, next_b)\n            return ans\n            \n        return dp(0, 0, True, True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <cstring>\nusing namespace std;\n\nclass Solution {\n    vector<int> digits;\n    long long memo[20][2][2][2];\n    \n    long long dfs(int idx, int carry, bool active_a, bool active_b) {\n        if (idx == (int)digits.size()) {\n            return carry == 0 ? 1 : 0;\n        }\n        if (memo[idx][carry][active_a][active_b] != -1) {\n            return memo[idx][carry][active_a][active_b];\n        }\n        int target = digits[idx];\n        long long ans = 0;\n        int min_a = (active_a && idx == 0) ? 1 : 0;\n        int max_a = active_a ? 9 : 0;\n        int min_b = (active_b && idx == 0) ? 1 : 0;\n        int max_b = active_b ? 9 : 0;\n        for (int da = min_a; da <= max_a; ++da) {\n            bool next_a = active_a && (da > 0);\n            for (int db = min_b; db <= max_b; ++db) {\n                bool next_b = active_b && (db > 0);\n                int tot = da + db + carry;\n                if (tot % 10 == target) {\n                    ans += dfs(idx + 1, tot / 10, next_a, next_b);\n                }\n            }\n        }\n        return memo[idx][carry][active_a][active_b] = ans;\n    }\npublic:\n    long long countNoZeroPairs(long long n) {\n        digits.clear();\n        while (n > 0) {\n            digits.push_back(n % 10);\n            n /= 10;\n        }\n        memset(memo, -1, sizeof(memo));\n        return dfs(0, 0, true, true);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private List<Integer> digits = new ArrayList<>();\n    private Long[][][][] memo;\n\n    private long dfs(int idx, int carry, int actA, int actB) {\n        if (idx == digits.size()) {\n            return carry == 0 ? 1 : 0;\n        }\n        if (memo[idx][carry][actA][actB] != null) {\n            return memo[idx][carry][actA][actB];\n        }\n        int target = digits.get(idx);\n        long ans = 0;\n        int minA = (actA == 1 && idx == 0) ? 1 : 0;\n        int maxA = actA == 1 ? 9 : 0;\n        int minB = (actB == 1 && idx == 0) ? 1 : 0;\n        int maxB = actB == 1 ? 9 : 0;\n        for (int da = minA; da <= maxA; da++) {\n            int nextA = (actA == 1 && da > 0) ? 1 : 0;\n            for (int db = minB; db <= maxB; db++) {\n                int nextB = (actB == 1 && db > 0) ? 1 : 0;\n                int tot = da + db + carry;\n                if (tot % 10 == target) {\n                    ans += dfs(idx + 1, tot / 10, nextA, nextB);\n                }\n            }\n        }\n        return memo[idx][carry][actA][actB] = ans;\n    }\n\n    public long countNoZeroPairs(long n) {\n        digits.clear();\n        while (n > 0) {\n            digits.add((int)(n % 10));\n            n /= 10;\n        }\n        memo = new Long[digits.size() + 1][2][2][2];\n        return dfs(0, 0, 1, 1);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countNoZeroPairs = function(n) {\n    const digits = [];\n    let temp = BigInt(n);\n    while (temp > 0n) {\n        digits.push(Number(temp % 10n));\n        temp /= 10n;\n    }\n    const memo = new Map();\n    function dfs(idx, carry, actA, actB) {\n        if (idx === digits.length) {\n            return carry === 0 ? 1n : 0n;\n        }\n        const key = `${idx},${carry},${actA},${actB}`;\n        if (memo.has(key)) return memo.get(key);\n        const target = digits[idx];\n        let ans = 0n;\n        const minA = (actA && idx === 0) ? 1 : 0;\n        const maxA = actA ? 9 : 0;\n        const minB = (actB && idx === 0) ? 1 : 0;\n        const maxB = actB ? 9 : 0;\n        for (let da = minA; da <= maxA; da++) {\n            const nextA = actA && (da > 0);\n            for (let db = minB; db <= maxB; db++) {\n                const nextB = actB && (db > 0);\n                const tot = da + db + carry;\n                if (tot % 10 === target) {\n                    ans += dfs(idx + 1, Math.floor(tot / 10), nextA, nextB);\n                }\n            }\n        }\n        memo.set(key, ans);\n        return ans;\n    }\n    return Number(dfs(0, 0, true, true));\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

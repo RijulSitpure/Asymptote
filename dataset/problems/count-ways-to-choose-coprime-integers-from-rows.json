@@ -1,0 +1,80 @@
+{
+  "slug": "count-ways-to-choose-coprime-integers-from-rows",
+  "number": 3725,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-state-machine"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Divisor State",
+      "text": "Maintain the number of ways to achieve each possible running greatest common divisor after choosing elements from the first r rows."
+    },
+    {
+      "level": 2,
+      "title": "Divisor Contraction",
+      "text": "When transitioning to row r + 1, combine existing divisor states with each element of the new row using greatest common divisor arithmetic."
+    },
+    {
+      "level": 3,
+      "title": "Coprime Target",
+      "text": "After iterating through all matrix rows, the answer is the total combination count accumulated under divisor state 1 modulo 10^9+7."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport math\nfrom collections import defaultdict\n\nclass Solution:\n    def countCoprimeSelections(self, grid: list[list[int]]) -> int:\n        # Choose one element from each row such that gcd of all chosen elements equals 1\n        # dp[g]: number of ways prefix selection has greatest common divisor g\n        MOD = 1_000_000_007\n        dp = defaultdict(int)\n        for x in grid[0]:\n            dp[x] = (dp[x] + 1) % MOD\n            \n        for row in grid[1:]:\n            next_dp = defaultdict(int)\n            for g, ways in dp.items():\n                for x in row:\n                    new_g = math.gcd(g, x)\n                    next_dp[new_g] = (next_dp[new_g] + ways) % MOD\n            dp = next_dp\n            \n        return dp.get(1, 0)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R * C * D)",
+    "space": "O(D)",
+    "variables": [
+      "R: number of matrix rows",
+      "C: number of columns per row",
+      "D: number of distinct possible divisor states"
+    ],
+    "notes": "State compression DP over distinct greatest common divisors.",
+    "whyNaiveFails": "Brute-force testing all C^R combinations is impossible for large dimensions.",
+    "spaceTimeTradeoff": "O(D) memory bounded by divisors of matrix values.",
+    "interviewerExpectation": "Use hash table DP keyed on running gcd across matrix rows."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import math\nfrom collections import defaultdict\n\nclass Solution:\n    def countCoprimeSelections(self, grid: list[list[int]]) -> int:\n        # Choose one element from each row such that gcd of all chosen elements equals 1\n        # dp[g]: number of ways prefix selection has greatest common divisor g\n        MOD = 1_000_000_007\n        dp = defaultdict(int)\n        for x in grid[0]:\n            dp[x] = (dp[x] + 1) % MOD\n            \n        for row in grid[1:]:\n            next_dp = defaultdict(int)\n            for g, ways in dp.items():\n                for x in row:\n                    new_g = math.gcd(g, x)\n                    next_dp[new_g] = (next_dp[new_g] + ways) % MOD\n            dp = next_dp\n            \n        return dp.get(1, 0)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <numeric>\nusing namespace std;\n\nclass Solution {\n    int gcd(int a, int b) {\n        while (b) {\n            a %= b;\n            swap(a, b);\n        }\n        return a;\n    }\npublic:\n    int countCoprimeSelections(vector<vector<int>>& grid) {\n        long long MOD = 1000000007;\n        unordered_map<int, long long> dp;\n        for (int x : grid[0]) {\n            dp[x] = (dp[x] + 1) % MOD;\n        }\n        for (size_t r = 1; r < grid.size(); ++r) {\n            unordered_map<int, long long> next_dp;\n            for (auto& [g, ways] : dp) {\n                for (int x : grid[r]) {\n                    int new_g = gcd(g, x);\n                    next_dp[new_g] = (next_dp[new_g] + ways) % MOD;\n                }\n            }\n            dp = move(next_dp);\n        }\n        return dp[1] % MOD;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int gcd(int a, int b) {\n        while (b != 0) {\n            int t = a % b;\n            a = b;\n            b = t;\n        }\n        return a;\n    }\n\n    public int countCoprimeSelections(int[][] grid) {\n        long MOD = 1000000007;\n        Map<Integer, Long> dp = new HashMap<>();\n        for (int x : grid[0]) {\n            dp.put(x, (dp.getOrDefault(x, 0L) + 1) % MOD);\n        }\n        for (int r = 1; r < grid.length; r++) {\n            Map<Integer, Long> nextDp = new HashMap<>();\n            for (Map.Entry<Integer, Long> entry : dp.entrySet()) {\n                int g = entry.getKey();\n                long ways = entry.getValue();\n                for (int x : grid[r]) {\n                    int newG = gcd(g, x);\n                    nextDp.put(newG, (nextDp.getOrDefault(newG, 0L) + ways) % MOD);\n                }\n            }\n            dp = nextDp;\n        }\n        return (int)(dp.getOrDefault(1, 0L) % MOD);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countCoprimeSelections = function(grid) {\n    const MOD = 1000000007n;\n    function gcd(a, b) {\n        while (b !== 0) {\n            const t = a % b;\n            a = b;\n            b = t;\n        }\n        return a;\n    }\n    let dp = new Map();\n    for (const x of grid[0]) {\n        dp.set(x, ((dp.get(x) || 0n) + 1n) % MOD);\n    }\n    for (let r = 1; r < grid.length; r++) {\n        const nextDp = new Map();\n        for (const [g, ways] of dp.entries()) {\n            for (const x of grid[r]) {\n                const newG = gcd(g, x);\n                nextDp.set(newG, ((nextDp.get(newG) || 0n) + ways) % MOD);\n            }\n        }\n        dp = nextDp;\n    }\n    return Number((dp.get(1) || 0n) % MOD);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,71 @@
+{
+  "slug": "find-golden-hour-customers",
+  "number": 3705,
+  "category": "Database",
+  "patterns": [
+    "group-aggregate"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Timestamp Filtering",
+      "text": "Extract the hour component from order timestamps to isolate orders placed during the 18:00 window."
+    },
+    {
+      "level": 2,
+      "title": "Customer Aggregation",
+      "text": "Join customer profiles with the filtered orders and group by customer identifier and name."
+    },
+    {
+      "level": 3,
+      "title": "Total Spending Filter",
+      "text": "Apply a group filter clause to retain only customers whose aggregated golden hour spending reaches at least 100."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    c.customer_id,\n    c.name,\n    SUM(o.amount) AS total_golden_spent\nFROM Customers c\nJOIN Orders o ON c.customer_id = o.customer_id\nWHERE HOUR(o.order_timestamp) = 18\nGROUP BY c.customer_id, c.name\nHAVING SUM(o.amount) >= 100\nORDER BY c.customer_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total count of orders"
+    ],
+    "notes": "Indexed date filtering followed by grouped aggregation.",
+    "whyNaiveFails": "Correlated scalar subqueries for each customer result in slow quadratic execution.",
+    "spaceTimeTradeoff": "Grouping hash table bounded by distinct customer count.",
+    "interviewerExpectation": "Clean date extraction function and aggregate filtering via group filter clause."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    c.customer_id,\n    c.name,\n    SUM(o.amount) AS total_golden_spent\nFROM Customers c\nJOIN Orders o ON c.customer_id = o.customer_id\nWHERE HOUR(o.order_timestamp) = 18\nGROUP BY c.customer_id, c.name\nHAVING SUM(o.amount) >= 100\nORDER BY c.customer_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    c.customer_id,\n    c.name,\n    SUM(o.amount) AS total_golden_spent\nFROM Customers c\nJOIN Orders o ON c.customer_id = o.customer_id\nWHERE EXTRACT(HOUR FROM o.order_timestamp) = 18\nGROUP BY c.customer_id, c.name\nHAVING SUM(o.amount) >= 100\nORDER BY c.customer_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_golden_hour_customers(customers: pd.DataFrame, orders: pd.DataFrame) -> pd.DataFrame:\n    orders['order_timestamp'] = pd.to_datetime(orders['order_timestamp'])\n    golden_orders = orders[orders['order_timestamp'].dt.hour == 18]\n    grouped = golden_orders.groupby('customer_id')['amount'].sum().reset_index()\n    qualified = grouped[grouped['amount'] >= 100]\n    res = customers.merge(qualified, on='customer_id')\n    res = res.rename(columns={'amount': 'total_golden_spent'})\n    return res[['customer_id', 'name', 'total_golden_spent']].sort_values('customer_id')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
