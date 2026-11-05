@@ -1,0 +1,79 @@
+{
+  "slug": "lexicographically-smallest-negated-permutation-that-sums-to-target",
+  "number": 3752,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-knapsack-variants"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subset Sum Transformation",
+      "text": "Assigning plus and minus signs is equivalent to finding a positive subset whose sum equals (total_sum + target) // 2."
+    },
+    {
+      "level": 2,
+      "title": "Parity Feasibility",
+      "text": "If (total_sum + target) is odd or negative, no valid sign assignment can achieve the target."
+    },
+    {
+      "level": 3,
+      "title": "Lexicographical Sort",
+      "text": "Negate the unchosen elements and sort the complete signed list ascendingly to minimize lexicographical order."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Solution:\n    def smallestNegatedPermutation(self, nums: list[int], target: int) -> list[int]:\n        # Assign + and - signs to a permutation of nums so total sum equals target\n        # S = sum(nums). Total sum with subset P positive and subset N negative is:\n        # sum(P) - sum(N) = target <=> sum(P) - (S - sum(P)) = target <=> 2 * sum(P) = S + target\n        # So sum(P) must equal (S + target) // 2\n        S = sum(nums)\n        if (S + target) % 2 != 0 or S + target < 0:\n            return []\n        P_target = (S + target) // 2\n        \n        # 0/1 knapsack to find if subset summing to P_target exists\n        n = len(nums)\n        sorted_nums = sorted(nums)\n        dp = {0: []}\n        for x in sorted_nums:\n            new_dp = dict(dp)\n            for s, items in dp.items():\n                if s + x <= P_target and (s + x) not in new_dp:\n                    new_dp[s + x] = items + [x]\n            dp = new_dp\n            \n        if P_target not in dp:\n            return []\n            \n        pos_items = list(dp[P_target])\n        rem = list(sorted_nums)\n        for x in pos_items:\n            rem.remove(x)\n        # Rem are negative\n        neg_items = [-x for x in rem]\n        # Lexicographically smallest permutation: sort all resulting signed numbers\n        res = sorted(pos_items + neg_items)\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * Target)",
+    "space": "O(N * Target)",
+    "variables": [
+      "N: length of array nums",
+      "Target: positive subset target sum"
+    ],
+    "notes": "Subset sum 0/1 knapsack reconstruction followed by ascending sort.",
+    "whyNaiveFails": "Testing all 2^N sign combinations is exponential.",
+    "spaceTimeTradeoff": "O(N * Target) memory for subset sum dynamic programming table.",
+    "interviewerExpectation": "Transform sign assignment to subset sum and sort resulting signed values."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def smallestNegatedPermutation(self, nums: list[int], target: int) -> list[int]:\n        # Assign + and - signs to a permutation of nums so total sum equals target\n        # S = sum(nums). Total sum with subset P positive and subset N negative is:\n        # sum(P) - sum(N) = target <=> sum(P) - (S - sum(P)) = target <=> 2 * sum(P) = S + target\n        # So sum(P) must equal (S + target) // 2\n        S = sum(nums)\n        if (S + target) % 2 != 0 or S + target < 0:\n            return []\n        P_target = (S + target) // 2\n        \n        # 0/1 knapsack to find if subset summing to P_target exists\n        n = len(nums)\n        sorted_nums = sorted(nums)\n        dp = {0: []}\n        for x in sorted_nums:\n            new_dp = dict(dp)\n            for s, items in dp.items():\n                if s + x <= P_target and (s + x) not in new_dp:\n                    new_dp[s + x] = items + [x]\n            dp = new_dp\n            \n        if P_target not in dp:\n            return []\n            \n        pos_items = list(dp[P_target])\n        rem = list(sorted_nums)\n        for x in pos_items:\n            rem.remove(x)\n        # Rem are negative\n        neg_items = [-x for x in rem]\n        # Lexicographically smallest permutation: sort all resulting signed numbers\n        res = sorted(pos_items + neg_items)\n        return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <numeric>\n#include <algorithm>\n#include <unordered_map>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> smallestNegatedPermutation(vector<int>& nums, int target) {\n        long long S = 0;\n        for (int x : nums) S += x;\n        if ((S + target) % 2 != 0 || S + target < 0) return {};\n        long long P_target = (S + target) / 2;\n        \n        vector<int> sorted_nums = nums;\n        sort(sorted_nums.begin(), sorted_nums.end());\n        unordered_map<long long, vector<int>> dp;\n        dp[0] = {};\n        for (int x : sorted_nums) {\n            auto next_dp = dp;\n            for (auto& [s, items] : dp) {\n                if (s + x <= P_target && !next_dp.count(s + x)) {\n                    auto nitems = items;\n                    nitems.push_back(x);\n                    next_dp[s + x] = nitems;\n                }\n            }\n            dp = move(next_dp);\n        }\n        if (!dp.count(P_target)) return {};\n        vector<int> pos_items = dp[P_target];\n        vector<int> rem = sorted_nums;\n        for (int x : pos_items) {\n            auto it = find(rem.begin(), rem.end(), x);\n            if (it != rem.end()) rem.erase(it);\n        }\n        vector<int> res = pos_items;\n        for (int x : rem) res.push_back(-x);\n        sort(res.begin(), res.end());\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] smallestNegatedPermutation(int[] nums, int target) {\n        long S = 0;\n        for (int x : nums) S += x;\n        if ((S + target) % 2 != 0 || S + target < 0) return new int[]{};\n        long pTarget = (S + target) / 2;\n\n        int[] sorted = nums.clone();\n        Arrays.sort(sorted);\n        Map<Long, List<Integer>> dp = new HashMap<>();\n        dp.put(0L, new ArrayList<>());\n        for (int x : sorted) {\n            Map<Long, List<Integer>> nextDp = new HashMap<>(dp);\n            for (Map.Entry<Long, List<Integer>> entry : dp.entrySet()) {\n                long s = entry.getKey();\n                if (s + x <= pTarget && !nextDp.containsKey(s + x)) {\n                    List<Integer> list = new ArrayList<>(entry.getValue());\n                    list.add(x);\n                    nextDp.put(s + x, list);\n                }\n            }\n            dp = nextDp;\n        }\n        if (!dp.containsKey(pTarget)) return new int[]{};\n        List<Integer> posItems = dp.get(pTarget);\n        List<Integer> rem = new ArrayList<>();\n        for (int x : sorted) rem.add(x);\n        for (int x : posItems) rem.remove((Integer)x);\n\n        List<Integer> resList = new ArrayList<>(posItems);\n        for (int x : rem) resList.add(-x);\n        Collections.sort(resList);\n        int[] res = new int[resList.size()];\n        for (int i = 0; i < resList.size(); i++) res[i] = resList.get(i);\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var smallestNegatedPermutation = function(nums, target) {\n    let S = 0;\n    for (const x of nums) S += x;\n    if ((S + target) % 2 !== 0 || S + target < 0) return [];\n    const pTarget = Math.floor((S + target) / 2);\n\n    const sorted = [...nums].sort((a, b) => a - b);\n    let dp = new Map();\n    dp.set(0, []);\n    for (const x of sorted) {\n        const nextDp = new Map(dp);\n        for (const [s, items] of dp.entries()) {\n            if (s + x <= pTarget && !nextDp.has(s + x)) {\n                nextDp.set(s + x, [...items, x]);\n            }\n        }\n        dp = nextDp;\n    }\n    if (!dp.has(pTarget)) return [];\n    const posItems = dp.get(pTarget);\n    const rem = [...sorted];\n    for (const x of posItems) {\n        const idx = rem.indexOf(x);\n        if (idx !== -1) rem.splice(idx, 1);\n    }\n    const res = [...posItems, ...rem.map(x => -x)].sort((a, b) => a - b);\n    return res;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

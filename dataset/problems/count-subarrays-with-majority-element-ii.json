@@ -1,0 +1,78 @@
+{
+  "slug": "count-subarrays-with-majority-element-ii",
+  "number": 3739,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Sum Inversion Count",
+      "text": "Transform elements into +1 and -1. The task becomes counting earlier prefix sum indices with P[i] < P[j]."
+    },
+    {
+      "level": 2,
+      "title": "Index Coordinate Shift",
+      "text": "Because prefix sums range from -N to +N, shift values by N + 1 into non-negative index space."
+    },
+    {
+      "level": 3,
+      "title": "Binary Indexed Tree",
+      "text": "Use a Fenwick tree to query cumulative counts strictly below current prefix sum in logarithmic time."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nclass Fenwick:\n    def __init__(self, size: int):\n        self.tree = [0] * (size + 1)\n        \n    def add(self, idx: int, delta: int = 1):\n        while idx < len(self.tree):\n            self.tree[idx] += delta\n            idx += idx & (-idx)\n            \n    def query(self, idx: int) -> int:\n        s = 0\n        while idx > 0:\n            s += self.tree[idx]\n            idx -= idx & (-idx)\n        return s\n\nclass Solution:\n    def countMajoritySubarrays(self, nums: list[int], target: int) -> int:\n        # Transform: target -> +1, others -> -1\n        # Prefix sum P[j] - P[i] > 0 <=> P[j] > P[i] for i < j\n        # P values range from -N to +N. Shift by N + 1 for Fenwick index.\n        n = len(nums)\n        shift = n + 1\n        bit = Fenwick(2 * n + 2)\n        bit.add(0 + shift, 1) # P[0] = 0\n        pref = 0\n        ans = 0\n        for x in nums:\n            pref += 1 if x == target else -1\n            # We want count of previous P[i] < pref <=> query((pref - 1) + shift)\n            ans += bit.query((pref - 1) + shift)\n            bit.add(pref + shift, 1)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of array nums"
+    ],
+    "notes": "Fenwick tree counting inversions on transformed prefix sums in O(N log N).",
+    "whyNaiveFails": "O(N^2) pairwise prefix checks time out on large array limits.",
+    "spaceTimeTradeoff": "O(N) memory for Fenwick tree array.",
+    "interviewerExpectation": "Recognize inversion counting on prefix sums and implement a Fenwick tree."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Fenwick:\n    def __init__(self, size: int):\n        self.tree = [0] * (size + 1)\n        \n    def add(self, idx: int, delta: int = 1):\n        while idx < len(self.tree):\n            self.tree[idx] += delta\n            idx += idx & (-idx)\n            \n    def query(self, idx: int) -> int:\n        s = 0\n        while idx > 0:\n            s += self.tree[idx]\n            idx -= idx & (-idx)\n        return s\n\nclass Solution:\n    def countMajoritySubarrays(self, nums: list[int], target: int) -> int:\n        # Transform: target -> +1, others -> -1\n        # Prefix sum P[j] - P[i] > 0 <=> P[j] > P[i] for i < j\n        # P values range from -N to +N. Shift by N + 1 for Fenwick index.\n        n = len(nums)\n        shift = n + 1\n        bit = Fenwick(2 * n + 2)\n        bit.add(0 + shift, 1) # P[0] = 0\n        pref = 0\n        ans = 0\n        for x in nums:\n            pref += 1 if x == target else -1\n            # We want count of previous P[i] < pref <=> query((pref - 1) + shift)\n            ans += bit.query((pref - 1) + shift)\n            bit.add(pref + shift, 1)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\nusing namespace std;\n\nclass Fenwick {\n    vector<int> tree;\npublic:\n    Fenwick(int n) : tree(n + 1, 0) {}\n    void add(int idx, int delta = 1) {\n        for (; idx < (int)tree.size(); idx += idx & (-idx)) {\n            tree[idx] += delta;\n        }\n    }\n    int query(int idx) {\n        int s = 0;\n        for (; idx > 0; idx -= idx & (-idx)) {\n            s += tree[idx];\n        }\n        return s;\n    }\n};\n\nclass Solution {\npublic:\n    long long countMajoritySubarrays(vector<int>& nums, int target) {\n        int n = nums.size();\n        int shift = n + 1;\n        Fenwick bit(2 * n + 2);\n        bit.add(0 + shift, 1);\n        int pref = 0;\n        long long ans = 0;\n        for (int x : nums) {\n            pref += (x == target) ? 1 : -1;\n            ans += bit.query((pref - 1) + shift);\n            bit.add(pref + shift, 1);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    static class Fenwick {\n        int[] tree;\n        Fenwick(int n) { tree = new int[n + 1]; }\n        void add(int idx, int delta) {\n            for (; idx < tree.length; idx += idx & (-idx)) {\n                tree[idx] += delta;\n            }\n        }\n        int query(int idx) {\n            int s = 0;\n            for (; idx > 0; idx -= idx & (-idx)) {\n                s += tree[idx];\n            }\n            return s;\n        }\n    }\n\n    public long countMajoritySubarrays(int[] nums, int target) {\n        int n = nums.length;\n        int shift = n + 1;\n        Fenwick bit = new Fenwick(2 * n + 2);\n        bit.add(0 + shift, 1);\n        int pref = 0;\n        long ans = 0;\n        for (int x : nums) {\n            pref += (x == target) ? 1 : -1;\n            ans += bit.query((pref - 1) + shift);\n            bit.add(pref + shift, 1);\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countMajoritySubarrays = function(nums, target) {\n    const n = nums.length;\n    const size = 2 * n + 2;\n    const tree = new Int32Array(size + 1);\n    function add(idx, delta) {\n        for (; idx <= size; idx += idx & (-idx)) {\n            tree[idx] += delta;\n        }\n    }\n    function query(idx) {\n        let s = 0;\n        for (; idx > 0; idx -= idx & (-idx)) {\n            s += tree[idx];\n        }\n        return s;\n    }\n    const shift = n + 1;\n    add(0 + shift, 1);\n    let pref = 0;\n    let ans = 0;\n    for (const x of nums) {\n        pref += (x === target) ? 1 : -1;\n        ans += query((pref - 1) + shift);\n        add(pref + shift, 1);\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
