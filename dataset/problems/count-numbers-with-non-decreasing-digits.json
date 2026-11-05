@@ -1,0 +1,79 @@
+{
+  "slug": "count-numbers-with-non-decreasing-digits",
+  "number": 3519,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Digit Position Recurrence",
+      "text": "Count qualifying numbers up to an upper limit by fixing digits from highest to lowest significance."
+    },
+    {
+      "level": 2,
+      "title": "Non-decreasing Transition Constraint",
+      "text": "Every placed digit must be greater than or equal to the preceding digit once leading zeros conclude."
+    },
+    {
+      "level": 3,
+      "title": "Range Count Subtraction",
+      "text": "Compute total valid numbers below r and subtract valid numbers below l, taking differences modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def countNumbers(self, l: str, r: str, b: int) -> int:\n        MOD = 1_000_000_007\n\n        def to_base_b(num_str: str) -> list[int]:\n            n = int(num_str)\n            if n == 0:\n                return [0]\n            digits = []\n            while n > 0:\n                digits.append(n % b)\n                n //= b\n            return digits[::-1]\n\n        def count_valid(num_digits: list[int]) -> int:\n            memo = {}\n            def dfs(pos: int, last: int, is_tight: bool, is_leading: bool) -> int:\n                if pos == len(num_digits):\n                    return 1\n                state = (pos, last, is_tight, is_leading)\n                if state in memo:\n                    return memo[state]\n                limit = num_digits[pos] if is_tight else b - 1\n                res = 0\n                for d in range(limit + 1):\n                    if is_leading and d == 0:\n                        res = (res + dfs(pos + 1, 0, is_tight and (d == limit), True)) % MOD\n                    else:\n                        if d >= last:\n                            res = (res + dfs(pos + 1, d, is_tight and (d == limit), False)) % MOD\n                memo[state] = res\n                return res\n            return dfs(0, 0, True, True)\n\n        def is_valid(num_str: str) -> bool:\n            digs = to_base_b(num_str)\n            return all(digs[i] <= digs[i + 1] for i in range(len(digs) - 1))\n\n        cnt_r = count_valid(to_base_b(r))\n        cnt_l = count_valid(to_base_b(l))\n        ans = (cnt_r - cnt_l + (1 if is_valid(l) else 0)) % MOD\n        return (ans + MOD) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(D * B)",
+    "space": "O(D * B)",
+    "variables": [
+      "D: number of digits in base b representation",
+      "B: numerical base"
+    ],
+    "notes": "Digit states track current position, previous digit value, tight bound, and leading zero flag.",
+    "whyNaiveFails": "Iterating over large numeric intervals exceeds execution time limits.",
+    "spaceTimeTradeoff": "Memoized states eliminate recomputation across digit prefixes.",
+    "interviewerExpectation": "Use digit DP to handle leading zeros and prefix equality bounds."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def countNumbers(self, l: str, r: str, b: int) -> int:\n        MOD = 1_000_000_007\n\n        def to_base_b(num_str: str) -> list[int]:\n            n = int(num_str)\n            if n == 0:\n                return [0]\n            digits = []\n            while n > 0:\n                digits.append(n % b)\n                n //= b\n            return digits[::-1]\n\n        def count_valid(num_digits: list[int]) -> int:\n            memo = {}\n            def dfs(pos: int, last: int, is_tight: bool, is_leading: bool) -> int:\n                if pos == len(num_digits):\n                    return 1\n                state = (pos, last, is_tight, is_leading)\n                if state in memo:\n                    return memo[state]\n                limit = num_digits[pos] if is_tight else b - 1\n                res = 0\n                for d in range(limit + 1):\n                    if is_leading and d == 0:\n                        res = (res + dfs(pos + 1, 0, is_tight and (d == limit), True)) % MOD\n                    else:\n                        if d >= last:\n                            res = (res + dfs(pos + 1, d, is_tight and (d == limit), False)) % MOD\n                memo[state] = res\n                return res\n            return dfs(0, 0, True, True)\n\n        def is_valid(num_str: str) -> bool:\n            digs = to_base_b(num_str)\n            return all(digs[i] <= digs[i + 1] for i in range(len(digs) - 1))\n\n        cnt_r = count_valid(to_base_b(r))\n        cnt_l = count_valid(to_base_b(l))\n        ans = (cnt_r - cnt_l + (1 if is_valid(l) else 0)) % MOD\n        return (ans + MOD) % MOD",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\n    static constexpr int MOD = 1'000'000'007;\n\n    vector<int> toBaseB(string s, int b) {\n        long long n = stoll(s);\n        if (n == 0) return {0};\n        vector<int> digits;\n        while (n > 0) {\n            digits.push_back(n % b);\n            n /= b;\n        }\n        reverse(digits.begin(), digits.end());\n        return digits;\n    }\n\n    int countValid(const vector<int>& digits, int b) {\n        int sz = digits.size();\n        vector<vector<vector<vector<int>>>> memo(sz, vector<vector<vector<int>>>(b + 1, vector<vector<int>>(2, vector<int>(2, -1))));\n\n        auto dfs = [&](auto& self, int pos, int last, bool isTight, bool isLeading) -> int {\n            if (pos == sz) return 1;\n            if (memo[pos][last][isTight][isLeading] != -1) return memo[pos][last][isTight][isLeading];\n            int limit = isTight ? digits[pos] : b - 1;\n            long long res = 0;\n            for (int d = 0; d <= limit; ++d) {\n                if (isLeading && d == 0) {\n                    res = (res + self(self, pos + 1, 0, isTight && (d == limit), true)) % MOD;\n                } else {\n                    if (d >= last) {\n                        res = (res + self(self, pos + 1, d, isTight && (d == limit), false)) % MOD;\n                    }\n                }\n            }\n            return memo[pos][last][isTight][isLeading] = res;\n        };\n        return dfs(dfs, 0, 0, true, true);\n    }\n\n    bool isValid(string s, int b) {\n        auto digs = toBaseB(s, b);\n        for (size_t i = 0; i + 1 < digs.size(); ++i) {\n            if (digs[i] > digs[i + 1]) return false;\n        }\n        return true;\n    }\n\npublic:\n    int countNumbers(string l, string r, int b) {\n        int cntR = countValid(toBaseB(r, b), b);\n        int cntL = countValid(toBaseB(l, b), b);\n        int ans = (cntR - cntL + (isValid(l, b) ? 1 : 0)) % MOD;\n        return (ans + MOD) % MOD;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    static final int MOD = 1_000_000_007;\n\n    public int countNumbers(String l, String r, int b) {\n        int cntR = countValid(toBaseB(r, b), b);\n        int cntL = countValid(toBaseB(l, b), b);\n        int ans = (cntR - cntL + (isValid(l, b) ? 1 : 0)) % MOD;\n        return (ans + MOD) % MOD;\n    }\n\n    private List<Integer> toBaseB(String s, int b) {\n        long n = Long.parseLong(s);\n        if (n == 0) return Collections.singletonList(0);\n        List<Integer> digits = new ArrayList<>();\n        while (n > 0) {\n            digits.add((int) (n % b));\n            n /= b;\n        }\n        Collections.reverse(digits);\n        return digits;\n    }\n\n    private int countValid(List<Integer> digits, int b) {\n        int sz = digits.size();\n        int[][][][] memo = new int[sz][b + 1][2][2];\n        for (int[][][] a : memo) for (int[][] c : a) for (int[] d : c) Arrays.fill(d, -1);\n        return dfs(0, 0, 1, 1, digits, b, memo);\n    }\n\n    private int dfs(int pos, int last, int isTight, int isLeading, List<Integer> digits, int b, int[][][][] memo) {\n        if (pos == digits.size()) return 1;\n        if (memo[pos][last][isTight][isLeading] != -1) return memo[pos][last][isTight][isLeading];\n        int limit = (isTight == 1) ? digits.get(pos) : b - 1;\n        long res = 0;\n        for (int d = 0; d <= limit; d++) {\n            if (isLeading == 1 && d == 0) {\n                res = (res + dfs(pos + 1, 0, (isTight == 1 && d == limit) ? 1 : 0, 1, digits, b, memo)) % MOD;\n            } else {\n                if (d >= last) {\n                    res = (res + dfs(pos + 1, d, (isTight == 1 && d == limit) ? 1 : 0, 0, digits, b, memo)) % MOD;\n                }\n            }\n        }\n        return memo[pos][last][isTight][isLeading] = (int) res;\n    }\n\n    private boolean isValid(String s, int b) {\n        List<Integer> digs = toBaseB(s, b);\n        for (int i = 0; i + 1 < digs.size(); i++) {\n            if (digs.get(i) > digs.get(i + 1)) return false;\n        }\n        return true;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countNumbers = function(l, r, b) {\n    const MOD = 1000000007;\n\n    const toBaseB = s => {\n        let n = BigInt(s);\n        if (n === 0n) return [0];\n        const digits = [];\n        const base = BigInt(b);\n        while (n > 0n) {\n            digits.push(Number(n % base));\n            n /= base;\n        }\n        return digits.reverse();\n    };\n\n    const countValid = digits => {\n        const sz = digits.length;\n        const memo = new Map();\n        const dfs = (pos, last, isTight, isLeading) => {\n            if (pos === sz) return 1;\n            const key = `${pos},${last},${isTight},${isLeading}`;\n            if (memo.has(key)) return memo.get(key);\n            const limit = isTight ? digits[pos] : b - 1;\n            let res = 0;\n            for (let d = 0; d <= limit; d++) {\n                if (isLeading && d === 0) {\n                    res = (res + dfs(pos + 1, 0, isTight && (d === limit), true)) % MOD;\n                } else {\n                    if (d >= last) {\n                        res = (res + dfs(pos + 1, d, isTight && (d === limit), false)) % MOD;\n                    }\n                }\n            }\n            memo.set(key, res);\n            return res;\n        };\n        return dfs(0, 0, true, true);\n    };\n\n    const isValid = s => {\n        const digs = toBaseB(s);\n        for (let i = 0; i + 1 < digs.length; i++) {\n            if (digs[i] > digs[i + 1]) return false;\n        }\n        return true;\n    };\n\n    const cntR = countValid(toBaseB(r));\n    const cntL = countValid(toBaseB(l));\n    const ans = (cntR - cntL + (isValid(l) ? 1 : 0)) % MOD;\n    return (ans + MOD) % MOD;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

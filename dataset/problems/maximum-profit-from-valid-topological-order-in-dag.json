@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-profit-from-valid-topological-order-in-dag",
+  "number": 3530,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-topo-kahn"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prerequisite Bitmask Validation",
+      "text": "For each node, compute a bitmask representing all predecessor nodes that must precede it in any valid topological order."
+    },
+    {
+      "level": 2,
+      "title": "Subset Construction",
+      "text": "Track the maximum profit for each subset of scheduled nodes using a table indexed by subset masks."
+    },
+    {
+      "level": 3,
+      "title": "Position Weighted Transitions",
+      "text": "The next placed node occupies position equal to the current subset size plus one, scaling its score accordingly."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def maxProfit(self, n: int, edges: list[list[int]], score: list[int]) -> int:\n        need = [0] * n\n        for u, v in edges:\n            need[v] |= (1 << u)\n\n        max_mask = 1 << n\n        dp = [-1] * max_mask\n        dp[0] = 0\n\n        for mask in range(max_mask):\n            if dp[mask] == -1:\n                continue\n            pos = bin(mask).count('1') + 1\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    if (mask & need[i]) == need[i]:\n                        new_mask = mask | (1 << i)\n                        val = dp[mask] + score[i] * pos\n                        if val > dp[new_mask]:\n                            dp[new_mask] = val\n        return dp[max_mask - 1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(2^N * N)",
+    "space": "O(2^N)",
+    "variables": [
+      "N: number of vertices in the DAG"
+    ],
+    "notes": "Bitmask dynamic programming iterates over 2^N states with N transitions per state.",
+    "whyNaiveFails": "Examining all N! permutations takes factorial time.",
+    "spaceTimeTradeoff": "Exponential DP table bounds state space to 2^N entries.",
+    "interviewerExpectation": "Formulate DP over topological order bitmasks with predecessor validation."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxProfit(self, n: int, edges: list[list[int]], score: list[int]) -> int:\n        need = [0] * n\n        for u, v in edges:\n            need[v] |= (1 << u)\n\n        max_mask = 1 << n\n        dp = [-1] * max_mask\n        dp[0] = 0\n\n        for mask in range(max_mask):\n            if dp[mask] == -1:\n                continue\n            pos = bin(mask).count('1') + 1\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    if (mask & need[i]) == need[i]:\n                        new_mask = mask | (1 << i)\n                        val = dp[mask] + score[i] * pos\n                        if val > dp[new_mask]:\n                            dp[new_mask] = val\n        return dp[max_mask - 1]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int maxProfit(int n, vector<vector<int>>& edges, vector<int>& score) {\n        vector<int> need(n, 0);\n        for (const auto& e : edges) {\n            need[e[1]] |= (1 << e[0]);\n        }\n        int maxMask = 1 << n;\n        vector<int> dp(maxMask, -1);\n        dp[0] = 0;\n\n        for (int mask = 0; mask < maxMask; ++mask) {\n            if (dp[mask] == -1) continue;\n            int pos = __builtin_popcount(mask) + 1;\n            for (int i = 0; i < n; ++i) {\n                if (!(mask & (1 << i))) {\n                    if ((mask & need[i]) == need[i]) {\n                        int newMask = mask | (1 << i);\n                        dp[newMask] = max(dp[newMask], dp[mask] + score[i] * pos);\n                    }\n                }\n            }\n        }\n        return dp[maxMask - 1];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxProfit(int n, int[][] edges, int[] score) {\n        int[] need = new int[n];\n        for (int[] e : edges) {\n            need[e[1]] |= (1 << e[0]);\n        }\n        int maxMask = 1 << n;\n        int[] dp = new int[maxMask];\n        Arrays.fill(dp, -1);\n        dp[0] = 0;\n\n        for (int mask = 0; mask < maxMask; mask++) {\n            if (dp[mask] == -1) continue;\n            int pos = Integer.bitCount(mask) + 1;\n            for (int i = 0; i < n; i++) {\n                if ((mask & (1 << i)) == 0) {\n                    if ((mask & need[i]) == need[i]) {\n                        int newMask = mask | (1 << i);\n                        dp[newMask] = Math.max(dp[newMask], dp[mask] + score[i] * pos);\n                    }\n                }\n            }\n        }\n        return dp[maxMask - 1];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxProfit = function(n, edges, score) {\n    const need = new Array(n).fill(0);\n    for (const [u, v] of edges) {\n        need[v] |= (1 << u);\n    }\n    const maxMask = 1 << n;\n    const dp = new Array(maxMask).fill(-1);\n    dp[0] = 0;\n\n    const popcount = x => {\n        let c = 0;\n        while (x > 0) { c += (x & 1); x >>= 1; }\n        return c;\n    };\n\n    for (let mask = 0; mask < maxMask; mask++) {\n        if (dp[mask] === -1) continue;\n        const pos = popcount(mask) + 1;\n        for (let i = 0; i < n; i++) {\n            if (!(mask & (1 << i))) {\n                if ((mask & need[i]) === need[i]) {\n                    const newMask = mask | (1 << i);\n                    const val = dp[mask] + score[i] * pos;\n                    if (val > dp[newMask]) dp[newMask] = val;\n                }\n            }\n        }\n    }\n    return dp[maxMask - 1];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

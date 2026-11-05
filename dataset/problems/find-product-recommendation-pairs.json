@@ -1,0 +1,71 @@
+{
+  "slug": "find-product-recommendation-pairs",
+  "number": 3521,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Co-purchased Item Pairing",
+      "text": "Link purchase entries sharing the same buyer to detect products bought together."
+    },
+    {
+      "level": 2,
+      "title": "Strict Index Ordering",
+      "text": "Enforce a strict inequality between product identifiers to prevent duplicate mirrored pairs."
+    },
+    {
+      "level": 3,
+      "title": "Aggregation and Threshold Filtering",
+      "text": "Group by both products and their respective categories, retaining pairs with at least three distinct buyers."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    P1.product_id AS product1_id, \n    P2.product_id AS product2_id, \n    PI1.category AS product1_category, \n    PI2.category AS product2_category, \n    COUNT(DISTINCT P1.user_id) AS customer_count \nFROM ProductPurchases AS P1 \nINNER JOIN ProductPurchases AS P2 \n    ON P1.user_id = P2.user_id AND P1.product_id < P2.product_id \nLEFT JOIN ProductInfo AS PI1 \n    ON P1.product_id = PI1.product_id \nLEFT JOIN ProductInfo AS PI2 \n    ON P2.product_id = PI2.product_id \nGROUP BY P1.product_id, P2.product_id, PI1.category, PI2.category \nHAVING COUNT(DISTINCT P1.user_id) >= 3 \nORDER BY customer_count DESC, product1_id ASC, product2_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2)",
+    "space": "O(N)",
+    "variables": [
+      "N: number of purchase records in ProductPurchases"
+    ],
+    "notes": "Self-joining purchase records on identical customer identifiers generates candidate pairs.",
+    "whyNaiveFails": "Without ordering constraints on product pairs, redundant duplicates and self-pairs pollute the result.",
+    "spaceTimeTradeoff": "Grouping by product pairs collapses individual transactions into aggregated counts.",
+    "interviewerExpectation": "Use inner self-joins with inequality filters and aggregate having conditions."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    P1.product_id AS product1_id, \n    P2.product_id AS product2_id, \n    PI1.category AS product1_category, \n    PI2.category AS product2_category, \n    COUNT(DISTINCT P1.user_id) AS customer_count \nFROM ProductPurchases AS P1 \nINNER JOIN ProductPurchases AS P2 \n    ON P1.user_id = P2.user_id AND P1.product_id < P2.product_id \nLEFT JOIN ProductInfo AS PI1 \n    ON P1.product_id = PI1.product_id \nLEFT JOIN ProductInfo AS PI2 \n    ON P2.product_id = PI2.product_id \nGROUP BY P1.product_id, P2.product_id, PI1.category, PI2.category \nHAVING COUNT(DISTINCT P1.user_id) >= 3 \nORDER BY customer_count DESC, product1_id ASC, product2_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    P1.product_id AS product1_id, \n    P2.product_id AS product2_id, \n    PI1.category AS product1_category, \n    PI2.category AS product2_category, \n    COUNT(DISTINCT P1.user_id) AS customer_count \nFROM ProductPurchases AS P1 \nINNER JOIN ProductPurchases AS P2 \n    ON P1.user_id = P2.user_id AND P1.product_id < P2.product_id \nLEFT JOIN ProductInfo AS PI1 \n    ON P1.product_id = PI1.product_id \nLEFT JOIN ProductInfo AS PI2 \n    ON P2.product_id = PI2.product_id \nGROUP BY P1.product_id, P2.product_id, PI1.category, PI2.category \nHAVING COUNT(DISTINCT P1.user_id) >= 3 \nORDER BY customer_count DESC, product1_id ASC, product2_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_product_recommendation_pairs(product_purchases: pd.DataFrame, product_info: pd.DataFrame) -> pd.DataFrame:\n    df = product_purchases.merge(product_purchases, on='user_id', suffixes=('_1', '_2'))\n    df = df[df['product_id_1'] < df['product_id_2']]\n    if df.empty:\n        return pd.DataFrame(columns=['product1_id', 'product2_id', 'product1_category', 'product2_category', 'customer_count'])\n    grouped = df.groupby(['product_id_1', 'product_id_2'])['user_id'].nunique().reset_index()\n    grouped = grouped[grouped['user_id'] >= 3].rename(columns={'user_id': 'customer_count'})\n    if grouped.empty:\n        return pd.DataFrame(columns=['product1_id', 'product2_id', 'product1_category', 'product2_category', 'customer_count'])\n    cat_map = dict(zip(product_info['product_id'], product_info['category']))\n    grouped['product1_category'] = grouped['product_id_1'].map(cat_map)\n    grouped['product2_category'] = grouped['product_id_2'].map(cat_map)\n    grouped = grouped.rename(columns={'product_id_1': 'product1_id', 'product_id_2': 'product2_id'})\n    res = grouped[['product1_id', 'product2_id', 'product1_category', 'product2_category', 'customer_count']]\n    return res.sort_values(by=['customer_count', 'product1_id', 'product2_id'], ascending=[False, True, True]).reset_index(drop=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

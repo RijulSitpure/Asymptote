@@ -1,0 +1,79 @@
+{
+  "slug": "implement-router",
+  "number": 3508,
+  "category": "Algorithms",
+  "patterns": [
+    "design-data-structures"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Dual Container Architecture",
+      "text": "Maintain an ordered collection for arrival ordering and a lookup collection to verify uniqueness of packet contents."
+    },
+    {
+      "level": 2,
+      "title": "FIFO Eviction Protocol",
+      "text": "When capacity is reached upon receiving a new unique item, discard the oldest unserved item from memory and remove it from lookup records."
+    },
+    {
+      "level": 3,
+      "title": "Per-Destination Sorted Timestamps",
+      "text": "Group timestamps by destination and query interval counts using binary bounds."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque, defaultdict\nimport bisect\n\nclass Router:\n    def __init__(self, memoryLimit: int):\n        self.limit = memoryLimit\n        self.q = deque()\n        self.seen = set()\n        self.dest_times = defaultdict(list)\n\n    def addPacket(self, source: int, destination: int, timestamp: int) -> bool:\n        pkt = (source, destination, timestamp)\n        if pkt in self.seen:\n            return False\n        if len(self.q) >= self.limit:\n            old_src, old_dst, old_ts = self.q.popleft()\n            self.seen.remove((old_src, old_dst, old_ts))\n            lst = self.dest_times[old_dst]\n            idx = bisect.bisect_left(lst, old_ts)\n            if idx < len(lst) and lst[idx] == old_ts:\n                lst.pop(idx)\n        self.q.append(pkt)\n        self.seen.add(pkt)\n        bisect.insort(self.dest_times[destination], timestamp)\n        return True\n\n    def forwardPacket(self) -> list[int]:\n        if not self.q:\n            return []\n        src, dst, ts = self.q.popleft()\n        self.seen.remove((src, dst, ts))\n        lst = self.dest_times[dst]\n        idx = bisect.bisect_left(lst, ts)\n        if idx < len(lst) and lst[idx] == ts:\n            lst.pop(idx)\n        return [src, dst, ts]\n\n    def getCount(self, destination: int, startTime: int, endTime: int) -> int:\n        lst = self.dest_times[destination]\n        if not lst:\n            return 0\n        l = bisect.bisect_left(lst, startTime)\n        r = bisect.bisect_right(lst, endTime)\n        return r - l\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(log(N)) per query, O(N) worst-case eviction list adjustment",
+    "space": "O(limit)",
+    "variables": [
+      "limit: buffer memory capacity",
+      "N: active packets in destination list"
+    ],
+    "notes": "Arrival queue and set provide constant time operations while per-destination ordered lists support logarithmic range counts.",
+    "whyNaiveFails": "Scanning all packets linearly during getCount takes linear time per query.",
+    "spaceTimeTradeoff": "Grouping timestamps per destination requires duplicated memory for fast counting.",
+    "interviewerExpectation": "Handle edge cases including duplicate rejection and accurate synchronization across indices."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import deque, defaultdict\nimport bisect\n\nclass Router:\n    def __init__(self, memoryLimit: int):\n        self.limit = memoryLimit\n        self.q = deque()\n        self.seen = set()\n        self.dest_times = defaultdict(list)\n\n    def addPacket(self, source: int, destination: int, timestamp: int) -> bool:\n        pkt = (source, destination, timestamp)\n        if pkt in self.seen:\n            return False\n        if len(self.q) >= self.limit:\n            old_src, old_dst, old_ts = self.q.popleft()\n            self.seen.remove((old_src, old_dst, old_ts))\n            lst = self.dest_times[old_dst]\n            idx = bisect.bisect_left(lst, old_ts)\n            if idx < len(lst) and lst[idx] == old_ts:\n                lst.pop(idx)\n        self.q.append(pkt)\n        self.seen.add(pkt)\n        bisect.insort(self.dest_times[destination], timestamp)\n        return True\n\n    def forwardPacket(self) -> list[int]:\n        if not self.q:\n            return []\n        src, dst, ts = self.q.popleft()\n        self.seen.remove((src, dst, ts))\n        lst = self.dest_times[dst]\n        idx = bisect.bisect_left(lst, ts)\n        if idx < len(lst) and lst[idx] == ts:\n            lst.pop(idx)\n        return [src, dst, ts]\n\n    def getCount(self, destination: int, startTime: int, endTime: int) -> int:\n        lst = self.dest_times[destination]\n        if not lst:\n            return 0\n        l = bisect.bisect_left(lst, startTime)\n        r = bisect.bisect_right(lst, endTime)\n        return r - l",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <deque>\n#include <set>\n#include <unordered_map>\n#include <algorithm>\n\nusing namespace std;\n\nclass Router {\n    int limit;\n    deque<vector<int>> q;\n    set<vector<int>> seen;\n    unordered_map<int, vector<int>> destTimes;\n\npublic:\n    Router(int memoryLimit) : limit(memoryLimit) {}\n\n    bool addPacket(int source, int destination, int timestamp) {\n        vector<int> pkt = {source, destination, timestamp};\n        if (seen.count(pkt)) return false;\n\n        if ((int)q.size() >= limit) {\n            auto old = q.front(); q.pop_front();\n            seen.erase(old);\n            auto& vec = destTimes[old[1]];\n            auto it = lower_bound(vec.begin(), vec.end(), old[2]);\n            if (it != vec.end() && *it == old[2]) vec.erase(it);\n        }\n        q.push_back(pkt);\n        seen.insert(pkt);\n        auto& vec = destTimes[destination];\n        vec.insert(upper_bound(vec.begin(), vec.end(), timestamp), timestamp);\n        return true;\n    }\n\n    vector<int> forwardPacket() {\n        if (q.empty()) return {};\n        auto pkt = q.front(); q.pop_front();\n        seen.erase(pkt);\n        auto& vec = destTimes[pkt[1]];\n        auto it = lower_bound(vec.begin(), vec.end(), pkt[2]);\n        if (it != vec.end() && *it == pkt[2]) vec.erase(it);\n        return pkt;\n    }\n\n    int getCount(int destination, int startTime, int endTime) {\n        if (!destTimes.count(destination)) return 0;\n        const auto& vec = destTimes[destination];\n        auto l = lower_bound(vec.begin(), vec.end(), startTime);\n        auto r = upper_bound(vec.begin(), vec.end(), endTime);\n        return distance(l, r);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Router {\n    private int limit;\n    private ArrayDeque<int[]> q;\n    private Set<String> seen;\n    private Map<Integer, List<Integer>> destTimes;\n\n    public Router(int memoryLimit) {\n        this.limit = memoryLimit;\n        this.q = new ArrayDeque<>();\n        this.seen = new HashSet<>();\n        this.destTimes = new HashMap<>();\n    }\n\n    public boolean addPacket(int source, int destination, int timestamp) {\n        String key = source + \"#\" + destination + \"#\" + timestamp;\n        if (seen.contains(key)) return false;\n\n        if (q.size() >= limit) {\n            int[] old = q.pollFirst();\n            seen.remove(old[0] + \"#\" + old[1] + \"#\" + old[2]);\n            List<Integer> list = destTimes.get(old[1]);\n            if (list != null) {\n                int idx = Collections.binarySearch(list, old[2]);\n                if (idx >= 0) list.remove(idx);\n            }\n        }\n\n        q.addLast(new int[]{source, destination, timestamp});\n        seen.add(key);\n        destTimes.computeIfAbsent(destination, k -> new ArrayList<>());\n        List<Integer> list = destTimes.get(destination);\n        int idx = Collections.binarySearch(list, timestamp);\n        if (idx < 0) idx = -idx - 1;\n        list.add(idx, timestamp);\n        return true;\n    }\n\n    public int[] forwardPacket() {\n        if (q.isEmpty()) return new int[0];\n        int[] pkt = q.pollFirst();\n        seen.remove(pkt[0] + \"#\" + pkt[1] + \"#\" + pkt[2]);\n        List<Integer> list = destTimes.get(pkt[1]);\n        if (list != null) {\n            int idx = Collections.binarySearch(list, pkt[2]);\n            if (idx >= 0) list.remove(idx);\n        }\n        return pkt;\n    }\n\n    public int getCount(int destination, int startTime, int endTime) {\n        List<Integer> list = destTimes.get(destination);\n        if (list == null || list.isEmpty()) return 0;\n        int l = lowerBound(list, startTime);\n        int r = upperBound(list, endTime);\n        return r - l;\n    }\n\n    private int lowerBound(List<Integer> list, int val) {\n        int lo = 0, hi = list.size();\n        while (lo < hi) {\n            int mid = (lo + hi) >>> 1;\n            if (list.get(mid) >= val) hi = mid;\n            else lo = mid + 1;\n        }\n        return lo;\n    }\n\n    private int upperBound(List<Integer> list, int val) {\n        int lo = 0, hi = list.size();\n        while (lo < hi) {\n            int mid = (lo + hi) >>> 1;\n            if (list.get(mid) > val) hi = mid;\n            else lo = mid + 1;\n        }\n        return lo;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var Router = function(memoryLimit) {\n    this.limit = memoryLimit;\n    this.q = [];\n    this.seen = new Set();\n    this.destTimes = new Map();\n};\n\nRouter.prototype.addPacket = function(source, destination, timestamp) {\n    const key = `${source},${destination},${timestamp}`;\n    if (this.seen.has(key)) return false;\n\n    if (this.q.length >= this.limit) {\n        const old = this.q.shift();\n        this.seen.delete(`${old[0]},${old[1]},${old[2]}`);\n        const list = this.destTimes.get(old[1]);\n        if (list) {\n            const idx = list.indexOf(old[2]);\n            if (idx !== -1) list.splice(idx, 1);\n        }\n    }\n\n    this.q.push([source, destination, timestamp]);\n    this.seen.add(key);\n    if (!this.destTimes.has(destination)) this.destTimes.set(destination, []);\n    const list = this.destTimes.get(destination);\n    let idx = 0;\n    while (idx < list.length && list[idx] <= timestamp) idx++;\n    list.splice(idx, 0, timestamp);\n    return true;\n};\n\nRouter.prototype.forwardPacket = function() {\n    if (this.q.length === 0) return [];\n    const pkt = this.q.shift();\n    this.seen.delete(`${pkt[0]},${pkt[1]},${pkt[2]}`);\n    const list = this.destTimes.get(pkt[1]);\n    if (list) {\n        const idx = list.indexOf(pkt[2]);\n        if (idx !== -1) list.splice(idx, 1);\n    }\n    return pkt;\n};\n\nRouter.prototype.getCount = function(destination, startTime, endTime) {\n    const list = this.destTimes.get(destination);\n    if (!list) return 0;\n    let count = 0;\n    for (const t of list) {\n        if (t >= startTime && t <= endTime) count++;\n    }\n    return count;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

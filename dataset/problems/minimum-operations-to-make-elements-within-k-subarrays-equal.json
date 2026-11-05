@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-operations-to-make-elements-within-k-subarrays-equal",
+  "number": 3505,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subarray Target Element",
+      "text": "To make all elements in a contiguous block of length x equal with minimal adjustments, the optimal target value is the middle element of the sorted block."
+    },
+    {
+      "level": 2,
+      "title": "Sliding Window Cost Evaluation",
+      "text": "Calculate the transformation cost for every window of size x across the array."
+    },
+    {
+      "level": 3,
+      "title": "Non-Overlapping Interval Selection",
+      "text": "Use a table where each state represents choosing a certain number of non-overlapping windows up to the current position."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def minOperations(self, nums: list[int], x: int, k: int) -> int:\n        n = len(nums)\n        costs = []\n        for i in range(n - x + 1):\n            sub = sorted(nums[i:i + x])\n            med = sub[x // 2]\n            costs.append(sum(abs(v - med) for v in sub))\n\n        inf = float('inf')\n        dp = [[inf] * (k + 1) for _ in range(n + 1)]\n        dp[0][0] = 0\n        for i in range(1, n + 1):\n            for j in range(k + 1):\n                dp[i][j] = dp[i - 1][j]\n                if j > 0 and i >= x and dp[i - x][j - 1] != inf:\n                    dp[i][j] = min(dp[i][j], dp[i - x][j - 1] + costs[i - x])\n        return int(dp[n][k])\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * X * log(X) + N * K)",
+    "space": "O(N * K)",
+    "variables": [
+      "N: length of array nums",
+      "X: length of each target subarray",
+      "K: number of subarrays to select"
+    ],
+    "notes": "Median minimization determines optimal local costs, and tabular transitions select disjoint intervals.",
+    "whyNaiveFails": "Exhaustive search over all subsets of disjoint intervals requires exponential combinations.",
+    "spaceTimeTradeoff": "Precomputing window costs allows linear recurrence per state.",
+    "interviewerExpectation": "Recognize the median property for absolute deviations and formulate the recurrence."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minOperations(self, nums: list[int], x: int, k: int) -> int:\n        n = len(nums)\n        costs = []\n        for i in range(n - x + 1):\n            sub = sorted(nums[i:i + x])\n            med = sub[x // 2]\n            costs.append(sum(abs(v - med) for v in sub))\n\n        inf = float('inf')\n        dp = [[inf] * (k + 1) for _ in range(n + 1)]\n        dp[0][0] = 0\n        for i in range(1, n + 1):\n            for j in range(k + 1):\n                dp[i][j] = dp[i - 1][j]\n                if j > 0 and i >= x and dp[i - x][j - 1] != inf:\n                    dp[i][j] = min(dp[i][j], dp[i - x][j - 1] + costs[i - x])\n        return int(dp[n][k])",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n#include <cmath>\n#include <climits>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    long long minOperations(vector<int>& nums, int x, int k) {\n        int n = nums.size();\n        vector<long long> costs;\n        for (int i = 0; i <= n - x; ++i) {\n            vector<int> sub(nums.begin() + i, nums.begin() + i + x);\n            sort(sub.begin(), sub.end());\n            int med = sub[x / 2];\n            long long c = 0;\n            for (int v : sub) c += abs(v - med);\n            costs.push_back(c);\n        }\n\n        long long inf = 1e18;\n        vector<vector<long long>> dp(n + 1, vector<long long>(k + 1, inf));\n        dp[0][0] = 0;\n        for (int i = 1; i <= n; ++i) {\n            for (int j = 0; j <= k; ++j) {\n                dp[i][j] = dp[i - 1][j];\n                if (j > 0 && i >= x && dp[i - x][j - 1] != inf) {\n                    dp[i][j] = min(dp[i][j], dp[i - x][j - 1] + costs[i - x]);\n                }\n            }\n        }\n        return dp[n][k];\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long minOperations(int[] nums, int x, int k) {\n        int n = nums.length;\n        long[] costs = new long[n - x + 1];\n        for (int i = 0; i <= n - x; i++) {\n            int[] sub = Arrays.copyOfRange(nums, i, i + x);\n            Arrays.sort(sub);\n            int med = sub[x / 2];\n            long c = 0;\n            for (int v : sub) c += Math.abs(v - med);\n            costs[i] = c;\n        }\n\n        long inf = (long) 1e18;\n        long[][] dp = new long[n + 1][k + 1];\n        for (int i = 0; i <= n; i++) {\n            Arrays.fill(dp[i], inf);\n        }\n        dp[0][0] = 0;\n        for (int i = 1; i <= n; i++) {\n            for (int j = 0; j <= k; j++) {\n                dp[i][j] = dp[i - 1][j];\n                if (j > 0 && i >= x && dp[i - x][j - 1] != inf) {\n                    dp[i][j] = Math.min(dp[i][j], dp[i - x][j - 1] + costs[i - x]);\n                }\n            }\n        }\n        return dp[n][k];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minOperations = function(nums, x, k) {\n    const n = nums.length;\n    const costs = [];\n    for (let i = 0; i <= n - x; i++) {\n        const sub = nums.slice(i, i + x).sort((a, b) => a - b);\n        const med = sub[Math.floor(x / 2)];\n        let c = 0;\n        for (const v of sub) c += Math.abs(v - med);\n        costs.push(c);\n    }\n\n    const inf = Infinity;\n    const dp = Array.from({ length: n + 1 }, () => new Array(k + 1).fill(inf));\n    dp[0][0] = 0;\n    for (let i = 1; i <= n; i++) {\n        for (let j = 0; j <= k; j++) {\n            dp[i][j] = dp[i - 1][j];\n            if (j > 0 && i >= x && dp[i - x][j - 1] !== inf) {\n                dp[i][j] = Math.min(dp[i][j], dp[i - x][j - 1] + costs[i - x]);\n            }\n        }\n    }\n    return dp[n][k];\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

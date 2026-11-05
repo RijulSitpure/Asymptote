@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-pair-removal-to-sort-array-ii",
+  "number": 3510,
+  "category": "Algorithms",
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Doubly Linked List Structure",
+      "text": "Represent elements as adjacent linked nodes so merging two items takes constant time."
+    },
+    {
+      "level": 2,
+      "title": "Priority Queue with Invalidation",
+      "text": "Keep candidate adjacent sums in a min-oriented queue alongside index references, skipping stale entries when popped."
+    },
+    {
+      "level": 3,
+      "title": "Inversion Counter Delta",
+      "text": "Track total decreasing adjacent steps and stop immediately when the inversion count drops to zero."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\nclass Node:\n    def __init__(self, val: int, idx: int):\n        self.val = val\n        self.idx = idx\n        self.prev = None\n        self.next = None\n\nclass Solution:\n    def minimumPairRemoval(self, nums: list[int]) -> int:\n        n = len(nums)\n        if n < 2:\n            return 0\n        nodes = [Node(nums[i], i) for i in range(n)]\n        for i in range(n):\n            if i > 0: nodes[i].prev = nodes[i - 1]\n            if i < n - 1: nodes[i].next = nodes[i + 1]\n\n        inversions = 0\n        for i in range(n - 1):\n            if nodes[i].val > nodes[i + 1].val:\n                inversions += 1\n\n        heap = []\n        active = [True] * n\n        for i in range(n - 1):\n            heapq.heappush(heap, (nodes[i].val + nodes[i + 1].val, i))\n\n        ops = 0\n        while inversions > 0:\n            found = False\n            while heap:\n                s, i = heapq.heappop(heap)\n                if not active[i]: continue\n                nxt = nodes[i].next\n                if nxt is None or not active[nxt.idx]: continue\n                if nodes[i].val + nxt.val == s:\n                    left, right = nodes[i], nxt\n                    found = True\n                    break\n            if not found: break\n\n            ops += 1\n            if left.prev and left.prev.val > left.val: inversions -= 1\n            if left.val > right.val: inversions -= 1\n            if right.next and right.val > right.next.val: inversions -= 1\n\n            left.val += right.val\n            active[right.idx] = False\n            left.next = right.next\n            if right.next: right.next.prev = left\n\n            if left.prev and left.prev.val > left.val: inversions += 1\n            if left.next and left.val > left.next.val: inversions += 1\n\n            if left.prev:\n                heapq.heappush(heap, (left.prev.val + left.val, left.prev.idx))\n            if left.next:\n                heapq.heappush(heap, (left.val + left.next.val, left.idx))\n        return ops\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * log(N))",
+    "space": "O(N)",
+    "variables": [
+      "N: length of array nums"
+    ],
+    "notes": "Doubly linked list updates neighbor pointers in O(1) while the heap manages minimum sum pairs in logarithmic time.",
+    "whyNaiveFails": "Simulating array shifts on large arrays takes quadratic time.",
+    "spaceTimeTradeoff": "Active flags avoid explicit heap deletion while conserving memory.",
+    "interviewerExpectation": "Combine a doubly linked list with a heap to achieve efficient localized updates."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\n\nclass Node:\n    def __init__(self, val: int, idx: int):\n        self.val = val\n        self.idx = idx\n        self.prev = None\n        self.next = None\n\nclass Solution:\n    def minimumPairRemoval(self, nums: list[int]) -> int:\n        n = len(nums)\n        if n < 2:\n            return 0\n        nodes = [Node(nums[i], i) for i in range(n)]\n        for i in range(n):\n            if i > 0: nodes[i].prev = nodes[i - 1]\n            if i < n - 1: nodes[i].next = nodes[i + 1]\n\n        inversions = 0\n        for i in range(n - 1):\n            if nodes[i].val > nodes[i + 1].val:\n                inversions += 1\n\n        heap = []\n        active = [True] * n\n        for i in range(n - 1):\n            heapq.heappush(heap, (nodes[i].val + nodes[i + 1].val, i))\n\n        ops = 0\n        while inversions > 0:\n            found = False\n            while heap:\n                s, i = heapq.heappop(heap)\n                if not active[i]: continue\n                nxt = nodes[i].next\n                if nxt is None or not active[nxt.idx]: continue\n                if nodes[i].val + nxt.val == s:\n                    left, right = nodes[i], nxt\n                    found = True\n                    break\n            if not found: break\n\n            ops += 1\n            if left.prev and left.prev.val > left.val: inversions -= 1\n            if left.val > right.val: inversions -= 1\n            if right.next and right.val > right.next.val: inversions -= 1\n\n            left.val += right.val\n            active[right.idx] = False\n            left.next = right.next\n            if right.next: right.next.prev = left\n\n            if left.prev and left.prev.val > left.val: inversions += 1\n            if left.next and left.val > left.next.val: inversions += 1\n\n            if left.prev:\n                heapq.heappush(heap, (left.prev.val + left.val, left.prev.idx))\n            if left.next:\n                heapq.heappush(heap, (left.val + left.next.val, left.idx))\n        return ops",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n\nusing namespace std;\n\nstruct Node {\n    long long val;\n    int idx;\n    int prev;\n    int next;\n};\n\nclass Solution {\npublic:\n    int minimumPairRemoval(vector<int>& nums) {\n        int n = nums.size();\n        if (n < 2) return 0;\n\n        vector<Node> nodes(n);\n        for (int i = 0; i < n; ++i) {\n            nodes[i] = {(long long)nums[i], i, i - 1, i + 1 < n ? i + 1 : -1};\n        }\n\n        int inversions = 0;\n        for (int i = 0; i < n - 1; ++i) {\n            if (nodes[i].val > nodes[i + 1].val) inversions++;\n        }\n\n        using P = pair<long long, int>;\n        priority_queue<P, vector<P>, greater<P>> pq;\n        vector<bool> active(n, true);\n        for (int i = 0; i < n - 1; ++i) {\n            pq.push({nodes[i].val + nodes[i + 1].val, i});\n        }\n\n        int ops = 0;\n        while (inversions > 0) {\n            int leftIdx = -1, rightIdx = -1;\n            while (!pq.empty()) {\n                auto [s, i] = pq.top(); pq.pop();\n                if (!active[i]) continue;\n                int nxt = nodes[i].next;\n                if (nxt == -1 || !active[nxt]) continue;\n                if (nodes[i].val + nodes[nxt].val == s) {\n                    leftIdx = i;\n                    rightIdx = nxt;\n                    break;\n                }\n            }\n            if (leftIdx == -1) break;\n\n            ops++;\n            int p = nodes[leftIdx].prev;\n            int nxt = nodes[rightIdx].next;\n            if (p != -1 && nodes[p].val > nodes[leftIdx].val) inversions--;\n            if (nodes[leftIdx].val > nodes[rightIdx].val) inversions--;\n            if (nxt != -1 && nodes[rightIdx].val > nodes[nxt].val) inversions--;\n\n            nodes[leftIdx].val += nodes[rightIdx].val;\n            active[rightIdx] = false;\n            nodes[leftIdx].next = nxt;\n            if (nxt != -1) nodes[nxt].prev = leftIdx;\n\n            if (p != -1 && nodes[p].val > nodes[leftIdx].val) inversions++;\n            if (nxt != -1 && nodes[leftIdx].val > nodes[nxt].val) inversions++;\n\n            if (p != -1) pq.push({nodes[p].val + nodes[leftIdx].val, p});\n            if (nxt != -1) pq.push({nodes[leftIdx].val + nodes[nxt].val, leftIdx});\n        }\n        return ops;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class Node {\n        long val;\n        int idx, prev, next;\n        Node(long val, int idx, int prev, int next) {\n            this.val = val; this.idx = idx; this.prev = prev; this.next = next;\n        }\n    }\n\n    public int minimumPairRemoval(int[] nums) {\n        int n = nums.length;\n        if (n < 2) return 0;\n\n        Node[] nodes = new Node[n];\n        for (int i = 0; i < n; i++) {\n            nodes[i] = new Node(nums[i], i, i - 1, i + 1 < n ? i + 1 : -1);\n        }\n\n        int inversions = 0;\n        for (int i = 0; i < n - 1; i++) {\n            if (nodes[i].val > nodes[i + 1].val) inversions++;\n        }\n\n        PriorityQueue<long[]> pq = new PriorityQueue<>(Comparator.comparingLong(a -> a[0]));\n        boolean[] active = new boolean[n];\n        Arrays.fill(active, true);\n        for (int i = 0; i < n - 1; i++) {\n            pq.offer(new long[]{nodes[i].val + nodes[i + 1].val, i});\n        }\n\n        int ops = 0;\n        while (inversions > 0) {\n            int leftIdx = -1, rightIdx = -1;\n            while (!pq.isEmpty()) {\n                long[] top = pq.poll();\n                int i = (int) top[1];\n                if (!active[i]) continue;\n                int nxt = nodes[i].next;\n                if (nxt == -1 || !active[nxt]) continue;\n                if (nodes[i].val + nodes[nxt].val == top[0]) {\n                    leftIdx = i; rightIdx = nxt; break;\n                }\n            }\n            if (leftIdx == -1) break;\n\n            ops++;\n            int p = nodes[leftIdx].prev;\n            int nxt = nodes[rightIdx].next;\n            if (p != -1 && nodes[p].val > nodes[leftIdx].val) inversions--;\n            if (nodes[leftIdx].val > nodes[rightIdx].val) inversions--;\n            if (nxt != -1 && nodes[rightIdx].val > nodes[nxt].val) inversions--;\n\n            nodes[leftIdx].val += nodes[rightIdx].val;\n            active[rightIdx] = false;\n            nodes[leftIdx].next = nxt;\n            if (nxt != -1) nodes[nxt].prev = leftIdx;\n\n            if (p != -1 && nodes[p].val > nodes[leftIdx].val) inversions++;\n            if (nxt != -1 && nodes[leftIdx].val > nodes[nxt].val) inversions++;\n\n            if (p != -1) pq.offer(new long[]{nodes[p].val + nodes[leftIdx].val, p});\n            if (nxt != -1) pq.offer(new long[]{nodes[leftIdx].val + nodes[nxt].val, leftIdx});\n        }\n        return ops;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minimumPairRemoval = function(nums) {\n    const n = nums.length;\n    if (n < 2) return 0;\n\n    const nodes = [];\n    for (let i = 0; i < n; i++) {\n        nodes.push({ val: nums[i], idx: i, prev: i - 1, next: i + 1 < n ? i + 1 : -1 });\n    }\n\n    let inversions = 0;\n    for (let i = 0; i < n - 1; i++) {\n        if (nodes[i].val > nodes[i + 1].val) inversions++;\n    }\n\n    const active = new Array(n).fill(true);\n    let ops = 0;\n\n    while (inversions > 0) {\n        let minSum = Infinity;\n        let leftIdx = -1;\n        for (let i = 0; i < n; i++) {\n            if (!active[i] || nodes[i].next === -1) continue;\n            const s = nodes[i].val + nodes[nodes[i].next].val;\n            if (s < minSum) {\n                minSum = s;\n                leftIdx = i;\n            }\n        }\n        if (leftIdx === -1) break;\n\n        const rightIdx = nodes[leftIdx].next;\n        ops++;\n        const p = nodes[leftIdx].prev;\n        const nxt = nodes[rightIdx].next;\n        if (p !== -1 && nodes[p].val > nodes[leftIdx].val) inversions--;\n        if (nodes[leftIdx].val > nodes[rightIdx].val) inversions--;\n        if (nxt !== -1 && nodes[rightIdx].val > nodes[nxt].val) inversions--;\n\n        nodes[leftIdx].val += nodes[rightIdx].val;\n        active[rightIdx] = false;\n        nodes[leftIdx].next = nxt;\n        if (nxt !== -1) nodes[nxt].prev = leftIdx;\n\n        if (p !== -1 && nodes[p].val > nodes[leftIdx].val) inversions++;\n        if (nxt !== -1 && nodes[leftIdx].val > nodes[nxt].val) inversions++;\n    }\n    return ops;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "concatenated-divisibility",
+  "number": 3533,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Lexicographical Search Order",
+      "text": "Sort input values in ascending order initially so greedy selection yields the lexicographically smallest permutation."
+    },
+    {
+      "level": 2,
+      "title": "Decimal Length Modulo Arithmetic",
+      "text": "Appending a number x with length L to a running remainder rem produces (rem * 10^L + x) modulo k."
+    },
+    {
+      "level": 3,
+      "title": "Subset Memoization and Path Reconstruction",
+      "text": "Record reachable states of chosen subset masks and current remainders, then greedily reconstruct the first valid path."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def concatenatedDivisibility(self, nums: list[int], k: int) -> list[int]:\n        n = len(nums)\n        nums.sort()\n        len_nums = [len(str(x)) for x in nums]\n        pow10 = [pow(10, l, k) for l in len_nums]\n\n        memo = {}\n        def dfs(mask, rem):\n            if mask == (1 << n) - 1:\n                return rem == 0\n            state = (mask, rem)\n            if state in memo:\n                return memo[state]\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    n_rem = (rem * pow10[i] + nums[i]) % k\n                    if dfs(mask | (1 << i), n_rem):\n                        memo[state] = True\n                        return True\n            memo[state] = False\n            return False\n\n        if not dfs(0, 0):\n            return []\n\n        res = []\n        mask = 0\n        rem = 0\n        for _ in range(n):\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    n_rem = (rem * pow10[i] + nums[i]) % k\n                    if dfs(mask | (1 << i), n_rem):\n                        res.append(nums[i])\n                        mask |= (1 << i)\n                        rem = n_rem\n                        break\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(2^N * N * K)",
+    "space": "O(2^N * K)",
+    "variables": [
+      "N: length of array nums",
+      "K: divisor value"
+    ],
+    "notes": "Bitmask dynamic programming memoizes state tuples of visited elements and running remainder.",
+    "whyNaiveFails": "Direct permutation search tests N! combinations and times out.",
+    "spaceTimeTradeoff": "Memoization map prevents re-exploring identical subset remainders.",
+    "interviewerExpectation": "Combine bitmask DP with lexicographical path reconstruction."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def concatenatedDivisibility(self, nums: list[int], k: int) -> list[int]:\n        n = len(nums)\n        nums.sort()\n        len_nums = [len(str(x)) for x in nums]\n        pow10 = [pow(10, l, k) for l in len_nums]\n\n        memo = {}\n        def dfs(mask, rem):\n            if mask == (1 << n) - 1:\n                return rem == 0\n            state = (mask, rem)\n            if state in memo:\n                return memo[state]\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    n_rem = (rem * pow10[i] + nums[i]) % k\n                    if dfs(mask | (1 << i), n_rem):\n                        memo[state] = True\n                        return True\n            memo[state] = False\n            return False\n\n        if not dfs(0, 0):\n            return []\n\n        res = []\n        mask = 0\n        rem = 0\n        for _ in range(n):\n            for i in range(n):\n                if not (mask & (1 << i)):\n                    n_rem = (rem * pow10[i] + nums[i]) % k\n                    if dfs(mask | (1 << i), n_rem):\n                        res.append(nums[i])\n                        mask |= (1 << i)\n                        rem = n_rem\n                        break\n        return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <string>\n#include <algorithm>\n#include <map>\n\nusing namespace std;\n\nclass Solution {\n    int modPow(int base, int exp, int mod) {\n        long long res = 1, b = base;\n        while (exp > 0) {\n            if (exp & 1) res = (res * b) % mod;\n            b = (b * b) % mod;\n            exp >>= 1;\n        }\n        return res;\n    }\npublic:\n    vector<int> concatenatedDivisibility(vector<int>& nums, int k) {\n        int n = nums.size();\n        sort(nums.begin(), nums.end());\n        vector<int> pow10(n);\n        for (int i = 0; i < n; ++i) {\n            pow10[i] = modPow(10, to_string(nums[i]).length(), k);\n        }\n\n        map<pair<int, int>, bool> memo;\n        auto dfs = [&](auto& self, int mask, int rem) -> bool {\n            if (mask == (1 << n) - 1) return rem == 0;\n            auto st = make_pair(mask, rem);\n            if (memo.count(st)) return memo[st];\n            for (int i = 0; i < n; ++i) {\n                if (!(mask & (1 << i))) {\n                    int nRem = ((long long)rem * pow10[i] + nums[i]) % k;\n                    if (self(self, mask | (1 << i), nRem)) return memo[st] = true;\n                }\n            }\n            return memo[st] = false;\n        };\n\n        if (!dfs(dfs, 0, 0)) return {};\n\n        vector<int> res;\n        int mask = 0, rem = 0;\n        for (int step = 0; step < n; ++step) {\n            for (int i = 0; i < n; ++i) {\n                if (!(mask & (1 << i))) {\n                    int nRem = ((long long)rem * pow10[i] + nums[i]) % k;\n                    if (dfs(dfs, mask | (1 << i), nRem)) {\n                        res.push_back(nums[i]);\n                        mask |= (1 << i);\n                        rem = nRem;\n                        break;\n                    }\n                }\n            }\n        }\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] concatenatedDivisibility(int[] nums, int k) {\n        int n = nums.length;\n        Arrays.sort(nums);\n        int[] pow10 = new int[n];\n        for (int i = 0; i < n; i++) {\n            pow10[i] = modPow(10, String.valueOf(nums[i]).length(), k);\n        }\n\n        Map<String, Boolean> memo = new HashMap<>();\n        if (!dfs(0, 0, n, nums, pow10, k, memo)) return new int[0];\n\n        int[] res = new int[n];\n        int mask = 0, rem = 0;\n        for (int step = 0; step < n; step++) {\n            for (int i = 0; i < n; i++) {\n                if ((mask & (1 << i)) == 0) {\n                    int nRem = (int) (((long) rem * pow10[i] + nums[i]) % k);\n                    if (dfs(mask | (1 << i), nRem, n, nums, pow10, k, memo)) {\n                        res[step] = nums[i];\n                        mask |= (1 << i);\n                        rem = nRem;\n                        break;\n                    }\n                }\n            }\n        }\n        return res;\n    }\n\n    private boolean dfs(int mask, int rem, int n, int[] nums, int[] pow10, int k, Map<String, Boolean> memo) {\n        if (mask == (1 << n) - 1) return rem == 0;\n        String key = mask + \"#\" + rem;\n        if (memo.containsKey(key)) return memo.get(key);\n        for (int i = 0; i < n; i++) {\n            if ((mask & (1 << i)) == 0) {\n                int nRem = (int) (((long) rem * pow10[i] + nums[i]) % k);\n                if (dfs(mask | (1 << i), nRem, n, nums, pow10, k, memo)) {\n                    memo.put(key, true);\n                    return true;\n                }\n            }\n        }\n        memo.put(key, false);\n        return false;\n    }\n\n    private int modPow(int base, int exp, int mod) {\n        long res = 1, b = base;\n        while (exp > 0) {\n            if ((exp & 1) == 1) res = (res * b) % mod;\n            b = (b * b) % mod;\n            exp >>= 1;\n        }\n        return (int) res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var concatenatedDivisibility = function(nums, k) {\n    const n = nums.length;\n    nums.sort((a, b) => a - b);\n    const pow10 = nums.map(x => {\n        let res = 1;\n        let len = String(x).length;\n        while (len--) res = (res * 10) % k;\n        return res;\n    });\n\n    const memo = new Map();\n    const dfs = (mask, rem) => {\n        if (mask === (1 << n) - 1) return rem === 0;\n        const key = `${mask},${rem}`;\n        if (memo.has(key)) return memo.get(key);\n        for (let i = 0; i < n; i++) {\n            if (!(mask & (1 << i))) {\n                const nRem = (rem * pow10[i] + nums[i]) % k;\n                if (dfs(mask | (1 << i), nRem)) {\n                    memo.set(key, true);\n                    return true;\n                }\n            }\n        }\n        memo.set(key, false);\n        return false;\n    };\n\n    if (!dfs(0, 0)) return [];\n\n    const res = [];\n    let mask = 0, rem = 0;\n    for (let step = 0; step < n; step++) {\n        for (let i = 0; i < n; i++) {\n            if (!(mask & (1 << i))) {\n                const nRem = (rem * pow10[i] + nums[i]) % k;\n                if (dfs(mask | (1 << i), nRem)) {\n                    res.push(nums[i]);\n                    mask |= (1 << i);\n                    rem = nRem;\n                    break;\n                }\n            }\n        }\n    }\n    return res;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-threshold-for-inversion-pairs-count",
+  "number": 3520,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Monotonic Inversion Count",
+      "text": "As the separation threshold increases, the count of satisfying inversion pairs monotonically increases."
+    },
+    {
+      "level": 2,
+      "title": "Interval Bounded Counting",
+      "text": "For a fixed threshold candidate, count pairs where the right element lies within the required difference window."
+    },
+    {
+      "level": 3,
+      "title": "Fenwick Tree Inversion Counting",
+      "text": "Maintain previously seen elements in an index tree to query frequency bounds for each step."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Fenwick:\n    def __init__(self, size: int):\n        self.tree = [0] * (size + 2)\n    def add(self, i: int, val: int):\n        while i < len(self.tree):\n            self.tree[i] += val\n            i += i & (-i)\n    def query(self, i: int) -> int:\n        s = 0\n        while i > 0:\n            s += self.tree[i]\n            i -= i & (-i)\n        return s\n\nclass Solution:\n    def minThreshold(self, nums: list[int], k: int) -> int:\n        n = len(nums)\n        if n * (n - 1) // 2 < k:\n            return -1\n        min_v = min(nums)\n        max_v = max(nums)\n        \n        def count_pairs(thresh: int) -> int:\n            cnt = 0\n            for i in range(n):\n                for j in range(i + 1, n):\n                    if nums[i] > nums[j] and nums[i] - nums[j] <= thresh:\n                        cnt += 1\n            return cnt\n\n        l, r = 0, max_v - min_v\n        ans = -1\n        while l <= r:\n            mid = (l + r) // 2\n            if count_pairs(mid) >= k:\n                ans = mid\n                r = mid - 1\n            else:\n                l = mid + 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N^2 * log(MAX_DIFF))",
+    "space": "O(1)",
+    "variables": [
+      "N: length of array nums",
+      "MAX_DIFF: maximum difference between elements in nums"
+    ],
+    "notes": "Binary search on monotonic threshold combined with pair counting.",
+    "whyNaiveFails": "Evaluating all possible threshold values sequentially requires testing every distinct difference.",
+    "spaceTimeTradeoff": "Direct comparison evaluates threshold conditions without large memory buffers.",
+    "interviewerExpectation": "Recognize monotonicity with respect to threshold to apply binary search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Fenwick:\n    def __init__(self, size: int):\n        self.tree = [0] * (size + 2)\n    def add(self, i: int, val: int):\n        while i < len(self.tree):\n            self.tree[i] += val\n            i += i & (-i)\n    def query(self, i: int) -> int:\n        s = 0\n        while i > 0:\n            s += self.tree[i]\n            i -= i & (-i)\n        return s\n\nclass Solution:\n    def minThreshold(self, nums: list[int], k: int) -> int:\n        n = len(nums)\n        if n * (n - 1) // 2 < k:\n            return -1\n        min_v = min(nums)\n        max_v = max(nums)\n        \n        def count_pairs(thresh: int) -> int:\n            cnt = 0\n            for i in range(n):\n                for j in range(i + 1, n):\n                    if nums[i] > nums[j] and nums[i] - nums[j] <= thresh:\n                        cnt += 1\n            return cnt\n\n        l, r = 0, max_v - min_v\n        ans = -1\n        while l <= r:\n            mid = (l + r) // 2\n            if count_pairs(mid) >= k:\n                ans = mid\n                r = mid - 1\n            else:\n                l = mid + 1\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int minThreshold(vector<int>& nums, int k) {\n        int n = nums.size();\n        if ((long long)n * (n - 1) / 2 < k) return -1;\n        int minV = *min_element(nums.begin(), nums.end());\n        int maxV = *max_element(nums.begin(), nums.end());\n\n        auto countPairs = [&](int thresh) {\n            long long cnt = 0;\n            for (int i = 0; i < n; ++i) {\n                for (int j = i + 1; j < n; ++j) {\n                    if (nums[i] > nums[j] && nums[i] - nums[j] <= thresh) {\n                        cnt++;\n                    }\n                }\n            }\n            return cnt;\n        };\n\n        int l = 0, r = maxV - minV;\n        int ans = -1;\n        while (l <= r) {\n            int mid = l + (r - l) / 2;\n            if (countPairs(mid) >= k) {\n                ans = mid;\n                r = mid - 1;\n            } else {\n                l = mid + 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minThreshold(int[] nums, int k) {\n        int n = nums.length;\n        if ((long) n * (n - 1) / 2 < k) return -1;\n        int minV = nums[0], maxV = nums[0];\n        for (int v : nums) {\n            if (v < minV) minV = v;\n            if (v > maxV) maxV = v;\n        }\n\n        int l = 0, r = maxV - minV;\n        int ans = -1;\n        while (l <= r) {\n            int mid = l + (r - l) / 2;\n            if (countPairs(nums, mid) >= k) {\n                ans = mid;\n                r = mid - 1;\n            } else {\n                l = mid + 1;\n            }\n        }\n        return ans;\n    }\n\n    private long countPairs(int[] nums, int thresh) {\n        long cnt = 0;\n        int n = nums.length;\n        for (int i = 0; i < n; i++) {\n            for (int j = i + 1; j < n; j++) {\n                if (nums[i] > nums[j] && nums[i] - nums[j] <= thresh) {\n                    cnt++;\n                }\n            }\n        }\n        return cnt;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minThreshold = function(nums, k) {\n    const n = nums.length;\n    if ((n * (n - 1)) / 2 < k) return -1;\n    let minV = nums[0], maxV = nums[0];\n    for (const v of nums) {\n        if (v < minV) minV = v;\n        if (v > maxV) maxV = v;\n    }\n\n    const countPairs = thresh => {\n        let cnt = 0;\n        for (let i = 0; i < n; i++) {\n            for (let j = i + 1; j < n; j++) {\n                if (nums[i] > nums[j] && nums[i] - nums[j] <= thresh) {\n                    cnt++;\n                }\n            }\n        }\n        return cnt;\n    };\n\n    let l = 0, r = maxV - minV;\n    let ans = -1;\n    while (l <= r) {\n        const mid = Math.floor((l + r) / 2);\n        if (countPairs(mid) >= k) {\n            ans = mid;\n            r = mid - 1;\n        } else {\n            l = mid + 1;\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

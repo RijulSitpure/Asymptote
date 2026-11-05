@@ -1,0 +1,79 @@
+{
+  "slug": "path-existence-queries-in-a-graph-ii",
+  "number": 3534,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Sorted Position Coordinate Mapping",
+      "text": "Sort values and their original indices to observe valid transition ranges as intervals."
+    },
+    {
+      "level": 2,
+      "title": "Greedy Forward Jumping",
+      "text": "From each sorted index, find the furthest index to the right whose difference does not exceed the allowed threshold."
+    },
+    {
+      "level": 3,
+      "title": "Binary Lifting Reachability",
+      "text": "Precompute power-of-two jump tables to count the minimum steps required to reach or exceed target positions."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def pathExistenceQueries(self, n: int, nums: list[int], maxDiff: int, queries: list[list[int]]) -> list[int]:\n        sorted_pairs = sorted((nums[i], i) for i in range(n))\n        sorted_nums = [p[0] for p in sorted_pairs]\n        index_map = {p[1]: idx for idx, p in enumerate(sorted_pairs)}\n\n        max_level = n.bit_length() + 1\n        jump = [[0] * max_level for _ in range(n)]\n        right = 0\n        for i in range(n):\n            while right + 1 < n and sorted_nums[right + 1] - sorted_nums[i] <= maxDiff:\n                right += 1\n            jump[i][0] = right\n        for level in range(1, max_level):\n            for i in range(n):\n                jump[i][level] = jump[jump[i][level - 1]][level - 1]\n\n        ans = []\n        for q in queries:\n            u, v = index_map[q[0]], index_map[q[1]]\n            if u == v:\n                ans.append(0)\n                continue\n            l, r = min(u, v), max(u, v)\n            steps = 0\n            for level in range(max_level - 1, -1, -1):\n                if jump[l][level] < r:\n                    l = jump[l][level]\n                    steps += (1 << level)\n            if jump[l][0] >= r:\n                ans.append(steps + 1)\n            else:\n                ans.append(-1)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((N + Q) * log(N))",
+    "space": "O(N * log(N))",
+    "variables": [
+      "N: length of array nums",
+      "Q: number of queries"
+    ],
+    "notes": "Binary lifting tables answer reachability queries in logarithmic steps.",
+    "whyNaiveFails": "Single step traversals take O(N) time per query.",
+    "spaceTimeTradeoff": "Doubling jump tables store ancestors across logarithmic depth.",
+    "interviewerExpectation": "Sort and precompute binary lifting jump tables for fast distance queries."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def pathExistenceQueries(self, n: int, nums: list[int], maxDiff: int, queries: list[list[int]]) -> list[int]:\n        sorted_pairs = sorted((nums[i], i) for i in range(n))\n        sorted_nums = [p[0] for p in sorted_pairs]\n        index_map = {p[1]: idx for idx, p in enumerate(sorted_pairs)}\n\n        max_level = n.bit_length() + 1\n        jump = [[0] * max_level for _ in range(n)]\n        right = 0\n        for i in range(n):\n            while right + 1 < n and sorted_nums[right + 1] - sorted_nums[i] <= maxDiff:\n                right += 1\n            jump[i][0] = right\n        for level in range(1, max_level):\n            for i in range(n):\n                jump[i][level] = jump[jump[i][level - 1]][level - 1]\n\n        ans = []\n        for q in queries:\n            u, v = index_map[q[0]], index_map[q[1]]\n            if u == v:\n                ans.append(0)\n                continue\n            l, r = min(u, v), max(u, v)\n            steps = 0\n            for level in range(max_level - 1, -1, -1):\n                if jump[l][level] < r:\n                    l = jump[l][level]\n                    steps += (1 << level)\n            if jump[l][0] >= r:\n                ans.append(steps + 1)\n            else:\n                ans.append(-1)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> pathExistenceQueries(int n, vector<int>& nums, int maxDiff, vector<vector<int>>& queries) {\n        vector<pair<int, int>> pairs(n);\n        for (int i = 0; i < n; ++i) pairs[i] = {nums[i], i};\n        sort(pairs.begin(), pairs.end());\n\n        vector<int> sortedNums(n), indexMap(n);\n        for (int i = 0; i < n; ++i) {\n            sortedNums[i] = pairs[i].first;\n            indexMap[pairs[i].second] = i;\n        }\n\n        int maxLevel = 0;\n        while ((1 << maxLevel) <= n) maxLevel++;\n        maxLevel++;\n\n        vector<vector<int>> jump(n, vector<int>(maxLevel));\n        int right = 0;\n        for (int i = 0; i < n; ++i) {\n            while (right + 1 < n && sortedNums[right + 1] - sortedNums[i] <= maxDiff) right++;\n            jump[i][0] = right;\n        }\n        for (int level = 1; level < maxLevel; ++level) {\n            for (int i = 0; i < n; ++i) {\n                jump[i][level] = jump[jump[i][level - 1]][level - 1];\n            }\n        }\n\n        vector<int> ans;\n        for (const auto& q : queries) {\n            int u = indexMap[q[0]], v = indexMap[q[1]];\n            if (u == v) {\n                ans.push_back(0);\n                continue;\n            }\n            int l = min(u, v), r = max(u, v);\n            int steps = 0;\n            for (int level = maxLevel - 1; level >= 0; --level) {\n                if (jump[l][level] < r) {\n                    l = jump[l][level];\n                    steps += (1 << level);\n                }\n            }\n            if (jump[l][0] >= r) {\n                ans.push_back(steps + 1);\n            } else {\n                ans.push_back(-1);\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] pathExistenceQueries(int n, int[] nums, int maxDiff, int[][] queries) {\n        int[][] pairs = new int[n][2];\n        for (int i = 0; i < n; i++) {\n            pairs[i][0] = nums[i];\n            pairs[i][1] = i;\n        }\n        Arrays.sort(pairs, Comparator.comparingInt(a -> a[0]));\n\n        int[] sortedNums = new int[n];\n        int[] indexMap = new int[n];\n        for (int i = 0; i < n; i++) {\n            sortedNums[i] = pairs[i][0];\n            indexMap[pairs[i][1]] = i;\n        }\n\n        int maxLevel = 0;\n        while ((1 << maxLevel) <= n) maxLevel++;\n        maxLevel++;\n\n        int[][] jump = new int[n][maxLevel];\n        int right = 0;\n        for (int i = 0; i < n; i++) {\n            while (right + 1 < n && sortedNums[right + 1] - sortedNums[i] <= maxDiff) right++;\n            jump[i][0] = right;\n        }\n        for (int level = 1; level < maxLevel; level++) {\n            for (int i = 0; i < n; i++) {\n                jump[i][level] = jump[jump[i][level - 1]][level - 1];\n            }\n        }\n\n        int[] ans = new int[queries.length];\n        for (int j = 0; j < queries.length; j++) {\n            int u = indexMap[queries[j][0]], v = indexMap[queries[j][1]];\n            if (u == v) {\n                ans[j] = 0;\n                continue;\n            }\n            int l = Math.min(u, v), r = Math.max(u, v);\n            int steps = 0;\n            for (int level = maxLevel - 1; level >= 0; level--) {\n                if (jump[l][level] < r) {\n                    l = jump[l][level];\n                    steps += (1 << level);\n                }\n            }\n            if (jump[l][0] >= r) {\n                ans[j] = steps + 1;\n            } else {\n                ans[j] = -1;\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var pathExistenceQueries = function(n, nums, maxDiff, queries) {\n    const pairs = nums.map((v, i) => [v, i]).sort((a, b) => a[0] - b[0]);\n    const sortedNums = pairs.map(p => p[0]);\n    const indexMap = new Array(n);\n    for (let i = 0; i < n; i++) indexMap[pairs[i][1]] = i;\n\n    let maxLevel = 0;\n    while ((1 << maxLevel) <= n) maxLevel++;\n    maxLevel++;\n\n    const jump = Array.from({ length: n }, () => new Array(maxLevel).fill(0));\n    let right = 0;\n    for (let i = 0; i < n; i++) {\n        while (right + 1 < n && sortedNums[right + 1] - sortedNums[i] <= maxDiff) right++;\n        jump[i][0] = right;\n    }\n    for (let level = 1; level < maxLevel; level++) {\n        for (let i = 0; i < n; i++) {\n            jump[i][level] = jump[jump[i][level - 1]][level - 1];\n        }\n    }\n\n    return queries.map(([q0, q1]) => {\n        const u = indexMap[q0], v = indexMap[q1];\n        if (u === v) return 0;\n        let l = Math.min(u, v), r = Math.max(u, v);\n        let steps = 0;\n        for (let level = maxLevel - 1; level >= 0; level--) {\n            if (jump[l][level] < r) {\n                l = jump[l][level];\n                steps += (1 << level);\n            }\n        }\n        return jump[l][0] >= r ? steps + 1 : -1;\n    });\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

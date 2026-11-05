@@ -1,0 +1,79 @@
+{
+  "slug": "shortest-path-in-a-weighted-tree",
+  "number": 3515,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subtree Interval Mapping",
+      "text": "Every node entry and exit order maps its entire subtree to a single continuous range."
+    },
+    {
+      "level": 2,
+      "title": "Root Path Weight Propagation",
+      "text": "Updating an edge weight alters root path distances for all vertices located in the lower node subtree."
+    },
+    {
+      "level": 3,
+      "title": "Range Addition and Point Inquiries",
+      "text": "Maintain subtree range offsets with an interval tree to query root path distances in logarithmic time."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Fenwick:\n    def __init__(self, size: int):\n        self.tree = [0] * (size + 2)\n    def add(self, i: int, val: int):\n        while i < len(self.tree):\n            self.tree[i] += val\n            i += i & (-i)\n    def query(self, i: int) -> int:\n        s = 0\n        while i > 0:\n            s += self.tree[i]\n            i -= i & (-i)\n        return s\n\nclass Solution:\n    def treeQueries(self, n: int, edges: list[list[int]], queries: list[list[int]]) -> list[int]:\n        graph = [[] for _ in range(n + 1)]\n        edge_weights = {}\n        for u, v, w in edges:\n            graph[u].append((v, w))\n            graph[v].append((u, w))\n            edge_weights[(min(u, v), max(u, v))] = w\n\n        in_time = [0] * (n + 1)\n        out_time = [0] * (n + 1)\n        parent = [0] * (n + 1)\n        dist = [0] * (n + 1)\n        timer = 0\n\n        def dfs(u, p, d):\n            nonlocal timer\n            timer += 1\n            in_time[u] = timer\n            parent[u] = p\n            dist[u] = d\n            for v, w in graph[u]:\n                if v != p:\n                    dfs(v, u, d + w)\n            out_time[u] = timer\n\n        dfs(1, 0, 0)\n        bit = Fenwick(n + 2)\n        for i in range(1, n + 1):\n            bit.add(in_time[i], dist[i])\n            bit.add(in_time[i] + 1, -dist[i])\n\n        ans = []\n        for q in queries:\n            if q[0] == 1:\n                u, v, nw = q[1], q[2], q[3]\n                key = (min(u, v), max(u, v))\n                delta = nw - edge_weights[key]\n                edge_weights[key] = nw\n                child = v if parent[v] == u else u\n                bit.add(in_time[child], delta)\n                bit.add(out_time[child] + 1, -delta)\n            else:\n                x = q[1]\n                ans.append(bit.query(in_time[x]))\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((N + Q) * log(N))",
+    "space": "O(N)",
+    "variables": [
+      "N: number of nodes in the tree",
+      "Q: number of queries"
+    ],
+    "notes": "Subtree intervals flattened via DFS traversal convert edge weight updates into range additions.",
+    "whyNaiveFails": "Traversing paths from root for each query takes O(N) per query.",
+    "spaceTimeTradeoff": "Fenwick tree requires linear space and logarithmic per-query latency.",
+    "interviewerExpectation": "Use Euler tour traversal to flatten subtrees into contiguous ranges for prefix-sum updates."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Fenwick:\n    def __init__(self, size: int):\n        self.tree = [0] * (size + 2)\n    def add(self, i: int, val: int):\n        while i < len(self.tree):\n            self.tree[i] += val\n            i += i & (-i)\n    def query(self, i: int) -> int:\n        s = 0\n        while i > 0:\n            s += self.tree[i]\n            i -= i & (-i)\n        return s\n\nclass Solution:\n    def treeQueries(self, n: int, edges: list[list[int]], queries: list[list[int]]) -> list[int]:\n        graph = [[] for _ in range(n + 1)]\n        edge_weights = {}\n        for u, v, w in edges:\n            graph[u].append((v, w))\n            graph[v].append((u, w))\n            edge_weights[(min(u, v), max(u, v))] = w\n\n        in_time = [0] * (n + 1)\n        out_time = [0] * (n + 1)\n        parent = [0] * (n + 1)\n        dist = [0] * (n + 1)\n        timer = 0\n\n        def dfs(u, p, d):\n            nonlocal timer\n            timer += 1\n            in_time[u] = timer\n            parent[u] = p\n            dist[u] = d\n            for v, w in graph[u]:\n                if v != p:\n                    dfs(v, u, d + w)\n            out_time[u] = timer\n\n        dfs(1, 0, 0)\n        bit = Fenwick(n + 2)\n        for i in range(1, n + 1):\n            bit.add(in_time[i], dist[i])\n            bit.add(in_time[i] + 1, -dist[i])\n\n        ans = []\n        for q in queries:\n            if q[0] == 1:\n                u, v, nw = q[1], q[2], q[3]\n                key = (min(u, v), max(u, v))\n                delta = nw - edge_weights[key]\n                edge_weights[key] = nw\n                child = v if parent[v] == u else u\n                bit.add(in_time[child], delta)\n                bit.add(out_time[child] + 1, -delta)\n            else:\n                x = q[1]\n                ans.append(bit.query(in_time[x]))\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <map>\n#include <algorithm>\n\nusing namespace std;\n\nclass Fenwick {\n    vector<long long> tree;\npublic:\n    Fenwick(int sz) : tree(sz + 2, 0) {}\n    void add(int i, long long val) {\n        for (; i < (int)tree.size(); i += i & (-i)) tree[i] += val;\n    }\n    long long query(int i) {\n        long long s = 0;\n        for (; i > 0; i -= i & (-i)) s += tree[i];\n        return s;\n    }\n};\n\nclass Solution {\npublic:\n    vector<int> treeQueries(int n, vector<vector<int>>& edges, vector<vector<int>>& queries) {\n        vector<vector<pair<int, int>>> graph(n + 1);\n        map<pair<int, int>, int> edgeWeights;\n        for (const auto& e : edges) {\n            graph[e[0]].push_back({e[1], e[2]});\n            graph[e[1]].push_back({e[0], e[2]});\n            edgeWeights[{min(e[0], e[1]), max(e[0], e[1])}] = e[2];\n        }\n\n        vector<int> inTime(n + 1), outTime(n + 1), parent(n + 1);\n        vector<long long> dist(n + 1);\n        int timer = 0;\n\n        auto dfs = [&](auto& self, int u, int p, long long d) -> void {\n            inTime[u] = ++timer;\n            parent[u] = p;\n            dist[u] = d;\n            for (const auto& [v, w] : graph[u]) {\n                if (v != p) self(self, v, u, d + w);\n            }\n            outTime[u] = timer;\n        };\n        dfs(dfs, 1, 0, 0);\n\n        Fenwick bit(n + 2);\n        for (int i = 1; i <= n; ++i) {\n            bit.add(inTime[i], dist[i]);\n            bit.add(inTime[i] + 1, -dist[i]);\n        }\n\n        vector<int> ans;\n        for (const auto& q : queries) {\n            if (q[0] == 1) {\n                int u = q[1], v = q[2], nw = q[3];\n                auto key = make_pair(min(u, v), max(u, v));\n                int delta = nw - edgeWeights[key];\n                edgeWeights[key] = nw;\n                int child = (parent[v] == u) ? v : u;\n                bit.add(inTime[child], delta);\n                bit.add(outTime[child] + 1, -delta);\n            } else {\n                int x = q[1];\n                ans.push_back((int)bit.query(inTime[x]));\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class Fenwick {\n        long[] tree;\n        Fenwick(int sz) { tree = new long[sz + 2]; }\n        void add(int i, long val) {\n            for (; i < tree.length; i += i & (-i)) tree[i] += val;\n        }\n        long query(int i) {\n            long s = 0;\n            for (; i > 0; i -= i & (-i)) s += tree[i];\n            return s;\n        }\n    }\n\n    public int[] treeQueries(int n, int[][] edges, int[][] queries) {\n        List<int[]>[] graph = new ArrayList[n + 1];\n        for (int i = 0; i <= n; i++) graph[i] = new ArrayList<>();\n        Map<String, Integer> edgeWeights = new HashMap<>();\n        for (int[] e : edges) {\n            graph[e[0]].add(new int[]{e[1], e[2]});\n            graph[e[1]].add(new int[]{e[0], e[2]});\n            edgeWeights.put(Math.min(e[0], e[1]) + \"#\" + Math.max(e[0], e[1]), e[2]);\n        }\n\n        int[] inTime = new int[n + 1], outTime = new int[n + 1], parent = new int[n + 1];\n        long[] dist = new long[n + 1];\n        dfs(1, 0, 0, graph, inTime, outTime, parent, dist, new int[]{0});\n\n        Fenwick bit = new Fenwick(n + 2);\n        for (int i = 1; i <= n; i++) {\n            bit.add(inTime[i], dist[i]);\n            bit.add(inTime[i] + 1, -dist[i]);\n        }\n\n        List<Integer> res = new ArrayList<>();\n        for (int[] q : queries) {\n            if (q[0] == 1) {\n                int u = q[1], v = q[2], nw = q[3];\n                String key = Math.min(u, v) + \"#\" + Math.max(u, v);\n                int delta = nw - edgeWeights.get(key);\n                edgeWeights.put(key, nw);\n                int child = (parent[v] == u) ? v : u;\n                bit.add(inTime[child], delta);\n                bit.add(outTime[child] + 1, -delta);\n            } else {\n                int x = q[1];\n                res.add((int) bit.query(inTime[x]));\n            }\n        }\n        int[] ans = new int[res.size()];\n        for (int i = 0; i < res.size(); i++) ans[i] = res.get(i);\n        return ans;\n    }\n\n    private void dfs(int u, int p, long d, List<int[]>[] g, int[] inT, int[] outT, int[] par, long[] dist, int[] timer) {\n        inT[u] = ++timer[0];\n        par[u] = p;\n        dist[u] = d;\n        for (int[] edge : g[u]) {\n            if (edge[0] != p) dfs(edge[0], u, d + edge[1], g, inT, outT, par, dist, timer);\n        }\n        outT[u] = timer[0];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var treeQueries = function(n, edges, queries) {\n    const graph = Array.from({ length: n + 1 }, () => []);\n    const edgeWeights = new Map();\n    for (const [u, v, w] of edges) {\n        graph[u].push([v, w]);\n        graph[v].push([u, w]);\n        edgeWeights.set(`${Math.min(u, v)},${Math.max(u, v)}`, w);\n    }\n\n    const inTime = new Array(n + 1).fill(0);\n    const outTime = new Array(n + 1).fill(0);\n    const parent = new Array(n + 1).fill(0);\n    const dist = new Array(n + 1).fill(0);\n    let timer = 0;\n\n    function dfs(u, p, d) {\n        inTime[u] = ++timer;\n        parent[u] = p;\n        dist[u] = d;\n        for (const [v, w] of graph[u]) {\n            if (v !== p) dfs(v, u, d + w);\n        }\n        outTime[u] = timer;\n    }\n    dfs(1, 0, 0);\n\n    const bit = new Array(n + 4).fill(0);\n    const add = (i, val) => {\n        for (; i < bit.length; i += i & -i) bit[i] += val;\n    };\n    const query = i => {\n        let s = 0;\n        for (; i > 0; i -= i & -i) s += bit[i];\n        return s;\n    };\n\n    for (let i = 1; i <= n; i++) {\n        add(inTime[i], dist[i]);\n        add(inTime[i] + 1, -dist[i]);\n    }\n\n    const ans = [];\n    for (const q of queries) {\n        if (q[0] === 1) {\n            const [_, u, v, nw] = q;\n            const key = `${Math.min(u, v)},${Math.max(u, v)}`;\n            const delta = nw - edgeWeights.get(key);\n            edgeWeights.set(key, nw);\n            const child = parent[v] === u ? v : u;\n            add(inTime[child], delta);\n            add(outTime[child] + 1, -delta);\n        } else {\n            ans.push(query(inTime[q[1]]));\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

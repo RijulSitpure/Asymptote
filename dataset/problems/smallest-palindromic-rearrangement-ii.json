@@ -1,0 +1,79 @@
+{
+  "slug": "smallest-palindromic-rearrangement-ii",
+  "number": 3518,
+  "category": "Algorithms",
+  "patterns": [
+    "math-number-theory"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Left Half Multiset Permutations",
+      "text": "The problem reduces to finding the k-th lexicographical permutation of the characters belonging to the first half."
+    },
+    {
+      "level": 2,
+      "title": "Multinomial Coefficient Counting",
+      "text": "Calculate the number of unique arrangements formed by remaining characters using multinomial coefficients."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Character Selection",
+      "text": "At each position, try placing characters from a to z. If available permutations under that choice are less than k, subtract and move to the next character."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport collections\nimport math\n\nclass Solution:\n    def smallestPalindrome(self, s: str, k: int) -> str:\n        count = collections.Counter(s)\n        odd_count = sum(1 for freq in count.values() if freq % 2 == 1)\n        if odd_count > 1:\n            return \"\"\n\n        half_count = [0] * 26\n        mid_letter = \"\"\n        for c, freq in count.items():\n            idx = ord(c) - ord('a')\n            half_count[idx] = freq // 2\n            if freq % 2 == 1:\n                mid_letter = c\n\n        def count_arrangements(counts: list[int]) -> int:\n            total = sum(counts)\n            res = math.factorial(total)\n            for freq in counts:\n                res //= math.factorial(freq)\n            return res\n\n        total_perm = count_arrangements(half_count)\n        if k > total_perm:\n            return \"\"\n\n        half_len = sum(half_count)\n        left = []\n        for _ in range(half_len):\n            for i in range(26):\n                if half_count[i] == 0:\n                    continue\n                half_count[i] -= 1\n                arrangements = count_arrangements(half_count)\n                if arrangements >= k:\n                    left.append(chr(i + ord('a')))\n                    break\n                else:\n                    k -= arrangements\n                    half_count[i] += 1\n        left_str = \"\".join(left)\n        return left_str + mid_letter + left_str[::-1]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * Sigma)",
+    "space": "O(N)",
+    "variables": [
+      "N: length of string s",
+      "Sigma: alphabet size (26)"
+    ],
+    "notes": "Multinomial permutation counts guide greedy prefix determination.",
+    "whyNaiveFails": "Generating permutations one by one times out for large k.",
+    "spaceTimeTradeoff": "Combinatorial counts pinpoint characters without generating invalid strings.",
+    "interviewerExpectation": "Apply multinomial counting to isolate the lexicographical rank."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import collections\nimport math\n\nclass Solution:\n    def smallestPalindrome(self, s: str, k: int) -> str:\n        count = collections.Counter(s)\n        odd_count = sum(1 for freq in count.values() if freq % 2 == 1)\n        if odd_count > 1:\n            return \"\"\n\n        half_count = [0] * 26\n        mid_letter = \"\"\n        for c, freq in count.items():\n            idx = ord(c) - ord('a')\n            half_count[idx] = freq // 2\n            if freq % 2 == 1:\n                mid_letter = c\n\n        def count_arrangements(counts: list[int]) -> int:\n            total = sum(counts)\n            res = math.factorial(total)\n            for freq in counts:\n                res //= math.factorial(freq)\n            return res\n\n        total_perm = count_arrangements(half_count)\n        if k > total_perm:\n            return \"\"\n\n        half_len = sum(half_count)\n        left = []\n        for _ in range(half_len):\n            for i in range(26):\n                if half_count[i] == 0:\n                    continue\n                half_count[i] -= 1\n                arrangements = count_arrangements(half_count)\n                if arrangements >= k:\n                    left.append(chr(i + ord('a')))\n                    break\n                else:\n                    k -= arrangements\n                    half_count[i] += 1\n        left_str = \"\".join(left)\n        return left_str + mid_letter + left_str[::-1]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <numeric>\n\nusing namespace std;\n\nclass Solution {\n    double fact(int n) {\n        double res = 1;\n        for (int i = 2; i <= n; ++i) res *= i;\n        return res;\n    }\n\n    double countArrangements(const vector<int>& counts) {\n        int total = 0;\n        for (int c : counts) total += c;\n        double res = fact(total);\n        for (int c : counts) res /= fact(c);\n        return res;\n    }\n\npublic:\n    string smallestPalindrome(string s, int k) {\n        vector<int> count(26, 0);\n        for (char c : s) count[c - 'a']++;\n        int oddCount = 0;\n        for (int v : count) if (v % 2 == 1) oddCount++;\n        if (oddCount > 1) return \"\";\n\n        vector<int> half(26, 0);\n        string mid = \"\";\n        for (int i = 0; i < 26; ++i) {\n            half[i] = count[i] / 2;\n            if (count[i] % 2 == 1) mid = string(1, 'a' + i);\n        }\n\n        if (countArrangements(half) < k) return \"\";\n\n        int halfLen = 0;\n        for (int c : half) halfLen += c;\n        string left = \"\";\n        double remK = k;\n\n        for (int step = 0; step < halfLen; ++step) {\n            for (int i = 0; i < 26; ++i) {\n                if (half[i] == 0) continue;\n                half[i]--;\n                double arrangements = countArrangements(half);\n                if (arrangements >= remK) {\n                    left += (char)('a' + i);\n                    break;\n                } else {\n                    remK -= arrangements;\n                    half[i]++;\n                }\n            }\n        }\n        string rev = left;\n        for (int i = 0, j = (int)rev.size() - 1; i < j; ++i, --j) swap(rev[i], rev[j]);\n        return left + mid + rev;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.math.BigInteger;\nimport java.util.*;\n\nclass Solution {\n    public String smallestPalindrome(String s, int k) {\n        int[] count = new int[26];\n        for (char c : s.toCharArray()) count[c - 'a']++;\n        int oddCount = 0;\n        for (int v : count) if (v % 2 == 1) oddCount++;\n        if (oddCount > 1) return \"\";\n\n        int[] half = new int[26];\n        String mid = \"\";\n        for (int i = 0; i < 26; i++) {\n            half[i] = count[i] / 2;\n            if (count[i] % 2 == 1) mid = String.valueOf((char) ('a' + i));\n        }\n\n        BigInteger targetK = BigInteger.valueOf(k);\n        if (countArrangements(half).compareTo(targetK) < 0) return \"\";\n\n        int halfLen = 0;\n        for (int c : half) halfLen += c;\n        StringBuilder left = new StringBuilder();\n\n        for (int step = 0; step < halfLen; step++) {\n            for (int i = 0; i < 26; i++) {\n                if (half[i] == 0) continue;\n                half[i]--;\n                BigInteger arrangements = countArrangements(half);\n                if (arrangements.compareTo(targetK) >= 0) {\n                    left.append((char) ('a' + i));\n                    break;\n                } else {\n                    targetK = targetK.subtract(arrangements);\n                    half[i]++;\n                }\n            }\n        }\n        String lStr = left.toString();\n        return lStr + mid + left.reverse().toString();\n    }\n\n    private BigInteger countArrangements(int[] counts) {\n        int total = 0;\n        for (int c : counts) total += c;\n        BigInteger res = factorial(total);\n        for (int c : counts) res = res.divide(factorial(c));\n        return res;\n    }\n\n    private BigInteger factorial(int n) {\n        BigInteger res = BigInteger.ONE;\n        for (int i = 2; i <= n; i++) res = res.multiply(BigInteger.valueOf(i));\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var smallestPalindrome = function(s, k) {\n    const count = new Array(26).fill(0);\n    for (const c of s) count[c.charCodeAt(0) - 97]++;\n    let oddCount = 0;\n    for (const v of count) if (v % 2 === 1) oddCount++;\n    if (oddCount > 1) return \"\";\n\n    const half = new Array(26).fill(0);\n    let mid = \"\";\n    for (let i = 0; i < 26; i++) {\n        half[i] = Math.floor(count[i] / 2);\n        if (count[i] % 2 === 1) mid = String.fromCharCode(97 + i);\n    }\n\n    const fact = n => {\n        let res = 1n;\n        for (let i = 2n; i <= BigInt(n); i++) res *= i;\n        return res;\n    };\n    const countArrangements = counts => {\n        let total = counts.reduce((a, b) => a + b, 0);\n        let res = fact(total);\n        for (const c of counts) res /= fact(c);\n        return res;\n    };\n\n    let targetK = BigInt(k);\n    if (countArrangements(half) < targetK) return \"\";\n\n    const halfLen = half.reduce((a, b) => a + b, 0);\n    let left = \"\";\n    for (let step = 0; step < halfLen; step++) {\n        for (let i = 0; i < 26; i++) {\n            if (half[i] === 0) continue;\n            half[i]--;\n            const arr = countArrangements(half);\n            if (arr >= targetK) {\n                left += String.fromCharCode(97 + i);\n                break;\n            } else {\n                targetK -= arr;\n                half[i]++;\n            }\n        }\n    }\n    const rev = left.split(\"\").reverse().join(\"\");\n    return left + mid + rev;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

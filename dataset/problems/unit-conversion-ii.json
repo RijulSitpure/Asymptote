@@ -1,0 +1,80 @@
+{
+  "slug": "unit-conversion-ii",
+  "number": 3535,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Reference Unit Normalization",
+      "text": "Calculate the conversion ratio of every unit with respect to base unit 0 using modular multiplication."
+    },
+    {
+      "level": 2,
+      "title": "Modular Multiplicative Inverse",
+      "text": "The ratio between unit u and unit v is value[v] multiplied by the modular inverse of value[u]."
+    },
+    {
+      "level": 3,
+      "title": "Fermat Little Theorem",
+      "text": "For prime modulus p = 10^9 + 7, compute inverse using pow(val, p - 2, p)."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\nclass Solution:\n    def queryConversions(self, conversions: list[list[int]], queries: list[list[int]]) -> list[int]:\n        MOD = 1_000_000_007\n        n = len(conversions) + 1\n        units = [0] * n\n        units[0] = 1\n        graph = [[] for _ in range(n)]\n        for u, v, factor in conversions:\n            graph[u].append((v, factor))\n        q = deque([0])\n        while q:\n            u = q.popleft()\n            for v, factor in graph[u]:\n                units[v] = (units[u] * factor) % MOD\n                q.append(v)\n\n        ans = []\n        for u, v in queries:\n            ans.append((units[v] * pow(units[u], MOD - 2, MOD)) % MOD)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N + Q * log(MOD))",
+    "space": "O(N)",
+    "variables": [
+      "N: number of units",
+      "Q: number of conversion queries",
+      "MOD: modulo arithmetic prime (10^9 + 7)"
+    ],
+    "notes": "Breadth-first traversal precomputes absolute ratios, and queries evaluate using modular inverses.",
+    "whyNaiveFails": "Running graph traversals from source node u for each query takes O(Q * N) time.",
+    "spaceTimeTradeoff": "Linear storage of base ratios accelerates query resolution.",
+    "interviewerExpectation": "Use root-normalized values with modular inverses for constant-time conversion queries."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import deque\n\nclass Solution:\n    def queryConversions(self, conversions: list[list[int]], queries: list[list[int]]) -> list[int]:\n        MOD = 1_000_000_007\n        n = len(conversions) + 1\n        units = [0] * n\n        units[0] = 1\n        graph = [[] for _ in range(n)]\n        for u, v, factor in conversions:\n            graph[u].append((v, factor))\n        q = deque([0])\n        while q:\n            u = q.popleft()\n            for v, factor in graph[u]:\n                units[v] = (units[u] * factor) % MOD\n                q.append(v)\n\n        ans = []\n        for u, v in queries:\n            ans.append((units[v] * pow(units[u], MOD - 2, MOD)) % MOD)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n\nusing namespace std;\n\nclass Solution {\n    static constexpr int MOD = 1'000'000'007;\n    long long modPow(long long b, long long exp) {\n        long long res = 1;\n        while (exp > 0) {\n            if (exp & 1) res = (res * b) % MOD;\n            b = (b * b) % MOD;\n            exp >>= 1;\n        }\n        return res;\n    }\npublic:\n    vector<int> queryConversions(vector<vector<int>>& conversions, vector<vector<int>>& queries) {\n        int n = conversions.size() + 1;\n        vector<long long> units(n, 0);\n        units[0] = 1;\n        vector<vector<pair<int, int>>> graph(n);\n        for (const auto& c : conversions) {\n            graph[c[0]].push_back({c[1], c[2]});\n        }\n        queue<int> q;\n        q.push(0);\n        while (!q.empty()) {\n            int u = q.front(); q.pop();\n            for (const auto& [v, factor] : graph[u]) {\n                units[v] = (units[u] * factor) % MOD;\n                q.push(v);\n            }\n        }\n        vector<int> ans;\n        for (const auto& qry : queries) {\n            int u = qry[0], v = qry[1];\n            long long inv = modPow(units[u], MOD - 2);\n            ans.push_back((units[v] * inv) % MOD);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private static final int MOD = 1_000_000_007;\n    public int[] queryConversions(int[][] conversions, int[][] queries) {\n        int n = conversions.length + 1;\n        long[] units = new long[n];\n        units[0] = 1;\n        List<int[]>[] graph = new ArrayList[n];\n        for (int i = 0; i < n; i++) graph[i] = new ArrayList<>();\n        for (int[] c : conversions) {\n            graph[c[0]].add(new int[]{c[1], c[2]});\n        }\n        ArrayDeque<Integer> q = new ArrayDeque<>();\n        q.add(0);\n        while (!q.isEmpty()) {\n            int u = q.poll();\n            for (int[] edge : graph[u]) {\n                int v = edge[0], factor = edge[1];\n                units[v] = (units[u] * factor) % MOD;\n                q.add(v);\n            }\n        }\n        int[] ans = new int[queries.length];\n        for (int i = 0; i < queries.length; i++) {\n            int u = queries[i][0], v = queries[i][1];\n            long inv = modPow(units[u], MOD - 2);\n            ans[i] = (int) ((units[v] * inv) % MOD);\n        }\n        return ans;\n    }\n    private long modPow(long b, long exp) {\n        long res = 1;\n        while (exp > 0) {\n            if ((exp & 1) == 1) res = (res * b) % MOD;\n            b = (b * b) % MOD;\n            exp >>= 1;\n        }\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var queryConversions = function(conversions, queries) {\n    const MOD = 1000000007n;\n    const n = conversions.length + 1;\n    const units = new Array(n).fill(0n);\n    units[0] = 1n;\n    const graph = Array.from({ length: n }, () => []);\n    for (const [u, v, factor] of conversions) {\n        graph[u].push([v, BigInt(factor)]);\n    }\n    const q = [0];\n    while (q.length > 0) {\n        const u = q.shift();\n        for (const [v, factor] of graph[u]) {\n            units[v] = (units[u] * factor) % MOD;\n            q.push(v);\n        }\n    }\n    const modPow = (b, exp) => {\n        let res = 1n;\n        while (exp > 0n) {\n            if (exp & 1n) res = (res * b) % MOD;\n            b = (b * b) % MOD;\n            exp >>= 1n;\n        }\n        return res;\n    };\n    return queries.map(([u, v]) => {\n        const inv = modPow(units[u], MOD - 2n);\n        return Number((units[v] * inv) % MOD);\n    });\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}

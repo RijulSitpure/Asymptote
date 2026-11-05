@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-product-of-subsequences-with-an-alternating-sum-equal-to-k",
+  "number": 3509,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Subsequence State Tuple",
+      "text": "Every prefix of a subsequence can be characterized by its current alternating sum and whether the next element will be added or subtracted."
+    },
+    {
+      "level": 2,
+      "title": "Dual Parity Tracking",
+      "text": "Maintain separate records for alternating sums ending at an even or odd length so the correct sign applies to the subsequent candidate."
+    },
+    {
+      "level": 3,
+      "title": "Bounded Product Updates",
+      "text": "Update maximum products for each reachable alternating sum state, discarding products exceeding the given limit."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def maxProduct(self, nums: list[int], k: int, limit: int) -> int:\n        dp = {}\n        for x in nums:\n            newdp = dp.copy()\n            if x <= limit:\n                newdp[(x, 1)] = max(newdp.get((x, 1), -1), x)\n            for (s, par), prod in dp.items():\n                np = prod * x\n                if np <= limit:\n                    ns = s + x if par == 0 else s - x\n                    next_par = 1 - par\n                    newdp[(ns, next_par)] = max(newdp.get((ns, next_par), -1), np)\n            dp = newdp\n        return max(dp.get((k, 0), -1), dp.get((k, 1), -1))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * S)",
+    "space": "O(S)",
+    "variables": [
+      "N: length of array nums",
+      "S: number of distinct reachable state tuples"
+    ],
+    "notes": "State compression over reachable alternating sum and sign pairs bounds transitions.",
+    "whyNaiveFails": "Evaluating all subsequences requires checking exponential combinations.",
+    "spaceTimeTradeoff": "Storing maximal products per state reduces combinatorial explosion.",
+    "interviewerExpectation": "Track alternating parity and bound product values within limit."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxProduct(self, nums: list[int], k: int, limit: int) -> int:\n        dp = {}\n        for x in nums:\n            newdp = dp.copy()\n            if x <= limit:\n                newdp[(x, 1)] = max(newdp.get((x, 1), -1), x)\n            for (s, par), prod in dp.items():\n                np = prod * x\n                if np <= limit:\n                    ns = s + x if par == 0 else s - x\n                    next_par = 1 - par\n                    newdp[(ns, next_par)] = max(newdp.get((ns, next_par), -1), np)\n            dp = newdp\n        return max(dp.get((k, 0), -1), dp.get((k, 1), -1))",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <map>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int maxProduct(vector<int>& nums, int k, int limit) {\n        map<pair<int, int>, int> dp;\n        for (int x : nums) {\n            auto nextDp = dp;\n            if (x <= limit) {\n                nextDp[{x, 1}] = max(nextDp[{x, 1}], x);\n            }\n            for (const auto& [st, prod] : dp) {\n                long long np = (long long)prod * x;\n                if (np <= limit) {\n                    int ns = (st.second == 0) ? (st.first + x) : (st.first - x);\n                    int nextPar = 1 - st.second;\n                    nextDp[{ns, nextPar}] = max(nextDp[{ns, nextPar}], (int)np);\n                }\n            }\n            dp = std::move(nextDp);\n        }\n        int ans = -1;\n        if (dp.count({k, 0})) ans = max(ans, dp[{k, 0}]);\n        if (dp.count({k, 1})) ans = max(ans, dp[{k, 1}]);\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxProduct(int[] nums, int k, int limit) {\n        Map<String, Integer> dp = new HashMap<>();\n        for (int x : nums) {\n            Map<String, Integer> nextDp = new HashMap<>(dp);\n            if (x <= limit) {\n                String key = x + \",1\";\n                nextDp.put(key, Math.max(nextDp.getOrDefault(key, -1), x));\n            }\n            for (Map.Entry<String, Integer> entry : dp.entrySet()) {\n                String[] parts = entry.getKey().split(\",\");\n                int s = Integer.parseInt(parts[0]);\n                int par = Integer.parseInt(parts[1]);\n                long np = (long) entry.getValue() * x;\n                if (np <= limit) {\n                    int ns = (par == 0) ? (s + x) : (s - x);\n                    int nextPar = 1 - par;\n                    String nKey = ns + \",\" + nextPar;\n                    nextDp.put(nKey, Math.max(nextDp.getOrDefault(nKey, -1), (int) np));\n                }\n            }\n            dp = nextDp;\n        }\n        int ans = -1;\n        ans = Math.max(ans, dp.getOrDefault(k + \",0\", -1));\n        ans = Math.max(ans, dp.getOrDefault(k + \",1\", -1));\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxProduct = function(nums, k, limit) {\n    let dp = new Map();\n    for (const x of nums) {\n        const nextDp = new Map(dp);\n        if (x <= limit) {\n            const key = `${x},1`;\n            nextDp.set(key, Math.max(nextDp.get(key) || -1, x));\n        }\n        for (const [key, prod] of dp.entries()) {\n            const [sStr, parStr] = key.split(',');\n            const s = Number(sStr);\n            const par = Number(parStr);\n            const np = prod * x;\n            if (np <= limit) {\n                const ns = par === 0 ? s + x : s - x;\n                const nextPar = 1 - par;\n                const nKey = `${ns},${nextPar}`;\n                nextDp.set(nKey, Math.max(nextDp.get(nKey) || -1, np));\n            }\n        }\n        dp = nextDp;\n    }\n    const a0 = dp.get(`${k},0`) ?? -1;\n    const a1 = dp.get(`${k},1`) ?? -1;\n    return Math.max(a0, a1);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-06"
+}
