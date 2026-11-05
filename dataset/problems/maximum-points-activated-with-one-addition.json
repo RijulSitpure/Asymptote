@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-points-activated-with-one-addition",
+  "number": 3873,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Connected groups of active cells can be grouped together with their component identifiers."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Label each connected component of 1s with a unique identifier and compute its total size."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "For each empty cell 0, evaluate the sum of sizes of distinct adjacent components plus 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef maxPointsActivated(grid: list[list[int]]) -> int:\n    n = len(grid)\n    comp_size = {}\n    comp_id = [[0] * n for _ in range(n)]\n    cid = 1\n    \n    def dfs(r: int, c: int, cur_id: int) -> int:\n        comp_id[r][c] = cur_id\n        size = 1\n        for nr, nc in [(r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)]:\n            if 0 <= nr < n and 0 <= nc < n and grid[nr][nc] == 1 and comp_id[nr][nc] == 0:\n                size += dfs(nr, nc, cur_id)\n        return size\n\n    max_comp = 0\n    for r in range(n):\n        for c in range(n):\n            if grid[r][c] == 1 and comp_id[r][c] == 0:\n                sz = dfs(r, c, cid)\n                comp_size[cid] = sz\n                max_comp = max(max_comp, sz)\n                cid += 1\n                \n    ans = max_comp\n    for r in range(n):\n        for c in range(n):\n            if grid[r][c] == 0:\n                seen = set()\n                cur = 1\n                for nr, nc in [(r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)]:\n                    if 0 <= nr < n and 0 <= nc < n and comp_id[nr][nc] > 0:\n                        adj_id = comp_id[nr][nc]\n                        if adj_id not in seen:\n                            seen.add(adj_id)\n                            cur += comp_size[adj_id]\n                ans = max(ans, cur)\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2)",
+    "space": "O(n^2)",
+    "variables": [
+      "n"
+    ],
+    "notes": "Visits each grid cell a constant number of times during component labeling and neighbor aggregation.",
+    "whyNaiveFails": "Running breadth searches from every zero cell results in O(n^4) worst-case time.",
+    "spaceTimeTradeoff": "Stores component labels and sizes in an n by n table.",
+    "interviewerExpectation": "Labels components first to aggregate neighboring component sizes in O(1)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def maxPointsActivated(grid: list[list[int]]) -> int:\n    n = len(grid)\n    comp_size = {}\n    comp_id = [[0] * n for _ in range(n)]\n    cid = 1\n    \n    def dfs(r: int, c: int, cur_id: int) -> int:\n        comp_id[r][c] = cur_id\n        size = 1\n        for nr, nc in [(r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)]:\n            if 0 <= nr < n and 0 <= nc < n and grid[nr][nc] == 1 and comp_id[nr][nc] == 0:\n                size += dfs(nr, nc, cur_id)\n        return size\n\n    max_comp = 0\n    for r in range(n):\n        for c in range(n):\n            if grid[r][c] == 1 and comp_id[r][c] == 0:\n                sz = dfs(r, c, cid)\n                comp_size[cid] = sz\n                max_comp = max(max_comp, sz)\n                cid += 1\n                \n    ans = max_comp\n    for r in range(n):\n        for c in range(n):\n            if grid[r][c] == 0:\n                seen = set()\n                cur = 1\n                for nr, nc in [(r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)]:\n                    if 0 <= nr < n and 0 <= nc < n and comp_id[nr][nc] > 0:\n                        adj_id = comp_id[nr][nc]\n                        if adj_id not in seen:\n                            seen.add(adj_id)\n                            cur += comp_size[adj_id]\n                ans = max(ans, cur)\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <unordered_set>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxPointsActivated(std::vector<std::vector<int>>& grid) {\n        int n = grid.size();\n        std::vector<std::vector<int>> compId(n, std::vector<int>(n, 0));\n        std::unordered_map<int, int> compSize;\n        int cid = 1;\n        \n        auto dfs = [&](auto& self, int r, int c, int curId) -> int {\n            compId[r][c] = curId;\n            int sz = 1;\n            int dr[] = {1, -1, 0, 0};\n            int dc[] = {0, 0, 1, -1};\n            for (int i = 0; i < 4; ++i) {\n                int nr = r + dr[i], nc = c + dc[i];\n                if (nr >= 0 && nr < n && nc >= 0 && nc < n && grid[nr][nc] == 1 && compId[nr][nc] == 0) {\n                    sz += self(self, nr, nc, curId);\n                }\n            }\n            return sz;\n        };\n\n        int maxComp = 0;\n        for (int r = 0; r < n; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (grid[r][c] == 1 && compId[r][c] == 0) {\n                    int sz = dfs(dfs, r, c, cid);\n                    compSize[cid] = sz;\n                    maxComp = std::max(maxComp, sz);\n                    cid++;\n                }\n            }\n        }\n\n        int ans = maxComp;\n        for (int r = 0; r < n; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (grid[r][c] == 0) {\n                    std::unordered_set<int> seen;\n                    int cur = 1;\n                    int dr[] = {1, -1, 0, 0};\n                    int dc[] = {0, 0, 1, -1};\n                    for (int i = 0; i < 4; ++i) {\n                        int nr = r + dr[i], nc = c + dc[i];\n                        if (nr >= 0 && nr < n && nc >= 0 && nc < n && compId[nr][nc] > 0) {\n                            int adj = compId[nr][nc];\n                            if (seen.insert(adj).second) {\n                                cur += compSize[adj];\n                            }\n                        }\n                    }\n                    ans = std::max(ans, cur);\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private int n;\n    private int[][] grid;\n    private int[][] compId;\n\n    private int dfs(int r, int c, int curId) {\n        compId[r][c] = curId;\n        int sz = 1;\n        int[] dr = {1, -1, 0, 0};\n        int[] dc = {0, 0, 1, -1};\n        for (int i = 0; i < 4; i++) {\n            int nr = r + dr[i], nc = c + dc[i];\n            if (nr >= 0 && nr < n && nc >= 0 && nc < n && grid[nr][nc] == 1 && compId[nr][nc] == 0) {\n                sz += dfs(nr, nc, curId);\n            }\n        }\n        return sz;\n    }\n\n    public int maxPointsActivated(int[][] grid) {\n        this.grid = grid;\n        this.n = grid.length;\n        this.compId = new int[n][n];\n        Map<Integer, Integer> compSize = new HashMap<>();\n        int cid = 1;\n        int maxComp = 0;\n\n        for (int r = 0; r < n; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 1 && compId[r][c] == 0) {\n                    int sz = dfs(r, c, cid);\n                    compSize.put(cid, sz);\n                    maxComp = Math.max(maxComp, sz);\n                    cid++;\n                }\n            }\n        }\n\n        int ans = maxComp;\n        for (int r = 0; r < n; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 0) {\n                    Set<Integer> seen = new HashSet<>();\n                    int cur = 1;\n                    int[] dr = {1, -1, 0, 0};\n                    int[] dc = {0, 0, 1, -1};\n                    for (int i = 0; i < 4; i++) {\n                        int nr = r + dr[i], nc = c + dc[i];\n                        if (nr >= 0 && nr < n && nc >= 0 && nc < n && compId[nr][nc] > 0) {\n                            int adj = compId[nr][nc];\n                            if (seen.add(adj)) {\n                                cur += compSize.get(adj);\n                            }\n                        }\n                    }\n                    ans = Math.max(ans, cur);\n                }\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function maxPointsActivated(grid) {\n    const n = grid.length;\n    const compId = Array.from({length: n}, () => new Array(n).fill(0));\n    const compSize = new Map();\n    let cid = 1;\n\n    const dfs = (r, c, curId) => {\n        compId[r][c] = curId;\n        let sz = 1;\n        const dr = [1, -1, 0, 0];\n        const dc = [0, 0, 1, -1];\n        for (let i = 0; i < 4; i++) {\n            const nr = r + dr[i], nc = c + dc[i];\n            if (nr >= 0 && nr < n && nc >= 0 && nc < n && grid[nr][nc] === 1 && compId[nr][nc] === 0) {\n                sz += dfs(nr, nc, curId);\n            }\n        }\n        return sz;\n    };\n\n    let maxComp = 0;\n    for (let r = 0; r < n; r++) {\n        for (let c = 0; c < n; c++) {\n            if (grid[r][c] === 1 && compId[r][c] === 0) {\n                const sz = dfs(r, c, cid);\n                compSize.set(cid, sz);\n                maxComp = Math.max(maxComp, sz);\n                cid++;\n            }\n        }\n    }\n\n    let ans = maxComp;\n    for (let r = 0; r < n; r++) {\n        for (let c = 0; c < n; c++) {\n            if (grid[r][c] === 0) {\n                const seen = new Set();\n                let cur = 1;\n                const dr = [1, -1, 0, 0];\n                const dc = [0, 0, 1, -1];\n                for (let i = 0; i < 4; i++) {\n                    const nr = r + dr[i], nc = c + dc[i];\n                    if (nr >= 0 && nr < n && nc >= 0 && nc < n && compId[nr][nc] > 0) {\n                        const adj = compId[nr][nc];\n                        if (!seen.has(adj)) {\n                            seen.add(adj);\n                            cur += compSize.get(adj);\n                        }\n                    }\n                }\n                ans = Math.max(ans, cur);\n            }\n        }\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

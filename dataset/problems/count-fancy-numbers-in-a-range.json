@@ -1,0 +1,78 @@
+{
+  "slug": "count-fancy-numbers-in-a-range",
+  "number": 3869,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "A fancy number has no adjacent identical digits in its decimal representation."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Formulate a digit-by-digit construction tracking whether the current prefix matches the upper bound."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Compute count up to high minus count up to low - 1."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef countFancy(low: int, high: int) -> int:\n    def count_up_to(n: int) -> int:\n        if n < 0:\n            return 0\n        s = str(n)\n        m = len(s)\n        memo = {}\n        def dp(idx: int, last: int, is_less: bool, started: bool) -> int:\n            if idx == m:\n                return 1 if started else 0\n            state = (idx, last, is_less, started)\n            if state in memo:\n                return memo[state]\n            limit = int(s[idx]) if not is_less else 9\n            ans = 0\n            for d in range(0, limit + 1):\n                if not started and d == 0:\n                    ans += dp(idx + 1, -1, is_less or (d < limit), False)\n                else:\n                    if d != last:\n                        ans += dp(idx + 1, d, is_less or (d < limit), True)\n            memo[state] = ans\n            return ans\n        return dp(0, -1, False, False)\n\n    return count_up_to(high) - count_up_to(low - 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(d * 10 * 2)",
+    "space": "O(d * 10)",
+    "variables": [
+      "d"
+    ],
+    "notes": "Digit DP evaluates states bounded by number of digits d.",
+    "whyNaiveFails": "Iterating over all numbers in range up to 10^15 causes time limit exceeded.",
+    "spaceTimeTradeoff": "Memoizes transitions for d digit positions.",
+    "interviewerExpectation": "Solves digit recurrence tracking tight bound and leading zeros."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def countFancy(low: int, high: int) -> int:\n    def count_up_to(n: int) -> int:\n        if n < 0:\n            return 0\n        s = str(n)\n        m = len(s)\n        memo = {}\n        def dp(idx: int, last: int, is_less: bool, started: bool) -> int:\n            if idx == m:\n                return 1 if started else 0\n            state = (idx, last, is_less, started)\n            if state in memo:\n                return memo[state]\n            limit = int(s[idx]) if not is_less else 9\n            ans = 0\n            for d in range(0, limit + 1):\n                if not started and d == 0:\n                    ans += dp(idx + 1, -1, is_less or (d < limit), False)\n                else:\n                    if d != last:\n                        ans += dp(idx + 1, d, is_less or (d < limit), True)\n            memo[state] = ans\n            return ans\n        return dp(0, -1, False, False)\n\n    return count_up_to(high) - count_up_to(low - 1)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <cstring>\n\nclass Solution {\n    long long memo[20][11][2][2];\n    std::string s;\n    long long solve(int idx, int last, bool isLess, bool started) {\n        if (idx == (int)s.length()) return started ? 1 : 0;\n        int lIdx = last == -1 ? 10 : last;\n        if (memo[idx][lIdx][isLess][started] != -1) return memo[idx][lIdx][isLess][started];\n        int limit = isLess ? 9 : (s[idx] - '0');\n        long long ans = 0;\n        for (int d = 0; d <= limit; ++d) {\n            if (!started && d == 0) {\n                ans += solve(idx + 1, -1, isLess || (d < limit), false);\n            } else {\n                if (d != last) {\n                    ans += solve(idx + 1, d, isLess || (d < limit), true);\n                }\n            }\n        }\n        return memo[idx][lIdx][isLess][started] = ans;\n    }\n    long long countUpTo(long long n) {\n        if (n < 0) return 0;\n        s = std::to_string(n);\n        std::memset(memo, -1, sizeof(memo));\n        return solve(0, -1, false, false);\n    }\npublic:\n    long long countFancy(long long low, long long high) {\n        return countUpTo(high) - countUpTo(low - 1);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private Long[][][][] memo;\n    private String s;\n\n    private long solve(int idx, int last, boolean isLess, boolean started) {\n        if (idx == s.length()) return started ? 1 : 0;\n        int lIdx = last == -1 ? 10 : last;\n        int lessIdx = isLess ? 1 : 0;\n        int startIdx = started ? 1 : 0;\n        if (memo[idx][lIdx][lessIdx][startIdx] != null) return memo[idx][lIdx][lessIdx][startIdx];\n        int limit = isLess ? 9 : (s.charAt(idx) - '0');\n        long ans = 0;\n        for (int d = 0; d <= limit; d++) {\n            if (!started && d == 0) {\n                ans += solve(idx + 1, -1, isLess || (d < limit), false);\n            } else {\n                if (d != last) {\n                    ans += solve(idx + 1, d, isLess || (d < limit), true);\n                }\n            }\n        }\n        return memo[idx][lIdx][lessIdx][startIdx] = ans;\n    }\n\n    private long countUpTo(long n) {\n        if (n < 0) return 0;\n        s = String.valueOf(n);\n        memo = new Long[s.length()][11][2][2];\n        return solve(0, -1, false, false);\n    }\n\n    public long countFancy(long low, long high) {\n        return countUpTo(high) - countUpTo(low - 1);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function countFancy(low, high) {\n    const countUpTo = (n) => {\n        if (n < 0) return 0;\n        const s = String(n);\n        const m = s.length;\n        const memo = new Map();\n        const dp = (idx, last, isLess, started) => {\n            if (idx === m) return started ? 1 : 0;\n            const key = `${idx},${last},${isLess},${started}`;\n            if (memo.has(key)) return memo.get(key);\n            const limit = isLess ? 9 : Number(s[idx]);\n            let ans = 0;\n            for (let d = 0; d <= limit; d++) {\n                if (!started && d === 0) {\n                    ans += dp(idx + 1, -1, isLess || (d < limit), false);\n                } else {\n                    if (d !== last) {\n                        ans += dp(idx + 1, d, isLess || (d < limit), true);\n                    }\n                }\n            }\n            memo.set(key, ans);\n            return ans;\n        };\n        return dp(0, -1, false, false);\n    };\n    return countUpTo(high) - countUpTo(low - 1);\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

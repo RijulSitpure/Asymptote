@@ -1,0 +1,79 @@
+{
+  "slug": "incremental-even-weighted-cycle-queries",
+  "number": 3887,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "An even-weighted cycle exists in an undirected network if adding an edge connects two already connected vertices with parity matching."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Maintain connected components with relative edge parity potentials to the root."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "For each query adding an edge between u and v with weight w, check if u and v share the same component and whether cycle weight is even."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass DSU:\n    def __init__(self, n: int):\n        self.parent = list(range(n))\n        self.pot = [0] * n\n\n    def find(self, x: int) -> tuple[int, int]:\n        if self.parent[x] != x:\n            p, par_pot = self.find(self.parent[x])\n            self.parent[x] = p\n            self.pot[x] ^= par_pot\n        return self.parent[x], self.pot[x]\n\n    def union(self, u: int, v: int, w: int) -> bool:\n        root_u, pot_u = self.find(u)\n        root_v, pot_v = self.find(v)\n        parity = w % 2\n        if root_u == root_v:\n            cycle_parity = pot_u ^ pot_v ^ parity\n            return cycle_parity == 0\n        else:\n            self.parent[root_u] = root_v\n            self.pot[root_u] = pot_u ^ pot_v ^ parity\n            return False\n\ndef evenWeightedCycleQueries(n: int, edges: list[list[int]]) -> list[bool]:\n    dsu = DSU(n)\n    ans = []\n    found_even_cycle = False\n    for u, v, w in edges:\n        if dsu.union(u, v, w):\n            found_even_cycle = True\n        ans.append(found_even_cycle)\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(q * alpha(n))",
+    "space": "O(n)",
+    "variables": [
+      "n",
+      "q"
+    ],
+    "notes": "Processes incremental edge queries using path compression and parity tracking.",
+    "whyNaiveFails": "Running cycle detection traversals from scratch per edge takes O(q * (V + E)).",
+    "spaceTimeTradeoff": "Stores parent and potential arrays for n vertices.",
+    "interviewerExpectation": "Maintains potential parity offsets across connected tree components."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class DSU:\n    def __init__(self, n: int):\n        self.parent = list(range(n))\n        self.pot = [0] * n\n\n    def find(self, x: int) -> tuple[int, int]:\n        if self.parent[x] != x:\n            p, par_pot = self.find(self.parent[x])\n            self.parent[x] = p\n            self.pot[x] ^= par_pot\n        return self.parent[x], self.pot[x]\n\n    def union(self, u: int, v: int, w: int) -> bool:\n        root_u, pot_u = self.find(u)\n        root_v, pot_v = self.find(v)\n        parity = w % 2\n        if root_u == root_v:\n            cycle_parity = pot_u ^ pot_v ^ parity\n            return cycle_parity == 0\n        else:\n            self.parent[root_u] = root_v\n            self.pot[root_u] = pot_u ^ pot_v ^ parity\n            return False\n\ndef evenWeightedCycleQueries(n: int, edges: list[list[int]]) -> list[bool]:\n    dsu = DSU(n)\n    ans = []\n    found_even_cycle = False\n    for u, v, w in edges:\n        if dsu.union(u, v, w):\n            found_even_cycle = True\n        ans.append(found_even_cycle)\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n\nclass Solution {\n    struct DSU {\n        std::vector<int> parent, pot;\n        DSU(int n) : parent(n), pot(n, 0) {\n            for (int i = 0; i < n; ++i) parent[i] = i;\n        }\n        std::pair<int, int> find(int x) {\n            if (parent[x] != x) {\n                auto [p, par_pot] = find(parent[x]);\n                parent[x] = p;\n                pot[x] ^= par_pot;\n            }\n            return {parent[x], pot[x]};\n        }\n        bool unite(int u, int v, int w) {\n            auto [root_u, pot_u] = find(u);\n            auto [root_v, pot_v] = find(v);\n            int parity = w % 2;\n            if (root_u == root_v) {\n                return (pot_u ^ pot_v ^ parity) == 0;\n            } else {\n                parent[root_u] = root_v;\n                pot[root_u] = pot_u ^ pot_v ^ parity;\n                return false;\n            }\n        }\n    };\npublic:\n    std::vector<bool> evenWeightedCycleQueries(int n, std::vector<std::vector<int>>& edges) {\n        DSU dsu(n);\n        std::vector<bool> ans;\n        bool found = false;\n        for (const auto& e : edges) {\n            if (dsu.unite(e[0], e[1], e[2])) found = true;\n            ans.push_back(found);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class DSU {\n        int[] parent, pot;\n        DSU(int n) {\n            parent = new int[n];\n            pot = new int[n];\n            for (int i = 0; i < n; i++) parent[i] = i;\n        }\n        int[] find(int x) {\n            if (parent[x] != x) {\n                int[] res = find(parent[x]);\n                parent[x] = res[0];\n                pot[x] ^= res[1];\n            }\n            return new int[]{parent[x], pot[x]};\n        }\n        boolean union(int u, int v, int w) {\n            int[] resU = find(u);\n            int[] resV = find(v);\n            int parity = w % 2;\n            if (resU[0] == resV[0]) {\n                return (resU[1] ^ resV[1] ^ parity) == 0;\n            } else {\n                parent[resU[0]] = resV[0];\n                pot[resU[0]] = resU[1] ^ resV[1] ^ parity;\n                return false;\n            }\n        }\n    }\n\n    public boolean[] evenWeightedCycleQueries(int n, int[][] edges) {\n        DSU dsu = new DSU(n);\n        boolean[] ans = new boolean[edges.length];\n        boolean found = false;\n        for (int i = 0; i < edges.length; i++) {\n            if (dsu.union(edges[i][0], edges[i][1], edges[i][2])) found = true;\n            ans[i] = found;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function evenWeightedCycleQueries(n, edges) {\n    const parent = Array.from({length: n}, (_, i) => i);\n    const pot = new Array(n).fill(0);\n    const find = (x) => {\n        if (parent[x] !== x) {\n            const [p, parPot] = find(parent[x]);\n            parent[x] = p;\n            pot[x] ^= parPot;\n        }\n        return [parent[x], pot[x]];\n    };\n    const union = (u, v, w) => {\n        const [ru, pu] = find(u);\n        const [rv, pv] = find(v);\n        const parity = w % 2;\n        if (ru === rv) {\n            return (pu ^ pv ^ parity) === 0;\n        } else {\n            parent[ru] = rv;\n            pot[ru] = pu ^ pv ^ parity;\n            return false;\n        }\n    };\n    const ans = [];\n    let found = false;\n    for (const [u, v, w] of edges) {\n        if (union(u, v, w)) found = true;\n        ans.push(found);\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

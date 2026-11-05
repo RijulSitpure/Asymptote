@@ -1,0 +1,79 @@
+{
+  "slug": "count-non-decreasing-arrays-with-given-digit-sums",
+  "number": 3883,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Each array element must satisfy two conditions: its digit sum matches the specified target, and elements are non-decreasing."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Precompute all possible integer values up to a practical bound that have the target digit sums."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Transition the count of valid non-decreasing sequences element by element modulo 10^9 + 7."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef countArrays(digit_sums: list[int], max_val: int = 50) -> int:\n    MOD = 1_000_000_007\n    def get_digit_sum(x: int) -> int:\n        return sum(int(d) for d in str(x))\n        \n    candidates = []\n    for target in digit_sums:\n        valid = [x for x in range(max_val + 1) if get_digit_sum(x) == target]\n        candidates.append(valid)\n        \n    if not candidates[0]:\n        return 0\n    dp = {x: 1 for x in candidates[0]}\n    for cand in candidates[1:]:\n        next_dp = {}\n        for y in cand:\n            next_dp[y] = sum(count for x, count in dp.items() if x <= y) % MOD\n        dp = next_dp\n    return sum(dp.values()) % MOD\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n * v^2)",
+    "space": "O(v)",
+    "variables": [
+      "n",
+      "v"
+    ],
+    "notes": "Iterates through candidate values bounded by max_val v.",
+    "whyNaiveFails": "Generating all non-decreasing sequences directly leads to exponential runtime.",
+    "spaceTimeTradeoff": "Maintains transition dictionary of length at most v.",
+    "interviewerExpectation": "Combines digit sum filtering with sorted sequence dynamic programming."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def countArrays(digit_sums: list[int], max_val: int = 50) -> int:\n    MOD = 1_000_000_007\n    def get_digit_sum(x: int) -> int:\n        return sum(int(d) for d in str(x))\n        \n    candidates = []\n    for target in digit_sums:\n        valid = [x for x in range(max_val + 1) if get_digit_sum(x) == target]\n        candidates.append(valid)\n        \n    if not candidates[0]:\n        return 0\n    dp = {x: 1 for x in candidates[0]}\n    for cand in candidates[1:]:\n        next_dp = {}\n        for y in cand:\n            next_dp[y] = sum(count for x, count in dp.items() if x <= y) % MOD\n        dp = next_dp\n    return sum(dp.values()) % MOD",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <map>\n#include <string>\n\nclass Solution {\npublic:\n    int countArrays(std::vector<int>& digit_sums, int max_val = 50) {\n        const int MOD = 1e9 + 7;\n        auto getDigitSum = [](int x) {\n            int s = 0;\n            while (x > 0) { s += x % 10; x /= 10; }\n            return s;\n        };\n        std::vector<std::vector<int>> candidates;\n        for (int target : digit_sums) {\n            std::vector<int> valid;\n            for (int x = 0; x <= max_val; ++x) {\n                if (getDigitSum(x) == target) valid.push_back(x);\n            }\n            candidates.push_back(valid);\n        }\n        if (candidates[0].empty()) return 0;\n        std::map<int, int> dp;\n        for (int x : candidates[0]) dp[x] = 1;\n        for (size_t i = 1; i < candidates.size(); ++i) {\n            std::map<int, int> next_dp;\n            for (int y : candidates[i]) {\n                long long sum = 0;\n                for (const auto& [x, count] : dp) {\n                    if (x <= y) sum = (sum + count) % MOD;\n                }\n                next_dp[y] = sum;\n            }\n            dp = std::move(next_dp);\n        }\n        long long total = 0;\n        for (const auto& [k, v] : dp) total = (total + v) % MOD;\n        return total;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int countArrays(int[] digitSums, int maxVal) {\n        int MOD = 1_000_000_007;\n        List<List<Integer>> candidates = new ArrayList<>();\n        for (int target : digitSums) {\n            List<Integer> valid = new ArrayList<>();\n            for (int x = 0; x <= maxVal; x++) {\n                int s = 0, tmp = x;\n                while (tmp > 0) { s += tmp % 10; tmp /= 10; }\n                if (s == target) valid.add(x);\n            }\n            candidates.add(valid);\n        }\n        if (candidates.get(0).isEmpty()) return 0;\n        Map<Integer, Integer> dp = new TreeMap<>();\n        for (int x : candidates.get(0)) dp.put(x, 1);\n        for (int i = 1; i < candidates.size(); i++) {\n            Map<Integer, Integer> nextDp = new TreeMap<>();\n            for (int y : candidates.get(i)) {\n                long sum = 0;\n                for (var entry : dp.entrySet()) {\n                    if (entry.getKey() <= y) sum = (sum + entry.getValue()) % MOD;\n                }\n                nextDp.put(y, (int) sum);\n            }\n            dp = nextDp;\n        }\n        long total = 0;\n        for (int v : dp.values()) total = (total + v) % MOD;\n        return (int) total;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function countArrays(digitSums, maxVal = 50) {\n    const MOD = 1000000007;\n    const candidates = [];\n    for (const target of digitSums) {\n        const valid = [];\n        for (let x = 0; x <= maxVal; x++) {\n            let s = 0, tmp = x;\n            while (tmp > 0) { s += tmp % 10; tmp = Math.floor(tmp / 10); }\n            if (s === target) valid.push(x);\n        }\n        candidates.push(valid);\n    }\n    if (candidates[0].length === 0) return 0;\n    let dp = new Map();\n    for (const x of candidates[0]) dp.set(x, 1);\n    for (let i = 1; i < candidates.length; i++) {\n        const nextDp = new Map();\n        for (const y of candidates[i]) {\n            let sum = 0;\n            for (const [x, count] of dp.entries()) {\n                if (x <= y) sum = (sum + count) % MOD;\n            }\n            nextDp.set(y, sum);\n        }\n        dp = nextDp;\n    }\n    let total = 0;\n    for (const v of dp.values()) total = (total + v) % MOD;\n    return total;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
