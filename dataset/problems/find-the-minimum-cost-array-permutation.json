@@ -1,0 +1,78 @@
+{
+  "slug": "find-the-minimum-cost-array-permutation",
+  "number": 3149,
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Because the score formula is cyclic, rotating any permutation preserves its total cost. Fix perm[0] = 0 to break cyclic symmetry."
+    },
+    {
+      "level": 2,
+      "title": "Bitmask State",
+      "text": "Define state (last, mask) where last is the most recently chosen element and mask represents the subset of selected elements."
+    },
+    {
+      "level": 3,
+      "title": "Reconstruction",
+      "text": "Iterate over unvisited elements in ascending order to find optimal successor transitions, then reconstruct the lexicographically smallest optimal permutation."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def findPermutation(self, nums: list[int]) -> list[int]:\n        n = len(nums)\n        memo = {}\n        best_pick = {}\n\n        def get_score(last, mask):\n            if mask == (1 << n) - 1:\n                return abs(last - nums[0])\n            key = (last, mask)\n            if key in memo:\n                return memo[key]\n\n            min_score = float('inf')\n            best_i = -1\n            for i in range(1, n):\n                if not (mask & (1 << i)):\n                    score = abs(last - nums[i]) + get_score(i, mask | (1 << i))\n                    if score < min_score:\n                        min_score = score\n                        best_i = i\n            memo[key] = min_score\n            best_pick[key] = best_i\n            return min_score\n\n        get_score(0, 1)\n\n        res = [0]\n        last = 0\n        mask = 1\n        for _ in range(n - 1):\n            nxt = best_pick[(last, mask)]\n            res.append(nxt)\n            mask |= (1 << nxt)\n            last = nxt\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n^2 * 2^n)",
+    "space": "O(n * 2^n)",
+    "variables": [
+      "n: length of array nums (at most 14)"
+    ],
+    "notes": "Bitmask traveling salesperson formulation with path reconstruction.",
+    "whyNaiveFails": "Evaluating all n! permutations directly is impossible for n up to 14.",
+    "spaceTimeTradeoff": "O(n * 2^n) memoization and transition table.",
+    "interviewerExpectation": "Fix the initial element to zero due to cyclic invariance and apply bitmask dynamic programming."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Cyclic Symmetry Breaking with Bitmask Dynamic Programming",
+      "code": "class Solution:\n    def findPermutation(self, nums: list[int]) -> list[int]:\n        n = len(nums)\n        memo = {}\n        best_pick = {}\n\n        def get_score(last, mask):\n            if mask == (1 << n) - 1:\n                return abs(last - nums[0])\n            key = (last, mask)\n            if key in memo:\n                return memo[key]\n\n            min_score = float('inf')\n            best_i = -1\n            for i in range(1, n):\n                if not (mask & (1 << i)):\n                    score = abs(last - nums[i]) + get_score(i, mask | (1 << i))\n                    if score < min_score:\n                        min_score = score\n                        best_i = i\n            memo[key] = min_score\n            best_pick[key] = best_i\n            return min_score\n\n        get_score(0, 1)\n\n        res = [0]\n        last = 0\n        mask = 1\n        for _ in range(n - 1):\n            nxt = best_pick[(last, mask)]\n            res.append(nxt)\n            mask |= (1 << nxt)\n            last = nxt\n        return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Cyclic Symmetry Breaking with Bitmask Dynamic Programming",
+      "code": "class Solution {\npublic:\n    vector<int> findPermutation(vector<int>& nums) {\n        int n = nums.size();\n        vector<vector<int>> memo(n, vector<int>(1 << n, -1));\n        vector<vector<int>> best_pick(n, vector<int>(1 << n, -1));\n\n        auto get_score = [&](auto& self, int last, int mask) -> int {\n            if (mask == (1 << n) - 1) {\n                return abs(last - nums[0]);\n            }\n            if (memo[last][mask] != -1) return memo[last][mask];\n\n            int min_score = 1e9, best_i = -1;\n            for (int i = 1; i < n; ++i) {\n                if (!(mask & (1 << i))) {\n                    int score = abs(last - nums[i]) + self(self, i, mask | (1 << i));\n                    if (score < min_score) {\n                        min_score = score;\n                        best_i = i;\n                    }\n                }\n            }\n            best_pick[last][mask] = best_i;\n            return memo[last][mask] = min_score;\n        };\n\n        get_score(get_score, 0, 1);\n\n        vector<int> res = {0};\n        int last = 0, mask = 1;\n        for (int step = 0; step < n - 1; ++step) {\n            int nxt = best_pick[last][mask];\n            res.push_back(nxt);\n            mask |= (1 << nxt);\n            last = nxt;\n        }\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Cyclic Symmetry Breaking with Bitmask Dynamic Programming",
+      "code": "class Solution {\n    public int[] findPermutation(int[] nums) {\n        int n = nums.length;\n        int[][] memo = new int[n][1 << n];\n        int[][] bestPick = new int[n][1 << n];\n        for (int[] row : memo) Arrays.fill(row, -1);\n\n        getScore(0, 1, nums, memo, bestPick);\n\n        int[] res = new int[n];\n        res[0] = 0;\n        int last = 0, mask = 1;\n        for (int i = 1; i < n; i++) {\n            int nxt = bestPick[last][mask];\n            res[i] = nxt;\n            mask |= (1 << nxt);\n            last = nxt;\n        }\n        return res;\n    }\n\n    private int getScore(int last, int mask, int[] nums, int[][] memo, int[][] bestPick) {\n        int n = nums.length;\n        if (mask == (1 << n) - 1) {\n            return Math.abs(last - nums[0]);\n        }\n        if (memo[last][mask] != -1) return memo[last][mask];\n\n        int minScore = Integer.MAX_VALUE, bestI = -1;\n        for (int i = 1; i < n; i++) {\n            if ((mask & (1 << i)) == 0) {\n                int score = Math.abs(last - nums[i]) + getScore(i, mask | (1 << i), nums, memo, bestPick);\n                if (score < minScore) {\n                    minScore = score;\n                    bestI = i;\n                }\n            }\n        }\n        bestPick[last][mask] = bestI;\n        return memo[last][mask] = minScore;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Cyclic Symmetry Breaking with Bitmask Dynamic Programming",
+      "code": "var findPermutation = function(nums) {\n    const n = nums.length;\n    const memo = Array.from({length: n}, () => new Int32Array(1 << n).fill(-1));\n    const bestPick = Array.from({length: n}, () => new Int32Array(1 << n).fill(-1));\n\n    function getScore(last, mask) {\n        if (mask === (1 << n) - 1) {\n            return Math.abs(last - nums[0]);\n        }\n        if (memo[last][mask] !== -1) return memo[last][mask];\n\n        let minScore = 1e9, bestI = -1;\n        for (let i = 1; i < n; i++) {\n            if (!(mask & (1 << i))) {\n                const score = Math.abs(last - nums[i]) + getScore(i, mask | (1 << i));\n                if (score < minScore) {\n                    minScore = score;\n                    bestI = i;\n                }\n            }\n        }\n        bestPick[last][mask] = bestI;\n        return memo[last][mask] = minScore;\n    }\n\n    getScore(0, 1);\n\n    const res = [0];\n    let last = 0, mask = 1;\n    for (let step = 0; step < n - 1; step++) {\n        const nxt = bestPick[last][mask];\n        res.push(nxt);\n        mask |= (1 << nxt);\n        last = nxt;\n    }\n    return res;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

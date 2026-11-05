@@ -1,0 +1,71 @@
+{
+  "slug": "consecutive-available-seats-ii",
+  "number": 3140,
+  "patterns": [
+    "window-offset"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Find the longest contiguous sequences of available cinema seats where free equals one."
+    },
+    {
+      "level": 2,
+      "title": "Islands Identification",
+      "text": "Subtract row number from seat identifier for all free seats to form identical group identifiers across contiguous sequences."
+    },
+    {
+      "level": 3,
+      "title": "Rank and Output",
+      "text": "Group by the generated island identifier to compute minimum seat, maximum seat, and sequence length. Rank groups descending by length and output tied longest sequences."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH FreeSeats AS (\n  SELECT \n    seat_id, \n    seat_id - ROW_NUMBER() OVER (ORDER BY seat_id) AS group_id \n  FROM Cinema \n  WHERE free = 1\n), \nRankedFreeSeats AS (\n  SELECT \n    MIN(seat_id) AS first_seat_id, \n    MAX(seat_id) AS last_seat_id, \n    COUNT(*) AS consecutive_seats_len, \n    RANK() OVER (ORDER BY COUNT(*) DESC) AS seat_rank \n  FROM FreeSeats \n  GROUP BY group_id \n) \nSELECT \n  first_seat_id, \n  last_seat_id, \n  consecutive_seats_len \nFROM RankedFreeSeats \nWHERE seat_rank = 1 \nORDER BY first_seat_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total seats in Cinema table"
+    ],
+    "notes": "Row number generation, grouping, and rank ordering.",
+    "whyNaiveFails": "Self-joining arbitrary seat ranges causes quadratic time complexity.",
+    "spaceTimeTradeoff": "O(N) intermediate table for window rank calculation.",
+    "interviewerExpectation": "Apply the classic gaps-and-islands technique using seat_id - ROW_NUMBER()."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Gaps and Islands Row Number Difference Partitioning",
+      "code": "WITH FreeSeats AS (\n  SELECT \n    seat_id, \n    seat_id - ROW_NUMBER() OVER (ORDER BY seat_id) AS group_id \n  FROM Cinema \n  WHERE free = 1\n), \nRankedFreeSeats AS (\n  SELECT \n    MIN(seat_id) AS first_seat_id, \n    MAX(seat_id) AS last_seat_id, \n    COUNT(*) AS consecutive_seats_len, \n    RANK() OVER (ORDER BY COUNT(*) DESC) AS seat_rank \n  FROM FreeSeats \n  GROUP BY group_id \n) \nSELECT \n  first_seat_id, \n  last_seat_id, \n  consecutive_seats_len \nFROM RankedFreeSeats \nWHERE seat_rank = 1 \nORDER BY first_seat_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Gaps and Islands Row Number Difference Partitioning",
+      "code": "WITH FreeSeats AS (\n  SELECT \n    seat_id, \n    seat_id - ROW_NUMBER() OVER (ORDER BY seat_id) AS group_id \n  FROM Cinema \n  WHERE free = 1\n), \nRankedFreeSeats AS (\n  SELECT \n    MIN(seat_id) AS first_seat_id, \n    MAX(seat_id) AS last_seat_id, \n    COUNT(*) AS consecutive_seats_len, \n    RANK() OVER (ORDER BY COUNT(*) DESC) AS seat_rank \n  FROM FreeSeats \n  GROUP BY group_id \n) \nSELECT \n  first_seat_id, \n  last_seat_id, \n  consecutive_seats_len \nFROM RankedFreeSeats \nWHERE seat_rank = 1 \nORDER BY first_seat_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Gaps and Islands Row Number Difference Partitioning",
+      "code": "import pandas as pd\n\ndef consecutive_available_seats_ii(cinema: pd.DataFrame) -> pd.DataFrame:\n    free = cinema[cinema['free'] == 1].copy()\n    if free.empty:\n        return pd.DataFrame(columns=['first_seat_id', 'last_seat_id', 'consecutive_seats_len'])\n        \n    free = free.sort_values(by='seat_id')\n    free['row_num'] = range(1, len(free) + 1)\n    free['group_id'] = free['seat_id'] - free['row_num']\n    \n    grouped = free.groupby('group_id').agg(\n        first_seat_id=('seat_id', 'min'),\n        last_seat_id=('seat_id', 'max'),\n        consecutive_seats_len=('seat_id', 'count')\n    ).reset_index()\n    \n    max_len = grouped['consecutive_seats_len'].max()\n    res = grouped[grouped['consecutive_seats_len'] == max_len]\n    return res[['first_seat_id', 'last_seat_id', 'consecutive_seats_len']].sort_values(by='first_seat_id')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

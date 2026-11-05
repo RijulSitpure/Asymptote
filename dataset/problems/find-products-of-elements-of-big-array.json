@@ -1,0 +1,79 @@
+{
+  "slug": "find-products-of-elements-of-big-array",
+  "number": 3145,
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "The problem asks for the product of powers of two across ranges, which is equivalent to two raised to the sum of the bit exponents modulo each query modulus."
+    },
+    {
+      "level": 2,
+      "title": "Bit Counting Formula",
+      "text": "For any integer n, calculate the total count of set bits and total sum of bit exponents across numbers 1 through n using cycle periodicity."
+    },
+    {
+      "level": 3,
+      "title": "Boundary Search",
+      "text": "Search monotonically for the largest integer completely enclosed within the first k bits, then add remaining exponents from the succeeding integer."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def findProductsOfElements(self, queries: list[list[int]]) -> list[int]:\n        def count_bit(n, b):\n            period = 1 << (b + 1)\n            full = (n + 1) // period\n            rem = (n + 1) % period\n            return full * (1 << b) + max(0, rem - (1 << b))\n\n        def total_bits(n):\n            return sum(count_bit(n, b) for b in range(60))\n\n        def total_power_sum(n):\n            return sum(b * count_bit(n, b) for b in range(60))\n\n        def sum_powers(k):\n            if k <= 0:\n                return 0\n            low, high = 1, k\n            x = 0\n            while low <= high:\n                mid = (low + high) // 2\n                if total_bits(mid) <= k:\n                    x = mid\n                    low = mid + 1\n                else:\n                    high = mid - 1\n\n            res = total_power_sum(x)\n            rem = k - total_bits(x)\n            nxt = x + 1\n            for b in range(60):\n                if rem == 0:\n                    break\n                if (nxt >> b) & 1:\n                    res += b\n                    rem -= 1\n            return res\n\n        ans = []\n        for l, r, mod in queries:\n            exp = sum_powers(r + 1) - sum_powers(l)\n            ans.append(pow(2, exp, mod))\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(Q * log(to) * 60)",
+    "space": "O(Q)",
+    "variables": [
+      "Q: number of queries",
+      "to: maximum query index"
+    ],
+    "notes": "Binary search over threshold integer with 60 bit counters per query.",
+    "whyNaiveFails": "Query indices reach 10^15, rendering direct array construction impossible.",
+    "spaceTimeTradeoff": "O(Q) output array.",
+    "interviewerExpectation": "Reduce range product of powers of two to prefix sums of bit exponents using binary search."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Binary Search on Set Bit Count and Exponent Prefix Sums",
+      "code": "class Solution:\n    def findProductsOfElements(self, queries: list[list[int]]) -> list[int]:\n        def count_bit(n, b):\n            period = 1 << (b + 1)\n            full = (n + 1) // period\n            rem = (n + 1) % period\n            return full * (1 << b) + max(0, rem - (1 << b))\n\n        def total_bits(n):\n            return sum(count_bit(n, b) for b in range(60))\n\n        def total_power_sum(n):\n            return sum(b * count_bit(n, b) for b in range(60))\n\n        def sum_powers(k):\n            if k <= 0:\n                return 0\n            low, high = 1, k\n            x = 0\n            while low <= high:\n                mid = (low + high) // 2\n                if total_bits(mid) <= k:\n                    x = mid\n                    low = mid + 1\n                else:\n                    high = mid - 1\n\n            res = total_power_sum(x)\n            rem = k - total_bits(x)\n            nxt = x + 1\n            for b in range(60):\n                if rem == 0:\n                    break\n                if (nxt >> b) & 1:\n                    res += b\n                    rem -= 1\n            return res\n\n        ans = []\n        for l, r, mod in queries:\n            exp = sum_powers(r + 1) - sum_powers(l)\n            ans.append(pow(2, exp, mod))\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Binary Search on Set Bit Count and Exponent Prefix Sums",
+      "code": "class Solution {\npublic:\n    vector<int> findProductsOfElements(vector<vector<long long>>& queries) {\n        auto count_bit = [](long long n, int b) -> long long {\n            long long period = 1LL << (b + 1);\n            long long full = (n + 1) / period;\n            long long rem = (n + 1) % period;\n            return full * (1LL << b) + max(0LL, rem - (1LL << b));\n        };\n\n        auto total_bits = [&](long long n) -> long long {\n            long long s = 0;\n            for (int b = 0; b < 60; ++b) s += count_bit(n, b);\n            return s;\n        };\n\n        auto total_power_sum = [&](long long n) -> long long {\n            long long s = 0;\n            for (int b = 0; b < 60; ++b) s += b * count_bit(n, b);\n            return s;\n        };\n\n        auto sum_powers = [&](long long k) -> long long {\n            if (k <= 0) return 0;\n            long long low = 1, high = k, x = 0;\n            while (low <= high) {\n                long long mid = low + (high - low) / 2;\n                if (total_bits(mid) <= k) {\n                    x = mid;\n                    low = mid + 1;\n                } else {\n                    high = mid - 1;\n                }\n            }\n\n            long long res = total_power_sum(x);\n            long long rem = k - total_bits(x);\n            long long nxt = x + 1;\n            for (int b = 0; b < 60; ++b) {\n                if (rem == 0) break;\n                if ((nxt >> b) & 1LL) {\n                    res += b;\n                    rem--;\n                }\n            }\n            return res;\n        };\n\n        auto mod_pow = [](long long base, long long exp, long long mod) -> int {\n            long long res = 1 % mod;\n            base %= mod;\n            while (exp > 0) {\n                if (exp % 2 == 1) res = (res * base) % mod;\n                base = (base * base) % mod;\n                exp /= 2;\n            }\n            return res;\n        };\n\n        vector<int> ans;\n        for (const auto& q : queries) {\n            long long l = q[0], r = q[1], mod = q[2];\n            long long exp = sum_powers(r + 1) - sum_powers(l);\n            ans.push_back(mod_pow(2, exp, mod));\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Binary Search on Set Bit Count and Exponent Prefix Sums",
+      "code": "class Solution {\n    public int[] findProductsOfElements(long[][] queries) {\n        int[] ans = new int[queries.length];\n        for (int i = 0; i < queries.length; i++) {\n            long l = queries[i][0], r = queries[i][1], mod = queries[i][2];\n            long exp = sumPowers(r + 1) - sumPowers(l);\n            ans[i] = modPow(2, exp, mod);\n        }\n        return ans;\n    }\n\n    private long countBit(long n, int b) {\n        long period = 1L << (b + 1);\n        long full = (n + 1) / period;\n        long rem = (n + 1) % period;\n        return full * (1L << b) + Math.max(0L, rem - (1L << b));\n    }\n\n    private long totalBits(long n) {\n        long s = 0;\n        for (int b = 0; b < 60; b++) s += countBit(n, b);\n        return s;\n    }\n\n    private long totalPowerSum(long n) {\n        long s = 0;\n        for (int b = 0; b < 60; b++) s += b * countBit(n, b);\n        return s;\n    }\n\n    private long sumPowers(long k) {\n        if (k <= 0) return 0;\n        long low = 1, high = k, x = 0;\n        while (low <= high) {\n            long mid = low + (high - low) / 2;\n            if (totalBits(mid) <= k) {\n                x = mid;\n                low = mid + 1;\n            } else {\n                high = mid - 1;\n            }\n        }\n\n        long res = totalPowerSum(x);\n        long rem = k - totalBits(x);\n        long nxt = x + 1;\n        for (int b = 0; b < 60; b++) {\n            if (rem == 0) break;\n            if (((nxt >> b) & 1L) == 1L) {\n                res += b;\n                rem--;\n            }\n        }\n        return res;\n    }\n\n    private int modPow(long base, long exp, long mod) {\n        long res = 1 % mod;\n        base %= mod;\n        while (exp > 0) {\n            if (exp % 2 == 1) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp /= 2;\n        }\n        return (int) res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Binary Search on Set Bit Count and Exponent Prefix Sums",
+      "code": "var findProductsOfElements = function(queries) {\n    function countBit(n, b) {\n        const period = 1n << BigInt(b + 1);\n        const full = (n + 1n) / period;\n        const rem = (n + 1n) % period;\n        const half = 1n << BigInt(b);\n        return full * half + (rem > half ? rem - half : 0n);\n    }\n\n    function totalBits(n) {\n        let s = 0n;\n        for (let b = 0; b < 60; b++) s += countBit(n, b);\n        return s;\n    }\n\n    function totalPowerSum(n) {\n        let s = 0n;\n        for (let b = 0; b < 60; b++) s += BigInt(b) * countBit(n, b);\n        return s;\n    }\n\n    function sumPowers(k) {\n        if (k <= 0n) return 0n;\n        let low = 1n, high = k, x = 0n;\n        while (low <= high) {\n            const mid = (low + high) / 2n;\n            if (totalBits(mid) <= k) {\n                x = mid;\n                low = mid + 1n;\n            } else {\n                high = mid - 1n;\n            }\n        }\n\n        let res = totalPowerSum(x);\n        let rem = k - totalBits(x);\n        const nxt = x + 1n;\n        for (let b = 0; b < 60; b++) {\n            if (rem === 0n) break;\n            if ((nxt >> BigInt(b)) & 1n) {\n                res += BigInt(b);\n                rem -= 1n;\n            }\n        }\n        return res;\n    }\n\n    function modPow(base, exp, mod) {\n        let res = 1n % mod;\n        base = base % mod;\n        while (exp > 0n) {\n            if (exp % 2n === 1n) res = (res * base) % mod;\n            base = (base * base) % mod;\n            exp /= 2n;\n        }\n        return Number(res);\n    }\n\n    return queries.map(([l, r, mod]) => {\n        const exp = sumPowers(BigInt(r + 1)) - sumPowers(BigInt(l));\n        return modPow(2n, exp, BigInt(mod));\n    });\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

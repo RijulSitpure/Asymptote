@@ -1,0 +1,71 @@
+{
+  "slug": "find-longest-calls",
+  "number": 3124,
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Find the top three longest calls for incoming and outgoing types along with contact names formatted as HH:MM:SS."
+    },
+    {
+      "level": 2,
+      "title": "Window Partitioning",
+      "text": "Join Calls with Contacts on contact identifier and use rank partitioned by call type descending by duration."
+    },
+    {
+      "level": 3,
+      "title": "Formatting and Ordering",
+      "text": "Filter where rank is at most three. Convert seconds to HH:MM:SS using floor and modulo with zero padding, ordering by type descending, duration descending, and first name descending."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH RankedCalls AS (\n  SELECT \n    Contacts.first_name, \n    Calls.type, \n    Calls.duration, \n    RANK() OVER (PARTITION BY Calls.type ORDER BY Calls.duration DESC) AS call_rank\n  FROM Calls\n  INNER JOIN Contacts \n    ON Calls.contact_id = Contacts.id\n)\nSELECT \n  first_name, \n  type, \n  CONCAT(\n    LPAD(FLOOR(duration / 3600), 2, '0'), ':',\n    LPAD(FLOOR((duration % 3600) / 60), 2, '0'), ':',\n    LPAD(FLOOR(duration % 60), 2, '0')\n  ) AS duration_formatted\nFROM RankedCalls\nWHERE call_rank <= 3\nORDER BY type DESC, duration DESC, first_name DESC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total calls"
+    ],
+    "notes": "Partition ranking by type followed by duration sorting.",
+    "whyNaiveFails": "Correlated subqueries per call type lead to quadratic execution time.",
+    "spaceTimeTradeoff": "O(N) memory for window rank computation.",
+    "interviewerExpectation": "Use window ranking functions and format seconds into HH:MM:SS accurately."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window Partition Rank and HH:MM:SS Duration Formatting",
+      "code": "WITH RankedCalls AS (\n  SELECT \n    Contacts.first_name, \n    Calls.type, \n    Calls.duration, \n    RANK() OVER (PARTITION BY Calls.type ORDER BY Calls.duration DESC) AS call_rank\n  FROM Calls\n  INNER JOIN Contacts \n    ON Calls.contact_id = Contacts.id\n)\nSELECT \n  first_name, \n  type, \n  CONCAT(\n    LPAD(FLOOR(duration / 3600), 2, '0'), ':',\n    LPAD(FLOOR((duration % 3600) / 60), 2, '0'), ':',\n    LPAD(FLOOR(duration % 60), 2, '0')\n  ) AS duration_formatted\nFROM RankedCalls\nWHERE call_rank <= 3\nORDER BY type DESC, duration DESC, first_name DESC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window Partition Rank and HH:MM:SS Duration Formatting",
+      "code": "WITH RankedCalls AS (\n  SELECT \n    Contacts.first_name, \n    Calls.type, \n    Calls.duration, \n    RANK() OVER (PARTITION BY Calls.type ORDER BY Calls.duration DESC) AS call_rank\n  FROM Calls\n  INNER JOIN Contacts \n    ON Calls.contact_id = Contacts.id\n)\nSELECT \n  first_name, \n  type, \n  TO_CHAR(duration * INTERVAL '1 second', 'HH24:MI:SS') AS duration_formatted\nFROM RankedCalls\nWHERE call_rank <= 3\nORDER BY type DESC, duration DESC, first_name DESC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Window Partition Rank and HH:MM:SS Duration Formatting",
+      "code": "import pandas as pd\n\ndef find_longest_calls(contacts: pd.DataFrame, calls: pd.DataFrame) -> pd.DataFrame:\n    merged = calls.merge(contacts, left_on='contact_id', right_on='id', how='inner')\n    if merged.empty:\n        return pd.DataFrame(columns=['first_name', 'type', 'duration_formatted'])\n        \n    merged['call_rank'] = merged.groupby('type')['duration'].rank(method='min', ascending=False)\n    filtered = merged[merged['call_rank'] <= 3].copy()\n    \n    def fmt(sec):\n        h = sec // 3600\n        m = (sec % 3600) // 60\n        s = sec % 60\n        return f\"{h:02d}:{m:02d}:{s:02d}\"\n        \n    filtered['duration_formatted'] = filtered['duration'].apply(fmt)\n    filtered = filtered.sort_values(by=['type', 'duration', 'first_name'], ascending=[False, False, False])\n    return filtered[['first_name', 'type', 'duration_formatted']]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

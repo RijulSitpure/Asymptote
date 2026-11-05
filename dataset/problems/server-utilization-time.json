@@ -1,0 +1,71 @@
+{
+  "slug": "server-utilization-time",
+  "number": 3126,
+  "patterns": [
+    "date-time"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "Calculate the total active running duration across all server sessions and convert the aggregated seconds into full days."
+    },
+    {
+      "level": 2,
+      "title": "Session Pairing",
+      "text": "Use window lead partitioned by server identifier ordered by status time to match each start timestamp with its corresponding stop timestamp."
+    },
+    {
+      "level": 3,
+      "title": "Aggregation Formula",
+      "text": "Sum the timestamp differences in seconds for rows with start status, divide by eighty-six thousand four hundred, and floor the outcome."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```mysql\nWITH ServerNeighbors AS (\n    SELECT \n        status_time, \n        session_status, \n        LEAD(status_time) OVER (\n            PARTITION BY server_id \n            ORDER BY status_time\n        ) AS next_status_time \n    FROM Servers\n) \nSELECT \n    FLOOR(SUM(TIMESTAMPDIFF(SECOND, status_time, next_status_time)) / 86400) AS total_uptime_days \nFROM ServerNeighbors \nWHERE session_status = 'start';\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: total log records in Servers table"
+    ],
+    "notes": "Partition sorting by server followed by single aggregation pass.",
+    "whyNaiveFails": "Self joins without window indexing lead to quadratic comparison times.",
+    "spaceTimeTradeoff": "O(N) window buffer.",
+    "interviewerExpectation": "Use window lead to seamlessly pair start and stop log events."
+  },
+  "category": "Database",
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Window Lead Pairing and Seconds-to-Days Conversion",
+      "code": "WITH ServerNeighbors AS (\n    SELECT \n        status_time, \n        session_status, \n        LEAD(status_time) OVER (\n            PARTITION BY server_id \n            ORDER BY status_time\n        ) AS next_status_time \n    FROM Servers\n) \nSELECT \n    FLOOR(SUM(TIMESTAMPDIFF(SECOND, status_time, next_status_time)) / 86400) AS total_uptime_days \nFROM ServerNeighbors \nWHERE session_status = 'start';",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Window Lead Pairing and Seconds-to-Days Conversion",
+      "code": "WITH ServerNeighbors AS (\n    SELECT \n        status_time, \n        session_status, \n        LEAD(status_time) OVER (\n            PARTITION BY server_id \n            ORDER BY status_time\n        ) AS next_status_time \n    FROM Servers\n) \nSELECT \n    FLOOR(SUM(EXTRACT(EPOCH FROM (next_status_time - status_time))) / 86400) AS total_uptime_days \nFROM ServerNeighbors \nWHERE session_status = 'start';",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Window Lead Pairing and Seconds-to-Days Conversion",
+      "code": "import pandas as pd\n\ndef server_utilization_time(servers: pd.DataFrame) -> pd.DataFrame:\n    df = servers.copy()\n    if df.empty:\n        return pd.DataFrame({'total_uptime_days': [0]})\n    df['status_time'] = pd.to_datetime(df['status_time'])\n    df = df.sort_values(by=['server_id', 'status_time'])\n    df['next_status_time'] = df.groupby('server_id')['status_time'].shift(-1)\n    \n    starts = df[df['session_status'] == 'start']\n    total_seconds = (starts['next_status_time'] - starts['status_time']).dt.total_seconds().sum()\n    days = int(total_seconds // 86400) if not pd.isna(total_seconds) else 0\n    return pd.DataFrame({'total_uptime_days': [days]})",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

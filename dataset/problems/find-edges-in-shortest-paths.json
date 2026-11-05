@@ -1,0 +1,79 @@
+{
+  "slug": "find-edges-in-shortest-paths",
+  "number": 3123,
+  "patterns": [
+    "heap-top-k-elements"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "An edge belongs to a shortest path between vertices 0 and n - 1 if and only if the sum of distances from 0 to u, the edge weight, and the distance from v to n - 1 equals the overall shortest path length."
+    },
+    {
+      "level": 2,
+      "title": "Two-Source Distances",
+      "text": "Compute shortest distances from node 0 to all vertices, and from node n - 1 to all vertices using priority queues."
+    },
+    {
+      "level": 3,
+      "title": "Edge Evaluation",
+      "text": "For each undirected edge between u and v with weight w, check dist0[u] + w + distN[v] == total_dist or dist0[v] + w + distN[u] == total_dist."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nimport heapq\n\nclass Solution:\n    def findAnswer(self, n: int, edges: list[list[int]]) -> list[bool]:\n        adj = [[] for _ in range(n)]\n        for i, (u, v, w) in enumerate(edges):\n            adj[u].append((v, w, i))\n            adj[v].append((u, w, i))\n\n        def dijkstra(start):\n            dist = [float('inf')] * n\n            dist[start] = 0\n            pq = [(0, start)]\n            while pq:\n                d, u = heapq.heappop(pq)\n                if d > dist[u]:\n                    continue\n                for v, w, _ in adj[u]:\n                    if d + w < dist[v]:\n                        dist[v] = d + w\n                        heapq.heappush(pq, (d + w, v))\n            return dist\n\n        dist0 = dijkstra(0)\n        distN = dijkstra(n - 1)\n        total = dist0[n - 1]\n\n        if total == float('inf'):\n            return [False] * len(edges)\n\n        ans = []\n        for u, v, w in edges:\n            on_path = (dist0[u] + w + distN[v] == total) or (dist0[v] + w + distN[u] == total)\n            ans.append(on_path)\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O((V + E) log V)",
+    "space": "O(V + E)",
+    "variables": [
+      "V: number of vertices",
+      "E: number of edges"
+    ],
+    "notes": "Two Dijkstra runs followed by linear edge checks.",
+    "whyNaiveFails": "Examining all paths between 0 and n - 1 takes exponential time.",
+    "spaceTimeTradeoff": "O(V + E) memory for adjacency list and distance arrays.",
+    "interviewerExpectation": "Use bidirectional distance equality dist(0, u) + w + dist(v, n-1) == total_dist."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Bidirectional Shortest Path Distance Criterion",
+      "code": "import heapq\n\nclass Solution:\n    def findAnswer(self, n: int, edges: list[list[int]]) -> list[bool]:\n        adj = [[] for _ in range(n)]\n        for i, (u, v, w) in enumerate(edges):\n            adj[u].append((v, w, i))\n            adj[v].append((u, w, i))\n\n        def dijkstra(start):\n            dist = [float('inf')] * n\n            dist[start] = 0\n            pq = [(0, start)]\n            while pq:\n                d, u = heapq.heappop(pq)\n                if d > dist[u]:\n                    continue\n                for v, w, _ in adj[u]:\n                    if d + w < dist[v]:\n                        dist[v] = d + w\n                        heapq.heappush(pq, (d + w, v))\n            return dist\n\n        dist0 = dijkstra(0)\n        distN = dijkstra(n - 1)\n        total = dist0[n - 1]\n\n        if total == float('inf'):\n            return [False] * len(edges)\n\n        ans = []\n        for u, v, w in edges:\n            on_path = (dist0[u] + w + distN[v] == total) or (dist0[v] + w + distN[u] == total)\n            ans.append(on_path)\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Bidirectional Shortest Path Distance Criterion",
+      "code": "class Solution {\npublic:\n    vector<bool> findAnswer(int n, vector<vector<int>>& edges) {\n        vector<vector<pair<int, int>>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            adj[e[1]].push_back({e[0], e[2]});\n        }\n\n        auto dijkstra = [&](int start) {\n            vector<long long> dist(n, 1e18);\n            dist[start] = 0;\n            priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<>> pq;\n            pq.push({0, start});\n            while (!pq.empty()) {\n                auto [d, u] = pq.top();\n                pq.pop();\n                if (d > dist[u]) continue;\n                for (const auto& [v, w] : adj[u]) {\n                    if (d + w < dist[v]) {\n                        dist[v] = d + w;\n                        pq.push({d + w, v});\n                    }\n                }\n            }\n            return dist;\n        };\n\n        auto dist0 = dijkstra(0);\n        auto distN = dijkstra(n - 1);\n        long long total = dist0[n - 1];\n\n        if (total >= 1e18) {\n            return vector<bool>(edges.size(), false);\n        }\n\n        vector<bool> ans;\n        for (const auto& e : edges) {\n            int u = e[0], v = e[1], w = e[2];\n            bool on_path = (dist0[u] + w + distN[v] == total) || (dist0[v] + w + distN[u] == total);\n            ans.push_back(on_path);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Bidirectional Shortest Path Distance Criterion",
+      "code": "class Solution {\n    public boolean[] findAnswer(int n, int[][] edges) {\n        List<List<int[]>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(new int[]{e[1], e[2]});\n            adj.get(e[1]).add(new int[]{e[0], e[2]});\n        }\n\n        long[] dist0 = dijkstra(0, n, adj);\n        long[] distN = dijkstra(n - 1, n, adj);\n        long total = dist0[n - 1];\n\n        boolean[] ans = new boolean[edges.length];\n        if (total >= 1e17) return ans;\n\n        for (int i = 0; i < edges.length; i++) {\n            int u = edges[i][0], v = edges[i][1], w = edges[i][2];\n            if (dist0[u] + w + distN[v] == total || dist0[v] + w + distN[u] == total) {\n                ans[i] = true;\n            }\n        }\n        return ans;\n    }\n\n    private long[] dijkstra(int start, int n, List<List<int[]>> adj) {\n        long[] dist = new long[n];\n        Arrays.fill(dist, (long) 1e18);\n        dist[start] = 0;\n        PriorityQueue<long[]> pq = new PriorityQueue<>((a, b) -> Long.compare(a[0], b[0]));\n        pq.offer(new long[]{0, start});\n\n        while (!pq.isEmpty()) {\n            long[] top = pq.poll();\n            long d = top[0];\n            int u = (int) top[1];\n            if (d > dist[u]) continue;\n\n            for (int[] edge : adj.get(u)) {\n                int v = edge[0], w = edge[1];\n                if (d + w < dist[v]) {\n                    dist[v] = d + w;\n                    pq.offer(new long[]{dist[v], v});\n                }\n            }\n        }\n        return dist;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Bidirectional Shortest Path Distance Criterion",
+      "code": "var findAnswer = function(n, edges) {\n    const adj = Array.from({length: n}, () => []);\n    for (const [u, v, w] of edges) {\n        adj[u].push([v, w]);\n        adj[v].push([u, w]);\n    }\n\n    function dijkstra(start) {\n        const dist = new Array(n).fill(Infinity);\n        dist[start] = 0;\n        const heap = [[0, start]];\n\n        function push(val) {\n            heap.push(val);\n            let idx = heap.length - 1;\n            while (idx > 0) {\n                let p = Math.floor((idx - 1) / 2);\n                if (heap[idx][0] < heap[p][0]) {\n                    [heap[idx], heap[p]] = [heap[p], heap[idx]];\n                    idx = p;\n                } else break;\n            }\n        }\n        function pop() {\n            const top = heap[0];\n            const last = heap.pop();\n            if (heap.length > 0) {\n                heap[0] = last;\n                let idx = 0;\n                while (true) {\n                    let left = 2 * idx + 1, right = 2 * idx + 2, best = idx;\n                    if (left < heap.length && heap[left][0] < heap[best][0]) best = left;\n                    if (right < heap.length && heap[right][0] < heap[best][0]) best = right;\n                    if (best !== idx) {\n                        [heap[best], heap[idx]] = [heap[idx], heap[best]];\n                        idx = best;\n                    } else break;\n                }\n            }\n            return top;\n        }\n\n        while (heap.length > 0) {\n            const [d, u] = pop();\n            if (d > dist[u]) continue;\n            for (const [v, w] of adj[u]) {\n                if (d + w < dist[v]) {\n                    dist[v] = d + w;\n                    push([d + w, v]);\n                }\n            }\n        }\n        return dist;\n    }\n\n    const dist0 = dijkstra(0);\n    const distN = dijkstra(n - 1);\n    const total = dist0[n - 1];\n\n    if (total === Infinity) {\n        return new Array(edges.length).fill(false);\n    }\n\n    return edges.map(([u, v, w]) => {\n        return (dist0[u] + w + distN[v] === total) || (dist0[v] + w + distN[u] === total);\n    });\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}

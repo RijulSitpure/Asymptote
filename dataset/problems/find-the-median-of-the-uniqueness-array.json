@@ -1,0 +1,78 @@
+{
+  "slug": "find-the-median-of-the-uniqueness-array",
+  "number": 3134,
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Core Idea",
+      "text": "The uniqueness array contains the distinct element counts for all n * (n + 1) // 2 subarrays. We need the median value."
+    },
+    {
+      "level": 2,
+      "title": "Monotonicity",
+      "text": "The number of subarrays with at most k distinct elements is monotonically non-decreasing with respect to k."
+    },
+    {
+      "level": 3,
+      "title": "Window Counting",
+      "text": "Binary search on k from 1 to n. Use a sliding window with frequency dictionary to count subarrays with at most k distinct values and compare against the median rank."
+    },
+    {
+      "level": 4,
+      "title": "Implementation",
+      "text": "```python\nclass Solution:\n    def medianOfUniquenessArray(self, nums: list[int]) -> int:\n        n = len(nums)\n        total_subarrays = n * (n + 1) // 2\n        target = (total_subarrays + 1) // 2\n\n        def count_at_most(k):\n            freq = {}\n            left = 0\n            cnt = 0\n            for right, x in enumerate(nums):\n                freq[x] = freq.get(x, 0) + 1\n                while len(freq) > k:\n                    freq[nums[left]] -= 1\n                    if freq[nums[left]] == 0:\n                        del freq[nums[left]]\n                    left += 1\n                cnt += (right - left + 1)\n            return cnt\n\n        low = 1\n        high = n\n        ans = n\n        while low <= high:\n            mid = (low + high) // 2\n            if count_at_most(mid) >= target:\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n: length of array nums"
+    ],
+    "notes": "Binary search over range [1, n] with O(n) sliding window checks.",
+    "whyNaiveFails": "Generating all O(n^2) subarrays exceeds both memory and time limits.",
+    "spaceTimeTradeoff": "O(n) auxiliary frequency map.",
+    "interviewerExpectation": "Transform median finding over all subarrays into binary search with sliding window verification."
+  },
+  "category": "Algorithms",
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Binary Search on Answer with Sliding Window Frequency Count",
+      "code": "class Solution:\n    def medianOfUniquenessArray(self, nums: list[int]) -> int:\n        n = len(nums)\n        total_subarrays = n * (n + 1) // 2\n        target = (total_subarrays + 1) // 2\n\n        def count_at_most(k):\n            freq = {}\n            left = 0\n            cnt = 0\n            for right, x in enumerate(nums):\n                freq[x] = freq.get(x, 0) + 1\n                while len(freq) > k:\n                    freq[nums[left]] -= 1\n                    if freq[nums[left]] == 0:\n                        del freq[nums[left]]\n                    left += 1\n                cnt += (right - left + 1)\n            return cnt\n\n        low = 1\n        high = n\n        ans = n\n        while low <= high:\n            mid = (low + high) // 2\n            if count_at_most(mid) >= target:\n                ans = mid\n                high = mid - 1\n            else:\n                low = mid + 1\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Binary Search on Answer with Sliding Window Frequency Count",
+      "code": "class Solution {\npublic:\n    int medianOfUniquenessArray(vector<int>& nums) {\n        int n = nums.size();\n        long long total = 1LL * n * (n + 1) / 2;\n        long long target = (total + 1) / 2;\n\n        auto count_at_most = [&](int k) {\n            unordered_map<int, int> freq;\n            int left = 0;\n            long long cnt = 0;\n            for (int right = 0; right < n; ++right) {\n                freq[nums[right]]++;\n                while (freq.size() > k) {\n                    freq[nums[left]]--;\n                    if (freq[nums[left]] == 0) {\n                        freq.erase(nums[left]);\n                    }\n                    left++;\n                }\n                cnt += (right - left + 1);\n            }\n            return cnt;\n        };\n\n        int low = 1, high = n, ans = n;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (count_at_most(mid) >= target) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "java",
+      "approach": "Binary Search on Answer with Sliding Window Frequency Count",
+      "code": "class Solution {\n    public int medianOfUniquenessArray(int[] nums) {\n        int n = nums.length;\n        long total = (long) n * (n + 1) / 2;\n        long target = (total + 1) / 2;\n\n        int low = 1, high = n, ans = n;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (countAtMost(nums, mid) >= target) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n\n    private long countAtMost(int[] nums, int k) {\n        Map<Integer, Integer> freq = new HashMap<>();\n        int left = 0;\n        long cnt = 0;\n        for (int right = 0; right < nums.length; right++) {\n            freq.put(nums[right], freq.getOrDefault(nums[right], 0) + 1);\n            while (freq.size() > k) {\n                int count = freq.get(nums[left]) - 1;\n                if (count == 0) {\n                    freq.remove(nums[left]);\n                } else {\n                    freq.put(nums[left], count);\n                }\n                left++;\n            }\n            cnt += (right - left + 1);\n        }\n        return cnt;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Binary Search on Answer with Sliding Window Frequency Count",
+      "code": "var medianOfUniquenessArray = function(nums) {\n    const n = nums.length;\n    const total = Math.floor(n * (n + 1) / 2);\n    const target = Math.floor((total + 1) / 2);\n\n    function countAtMost(k) {\n        const freq = new Map();\n        let left = 0;\n        let cnt = 0;\n        for (let right = 0; right < n; right++) {\n            freq.set(nums[right], (freq.get(nums[right]) || 0) + 1);\n            while (freq.size > k) {\n                const count = freq.get(nums[left]) - 1;\n                if (count === 0) {\n                    freq.delete(nums[left]);\n                } else {\n                    freq.set(nums[left], count);\n                }\n                left++;\n            }\n            cnt += (right - left + 1);\n        }\n        return cnt;\n    }\n\n    let low = 1, high = n, ans = n;\n    while (low <= high) {\n        const mid = Math.floor((low + high) / 2);\n        if (countAtMost(mid) >= target) {\n            ans = mid;\n            high = mid - 1;\n        } else {\n            low = mid + 1;\n        }\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-10-31"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": null
+  },
+  "updated": "2026-11-05T00:00:00.000Z"
+}
