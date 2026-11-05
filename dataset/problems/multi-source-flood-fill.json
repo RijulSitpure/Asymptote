@@ -1,0 +1,79 @@
+{
+  "slug": "multi-source-flood-fill",
+  "number": 3905,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-multi-source-bfs"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Multiple wavefronts propagate simultaneously step by step across the matrix."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Maintain a matrix of arrival times and current cell colors."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "When two wavefronts reach an uncolored cell at the same time step, assign the higher color value."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\ndef multiSourceFloodFill(n: int, m: int, sources: list[list[int]]) -> list[list[int]]:\n    grid = [[0] * m for _ in range(n)]\n    dist = [[float('inf')] * m for _ in range(n)]\n    cell_sources = {}\n    for r, c, col in sources:\n        if (r, c) not in cell_sources or col > cell_sources[(r, c)]:\n            cell_sources[(r, c)] = col\n    q = deque()\n    for (r, c), col in cell_sources.items():\n        grid[r][c] = col\n        dist[r][c] = 0\n        q.append((r, c))\n    while q:\n        level_size = len(q)\n        next_colors = {}\n        for _ in range(level_size):\n            r, c = q.popleft()\n            cur_col = grid[r][c]\n            d = dist[r][c]\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < n and 0 <= nc < m:\n                    if dist[nr][nc] > d + 1:\n                        if (nr, nc) not in next_colors or cur_col > next_colors[(nr, nc)]:\n                            next_colors[(nr, nc)] = cur_col\n        for (nr, nc), col in next_colors.items():\n            if dist[nr][nc] == float('inf'):\n                dist[nr][nc] = d + 1\n                grid[nr][nc] = col\n                q.append((nr, nc))\n    return grid\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "m"
+    ],
+    "time": "O(n * m)",
+    "space": "O(n * m)",
+    "notes": "Each cell is enqueued and finalized at most once across the traversal.",
+    "whyNaiveFails": "Running separate traversals from each source takes quadratic time in cell count.",
+    "spaceTimeTradeoff": "Tracks distance and color grids to handle simultaneous collisions.",
+    "interviewerExpectation": "Uses multi source BFS level propagation with tie breaking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import deque\n\ndef multiSourceFloodFill(n: int, m: int, sources: list[list[int]]) -> list[list[int]]:\n    grid = [[0] * m for _ in range(n)]\n    dist = [[float('inf')] * m for _ in range(n)]\n    cell_sources = {}\n    for r, c, col in sources:\n        if (r, c) not in cell_sources or col > cell_sources[(r, c)]:\n            cell_sources[(r, c)] = col\n    q = deque()\n    for (r, c), col in cell_sources.items():\n        grid[r][c] = col\n        dist[r][c] = 0\n        q.append((r, c))\n    while q:\n        level_size = len(q)\n        next_colors = {}\n        for _ in range(level_size):\n            r, c = q.popleft()\n            cur_col = grid[r][c]\n            d = dist[r][c]\n            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < n and 0 <= nc < m:\n                    if dist[nr][nc] > d + 1:\n                        if (nr, nc) not in next_colors or cur_col > next_colors[(nr, nc)]:\n                            next_colors[(nr, nc)] = cur_col\n        for (nr, nc), col in next_colors.items():\n            if dist[nr][nc] == float('inf'):\n                dist[nr][nc] = d + 1\n                grid[nr][nc] = col\n                q.append((nr, nc))\n    return grid",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n#include <map>\n\nclass Solution {\npublic:\n    std::vector<std::vector<int>> multiSourceFloodFill(int n, int m, std::vector<std::vector<int>>& sources) {\n        std::vector<std::vector<int>> grid(n, std::vector<int>(m, 0));\n        std::vector<std::vector<int>> dist(n, std::vector<int>(m, 1e9));\n        std::map<std::pair<int, int>, int> cellSources;\n        for (const auto& s : sources) {\n            std::pair<int, int> cell = {s[0], s[1]};\n            if (!cellSources.count(cell) || s[2] > cellSources[cell]) {\n                cellSources[cell] = s[2];\n            }\n        }\n        std::queue<std::pair<int, int>> q;\n        for (const auto& [cell, col] : cellSources) {\n            grid[cell.first][cell.second] = col;\n            dist[cell.first][cell.second] = 0;\n            q.push(cell);\n        }\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        int curDist = 0;\n        while (!q.empty()) {\n            int sz = q.size();\n            std::map<std::pair<int, int>, int> nextColors;\n            for (int i = 0; i < sz; ++i) {\n                auto [r, c] = q.front();\n                q.pop();\n                int col = grid[r][c];\n                for (int d = 0; d < 4; ++d) {\n                    int nr = r + dirs[d][0], nc = c + dirs[d][1];\n                    if (nr >= 0 && nr < n && nc >= 0 && nc < m) {\n                        if (dist[nr][nc] > curDist + 1) {\n                            std::pair<int, int> ncell = {nr, nc};\n                            if (!nextColors.count(ncell) || col > nextColors[ncell]) {\n                                nextColors[ncell] = col;\n                            }\n                        }\n                    }\n                }\n            }\n            curDist++;\n            for (const auto& [cell, col] : nextColors) {\n                if (dist[cell.first][cell.second] == 1e9) {\n                    dist[cell.first][cell.second] = curDist;\n                    grid[cell.first][cell.second] = col;\n                    q.push(cell);\n                }\n            }\n        }\n        return grid;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[][] multiSourceFloodFill(int n, int m, int[][] sources) {\n        int[][] grid = new int[n][m];\n        int[][] dist = new int[n][m];\n        for (int[] row : dist) Arrays.fill(row, Integer.MAX_VALUE);\n        Map<Long, Integer> cellSources = new HashMap<>();\n        for (int[] s : sources) {\n            long key = ((long)s[0] << 32) | (s[1] & 0xFFFFFFFFL);\n            cellSources.put(key, Math.max(cellSources.getOrDefault(key, 0), s[2]));\n        }\n        Queue<int[]> q = new LinkedList<>();\n        for (Map.Entry<Long, Integer> entry : cellSources.entrySet()) {\n            int r = (int)(entry.getKey() >> 32);\n            int c = (int)(long)entry.getKey();\n            int col = entry.getValue();\n            grid[r][c] = col;\n            dist[r][c] = 0;\n            q.offer(new int[]{r, c});\n        }\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        int curDist = 0;\n        while (!q.isEmpty()) {\n            int sz = q.size();\n            Map<Long, Integer> nextColors = new HashMap<>();\n            for (int i = 0; i < sz; i++) {\n                int[] cell = q.poll();\n                int r = cell[0], c = cell[1];\n                int col = grid[r][c];\n                for (int[] d : dirs) {\n                    int nr = r + d[0], nc = c + d[1];\n                    if (nr >= 0 && nr < n && nc >= 0 && nc < m) {\n                        if (dist[nr][nc] > curDist + 1) {\n                            long nKey = ((long)nr << 32) | (nc & 0xFFFFFFFFL);\n                            nextColors.put(nKey, Math.max(nextColors.getOrDefault(nKey, 0), col));\n                        }\n                    }\n                }\n            }\n            curDist++;\n            for (Map.Entry<Long, Integer> entry : nextColors.entrySet()) {\n                int nr = (int)(entry.getKey() >> 32);\n                int nc = (int)(long)entry.getKey();\n                if (dist[nr][nc] == Integer.MAX_VALUE) {\n                    dist[nr][nc] = curDist;\n                    grid[nr][nc] = entry.getValue();\n                    q.offer(new int[]{nr, nc});\n                }\n            }\n        }\n        return grid;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function multiSourceFloodFill(n, m, sources) {\n    const grid = Array.from({ length: n }, () => new Array(m).fill(0));\n    const dist = Array.from({ length: n }, () => new Array(m).fill(Infinity));\n    const cellSources = new Map();\n    for (const [r, c, col] of sources) {\n        const key = `${r},${c}`;\n        cellSources.set(key, Math.max(cellSources.get(key) || 0, col));\n    }\n    const q = [];\n    for (const [key, col] of cellSources.entries()) {\n        const [r, c] = key.split(',').map(Number);\n        grid[r][c] = col;\n        dist[r][c] = 0;\n        q.push([r, c]);\n    }\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    let curDist = 0;\n    let head = 0;\n    while (head < q.length) {\n        const sz = q.length - head;\n        const nextColors = new Map();\n        for (let i = 0; i < sz; i++) {\n            const [r, c] = q[head++];\n            const col = grid[r][c];\n            for (const [dr, dc] of dirs) {\n                const nr = r + dr, nc = c + dc;\n                if (nr >= 0 && nr < n && nc >= 0 && nc < m) {\n                    if (dist[nr][nc] > curDist + 1) {\n                        const nKey = `${nr},${nc}`;\n                        nextColors.set(nKey, Math.max(nextColors.get(nKey) || 0, col));\n                    }\n                }\n            }\n        }\n        curDist++;\n        for (const [nKey, col] of nextColors.entries()) {\n            const [nr, nc] = nKey.split(',').map(Number);\n            if (dist[nr][nc] === Infinity) {\n                dist[nr][nc] = curDist;\n                grid[nr][nc] = col;\n                q.push([nr, nc]);\n            }\n        }\n    }\n    return grid;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

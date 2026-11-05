@@ -1,0 +1,78 @@
+{
+  "slug": "count-connected-subgraphs-with-even-node-sum",
+  "number": 3910,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Small node counts allow exhaustive subset evaluation using bitmasks."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Check that the sum of node values within the candidate subset is even."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Perform a graph traversal to ensure all subset nodes belong to one connected component."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef countConnectedSubgraphs(nums: list[int], edges: list[list[int]]) -> int:\n    n = len(nums)\n    g = [[] for _ in range(n)]\n    for u, v in edges:\n        g[u].append(v)\n        g[v].append(u)\n    ans = 0\n    for sub in range(1, 1 << n):\n        node_sum = 0\n        start = -1\n        for i in range(n):\n            if (sub >> i) & 1:\n                node_sum += nums[i]\n                if start == -1:\n                    start = i\n        if node_sum % 2 != 0:\n            continue\n        visited_mask = 1 << start\n        q = [start]\n        while q:\n            curr = q.pop(0)\n            for nxt in g[curr]:\n                if ((sub >> nxt) & 1) and not ((visited_mask >> nxt) & 1):\n                    visited_mask |= (1 << nxt)\n                    q.append(nxt)\n        if visited_mask == sub:\n            ans += 1\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(2^n * (n + m))",
+    "space": "O(n + m)",
+    "notes": "Bitmask traversal verifies connectivity across all candidate subsets.",
+    "whyNaiveFails": "Tree DP is complex when arbitrary graph topologies with cycles are present.",
+    "spaceTimeTradeoff": "Adjacency structure enables quick connectivity checks.",
+    "interviewerExpectation": "Combines bitmask subset enumeration with BFS connectivity verification."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def countConnectedSubgraphs(nums: list[int], edges: list[list[int]]) -> int:\n    n = len(nums)\n    g = [[] for _ in range(n)]\n    for u, v in edges:\n        g[u].append(v)\n        g[v].append(u)\n    ans = 0\n    for sub in range(1, 1 << n):\n        node_sum = 0\n        start = -1\n        for i in range(n):\n            if (sub >> i) & 1:\n                node_sum += nums[i]\n                if start == -1:\n                    start = i\n        if node_sum % 2 != 0:\n            continue\n        visited_mask = 1 << start\n        q = [start]\n        while q:\n            curr = q.pop(0)\n            for nxt in g[curr]:\n                if ((sub >> nxt) & 1) and not ((visited_mask >> nxt) & 1):\n                    visited_mask |= (1 << nxt)\n                    q.append(nxt)\n        if visited_mask == sub:\n            ans += 1\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n\nclass Solution {\npublic:\n    int countConnectedSubgraphs(std::vector<int>& nums, std::vector<std::vector<int>>& edges) {\n        int n = nums.size();\n        std::vector<std::vector<int>> g(n);\n        for (const auto& e : edges) {\n            g[e[0]].push_back(e[1]);\n            g[e[1]].push_back(e[0]);\n        }\n        int ans = 0;\n        int totalSub = 1 << n;\n        for (int sub = 1; sub < totalSub; ++sub) {\n            int nodeSum = 0;\n            int start = -1;\n            for (int i = 0; i < n; ++i) {\n                if ((sub >> i) & 1) {\n                    nodeSum += nums[i];\n                    if (start == -1) start = i;\n                }\n            }\n            if (nodeSum % 2 != 0) continue;\n            int visitedMask = 1 << start;\n            std::queue<int> q;\n            q.push(start);\n            while (!q.empty()) {\n                int curr = q.front();\n                q.pop();\n                for (int nxt : g[curr]) {\n                    if (((sub >> nxt) & 1) && !((visitedMask >> nxt) & 1)) {\n                        visitedMask |= (1 << nxt);\n                        q.push(nxt);\n                    }\n                }\n            }\n            if (visitedMask == sub) ans++;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int countConnectedSubgraphs(int[] nums, int[][] edges) {\n        int n = nums.length;\n        List<List<Integer>> g = new ArrayList<>();\n        for (int i = 0; i < n; i++) g.add(new ArrayList<>());\n        for (int[] e : edges) {\n            g.get(e[0]).add(e[1]);\n            g.get(e[1]).add(e[0]);\n        }\n        int ans = 0;\n        int totalSub = 1 << n;\n        for (int sub = 1; sub < totalSub; sub++) {\n            int nodeSum = 0;\n            int start = -1;\n            for (int i = 0; i < n; i++) {\n                if (((sub >> i) & 1) == 1) {\n                    nodeSum += nums[i];\n                    if (start == -1) start = i;\n                }\n            }\n            if (nodeSum % 2 != 0) continue;\n            int visitedMask = 1 << start;\n            Queue<Integer> q = new LinkedList<>();\n            q.offer(start);\n            while (!q.isEmpty()) {\n                int curr = q.poll();\n                for (int nxt : g.get(curr)) {\n                    if (((sub >> nxt) & 1) == 1 && ((visitedMask >> nxt) & 1) == 0) {\n                        visitedMask |= (1 << nxt);\n                        q.offer(nxt);\n                    }\n                }\n            }\n            if (visitedMask == sub) ans++;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function countConnectedSubgraphs(nums, edges) {\n    const n = nums.length;\n    const g = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        g[u].push(v);\n        g[v].push(u);\n    }\n    let ans = 0;\n    const totalSub = 1 << n;\n    for (let sub = 1; sub < totalSub; sub++) {\n        let nodeSum = 0;\n        let start = -1;\n        for (let i = 0; i < n; i++) {\n            if ((sub >> i) & 1) {\n                nodeSum += nums[i];\n                if (start === -1) start = i;\n            }\n        }\n        if (nodeSum % 2 !== 0) continue;\n        let visitedMask = 1 << start;\n        const q = [start];\n        while (q.length > 0) {\n            const curr = q.shift();\n            for (const nxt of g[curr]) {\n                if (((sub >> nxt) & 1) && !((visitedMask >> nxt) & 1)) {\n                    visitedMask |= (1 << nxt);\n                    q.push(nxt);\n                }\n            }\n        }\n        if (visitedMask === sub) ans++;\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

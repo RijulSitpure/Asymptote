@@ -1,0 +1,78 @@
+{
+  "slug": "count-good-integers-on-a-grid-path",
+  "number": 3906,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "A sixteen digit representation maps directly into a four by four grid positions in fixed row-major sequence."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "The directed traversal identifies seven specific digit positions that must remain monotonically non-decreasing."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Digit dynamic programming counts valid configurations bounded by prefix tightness."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef countGoodIntegersOnGridPath(l: int, r: int, directions: str) -> int:\n    path_indices = [0]\n    cr, cc = 0, 0\n    for move in directions:\n        if move == 'D':\n            cr += 1\n        else:\n            cc += 1\n        path_indices.append(cr * 4 + cc)\n    path_set = set(path_indices)\n    \n    def count_up_to(n: int) -> int:\n        if n < 0:\n            return 0\n        s = str(n).zfill(16)\n        memo = {}\n        \n        def dp(idx: int, is_less: bool, last_val: int) -> int:\n            if idx == 16:\n                return 1\n            state = (idx, is_less, last_val)\n            if state in memo:\n                return memo[state]\n            limit = 9 if is_less else int(s[idx])\n            total = 0\n            is_on_path = idx in path_set\n            start_digit = last_val if is_on_path else 0\n            for d in range(start_digit, limit + 1):\n                nxt_less = is_less or (d < limit)\n                nxt_last = d if is_on_path else last_val\n                total += dp(idx + 1, nxt_less, nxt_last)\n            memo[state] = total\n            return total\n            \n        return dp(0, False, 0)\n        \n    return count_up_to(r) - count_up_to(l - 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(1)",
+    "space": "O(1)",
+    "notes": "Fixed sixteen digit grid traversal evaluates in constant bounded states.",
+    "whyNaiveFails": "Enumerating all numbers in large numerical intervals causes time limit exceeded.",
+    "spaceTimeTradeoff": "Memoizes digit DP states indexed by position, boundary tightness, and path value.",
+    "interviewerExpectation": "Applies digit DP over the fixed grid path positions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def countGoodIntegersOnGridPath(l: int, r: int, directions: str) -> int:\n    path_indices = [0]\n    cr, cc = 0, 0\n    for move in directions:\n        if move == 'D':\n            cr += 1\n        else:\n            cc += 1\n        path_indices.append(cr * 4 + cc)\n    path_set = set(path_indices)\n    \n    def count_up_to(n: int) -> int:\n        if n < 0:\n            return 0\n        s = str(n).zfill(16)\n        memo = {}\n        \n        def dp(idx: int, is_less: bool, last_val: int) -> int:\n            if idx == 16:\n                return 1\n            state = (idx, is_less, last_val)\n            if state in memo:\n                return memo[state]\n            limit = 9 if is_less else int(s[idx])\n            total = 0\n            is_on_path = idx in path_set\n            start_digit = last_val if is_on_path else 0\n            for d in range(start_digit, limit + 1):\n                nxt_less = is_less or (d < limit)\n                nxt_last = d if is_on_path else last_val\n                total += dp(idx + 1, nxt_less, nxt_last)\n            memo[state] = total\n            return total\n            \n        return dp(0, False, 0)\n        \n    return count_up_to(r) - count_up_to(l - 1)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <unordered_set>\n#include <cstring>\n#include <iomanip>\n#include <sstream>\n\nclass Solution {\npublic:\n    long long countGoodIntegersOnGridPath(long long l, long long r, std::string directions) {\n        std::vector<int> pathIndices = {0};\n        int cr = 0, cc = 0;\n        for (char move : directions) {\n            if (move == 'D') cr++;\n            else cc++;\n            pathIndices.push_back(cr * 4 + cc);\n        }\n        std::unordered_set<int> pathSet(pathIndices.begin(), pathIndices.end());\n        \n        auto countUpTo = [&](long long n) -> long long {\n            if (n < 0) return 0;\n            std::ostringstream oss;\n            oss << std::setw(16) << std::setfill('0') << n;\n            std::string s = oss.str();\n            long long memo[17][2][10];\n            std::memset(memo, -1, sizeof(memo));\n            \n            auto dp = [&](auto& self, int idx, bool isLess, int lastVal) -> long long {\n                if (idx == 16) return 1;\n                if (memo[idx][isLess][lastVal] != -1) return memo[idx][isLess][lastVal];\n                int limit = isLess ? 9 : (s[idx] - '0');\n                long long total = 0;\n                bool isOnPath = pathSet.count(idx);\n                int startDigit = isOnPath ? lastVal : 0;\n                for (int d = startDigit; d <= limit; ++d) {\n                    bool nxtLess = isLess || (d < limit);\n                    int nxtLast = isOnPath ? d : lastVal;\n                    total += self(self, idx + 1, nxtLess, nxtLast);\n                }\n                return memo[idx][isLess][lastVal] = total;\n            };\n            return dp(dp, 0, false, 0);\n        };\n        \n        return countUpTo(r) - countUpTo(l - 1);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long countGoodIntegersOnGridPath(long long l, long long r, String directions) {\n        List<Integer> pathIndices = new ArrayList<>();\n        pathIndices.add(0);\n        int cr = 0, cc = 0;\n        for (char move : directions.toCharArray()) {\n            if (move == 'D') cr++;\n            else cc++;\n            pathIndices.add(cr * 4 + cc);\n        }\n        Set<Integer> pathSet = new HashSet<>(pathIndices);\n        \n        return countUpTo(r, pathSet) - countUpTo(l - 1, pathSet);\n    }\n    \n    private long countUpTo(long n, Set<Integer> pathSet) {\n        if (n < 0) return 0;\n        String s = String.format(\"%016d\", n);\n        Long[][][] memo = new Long[17][2][10];\n        return dp(0, false, 0, s, pathSet, memo);\n    }\n    \n    private long dp(int idx, boolean isLess, int lastVal, String s, Set<Integer> pathSet, Long[][][] memo) {\n        if (idx == 16) return 1;\n        int lessIdx = isLess ? 1 : 0;\n        if (memo[idx][lessIdx][lastVal] != null) return memo[idx][lessIdx][lastVal];\n        int limit = isLess ? 9 : (s.charAt(idx) - '0');\n        long total = 0;\n        boolean isOnPath = pathSet.contains(idx);\n        int startDigit = isOnPath ? lastVal : 0;\n        for (int d = startDigit; d <= limit; d++) {\n            boolean nxtLess = isLess || (d < limit);\n            int nxtLast = isOnPath ? d : lastVal;\n            total += dp(idx + 1, nxtLess, nxtLast, s, pathSet, memo);\n        }\n        return memo[idx][lessIdx][lastVal] = total;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function countGoodIntegersOnGridPath(l, r, directions) {\n    const pathIndices = [0];\n    let cr = 0, cc = 0;\n    for (const move of directions) {\n        if (move === 'D') cr++;\n        else cc++;\n        pathIndices.push(cr * 4 + cc);\n    }\n    const pathSet = new Set(pathIndices);\n    \n    function countUpTo(n) {\n        if (n < 0n) return 0n;\n        const s = n.toString().padStart(16, '0');\n        const memo = new Map();\n        \n        function dp(idx, isLess, lastVal) {\n            if (idx === 16) return 1n;\n            const key = `${idx},${isLess ? 1 : 0},${lastVal}`;\n            if (memo.has(key)) return memo.get(key);\n            const limit = isLess ? 9 : Number(s[idx]);\n            let total = 0n;\n            const isOnPath = pathSet.has(idx);\n            const startDigit = isOnPath ? lastVal : 0;\n            for (let d = startDigit; d <= limit; d++) {\n                const nxtLess = isLess || (d < limit);\n                const nxtLast = isOnPath ? d : lastVal;\n                total += dp(idx + 1, nxtLess, nxtLast);\n            }\n            memo.set(key, total);\n            return total;\n        }\n        return dp(0, false, 0);\n    }\n    \n    return Number(countUpTo(BigInt(r)) - countUpTo(BigInt(l) - 1n));\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

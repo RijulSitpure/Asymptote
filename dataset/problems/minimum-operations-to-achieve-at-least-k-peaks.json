@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-operations-to-achieve-at-least-k-peaks",
+  "number": 3892,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Because two peaks cannot be adjacent, selecting index i as a peak skips index i - 1."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Formulate a state table: dp[p][i] represents the minimum cost to form p peaks within the first i elements."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Compute transitions by either skipping index i or paying the cost to make index i a peak combined with dp[p - 1][i - 2]."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef minOperationsForKPeaks(nums: list[int], k: int) -> int:\n    n = len(nums)\n    if k == 0:\n        return 0\n    if k > (n - 1) // 2:\n        return -1\n    cost = [0] * n\n    for i in range(1, n - 1):\n        req = max(nums[i - 1], nums[i + 1]) + 1\n        cost[i] = max(0, req - nums[i])\n        \n    dp = [[float('inf')] * n for _ in range(k + 1)]\n    for i in range(n):\n        dp[0][i] = 0\n    for p in range(1, k + 1):\n        for i in range(2 * p - 1, n - 1):\n            dp[p][i] = dp[p][i - 1]\n            prev_cost = dp[p - 1][i - 2] if i >= 2 else 0\n            dp[p][i] = min(dp[p][i], prev_cost + cost[i])\n    return min(dp[k][i] for i in range(n))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "k"
+    ],
+    "time": "O(n * k)",
+    "space": "O(n * k)",
+    "notes": "Fills a 2D table of size k by n evaluating skip or pick decisions.",
+    "whyNaiveFails": "Evaluating all combinations of non-adjacent peak indices is exponential.",
+    "spaceTimeTradeoff": "Stores table of size (k + 1) by n.",
+    "interviewerExpectation": "Models non-adjacent peak selection using dynamic programming transitions."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def minOperationsForKPeaks(nums: list[int], k: int) -> int:\n    n = len(nums)\n    if k == 0:\n        return 0\n    if k > (n - 1) // 2:\n        return -1\n    cost = [0] * n\n    for i in range(1, n - 1):\n        req = max(nums[i - 1], nums[i + 1]) + 1\n        cost[i] = max(0, req - nums[i])\n        \n    dp = [[float('inf')] * n for _ in range(k + 1)]\n    for i in range(n):\n        dp[0][i] = 0\n    for p in range(1, k + 1):\n        for i in range(2 * p - 1, n - 1):\n            dp[p][i] = dp[p][i - 1]\n            prev_cost = dp[p - 1][i - 2] if i >= 2 else 0\n            dp[p][i] = min(dp[p][i], prev_cost + cost[i])\n    return min(dp[k][i] for i in range(n))",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n#include <climits>\n\nclass Solution {\npublic:\n    long long minOperationsForKPeaks(std::vector<int>& nums, int k) {\n        int n = nums.size();\n        if (k == 0) return 0;\n        if (k > (n - 1) / 2) return -1;\n        std::vector<int> cost(n, 0);\n        for (int i = 1; i < n - 1; ++i) {\n            int req = std::max(nums[i - 1], nums[i + 1]) + 1;\n            cost[i] = std::max(0, req - nums[i]);\n        }\n        std::vector<std::vector<long long>> dp(k + 1, std::vector<long long>(n, 1e18));\n        for (int i = 0; i < n; ++i) dp[0][i] = 0;\n        for (int p = 1; p <= k; ++p) {\n            for (int i = 2 * p - 1; i < n - 1; ++i) {\n                dp[p][i] = dp[p][i - 1];\n                long long prev = i >= 2 ? dp[p - 1][i - 2] : 0;\n                dp[p][i] = std::min(dp[p][i], prev + cost[i]);\n            }\n        }\n        long long ans = 1e18;\n        for (int i = 0; i < n; ++i) ans = std::min(ans, dp[k][i]);\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long minOperationsForKPeaks(int[] nums, int k) {\n        int n = nums.length;\n        if (k == 0) return 0;\n        if (k > (n - 1) / 2) return -1;\n        int[] cost = new int[n];\n        for (int i = 1; i < n - 1; i++) {\n            int req = Math.max(nums[i - 1], nums[i + 1]) + 1;\n            cost[i] = Math.max(0, req - nums[i]);\n        }\n        long[][] dp = new long[k + 1][n];\n        for (int p = 1; p <= k; p++) Arrays.fill(dp[p], (long) 1e18);\n        for (int p = 1; p <= k; p++) {\n            for (int i = 2 * p - 1; i < n - 1; i++) {\n                dp[p][i] = dp[p][i - 1];\n                long prev = i >= 2 ? dp[p - 1][i - 2] : 0;\n                dp[p][i] = Math.min(dp[p][i], prev + cost[i]);\n            }\n        }\n        long ans = (long) 1e18;\n        for (int i = 0; i < n; i++) ans = Math.min(ans, dp[k][i]);\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minOperationsForKPeaks(nums, k) {\n    const n = nums.length;\n    if (k === 0) return 0;\n    if (k > Math.floor((n - 1) / 2)) return -1;\n    const cost = new Array(n).fill(0);\n    for (let i = 1; i < n - 1; i++) {\n        const req = Math.max(nums[i - 1], nums[i + 1]) + 1;\n        cost[i] = Math.max(0, req - nums[i]);\n    }\n    const dp = Array.from({length: k + 1}, () => new Array(n).fill(Infinity));\n    for (let i = 0; i < n; i++) dp[0][i] = 0;\n    for (let p = 1; p <= k; p++) {\n        for (let i = 2 * p - 1; i < n - 1; i++) {\n            dp[p][i] = dp[p][i - 1];\n            const prev = i >= 2 ? dp[p - 1][i - 2] : 0;\n            dp[p][i] = Math.min(dp[p][i], prev + cost[i]);\n        }\n    }\n    return Math.min(...dp[k]);\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

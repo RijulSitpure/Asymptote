@@ -1,0 +1,78 @@
+{
+  "slug": "longest-balanced-substring-after-one-swap",
+  "number": 3900,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "A binary sequence has equal counts of zeros and ones if its prefix sum (with 0 as -1 and 1 as +1) balances to zero."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Record the earliest occurrence of every prefix balance value."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "One swap of a 0 and a 1 outside or inside the interval allows matching prefix balances differing by +2 or -2."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef longestBalancedSubstring(s: str) -> int:\n    total_zeros = s.count('0')\n    total_ones = s.count('1')\n    first_occ = {0: [0]}\n    n = len(s)\n    pref_zeros = [0] * (n + 1)\n    pref_ones = [0] * (n + 1)\n    pref = 0\n    for i, c in enumerate(s):\n        pref_zeros[i + 1] = pref_zeros[i] + (1 if c == '0' else 0)\n        pref_ones[i + 1] = pref_ones[i] + (1 if c == '1' else 0)\n        pref += (1 if c == '1' else -1)\n        if pref not in first_occ:\n            first_occ[pref] = []\n        if len(first_occ[pref]) < 5:\n            first_occ[pref].append(i + 1)\n    max_len = 0\n    cur_pref = 0\n    for i in range(1, n + 1):\n        cur_pref += (1 if s[i - 1] == '1' else -1)\n        if cur_pref in first_occ:\n            j = first_occ[cur_pref][0]\n            if j < i:\n                max_len = max(max_len, i - j)\n        target = cur_pref - 2\n        if target in first_occ:\n            for j in first_occ[target]:\n                if j < i:\n                    if total_zeros - (pref_zeros[i] - pref_zeros[j]) > 0:\n                        max_len = max(max_len, i - j)\n                        break\n        target = cur_pref + 2\n        if target in first_occ:\n            for j in first_occ[target]:\n                if j < i:\n                    if total_ones - (pref_ones[i] - pref_ones[j]) > 0:\n                        max_len = max(max_len, i - j)\n                        break\n    return max_len\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(n)",
+    "space": "O(n)",
+    "notes": "Single linear pass tracks prefix offsets and queries candidate shift balances in O(1).",
+    "whyNaiveFails": "Evaluating all O(n^2) swaps with substring balance checks takes O(n^3) time.",
+    "spaceTimeTradeoff": "Stores first occurrence indices of each prefix balance value.",
+    "interviewerExpectation": "Uses prefix hash map with offset checks for one swap."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def longestBalancedSubstring(s: str) -> int:\n    total_zeros = s.count('0')\n    total_ones = s.count('1')\n    first_occ = {0: [0]}\n    n = len(s)\n    pref_zeros = [0] * (n + 1)\n    pref_ones = [0] * (n + 1)\n    pref = 0\n    for i, c in enumerate(s):\n        pref_zeros[i + 1] = pref_zeros[i] + (1 if c == '0' else 0)\n        pref_ones[i + 1] = pref_ones[i] + (1 if c == '1' else 0)\n        pref += (1 if c == '1' else -1)\n        if pref not in first_occ:\n            first_occ[pref] = []\n        if len(first_occ[pref]) < 5:\n            first_occ[pref].append(i + 1)\n    max_len = 0\n    cur_pref = 0\n    for i in range(1, n + 1):\n        cur_pref += (1 if s[i - 1] == '1' else -1)\n        if cur_pref in first_occ:\n            j = first_occ[cur_pref][0]\n            if j < i:\n                max_len = max(max_len, i - j)\n        target = cur_pref - 2\n        if target in first_occ:\n            for j in first_occ[target]:\n                if j < i:\n                    if total_zeros - (pref_zeros[i] - pref_zeros[j]) > 0:\n                        max_len = max(max_len, i - j)\n                        break\n        target = cur_pref + 2\n        if target in first_occ:\n            for j in first_occ[target]:\n                if j < i:\n                    if total_ones - (pref_ones[i] - pref_ones[j]) > 0:\n                        max_len = max(max_len, i - j)\n                        break\n    return max_len",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <unordered_map>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int longestBalancedSubstring(std::string s) {\n        int totalZeros = 0, totalOnes = 0;\n        for (char c : s) {\n            if (c == '0') totalZeros++;\n            else totalOnes++;\n        }\n        int n = s.length();\n        std::vector<int> prefZeros(n + 1, 0), prefOnes(n + 1, 0);\n        std::unordered_map<int, std::vector<int>> firstOcc;\n        firstOcc[0].push_back(0);\n        int pref = 0;\n        for (int i = 0; i < n; ++i) {\n            prefZeros[i + 1] = prefZeros[i] + (s[i] == '0' ? 1 : 0);\n            prefOnes[i + 1] = prefOnes[i] + (s[i] == '1' ? 1 : 0);\n            pref += (s[i] == '1' ? 1 : -1);\n            if (firstOcc[pref].size() < 5) {\n                firstOcc[pref].push_back(i + 1);\n            }\n        }\n        int maxLen = 0, curPref = 0;\n        for (int i = 1; i <= n; ++i) {\n            curPref += (s[i - 1] == '1' ? 1 : -1);\n            if (firstOcc.count(curPref)) {\n                int j = firstOcc[curPref][0];\n                if (j < i) maxLen = std::max(maxLen, i - j);\n            }\n            int target = curPref - 2;\n            if (firstOcc.count(target)) {\n                for (int j : firstOcc[target]) {\n                    if (j < i && totalZeros - (prefZeros[i] - prefZeros[j]) > 0) {\n                        maxLen = std::max(maxLen, i - j);\n                        break;\n                    }\n                }\n            }\n            target = curPref + 2;\n            if (firstOcc.count(target)) {\n                for (int j : firstOcc[target]) {\n                    if (j < i && totalOnes - (prefOnes[i] - prefOnes[j]) > 0) {\n                        maxLen = std::max(maxLen, i - j);\n                        break;\n                    }\n                }\n            }\n        }\n        return maxLen;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int longestBalancedSubstring(String s) {\n        int totalZeros = 0, totalOnes = 0;\n        for (char c : s.toCharArray()) {\n            if (c == '0') totalZeros++;\n            else totalOnes++;\n        }\n        int n = s.length();\n        int[] prefZeros = new int[n + 1];\n        int[] prefOnes = new int[n + 1];\n        Map<Integer, List<Integer>> firstOcc = new HashMap<>();\n        firstOcc.put(0, new ArrayList<>(List.of(0)));\n        int pref = 0;\n        for (int i = 0; i < n; i++) {\n            prefZeros[i + 1] = prefZeros[i] + (s.charAt(i) == '0' ? 1 : 0);\n            prefOnes[i + 1] = prefOnes[i] + (s.charAt(i) == '1' ? 1 : 0);\n            pref += (s.charAt(i) == '1' ? 1 : -1);\n            firstOcc.putIfAbsent(pref, new ArrayList<>());\n            if (firstOcc.get(pref).size() < 5) {\n                firstOcc.get(pref).add(i + 1);\n            }\n        }\n        int maxLen = 0;\n        int curPref = 0;\n        for (int i = 1; i <= n; i++) {\n            curPref += (s.charAt(i - 1) == '1' ? 1 : -1);\n            if (firstOcc.containsKey(curPref)) {\n                int j = firstOcc.get(curPref).get(0);\n                if (j < i) maxLen = Math.max(maxLen, i - j);\n            }\n            int target = curPref - 2;\n            if (firstOcc.containsKey(target)) {\n                for (int j : firstOcc.get(target)) {\n                    if (j < i && totalZeros - (prefZeros[i] - prefZeros[j]) > 0) {\n                        maxLen = Math.max(maxLen, i - j);\n                        break;\n                    }\n                }\n            }\n            target = curPref + 2;\n            if (firstOcc.containsKey(target)) {\n                for (int j : firstOcc.get(target)) {\n                    if (j < i && totalOnes - (prefOnes[i] - prefOnes[j]) > 0) {\n                        maxLen = Math.max(maxLen, i - j);\n                        break;\n                    }\n                }\n            }\n        }\n        return maxLen;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function longestBalancedSubstring(s) {\n    let totalZeros = 0, totalOnes = 0;\n    for (const c of s) {\n        if (c === '0') totalZeros++;\n        else totalOnes++;\n    }\n    const n = s.length;\n    const prefZeros = new Array(n + 1).fill(0);\n    const prefOnes = new Array(n + 1).fill(0);\n    const firstOcc = new Map();\n    firstOcc.set(0, [0]);\n    let pref = 0;\n    for (let i = 0; i < n; i++) {\n        prefZeros[i + 1] = prefZeros[i] + (s[i] === '0' ? 1 : 0);\n        prefOnes[i + 1] = prefOnes[i] + (s[i] === '1' ? 1 : 0);\n        pref += (s[i] === '1' ? 1 : -1);\n        if (!firstOcc.has(pref)) firstOcc.set(pref, []);\n        if (firstOcc.get(pref).length < 5) {\n            firstOcc.get(pref).push(i + 1);\n        }\n    }\n    let maxLen = 0;\n    let curPref = 0;\n    for (let i = 1; i <= n; i++) {\n        curPref += (s[i - 1] === '1' ? 1 : -1);\n        if (firstOcc.has(curPref)) {\n            const j = firstOcc.get(curPref)[0];\n            if (j < i) maxLen = Math.max(maxLen, i - j);\n        }\n        let target = curPref - 2;\n        if (firstOcc.has(target)) {\n            for (const j of firstOcc.get(target)) {\n                if (j < i && totalZeros - (prefZeros[i] - prefZeros[j]) > 0) {\n                    maxLen = Math.max(maxLen, i - j);\n                    break;\n                }\n            }\n        }\n        target = curPref + 2;\n        if (firstOcc.has(target)) {\n            for (const j of firstOcc.get(target)) {\n                if (j < i && totalOnes - (prefOnes[i] - prefOnes[j]) > 0) {\n                    maxLen = Math.max(maxLen, i - j);\n                    break;\n                }\n            }\n        }\n    }\n    return maxLen;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

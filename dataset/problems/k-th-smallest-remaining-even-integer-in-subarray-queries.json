@@ -1,0 +1,79 @@
+{
+  "slug": "k-th-smallest-remaining-even-integer-in-subarray-queries",
+  "number": 3911,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "The number of positive even numbers less than or equal to mid is mid divided by two."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Count how many elements in the query subarray are even and less than or equal to mid."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Binary search over the answer value space using prefix counts of evens."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom bisect import bisect_right\n\ndef kthSmallestEven(nums: list[int], queries: list[list[int]]) -> list[int]:\n    n = len(nums)\n    pref_evens = [0] * (n + 1)\n    for i in range(n):\n        pref_evens[i + 1] = pref_evens[i] + (1 if nums[i] % 2 == 0 else 0)\n    ans = []\n    for l, r, k in queries:\n        low = 2\n        high = 2 * (k + n)\n        res = -1\n        while low <= high:\n            mid = (low + high) // 2\n            if mid % 2 != 0:\n                mid -= 1\n            pos = min(r, bisect_right(nums, mid) - 1)\n            removed = (pref_evens[pos + 1] - pref_evens[l]) if pos >= l else 0\n            remaining = (mid // 2) - removed\n            if remaining >= k:\n                res = mid\n                high = mid - 2\n            else:\n                low = mid + 2\n        ans.append(res)\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "q"
+    ],
+    "time": "O(q log(k + n) log n)",
+    "space": "O(n)",
+    "notes": "Binary search on target answer space with range prefix count.",
+    "whyNaiveFails": "Scanning or generating remaining integers per query is far too slow.",
+    "spaceTimeTradeoff": "Prefix counts of even integers enable fast range lookups.",
+    "interviewerExpectation": "Formulates monotonic predicate and applies binary search over value space."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from bisect import bisect_right\n\ndef kthSmallestEven(nums: list[int], queries: list[list[int]]) -> list[int]:\n    n = len(nums)\n    pref_evens = [0] * (n + 1)\n    for i in range(n):\n        pref_evens[i + 1] = pref_evens[i] + (1 if nums[i] % 2 == 0 else 0)\n    ans = []\n    for l, r, k in queries:\n        low = 2\n        high = 2 * (k + n)\n        res = -1\n        while low <= high:\n            mid = (low + high) // 2\n            if mid % 2 != 0:\n                mid -= 1\n            pos = min(r, bisect_right(nums, mid) - 1)\n            removed = (pref_evens[pos + 1] - pref_evens[l]) if pos >= l else 0\n            remaining = (mid // 2) - removed\n            if remaining >= k:\n                res = mid\n                high = mid - 2\n            else:\n                low = mid + 2\n        ans.append(res)\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<long long> kthSmallestEven(std::vector<int>& nums, std::vector<std::vector<int>>& queries) {\n        int n = nums.size();\n        std::vector<int> prefEvens(n + 1, 0);\n        for (int i = 0; i < n; ++i) {\n            prefEvens[i + 1] = prefEvens[i] + (nums[i] % 2 == 0 ? 1 : 0);\n        }\n        std::vector<long long> ans;\n        for (const auto& q : queries) {\n            int l = q[0], r = q[1];\n            long long k = q[2];\n            long long low = 2, high = 2LL * (k + n);\n            long long res = -1;\n            while (low <= high) {\n                long long mid = (low + high) / 2;\n                if (mid % 2 != 0) mid--;\n                auto it = std::upper_bound(nums.begin(), nums.end(), (int)std::min<long long>(mid, 2e9));\n                int pos = std::min<int>(r, (it - nums.begin()) - 1);\n                int removed = (pos >= l) ? (prefEvens[pos + 1] - prefEvens[l]) : 0;\n                long long remaining = (mid / 2) - removed;\n                if (remaining >= k) {\n                    res = mid;\n                    high = mid - 2;\n                } else {\n                    low = mid + 2;\n                }\n            }\n            ans.push_back(res);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long[] kthSmallestEven(int[] nums, int[][] queries) {\n        int n = nums.length;\n        int[] prefEvens = new int[n + 1];\n        for (int i = 0; i < n; i++) {\n            prefEvens[i + 1] = prefEvens[i] + (nums[i] % 2 == 0 ? 1 : 0);\n        }\n        long[] ans = new long[queries.length];\n        for (int qi = 0; qi < queries.length; qi++) {\n            int l = queries[qi][0], r = queries[qi][1];\n            long k = queries[qi][2];\n            long low = 2, high = 2L * (k + n);\n            long res = -1;\n            while (low <= high) {\n                long mid = (low + high) / 2;\n                if (mid % 2 != 0) mid--;\n                int idx = Arrays.binarySearch(nums, (int)Math.min(mid, (long)Integer.MAX_VALUE));\n                if (idx < 0) idx = -idx - 2;\n                int pos = Math.min(r, idx);\n                int removed = (pos >= l) ? (prefEvens[pos + 1] - prefEvens[l]) : 0;\n                long remaining = (mid / 2) - removed;\n                if (remaining >= k) {\n                    res = mid;\n                    high = mid - 2;\n                } else {\n                    low = mid + 2;\n                }\n            }\n            ans[qi] = res;\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function kthSmallestEven(nums, queries) {\n    const n = nums.length;\n    const prefEvens = new Array(n + 1).fill(0);\n    for (let i = 0; i < n; i++) {\n        prefEvens[i + 1] = prefEvens[i] + (nums[i] % 2 === 0 ? 1 : 0);\n    }\n    \n    function bisectRight(arr, target) {\n        let low = 0, high = arr.length;\n        while (low < high) {\n            const mid = (low + high) >> 1;\n            if (arr[mid] <= target) low = mid + 1;\n            else high = mid;\n        }\n        return low;\n    }\n    \n    const ans = [];\n    for (const [l, r, k] of queries) {\n        let low = 2n, high = 2n * BigInt(k + n);\n        let res = -1n;\n        while (low <= high) {\n            let mid = (low + high) / 2n;\n            if (mid % 2n !== 0n) mid--;\n            const pos = Math.min(r, bisectRight(nums, Number(mid)) - 1);\n            const removed = (pos >= l) ? (prefEvens[pos + 1] - prefEvens[l]) : 0;\n            const remaining = (mid / 2n) - BigInt(removed);\n            if (remaining >= BigInt(k)) {\n                res = mid;\n                high = mid - 2n;\n            } else {\n                low = mid + 2n;\n            }\n        }\n        ans.push(Number(res));\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

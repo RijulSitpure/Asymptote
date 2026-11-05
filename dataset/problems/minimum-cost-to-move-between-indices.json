@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-cost-to-move-between-indices",
+  "number": 3919,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "A closest move to an adjacent neighbour costs one while other moves cost absolute value difference."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Precompute prefix costs for forward movement from index i to i + 1."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Precompute prefix costs for backward movement from index i to i - 1 to answer queries in constant time."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef minCostToMove(nums: list[int], queries: list[list[int]]) -> list[int]:\n    n = len(nums)\n    pref_fwd = [0] * n\n    for i in range(n - 1):\n        is_closest = False\n        if i == 0:\n            is_closest = True\n        else:\n            diff_left = abs(nums[i] - nums[i - 1])\n            diff_right = abs(nums[i] - nums[i + 1])\n            if diff_right < diff_left:\n                is_closest = True\n        cost = 1 if is_closest else abs(nums[i + 1] - nums[i])\n        pref_fwd[i + 1] = pref_fwd[i] + cost\n\n    pref_bwd = [0] * n\n    for i in range(n - 1, 0, -1):\n        is_closest = False\n        if i == n - 1:\n            is_closest = True\n        else:\n            diff_left = abs(nums[i] - nums[i - 1])\n            diff_right = abs(nums[i] - nums[i + 1])\n            if diff_left <= diff_right:\n                is_closest = True\n        cost = 1 if is_closest else abs(nums[i] - nums[i - 1])\n        pref_bwd[i - 1] = pref_bwd[i] + cost\n\n    ans = []\n    for l, r in queries:\n        if l == r:\n            ans.append(0)\n        elif l < r:\n            ans.append(pref_fwd[r] - pref_fwd[l])\n        else:\n            ans.append(pref_bwd[r] - pref_bwd[l])\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "q"
+    ],
+    "time": "O(n + q)",
+    "space": "O(n)",
+    "notes": "Two prefix accumulation arrays resolve each query in O(1) time.",
+    "whyNaiveFails": "Simulating step-by-step traversal per query takes O(q * n) time.",
+    "spaceTimeTradeoff": "Precomputes forward and backward movement cost prefix arrays.",
+    "interviewerExpectation": "Precomputes directional step prefix sums for constant time query response."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def minCostToMove(nums: list[int], queries: list[list[int]]) -> list[int]:\n    n = len(nums)\n    pref_fwd = [0] * n\n    for i in range(n - 1):\n        is_closest = False\n        if i == 0:\n            is_closest = True\n        else:\n            diff_left = abs(nums[i] - nums[i - 1])\n            diff_right = abs(nums[i] - nums[i + 1])\n            if diff_right < diff_left:\n                is_closest = True\n        cost = 1 if is_closest else abs(nums[i + 1] - nums[i])\n        pref_fwd[i + 1] = pref_fwd[i] + cost\n\n    pref_bwd = [0] * n\n    for i in range(n - 1, 0, -1):\n        is_closest = False\n        if i == n - 1:\n            is_closest = True\n        else:\n            diff_left = abs(nums[i] - nums[i - 1])\n            diff_right = abs(nums[i] - nums[i + 1])\n            if diff_left <= diff_right:\n                is_closest = True\n        cost = 1 if is_closest else abs(nums[i] - nums[i - 1])\n        pref_bwd[i - 1] = pref_bwd[i] + cost\n\n    ans = []\n    for l, r in queries:\n        if l == r:\n            ans.append(0)\n        elif l < r:\n            ans.append(pref_fwd[r] - pref_fwd[l])\n        else:\n            ans.append(pref_bwd[r] - pref_bwd[l])\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <cmath>\n\nclass Solution {\npublic:\n    std::vector<int> minCostToMove(std::vector<int>& nums, std::vector<std::vector<int>>& queries) {\n        int n = nums.size();\n        std::vector<int> prefFwd(n, 0);\n        for (int i = 0; i < n - 1; ++i) {\n            bool isClosest = false;\n            if (i == 0) {\n                isClosest = true;\n            } else {\n                int diffLeft = std::abs(nums[i] - nums[i - 1]);\n                int diffRight = std::abs(nums[i] - nums[i + 1]);\n                if (diffRight < diffLeft) isClosest = true;\n            }\n            int cost = isClosest ? 1 : std::abs(nums[i + 1] - nums[i]);\n            prefFwd[i + 1] = prefFwd[i] + cost;\n        }\n        std::vector<int> prefBwd(n, 0);\n        for (int i = n - 1; i > 0; --i) {\n            bool isClosest = false;\n            if (i == n - 1) {\n                isClosest = true;\n            } else {\n                int diffLeft = std::abs(nums[i] - nums[i - 1]);\n                int diffRight = std::abs(nums[i] - nums[i + 1]);\n                if (diffLeft <= diffRight) isClosest = true;\n            }\n            int cost = isClosest ? 1 : std::abs(nums[i] - nums[i - 1]);\n            prefBwd[i - 1] = prefBwd[i] + cost;\n        }\n        std::vector<int> ans;\n        for (const auto& q : queries) {\n            int l = q[0], r = q[1];\n            if (l == r) ans.push_back(0);\n            else if (l < r) ans.push_back(prefFwd[r] - prefFwd[l]);\n            else ans.push_back(prefBwd[r] - prefBwd[l]);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int[] minCostToMove(int[] nums, int[][] queries) {\n        int n = nums.length;\n        int[] prefFwd = new int[n];\n        for (int i = 0; i < n - 1; i++) {\n            boolean isClosest = false;\n            if (i == 0) {\n                isClosest = true;\n            } else {\n                int diffLeft = Math.abs(nums[i] - nums[i - 1]);\n                int diffRight = Math.abs(nums[i] - nums[i + 1]);\n                if (diffRight < diffLeft) isClosest = true;\n            }\n            int cost = isClosest ? 1 : Math.abs(nums[i + 1] - nums[i]);\n            prefFwd[i + 1] = prefFwd[i] + cost;\n        }\n        int[] prefBwd = new int[n];\n        for (int i = n - 1; i > 0; i--) {\n            boolean isClosest = false;\n            if (i == n - 1) {\n                isClosest = true;\n            } else {\n                int diffLeft = Math.abs(nums[i] - nums[i - 1]);\n                int diffRight = Math.abs(nums[i] - nums[i + 1]);\n                if (diffLeft <= diffRight) isClosest = true;\n            }\n            int cost = isClosest ? 1 : Math.abs(nums[i] - nums[i - 1]);\n            prefBwd[i - 1] = prefBwd[i] + cost;\n        }\n        int[] ans = new int[queries.length];\n        for (int q = 0; q < queries.length; q++) {\n            int l = queries[q][0], r = queries[q][1];\n            if (l == r) ans[q] = 0;\n            else if (l < r) ans[q] = prefFwd[r] - prefFwd[l];\n            else ans[q] = prefBwd[r] - prefBwd[l];\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minCostToMove(nums, queries) {\n    const n = nums.length;\n    const prefFwd = new Array(n).fill(0);\n    for (let i = 0; i < n - 1; i++) {\n        let isClosest = false;\n        if (i === 0) {\n            isClosest = true;\n        } else {\n            const diffLeft = Math.abs(nums[i] - nums[i - 1]);\n            const diffRight = Math.abs(nums[i] - nums[i + 1]);\n            if (diffRight < diffLeft) isClosest = true;\n        }\n        const cost = isClosest ? 1 : Math.abs(nums[i + 1] - nums[i]);\n        prefFwd[i + 1] = prefFwd[i] + cost;\n    }\n    const prefBwd = new Array(n).fill(0);\n    for (let i = n - 1; i > 0; i--) {\n        let isClosest = false;\n        if (i === n - 1) {\n            isClosest = true;\n        } else {\n            const diffLeft = Math.abs(nums[i] - nums[i - 1]);\n            const diffRight = Math.abs(nums[i] - nums[i + 1]);\n            if (diffLeft <= diffRight) isClosest = true;\n        }\n        const cost = isClosest ? 1 : Math.abs(nums[i] - nums[i - 1]);\n        prefBwd[i - 1] = prefBwd[i] + cost;\n    }\n    const ans = [];\n    for (const [l, r] of queries) {\n        if (l === r) ans.push(0);\n        else if (l < r) ans.push(prefFwd[r] - prefFwd[l]);\n        else ans.push(prefBwd[r] - prefBwd[l]);\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

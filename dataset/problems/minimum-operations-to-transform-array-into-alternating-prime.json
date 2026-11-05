@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-operations-to-transform-array-into-alternating-prime",
+  "number": 3896,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Precompute prime indicators using a sieve up to the maximum potential integer."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Calculate the minimum cost to transform nums[i] into a prime number and into a non-prime number."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Evaluate the two alternating parity configurations and return the minimum total operations."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport bisect\n\ndef minOperationsAlternatingPrime(nums: list[int]) -> int:\n    MAX_V = 200_000\n    is_prime = [True] * (MAX_V + 1)\n    is_prime[0] = is_prime[1] = False\n    for i in range(2, int(MAX_V**0.5) + 1):\n        if is_prime[i]:\n            for j in range(i * i, MAX_V + 1, i):\n                is_prime[j] = False\n    primes = [i for i, p in enumerate(is_prime) if p]\n\n    def cost_to_prime(x: int) -> int:\n        idx = bisect.bisect_left(primes, x)\n        best = abs(x - primes[idx])\n        if idx > 0:\n            best = min(best, abs(x - primes[idx - 1]))\n        return best\n\n    def cost_to_non_prime(x: int) -> int:\n        if not is_prime[x]:\n            return 0\n        return 1\n\n    cost0 = 0\n    cost1 = 0\n    for i, x in enumerate(nums):\n        cp = cost_to_prime(x)\n        cnp = cost_to_non_prime(x)\n        if i % 2 == 0:\n            cost0 += cp\n            cost1 += cnp\n        else:\n            cost0 += cnp\n            cost1 += cp\n    return min(cost0, cost1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "m"
+    ],
+    "time": "O(m log log m + n log P)",
+    "space": "O(m)",
+    "notes": "Sieve precomputes primes up to m; binary search finds nearest primes in O(log P).",
+    "whyNaiveFails": "Trial division for each number repeatedly is too slow.",
+    "spaceTimeTradeoff": "Stores boolean sieve table up to 200,000.",
+    "interviewerExpectation": "Precomputes primes and compares both alternating configurations."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import bisect\n\ndef minOperationsAlternatingPrime(nums: list[int]) -> int:\n    MAX_V = 200_000\n    is_prime = [True] * (MAX_V + 1)\n    is_prime[0] = is_prime[1] = False\n    for i in range(2, int(MAX_V**0.5) + 1):\n        if is_prime[i]:\n            for j in range(i * i, MAX_V + 1, i):\n                is_prime[j] = False\n    primes = [i for i, p in enumerate(is_prime) if p]\n\n    def cost_to_prime(x: int) -> int:\n        idx = bisect.bisect_left(primes, x)\n        best = abs(x - primes[idx])\n        if idx > 0:\n            best = min(best, abs(x - primes[idx - 1]))\n        return best\n\n    def cost_to_non_prime(x: int) -> int:\n        if not is_prime[x]:\n            return 0\n        return 1\n\n    cost0 = 0\n    cost1 = 0\n    for i, x in enumerate(nums):\n        cp = cost_to_prime(x)\n        cnp = cost_to_non_prime(x)\n        if i % 2 == 0:\n            cost0 += cp\n            cost1 += cnp\n        else:\n            cost0 += cnp\n            cost1 += cp\n    return min(cost0, cost1)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n#include <cmath>\n\nclass Solution {\npublic:\n    int minOperationsAlternatingPrime(std::vector<int>& nums) {\n        int MAX_V = 200000;\n        std::vector<bool> isPrime(MAX_V + 1, true);\n        isPrime[0] = isPrime[1] = false;\n        for (int i = 2; i * i <= MAX_V; ++i) {\n            if (isPrime[i]) {\n                for (int j = i * i; j <= MAX_V; j += i) isPrime[j] = false;\n            }\n        }\n        std::vector<int> primes;\n        for (int i = 2; i <= MAX_V; ++i) if (isPrime[i]) primes.push_back(i);\n\n        auto costToPrime = [&](int x) {\n            auto it = std::lower_bound(primes.begin(), primes.end(), x);\n            int best = std::abs(x - *it);\n            if (it != primes.begin()) best = std::min(best, std::abs(x - *(it - 1)));\n            return best;\n        };\n\n        long long cost0 = 0, cost1 = 0;\n        for (int i = 0; i < (int)nums.size(); ++i) {\n            int cp = costToPrime(nums[i]);\n            int cnp = isPrime[nums[i]] ? 1 : 0;\n            if (i % 2 == 0) {\n                cost0 += cp;\n                cost1 += cnp;\n            } else {\n                cost0 += cnp;\n                cost1 += cp;\n            }\n        }\n        return std::min(cost0, cost1);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minOperationsAlternatingPrime(int[] nums) {\n        int MAX_V = 200000;\n        boolean[] isPrime = new boolean[MAX_V + 1];\n        Arrays.fill(isPrime, true);\n        isPrime[0] = isPrime[1] = false;\n        for (int i = 2; i * i <= MAX_V; i++) {\n            if (isPrime[i]) {\n                for (int j = i * i; j <= MAX_V; j += i) isPrime[j] = false;\n            }\n        }\n        List<Integer> primes = new ArrayList<>();\n        for (int i = 2; i <= MAX_V; i++) if (isPrime[i]) primes.add(i);\n\n        long cost0 = 0, cost1 = 0;\n        for (int i = 0; i < nums.length; i++) {\n            int idx = Collections.binarySearch(primes, nums[i]);\n            int cp;\n            if (idx >= 0) cp = 0;\n            else {\n                int ins = -(idx + 1);\n                cp = Math.abs(nums[i] - primes.get(ins));\n                if (ins > 0) cp = Math.min(cp, Math.abs(nums[i] - primes.get(ins - 1)));\n            }\n            int cnp = isPrime[nums[i]] ? 1 : 0;\n            if (i % 2 == 0) {\n                cost0 += cp;\n                cost1 += cnp;\n            } else {\n                cost0 += cnp;\n                cost1 += cp;\n            }\n        }\n        return (int) Math.min(cost0, cost1);\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minOperationsAlternatingPrime(nums) {\n    const MAX_V = 200000;\n    const isPrime = new Uint8Array(MAX_V + 1).fill(1);\n    isPrime[0] = isPrime[1] = 0;\n    for (let i = 2; i * i <= MAX_V; i++) {\n        if (isPrime[i]) {\n            for (let j = i * i; j <= MAX_V; j += i) isPrime[j] = 0;\n        }\n    }\n    const primes = [];\n    for (let i = 2; i <= MAX_V; i++) if (isPrime[i]) primes.push(i);\n\n    const costToPrime = (x) => {\n        let l = 0, r = primes.length - 1;\n        while (l < r) {\n            const mid = (l + r) >> 1;\n            if (primes[mid] >= x) r = mid;\n            else l = mid + 1;\n        }\n        let best = Math.abs(x - primes[l]);\n        if (l > 0) best = Math.min(best, Math.abs(x - primes[l - 1]));\n        return best;\n    };\n\n    let cost0 = 0, cost1 = 0;\n    for (let i = 0; i < nums.length; i++) {\n        const cp = costToPrime(nums[i]);\n        const cnp = isPrime[nums[i]] ? 1 : 0;\n        if (i % 2 === 0) {\n            cost0 += cp;\n            cost1 += cnp;\n        } else {\n            cost0 += cnp;\n            cost1 += cp;\n        }\n    }\n    return Math.min(cost0, cost1);\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

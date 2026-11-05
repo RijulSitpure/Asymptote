@@ -1,0 +1,79 @@
+{
+  "slug": "good-subsequence-queries",
+  "number": 3901,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "A sequence query asks for the sum of elements within range [l, r] that are greater than or equal to a threshold."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Sort queries by threshold in descending order alongside sorted element values."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Insert elements into a prefix sum structure as threshold decreases, answering range sum queries in logarithmic time."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Fenwick:\n    def __init__(self, n: int):\n        self.tree = [0] * (n + 1)\n\n    def update(self, idx: int, delta: int):\n        idx += 1\n        while idx < len(self.tree):\n            self.tree[idx] += delta\n            idx += idx & (-idx)\n\n    def query(self, idx: int) -> int:\n        idx += 1\n        s = 0\n        while idx > 0:\n            s += self.tree[idx]\n            idx -= idx & (-idx)\n        return s\n\n    def range_query(self, l: int, r: int) -> int:\n        return self.query(r) - self.query(l - 1)\n\ndef goodSubsequenceQueries(nums: list[int], queries: list[list[int]]) -> list[int]:\n    n = len(nums)\n    bit = Fenwick(n)\n    q_indexed = sorted(enumerate(queries), key=lambda x: x[1][2], reverse=True)\n    num_indexed = sorted(enumerate(nums), key=lambda x: x[1], reverse=True)\n    \n    ans = [0] * len(queries)\n    cur_num = 0\n    for q_idx, (l, r, thresh) in q_indexed:\n        while cur_num < n and num_indexed[cur_num][1] >= thresh:\n            idx, val = num_indexed[cur_num]\n            bit.update(idx, val)\n            cur_num += 1\n        ans[q_idx] = bit.range_query(l, r)\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "q"
+    ],
+    "time": "O((n + q) log n)",
+    "space": "O(n + q)",
+    "notes": "Offline threshold sorting with binary indexed tree updates takes O((n + q) log n).",
+    "whyNaiveFails": "Scanning each query range takes O(n * q) worst-case time.",
+    "spaceTimeTradeoff": "Maintains Fenwick tree of size n + 1.",
+    "interviewerExpectation": "Applies offline query sorting with Fenwick tree range sum processing."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Fenwick:\n    def __init__(self, n: int):\n        self.tree = [0] * (n + 1)\n\n    def update(self, idx: int, delta: int):\n        idx += 1\n        while idx < len(self.tree):\n            self.tree[idx] += delta\n            idx += idx & (-idx)\n\n    def query(self, idx: int) -> int:\n        idx += 1\n        s = 0\n        while idx > 0:\n            s += self.tree[idx]\n            idx -= idx & (-idx)\n        return s\n\n    def range_query(self, l: int, r: int) -> int:\n        return self.query(r) - self.query(l - 1)\n\ndef goodSubsequenceQueries(nums: list[int], queries: list[list[int]]) -> list[int]:\n    n = len(nums)\n    bit = Fenwick(n)\n    q_indexed = sorted(enumerate(queries), key=lambda x: x[1][2], reverse=True)\n    num_indexed = sorted(enumerate(nums), key=lambda x: x[1], reverse=True)\n    \n    ans = [0] * len(queries)\n    cur_num = 0\n    for q_idx, (l, r, thresh) in q_indexed:\n        while cur_num < n and num_indexed[cur_num][1] >= thresh:\n            idx, val = num_indexed[cur_num]\n            bit.update(idx, val)\n            cur_num += 1\n        ans[q_idx] = bit.range_query(l, r)\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\n    struct Fenwick {\n        int n;\n        std::vector<long long> tree;\n        Fenwick(int n) : n(n), tree(n + 1, 0) {}\n        void update(int idx, int delta) {\n            for (++idx; idx <= n; idx += idx & (-idx)) tree[idx] += delta;\n        }\n        long long query(int idx) {\n            long long s = 0;\n            for (++idx; idx > 0; idx -= idx & (-idx)) s += tree[idx];\n            return s;\n        }\n        long long rangeQuery(int l, int r) {\n            return query(r) - query(l - 1);\n        }\n    };\npublic:\n    std::vector<long long> goodSubsequenceQueries(std::vector<int>& nums, std::vector<std::vector<int>>& queries) {\n        int n = nums.size(), q = queries.size();\n        Fenwick bit(n);\n        std::vector<int> qIdx(q);\n        for (int i = 0; i < q; ++i) qIdx[i] = i;\n        std::sort(qIdx.begin(), qIdx.end(), [&](int a, int b) {\n            return queries[a][2] > queries[b][2];\n        });\n        std::vector<std::pair<int, int>> numIndexed(n);\n        for (int i = 0; i < n; ++i) numIndexed[i] = {nums[i], i};\n        std::sort(numIndexed.rbegin(), numIndexed.rend());\n\n        std::vector<long long> ans(q);\n        int curNum = 0;\n        for (int idx : qIdx) {\n            int l = queries[idx][0], r = queries[idx][1], thresh = queries[idx][2];\n            while (curNum < n && numIndexed[curNum].first >= thresh) {\n                bit.update(numIndexed[curNum].second, numIndexed[curNum].first);\n                curNum++;\n            }\n            ans[idx] = bit.rangeQuery(l, r);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    static class Fenwick {\n        int n;\n        long[] tree;\n        Fenwick(int n) { this.n = n; tree = new long[n + 1]; }\n        void update(int idx, int delta) {\n            for (++idx; idx <= n; idx += idx & (-idx)) tree[idx] += delta;\n        }\n        long query(int idx) {\n            long s = 0;\n            for (++idx; idx > 0; idx -= idx & (-idx)) s += tree[idx];\n            return s;\n        }\n        long rangeQuery(int l, int r) { return query(r) - query(l - 1); }\n    }\n\n    public long[] goodSubsequenceQueries(int[] nums, int[][] queries) {\n        int n = nums.length, q = queries.length;\n        Fenwick bit = new Fenwick(n);\n        Integer[] qIdx = new Integer[q];\n        for (int i = 0; i < q; i++) qIdx[i] = i;\n        Arrays.sort(qIdx, (a, b) -> Integer.compare(queries[b][2], queries[a][2]));\n        int[][] numIndexed = new int[n][2];\n        for (int i = 0; i < n; i++) { numIndexed[i][0] = nums[i]; numIndexed[i][1] = i; }\n        Arrays.sort(numIndexed, (a, b) -> Integer.compare(b[0], a[0]));\n\n        long[] ans = new long[q];\n        int curNum = 0;\n        for (int idx : qIdx) {\n            int l = queries[idx][0], r = queries[idx][1], thresh = queries[idx][2];\n            while (curNum < n && numIndexed[curNum][0] >= thresh) {\n                bit.update(numIndexed[curNum][1], numIndexed[curNum][0]);\n                curNum++;\n            }\n            ans[idx] = bit.rangeQuery(l, r);\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function goodSubsequenceQueries(nums, queries) {\n    const n = nums.length, q = queries.length;\n    const tree = new Array(n + 1).fill(0);\n    const update = (idx, delta) => {\n        for (++idx; idx <= n; idx += idx & (-idx)) tree[idx] += delta;\n    };\n    const query = (idx) => {\n        let s = 0;\n        for (++idx; idx > 0; idx -= idx & (-idx)) s += tree[idx];\n        return s;\n    };\n    const rangeQuery = (l, r) => query(r) - query(l - 1);\n\n    const qIdx = Array.from({length: q}, (_, i) => i);\n    qIdx.sort((a, b) => queries[b][2] - queries[a][2]);\n    const numIndexed = nums.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]);\n\n    const ans = new Array(q).fill(0);\n    let curNum = 0;\n    for (const idx of qIdx) {\n        const [l, r, thresh] = queries[idx];\n        while (curNum < n && numIndexed[curNum][0] >= thresh) {\n            update(numIndexed[curNum][1], numIndexed[curNum][0]);\n            curNum++;\n        }\n        ans[idx] = rangeQuery(l, r);\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
