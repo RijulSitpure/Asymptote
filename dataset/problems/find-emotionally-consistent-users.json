@@ -1,0 +1,71 @@
+{
+  "slug": "find-emotionally-consistent-users",
+  "number": 3808,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Group Posts by User",
+      "text": "Group the user posts by user identifier and aggregate post counts and distinct sentiments."
+    },
+    {
+      "level": 2,
+      "title": "Filter Single Sentiment and Minimum Count",
+      "text": "Use a group filter condition requiring count(distinct sentiment) = 1 and count(post_id) >= 3."
+    },
+    {
+      "level": 3,
+      "title": "Extract Sentiment Value",
+      "text": "Select min(sentiment) or max(sentiment) as the single consistent sentiment for qualifying users."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```sql\nSELECT \n    user_id,\n    MIN(sentiment) AS sentiment,\n    COUNT(post_id) AS post_count\nFROM UserPosts\nGROUP BY user_id\nHAVING COUNT(post_id) >= 3 \n   AND COUNT(DISTINCT sentiment) = 1\nORDER BY user_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n log n)",
+    "space": "O(n)",
+    "variables": [
+      "n"
+    ],
+    "notes": "Group aggregation by user_id and sort.",
+    "whyNaiveFails": "Self-joining without aggregation fails to capture users with >= 3 posts cleanly.",
+    "spaceTimeTradeoff": "Hash aggregation requires memory for unique users.",
+    "interviewerExpectation": "Expects clean HAVING clause with COUNT(DISTINCT sentiment) = 1."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    user_id,\n    MIN(sentiment) AS sentiment,\n    COUNT(post_id) AS post_count\nFROM UserPosts\nGROUP BY user_id\nHAVING COUNT(post_id) >= 3 \n   AND COUNT(DISTINCT sentiment) = 1\nORDER BY user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    user_id,\n    MIN(sentiment) AS sentiment,\n    COUNT(post_id) AS post_count\nFROM UserPosts\nGROUP BY user_id\nHAVING COUNT(post_id) >= 3 \n   AND COUNT(DISTINCT sentiment) = 1\nORDER BY user_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_emotionally_consistent_users(user_posts: pd.DataFrame) -> pd.DataFrame:\n    grouped = user_posts.groupby('user_id').agg(\n        sentiment=('sentiment', 'first'),\n        distinct_sentiments=('sentiment', 'nunique'),\n        post_count=('post_id', 'count')\n    ).reset_index()\n    res = grouped[(grouped['post_count'] >= 3) & (grouped['distinct_sentiments'] == 1)]\n    return res[['user_id', 'sentiment', 'post_count']].sort_values('user_id')",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

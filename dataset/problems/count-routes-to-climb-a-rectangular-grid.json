@@ -1,0 +1,79 @@
+{
+  "slug": "count-routes-to-climb-a-rectangular-grid",
+  "number": 3797,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-grid-2d"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Grid Directed Transitions",
+      "text": "Every cell can transition only to right or down neighbors with strictly greater values."
+    },
+    {
+      "level": 2,
+      "title": "Sort Cells by Value",
+      "text": "Sorting cells in descending order ensures no cycles, allowing forward accumulation of paths."
+    },
+    {
+      "level": 3,
+      "title": "Memoized Path Count",
+      "text": "paths(r, c) = 1 + sum(paths(nr, nc)) for strictly increasing valid right or down neighbors."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def countPaths(self, grid: list[list[int]]) -> int:\n        MOD = 1_000_000_007\n        m, n = len(grid), len(grid[0])\n        memo = {}\n        \n        def dfs(r: int, c: int) -> int:\n            if (r, c) in memo:\n                return memo[(r, c)]\n            res = 1\n            for dr, dc in [(0, 1), (1, 0)]:\n                nr, nc = r + dr, c + dc\n                if nr < m and nc < n and grid[nr][nc] > grid[r][c]:\n                    res = (res + dfs(nr, nc)) % MOD\n            memo[(r, c)] = res\n            return res\n        \n        total = 0\n        for r in range(m):\n            for c in range(n):\n                total = (total + dfs(r, c)) % MOD\n        return total\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(m * n)",
+    "space": "O(m * n)",
+    "variables": [
+      "m",
+      "n"
+    ],
+    "notes": "Each cell is computed once in DAG traversal.",
+    "whyNaiveFails": "Traversing paths without memoization causes exponential branching.",
+    "spaceTimeTradeoff": "Memoization cache uses O(m * n) space.",
+    "interviewerExpectation": "Expects DAG structure recognition and memoized DFS on grid."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def countPaths(self, grid: list[list[int]]) -> int:\n        MOD = 1_000_000_007\n        m, n = len(grid), len(grid[0])\n        memo = {}\n        \n        def dfs(r: int, c: int) -> int:\n            if (r, c) in memo:\n                return memo[(r, c)]\n            res = 1\n            for dr, dc in [(0, 1), (1, 0)]:\n                nr, nc = r + dr, c + dc\n                if nr < m and nc < n and grid[nr][nc] > grid[r][c]:\n                    res = (res + dfs(nr, nc)) % MOD\n            memo[(r, c)] = res\n            return res\n        \n        total = 0\n        for r in range(m):\n            for c in range(n):\n                total = (total + dfs(r, c)) % MOD\n        return total",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int countPaths(vector<vector<int>>& grid) {\n        const int MOD = 1000000007;\n        int m = grid.size(), n = grid[0].size();\n        vector<vector<int>> memo(m, vector<int>(n, -1));\n        auto dfs = [&](auto& self, int r, int c) -> int {\n            if (memo[r][c] != -1) return memo[r][c];\n            long long res = 1;\n            int dr[] = {0, 1}, dc[] = {1, 0};\n            for (int i = 0; i < 2; i++) {\n                int nr = r + dr[i], nc = c + dc[i];\n                if (nr < m && nc < n && grid[nr][nc] > grid[r][c]) {\n                    res = (res + self(self, nr, nc)) % MOD;\n                }\n            }\n            return memo[r][c] = res;\n        };\n        long long total = 0;\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                total = (total + dfs(dfs, r, c)) % MOD;\n            }\n        }\n        return total;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    private static final int MOD = 1_000_000_007;\n    private int[][] memo;\n\n    public int countPaths(int[][] grid) {\n        int m = grid.length, n = grid[0].length;\n        memo = new int[m][n];\n        long total = 0;\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                total = (total + dfs(grid, r, c, m, n)) % MOD;\n            }\n        }\n        return (int)total;\n    }\n\n    private int dfs(int[][] grid, int r, int c, int m, int n) {\n        if (memo[r][c] != 0) return memo[r][c];\n        long res = 1;\n        int[] dr = {0, 1}, dc = {1, 0};\n        for (int i = 0; i < 2; i++) {\n            int nr = r + dr[i], nc = c + dc[i];\n            if (nr < m && nc < n && grid[nr][nc] > grid[r][c]) {\n                res = (res + dfs(grid, nr, nc, m, n)) % MOD;\n            }\n        }\n        return memo[r][c] = (int)res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var countPaths = function(grid) {\n    const MOD = 1000000007;\n    const m = grid.length, n = grid[0].length;\n    const memo = Array.from({ length: m }, () => new Int32Array(n).fill(-1));\n    function dfs(r, c) {\n        if (memo[r][c] !== -1) return memo[r][c];\n        let res = 1;\n        const dirs = [[0, 1], [1, 0]];\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr, nc = c + dc;\n            if (nr < m && nc < n && grid[nr][nc] > grid[r][c]) {\n                res = (res + dfs(nr, nc)) % MOD;\n            }\n        }\n        return memo[r][c] = res;\n    }\n    let total = 0;\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            total = (total + dfs(r, c)) % MOD;\n        }\n    }\n    return total;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

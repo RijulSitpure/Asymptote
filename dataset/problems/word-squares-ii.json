@@ -1,0 +1,79 @@
+{
+  "slug": "word-squares-ii",
+  "number": 3799,
+  "category": "Algorithms",
+  "patterns": [
+    "backtracking-subsets-perm"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Prefix Constraint Propagation",
+      "text": "When choosing the i-th word of the square, its prefix must match the characters already placed in the i-th column."
+    },
+    {
+      "level": 2,
+      "title": "Lookup Table by Prefix",
+      "text": "Index all input words by their prefixes of lengths 1 through k for quick lookup."
+    },
+    {
+      "level": 3,
+      "title": "Recursive Backtracking",
+      "text": "Recursively construct word squares row by row, pruning candidates that do not match the required column prefix."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import defaultdict\n\nclass Solution:\n    def wordSquares(self, words: list[str]) -> list[list[str]]:\n        n = len(words[0])\n        pref_map = defaultdict(list)\n        for w in words:\n            for i in range(n + 1):\n                pref_map[w[:i]].append(w)\n        \n        res = []\n        def backtrack(step: int, current_square: list[str]):\n            if step == n:\n                res.append(list(current_square))\n                return\n            \n            pref = \"\".join(current_square[r][step] for r in range(step))\n            for candidate in pref_map.get(pref, []):\n                current_square.append(candidate)\n                backtrack(step + 1, current_square)\n                current_square.pop()\n        \n        backtrack(0, [])\n        return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N * 26^L)",
+    "space": "O(N * L)",
+    "variables": [
+      "N",
+      "L"
+    ],
+    "notes": "Here N is the number of words and L is word length.",
+    "whyNaiveFails": "Checking all permutations of words takes O(N^L) which is prohibitive without prefix pruning.",
+    "spaceTimeTradeoff": "Prefix dictionary requires O(N * L) space.",
+    "interviewerExpectation": "Expects prefix tree or hash map pruning during backtracking."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import defaultdict\n\nclass Solution:\n    def wordSquares(self, words: list[str]) -> list[list[str]]:\n        n = len(words[0])\n        pref_map = defaultdict(list)\n        for w in words:\n            for i in range(n + 1):\n                pref_map[w[:i]].append(w)\n        \n        res = []\n        def backtrack(step: int, current_square: list[str]):\n            if step == n:\n                res.append(list(current_square))\n                return\n            \n            pref = \"\".join(current_square[r][step] for r in range(step))\n            for candidate in pref_map.get(pref, []):\n                current_square.append(candidate)\n                backtrack(step + 1, current_square)\n                current_square.pop()\n        \n        backtrack(0, [])\n        return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <string>\n#include <unordered_map>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<vector<string>> wordSquares(vector<string>& words) {\n        int n = words[0].size();\n        unordered_map<string, vector<string>> pref_map;\n        for (const auto& w : words) {\n            for (int i = 0; i <= n; i++) {\n                pref_map[w.substr(0, i)].push_back(w);\n            }\n        }\n        vector<vector<string>> res;\n        vector<string> cur;\n        auto backtrack = [&](auto& self, int step) -> void {\n            if (step == n) {\n                res.push_back(cur);\n                return;\n            }\n            string pref = \"\";\n            for (int r = 0; r < step; r++) pref += cur[r][step];\n            if (pref_map.count(pref)) {\n                for (const auto& cand : pref_map[pref]) {\n                    cur.push_back(cand);\n                    self(self, step + 1);\n                    cur.pop_back();\n                }\n            }\n        };\n        backtrack(backtrack, 0);\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private Map<String, List<String>> prefMap = new HashMap<>();\n    private List<List<String>> res = new ArrayList<>();\n\n    public List<List<String>> wordSquares(String[] words) {\n        prefMap.clear();\n        res.clear();\n        int n = words[0].length();\n        for (String w : words) {\n            for (int i = 0; i <= n; i++) {\n                String p = w.substring(0, i);\n                prefMap.computeIfAbsent(p, k -> new ArrayList<>()).add(w);\n            }\n        }\n        backtrack(0, n, new ArrayList<>());\n        return res;\n    }\n\n    private void backtrack(int step, int n, List<String> cur) {\n        if (step == n) {\n            res.add(new ArrayList<>(cur));\n            return;\n        }\n        StringBuilder sb = new StringBuilder();\n        for (int r = 0; r < step; r++) sb.append(cur.get(r).charAt(step));\n        String pref = sb.toString();\n        if (prefMap.containsKey(pref)) {\n            for (String cand : prefMap.get(pref)) {\n                cur.add(cand);\n                backtrack(step + 1, n, cur);\n                cur.remove(cur.size() - 1);\n            }\n        }\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var wordSquares = function(words) {\n    const n = words[0].length;\n    const prefMap = new Map();\n    for (const w of words) {\n        for (let i = 0; i <= n; i++) {\n            const p = w.slice(0, i);\n            if (!prefMap.has(p)) prefMap.set(p, []);\n            prefMap.get(p).push(w);\n        }\n    }\n    const res = [];\n    const cur = [];\n    function backtrack(step) {\n        if (step === n) {\n            res.push([...cur]);\n            return;\n        }\n        let pref = '';\n        for (let r = 0; r < step; r++) pref += cur[r][step];\n        const cands = prefMap.get(pref) || [];\n        for (const cand of cands) {\n            cur.push(cand);\n            backtrack(step + 1);\n            cur.pop();\n        }\n    }\n    backtrack(0);\n    return res;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

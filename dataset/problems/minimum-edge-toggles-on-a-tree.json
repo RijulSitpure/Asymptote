@@ -1,0 +1,78 @@
+{
+  "slug": "minimum-edge-toggles-on-a-tree",
+  "number": 3812,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Leaf to Root Determination",
+      "text": "For any leaf node, the only operation that can toggle its incident edge is toggling the leaf itself."
+    },
+    {
+      "level": 2,
+      "title": "Post-Order Tree Invariant",
+      "text": "Traverse the tree from bottom up. For each child v with parent u, if edge (u, v) is 1, node v must be toggled."
+    },
+    {
+      "level": 3,
+      "title": "Root Parity Verification",
+      "text": "After resolving all child edges, check if the root has any remaining unresolved edges. If not, the total toggled nodes is the unique minimal answer."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def minEdgeToggles(self, n: int, edges: list[list[int]]) -> int:\n        adj = [[] for _ in range(n)]\n        for i, (u, v, state) in enumerate(edges):\n            adj[u].append((v, state))\n            adj[v].append((u, state))\n        \n        toggles = [0] * n\n        \n        def dfs(u: int, p: int, edge_state: int) -> bool:\n            for v, s in adj[u]:\n                if v != p:\n                    if not dfs(v, u, s):\n                        return False\n            effective_state = edge_state ^ toggles[u]\n            if effective_state == 1:\n                toggles[u] ^= 1\n            return True\n        \n        dfs(0, -1, 0)\n        return sum(toggles)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(n)",
+    "space": "O(n)",
+    "variables": [
+      "n"
+    ],
+    "notes": "Single post-order DFS traversal.",
+    "whyNaiveFails": "Testing all 2^n toggle subsets is exponential.",
+    "spaceTimeTradeoff": "Recursion stack and toggle state take O(n) space.",
+    "interviewerExpectation": "Expects bottom-up greedy uniqueness property on trees."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def minEdgeToggles(self, n: int, edges: list[list[int]]) -> int:\n        adj = [[] for _ in range(n)]\n        for i, (u, v, state) in enumerate(edges):\n            adj[u].append((v, state))\n            adj[v].append((u, state))\n        \n        toggles = [0] * n\n        \n        def dfs(u: int, p: int, edge_state: int) -> bool:\n            for v, s in adj[u]:\n                if v != p:\n                    if not dfs(v, u, s):\n                        return False\n            effective_state = edge_state ^ toggles[u]\n            if effective_state == 1:\n                toggles[u] ^= 1\n            return True\n        \n        dfs(0, -1, 0)\n        return sum(toggles)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <numeric>\nusing namespace std;\n\nclass Solution {\npublic:\n    int minEdgeToggles(int n, vector<vector<int>>& edges) {\n        vector<vector<pair<int, int>>> adj(n);\n        for (const auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2]});\n            adj[e[1]].push_back({e[0], e[2]});\n        }\n        vector<int> toggles(n, 0);\n        auto dfs = [&](auto& self, int u, int p, int edge_state) -> void {\n            for (auto [v, s] : adj[u]) {\n                if (v != p) self(self, v, u, s);\n            }\n            int effective = edge_state ^ toggles[u];\n            if (effective == 1) toggles[u] ^= 1;\n        };\n        dfs(dfs, 0, -1, 0);\n        return accumulate(toggles.begin(), toggles.end(), 0);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minEdgeToggles(int n, int[][] edges) {\n        List<List<int[]>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(new int[]{e[1], e[2]});\n            adj.get(e[1]).add(new int[]{e[0], e[2]});\n        }\n        int[] toggles = new int[n];\n        dfs(0, -1, 0, adj, toggles);\n        int ans = 0;\n        for (int t : toggles) ans += t;\n        return ans;\n    }\n\n    private void dfs(int u, int p, int edgeState, List<List<int[]>> adj, int[] toggles) {\n        for (int[] edge : adj.get(u)) {\n            int v = edge[0], s = edge[1];\n            if (v != p) dfs(v, u, s, adj, toggles);\n        }\n        int effective = edgeState ^ toggles[u];\n        if (effective == 1) toggles[u] ^= 1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var minEdgeToggles = function(n, edges) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, state] of edges) {\n        adj[u].push([v, state]);\n        adj[v].push([u, state]);\n    }\n    const toggles = new Int32Array(n);\n    function dfs(u, p, edgeState) {\n        for (const [v, s] of adj[u]) {\n            if (v !== p) dfs(v, u, s);\n        }\n        const effective = edgeState ^ toggles[u];\n        if (effective === 1) toggles[u] ^= 1;\n    }\n    dfs(0, -1, 0);\n    return toggles.reduce((a, b) => a + b, 0);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

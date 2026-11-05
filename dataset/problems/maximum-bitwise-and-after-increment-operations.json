@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-bitwise-and-after-increment-operations",
+  "number": 3806,
+  "category": "Algorithms",
+  "patterns": [
+    "bit-manipulation-tricks"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Pair Target Construction",
+      "text": "For two elements nums[i] and nums[j], the cost to make both have bitwise and containing target mask is the sum of increments required."
+    },
+    {
+      "level": 2,
+      "title": "Cost to Meet Mask",
+      "text": "For a value x and bit target T, the minimal y >= x such that (y & T) == T can be found by filling missing bits."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Bit Testing",
+      "text": "Test bits from most significant (bit 30) down to 0, greedily appending bit b to candidate mask if a pair exists with cost <= k."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nclass Solution:\n    def maxBitwiseAnd(self, nums: list[int], k: int) -> int:\n        def min_ge_with_mask(x: int, mask: int) -> int:\n            if (x & mask) == mask:\n                return x\n            best = x | mask\n            cur_prefix = 0\n            for bit in range(30, -1, -1):\n                mb = (mask >> bit) & 1\n                xb = (x >> bit) & 1\n                if mb == 1 and xb == 0:\n                    cand = cur_prefix | (1 << bit)\n                    for b in range(bit - 1, -1, -1):\n                        if (mask >> b) & 1:\n                            cand |= (1 << b)\n                    if cand >= x and cand < best:\n                        best = cand\n                    cur_prefix |= (1 << bit)\n                elif mb == 0 and xb == 0:\n                    cand = cur_prefix | (1 << bit)\n                    for b in range(bit - 1, -1, -1):\n                        if (mask >> b) & 1:\n                            cand |= (1 << b)\n                    if cand >= x and cand < best:\n                        best = cand\n                else:\n                    cur_prefix |= (1 << bit)\n            return best\n        \n        ans = 0\n        for bit in range(30, -1, -1):\n            cand = ans | (1 << bit)\n            costs = sorted([min_ge_with_mask(x, cand) - x for x in nums])\n            if costs[0] + costs[1] <= k:\n                ans = cand\n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(B * n log n)",
+    "space": "O(n)",
+    "variables": [
+      "B",
+      "n"
+    ],
+    "notes": "Here B = 30 bits.",
+    "whyNaiveFails": "Checking all 2^30 potential bitwise values is intractable.",
+    "spaceTimeTradeoff": "Cost sorting requires O(n) space.",
+    "interviewerExpectation": "Expects bitwise greedy search from most significant bit to least significant bit."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "class Solution:\n    def maxBitwiseAnd(self, nums: list[int], k: int) -> int:\n        def min_ge_with_mask(x: int, mask: int) -> int:\n            if (x & mask) == mask:\n                return x\n            best = x | mask\n            cur_prefix = 0\n            for bit in range(30, -1, -1):\n                mb = (mask >> bit) & 1\n                xb = (x >> bit) & 1\n                if mb == 1 and xb == 0:\n                    cand = cur_prefix | (1 << bit)\n                    for b in range(bit - 1, -1, -1):\n                        if (mask >> b) & 1:\n                            cand |= (1 << b)\n                    if cand >= x and cand < best:\n                        best = cand\n                    cur_prefix |= (1 << bit)\n                elif mb == 0 and xb == 0:\n                    cand = cur_prefix | (1 << bit)\n                    for b in range(bit - 1, -1, -1):\n                        if (mask >> b) & 1:\n                            cand |= (1 << b)\n                    if cand >= x and cand < best:\n                        best = cand\n                else:\n                    cur_prefix |= (1 << bit)\n            return best\n        \n        ans = 0\n        for bit in range(30, -1, -1):\n            cand = ans | (1 << bit)\n            costs = sorted([min_ge_with_mask(x, cand) - x for x in nums])\n            if costs[0] + costs[1] <= k:\n                ans = cand\n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\nusing namespace std;\n\nclass Solution {\npublic:\n    long long minGeWithMask(long long x, long long mask) {\n        if ((x & mask) == mask) return x;\n        long long best = x | mask;\n        long long cur_prefix = 0;\n        for (int bit = 30; bit >= 0; bit--) {\n            int mb = (mask >> bit) & 1;\n            int xb = (x >> bit) & 1;\n            if (mb == 1 && xb == 0) {\n                long long cand = cur_prefix | (1LL << bit);\n                for (int b = bit - 1; b >= 0; b--) {\n                    if ((mask >> b) & 1) cand |= (1LL << b);\n                }\n                if (cand >= x && cand < best) best = cand;\n                cur_prefix |= (1LL << bit);\n            } else if (mb == 0 && xb == 0) {\n                long long cand = cur_prefix | (1LL << bit);\n                for (int b = bit - 1; b >= 0; b--) {\n                    if ((mask >> b) & 1) cand |= (1LL << b);\n                }\n                if (cand >= x && cand < best) best = cand;\n            } else {\n                cur_prefix |= (1LL << bit);\n            }\n        }\n        return best;\n    }\n\n    int maxBitwiseAnd(vector<int>& nums, int k) {\n        long long ans = 0;\n        for (int bit = 30; bit >= 0; bit--) {\n            long long cand = ans | (1LL << bit);\n            vector<long long> costs;\n            for (int x : nums) costs.push_back(minGeWithMask(x, cand) - x);\n            sort(costs.begin(), costs.end());\n            if (costs[0] + costs[1] <= k) ans = cand;\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private long minGeWithMask(long x, long mask) {\n        if ((x & mask) == mask) return x;\n        long best = x | mask;\n        long curPrefix = 0;\n        for (int bit = 30; bit >= 0; bit--) {\n            int mb = (int)((mask >> bit) & 1);\n            int xb = (int)((x >> bit) & 1);\n            if (mb == 1 && xb == 0) {\n                long cand = curPrefix | (1L << bit);\n                for (int b = bit - 1; b >= 0; b--) {\n                    if (((mask >> b) & 1) == 1) cand |= (1L << b);\n                }\n                if (cand >= x && cand < best) best = cand;\n                curPrefix |= (1L << bit);\n            } else if (mb == 0 && xb == 0) {\n                long cand = curPrefix | (1L << bit);\n                for (int b = bit - 1; b >= 0; b--) {\n                    if (((mask >> b) & 1) == 1) cand |= (1L << b);\n                }\n                if (cand >= x && cand < best) best = cand;\n            } else {\n                curPrefix |= (1L << bit);\n            }\n        }\n        return best;\n    }\n\n    public int maxBitwiseAnd(int[] nums, int k) {\n        long ans = 0;\n        for (int bit = 30; bit >= 0; bit--) {\n            long cand = ans | (1L << bit);\n            long[] costs = new long[nums.length];\n            for (int i = 0; i < nums.length; i++) costs[i] = minGeWithMask(nums[i], cand) - nums[i];\n            Arrays.sort(costs);\n            if (costs[0] + costs[1] <= k) ans = cand;\n        }\n        return (int)ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxBitwiseAnd = function(nums, k) {\n    function minGeWithMask(x, mask) {\n        const xB = BigInt(x), maskB = BigInt(mask);\n        if ((xB & maskB) === maskB) return xB;\n        let best = xB | maskB;\n        let curPrefix = 0n;\n        for (let bit = 30n; bit >= 0n; bit--) {\n            const mb = (maskB >> bit) & 1n;\n            const xb = (xB >> bit) & 1n;\n            if (mb === 1n && xb === 0n) {\n                let cand = curPrefix | (1n << bit);\n                for (let b = bit - 1n; b >= 0n; b--) {\n                    if ((maskB >> b) & 1n) cand |= (1n << b);\n                }\n                if (cand >= xB && cand < best) best = cand;\n                curPrefix |= (1n << bit);\n            } else if (mb === 0n && xb === 0n) {\n                let cand = curPrefix | (1n << bit);\n                for (let b = bit - 1n; b >= 0n; b--) {\n                    if ((maskB >> b) & 1n) cand |= (1n << b);\n                }\n                if (cand >= xB && cand < best) best = cand;\n            } else {\n                curPrefix |= (1n << bit);\n            }\n        }\n        return best;\n    }\n    let ans = 0n;\n    for (let bit = 30n; bit >= 0n; bit--) {\n        const cand = ans | (1n << bit);\n        const costs = nums.map(x => Number(minGeWithMask(x, cand) - BigInt(x))).sort((a, b) => a - b);\n        if (costs[0] + costs[1] <= k) ans = cand;\n    }\n    return Number(ans);\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
