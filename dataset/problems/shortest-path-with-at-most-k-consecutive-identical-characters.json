@@ -1,0 +1,80 @@
+{
+  "slug": "shortest-path-with-at-most-k-consecutive-identical-characters",
+  "number": 3970,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Augment grid coordinates with current character streak state."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Transition to adjacent cells only when the streak limit for identical character is preserved."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Reset the streak counter to one whenever stepping onto a distinct character cell."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\ndef shortestPathWithConsecutiveLimit(grid: list[list[str]], k: int) -> int:\n    m = len(grid)\n    n = len(grid[0])\n    # (r, c, streak)\n    start_state = (0, 0, 1)\n    q = deque([(0, 0, 1, 0)])\n    vis = set([start_state])\n    while q:\n        r, c, streak, dist = q.popleft()\n        if r == m - 1 and c == n - 1:\n            return dist\n        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n            nr, nc = r + dr, c + dc\n            if 0 <= nr < m and 0 <= nc < n:\n                if grid[nr][nc] == grid[r][c]:\n                    n_streak = streak + 1\n                else:\n                    n_streak = 1\n                if n_streak <= k:\n                    nxt = (nr, nc, n_streak)\n                    if nxt not in vis:\n                        vis.add(nxt)\n                        q.append((nr, nc, n_streak, dist + 1))\n    return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "m",
+      "n",
+      "k"
+    ],
+    "time": "O(m * n * k)",
+    "space": "O(m * n * k)",
+    "notes": "Breadth-first search traverses state space defined by position and current character run length.",
+    "whyNaiveFails": "Ignoring the consecutive character streak allows invalid paths to corrupt distances.",
+    "spaceTimeTradeoff": "Visited state tracks (r, c, streak).",
+    "interviewerExpectation": "Augments graph state space with streak counter and runs breadth-first search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import deque\n\ndef shortestPathWithConsecutiveLimit(grid: list[list[str]], k: int) -> int:\n    m = len(grid)\n    n = len(grid[0])\n    # (r, c, streak)\n    start_state = (0, 0, 1)\n    q = deque([(0, 0, 1, 0)])\n    vis = set([start_state])\n    while q:\n        r, c, streak, dist = q.popleft()\n        if r == m - 1 and c == n - 1:\n            return dist\n        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n            nr, nc = r + dr, c + dc\n            if 0 <= nr < m and 0 <= nc < n:\n                if grid[nr][nc] == grid[r][c]:\n                    n_streak = streak + 1\n                else:\n                    n_streak = 1\n                if n_streak <= k:\n                    nxt = (nr, nc, n_streak)\n                    if nxt not in vis:\n                        vis.add(nxt)\n                        q.append((nr, nc, n_streak, dist + 1))\n    return -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <string>\n#include <queue>\n#include <tuple>\n\nclass Solution {\npublic:\n    int shortestPathWithConsecutiveLimit(std::vector<std::vector<char>>& grid, int k) {\n        int m = grid.size(), n = grid[0].size();\n        std::vector<std::vector<std::vector<bool>>> vis(m, std::vector<std::vector<bool>>(n, std::vector<bool>(k + 1, false)));\n        std::queue<std::tuple<int, int, int, int>> q;\n        q.push({0, 0, 1, 0});\n        vis[0][0][1] = true;\n        int dirs[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!q.empty()) {\n            auto [r, c, streak, dist] = q.front();\n            q.pop();\n            if (r == m - 1 && c == n - 1) return dist;\n            for (auto& d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int nStreak = (grid[nr][nc] == grid[r][c]) ? streak + 1 : 1;\n                    if (nStreak <= k && !vis[nr][nc][nStreak]) {\n                        vis[nr][nc][nStreak] = true;\n                        q.push({nr, nc, nStreak, dist + 1});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int shortestPathWithConsecutiveLimit(char[][] grid, int k) {\n        int m = grid.length, n = grid[0].length;\n        boolean[][][] vis = new boolean[m][n][k + 1];\n        Queue<int[]> q = new LinkedList<>();\n        q.offer(new int[]{0, 0, 1, 0});\n        vis[0][0][1] = true;\n        int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};\n        while (!q.isEmpty()) {\n            int[] cur = q.poll();\n            int r = cur[0], c = cur[1], streak = cur[2], dist = cur[3];\n            if (r == m - 1 && c == n - 1) return dist;\n            for (int[] d : dirs) {\n                int nr = r + d[0], nc = c + d[1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int nStreak = (grid[nr][nc] == grid[r][c]) ? streak + 1 : 1;\n                    if (nStreak <= k && !vis[nr][nc][nStreak]) {\n                        vis[nr][nc][nStreak] = true;\n                        q.offer(new int[]{nr, nc, nStreak, dist + 1});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function shortestPathWithConsecutiveLimit(grid, k) {\n    const m = grid.length;\n    const n = grid[0].length;\n    const vis = Array.from({ length: m }, () => \n        Array.from({ length: n }, () => new Array(k + 1).fill(false))\n    );\n    const q = [[0, 0, 1, 0]];\n    vis[0][0][1] = true;\n    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];\n    let head = 0;\n    while (head < q.length) {\n        const [r, c, streak, dist] = q[head++];\n        if (r === m - 1 && c === n - 1) return dist;\n        for (const [dr, dc] of dirs) {\n            const nr = r + dr;\n            const nc = c + dc;\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                const nStreak = (grid[nr][nc] === grid[r][c]) ? streak + 1 : 1;\n                if (nStreak <= k && !vis[nr][nc][nStreak]) {\n                    vis[nr][nc][nStreak] = true;\n                    q.push([nr, nc, nStreak, dist + 1]);\n                }\n            }\n        }\n    }\n    return -1;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

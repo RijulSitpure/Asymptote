@@ -1,0 +1,79 @@
+{
+  "slug": "count-good-integers-in-a-range",
+  "number": 3966,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Decompose counting over closed intervals into query(high) minus query(low - 1)."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Construct numbers digit by digit tracking current remainder modulo k."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Enforce digit upper bounds only while matching the prefix of the bounding limit."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef countGoodIntegersInRange(low: int, high: int, k: int) -> int:\n    def countUpTo(limit: int) -> int:\n        if limit < 0:\n            return 0\n        s = str(limit)\n        memo = {}\n        def dp(idx: int, rem: int, is_less: bool) -> int:\n            if idx == len(s):\n                return 1 if rem == 0 else 0\n            state = (idx, rem, is_less)\n            if state in memo:\n                return memo[state]\n            ub = 9 if is_less else int(s[idx])\n            total = 0\n            for d in range(ub + 1):\n                total += dp(idx + 1, (rem + d) % k, is_less or (d < ub))\n            memo[state] = total\n            return total\n        return dp(0, 0, False)\n\n    return countUpTo(high) - countUpTo(low - 1)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "d",
+      "k"
+    ],
+    "time": "O(d * k)",
+    "space": "O(d * k)",
+    "notes": "Memoized digit transitions over length and remainder state.",
+    "whyNaiveFails": "Iterating over huge numeric ranges times out.",
+    "spaceTimeTradeoff": "Caches state transitions for digit positions.",
+    "interviewerExpectation": "Applies standard digit dynamic programming with prefix bounding flag."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def countGoodIntegersInRange(low: int, high: int, k: int) -> int:\n    def countUpTo(limit: int) -> int:\n        if limit < 0:\n            return 0\n        s = str(limit)\n        memo = {}\n        def dp(idx: int, rem: int, is_less: bool) -> int:\n            if idx == len(s):\n                return 1 if rem == 0 else 0\n            state = (idx, rem, is_less)\n            if state in memo:\n                return memo[state]\n            ub = 9 if is_less else int(s[idx])\n            total = 0\n            for d in range(ub + 1):\n                total += dp(idx + 1, (rem + d) % k, is_less or (d < ub))\n            memo[state] = total\n            return total\n        return dp(0, 0, False)\n\n    return countUpTo(high) - countUpTo(low - 1)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <cstring>\n\nclass Solution {\npublic:\n    int countGoodIntegersInRange(int low, int high, int k) {\n        auto countUpTo = [&](int limit) -> int {\n            if (limit < 0) return 0;\n            std::string s = std::to_string(limit);\n            int n = s.size();\n            int memo[20][50][2];\n            std::memset(memo, -1, sizeof(memo));\n            auto dp = [&](auto self, int idx, int rem, bool isLess) -> int {\n                if (idx == n) return rem == 0 ? 1 : 0;\n                if (memo[idx][rem][isLess] != -1) return memo[idx][rem][isLess];\n                int ub = isLess ? 9 : (s[idx] - '0');\n                int total = 0;\n                for (int d = 0; d <= ub; ++d) {\n                    total += self(self, idx + 1, (rem + d) % k, isLess || (d < ub));\n                }\n                return memo[idx][rem][isLess] = total;\n            };\n            return dp(dp, 0, 0, false);\n        };\n        return countUpTo(high) - countUpTo(low - 1);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int countGoodIntegersInRange(int low, int high, int k) {\n        return countUpTo(high, k) - countUpTo(low - 1, k);\n    }\n\n    private int countUpTo(int limit, int k) {\n        if (limit < 0) return 0;\n        String s = Integer.toString(limit);\n        int[][][] memo = new int[s.length()][k][2];\n        for (int[][] a : memo) for (int[] b : a) Arrays.fill(b, -1);\n        return solve(0, 0, 0, s, k, memo);\n    }\n\n    private int solve(int idx, int rem, int isLess, String s, int k, int[][][] memo) {\n        if (idx == s.length()) return rem == 0 ? 1 : 0;\n        if (memo[idx][rem][isLess] != -1) return memo[idx][rem][isLess];\n        int ub = (isLess == 1) ? 9 : (s.charAt(idx) - '0');\n        int total = 0;\n        for (int d = 0; d <= ub; d++) {\n            total += solve(idx + 1, (rem + d) % k, (isLess == 1 || d < ub) ? 1 : 0, s, k, memo);\n        }\n        return memo[idx][rem][isLess] = total;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function countGoodIntegersInRange(low, high, k) {\n    function countUpTo(limit) {\n        if (limit < 0) return 0;\n        const s = String(limit);\n        const memo = new Map();\n        function dp(idx, rem, isLess) {\n            if (idx === s.length) return rem === 0 ? 1 : 0;\n            const key = `${idx}_${rem}_${isLess}`;\n            if (memo.has(key)) return memo.get(key);\n            const ub = isLess ? 9 : Number(s[idx]);\n            let total = 0;\n            for (let d = 0; d <= ub; d++) {\n                total += dp(idx + 1, (rem + d) % k, isLess || d < ub);\n            }\n            memo.set(key, total);\n            return total;\n        }\n        return dp(0, 0, false);\n    }\n    return countUpTo(high) - countUpTo(low - 1);\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

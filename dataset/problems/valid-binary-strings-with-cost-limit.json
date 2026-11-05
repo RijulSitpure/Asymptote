@@ -1,0 +1,79 @@
+{
+  "slug": "valid-binary-strings-with-cost-limit",
+  "number": 3955,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Track valid prefix extensions conditioned on previous bit value and accumulated mismatch cost."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Transition forward by trying bit zero and bit one at each consecutive index."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Sum states whose final cumulative cost remains within the allowed ceiling."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef countValidBinaryStrings(n: int, max_cost: int) -> int:\n    MOD = 1_000_000_007\n    if n == 0:\n        return 1\n    # dp[cost][last_bit]\n    dp = {0: [1, 1]}  # length 1: cost 0 for '0' and '1'\n    for _ in range(1, n):\n        nxt = {}\n        for c, (c0, c1) in dp.items():\n            # append '0'\n            cost0 = c + 1  # same bit costs 1\n            cost1 = c      # different bit costs 0\n            # from last=0 -> append 0 (cost + 1), append 1 (cost + 0)\n            if cost0 <= max_cost:\n                nxt.setdefault(cost0, [0, 0])[0] = (nxt.setdefault(cost0, [0, 0])[0] + c0) % MOD\n            if cost1 <= max_cost:\n                nxt.setdefault(cost1, [0, 0])[1] = (nxt.setdefault(cost1, [0, 0])[1] + c0) % MOD\n            # from last=1 -> append 0 (cost + 0), append 1 (cost + 1)\n            if cost1 <= max_cost:\n                nxt.setdefault(cost1, [0, 0])[0] = (nxt.setdefault(cost1, [0, 0])[0] + c1) % MOD\n            if cost0 <= max_cost:\n                nxt.setdefault(cost0, [0, 0])[1] = (nxt.setdefault(cost0, [0, 0])[1] + c1) % MOD\n        dp = nxt\n    ans = 0\n    for c, (c0, c1) in dp.items():\n        if c <= max_cost:\n            ans = (ans + c0 + c1) % MOD\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "c"
+    ],
+    "time": "O(n * c)",
+    "space": "O(c)",
+    "notes": "State transitions collapse to current and previous cost levels.",
+    "whyNaiveFails": "Generating 2^n binary strings exceeds time limits for large lengths.",
+    "spaceTimeTradeoff": "Rolling cost table uses linear memory proportional to cost limit.",
+    "interviewerExpectation": "Formulates state transition table tracking (last_bit, cost) modulo 10^9 + 7."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def countValidBinaryStrings(n: int, max_cost: int) -> int:\n    MOD = 1_000_000_007\n    if n == 0:\n        return 1\n    # dp[cost][last_bit]\n    dp = {0: [1, 1]}  # length 1: cost 0 for '0' and '1'\n    for _ in range(1, n):\n        nxt = {}\n        for c, (c0, c1) in dp.items():\n            # append '0'\n            cost0 = c + 1  # same bit costs 1\n            cost1 = c      # different bit costs 0\n            # from last=0 -> append 0 (cost + 1), append 1 (cost + 0)\n            if cost0 <= max_cost:\n                nxt.setdefault(cost0, [0, 0])[0] = (nxt.setdefault(cost0, [0, 0])[0] + c0) % MOD\n            if cost1 <= max_cost:\n                nxt.setdefault(cost1, [0, 0])[1] = (nxt.setdefault(cost1, [0, 0])[1] + c0) % MOD\n            # from last=1 -> append 0 (cost + 0), append 1 (cost + 1)\n            if cost1 <= max_cost:\n                nxt.setdefault(cost1, [0, 0])[0] = (nxt.setdefault(cost1, [0, 0])[0] + c1) % MOD\n            if cost0 <= max_cost:\n                nxt.setdefault(cost0, [0, 0])[1] = (nxt.setdefault(cost0, [0, 0])[1] + c1) % MOD\n        dp = nxt\n    ans = 0\n    for c, (c0, c1) in dp.items():\n        if c <= max_cost:\n            ans = (ans + c0 + c1) % MOD\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n\nclass Solution {\npublic:\n    int countValidBinaryStrings(int n, int maxCost) {\n        long long MOD = 1000000007;\n        if (n <= 0) return 1;\n        std::vector<std::vector<long long>> dp(maxCost + 1, std::vector<long long>(2, 0));\n        dp[0][0] = 1;\n        dp[0][1] = 1;\n        for (int step = 1; step < n; ++step) {\n            std::vector<std::vector<long long>> nxt(maxCost + 1, std::vector<long long>(2, 0));\n            for (int c = 0; c <= maxCost; ++c) {\n                // from 0\n                if (c + 1 <= maxCost) nxt[c + 1][0] = (nxt[c + 1][0] + dp[c][0]) % MOD;\n                nxt[c][1] = (nxt[c][1] + dp[c][0]) % MOD;\n                // from 1\n                nxt[c][0] = (nxt[c][0] + dp[c][1]) % MOD;\n                if (c + 1 <= maxCost) nxt[c + 1][1] = (nxt[c + 1][1] + dp[c][1]) % MOD;\n            }\n            dp = std::move(nxt);\n        }\n        long long total = 0;\n        for (int c = 0; c <= maxCost; ++c) {\n            total = (total + dp[c][0] + dp[c][1]) % MOD;\n        }\n        return total;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int countValidBinaryStrings(int n, int maxCost) {\n        long MOD = 1_000_000_007L;\n        if (n <= 0) return 1;\n        long[][] dp = new long[maxCost + 1][2];\n        dp[0][0] = 1;\n        dp[0][1] = 1;\n        for (int step = 1; step < n; step++) {\n            long[][] nxt = new long[maxCost + 1][2];\n            for (int c = 0; c <= maxCost; c++) {\n                if (c + 1 <= maxCost) nxt[c + 1][0] = (nxt[c + 1][0] + dp[c][0]) % MOD;\n                nxt[c][1] = (nxt[c][1] + dp[c][0]) % MOD;\n                nxt[c][0] = (nxt[c][0] + dp[c][1]) % MOD;\n                if (c + 1 <= maxCost) nxt[c + 1][1] = (nxt[c + 1][1] + dp[c][1]) % MOD;\n            }\n            dp = nxt;\n        }\n        long total = 0;\n        for (int c = 0; c <= maxCost; c++) {\n            total = (total + dp[c][0] + dp[c][1]) % MOD;\n        }\n        return (int) total;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function countValidBinaryStrings(n, maxCost) {\n    const MOD = 1000000007n;\n    if (n <= 0) return 1;\n    let dp = Array.from({ length: maxCost + 1 }, () => [0n, 0n]);\n    dp[0][0] = 1n;\n    dp[0][1] = 1n;\n    for (let step = 1; step < n; step++) {\n        const nxt = Array.from({ length: maxCost + 1 }, () => [0n, 0n]);\n        for (let c = 0; c <= maxCost; c++) {\n            if (c + 1 <= maxCost) nxt[c + 1][0] = (nxt[c + 1][0] + dp[c][0]) % MOD;\n            nxt[c][1] = (nxt[c][1] + dp[c][0]) % MOD;\n            nxt[c][0] = (nxt[c][0] + dp[c][1]) % MOD;\n            if (c + 1 <= maxCost) nxt[c + 1][1] = (nxt[c + 1][1] + dp[c][1]) % MOD;\n        }\n        dp = nxt;\n    }\n    let total = 0n;\n    for (let c = 0; c <= maxCost; c++) {\n        total = (total + dp[c][0] + dp[c][1]) % MOD;\n    }\n    return Number(total);\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

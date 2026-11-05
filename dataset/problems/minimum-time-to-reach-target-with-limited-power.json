@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-time-to-reach-target-with-limited-power",
+  "number": 3977,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Augment node distances with remaining battery power state."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Traverse edges using the minimum cumulative time while checking power viability."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Prune redundant paths that arrive with both longer elapsed time and less remaining energy."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\ndef minTimeToReachTarget(n: int, edges: list[list[int]], max_power: int) -> int:\n    adj = [[] for _ in range(n)]\n    for u, v, time, power in edges:\n        adj[u].append((v, time, power))\n        adj[v].append((u, time, power))\n    \n    # (time, u, power_left)\n    dist = {}\n    dist[(0, max_power)] = 0\n    pq = [(0, 0, max_power)]\n    while pq:\n        t, u, p = heapq.heappop(pq)\n        if u == n - 1:\n            return t\n        if t > dist.get((u, p), float('inf')):\n            continue\n        for v, edge_time, edge_power in adj[u]:\n            if p >= edge_power:\n                np = p - edge_power\n                nt = t + edge_time\n                if nt < dist.get((v, np), float('inf')):\n                    dist[(v, np)] = nt\n                    heapq.heappush(pq, (nt, v, np))\n    return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "v",
+      "e",
+      "p"
+    ],
+    "time": "O((v * p + e * p) * log(v * p))",
+    "space": "O(v * p)",
+    "notes": "Shortest path algorithm traverses the product state graph of node and energy level.",
+    "whyNaiveFails": "Ignoring power constraints leads to suboptimal or invalid reachability decisions.",
+    "spaceTimeTradeoff": "Distance table tracks best time for each (node, power) pair.",
+    "interviewerExpectation": "Formulates state-expanded graph and runs shortest path search with heap."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\n\ndef minTimeToReachTarget(n: int, edges: list[list[int]], max_power: int) -> int:\n    adj = [[] for _ in range(n)]\n    for u, v, time, power in edges:\n        adj[u].append((v, time, power))\n        adj[v].append((u, time, power))\n    \n    # (time, u, power_left)\n    dist = {}\n    dist[(0, max_power)] = 0\n    pq = [(0, 0, max_power)]\n    while pq:\n        t, u, p = heapq.heappop(pq)\n        if u == n - 1:\n            return t\n        if t > dist.get((u, p), float('inf')):\n            continue\n        for v, edge_time, edge_power in adj[u]:\n            if p >= edge_power:\n                np = p - edge_power\n                nt = t + edge_time\n                if nt < dist.get((v, np), float('inf')):\n                    dist[(v, np)] = nt\n                    heapq.heappush(pq, (nt, v, np))\n    return -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <tuple>\n\nclass Solution {\npublic:\n    int minTimeToReachTarget(int n, std::vector<std::vector<int>>& edges, int maxPower) {\n        std::vector<std::vector<std::tuple<int, int, int>>> adj(n);\n        for (auto& e : edges) {\n            adj[e[0]].push_back({e[1], e[2], e[3]});\n            adj[e[1]].push_back({e[0], e[2], e[3]});\n        }\n        std::vector<std::vector<int>> dist(n, std::vector<int>(maxPower + 1, 1e9));\n        dist[0][maxPower] = 0;\n        using State = std::tuple<int, int, int>; // time, u, power\n        std::priority_queue<State, std::vector<State>, std::greater<State>> pq;\n        pq.push({0, 0, maxPower});\n        while (!pq.empty()) {\n            auto [t, u, p] = pq.top();\n            pq.pop();\n            if (u == n - 1) return t;\n            if (t > dist[u][p]) continue;\n            for (auto& [v, edgeTime, edgePower] : adj[u]) {\n                if (p >= edgePower) {\n                    int np = p - edgePower;\n                    int nt = t + edgeTime;\n                    if (nt < dist[v][np]) {\n                        dist[v][np] = nt;\n                        pq.push({nt, v, np});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minTimeToReachTarget(int n, int[][] edges, int maxPower) {\n        List<List<int[]>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(new int[]{e[1], e[2], e[3]});\n            adj.get(e[1]).add(new int[]{e[0], e[2], e[3]});\n        }\n        int[][] dist = new int[n][maxPower + 1];\n        for (int[] row : dist) Arrays.fill(row, Integer.MAX_VALUE);\n        dist[0][maxPower] = 0;\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        pq.offer(new int[]{0, 0, maxPower});\n        while (!pq.isEmpty()) {\n            int[] top = pq.poll();\n            int t = top[0], u = top[1], p = top[2];\n            if (u == n - 1) return t;\n            if (t > dist[u][p]) continue;\n            for (int[] edge : adj.get(u)) {\n                int v = edge[0], edgeTime = edge[1], edgePower = edge[2];\n                if (p >= edgePower) {\n                    int np = p - edgePower;\n                    int nt = t + edgeTime;\n                    if (nt < dist[v][np]) {\n                        dist[v][np] = nt;\n                        pq.offer(new int[]{nt, v, np});\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minTimeToReachTarget(n, edges, maxPower) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v, time, power] of edges) {\n        adj[u].push([v, time, power]);\n        adj[v].push([u, time, power]);\n    }\n    const dist = Array.from({ length: n }, () => new Array(maxPower + 1).fill(Infinity));\n    dist[0][maxPower] = 0;\n    const pq = [[0, 0, maxPower]];\n    while (pq.length > 0) {\n        pq.sort((a, b) => a[0] - b[0]);\n        const [t, u, p] = pq.shift();\n        if (u === n - 1) return t;\n        if (t > dist[u][p]) continue;\n        for (const [v, edgeTime, edgePower] of adj[u]) {\n            if (p >= edgePower) {\n                const np = p - edgePower;\n                const nt = t + edgeTime;\n                if (nt < dist[v][np]) {\n                    dist[v][np] = nt;\n                    pq.push([nt, v, np]);\n                }\n            }\n        }\n    }\n    return -1;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

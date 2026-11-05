@@ -1,0 +1,78 @@
+{
+  "slug": "finish-time-of-tasks-ii",
+  "number": 3967,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Each task assigned to a worker after the first incurs an additional cooldown penalty."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Binary search on the total completion time duration."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Check how many workers are required when each consecutive task appends its duration plus cooldown."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef minimumFinishTimeWithCooldown(tasks: list[int], workers: int, cooldown: int) -> int:\n    low = max(tasks)\n    high = sum(tasks) + len(tasks) * cooldown\n    \n    def canFinish(limit: int) -> bool:\n        used = 1\n        cur = 0\n        is_first = True\n        for t in tasks:\n            cost = t if is_first else t + cooldown\n            if cur + cost > limit:\n                used += 1\n                cur = t\n                is_first = False\n                if used > workers or cur > limit:\n                    return False\n            else:\n                cur += cost\n                is_first = False\n        return True\n\n    ans = high\n    while low <= high:\n        mid = (low + high) // 2\n        if canFinish(mid):\n            ans = mid\n            high = mid - 1\n        else:\n            low = mid + 1\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(n * log(sum(tasks)))",
+    "space": "O(1)",
+    "notes": "Greedy linear check evaluates cooldown penalty per partition window.",
+    "whyNaiveFails": "Partition search space without monotonic answer property is intractable.",
+    "spaceTimeTradeoff": "Operates with constant scalar variables.",
+    "interviewerExpectation": "Integrates extra overhead term into monotonic binary search predicate."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def minimumFinishTimeWithCooldown(tasks: list[int], workers: int, cooldown: int) -> int:\n    low = max(tasks)\n    high = sum(tasks) + len(tasks) * cooldown\n    \n    def canFinish(limit: int) -> bool:\n        used = 1\n        cur = 0\n        is_first = True\n        for t in tasks:\n            cost = t if is_first else t + cooldown\n            if cur + cost > limit:\n                used += 1\n                cur = t\n                is_first = False\n                if used > workers or cur > limit:\n                    return False\n            else:\n                cur += cost\n                is_first = False\n        return True\n\n    ans = high\n    while low <= high:\n        mid = (low + high) // 2\n        if canFinish(mid):\n            ans = mid\n            high = mid - 1\n        else:\n            low = mid + 1\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <numeric>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minimumFinishTimeWithCooldown(std::vector<int>& tasks, int workers, int cooldown) {\n        int low = *std::max_element(tasks.begin(), tasks.end());\n        int high = std::accumulate(tasks.begin(), tasks.end(), 0) + tasks.size() * cooldown;\n        \n        auto canFinish = [&](int limit) {\n            int used = 1, cur = 0;\n            bool isFirst = true;\n            for (int t : tasks) {\n                int cost = isFirst ? t : t + cooldown;\n                if (cur + cost > limit) {\n                    used++;\n                    cur = t;\n                    isFirst = false;\n                    if (used > workers || cur > limit) return false;\n                } else {\n                    cur += cost;\n                    isFirst = false;\n                }\n            }\n            return true;\n        };\n\n        int ans = high;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            if (canFinish(mid)) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int minimumFinishTimeWithCooldown(int[] tasks, int workers, int cooldown) {\n        int low = 0, high = 0;\n        for (int t : tasks) {\n            low = Math.max(low, t);\n            high += t + cooldown;\n        }\n        int ans = high;\n        while (low <= high) {\n            int mid = low + (high - low) / 2;\n            int used = 1, cur = 0;\n            boolean isFirst = true;\n            boolean ok = true;\n            for (int t : tasks) {\n                int cost = isFirst ? t : t + cooldown;\n                if (cur + cost > mid) {\n                    used++;\n                    cur = t;\n                    isFirst = false;\n                    if (used > workers || cur > mid) {\n                        ok = false;\n                        break;\n                    }\n                } else {\n                    cur += cost;\n                    isFirst = false;\n                }\n            }\n            if (ok) {\n                ans = mid;\n                high = mid - 1;\n            } else {\n                low = mid + 1;\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minimumFinishTimeWithCooldown(tasks, workers, cooldown) {\n    let low = Math.max(...tasks);\n    let high = tasks.reduce((a, b) => a + b + cooldown, 0);\n    let ans = high;\n    while (low <= high) {\n        const mid = Math.floor((low + high) / 2);\n        let used = 1, cur = 0, isFirst = true, ok = true;\n        for (const t of tasks) {\n            const cost = isFirst ? t : t + cooldown;\n            if (cur + cost > mid) {\n                used++;\n                cur = t;\n                isFirst = false;\n                if (used > workers || cur > mid) {\n                    ok = false;\n                    break;\n                }\n            } else {\n                cur += cost;\n                isFirst = false;\n            }\n        }\n        if (ok) {\n            ans = mid;\n            high = mid - 1;\n        } else {\n            low = mid + 1;\n        }\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
