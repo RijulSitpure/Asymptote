@@ -22,6 +22,15 @@ describe('Pattern Atlas Boilerplate Templates & Uncurated Catalog Fallback UX', 
   beforeAll(async () => {
     const dataDir = path.resolve(process.cwd(), 'extension', 'data');
     dataset = await loadDatasetFromFs(dataDir);
+    // Add dedicated synthetic uncurated catalog entry for test 3
+    dataset.catalog.push({
+      n: 99999,
+      s: 'future-mock-uncurated-twopointers',
+      t: 'Future Mock Uncurated Two Pointers',
+      d: 'Medium',
+      c: 'Algorithms',
+      p: 'two-pointers-opposite'
+    });
     storage = createMemoryStorage();
     engine = createAsymptoteEngine({ dataset, storage });
 
@@ -106,8 +115,8 @@ describe('Pattern Atlas Boilerplate Templates & Uncurated Catalog Fallback UX', 
   });
 
   it('3. Confirms uncurated catalog problem returns suggested pattern blueprint, recognition signals, and templates', async () => {
-    // #3649 is in catalog (4,086 problems) but not in curated set
-    const result = await engine.getProblemHints('3649');
+    // #99999 is in catalog but not in curated set
+    const result = await engine.getProblemHints('99999');
     expect(result).toBeDefined();
     expect(result.problem).toBeDefined();
     expect(result.problem.verified).toBe(0);

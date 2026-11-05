@@ -1,0 +1,72 @@
+{
+  "slug": "find-loyal-customers",
+  "number": 3657,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Join Customer Orders",
+      "text": "Join the Customers table with Purchases on customer_id to associate dates and amounts."
+    },
+    {
+      "level": 2,
+      "title": "Distinct Month Counting",
+      "text": "Extract year-month representations from purchase dates and count distinct occurrences per customer."
+    },
+    {
+      "level": 3,
+      "title": "Aggregated Filter Criteria",
+      "text": "Enforce both active month and total expenditure minimums within the group filter clause."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    c.customer_id,\n    c.customer_name,\n    COUNT(DISTINCT DATE_FORMAT(p.purchase_date, '%Y-%m')) AS active_months,\n    SUM(p.amount) AS total_spent\nFROM Customers c\nJOIN Purchases p ON c.customer_id = p.customer_id\nGROUP BY c.customer_id, c.customer_name\nHAVING COUNT(DISTINCT DATE_FORMAT(p.purchase_date, '%Y-%m')) >= 3\n   AND SUM(p.amount) >= 500.00\nORDER BY c.customer_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(C + P log C)",
+    "space": "O(C)",
+    "variables": [
+      "C: Number of customers",
+      "P: Number of purchases"
+    ],
+    "notes": "Hash or index join grouped by customer identifier.",
+    "whyNaiveFails": "Correlated subqueries per customer incur repetitive scans.",
+    "spaceTimeTradeoff": "Aggregates grouped purchases in a single table pass.",
+    "interviewerExpectation": "Format dates and use COUNT(DISTINCT ...) with HAVING filters."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    c.customer_id,\n    c.customer_name,\n    COUNT(DISTINCT DATE_FORMAT(p.purchase_date, '%Y-%m')) AS active_months,\n    SUM(p.amount) AS total_spent\nFROM Customers c\nJOIN Purchases p ON c.customer_id = p.customer_id\nGROUP BY c.customer_id, c.customer_name\nHAVING COUNT(DISTINCT DATE_FORMAT(p.purchase_date, '%Y-%m')) >= 3\n   AND SUM(p.amount) >= 500.00\nORDER BY c.customer_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    c.customer_id,\n    c.customer_name,\n    COUNT(DISTINCT TO_CHAR(p.purchase_date, 'YYYY-MM')) AS active_months,\n    SUM(p.amount) AS total_spent\nFROM Customers c\nJOIN Purchases p ON c.customer_id = p.customer_id\nGROUP BY c.customer_id, c.customer_name\nHAVING COUNT(DISTINCT TO_CHAR(p.purchase_date, 'YYYY-MM')) >= 3\n   AND SUM(p.amount) >= 500.00\nORDER BY c.customer_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_loyal_customers(customers: pd.DataFrame, purchases: pd.DataFrame) -> pd.DataFrame:\n    if customers.empty or purchases.empty:\n        return pd.DataFrame(columns=['customer_id', 'customer_name', 'active_months', 'total_spent'])\n        \n    purchases['ym'] = pd.to_datetime(purchases['purchase_date']).dt.strftime('%Y-%m')\n    merged = pd.merge(customers, purchases, on='customer_id')\n    \n    agg = merged.groupby(['customer_id', 'customer_name']).agg(\n        active_months=('ym', 'nunique'),\n        total_spent=('amount', 'sum')\n    ).reset_index()\n    \n    res = agg[(agg['active_months'] >= 3) & (agg['total_spent'] >= 500.00)]\n    return res.sort_values(by='customer_id', ascending=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

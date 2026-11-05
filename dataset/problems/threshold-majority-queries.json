@@ -1,0 +1,80 @@
+{
+  "slug": "threshold-majority-queries",
+  "number": 3636,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-basic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Index List Mapping",
+      "text": "Group positions of each distinct element into separate sorted lists."
+    },
+    {
+      "level": 2,
+      "title": "Range Frequency Counting",
+      "text": "Compute the count of an element in interval l to r by subtracting index offsets."
+    },
+    {
+      "level": 3,
+      "title": "Threshold Filtering",
+      "text": "Skip any candidate whose overall array occurrences fall short of the query threshold."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport bisect\nfrom collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def subarrayMajority(self, nums: List[int], queries: List[List[int]]) -> List[int]:\n        pos = defaultdict(list)\n        for idx, val in enumerate(nums):\n            pos[val].append(idx)\n            \n        ans = []\n        for l, r, threshold in queries:\n            window_size = r - l + 1\n            if window_size < threshold:\n                ans.append(-1)\n                continue\n                \n            # Check unique elements occurring in the range\n            found = -1\n            # We can scan candidates with frequency >= threshold\n            for val, indices in pos.items():\n                if len(indices) < threshold:\n                    continue\n                # Count occurrences in range [l, r]\n                right_idx = bisect.bisect_right(indices, r)\n                left_idx = bisect.bisect_left(indices, l)\n                cnt = right_idx - left_idx\n                if cnt >= threshold:\n                    if found == -1 or val < found:\n                        found = val\n            ans.append(found)\n            \n        return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(Q * U log N)",
+    "space": "O(N)",
+    "variables": [
+      "N: Number of elements in array",
+      "Q: Number of queries",
+      "U: Number of candidate distinct elements"
+    ],
+    "notes": "Stores positions in sorted lists and counts range occurrences via binary search.",
+    "whyNaiveFails": "Scanning the subarray linearly for every query takes O(Q * N) time.",
+    "spaceTimeTradeoff": "Trades O(N) space for index lists to quickly count range frequencies in logarithmic time.",
+    "interviewerExpectation": "Use element index lists to count frequencies across arbitrary query intervals."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import bisect\nfrom collections import defaultdict\nfrom typing import List\n\nclass Solution:\n    def subarrayMajority(self, nums: List[int], queries: List[List[int]]) -> List[int]:\n        pos = defaultdict(list)\n        for idx, val in enumerate(nums):\n            pos[val].append(idx)\n            \n        ans = []\n        for l, r, threshold in queries:\n            window_size = r - l + 1\n            if window_size < threshold:\n                ans.append(-1)\n                continue\n                \n            # Check unique elements occurring in the range\n            found = -1\n            # We can scan candidates with frequency >= threshold\n            for val, indices in pos.items():\n                if len(indices) < threshold:\n                    continue\n                # Count occurrences in range [l, r]\n                right_idx = bisect.bisect_right(indices, r)\n                left_idx = bisect.bisect_left(indices, l)\n                cnt = right_idx - left_idx\n                if cnt >= threshold:\n                    if found == -1 or val < found:\n                        found = val\n            ans.append(found)\n            \n        return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<int> subarrayMajority(std::vector<int>& nums, std::vector<std::vector<int>>& queries) {\n        std::unordered_map<int, std::vector<int>> pos;\n        for (int i = 0; i < (int)nums.size(); ++i) {\n            pos[nums[i]].push_back(i);\n        }\n        \n        std::vector<int> ans;\n        ans.reserve(queries.size());\n        \n        for (const auto& q : queries) {\n            int l = q[0], r = q[1], threshold = q[2];\n            if (r - l + 1 < threshold) {\n                ans.push_back(-1);\n                continue;\n            }\n            int found = -1;\n            for (const auto& [val, indices] : pos) {\n                if ((int)indices.size() < threshold) continue;\n                auto it_r = std::upper_bound(indices.begin(), indices.end(), r);\n                auto it_l = std::lower_bound(indices.begin(), indices.end(), l);\n                int cnt = std::distance(it_l, it_r);\n                if (cnt >= threshold) {\n                    if (found == -1 || val < found) {\n                        found = val;\n                    }\n                }\n            }\n            ans.push_back(found);\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] subarrayMajority(int[] nums, int[][] queries) {\n        Map<Integer, List<Integer>> pos = new HashMap<>();\n        for (int i = 0; i < nums.length; i++) {\n            pos.computeIfAbsent(nums[i], k -> new ArrayList<>()).add(i);\n        }\n        \n        int[] ans = new int[queries.length];\n        for (int i = 0; i < queries.length; i++) {\n            int l = queries[i][0], r = queries[i][1], threshold = queries[i][2];\n            if (r - l + 1 < threshold) {\n                ans[i] = -1;\n                continue;\n            }\n            int found = -1;\n            for (Map.Entry<Integer, List<Integer>> entry : pos.entrySet()) {\n                List<Integer> indices = entry.getValue();\n                if (indices.size() < threshold) continue;\n                \n                int rIdx = upperBound(indices, r);\n                int lIdx = lowerBound(indices, l);\n                int cnt = rIdx - lIdx;\n                if (cnt >= threshold) {\n                    int val = entry.getKey();\n                    if (found == -1 || val < found) {\n                        found = val;\n                    }\n                }\n            }\n            ans[i] = found;\n        }\n        return ans;\n    }\n    \n    private int lowerBound(List<Integer> list, int target) {\n        int low = 0, high = list.size();\n        while (low < high) {\n            int mid = (low + high) >>> 1;\n            if (list.get(mid) >= target) high = mid;\n            else low = mid + 1;\n        }\n        return low;\n    }\n    \n    private int upperBound(List<Integer> list, int target) {\n        int low = 0, high = list.size();\n        while (low < high) {\n            int mid = (low + high) >>> 1;\n            if (list.get(mid) > target) high = mid;\n            else low = mid + 1;\n        }\n        return low;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var subarrayMajority = function(nums, queries) {\n    const pos = new Map();\n    for (let i = 0; i < nums.length; i++) {\n        if (!pos.has(nums[i])) pos.set(nums[i], []);\n        pos.get(nums[i]).push(i);\n    }\n    \n    function lowerBound(arr, target) {\n        let l = 0, r = arr.length;\n        while (l < r) {\n            const mid = (l + r) >> 1;\n            if (arr[mid] >= target) r = mid;\n            else l = mid + 1;\n        }\n        return l;\n    }\n    \n    function upperBound(arr, target) {\n        let l = 0, r = arr.length;\n        while (l < r) {\n            const mid = (l + r) >> 1;\n            if (arr[mid] > target) r = mid;\n            else l = mid + 1;\n        }\n        return l;\n    }\n    \n    const ans = [];\n    for (const [l, r, threshold] of queries) {\n        if (r - l + 1 < threshold) {\n            ans.push(-1);\n            continue;\n        }\n        let found = -1;\n        for (const [val, indices] of pos.entries()) {\n            if (indices.length < threshold) continue;\n            const cnt = upperBound(indices, r) - lowerBound(indices, l);\n            if (cnt >= threshold) {\n                if (found == -1 || val < found) {\n                    found = val;\n                }\n            }\n        }\n        ans.push(found);\n    }\n    return ans;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

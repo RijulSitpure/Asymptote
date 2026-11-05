@@ -1,0 +1,78 @@
+{
+  "slug": "trionic-array-ii",
+  "number": 3640,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Phase Based States",
+      "text": "Decompose the sequence into distinct stages representing the first rise, descent, and second rise."
+    },
+    {
+      "level": 2,
+      "title": "Transition Safeguards",
+      "text": "Ensure that the descent phase only begins after an increasing prefix with at least two values."
+    },
+    {
+      "level": 3,
+      "title": "Global Optimum Collection",
+      "text": "The answer is the highest sum recorded at any index in the final stage."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nfrom typing import List\n\nclass Solution:\n    def maxTrionicSubarraySum(self, nums: List[int]) -> int:\n        n = len(nums)\n        if n < 4:\n            return -1\n            \n        INF = float('inf')\n        # dp1: max sum of phase 1 (strictly increasing, at least 2 elements) ending at i\n        # dp2: max sum of phase 2 (strictly decreasing, at least 2 elements) ending at i\n        # dp3: max sum of phase 3 (strictly increasing, at least 2 elements) ending at i\n        \n        # State tracking:\n        # inc1[i]: strictly increasing ending at i (length >= 1)\n        # peak[i]: strictly increasing ending at i (length >= 2)\n        # dec[i]: decreasing ending at i (transitioned from peak)\n        # valley[i]: decreasing ending at i (length >= 2 in dec phase)\n        # inc2[i]: second increasing ending at i (transitioned from valley)\n        \n        inc1 = nums[:]\n        peak = [-INF] * n\n        dec = [-INF] * n\n        inc2 = [-INF] * n\n        \n        best = -INF\n        for i in range(1, n):\n            if nums[i] > nums[i - 1]:\n                inc1[i] = max(nums[i], inc1[i - 1] + nums[i])\n                peak[i] = inc1[i - 1] + nums[i]\n                if inc2[i - 1] != -INF:\n                    inc2[i] = max(inc2[i], inc2[i - 1] + nums[i])\n            if nums[i] < nums[i - 1]:\n                if peak[i - 1] != -INF:\n                    dec[i] = max(dec[i], peak[i - 1] + nums[i])\n                if dec[i - 1] != -INF:\n                    dec[i] = max(dec[i], dec[i - 1] + nums[i])\n            if nums[i] > nums[i - 1]:\n                if dec[i - 1] != -INF:\n                    inc2[i] = max(inc2[i], dec[i - 1] + nums[i])\n                    \n            if inc2[i] != -INF:\n                best = max(best, inc2[i])\n                \n        return best if best != -INF else -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(N)",
+    "space": "O(N)",
+    "variables": [
+      "N: Length of input array"
+    ],
+    "notes": "Maintains phase state arrays to accumulate maximal subarray sums.",
+    "whyNaiveFails": "Evaluating all possible tri-partition boundary indices requires O(N^3) time.",
+    "spaceTimeTradeoff": "Can be optimized to O(1) space by maintaining scalar variables for the previous index.",
+    "interviewerExpectation": "Define state transitions accurately ensuring minimum length requirements per segment."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from typing import List\n\nclass Solution:\n    def maxTrionicSubarraySum(self, nums: List[int]) -> int:\n        n = len(nums)\n        if n < 4:\n            return -1\n            \n        INF = float('inf')\n        # dp1: max sum of phase 1 (strictly increasing, at least 2 elements) ending at i\n        # dp2: max sum of phase 2 (strictly decreasing, at least 2 elements) ending at i\n        # dp3: max sum of phase 3 (strictly increasing, at least 2 elements) ending at i\n        \n        # State tracking:\n        # inc1[i]: strictly increasing ending at i (length >= 1)\n        # peak[i]: strictly increasing ending at i (length >= 2)\n        # dec[i]: decreasing ending at i (transitioned from peak)\n        # valley[i]: decreasing ending at i (length >= 2 in dec phase)\n        # inc2[i]: second increasing ending at i (transitioned from valley)\n        \n        inc1 = nums[:]\n        peak = [-INF] * n\n        dec = [-INF] * n\n        inc2 = [-INF] * n\n        \n        best = -INF\n        for i in range(1, n):\n            if nums[i] > nums[i - 1]:\n                inc1[i] = max(nums[i], inc1[i - 1] + nums[i])\n                peak[i] = inc1[i - 1] + nums[i]\n                if inc2[i - 1] != -INF:\n                    inc2[i] = max(inc2[i], inc2[i - 1] + nums[i])\n            if nums[i] < nums[i - 1]:\n                if peak[i - 1] != -INF:\n                    dec[i] = max(dec[i], peak[i - 1] + nums[i])\n                if dec[i - 1] != -INF:\n                    dec[i] = max(dec[i], dec[i - 1] + nums[i])\n            if nums[i] > nums[i - 1]:\n                if dec[i - 1] != -INF:\n                    inc2[i] = max(inc2[i], dec[i - 1] + nums[i])\n                    \n            if inc2[i] != -INF:\n                best = max(best, inc2[i])\n                \n        return best if best != -INF else -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n#include <climits>\n\nclass Solution {\npublic:\n    long long maxTrionicSubarraySum(std::vector<int>& nums) {\n        int n = nums.size();\n        if (n < 4) return -1;\n        \n        const long long INF = 1e16;\n        std::vector<long long> inc1(n);\n        std::vector<long long> peak(n, -INF);\n        std::vector<long long> dec(n, -INF);\n        std::vector<long long> inc2(n, -INF);\n        \n        for (int i = 0; i < n; ++i) inc1[i] = nums[i];\n        \n        long long best = -INF;\n        for (int i = 1; i < n; ++i) {\n            if (nums[i] > nums[i - 1]) {\n                inc1[i] = std::max((long long)nums[i], inc1[i - 1] + nums[i]);\n                peak[i] = inc1[i - 1] + nums[i];\n                if (inc2[i - 1] != -INF) {\n                    inc2[i] = std::max(inc2[i], inc2[i - 1] + nums[i]);\n                }\n                if (dec[i - 1] != -INF) {\n                    inc2[i] = std::max(inc2[i], dec[i - 1] + nums[i]);\n                }\n            } else if (nums[i] < nums[i - 1]) {\n                if (peak[i - 1] != -INF) {\n                    dec[i] = std::max(dec[i], peak[i - 1] + nums[i]);\n                }\n                if (dec[i - 1] != -INF) {\n                    dec[i] = std::max(dec[i], dec[i - 1] + nums[i]);\n                }\n            }\n            if (inc2[i] != -INF) {\n                best = std::max(best, inc2[i]);\n            }\n        }\n        return best == -INF ? -1 : best;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long maxTrionicSubarraySum(int[] nums) {\n        int n = nums.length;\n        if (n < 4) return -1;\n        \n        long INF = (long) 1e16;\n        long[] inc1 = new long[n];\n        long[] peak = new long[n];\n        long[] dec = new long[n];\n        long[] inc2 = new long[n];\n        \n        Arrays.fill(peak, -INF);\n        Arrays.fill(dec, -INF);\n        Arrays.fill(inc2, -INF);\n        \n        for (int i = 0; i < n; i++) inc1[i] = nums[i];\n        \n        long best = -INF;\n        for (int i = 1; i < n; i++) {\n            if (nums[i] > nums[i - 1]) {\n                inc1[i] = Math.max((long) nums[i], inc1[i - 1] + nums[i]);\n                peak[i] = inc1[i - 1] + nums[i];\n                if (inc2[i - 1] != -INF) {\n                    inc2[i] = Math.max(inc2[i], inc2[i - 1] + nums[i]);\n                }\n                if (dec[i - 1] != -INF) {\n                    inc2[i] = Math.max(inc2[i], dec[i - 1] + nums[i]);\n                }\n            } else if (nums[i] < nums[i - 1]) {\n                if (peak[i - 1] != -INF) {\n                    dec[i] = Math.max(dec[i], peak[i - 1] + nums[i]);\n                }\n                if (dec[i - 1] != -INF) {\n                    dec[i] = Math.max(dec[i], dec[i - 1] + nums[i]);\n                }\n            }\n            if (inc2[i] != -INF) {\n                best = Math.max(best, inc2[i]);\n            }\n        }\n        return best == -INF ? -1 : best;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxTrionicSubarraySum = function(nums) {\n    const n = nums.length;\n    if (n < 4) return -1;\n    \n    const INF = 1e16;\n    const inc1 = new Float64Array(n);\n    const peak = new Float64Array(n).fill(-INF);\n    const dec = new Float64Array(n).fill(-INF);\n    const inc2 = new Float64Array(n).fill(-INF);\n    \n    for (let i = 0; i < n; i++) inc1[i] = nums[i];\n    \n    let best = -INF;\n    for (let i = 1; i < n; i++) {\n        if (nums[i] > nums[i - 1]) {\n            inc1[i] = Math.max(nums[i], inc1[i - 1] + nums[i]);\n            peak[i] = inc1[i - 1] + nums[i];\n            if (inc2[i - 1] !== -INF) {\n                inc2[i] = Math.max(inc2[i], inc2[i - 1] + nums[i]);\n            }\n            if (dec[i - 1] !== -INF) {\n                inc2[i] = Math.max(inc2[i], dec[i - 1] + nums[i]);\n            }\n        } else if (nums[i] < nums[i - 1]) {\n            if (peak[i - 1] !== -INF) {\n                dec[i] = Math.max(dec[i], peak[i - 1] + nums[i]);\n            }\n            if (dec[i - 1] !== -INF) {\n                dec[i] = Math.max(dec[i], dec[i - 1] + nums[i]);\n            }\n        }\n        if (inc2[i] !== -INF) {\n            best = Math.max(best, inc2[i]);\n        }\n    }\n    return best === -INF ? -1 : best;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

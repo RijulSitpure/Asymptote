@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-walls-destroyed-by-robots",
+  "number": 3661,
+  "category": "Algorithms",
+  "patterns": [
+    "binary-search-answer"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Firing Direction Intervals",
+      "text": "Each robot can shoot either leftward covering [pos - range, pos] or rightward covering [pos, pos + range]."
+    },
+    {
+      "level": 2,
+      "title": "Wall Sorting",
+      "text": "Sort wall coordinates to determine counts inside target intervals using range boundaries."
+    },
+    {
+      "level": 3,
+      "title": "Greedy Selection",
+      "text": "Choose the direction that claims the highest number of previously undamaged walls."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```python\nimport bisect\nfrom typing import List\n\nclass Solution:\n    def maxWallsDestroyed(self, robots: List[int], walls: List[int], bulletRange: int) -> int:\n        walls.sort()\n        destroyed = set()\n        \n        # Greedily assign robot shots (e.g. choose direction hitting more walls)\n        for r in sorted(robots):\n            # Left shot destroys walls in [r - bulletRange, r]\n            left_w = [w for w in walls if r - bulletRange <= w <= r]\n            # Right shot destroys walls in [r, r + bulletRange]\n            right_w = [w for w in walls if r <= w <= r + bulletRange]\n            \n            # Count how many new walls each would hit\n            new_left = sum(1 for w in left_w if w not in destroyed)\n            new_right = sum(1 for w in right_w if w not in destroyed)\n            \n            if new_left >= new_right:\n                for w in left_w:\n                    destroyed.add(w)\n            else:\n                for w in right_w:\n                    destroyed.add(w)\n                    \n        return len(destroyed)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(R * W + W log W)",
+    "space": "O(W)",
+    "variables": [
+      "R: Number of robots",
+      "W: Number of walls"
+    ],
+    "notes": "Sorting walls followed by greedy direction selection per robot.",
+    "whyNaiveFails": "Examining 2^R directional combinations explodes exponentially.",
+    "spaceTimeTradeoff": "Maintains a set of destroyed wall coordinates.",
+    "interviewerExpectation": "Model shooting intervals and evaluate marginal coverage gains."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import bisect\nfrom typing import List\n\nclass Solution:\n    def maxWallsDestroyed(self, robots: List[int], walls: List[int], bulletRange: int) -> int:\n        walls.sort()\n        destroyed = set()\n        \n        # Greedily assign robot shots (e.g. choose direction hitting more walls)\n        for r in sorted(robots):\n            # Left shot destroys walls in [r - bulletRange, r]\n            left_w = [w for w in walls if r - bulletRange <= w <= r]\n            # Right shot destroys walls in [r, r + bulletRange]\n            right_w = [w for w in walls if r <= w <= r + bulletRange]\n            \n            # Count how many new walls each would hit\n            new_left = sum(1 for w in left_w if w not in destroyed)\n            new_right = sum(1 for w in right_w if w not in destroyed)\n            \n            if new_left >= new_right:\n                for w in left_w:\n                    destroyed.add(w)\n            else:\n                for w in right_w:\n                    destroyed.add(w)\n                    \n        return len(destroyed)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_set>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxWallsDestroyed(std::vector<int>& robots, std::vector<int>& walls, int bulletRange) {\n        std::sort(walls.begin(), walls.end());\n        std::sort(robots.begin(), robots.end());\n        std::unordered_set<int> destroyed;\n        \n        for (int r : robots) {\n            std::vector<int> left_w, right_w;\n            for (int w : walls) {\n                if (w >= r - bulletRange && w <= r) left_w.push_back(w);\n                if (w >= r && w <= r + bulletRange) right_w.push_back(w);\n            }\n            int new_left = 0, new_right = 0;\n            for (int w : left_w) if (!destroyed.count(w)) new_left++;\n            for (int w : right_w) if (!destroyed.count(w)) new_right++;\n            \n            if (new_left >= new_right) {\n                for (int w : left_w) destroyed.insert(w);\n            } else {\n                for (int w : right_w) destroyed.insert(w);\n            }\n        }\n        return destroyed.size();\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxWallsDestroyed(int[] robots, int[] walls, int bulletRange) {\n        Arrays.sort(walls);\n        Arrays.sort(robots);\n        Set<Integer> destroyed = new HashSet<>();\n        \n        for (int r : robots) {\n            List<Integer> leftW = new ArrayList<>();\n            List<Integer> rightW = new ArrayList<>();\n            for (int w : walls) {\n                if (w >= r - bulletRange && w <= r) leftW.add(w);\n                if (w >= r && w <= r + bulletRange) rightW.add(w);\n            }\n            int newLeft = 0, newRight = 0;\n            for (int w : leftW) if (!destroyed.contains(w)) newLeft++;\n            for (int w : rightW) if (!destroyed.contains(w)) newRight++;\n            \n            if (newLeft >= newRight) {\n                destroyed.addAll(leftW);\n            } else {\n                destroyed.addAll(rightW);\n            }\n        }\n        return destroyed.size();\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "var maxWallsDestroyed = function(robots, walls, bulletRange) {\n    walls.sort((a, b) => a - b);\n    robots.sort((a, b) => a - b);\n    const destroyed = new Set();\n    \n    for (const r of robots) {\n        const leftW = walls.filter(w => w >= r - bulletRange && w <= r);\n        const rightW = walls.filter(w => w >= r && w <= r + bulletRange);\n        \n        let newLeft = 0, newRight = 0;\n        for (const w of leftW) if (!destroyed.has(w)) newLeft++;\n        for (const w of rightW) if (!destroyed.has(w)) newRight++;\n        \n        if (newLeft >= newRight) {\n            for (const w of leftW) destroyed.add(w);\n        } else {\n            for (const w of rightW) destroyed.add(w);\n        }\n    }\n    return destroyed.size;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

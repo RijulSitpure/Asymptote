@@ -1,0 +1,72 @@
+{
+  "slug": "find-books-with-polarized-opinions",
+  "number": 3642,
+  "category": "Database",
+  "patterns": [
+    "join-filter"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Join and Group Reviews",
+      "text": "Combine books with reviews and group by book identifiers to compute aggregate percentages."
+    },
+    {
+      "level": 2,
+      "title": "Conditional Percentages",
+      "text": "Calculate positive and negative review percentages using conditional expressions divided by the total review count."
+    },
+    {
+      "level": 3,
+      "title": "Group Filtering",
+      "text": "Filter grouped results in the group filter clause requiring total reviews at least 5 and both percentages at least 30 percent."
+    },
+    {
+      "level": 4,
+      "title": "Reference Implementation",
+      "text": "```sql\nSELECT \n    b.book_id,\n    b.title,\n    b.author,\n    b.genre,\n    COUNT(r.review_id) AS total_reviews,\n    ROUND(SUM(CASE WHEN r.rating >= 4 THEN 1 ELSE 0 END) * 100.0 / COUNT(r.review_id), 2) AS positive_pct,\n    ROUND(SUM(CASE WHEN r.rating <= 2 THEN 1 ELSE 0 END) * 100.0 / COUNT(r.review_id), 2) AS negative_pct\nFROM Books b\nJOIN Reviews r ON b.book_id = r.book_id\nGROUP BY b.book_id, b.title, b.author, b.genre\nHAVING COUNT(r.review_id) >= 5\n   AND positive_pct >= 30.00\n   AND negative_pct >= 30.00\nORDER BY b.book_id ASC;\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "time": "O(B + R log B)",
+    "space": "O(B)",
+    "variables": [
+      "B: Number of books",
+      "R: Number of reviews"
+    ],
+    "notes": "Hash or index join on book_id followed by aggregate filtering.",
+    "whyNaiveFails": "Correlated subqueries per book execute redundant scans over the reviews table.",
+    "spaceTimeTradeoff": "Grouping over an indexed foreign key computes aggregates in a single scan.",
+    "interviewerExpectation": "Use aggregation with conditional sums and filter via HAVING without repeating complex expressions."
+  },
+  "solutions": [
+    {
+      "lang": "mysql",
+      "approach": "Optimal",
+      "code": "SELECT \n    b.book_id,\n    b.title,\n    b.author,\n    b.genre,\n    COUNT(r.review_id) AS total_reviews,\n    ROUND(SUM(CASE WHEN r.rating >= 4 THEN 1 ELSE 0 END) * 100.0 / COUNT(r.review_id), 2) AS positive_pct,\n    ROUND(SUM(CASE WHEN r.rating <= 2 THEN 1 ELSE 0 END) * 100.0 / COUNT(r.review_id), 2) AS negative_pct\nFROM Books b\nJOIN Reviews r ON b.book_id = r.book_id\nGROUP BY b.book_id, b.title, b.author, b.genre\nHAVING COUNT(r.review_id) >= 5\n   AND positive_pct >= 30.00\n   AND negative_pct >= 30.00\nORDER BY b.book_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "postgresql",
+      "approach": "Optimal",
+      "code": "SELECT \n    b.book_id,\n    b.title,\n    b.author,\n    b.genre,\n    COUNT(r.review_id) AS total_reviews,\n    ROUND(SUM(CASE WHEN r.rating >= 4 THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(r.review_id), 2) AS positive_pct,\n    ROUND(SUM(CASE WHEN r.rating <= 2 THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(r.review_id), 2) AS negative_pct\nFROM Books b\nJOIN Reviews r ON b.book_id = r.book_id\nGROUP BY b.book_id, b.title, b.author, b.genre\nHAVING COUNT(r.review_id) >= 5\n   AND (SUM(CASE WHEN r.rating >= 4 THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(r.review_id)) >= 30.00\n   AND (SUM(CASE WHEN r.rating <= 2 THEN 1.0 ELSE 0.0 END) * 100.0 / COUNT(r.review_id)) >= 30.00\nORDER BY b.book_id ASC;",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "pythondata",
+      "approach": "Optimal",
+      "code": "import pandas as pd\n\ndef find_polarized_books(books: pd.DataFrame, reviews: pd.DataFrame) -> pd.DataFrame:\n    if books.empty or reviews.empty:\n        return pd.DataFrame(columns=['book_id', 'title', 'author', 'genre', 'total_reviews', 'positive_pct', 'negative_pct'])\n        \n    merged = pd.merge(books, reviews, on='book_id')\n    \n    def calc_stats(group):\n        total = len(group)\n        pos = (group['rating'] >= 4).sum()\n        neg = (group['rating'] <= 2).sum()\n        return pd.Series({\n            'total_reviews': total,\n            'positive_pct': round((pos * 100.0) / total, 2),\n            'negative_pct': round((neg * 100.0) / total, 2)\n        })\n        \n    stats = merged.groupby(['book_id', 'title', 'author', 'genre']).apply(calc_stats, include_groups=False).reset_index()\n    res = stats[(stats['total_reviews'] >= 5) & (stats['positive_pct'] >= 30.0) & (stats['negative_pct'] >= 30.0)]\n    return res.sort_values(by='book_id', ascending=True)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
