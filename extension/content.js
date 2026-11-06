@@ -322,12 +322,45 @@ async function syncAllSolvedFromLeetCode() {
 
     showToast(`Found ${finalSolved.length} solved problems! Uploading to Pattern Tracker...`, 'info');
 
+    // Fetch official profile stats from LeetCode
+    let submitStats = null;
+    if (username && username !== 'User') {
+      try {
+        const statsData = await safeGraphqlQuery(`
+          query userProfileSubmitStats($username: String!) {
+            matchedUser(username: $username) {
+              submitStatsGlobal {
+                acSubmissionNum {
+                  difficulty
+                  count
+                }
+              }
+            }
+          }
+        `, { username });
+        const list = statsData?.matchedUser?.submitStatsGlobal?.acSubmissionNum;
+        if (Array.isArray(list)) {
+          submitStats = {};
+          for (const item of list) {
+            if (item.difficulty === 'All') submitStats.total = item.count;
+            else if (item.difficulty === 'Easy') submitStats.Easy = item.count;
+            else if (item.difficulty === 'Medium') submitStats.Medium = item.count;
+            else if (item.difficulty === 'Hard') submitStats.Hard = item.count;
+          }
+        }
+      } catch (statsErr) {
+        console.warn('Failed to fetch userProfileSubmitStats:', statsErr);
+      }
+    }
+
     // Send to background service worker (bypasses Mixed Content / PNA blocks)
     return new Promise((resolve) => {
       safeSendMessage({
         action: 'send_to_server',
         username: username,
-        problems: finalSolved
+        problems: finalSolved,
+        submitStats: submitStats,
+        isFullSync: true
       }, (response) => {
         if (response && response.success) {
           const result = response.data;

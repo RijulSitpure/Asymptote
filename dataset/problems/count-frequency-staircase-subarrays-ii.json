@@ -1,0 +1,78 @@
+{
+  "slug": "count-frequency-staircase-subarrays-ii",
+  "number": 4095,
+  "category": "Algorithms",
+  "patterns": [
+    "hash-map-lookup"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Triangular Length Invariant",
+      "text": "Every valid staircase subarray must have length equal to a triangular number T(k) = k * (k + 1) // 2."
+    },
+    {
+      "level": 2,
+      "title": "Strict Distinct Count Pruning",
+      "text": "Since max length of any subarray is n, the maximum number of distinct elements k is bounded by sqrt(2 * n)."
+    },
+    {
+      "level": 3,
+      "title": "Fast Validation",
+      "text": "At each triangular offset, check if the distinct frequencies match the exact 1 through k staircase progression."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef countStaircase(nums: list[int]) -> int:\n    n = len(nums)\n    ans = 0\n    for i in range(n):\n        order = []\n        seen = {}\n        freq = {}\n        for j in range(i, n):\n            x = nums[j]\n            if x not in seen:\n                seen[x] = len(order) + 1\n                order.append(x)\n            freq[x] = freq.get(x, 0) + 1\n            k = len(order)\n            req = k * (k + 1) // 2\n            cur = j - i + 1\n            if cur == req:\n                if all(freq[v] == seen[v] for v in order):\n                    ans += 1\n            elif cur > req:\n                break\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(n * sqrt(n))",
+    "space": "O(sqrt(n))",
+    "notes": "Bounded search since k <= sqrt(2n) for triangular sequence.",
+    "whyNaiveFails": "Unconstrained subarray frequency checks take cubic time.",
+    "spaceTimeTradeoff": "O(sqrt(n)) auxiliary storage for frequency tracking.",
+    "interviewerExpectation": "Recognizes that the maximum distinct elements in any valid subarray cannot exceed sqrt(2n)."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Triangular Bounded Validation",
+      "code": "def countStaircase(nums: list[int]) -> int:\n    n = len(nums)\n    ans = 0\n    for i in range(n):\n        order = []\n        seen = {}\n        freq = {}\n        for j in range(i, n):\n            x = nums[j]\n            if x not in seen:\n                seen[x] = len(order) + 1\n                order.append(x)\n            freq[x] = freq.get(x, 0) + 1\n            k = len(order)\n            req = k * (k + 1) // 2\n            cur = j - i + 1\n            if cur == req:\n                if all(freq[v] == seen[v] for v in order):\n                    ans += 1\n            elif cur > req:\n                break\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Triangular Bounded Validation",
+      "code": "#include <vector>\n#include <unordered_map>\n\nclass Solution {\npublic:\n    long long countStaircase(std::vector<int>& nums) {\n        int n = nums.size();\n        long long ans = 0;\n        for (int i = 0; i < n; ++i) {\n            std::vector<int> order;\n            std::unordered_map<int, int> seen, freq;\n            for (int j = i; j < n; ++j) {\n                int x = nums[j];\n                if (!seen.count(x)) {\n                    seen[x] = order.size() + 1;\n                    order.push_back(x);\n                }\n                freq[x]++;\n                int k = order.size();\n                int req = k * (k + 1) / 2;\n                int cur = j - i + 1;\n                if (cur == req) {\n                    bool ok = true;\n                    for (int v : order) {\n                        if (freq[v] != seen[v]) { ok = false; break; }\n                    }\n                    if (ok) ans++;\n                } else if (cur > req) {\n                    break;\n                }\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Triangular Bounded Validation",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int countStaircaseSubarraysII(int[] nums, int k) {\n        int reqLen = k * (k + 1) / 2;\n        int n = nums.length;\n        if (n < reqLen) return 0;\n        int total = 0;\n        for (int i = 0; i <= n - reqLen; i++) {\n            List<Integer> order = new ArrayList<>();\n            Map<Integer, Integer> counts = new HashMap<>();\n            for (int j = i; j < i + reqLen; j++) {\n                int x = nums[j];\n                if (!counts.containsKey(x)) order.add(x);\n                counts.put(x, counts.getOrDefault(x, 0) + 1);\n            }\n            if (order.size() == k) {\n                boolean valid = true;\n                for (int m = 0; m < k; m++) {\n                    if (counts.get(order.get(m)) != m + 1) {\n                        valid = false;\n                        break;\n                    }\n                }\n                if (valid) total++;\n            }\n        }\n        return total;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Triangular Bounded Validation",
+      "code": "var countStaircaseSubarraysII = function(nums, k) {\n    const reqLen = Math.floor((k * (k + 1)) / 2);\n    const n = nums.length;\n    if (n < reqLen) return 0;\n    let total = 0;\n    for (let i = 0; i <= n - reqLen; i++) {\n        const order = [];\n        const counts = new Map();\n        for (let j = i; j < i + reqLen; j++) {\n            const x = nums[j];\n            if (!counts.has(x)) order.push(x);\n            counts.set(x, (counts.get(x) || 0) + 1);\n        }\n        if (order.length === k) {\n            let valid = true;\n            for (let m = 0; m < k; m++) {\n                if (counts.get(order[m]) !== m + 1) {\n                    valid = false;\n                    break;\n                }\n            }\n            if (valid) total++;\n        }\n    }\n    return total;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

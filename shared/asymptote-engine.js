@@ -2228,6 +2228,7 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
   const STORAGE_KEY_USERNAME = 'asymptote_username';
   const STORAGE_KEY_LAST_SYNC = 'asymptote_last_sync';
   const STORAGE_KEY_RECENT_LOGS = 'asymptote_recent_logs';
+  const STORAGE_KEY_SUBMIT_STATS = 'asymptote_submit_stats';
 
   const domainShards = dataset.shards || dataset;
   const domains = ['algorithms', 'database', 'pandas', 'shell', 'concurrency', 'javascript'];
@@ -3058,10 +3059,13 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       };
     },
 
-    async syncBatch({ username, problems = [] }) {
+    async syncBatch({ username, problems = [], submitStats = null, isFullSync = false }) {
       const userProblems = (await store.get(STORAGE_KEY_USER_PROBLEMS)) || {};
       let newlySynced = 0;
       let updatedCount = 0;
+
+      const incomingSlugs = new Set();
+      const incomingNumbers = new Set();
 
       for (const p of problems) {
         if (!p) continue;
@@ -3083,6 +3087,14 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
             }
           }
         }
+        if (slug) incomingSlugs.add(slug);
+        if (rawSlug) incomingSlugs.add(rawSlug);
+        if (numberCandidate) {
+          incomingNumbers.add(String(numberCandidate));
+          const num = parseInt(String(numberCandidate), 10);
+          if (!isNaN(num)) incomingNumbers.add(num);
+        }
+
         if (!slug) continue;
 
         if (rawSlug && slug !== rawSlug && userProblems[rawSlug]) {
@@ -3120,9 +3132,31 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
         };
       }
 
+      // If full sync and problems were fetched, prune any stale solved marks in userProblems
+      // that are not in the incoming solved list
+      if (isFullSync && problems.length > 0) {
+        for (const [key, val] of Object.entries(userProblems)) {
+          if (!val || typeof val !== 'object') continue;
+          const keySlug = val.slug || resolveProblemSlug(key, dataset.index, rawCatalog) || key;
+          const keyNum = val.number || (val.id && /^\d+$/.test(String(val.id)) ? parseInt(String(val.id), 10) : null);
+          const isPresent = incomingSlugs.has(key) || incomingSlugs.has(keySlug) ||
+            (keyNum !== null && (incomingNumbers.has(keyNum) || incomingNumbers.has(String(keyNum))));
+          if (!isPresent && val.is_solved) {
+            val.is_solved = 0;
+          }
+          // Consolidate numeric duplicate keys if canonical slug key exists
+          if (/^\d+$/.test(key) && (incomingSlugs.has(keySlug) || userProblems[keySlug])) {
+            delete userProblems[key];
+          }
+        }
+      }
+
       await store.set(STORAGE_KEY_USER_PROBLEMS, userProblems);
       if (username) {
         await store.set(STORAGE_KEY_USERNAME, username);
+      }
+      if (submitStats && typeof submitStats === 'object') {
+        await store.set(STORAGE_KEY_SUBMIT_STATS, submitStats);
       }
       const now = new Date().toISOString();
       await store.set(STORAGE_KEY_LAST_SYNC, now);
@@ -3152,6 +3186,9 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
       const solvedCount = solvedProblems.length;
       const reviewQueueCount = problems.filter(p => Boolean(p.review_needed)).length;
 
+      // Official submitStats from LeetCode if synced
+      const officialSubmitStats = (await store.get(STORAGE_KEY_SUBMIT_STATS)) || null;
+
       // Difficulty breakdown for solved problems
       const difficultyBreakdown = { Easy: 0, Medium: 0, Hard: 0 };
       for (const p of solvedProblems) {
@@ -3159,6 +3196,13 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
           difficultyBreakdown[p.difficulty]++;
         }
       }
+
+      const totalSolved = officialSubmitStats?.total !== undefined ? officialSubmitStats.total : solvedCount;
+      const displayDifficultyBreakdown = officialSubmitStats ? {
+        Easy: officialSubmitStats.Easy !== undefined ? officialSubmitStats.Easy : difficultyBreakdown.Easy,
+        Medium: officialSubmitStats.Medium !== undefined ? officialSubmitStats.Medium : difficultyBreakdown.Medium,
+        Hard: officialSubmitStats.Hard !== undefined ? officialSubmitStats.Hard : difficultyBreakdown.Hard
+      } : difficultyBreakdown;
 
       // Category distribution for solved problems
       const catCountMap = new Map();
@@ -3207,13 +3251,13 @@ export function createAsymptoteEngine({ dataset, storage = null }) {
 
       return {
         totalProblems,
-        solvedCount,
-        totalSolved: solvedCount,
+        solvedCount: totalSolved,
+        totalSolved,
         reviewQueueCount,
         totalPatternsCount,
         coveredPatternsCount,
         patternCoveragePercent,
-        difficultyBreakdown,
+        difficultyBreakdown: displayDifficultyBreakdown,
         categoryDistribution,
         patternDistribution,
         weakSpots,

@@ -1,0 +1,79 @@
+{
+  "slug": "simulate-bomb-explosions-and-falling-boxes",
+  "number": 4096,
+  "category": "Algorithms",
+  "patterns": [
+    "matrix-simulation"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Two-Phase Simulation Round",
+      "text": "Each second consists of two distinct synchronous phases: explosions across all triggered bombs, followed by gravity drops."
+    },
+    {
+      "level": 2,
+      "title": "Explosion Adjacency Check",
+      "text": "A bomb detonates if and only if it shares an edge with at least one box. It clears all boxes in its 8 surrounding neighbor cells."
+    },
+    {
+      "level": 3,
+      "title": "Static Box Propagation",
+      "text": "A box is static if it is in the bottom row, directly above a bomb, or resting on another static box. Non-static boxes fall by one row into empty cells below."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef simulateBombAndBoxes(grid: list[list[str]]) -> list[list[str]]:\n    m, n = len(grid), len(grid[0])\n    for _ in range(m + n + 10):\n        new_grid = [row[:] for row in grid]\n        exploding = []\n        for r in range(m):\n            for c in range(n):\n                if grid[r][c] == '*':\n                    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                        nr, nc = r + dr, c + dc\n                        if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == '#':\n                            exploding.append((r, c))\n                            break\n        for br, bc in exploding:\n            for dr in [-1, 0, 1]:\n                for dc in [-1, 0, 1]:\n                    nr, nc = br + dr, bc + dc\n                    if 0 <= nr < m and 0 <= nc < n and new_grid[nr][nc] == '#':\n                        new_grid[nr][nc] = '-'\n        grid = new_grid\n        is_static = [[False] * n for _ in range(m)]\n        for r in range(m):\n            for c in range(n):\n                if grid[r][c] == '#':\n                    if r == m - 1 or grid[r + 1][c] == '*':\n                        is_static[r][c] = True\n        changed = True\n        while changed:\n            changed = False\n            for r in range(m - 2, -1, -1):\n                for c in range(n):\n                    if grid[r][c] == '#' and not is_static[r][c]:\n                        if is_static[r + 1][c] and grid[r + 1][c] == '#':\n                            is_static[r][c] = True\n                            changed = True\n        next_grid = [row[:] for row in grid]\n        moved = False\n        for r in range(m - 2, -1, -1):\n            for c in range(n):\n                if grid[r][c] == '#' and not is_static[r][c] and grid[r + 1][c] == '-':\n                    next_grid[r][c] = '-'\n                    next_grid[r + 1][c] = '#'\n                    moved = True\n        grid = next_grid\n        if not exploding and not moved:\n            break\n    return grid\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "m",
+      "n"
+    ],
+    "time": "O((m + n) * m * n)",
+    "space": "O(m * n)",
+    "notes": "Bounded simulation until grid reaches stable equilibrium.",
+    "whyNaiveFails": "Premature cell overwrites during simultaneous explosions cause cascading race conditions.",
+    "spaceTimeTradeoff": "Grid copies of size m x n ensure clean phase transitions.",
+    "interviewerExpectation": "Carefully separates orthogonal trigger condition from 8-directional blast radius and static gravity rules."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Synchronous Grid Simulation",
+      "code": "def simulateBombAndBoxes(grid: list[list[str]]) -> list[list[str]]:\n    m, n = len(grid), len(grid[0])\n    for _ in range(m + n + 10):\n        new_grid = [row[:] for row in grid]\n        exploding = []\n        for r in range(m):\n            for c in range(n):\n                if grid[r][c] == '*':\n                    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:\n                        nr, nc = r + dr, c + dc\n                        if 0 <= nr < m and 0 <= nc < n and grid[nr][nc] == '#':\n                            exploding.append((r, c))\n                            break\n        for br, bc in exploding:\n            for dr in [-1, 0, 1]:\n                for dc in [-1, 0, 1]:\n                    nr, nc = br + dr, bc + dc\n                    if 0 <= nr < m and 0 <= nc < n and new_grid[nr][nc] == '#':\n                        new_grid[nr][nc] = '-'\n        grid = new_grid\n        is_static = [[False] * n for _ in range(m)]\n        for r in range(m):\n            for c in range(n):\n                if grid[r][c] == '#':\n                    if r == m - 1 or grid[r + 1][c] == '*':\n                        is_static[r][c] = True\n        changed = True\n        while changed:\n            changed = False\n            for r in range(m - 2, -1, -1):\n                for c in range(n):\n                    if grid[r][c] == '#' and not is_static[r][c]:\n                        if is_static[r + 1][c] and grid[r + 1][c] == '#':\n                            is_static[r][c] = True\n                            changed = True\n        next_grid = [row[:] for row in grid]\n        moved = False\n        for r in range(m - 2, -1, -1):\n            for c in range(n):\n                if grid[r][c] == '#' and not is_static[r][c] and grid[r + 1][c] == '-':\n                    next_grid[r][c] = '-'\n                    next_grid[r + 1][c] = '#'\n                    moved = True\n        grid = next_grid\n        if not exploding and not moved:\n            break\n    return grid",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Synchronous Grid Simulation",
+      "code": "#include <vector>\n\nclass Solution {\npublic:\n    std::vector<std::vector<char>> simulateBombAndBoxes(std::vector<std::vector<char>>& grid) {\n        int m = grid.size(), n = grid[0].size();\n        for (int iter = 0; iter < m + n + 10; ++iter) {\n            auto new_grid = grid;\n            std::vector<std::pair<int, int>> exploding;\n            int dr[] = {-1, 1, 0, 0};\n            int dc[] = {0, 0, -1, 1};\n            for (int r = 0; r < m; ++r) {\n                for (int c = 0; c < n; ++c) {\n                    if (grid[r][c] == '*') {\n                        for (int d = 0; d < 4; ++d) {\n                            int nr = r + dr[d], nc = c + dc[d];\n                            if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == '#') {\n                                exploding.push_back({r, c});\n                                break;\n                            }\n                        }\n                    }\n                }\n            }\n            for (auto const& p : exploding) {\n                for (int d1 = -1; d1 <= 1; ++d1) {\n                    for (int d2 = -1; d2 <= 1; ++d2) {\n                        int nr = p.first + d1, nc = p.second + d2;\n                        if (nr >= 0 && nr < m && nc >= 0 && nc < n && new_grid[nr][nc] == '#') {\n                            new_grid[nr][nc] = '-';\n                        }\n                    }\n                }\n            }\n            grid = new_grid;\n            std::vector<std::vector<bool>> is_static(m, std::vector<bool>(n, false));\n            for (int r = 0; r < m; ++r) {\n                for (int c = 0; c < n; ++c) {\n                    if (grid[r][c] == '#') {\n                        if (r == m - 1 || grid[r + 1][c] == '*') is_static[r][c] = true;\n                    }\n                }\n            }\n            bool changed = true;\n            while (changed) {\n                changed = false;\n                for (int r = m - 2; r >= 0; --r) {\n                    for (int c = 0; c < n; ++c) {\n                        if (grid[r][c] == '#' && !is_static[r][c]) {\n                            if (is_static[r + 1][c] && grid[r + 1][c] == '#') {\n                                is_static[r][c] = true;\n                                changed = true;\n                            }\n                        }\n                    }\n                }\n            }\n            auto next_grid = grid;\n            bool moved = false;\n            for (int r = m - 2; r >= 0; --r) {\n                for (int c = 0; c < n; ++c) {\n                    if (grid[r][c] == '#' && !is_static[r][c] && grid[r + 1][c] == '-') {\n                        next_grid[r][c] = '-';\n                        next_grid[r + 1][c] = '#';\n                        moved = true;\n                    }\n                }\n            }\n            grid = next_grid;\n            if (exploding.empty() && !moved) break;\n        }\n        return grid;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Synchronous Grid Simulation",
+      "code": "import java.util.*;\n\nclass Solution {\n    public char[][] simulateBombAndBoxes(char[][] grid) {\n        int m = grid.length, n = grid[0].length;\n        for (int iter = 0; iter < m + n + 10; iter++) {\n            char[][] newGrid = new char[m][n];\n            for (int r = 0; r < m; r++) newGrid[r] = Arrays.copyOf(grid[r], n);\n            List<int[]> exploding = new ArrayList<>();\n            int[] dr = {-1, 1, 0, 0};\n            int[] dc = {0, 0, -1, 1};\n            for (int r = 0; r < m; r++) {\n                for (int c = 0; c < n; c++) {\n                    if (grid[r][c] == '*') {\n                        for (int d = 0; d < 4; d++) {\n                            int nr = r + dr[d], nc = c + dc[d];\n                            if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == '#') {\n                                exploding.add(new int[]{r, c});\n                                break;\n                            }\n                        }\n                    }\n                }\n            }\n            for (int[] p : exploding) {\n                for (int d1 = -1; d1 <= 1; d1++) {\n                    for (int d2 = -1; d2 <= 1; d2++) {\n                        int nr = p[0] + d1, nc = p[1] + d2;\n                        if (nr >= 0 && nr < m && nc >= 0 && nc < n && newGrid[nr][nc] == '#') {\n                            newGrid[nr][nc] = '-';\n                        }\n                    }\n                }\n            }\n            grid = newGrid;\n            boolean[][] isStatic = new boolean[m][n];\n            for (int r = 0; r < m; r++) {\n                for (int c = 0; c < n; c++) {\n                    if (grid[r][c] == '#' && (r == m - 1 || grid[r + 1][c] == '*')) isStatic[r][c] = true;\n                }\n            }\n            boolean changed = true;\n            while (changed) {\n                changed = false;\n                for (int r = m - 2; r >= 0; r--) {\n                    for (int c = 0; c < n; c++) {\n                        if (grid[r][c] == '#' && !isStatic[r][c] && isStatic[r + 1][c] && grid[r + 1][c] == '#') {\n                            isStatic[r][c] = true;\n                            changed = true;\n                        }\n                    }\n                }\n            }\n            char[][] nextGrid = new char[m][n];\n            for (int r = 0; r < m; r++) nextGrid[r] = Arrays.copyOf(grid[r], n);\n            boolean moved = false;\n            for (int r = m - 2; r >= 0; r--) {\n                for (int c = 0; c < n; c++) {\n                    if (grid[r][c] == '#' && !isStatic[r][c] && grid[r + 1][c] == '-') {\n                        nextGrid[r][c] = '-';\n                        nextGrid[r + 1][c] = '#';\n                        moved = true;\n                    }\n                }\n            }\n            grid = nextGrid;\n            if (exploding.isEmpty() && !moved) break;\n        }\n        return grid;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Synchronous Grid Simulation",
+      "code": "var simulateBombAndBoxes = function(grid) {\n    const m = grid.length, n = grid[0].length;\n    for (let iter = 0; iter < m + n + 10; iter++) {\n        let newGrid = grid.map(row => [...row]);\n        const exploding = [];\n        const dr = [-1, 1, 0, 0];\n        const dc = [0, 0, -1, 1];\n        for (let r = 0; r < m; r++) {\n            for (let c = 0; c < n; c++) {\n                if (grid[r][c] === '*') {\n                    for (let d = 0; d < 4; d++) {\n                        const nr = r + dr[d], nc = c + dc[d];\n                        if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] === '#') {\n                            exploding.push([r, c]);\n                            break;\n                        }\n                    }\n                }\n            }\n        }\n        for (const [br, bc] of exploding) {\n            for (let d1 = -1; d1 <= 1; d1++) {\n                for (let d2 = -1; d2 <= 1; d2++) {\n                    const nr = br + d1, nc = bc + d2;\n                    if (nr >= 0 && nr < m && nc >= 0 && nc < n && newGrid[nr][nc] === '#') {\n                        newGrid[nr][nc] = '-';\n                    }\n                }\n            }\n        }\n        grid = newGrid;\n        const isStatic = Array.from({ length: m }, () => new Array(n).fill(false));\n        for (let r = 0; r < m; r++) {\n            for (let c = 0; c < n; c++) {\n                if (grid[r][c] === '#' && (r === m - 1 || grid[r + 1][c] === '*')) isStatic[r][c] = true;\n            }\n        }\n        let changed = true;\n        while (changed) {\n            changed = false;\n            for (let r = m - 2; r >= 0; r--) {\n                for (let c = 0; c < n; c++) {\n                    if (grid[r][c] === '#' && !isStatic[r][c] && isStatic[r + 1][c] && grid[r + 1][c] === '#') {\n                        isStatic[r][c] = true;\n                        changed = true;\n                    }\n                }\n            }\n        }\n        const nextGrid = grid.map(row => [...row]);\n        let moved = false;\n        for (let r = m - 2; r >= 0; r--) {\n            for (let c = 0; c < n; c++) {\n                if (grid[r][c] === '#' && !isStatic[r][c] && grid[r + 1][c] === '-') {\n                    nextGrid[r][c] = '-';\n                    nextGrid[r + 1][c] = '#';\n                    moved = true;\n                }\n            }\n        }\n        grid = nextGrid;\n        if (exploding.length === 0 && !moved) break;\n    }\n    return grid;\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

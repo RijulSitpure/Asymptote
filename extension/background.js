@@ -66,7 +66,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           if (Array.isArray(request.problems)) {
             const data = await engine.syncBatch({
               username: request.username,
-              problems: request.problems
+              problems: request.problems,
+              submitStats: request.submitStats,
+              isFullSync: request.isFullSync !== false
             });
             sendResponse({ success: true, data });
           } else {
