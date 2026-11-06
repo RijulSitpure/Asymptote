@@ -1,0 +1,79 @@
+{
+  "slug": "minimize-inversions-in-a-prefix-tree",
+  "number": 4077,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-trie-prefix"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "In a binary prefix tree, each node partitions numbers by the current bit value zero or one."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Swapping the left and right children of a node inverts the relative order of all pairs split at that node."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Greedily choose whether to swap by comparing natural cross-inversions against inverted cross-inversions at each bit level."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef minInversionsPrefixTree(nums: list[int]) -> int:\n    # Build trie and calculate inversions per bit level\n    # For each bit level from 29 down to 0:\n    # count pairs (i < j) where bit at level differs\n    n = len(nums)\n    if n <= 1:\n        return 0\n\n    total_inv = 0\n    # Group indices by prefix\n    groups = [nums]\n\n    for bit in range(29, -1, -1):\n        inv01 = 0\n        inv10 = 0\n        next_groups = []\n\n        for grp in groups:\n            c0 = 0\n            c1 = 0\n            g0 = []\n            g1 = []\n            for x in grp:\n                if (x >> bit) & 1:\n                    inv01 += c0\n                    c1 += 1\n                    g1.append(x)\n                else:\n                    inv10 += c1\n                    c0 += 1\n                    g0.append(x)\n            if g0:\n                next_groups.append(g0)\n            if g1:\n                next_groups.append(g1)\n\n        total_inv += min(inv01, inv10)\n        groups = next_groups\n\n    return total_inv\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "b"
+    ],
+    "time": "O(n * b)",
+    "space": "O(n * b)",
+    "notes": "Building binary trie of depth b = 30 and collecting bit-level inversion counts.",
+    "whyNaiveFails": "Examining all 2^b swap choices takes exponential time.",
+    "spaceTimeTradeoff": "Binary trie with at most 30 * n nodes.",
+    "interviewerExpectation": "Recognizes independence of bit-level inversion decisions in prefix tree."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def minInversionsPrefixTree(nums: list[int]) -> int:\n    # Build trie and calculate inversions per bit level\n    # For each bit level from 29 down to 0:\n    # count pairs (i < j) where bit at level differs\n    n = len(nums)\n    if n <= 1:\n        return 0\n\n    total_inv = 0\n    # Group indices by prefix\n    groups = [nums]\n\n    for bit in range(29, -1, -1):\n        inv01 = 0\n        inv10 = 0\n        next_groups = []\n\n        for grp in groups:\n            c0 = 0\n            c1 = 0\n            g0 = []\n            g1 = []\n            for x in grp:\n                if (x >> bit) & 1:\n                    inv01 += c0\n                    c1 += 1\n                    g1.append(x)\n                else:\n                    inv10 += c1\n                    c0 += 1\n                    g0.append(x)\n            if g0:\n                next_groups.append(g0)\n            if g1:\n                next_groups.append(g1)\n\n        total_inv += min(inv01, inv10)\n        groups = next_groups\n\n    return total_inv",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    long long minInversionsPrefixTree(std::vector<int>& nums) {\n        int n = nums.size();\n        if (n <= 1) return 0;\n\n        long long total_inv = 0;\n        std::vector<std::vector<int>> groups = {nums};\n\n        for (int bit = 29; bit >= 0; --bit) {\n            long long inv01 = 0, inv10 = 0;\n            std::vector<std::vector<int>> next_groups;\n\n            for (auto const& grp : groups) {\n                int c0 = 0, c1 = 0;\n                std::vector<int> g0, g1;\n                for (int x : grp) {\n                    if ((x >> bit) & 1) {\n                        inv01 += c0;\n                        c1++;\n                        g1.push_back(x);\n                    } else {\n                        inv10 += c1;\n                        c0++;\n                        g0.push_back(x);\n                    }\n                }\n                if (!g0.empty()) next_groups.push_back(g0);\n                if (!g1.empty()) next_groups.push_back(g1);\n            }\n            total_inv += std::min(inv01, inv10);\n            groups = next_groups;\n        }\n        return total_inv;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public long minInversionsPrefixTree(int[] nums) {\n        int n = nums.length;\n        if (n <= 1) return 0;\n\n        long totalInv = 0;\n        List<int[]> groups = new ArrayList<>();\n        groups.add(nums);\n\n        for (int bit = 29; bit >= 0; bit--) {\n            long inv01 = 0, inv10 = 0;\n            List<int[]> nextGroups = new ArrayList<>();\n\n            for (int[] grp : groups) {\n                int c0 = 0, c1 = 0;\n                List<Integer> g0 = new ArrayList<>();\n                List<Integer> g1 = new ArrayList<>();\n                for (int x : grp) {\n                    if (((x >> bit) & 1) == 1) {\n                        inv01 += c0;\n                        c1++;\n                        g1.add(x);\n                    } else {\n                        inv10 += c1;\n                        c0++;\n                        g0.add(x);\n                    }\n                }\n                if (!g0.isEmpty()) {\n                    int[] a0 = new int[g0.size()];\n                    for (int i = 0; i < g0.size(); i++) a0[i] = g0.get(i);\n                    nextGroups.add(a0);\n                }\n                if (!g1.isEmpty()) {\n                    int[] a1 = new int[g1.size()];\n                    for (int i = 0; i < g1.size(); i++) a1[i] = g1.get(i);\n                    nextGroups.add(a1);\n                }\n            }\n            totalInv += Math.min(inv01, inv10);\n            groups = nextGroups;\n        }\n        return totalInv;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minInversionsPrefixTree(nums) {\n    const n = nums.length;\n    if (n <= 1) return 0;\n\n    let totalInv = 0;\n    let groups = [nums];\n\n    for (let bit = 29; bit >= 0; bit--) {\n        let inv01 = 0, inv10 = 0;\n        const nextGroups = [];\n\n        for (const grp of groups) {\n            let c0 = 0, c1 = 0;\n            const g0 = [], g1 = [];\n            for (const x of grp) {\n                if ((x >> bit) & 1) {\n                    inv01 += c0;\n                    c1++;\n                    g1.push(x);\n                } else {\n                    inv10 += c1;\n                    c0++;\n                    g0.push(x);\n                }\n            }\n            if (g0.length > 0) nextGroups.push(g0);\n            if (g1.length > 0) nextGroups.push(g1);\n        }\n        totalInv += Math.min(inv01, inv10);\n        groups = nextGroups;\n    }\n    return totalInv;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "count-evenly-good-integers",
+  "number": 4060,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-1d-fib-linear"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "A positive integer is evenly good if the count of its even digits equals the count of its odd digits."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Such integers must have an even number of total digits 2 * k."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Use digit state transitions tracking the current balance difference between even and odd digits."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef countEvenlyGoodIntegers(n: int) -> int:\n    s = str(n)\n    length = len(s)\n    memo = {}\n\n    def dp(idx: int, bal: int, is_less: bool, is_started: bool) -> int:\n        if idx == length:\n            return 1 if (is_started and bal == 0) else 0\n\n        state = (idx, bal, is_less, is_started)\n        if state in memo:\n            return memo[state]\n\n        limit = int(s[idx]) if not is_less else 9\n        total = 0\n\n        for dig in range(limit + 1):\n            next_less = is_less or (dig < limit)\n            if not is_started and dig == 0:\n                total += dp(idx + 1, bal, next_less, False)\n            else:\n                next_bal = bal + (1 if dig % 2 == 0 else -1)\n                total += dp(idx + 1, next_bal, next_less, True)\n\n        memo[state] = total\n        return total\n\n    return dp(0, 0, False, False)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "d"
+    ],
+    "time": "O(d^2 * 10)",
+    "space": "O(d^2)",
+    "notes": "Digit DP state tracks (index, balance, is_less, is_started) with d <= 18 digits.",
+    "whyNaiveFails": "Checking all numbers up to n takes O(n) which is infeasible for n up to 10^18.",
+    "spaceTimeTradeoff": "Memoization table holds states for small digit lengths.",
+    "interviewerExpectation": "Formulates digit DP with even-odd count differential state."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def countEvenlyGoodIntegers(n: int) -> int:\n    s = str(n)\n    length = len(s)\n    memo = {}\n\n    def dp(idx: int, bal: int, is_less: bool, is_started: bool) -> int:\n        if idx == length:\n            return 1 if (is_started and bal == 0) else 0\n\n        state = (idx, bal, is_less, is_started)\n        if state in memo:\n            return memo[state]\n\n        limit = int(s[idx]) if not is_less else 9\n        total = 0\n\n        for dig in range(limit + 1):\n            next_less = is_less or (dig < limit)\n            if not is_started and dig == 0:\n                total += dp(idx + 1, bal, next_less, False)\n            else:\n                next_bal = bal + (1 if dig % 2 == 0 else -1)\n                total += dp(idx + 1, next_bal, next_less, True)\n\n        memo[state] = total\n        return total\n\n    return dp(0, 0, False, False)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <string>\n#include <vector>\n#include <cstring>\n\nclass Solution {\n    std::string s;\n    int memo[20][45][2][2];\n\n    int dp(int idx, int bal, bool is_less, bool is_started) {\n        if (idx == (int)s.size()) {\n            return (is_started && bal == 20) ? 1 : 0;\n        }\n        if (memo[idx][bal][is_less][is_started] != -1) {\n            return memo[idx][bal][is_less][is_started];\n        }\n\n        int limit = is_less ? 9 : (s[idx] - '0');\n        int total = 0;\n\n        for (int dig = 0; dig <= limit; ++dig) {\n            bool next_less = is_less || (dig < limit);\n            if (!is_started && dig == 0) {\n                total += dp(idx + 1, bal, next_less, false);\n            } else {\n                int next_bal = bal + (dig % 2 == 0 ? 1 : -1);\n                total += dp(idx + 1, next_bal, next_less, true);\n            }\n        }\n        return memo[idx][bal][is_less][is_started] = total;\n    }\n\npublic:\n    int countEvenlyGoodIntegers(long long n) {\n        s = std::to_string(n);\n        std::memset(memo, -1, sizeof(memo));\n        return dp(0, 20, false, false);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private String s;\n    private int[][][][] memo;\n\n    public int countEvenlyGoodIntegers(long n) {\n        s = String.valueOf(n);\n        memo = new int[s.length() + 1][45][2][2];\n        for (int[][][] d1 : memo) {\n            for (int[][] d2 : d1) {\n                for (int[] d3 : d2) Arrays.fill(d3, -1);\n            }\n        }\n        return dp(0, 20, 0, 0);\n    }\n\n    private int dp(int idx, int bal, int isLess, int isStarted) {\n        if (idx == s.length()) {\n            return (isStarted == 1 && bal == 20) ? 1 : 0;\n        }\n        if (memo[idx][bal][isLess][isStarted] != -1) {\n            return memo[idx][bal][isLess][isStarted];\n        }\n\n        int limit = (isLess == 1) ? 9 : (s.charAt(idx) - '0');\n        int total = 0;\n\n        for (int dig = 0; dig <= limit; dig++) {\n            int nextLess = (isLess == 1 || dig < limit) ? 1 : 0;\n            if (isStarted == 0 && dig == 0) {\n                total += dp(idx + 1, bal, nextLess, 0);\n            } else {\n                int nextBal = bal + (dig % 2 == 0 ? 1 : -1);\n                total += dp(idx + 1, nextBal, nextLess, 1);\n            }\n        }\n        return memo[idx][bal][isLess][isStarted] = total;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function countEvenlyGoodIntegers(n) {\n    const s = String(n);\n    const len = s.length;\n    const memo = new Map();\n\n    function dp(idx, bal, isLess, isStarted) {\n        if (idx === len) {\n            return isStarted && bal === 0 ? 1 : 0;\n        }\n        const key = `${idx},${bal},${isLess ? 1 : 0},${isStarted ? 1 : 0}`;\n        if (memo.has(key)) return memo.get(key);\n\n        const limit = isLess ? 9 : parseInt(s[idx], 10);\n        let total = 0;\n\n        for (let dig = 0; dig <= limit; dig++) {\n            const nextLess = isLess || dig < limit;\n            if (!isStarted && dig === 0) {\n                total += dp(idx + 1, bal, nextLess, false);\n            } else {\n                const nextBal = bal + (dig % 2 === 0 ? 1 : -1);\n                total += dp(idx + 1, nextBal, nextLess, true);\n            }\n        }\n        memo.set(key, total);\n        return total;\n    }\n\n    return dp(0, 0, false, false);\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "lexicographically-largest-power-array",
+  "number": 4059,
+  "category": "Algorithms",
+  "patterns": [
+    "greedy-general"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "To make the array lexicographically as large as possible, greedily bring the largest available elements toward the earliest indices."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "If adjacent swaps are constrained by parity or connectivity, elements partitioned into the same connected components can be sorted independently."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Sort the values within each component in descending order and place them back into their respective index positions."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef largestPowerArray(nums: list[int], limit: int) -> list[int]:\n    n = len(nums)\n    sorted_pairs = sorted([(nums[i], i) for i in range(n)])\n\n    groups = []\n    curr_group = [sorted_pairs[0]]\n    for i in range(1, n):\n        if sorted_pairs[i][0] - sorted_pairs[i - 1][0] <= limit:\n            curr_group.append(sorted_pairs[i])\n        else:\n            groups.append(curr_group)\n            curr_group = [sorted_pairs[i]]\n    groups.append(curr_group)\n\n    res = [0] * n\n    for group in groups:\n        indices = sorted([idx for val, idx in group])\n        values = sorted([val for val, idx in group], reverse=True)\n        for idx, val in zip(indices, values):\n            res[idx] = val\n\n    return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(n * log(n))",
+    "space": "O(n)",
+    "notes": "Sorting component groups and placing elements into position takes O(n log n).",
+    "whyNaiveFails": "Simulating individual swaps takes O(n^2) or exponential search time.",
+    "spaceTimeTradeoff": "Auxiliary lists store grouped component values.",
+    "interviewerExpectation": "Groups swappable components and sorts values descending."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def largestPowerArray(nums: list[int], limit: int) -> list[int]:\n    n = len(nums)\n    sorted_pairs = sorted([(nums[i], i) for i in range(n)])\n\n    groups = []\n    curr_group = [sorted_pairs[0]]\n    for i in range(1, n):\n        if sorted_pairs[i][0] - sorted_pairs[i - 1][0] <= limit:\n            curr_group.append(sorted_pairs[i])\n        else:\n            groups.append(curr_group)\n            curr_group = [sorted_pairs[i]]\n    groups.append(curr_group)\n\n    res = [0] * n\n    for group in groups:\n        indices = sorted([idx for val, idx in group])\n        values = sorted([val for val, idx in group], reverse=True)\n        for idx, val in zip(indices, values):\n            res[idx] = val\n\n    return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<int> largestPowerArray(std::vector<int>& nums, int limit) {\n        int n = nums.size();\n        std::vector<std::pair<int, int>> pairs;\n        for (int i = 0; i < n; ++i) pairs.push_back({nums[i], i});\n        std::sort(pairs.begin(), pairs.end());\n\n        std::vector<int> res(n);\n        int i = 0;\n        while (i < n) {\n            int j = i;\n            std::vector<int> idxs = {pairs[i].second};\n            std::vector<int> vals = {pairs[i].first};\n            while (j + 1 < n && pairs[j + 1].first - pairs[j].first <= limit) {\n                j++;\n                idxs.push_back(pairs[j].second);\n                vals.push_back(pairs[j].first);\n            }\n            std::sort(idxs.begin(), idxs.end());\n            std::sort(vals.begin(), vals.end(), std::greater<int>());\n            for (size_t k = 0; k < idxs.size(); ++k) {\n                res[idxs[k]] = vals[k];\n            }\n            i = j + 1;\n        }\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] largestPowerArray(int[] nums, int limit) {\n        int n = nums.length;\n        int[][] pairs = new int[n][2];\n        for (int i = 0; i < n; i++) {\n            pairs[i][0] = nums[i];\n            pairs[i][1] = i;\n        }\n        Arrays.sort(pairs, (a, b) -> Integer.compare(a[0], b[0]));\n\n        int[] res = new int[n];\n        int i = 0;\n        while (i < n) {\n            int j = i;\n            List<Integer> idxs = new ArrayList<>();\n            List<Integer> vals = new ArrayList<>();\n            idxs.add(pairs[i][1]);\n            vals.add(pairs[i][0]);\n            while (j + 1 < n && pairs[j + 1][0] - pairs[j][0] <= limit) {\n                j++;\n                idxs.add(pairs[j][1]);\n                vals.add(pairs[j][0]);\n            }\n            Collections.sort(idxs);\n            vals.sort(Collections.reverseOrder());\n            for (int k = 0; k < idxs.size(); k++) {\n                res[idxs.get(k)] = vals.get(k);\n            }\n            i = j + 1;\n        }\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function largestPowerArray(nums, limit) {\n    const n = nums.length;\n    const pairs = nums.map((val, idx) => ({ val, idx })).sort((a, b) => a.val - b.val);\n\n    const res = new Array(n);\n    let i = 0;\n    while (i < n) {\n        let j = i;\n        const idxs = [pairs[i].idx];\n        const vals = [pairs[i].val];\n        while (j + 1 < n && pairs[j + 1].val - pairs[j].val <= limit) {\n            j++;\n            idxs.push(pairs[j].idx);\n            vals.push(pairs[j].val);\n        }\n        idxs.sort((a, b) => a - b);\n        vals.sort((a, b) => b - a);\n        for (let k = 0; k < idxs.length; k++) {\n            res[idxs[k]] = vals[k];\n        }\n        i = j + 1;\n    }\n    return res;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
