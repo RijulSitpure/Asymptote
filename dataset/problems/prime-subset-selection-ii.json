@@ -1,0 +1,78 @@
+{
+  "slug": "prime-subset-selection-ii",
+  "number": 4081,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-knapsack-variants"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "A subset of integers is valid if its cumulative product has no squared prime factors."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Factor each unique number into a bitmask of its prime factors up to 30."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Use bitmask state transitions to find the maximum possible size of a valid square-free subset."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef maxPrimeSubsetSize(nums: list[int]) -> int:\n    primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]\n    ones = nums.count(1)\n\n    # Filter square-free numbers <= 30\n    valid_nums = []\n    for x in nums:\n        if x <= 1 or x > 30:\n            continue\n        temp = x\n        mask = 0\n        is_sq_free = True\n        for i, p in enumerate(primes):\n            if temp % p == 0:\n                temp //= p\n                if temp % p == 0:\n                    is_sq_free = False\n                    break\n                mask |= (1 << i)\n        if is_sq_free:\n            valid_nums.append(mask)\n\n    # dp[mask]: max subset size using prime mask\n    dp = [-1] * (1 << 10)\n    dp[0] = 0\n\n    for mask in valid_nums:\n        for state in range((1 << 10) - 1, -1, -1):\n            if dp[state] != -1 and (state & mask) == 0:\n                if dp[state] + 1 > dp[state | mask]:\n                    dp[state | mask] = dp[state] + 1\n\n    max_size = max(dp)\n    return max_size + ones if max_size != -1 else ones\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(n + 2^10)",
+    "space": "O(2^10)",
+    "notes": "Bitmask state transition tracking maximum subset size over primes up to 30.",
+    "whyNaiveFails": "Checking all 2^n subsets is exponential and intractable for large arrays.",
+    "spaceTimeTradeoff": "Table of size 1024 stores max subset sizes for each prime combination.",
+    "interviewerExpectation": "Models prime factors as bitmasks and maximizes subset size via bitwise DP."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def maxPrimeSubsetSize(nums: list[int]) -> int:\n    primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]\n    ones = nums.count(1)\n\n    # Filter square-free numbers <= 30\n    valid_nums = []\n    for x in nums:\n        if x <= 1 or x > 30:\n            continue\n        temp = x\n        mask = 0\n        is_sq_free = True\n        for i, p in enumerate(primes):\n            if temp % p == 0:\n                temp //= p\n                if temp % p == 0:\n                    is_sq_free = False\n                    break\n                mask |= (1 << i)\n        if is_sq_free:\n            valid_nums.append(mask)\n\n    # dp[mask]: max subset size using prime mask\n    dp = [-1] * (1 << 10)\n    dp[0] = 0\n\n    for mask in valid_nums:\n        for state in range((1 << 10) - 1, -1, -1):\n            if dp[state] != -1 and (state & mask) == 0:\n                if dp[state] + 1 > dp[state | mask]:\n                    dp[state | mask] = dp[state] + 1\n\n    max_size = max(dp)\n    return max_size + ones if max_size != -1 else ones",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxPrimeSubsetSize(std::vector<int>& nums) {\n        std::vector<int> primes = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29};\n        int ones = 0;\n        std::vector<int> valid_masks;\n\n        for (int x : nums) {\n            if (x == 1) { ones++; continue; }\n            if (x <= 0 || x > 30) continue;\n            int temp = x, mask = 0;\n            bool ok = true;\n            for (int i = 0; i < 10; ++i) {\n                if (temp % primes[i] == 0) {\n                    temp /= primes[i];\n                    if (temp % primes[i] == 0) { ok = false; break; }\n                    mask |= (1 << i);\n                }\n            }\n            if (ok) valid_masks.push_back(mask);\n        }\n\n        std::vector<int> dp(1 << 10, -1);\n        dp[0] = 0;\n\n        for (int mask : valid_masks) {\n            for (int state = (1 << 10) - 1; state >= 0; --state) {\n                if (dp[state] != -1 && (state & mask) == 0) {\n                    dp[state | mask] = std::max(dp[state | mask], dp[state] + 1);\n                }\n            }\n        }\n\n        int max_size = 0;\n        for (int s = 0; s < (1 << 10); ++s) max_size = std::max(max_size, dp[s]);\n        return max_size + ones;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int maxPrimeSubsetSize(int[] nums) {\n        int[] primes = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29};\n        int ones = 0;\n        List<Integer> validMasks = new ArrayList<>();\n\n        for (int x : nums) {\n            if (x == 1) { ones++; continue; }\n            if (x <= 0 || x > 30) continue;\n            int temp = x, mask = 0;\n            boolean ok = true;\n            for (int i = 0; i < 10; i++) {\n                if (temp % primes[i] == 0) {\n                    temp /= primes[i];\n                    if (temp % primes[i] == 0) { ok = false; break; }\n                    mask |= (1 << i);\n                }\n            }\n            if (ok) validMasks.add(mask);\n        }\n\n        int[] dp = new int[1 << 10];\n        Arrays.fill(dp, -1);\n        dp[0] = 0;\n\n        for (int mask : validMasks) {\n            for (int state = (1 << 10) - 1; state >= 0; state--) {\n                if (dp[state] != -1 && (state & mask) == 0) {\n                    dp[state | mask] = Math.max(dp[state | mask], dp[state] + 1);\n                }\n            }\n        }\n\n        int maxSize = 0;\n        for (int s = 0; s < (1 << 10); s++) maxSize = Math.max(maxSize, dp[s]);\n        return maxSize + ones;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function maxPrimeSubsetSize(nums) {\n    const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29];\n    let ones = 0;\n    const validMasks = [];\n\n    for (const x of nums) {\n        if (x === 1) { ones++; continue; }\n        if (x <= 0 || x > 30) continue;\n        let temp = x, mask = 0;\n        let ok = true;\n        for (let i = 0; i < 10; i++) {\n            if (temp % primes[i] === 0) {\n                temp = Math.floor(temp / primes[i]);\n                if (temp % primes[i] === 0) { ok = false; break; }\n                mask |= (1 << i);\n            }\n        }\n        if (ok) validMasks.push(mask);\n    }\n\n    const dp = new Array(1 << 10).fill(-1);\n    dp[0] = 0;\n\n    for (const mask of validMasks) {\n        for (let state = (1 << 10) - 1; state >= 0; state--) {\n            if (dp[state] !== -1 && (state & mask) === 0) {\n                dp[state | mask] = Math.max(dp[state | mask], dp[state] + 1);\n            }\n        }\n    }\n\n    let maxSize = 0;\n    for (let s = 0; s < (1 << 10); s++) maxSize = Math.max(maxSize, dp[s]);\n    return maxSize + ones;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
