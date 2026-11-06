@@ -1,0 +1,79 @@
+{
+  "slug": "peaks-in-array-ii",
+  "number": 4017,
+  "category": "Algorithms",
+  "patterns": [
+    "segment-tree-fenwick"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "A peak occurs at index i where nums[i] is strictly greater than both its left and right neighbors."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Store peak status across indices in a binary indexed or segment tree structure."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Query range sums of internal peak positions and update neighbor states on point mutations."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef countPeaks(nums: list[int], queries: list[list[int]]) -> list[int]:\n    n = len(nums)\n    bit = [0] * (n + 1)\n\n    def add(idx: int, val: int) -> None:\n        idx += 1\n        while idx <= n:\n            bit[idx] += val\n            idx += idx & (-idx)\n\n    def query(idx: int) -> int:\n        idx += 1\n        s = 0\n        while idx > 0:\n            s += bit[idx]\n            idx -= idx & (-idx)\n        return s\n\n    def is_peak(i: int) -> int:\n        if 0 < i < n - 1 and nums[i] > nums[i - 1] and nums[i] > nums[i + 1]:\n            return 1\n        return 0\n\n    peak = [0] * n\n    for i in range(1, n - 1):\n        peak[i] = is_peak(i)\n        if peak[i]:\n            add(i, 1)\n\n    res = []\n    for q in queries:\n        if q[0] == 1:\n            l, r = q[1], q[2]\n            if r - l < 2:\n                res.append(0)\n            else:\n                res.append(query(r - 1) - query(l))\n        else:\n            idx, val = q[1], q[2]\n            nums[idx] = val\n            for i in range(max(1, idx - 1), min(n - 1, idx + 2)):\n                new_p = is_peak(i)\n                if new_p != peak[i]:\n                    add(i, new_p - peak[i])\n                    peak[i] = new_p\n    return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "q"
+    ],
+    "time": "O((n + q) * log(n))",
+    "space": "O(n)",
+    "notes": "Fenwick tree maintains peak indicators under point mutations.",
+    "whyNaiveFails": "Scanning every query interval takes linear time per query, yielding O(n * q) total.",
+    "spaceTimeTradeoff": "Fenwick array requires O(n) auxiliary memory.",
+    "interviewerExpectation": "Identifies localized neighbor updates and uses Fenwick tree for range sum queries."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def countPeaks(nums: list[int], queries: list[list[int]]) -> list[int]:\n    n = len(nums)\n    bit = [0] * (n + 1)\n\n    def add(idx: int, val: int) -> None:\n        idx += 1\n        while idx <= n:\n            bit[idx] += val\n            idx += idx & (-idx)\n\n    def query(idx: int) -> int:\n        idx += 1\n        s = 0\n        while idx > 0:\n            s += bit[idx]\n            idx -= idx & (-idx)\n        return s\n\n    def is_peak(i: int) -> int:\n        if 0 < i < n - 1 and nums[i] > nums[i - 1] and nums[i] > nums[i + 1]:\n            return 1\n        return 0\n\n    peak = [0] * n\n    for i in range(1, n - 1):\n        peak[i] = is_peak(i)\n        if peak[i]:\n            add(i, 1)\n\n    res = []\n    for q in queries:\n        if q[0] == 1:\n            l, r = q[1], q[2]\n            if r - l < 2:\n                res.append(0)\n            else:\n                res.append(query(r - 1) - query(l))\n        else:\n            idx, val = q[1], q[2]\n            nums[idx] = val\n            for i in range(max(1, idx - 1), min(n - 1, idx + 2)):\n                new_p = is_peak(i)\n                if new_p != peak[i]:\n                    add(i, new_p - peak[i])\n                    peak[i] = new_p\n    return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<int> countPeaks(std::vector<int>& nums, std::vector<std::vector<int>>& queries) {\n        int n = nums.size();\n        std::vector<int> bit(n + 1, 0);\n\n        auto add = [&](int idx, int val) {\n            idx++;\n            for (; idx <= n; idx += idx & (-idx)) bit[idx] += val;\n        };\n\n        auto query = [&](int idx) {\n            idx++;\n            int s = 0;\n            for (; idx > 0; idx -= idx & (-idx)) s += bit[idx];\n            return s;\n        };\n\n        auto isPeak = [&](int i) {\n            if (i > 0 && i < n - 1 && nums[i] > nums[i - 1] && nums[i] > nums[i + 1]) return 1;\n            return 0;\n        };\n\n        std::vector<int> peak(n, 0);\n        for (int i = 1; i < n - 1; ++i) {\n            peak[i] = isPeak(i);\n            if (peak[i]) add(i, 1);\n        }\n\n        std::vector<int> res;\n        for (auto& q : queries) {\n            if (q[0] == 1) {\n                int l = q[1], r = q[2];\n                if (r - l < 2) res.push_back(0);\n                else res.push_back(query(r - 1) - query(l));\n            } else {\n                int idx = q[1], val = q[2];\n                nums[idx] = val;\n                for (int i = std::max(1, idx - 1); i <= std::min(n - 2, idx + 1); ++i) {\n                    int newP = isPeak(i);\n                    if (newP != peak[i]) {\n                        add(i, newP - peak[i]);\n                        peak[i] = newP;\n                    }\n                }\n            }\n        }\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] countPeaks(int[] nums, int[][] queries) {\n        int n = nums.length;\n        int[] bit = new int[n + 1];\n\n        int[] peak = new int[n];\n        for (int i = 1; i < n - 1; i++) {\n            if (nums[i] > nums[i - 1] && nums[i] > nums[i + 1]) {\n                peak[i] = 1;\n                add(bit, n, i, 1);\n            }\n        }\n\n        List<Integer> ans = new ArrayList<>();\n        for (int[] q : queries) {\n            if (q[0] == 1) {\n                int l = q[1], r = q[2];\n                if (r - l < 2) ans.add(0);\n                else ans.add(query(bit, r - 1) - query(bit, l));\n            } else {\n                int idx = q[1], val = q[2];\n                nums[idx] = val;\n                for (int i = Math.max(1, idx - 1); i <= Math.min(n - 2, idx + 1); i++) {\n                    int newP = (nums[i] > nums[i - 1] && nums[i] > nums[i + 1]) ? 1 : 0;\n                    if (newP != peak[i]) {\n                        add(bit, n, i, newP - peak[i]);\n                        peak[i] = newP;\n                    }\n                }\n            }\n        }\n        int[] res = new int[ans.size()];\n        for (int i = 0; i < ans.size(); i++) res[i] = ans.get(i);\n        return res;\n    }\n\n    private void add(int[] bit, int n, int idx, int val) {\n        idx++;\n        for (; idx <= n; idx += idx & (-idx)) bit[idx] += val;\n    }\n\n    private int query(int[] bit, int idx) {\n        idx++;\n        int s = 0;\n        for (; idx > 0; idx -= idx & (-idx)) s += bit[idx];\n        return s;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function countPeaks(nums, queries) {\n    const n = nums.length;\n    const bit = new Array(n + 1).fill(0);\n\n    function add(idx, val) {\n        idx++;\n        for (; idx <= n; idx += idx & (-idx)) bit[idx] += val;\n    }\n\n    function query(idx) {\n        idx++;\n        let s = 0;\n        for (; idx > 0; idx -= idx & (-idx)) s += bit[idx];\n        return s;\n    }\n\n    function isPeak(i) {\n        if (i > 0 && i < n - 1 && nums[i] > nums[i - 1] && nums[i] > nums[i + 1]) return 1;\n        return 0;\n    }\n\n    const peak = new Array(n).fill(0);\n    for (let i = 1; i < n - 1; i++) {\n        peak[i] = isPeak(i);\n        if (peak[i]) add(i, 1);\n    }\n\n    const res = [];\n    for (const q of queries) {\n        if (q[0] === 1) {\n            const l = q[1], r = q[2];\n            if (r - l < 2) res.push(0);\n            else res.push(query(r - 1) - query(l));\n        } else {\n            const idx = q[1], val = q[2];\n            nums[idx] = val;\n            for (let i = Math.max(1, idx - 1); i <= Math.min(n - 2, idx + 1); i++) {\n                const newP = isPeak(i);\n                if (newP !== peak[i]) {\n                    add(i, newP - peak[i]);\n                    peak[i] = newP;\n                }\n            }\n        }\n    }\n    return res;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,80 @@
+{
+  "slug": "minimum-cost-path-with-at-most-k-turns",
+  "number": 4046,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-dijkstra"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Augment the search state to track cell coordinates, arriving direction, and remaining allowed direction turns."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Use a min-priority queue ordered by path cost to expand lowest cumulative weights first."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Prune redundant states when a state with fewer or equal turns has already been reached with equal or lower cost."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nimport heapq\n\ndef minCostPathWithKTurns(grid: list[list[int]], k: int) -> int:\n    m, n = len(grid), len(grid[0])\n    # Directions: 0: Right, 1: Down, 2: Left, 3: Up\n    dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)]\n\n    # dist[r][c][dir][turns]\n    # priority queue entries: (cost, r, c, last_dir, turns)\n    pq = []\n    # Start at (0, 0)\n    for d in range(4):\n        pq.append((grid[0][0], 0, 0, d, 0))\n\n    dist = {}\n\n    while pq:\n        cost, r, c, d, turns = heapq.heappop(pq)\n        if r == m - 1 and c == n - 1:\n            return cost\n\n        state = (r, c, d, turns)\n        if dist.get(state, float('inf')) <= cost:\n            continue\n        dist[state] = cost\n\n        for next_d, (dr, dc) in enumerate(dirs):\n            nr, nc = r + dr, c + dc\n            if 0 <= nr < m and 0 <= nc < n:\n                nturns = turns + (1 if next_d != d else 0)\n                if nturns <= k:\n                    ncost = cost + grid[nr][nc]\n                    next_state = (nr, nc, next_d, nturns)\n                    if ncost < dist.get(next_state, float('inf')):\n                        heapq.heappush(pq, (ncost, nr, nc, next_d, nturns))\n\n    return -1\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "m",
+      "n",
+      "k"
+    ],
+    "time": "O(m * n * k * log(m * n * k))",
+    "space": "O(m * n * k)",
+    "notes": "Priority queue over expanded states (r, c, direction, turns_used).",
+    "whyNaiveFails": "Standard shortest path ignores direction change penalties and turn limits.",
+    "spaceTimeTradeoff": "Distance table of size m * n * 4 * (k + 1) stores minimum costs.",
+    "interviewerExpectation": "Models direction and turn count directly into Dijkstra state."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "import heapq\n\ndef minCostPathWithKTurns(grid: list[list[int]], k: int) -> int:\n    m, n = len(grid), len(grid[0])\n    # Directions: 0: Right, 1: Down, 2: Left, 3: Up\n    dirs = [(0, 1), (1, 0), (0, -1), (-1, 0)]\n\n    # dist[r][c][dir][turns]\n    # priority queue entries: (cost, r, c, last_dir, turns)\n    pq = []\n    # Start at (0, 0)\n    for d in range(4):\n        pq.append((grid[0][0], 0, 0, d, 0))\n\n    dist = {}\n\n    while pq:\n        cost, r, c, d, turns = heapq.heappop(pq)\n        if r == m - 1 and c == n - 1:\n            return cost\n\n        state = (r, c, d, turns)\n        if dist.get(state, float('inf')) <= cost:\n            continue\n        dist[state] = cost\n\n        for next_d, (dr, dc) in enumerate(dirs):\n            nr, nc = r + dr, c + dc\n            if 0 <= nr < m and 0 <= nc < n:\n                nturns = turns + (1 if next_d != d else 0)\n                if nturns <= k:\n                    ncost = cost + grid[nr][nc]\n                    next_state = (nr, nc, next_d, nturns)\n                    if ncost < dist.get(next_state, float('inf')):\n                        heapq.heappush(pq, (ncost, nr, nc, next_d, nturns))\n\n    return -1",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <tuple>\n\nclass Solution {\npublic:\n    int minCostPathWithKTurns(std::vector<std::vector<int>>& grid, int k) {\n        int m = grid.size(), n = grid[0].size();\n        int dirs[4][2] = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};\n\n        // cost, r, c, dir, turns\n        typedef std::tuple<int, int, int, int, int> State;\n        std::priority_queue<State, std::vector<State>, std::greater<State>> pq;\n\n        std::vector<std::vector<std::vector<std::vector<int>>>> dist(\n            m, std::vector<std::vector<std::vector<int>>>(\n                n, std::vector<std::vector<int>>(4, std::vector<int>(k + 1, 1e9))));\n\n        for (int d = 0; d < 4; ++d) {\n            pq.push({grid[0][0], 0, 0, d, 0});\n            dist[0][0][d][0] = grid[0][0];\n        }\n\n        while (!pq.empty()) {\n            auto [cost, r, c, d, turns] = pq.top();\n            pq.pop();\n\n            if (r == m - 1 && c == n - 1) return cost;\n            if (cost > dist[r][c][d][turns]) continue;\n\n            for (int nd = 0; nd < 4; ++nd) {\n                int nr = r + dirs[nd][0];\n                int nc = c + dirs[nd][1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int nturns = turns + (nd != d ? 1 : 0);\n                    if (nturns <= k) {\n                        int ncost = cost + grid[nr][nc];\n                        if (ncost < dist[nr][nc][nd][nturns]) {\n                            dist[nr][nc][nd][nturns] = ncost;\n                            pq.push({ncost, nr, nc, nd, nturns});\n                        }\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minCostPathWithKTurns(int[][] grid, int k) {\n        int m = grid.length, n = grid[0].length;\n        int[][] dirs = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};\n\n        PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));\n        int[][][][] dist = new int[m][n][4][k + 1];\n        for (int[][][] d1 : dist) {\n            for (int[][] d2 : d1) {\n                for (int[] d3 : d2) Arrays.fill(d3, Integer.MAX_VALUE);\n            }\n        }\n\n        for (int d = 0; d < 4; d++) {\n            pq.offer(new int[]{grid[0][0], 0, 0, d, 0});\n            dist[0][0][d][0] = grid[0][0];\n        }\n\n        while (!pq.isEmpty()) {\n            int[] top = pq.poll();\n            int cost = top[0], r = top[1], c = top[2], d = top[3], turns = top[4];\n\n            if (r == m - 1 && c == n - 1) return cost;\n            if (cost > dist[r][c][d][turns]) continue;\n\n            for (int nd = 0; nd < 4; nd++) {\n                int nr = r + dirs[nd][0];\n                int nc = c + dirs[nd][1];\n                if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                    int nturns = turns + (nd != d ? 1 : 0);\n                    if (nturns <= k) {\n                        int ncost = cost + grid[nr][nc];\n                        if (ncost < dist[nr][nc][nd][nturns]) {\n                            dist[nr][nc][nd][nturns] = ncost;\n                            pq.offer(new int[]{ncost, nr, nc, nd, nturns});\n                        }\n                    }\n                }\n            }\n        }\n        return -1;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minCostPathWithKTurns(grid, k) {\n    const m = grid.length, n = grid[0].length;\n    const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]];\n\n    // simple priority queue / min-heap or sorted array for moderate k\n    const pq = [];\n    function pushState(item) {\n        pq.push(item);\n        pq.sort((a, b) => a[0] - b[0]);\n    }\n\n    const dist = new Map();\n    for (let d = 0; d < 4; d++) {\n        pushState([grid[0][0], 0, 0, d, 0]);\n        dist.set(`0,0,${d},0`, grid[0][0]);\n    }\n\n    while (pq.length > 0) {\n        const [cost, r, c, d, turns] = pq.shift();\n        if (r === m - 1 && c === n - 1) return cost;\n\n        const stateKey = `${r},${c},${d},${turns}`;\n        if (cost > (dist.get(stateKey) ?? Infinity)) continue;\n\n        for (let nd = 0; nd < 4; nd++) {\n            const nr = r + dirs[nd][0];\n            const nc = c + dirs[nd][1];\n            if (nr >= 0 && nr < m && nc >= 0 && nc < n) {\n                const nturns = turns + (nd !== d ? 1 : 0);\n                if (nturns <= k) {\n                    const ncost = cost + grid[nr][nc];\n                    const nextKey = `${nr},${nc},${nd},${nturns}`;\n                    if (ncost < (dist.get(nextKey) ?? Infinity)) {\n                        dist.set(nextKey, ncost);\n                        pushState([ncost, nr, nc, nd, nturns]);\n                    }\n                }\n            }\n        }\n    }\n    return -1;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

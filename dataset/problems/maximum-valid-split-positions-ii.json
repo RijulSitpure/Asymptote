@@ -1,0 +1,78 @@
+{
+  "slug": "maximum-valid-split-positions-ii",
+  "number": 4037,
+  "category": "Algorithms",
+  "patterns": [
+    "prefix-sum-hashmap"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "In this variation, changing at most one element or removing one element affects prefix and suffix balance across multiple indices."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Track the frequency of differences between prefix and suffix sums along the original array."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "For each candidate index, determine how replacing that element by a target value shifts subsequent balances."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef waysToPartition(nums: list[int], k: int) -> int:\n    n = len(nums)\n    pref = [0] * n\n    pref[0] = nums[0]\n    for i in range(1, n):\n        pref[i] = pref[i - 1] + nums[i]\n    total = pref[-1]\n\n    # diff[i] = pref[i] - (total - pref[i]) = 2*pref[i] - total\n    # splits where diff == 0 without change\n    right_diff = {}\n    for i in range(n - 1):\n        d = 2 * pref[i] - total\n        right_diff[d] = right_diff.get(d, 0) + 1\n\n    ans = right_diff.get(0, 0)\n    left_diff = {}\n\n    for i in range(n):\n        diff = k - nums[i]\n        curr = left_diff.get(diff, 0) + right_diff.get(-diff, 0)\n        ans = max(ans, curr)\n        if i < n - 1:\n            d = 2 * pref[i] - total\n            right_diff[d] -= 1\n            left_diff[d] = left_diff.get(d, 0) + 1\n\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(n)",
+    "space": "O(n)",
+    "notes": "Two passes with balance difference counts identify optimal single substitution.",
+    "whyNaiveFails": "Testing all n replacements and recalculating splits requires quadratic time.",
+    "spaceTimeTradeoff": "Frequency tables store prefix and suffix balance occurrences.",
+    "interviewerExpectation": "Applies difference mapping to evaluate mutations in constant time per index."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def waysToPartition(nums: list[int], k: int) -> int:\n    n = len(nums)\n    pref = [0] * n\n    pref[0] = nums[0]\n    for i in range(1, n):\n        pref[i] = pref[i - 1] + nums[i]\n    total = pref[-1]\n\n    # diff[i] = pref[i] - (total - pref[i]) = 2*pref[i] - total\n    # splits where diff == 0 without change\n    right_diff = {}\n    for i in range(n - 1):\n        d = 2 * pref[i] - total\n        right_diff[d] = right_diff.get(d, 0) + 1\n\n    ans = right_diff.get(0, 0)\n    left_diff = {}\n\n    for i in range(n):\n        diff = k - nums[i]\n        curr = left_diff.get(diff, 0) + right_diff.get(-diff, 0)\n        ans = max(ans, curr)\n        if i < n - 1:\n            d = 2 * pref[i] - total\n            right_diff[d] -= 1\n            left_diff[d] = left_diff.get(d, 0) + 1\n\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int waysToPartition(std::vector<int>& nums, int k) {\n        int n = nums.size();\n        std::vector<long long> pref(n);\n        pref[0] = nums[0];\n        for (int i = 1; i < n; ++i) pref[i] = pref[i - 1] + nums[i];\n        long long total = pref[n - 1];\n\n        std::unordered_map<long long, int> right_diff, left_diff;\n        for (int i = 0; i < n - 1; ++i) {\n            long long d = 2 * pref[i] - total;\n            right_diff[d]++;\n        }\n\n        int ans = right_diff[0];\n        for (int i = 0; i < n; ++i) {\n            long long delta = k - nums[i];\n            int curr = left_diff[delta] + right_diff[-delta];\n            ans = std::max(ans, curr);\n            if (i < n - 1) {\n                long long d = 2 * pref[i] - total;\n                right_diff[d]--;\n                left_diff[d]++;\n            }\n        }\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int waysToPartition(int[] nums, int k) {\n        int n = nums.length;\n        long[] pref = new long[n];\n        pref[0] = nums[0];\n        for (int i = 1; i < n; i++) pref[i] = pref[i - 1] + nums[i];\n        long total = pref[n - 1];\n\n        Map<Long, Integer> rightDiff = new HashMap<>();\n        Map<Long, Integer> leftDiff = new HashMap<>();\n\n        for (int i = 0; i < n - 1; i++) {\n            long d = 2 * pref[i] - total;\n            rightDiff.put(d, rightDiff.getOrDefault(d, 0) + 1);\n        }\n\n        int ans = rightDiff.getOrDefault(0L, 0);\n\n        for (int i = 0; i < n; i++) {\n            long delta = (long) k - nums[i];\n            int curr = leftDiff.getOrDefault(delta, 0) + rightDiff.getOrDefault(-delta, 0);\n            ans = Math.max(ans, curr);\n            if (i < n - 1) {\n                long d = 2 * pref[i] - total;\n                rightDiff.put(d, rightDiff.get(d) - 1);\n                leftDiff.put(d, leftDiff.getOrDefault(d, 0) + 1);\n            }\n        }\n        return ans;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function waysToPartition(nums, k) {\n    const n = nums.length;\n    const pref = new Array(n);\n    pref[0] = nums[0];\n    for (let i = 1; i < n; i++) pref[i] = pref[i - 1] + nums[i];\n    const total = pref[n - 1];\n\n    const rightDiff = new Map();\n    const leftDiff = new Map();\n\n    for (let i = 0; i < n - 1; i++) {\n        const d = 2 * pref[i] - total;\n        rightDiff.set(d, (rightDiff.get(d) || 0) + 1);\n    }\n\n    let ans = rightDiff.get(0) || 0;\n\n    for (let i = 0; i < n; i++) {\n        const delta = k - nums[i];\n        const curr = (leftDiff.get(delta) || 0) + (rightDiff.get(-delta) || 0);\n        ans = Math.max(ans, curr);\n        if (i < n - 1) {\n            const d = 2 * pref[i] - total;\n            rightDiff.set(d, rightDiff.get(d) - 1);\n            leftDiff.set(d, (leftDiff.get(d) || 0) + 1);\n        }\n    }\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

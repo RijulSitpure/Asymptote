@@ -1,0 +1,78 @@
+{
+  "slug": "longest-subarray-with-at-most-k-distinct-prime-factors",
+  "number": 4032,
+  "category": "Algorithms",
+  "patterns": [
+    "two-pointers-window-dynamic"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Precompute prime factors for each number in the array."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Expand the right window boundary while tracking distinct prime factor frequencies in the window."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Shrink the left window boundary whenever the count of distinct active prime factors exceeds k."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import Counter\n\ndef longestSubarrayAtMostKPrimes(nums: list[int], k: int) -> int:\n    def get_prime_factors(x: int) -> set[int]:\n        primes = set()\n        d = 2\n        while d * d <= x:\n            if x % d == 0:\n                primes.add(d)\n                while x % d == 0:\n                    x //= d\n            d += 1\n        if x > 1:\n            primes.add(x)\n        return primes\n\n    factors = [get_prime_factors(x) for x in nums]\n    prime_counts = Counter()\n    left = 0\n    max_len = 0\n    for right in range(len(nums)):\n        for p in factors[right]:\n            prime_counts[p] += 1\n        while len(prime_counts) > k:\n            for p in factors[left]:\n                prime_counts[p] -= 1\n                if prime_counts[p] == 0:\n                    del prime_counts[p]\n            left += 1\n        max_len = max(max_len, right - left + 1)\n    return max_len\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(n * sqrt(max_val))",
+    "space": "O(n)",
+    "notes": "Dynamic sliding window with running prime factor frequency map.",
+    "whyNaiveFails": "Examining all subarrays from scratch takes O(n^2 * sqrt(V)).",
+    "spaceTimeTradeoff": "Frequency map tracks counts of distinct active prime factors.",
+    "interviewerExpectation": "Combines prime factorization with dynamic two-pointer sliding window."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import Counter\n\ndef longestSubarrayAtMostKPrimes(nums: list[int], k: int) -> int:\n    def get_prime_factors(x: int) -> set[int]:\n        primes = set()\n        d = 2\n        while d * d <= x:\n            if x % d == 0:\n                primes.add(d)\n                while x % d == 0:\n                    x //= d\n            d += 1\n        if x > 1:\n            primes.add(x)\n        return primes\n\n    factors = [get_prime_factors(x) for x in nums]\n    prime_counts = Counter()\n    left = 0\n    max_len = 0\n    for right in range(len(nums)):\n        for p in factors[right]:\n            prime_counts[p] += 1\n        while len(prime_counts) > k:\n            for p in factors[left]:\n                prime_counts[p] -= 1\n                if prime_counts[p] == 0:\n                    del prime_counts[p]\n            left += 1\n        max_len = max(max_len, right - left + 1)\n    return max_len",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <unordered_map>\n#include <unordered_set>\n#include <algorithm>\n\nclass Solution {\nprivate:\n    std::vector<int> getPrimes(int x) {\n        std::vector<int> res;\n        for (int d = 2; d * d <= x; ++d) {\n            if (x % d == 0) {\n                res.push_back(d);\n                while (x % d == 0) x /= d;\n            }\n        }\n        if (x > 1) res.push_back(x);\n        return res;\n    }\npublic:\n    int longestSubarrayAtMostKPrimes(std::vector<int>& nums, int k) {\n        int n = nums.size();\n        std::vector<std::vector<int>> factors(n);\n        for (int i = 0; i < n; ++i) factors[i] = getPrimes(nums[i]);\n\n        std::unordered_map<int, int> counts;\n        int left = 0, maxLen = 0;\n        for (int right = 0; right < n; ++right) {\n            for (int p : factors[right]) counts[p]++;\n            while ((int)counts.size() > k) {\n                for (int p : factors[left]) {\n                    counts[p]--;\n                    if (counts[p] == 0) counts.erase(p);\n                }\n                left++;\n            }\n            maxLen = std::max(maxLen, right - left + 1);\n        }\n        return maxLen;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private List<Integer> getPrimes(int x) {\n        List<Integer> res = new ArrayList<>();\n        for (int d = 2; d * d <= x; d++) {\n            if (x % d == 0) {\n                res.add(d);\n                while (x % d == 0) x /= d;\n            }\n        }\n        if (x > 1) res.add(x);\n        return res;\n    }\n\n    public int longestSubarrayAtMostKPrimes(int[] nums, int k) {\n        int n = nums.length;\n        List<List<Integer>> factors = new ArrayList<>();\n        for (int x : nums) factors.add(getPrimes(x));\n\n        Map<Integer, Integer> counts = new HashMap<>();\n        int left = 0, maxLen = 0;\n        for (int right = 0; right < n; right++) {\n            for (int p : factors.get(right)) {\n                counts.put(p, counts.getOrDefault(p, 0) + 1);\n            }\n            while (counts.size() > k) {\n                for (int p : factors.get(left)) {\n                    int c = counts.get(p) - 1;\n                    if (c == 0) counts.remove(p);\n                    else counts.put(p, c);\n                }\n                left++;\n            }\n            maxLen = Math.max(maxLen, right - left + 1);\n        }\n        return maxLen;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function getPrimes(x) {\n    const res = [];\n    for (let d = 2; d * d <= x; d++) {\n        if (x % d === 0) {\n            res.push(d);\n            while (x % d === 0) x = Math.floor(x / d);\n        }\n    }\n    if (x > 1) res.push(x);\n    return res;\n}\n\nfunction longestSubarrayAtMostKPrimes(nums, k) {\n    const n = nums.length;\n    const factors = nums.map(getPrimes);\n    const counts = new Map();\n    let left = 0, maxLen = 0;\n    for (let right = 0; right < n; right++) {\n        for (const p of factors[right]) {\n            counts.set(p, (counts.get(p) || 0) + 1);\n        }\n        while (counts.size > k) {\n            for (const p of factors[left]) {\n                const c = counts.get(p) - 1;\n                if (c === 0) counts.delete(p);\n                else counts.set(p, c);\n            }\n            left++;\n        }\n        maxLen = Math.max(maxLen, right - left + 1);\n    }\n    return maxLen;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

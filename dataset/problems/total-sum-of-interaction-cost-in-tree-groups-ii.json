@@ -1,0 +1,79 @@
+{
+  "slug": "total-sum-of-interaction-cost-in-tree-groups-ii",
+  "number": 4018,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "In a tree, each edge contributes to group pairwise distance by the product of group nodes on its two sides."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "For each tree edge, count group members in the subtree versus remaining group members."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Sum products of subgroup counts across all tree edges for each group."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import Counter\n\ndef totalInteractionCost(n: int, edges: list[list[int]], groups: list[int]) -> int:\n    adj = [[] for _ in range(n)]\n    for u, v in edges:\n        adj[u].append(v)\n        adj[v].append(u)\n    \n    total_group_counts = Counter(groups)\n    num_groups = max(groups) + 1 if groups else 0\n    ans = 0\n\n    def dfs(u: int, p: int) -> list[int]:\n        nonlocal ans\n        sub_counts = [0] * num_groups\n        sub_counts[groups[u]] += 1\n        for v in adj[u]:\n            if v != p:\n                child_counts = dfs(v, u)\n                for g in range(num_groups):\n                    c = child_counts[g]\n                    rem = total_group_counts[g] - c\n                    ans += c * rem\n                    sub_counts[g] += c\n        return sub_counts\n\n    dfs(0, -1)\n    return ans\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "g"
+    ],
+    "time": "O(n * g)",
+    "space": "O(n * g)",
+    "notes": "Post-order subtree group counting determines edge contributions.",
+    "whyNaiveFails": "All-pairs shortest path pairwise summation scales as O(n^2).",
+    "spaceTimeTradeoff": "Subtree group counters require O(n * g) space.",
+    "interviewerExpectation": "Calculates tree distance sums by evaluating edge contribution counts."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import Counter\n\ndef totalInteractionCost(n: int, edges: list[list[int]], groups: list[int]) -> int:\n    adj = [[] for _ in range(n)]\n    for u, v in edges:\n        adj[u].append(v)\n        adj[v].append(u)\n    \n    total_group_counts = Counter(groups)\n    num_groups = max(groups) + 1 if groups else 0\n    ans = 0\n\n    def dfs(u: int, p: int) -> list[int]:\n        nonlocal ans\n        sub_counts = [0] * num_groups\n        sub_counts[groups[u]] += 1\n        for v in adj[u]:\n            if v != p:\n                child_counts = dfs(v, u)\n                for g in range(num_groups):\n                    c = child_counts[g]\n                    rem = total_group_counts[g] - c\n                    ans += c * rem\n                    sub_counts[g] += c\n        return sub_counts\n\n    dfs(0, -1)\n    return ans",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    long long totalInteractionCost(int n, std::vector<std::vector<int>>& edges, std::vector<int>& groups) {\n        std::vector<std::vector<int>> adj(n);\n        for (auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        int numGroups = 0;\n        for (int g : groups) numGroups = std::max(numGroups, g + 1);\n        std::vector<int> totalGroup(numGroups, 0);\n        for (int g : groups) totalGroup[g]++;\n\n        long long ans = 0;\n        auto dfs = [&](auto self, int u, int p) -> std::vector<int> {\n            std::vector<int> sub(numGroups, 0);\n            sub[groups[u]]++;\n            for (int v : adj[u]) {\n                if (v != p) {\n                    auto child = self(self, v, u);\n                    for (int g = 0; g < numGroups; ++g) {\n                        int c = child[g];\n                        int rem = totalGroup[g] - c;\n                        ans += (long long)c * rem;\n                        sub[g] += c;\n                    }\n                }\n            }\n            return sub;\n        };\n        dfs(dfs, 0, -1);\n        return ans;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    private long ans = 0;\n\n    public long totalInteractionCost(int n, int[][] edges, int[] groups) {\n        ans = 0;\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        int numGroups = 0;\n        for (int g : groups) numGroups = Math.max(numGroups, g + 1);\n        int[] totalGroup = new int[numGroups];\n        for (int g : groups) totalGroup[g]++;\n\n        dfs(0, -1, adj, groups, numGroups, totalGroup);\n        return ans;\n    }\n\n    private int[] dfs(int u, int p, List<List<Integer>> adj, int[] groups, int numGroups, int[] totalGroup) {\n        int[] sub = new int[numGroups];\n        sub[groups[u]]++;\n        for (int v : adj.get(u)) {\n            if (v != p) {\n                int[] child = dfs(v, u, adj, groups, numGroups, totalGroup);\n                for (int g = 0; g < numGroups; g++) {\n                    int c = child[g];\n                    int rem = totalGroup[g] - c;\n                    ans += (long)c * rem;\n                    sub[g] += c;\n                }\n            }\n        }\n        return sub;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function totalInteractionCost(n, edges, groups) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const numGroups = Math.max(...groups) + 1;\n    const totalGroup = new Array(numGroups).fill(0);\n    for (const g of groups) totalGroup[g]++;\n\n    let ans = 0;\n    function dfs(u, p) {\n        const sub = new Array(numGroups).fill(0);\n        sub[groups[u]]++;\n        for (const v of adj[u]) {\n            if (v !== p) {\n                const child = dfs(v, u);\n                for (let g = 0; g < numGroups; g++) {\n                    const c = child[g];\n                    const rem = totalGroup[g] - c;\n                    ans += c * rem;\n                    sub[g] += c;\n                }\n            }\n        }\n        return sub;\n    }\n    dfs(0, -1);\n    return ans;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

@@ -1,0 +1,78 @@
+{
+  "slug": "elevator-requests-iv",
+  "number": 4029,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-bitmask"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Use bitmask state to track subset of passenger requests already served."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "For each subset mask, maintain minimal trips and current elevator load."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Add an unserved passenger to the current ride if weight allows, or start a new elevator trip."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef minElevatorTrips(weights: list[int], max_weight: int) -> int:\n    n = len(weights)\n    # dp[mask] = (rides, current_weight)\n    dp = [(n + 1, 0)] * (1 << n)\n    dp[0] = (1, 0)\n    for mask in range(1 << n):\n        rides, cur_w = dp[mask]\n        for i in range(n):\n            if not (mask & (1 << i)):\n                nxt_mask = mask | (1 << i)\n                w = weights[i]\n                if cur_w + w <= max_weight:\n                    cand = (rides, cur_w + w)\n                else:\n                    cand = (rides + 1, w)\n                if cand < dp[nxt_mask]:\n                    dp[nxt_mask] = cand\n    return dp[(1 << n) - 1][0]\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n"
+    ],
+    "time": "O(n * 2^n)",
+    "space": "O(2^n)",
+    "notes": "Bitmask dynamic programming evaluates optimal passenger bin packing.",
+    "whyNaiveFails": "General bin packing is NP-hard; bitmask DP is exact and minimal for n <= 18.",
+    "spaceTimeTradeoff": "Array of size 2^n stores (trips, last_weight) tuples.",
+    "interviewerExpectation": "Models subset partitioning into minimal capacity-constrained trips using bitmask DP."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def minElevatorTrips(weights: list[int], max_weight: int) -> int:\n    n = len(weights)\n    # dp[mask] = (rides, current_weight)\n    dp = [(n + 1, 0)] * (1 << n)\n    dp[0] = (1, 0)\n    for mask in range(1 << n):\n        rides, cur_w = dp[mask]\n        for i in range(n):\n            if not (mask & (1 << i)):\n                nxt_mask = mask | (1 << i)\n                w = weights[i]\n                if cur_w + w <= max_weight:\n                    cand = (rides, cur_w + w)\n                else:\n                    cand = (rides + 1, w)\n                if cand < dp[nxt_mask]:\n                    dp[nxt_mask] = cand\n    return dp[(1 << n) - 1][0]",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minElevatorTrips(std::vector<int>& weights, int maxWeight) {\n        int n = weights.size();\n        std::vector<std::pair<int, int>> dp(1 << n, {n + 1, 0});\n        dp[0] = {1, 0};\n        for (int mask = 0; mask < (1 << n); ++mask) {\n            auto [rides, curW] = dp[mask];\n            for (int i = 0; i < n; ++i) {\n                if (!(mask & (1 << i))) {\n                    int nxtMask = mask | (1 << i);\n                    int w = weights[i];\n                    std::pair<int, int> cand = (curW + w <= maxWeight) ? std::make_pair(rides, curW + w) : std::make_pair(rides + 1, w);\n                    if (cand < dp[nxtMask]) dp[nxtMask] = cand;\n                }\n            }\n        }\n        return dp[(1 << n) - 1].first;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minElevatorTrips(int[] weights, int maxWeight) {\n        int n = weights.length;\n        int[][] dp = new int[1 << n][2];\n        for (int[] row : dp) Arrays.fill(row, n + 1);\n        dp[0][0] = 1;\n        dp[0][1] = 0;\n        for (int mask = 0; mask < (1 << n); mask++) {\n            int rides = dp[mask][0], curW = dp[mask][1];\n            for (int i = 0; i < n; i++) {\n                if ((mask & (1 << i)) == 0) {\n                    int nxtMask = mask | (1 << i);\n                    int w = weights[i];\n                    int nextRides = (curW + w <= maxWeight) ? rides : rides + 1;\n                    int nextW = (curW + w <= maxWeight) ? curW + w : w;\n                    if (nextRides < dp[nxtMask][0] || (nextRides == dp[nxtMask][0] && nextW < dp[nxtMask][1])) {\n                        dp[nxtMask][0] = nextRides;\n                        dp[nxtMask][1] = nextW;\n                    }\n                }\n            }\n        }\n        return dp[(1 << n) - 1][0];\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minElevatorTrips(weights, maxWeight) {\n    const n = weights.length;\n    const dpRides = new Array(1 << n).fill(n + 1);\n    const dpWeight = new Array(1 << n).fill(0);\n    dpRides[0] = 1;\n    dpWeight[0] = 0;\n    for (let mask = 0; mask < (1 << n); mask++) {\n        const rides = dpRides[mask], curW = dpWeight[mask];\n        for (let i = 0; i < n; i++) {\n            if (!(mask & (1 << i))) {\n                const nxtMask = mask | (1 << i);\n                const w = weights[i];\n                const nextRides = (curW + w <= maxWeight) ? rides : rides + 1;\n                const nextW = (curW + w <= maxWeight) ? curW + w : w;\n                if (nextRides < dpRides[nxtMask] || (nextRides === dpRides[nxtMask] && nextW < dpWeight[nxtMask])) {\n                    dpRides[nxtMask] = nextRides;\n                    dpWeight[nxtMask] = nextW;\n                }\n            }\n        }\n    }\n    return dpRides[(1 << n) - 1];\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
