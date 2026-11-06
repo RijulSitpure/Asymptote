@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import Ajv2020 from 'ajv/dist/2020.js';
 import '../../shared/languages.js';
 
@@ -188,6 +189,32 @@ function runValidation(exitOnFailure = false) {
         const testDir = path.join(datasetDir, 'tests', problem.slug);
         if (!fs.existsSync(testDir)) {
           errors.push(`[Review Tier] ${file}: status is 'tested' but test directory dataset/tests/${problem.slug} does not exist`);
+        } else if (problem.category === 'Database') {
+          const reqFiles = ['meta.json', 'schema.sql', 'reference.sql', 'generator.py'];
+          for (const req of reqFiles) {
+            if (!fs.existsSync(path.join(testDir, req))) {
+              errors.push(`[Database Test Harness] ${file}: missing required test file "${req}" in dataset/tests/${problem.slug}`);
+            }
+          }
+          const genPath = path.join(testDir, 'generator.py');
+          if (fs.existsSync(genPath)) {
+            const genRun = spawnSync('python3', [genPath], { encoding: 'utf8', timeout: 5000 });
+            if (genRun.status !== 0) {
+              errors.push(`[Database Test Harness] ${file}: generator.py exited with code ${genRun.status}: ${genRun.stderr || ''}`);
+            } else {
+              const out = (genRun.stdout || '').trim();
+              let isValid = false;
+              try {
+                const parsed = JSON.parse(out);
+                if (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) isValid = true;
+              } catch {
+                if (out.includes('INSERT INTO')) isValid = true;
+              }
+              if (!isValid) {
+                errors.push(`[Database Test Harness] ${file}: generator.py output must be valid JSON test cases or contain INSERT INTO statements`);
+              }
+            }
+          }
         }
       } else if (problem.review.status === 'reviewed') {
         if (!problem.review.acceptedOnLeetCode) {

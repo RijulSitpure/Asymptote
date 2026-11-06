@@ -386,13 +386,24 @@ async function main() {
               throw new Error(`Failed to generate test cases: ${genRun.stderr || ''}`);
             }
             let testCases;
+            const stdoutTrimmed = (genRun.stdout || '').trim();
             try {
-              testCases = JSON.parse(genRun.stdout);
+              testCases = JSON.parse(stdoutTrimmed);
             } catch {
-              if (genRun.stdout && genRun.stdout.includes('INSERT INTO')) {
-                testCases = [{ name: 'case_1', inserts: genRun.stdout.trim() }];
-              } else {
-                throw new Error(`Failed to parse test cases as JSON: ${genRun.stdout?.slice(0, 100)}`);
+              const jsonMatch = stdoutTrimmed.match(/\[\s*\{[\s\S]*\}\s*\]/) || stdoutTrimmed.match(/\{\s*"[\s\S]*"\s*:\s*[\s\S]*\}/);
+              if (jsonMatch) {
+                try {
+                  testCases = JSON.parse(jsonMatch[0]);
+                } catch {
+                  // Fall through
+                }
+              }
+              if (!testCases) {
+                if (stdoutTrimmed.includes('INSERT INTO')) {
+                  testCases = [{ name: 'case_1', inserts: stdoutTrimmed }];
+                } else {
+                  throw new Error(`Failed to parse test cases as JSON for #${prob.number} ${slug}: ${stdoutTrimmed.slice(0, 100)}`);
+                }
               }
             }
             testCases = (Array.isArray(testCases) ? testCases : [testCases]).map((tc, idx) => {
@@ -554,7 +565,23 @@ async function main() {
             if (genRun.status !== 0) {
               throw new Error(`Failed to generate shell test cases: ${genRun.stderr || ''}`);
             }
-            const testCases = JSON.parse(genRun.stdout);
+            let testCases;
+            const stdoutTrimmed = (genRun.stdout || '').trim();
+            try {
+              testCases = JSON.parse(stdoutTrimmed);
+            } catch {
+              const jsonMatch = stdoutTrimmed.match(/\[\s*\{[\s\S]*\}\s*\]/) || stdoutTrimmed.match(/\{\s*"[\s\S]*"\s*:\s*[\s\S]*\}/);
+              if (jsonMatch) {
+                try {
+                  testCases = JSON.parse(jsonMatch[0]);
+                } catch {
+                  // Fall through
+                }
+              }
+              if (!testCases) {
+                throw new Error(`Failed to parse shell test cases as JSON for #${prob.number} ${slug}: ${stdoutTrimmed.slice(0, 100)}`);
+              }
+            }
 
             for (const tc of testCases) {
               const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'asymptote-shell-'));
