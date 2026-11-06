@@ -420,12 +420,12 @@ describe('Shared Serverless Data Engine (Vitest Suite)', () => {
 
   // 10. Full LeetCode Problem Catalog Index Resolution
   it('10. Resolves uncurated problem metadata, category, supported languages, and suggested pattern from catalog.json', async () => {
-    // Problem #4000 (Largest Integer With Given Digit Sum) - uncurated, in catalog
-    const uncurated = await engine.getProblemHints(4000);
+    // Problem #99998 (Future Mock Uncurated Easy) - uncurated, in catalog
+    const uncurated = await engine.getProblemHints(99998);
     expect(uncurated.problem).not.toBeNull();
-    expect(uncurated.problem.number).toBe(4000);
-    expect(uncurated.problem.slug).toBe('largest-integer-with-given-digit-sum');
-    expect(uncurated.problem.title).toBe('Largest Integer With Given Digit Sum');
+    expect(uncurated.problem.number).toBe(99998);
+    expect(uncurated.problem.slug).toBe('future-mock-uncurated-easy');
+    expect(uncurated.problem.title).toBe('Future Mock Uncurated Easy');
     expect(uncurated.problem.difficulty).toBe('Easy');
     expect(uncurated.problem.category).toBe('Algorithms');
     expect(uncurated.problem.verified).toBe(0);

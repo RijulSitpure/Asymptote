@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-number-of-string-groups-through-transformations",
+  "number": 3999,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-union-find-dsu"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Two anagram strings are similar if they differ in at most two character positions."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Model strings as graph vertices and place edges between similar pairs."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Count connected components across the resulting equivalence graph."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef numSimilarGroups(strs: list[str]) -> int:\n    def is_similar(a: str, b: str) -> bool:\n        diff = 0\n        for ca, cb in zip(a, b):\n            if ca != cb:\n                diff += 1\n                if diff > 2:\n                    return False\n        return diff == 0 or diff == 2\n\n    n = len(strs)\n    parent = list(range(n))\n\n    def find(i: int) -> int:\n        if parent[i] == i:\n            return i\n        parent[i] = find(parent[i])\n        return parent[i]\n\n    def union(i: int, j: int) -> None:\n        pi, pj = find(i), find(j)\n        if pi != pj:\n            parent[pi] = pj\n\n    for i in range(n):\n        for j in range(i + 1, n):\n            if is_similar(strs[i], strs[j]):\n                union(i, j)\n\n    return len(set(find(i) for i in range(n)))\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "l"
+    ],
+    "time": "O(n^2 * l)",
+    "space": "O(n)",
+    "notes": "Pairwise similarity checks joined with disjoint set union.",
+    "whyNaiveFails": "Without disjoint set union component tracking becomes redundant and slow.",
+    "spaceTimeTradeoff": "Parent array tracks component roots for n elements.",
+    "interviewerExpectation": "Implements disjoint set union and counts distinct root components."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def numSimilarGroups(strs: list[str]) -> int:\n    def is_similar(a: str, b: str) -> bool:\n        diff = 0\n        for ca, cb in zip(a, b):\n            if ca != cb:\n                diff += 1\n                if diff > 2:\n                    return False\n        return diff == 0 or diff == 2\n\n    n = len(strs)\n    parent = list(range(n))\n\n    def find(i: int) -> int:\n        if parent[i] == i:\n            return i\n        parent[i] = find(parent[i])\n        return parent[i]\n\n    def union(i: int, j: int) -> None:\n        pi, pj = find(i), find(j)\n        if pi != pj:\n            parent[pi] = pj\n\n    for i in range(n):\n        for j in range(i + 1, n):\n            if is_similar(strs[i], strs[j]):\n                union(i, j)\n\n    return len(set(find(i) for i in range(n)))",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <string>\n#include <unordered_set>\n#include <numeric>\n\nclass Solution {\npublic:\n    int numSimilarGroups(std::vector<std::string>& strs) {\n        int n = strs.size();\n        std::vector<int> parent(n);\n        std::iota(parent.begin(), parent.end(), 0);\n\n        auto find = [&](auto self, int i) -> int {\n            return parent[i] == i ? i : parent[i] = self(self, parent[i]);\n        };\n\n        auto isSimilar = [&](const std::string& a, const std::string& b) {\n            int diff = 0;\n            for (size_t i = 0; i < a.size(); ++i) {\n                if (a[i] != b[i]) {\n                    diff++;\n                    if (diff > 2) return false;\n                }\n            }\n            return diff == 0 || diff == 2;\n        };\n\n        for (int i = 0; i < n; ++i) {\n            for (int j = i + 1; j < n; ++j) {\n                if (isSimilar(strs[i], strs[j])) {\n                    int pi = find(find, i);\n                    int pj = find(find, j);\n                    if (pi != pj) parent[pi] = pj;\n                }\n            }\n        }\n\n        std::unordered_set<int> roots;\n        for (int i = 0; i < n; ++i) roots.insert(find(find, i));\n        return roots.size();\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int numSimilarGroups(String[] strs) {\n        int n = strs.length;\n        int[] parent = new int[n];\n        for (int i = 0; i < n; i++) parent[i] = i;\n\n        for (int i = 0; i < n; i++) {\n            for (int j = i + 1; j < n; j++) {\n                if (isSimilar(strs[i], strs[j])) {\n                    int pi = find(i, parent);\n                    int pj = find(j, parent);\n                    if (pi != pj) parent[pi] = pj;\n                }\n            }\n        }\n        Set<Integer> roots = new HashSet<>();\n        for (int i = 0; i < n; i++) roots.add(find(i, parent));\n        return roots.size();\n    }\n\n    private int find(int i, int[] parent) {\n        return parent[i] == i ? i : (parent[i] = find(parent[i], parent));\n    }\n\n    private boolean isSimilar(String a, String b) {\n        int diff = 0;\n        for (int i = 0; i < a.length(); i++) {\n            if (a.charAt(i) != b.charAt(i)) {\n                diff++;\n                if (diff > 2) return false;\n            }\n        }\n        return diff == 0 || diff == 2;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function numSimilarGroups(strs) {\n    const n = strs.length;\n    const parent = Array.from({ length: n }, (_, i) => i);\n    function find(i) {\n        return parent[i] === i ? i : (parent[i] = find(parent[i]));\n    }\n    function isSimilar(a, b) {\n        let diff = 0;\n        for (let i = 0; i < a.length; i++) {\n            if (a[i] !== b[i]) {\n                diff++;\n                if (diff > 2) return false;\n            }\n        }\n        return diff === 0 || diff === 2;\n    }\n    for (let i = 0; i < n; i++) {\n        for (let j = i + 1; j < n; j++) {\n            if (isSimilar(strs[i], strs[j])) {\n                const pi = find(i);\n                const pj = find(j);\n                if (pi !== pj) parent[pi] = pj;\n            }\n        }\n    }\n    const roots = new Set();\n    for (let i = 0; i < n; i++) roots.add(find(i));\n    return roots.size;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

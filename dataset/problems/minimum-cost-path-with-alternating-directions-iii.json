@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-cost-path-with-alternating-directions-iii",
+  "number": 4003,
+  "category": "Algorithms",
+  "patterns": [
+    "graph-bfs-shortest-path"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Maintain distances for arriving at each node via a red edge versus a blue edge."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "From an edge of one color, only transition into adjacent edges of the opposite color."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Run breadth-first search initializing both red and blue arrivals from the source vertex."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\nfrom collections import deque\n\ndef minCostAlternatingPath(n: int, red_edges: list[list[int]], blue_edges: list[list[int]]) -> list[int]:\n    red_adj = [[] for _ in range(n)]\n    for u, v in red_edges:\n        red_adj[u].append(v)\n    blue_adj = [[] for _ in range(n)]\n    for u, v in blue_edges:\n        blue_adj[u].append(v)\n    \n    # dist[node][color]: 0 = red arrival, 1 = blue arrival\n    dist = [[-1, -1] for _ in range(n)]\n    dist[0][0] = 0\n    dist[0][1] = 0\n    # (u, color)\n    q = deque([(0, 0), (0, 1)])\n    while q:\n        u, color = q.popleft()\n        d = dist[u][color]\n        if color == 0:\n            # next must be blue (1)\n            for v in blue_adj[u]:\n                if dist[v][1] == -1:\n                    dist[v][1] = d + 1\n                    q.append((v, 1))\n        else:\n            # next must be red (0)\n            for v in red_adj[u]:\n                if dist[v][0] == -1:\n                    dist[v][0] = d + 1\n                    q.append((v, 0))\n    res = []\n    for i in range(n):\n        d0, d1 = dist[i]\n        if d0 == -1 and d1 == -1:\n            res.append(-1)\n        elif d0 == -1:\n            res.append(d1)\n        elif d1 == -1:\n            res.append(d0)\n        else:\n            res.append(min(d0, d1))\n    return res\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "v",
+      "e"
+    ],
+    "time": "O(v + e)",
+    "space": "O(v + e)",
+    "notes": "Breadth-first search traverses 2V states across red and blue edge transitions.",
+    "whyNaiveFails": "Ignoring incoming edge color causes invalid non-alternating path selections.",
+    "spaceTimeTradeoff": "Distance table tracks (node, color) pairs.",
+    "interviewerExpectation": "Models edge color alternation with state-expanded breadth-first search."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "from collections import deque\n\ndef minCostAlternatingPath(n: int, red_edges: list[list[int]], blue_edges: list[list[int]]) -> list[int]:\n    red_adj = [[] for _ in range(n)]\n    for u, v in red_edges:\n        red_adj[u].append(v)\n    blue_adj = [[] for _ in range(n)]\n    for u, v in blue_edges:\n        blue_adj[u].append(v)\n    \n    # dist[node][color]: 0 = red arrival, 1 = blue arrival\n    dist = [[-1, -1] for _ in range(n)]\n    dist[0][0] = 0\n    dist[0][1] = 0\n    # (u, color)\n    q = deque([(0, 0), (0, 1)])\n    while q:\n        u, color = q.popleft()\n        d = dist[u][color]\n        if color == 0:\n            # next must be blue (1)\n            for v in blue_adj[u]:\n                if dist[v][1] == -1:\n                    dist[v][1] = d + 1\n                    q.append((v, 1))\n        else:\n            # next must be red (0)\n            for v in red_adj[u]:\n                if dist[v][0] == -1:\n                    dist[v][0] = d + 1\n                    q.append((v, 0))\n    res = []\n    for i in range(n):\n        d0, d1 = dist[i]\n        if d0 == -1 and d1 == -1:\n            res.append(-1)\n        elif d0 == -1:\n            res.append(d1)\n        elif d1 == -1:\n            res.append(d0)\n        else:\n            res.append(min(d0, d1))\n    return res",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <queue>\n#include <algorithm>\n\nclass Solution {\npublic:\n    std::vector<int> minCostAlternatingPath(int n, std::vector<std::vector<int>>& redEdges, std::vector<std::vector<int>>& blueEdges) {\n        std::vector<std::vector<int>> redAdj(n), blueAdj(n);\n        for (auto& e : redEdges) redAdj[e[0]].push_back(e[1]);\n        for (auto& e : blueEdges) blueAdj[e[0]].push_back(e[1]);\n        std::vector<std::vector<int>> dist(n, std::vector<int>(2, -1));\n        dist[0][0] = 0; dist[0][1] = 0;\n        std::queue<std::pair<int, int>> q;\n        q.push({0, 0}); q.push({0, 1});\n        while (!q.empty()) {\n            auto [u, color] = q.front();\n            q.pop();\n            int d = dist[u][color];\n            if (color == 0) {\n                for (int v : blueAdj[u]) {\n                    if (dist[v][1] == -1) {\n                        dist[v][1] = d + 1;\n                        q.push({v, 1});\n                    }\n                }\n            } else {\n                for (int v : redAdj[u]) {\n                    if (dist[v][0] == -1) {\n                        dist[v][0] = d + 1;\n                        q.push({v, 0});\n                    }\n                }\n            }\n        }\n        std::vector<int> res(n);\n        for (int i = 0; i < n; ++i) {\n            int d0 = dist[i][0], d1 = dist[i][1];\n            if (d0 == -1 && d1 == -1) res[i] = -1;\n            else if (d0 == -1) res[i] = d1;\n            else if (d1 == -1) res[i] = d0;\n            else res[i] = std::min(d0, d1);\n        }\n        return res;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int[] minCostAlternatingPath(int n, int[][] redEdges, int[][] blueEdges) {\n        List<List<Integer>> redAdj = new ArrayList<>();\n        List<List<Integer>> blueAdj = new ArrayList<>();\n        for (int i = 0; i < n; i++) {\n            redAdj.add(new ArrayList<>());\n            blueAdj.add(new ArrayList<>());\n        }\n        for (int[] e : redEdges) redAdj.get(e[0]).add(e[1]);\n        for (int[] e : blueEdges) blueAdj.get(e[0]).add(e[1]);\n        int[][] dist = new int[n][2];\n        for (int[] row : dist) Arrays.fill(row, -1);\n        dist[0][0] = 0; dist[0][1] = 0;\n        Queue<int[]> q = new LinkedList<>();\n        q.offer(new int[]{0, 0});\n        q.offer(new int[]{0, 1});\n        while (!q.isEmpty()) {\n            int[] top = q.poll();\n            int u = top[0], color = top[1];\n            int d = dist[u][color];\n            if (color == 0) {\n                for (int v : blueAdj.get(u)) {\n                    if (dist[v][1] == -1) {\n                        dist[v][1] = d + 1;\n                        q.offer(new int[]{v, 1});\n                    }\n                }\n            } else {\n                for (int v : redAdj.get(u)) {\n                    if (dist[v][0] == -1) {\n                        dist[v][0] = d + 1;\n                        q.offer(new int[]{v, 0});\n                    }\n                }\n            }\n        }\n        int[] res = new int[n];\n        for (int i = 0; i < n; i++) {\n            int d0 = dist[i][0], d1 = dist[i][1];\n            if (d0 == -1 && d1 == -1) res[i] = -1;\n            else if (d0 == -1) res[i] = d1;\n            else if (d1 == -1) res[i] = d0;\n            else res[i] = Math.min(d0, d1);\n        }\n        return res;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minCostAlternatingPath(n, redEdges, blueEdges) {\n    const redAdj = Array.from({ length: n }, () => []);\n    const blueAdj = Array.from({ length: n }, () => []);\n    for (const [u, v] of redEdges) redAdj[u].push(v);\n    for (const [u, v] of blueEdges) blueAdj[u].push(v);\n    const dist = Array.from({ length: n }, () => [-1, -1]);\n    dist[0][0] = 0; dist[0][1] = 0;\n    const q = [[0, 0], [0, 1]];\n    let head = 0;\n    while (head < q.length) {\n        const [u, color] = q[head++];\n        const d = dist[u][color];\n        if (color === 0) {\n            for (const v of blueAdj[u]) {\n                if (dist[v][1] === -1) {\n                    dist[v][1] = d + 1;\n                    q.push([v, 1]);\n                }\n            }\n        } else {\n            for (const v of redAdj[u]) {\n                if (dist[v][0] === -1) {\n                    dist[v][0] = d + 1;\n                    q.push([v, 0]);\n                }\n            }\n        }\n    }\n    const res = [];\n    for (let i = 0; i < n; i++) {\n        const [d0, d1] = dist[i];\n        if (d0 === -1 && d1 === -1) res.push(-1);\n        else if (d0 === -1) res.push(d1);\n        else if (d1 === -1) res.push(d0);\n        else res.push(Math.min(d0, d1));\n    }\n    return res;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

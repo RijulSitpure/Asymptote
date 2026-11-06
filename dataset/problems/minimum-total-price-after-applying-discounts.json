@@ -1,0 +1,79 @@
+{
+  "slug": "minimum-total-price-after-applying-discounts",
+  "number": 4014,
+  "category": "Algorithms",
+  "patterns": [
+    "tree-dfs-subproblem"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Count how many times each node in the tree is traversed across all passenger trips."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Formulate independent set tree dynamic programming with two states: half price or full price."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "If a parent node is discounted, its child nodes must pay full price."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef minimumTotalPrice(n: int, edges: list[list[int]], price: list[int], trips: list[list[int]]) -> int:\n    adj = [[] for _ in range(n)]\n    for u, v in edges:\n        adj[u].append(v)\n        adj[v].append(u)\n    \n    count = [0] * n\n    for start, end in trips:\n        path = []\n        def find_path(u: int, p: int) -> bool:\n            path.append(u)\n            if u == end:\n                return True\n            for v in adj[u]:\n                if v != p and find_path(v, u):\n                    return True\n            path.pop()\n            return False\n        find_path(start, -1)\n        for node in path:\n            count[node] += 1\n\n    def dfs(u: int, p: int) -> tuple[int, int]:\n        no_discount = price[u] * count[u]\n        discount = (price[u] // 2) * count[u]\n        for v in adj[u]:\n            if v != p:\n                c_no, c_disc = dfs(v, u)\n                no_discount += min(c_no, c_disc)\n                discount += c_no\n        return no_discount, discount\n\n    c_no, c_disc = dfs(0, -1)\n    return min(c_no, c_disc)\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "n",
+      "t"
+    ],
+    "time": "O(n * t)",
+    "space": "O(n)",
+    "notes": "Trip path counting on tree followed by post-order tree dynamic programming.",
+    "whyNaiveFails": "Examining all 2^n discount subsets on tree exceeds time limits.",
+    "spaceTimeTradeoff": "DP table tracks (include, exclude) discount costs per subtree.",
+    "interviewerExpectation": "Combines trip path counting with tree independent set dynamic programming."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def minimumTotalPrice(n: int, edges: list[list[int]], price: list[int], trips: list[list[int]]) -> int:\n    adj = [[] for _ in range(n)]\n    for u, v in edges:\n        adj[u].append(v)\n        adj[v].append(u)\n    \n    count = [0] * n\n    for start, end in trips:\n        path = []\n        def find_path(u: int, p: int) -> bool:\n            path.append(u)\n            if u == end:\n                return True\n            for v in adj[u]:\n                if v != p and find_path(v, u):\n                    return True\n            path.pop()\n            return False\n        find_path(start, -1)\n        for node in path:\n            count[node] += 1\n\n    def dfs(u: int, p: int) -> tuple[int, int]:\n        no_discount = price[u] * count[u]\n        discount = (price[u] // 2) * count[u]\n        for v in adj[u]:\n            if v != p:\n                c_no, c_disc = dfs(v, u)\n                no_discount += min(c_no, c_disc)\n                discount += c_no\n        return no_discount, discount\n\n    c_no, c_disc = dfs(0, -1)\n    return min(c_no, c_disc)",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int minimumTotalPrice(int n, std::vector<std::vector<int>>& edges, std::vector<int>& price, std::vector<std::vector<int>>& trips) {\n        std::vector<std::vector<int>> adj(n);\n        for (auto& e : edges) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        std::vector<int> count(n, 0);\n        for (auto& t : trips) {\n            int start = t[0], end = t[1];\n            std::vector<int> path;\n            auto findPath = [&](auto self, int u, int p) -> bool {\n                path.push_back(u);\n                if (u == end) return true;\n                for (int v : adj[u]) {\n                    if (v != p && self(self, v, u)) return true;\n                }\n                path.pop_back();\n                return false;\n            };\n            findPath(findPath, start, -1);\n            for (int u : path) count[u]++;\n        }\n        auto dfs = [&](auto self, int u, int p) -> std::pair<int, int> {\n            int noDisc = price[u] * count[u];\n            int disc = (price[u] / 2) * count[u];\n            for (int v : adj[u]) {\n                if (v != p) {\n                    auto [cNo, cDisc] = self(self, v, u);\n                    noDisc += std::min(cNo, cDisc);\n                    disc += cNo;\n                }\n            }\n            return {noDisc, disc};\n        };\n        auto [cNo, cDisc] = dfs(dfs, 0, -1);\n        return std::min(cNo, cDisc);\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "import java.util.*;\n\nclass Solution {\n    public int minimumTotalPrice(int n, int[][] edges, int[] price, int[][] trips) {\n        List<List<Integer>> adj = new ArrayList<>();\n        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());\n        for (int[] e : edges) {\n            adj.get(e[0]).add(e[1]);\n            adj.get(e[1]).add(e[0]);\n        }\n        int[] count = new int[n];\n        for (int[] t : trips) {\n            List<Integer> path = new ArrayList<>();\n            findPath(t[0], -1, t[1], adj, path);\n            for (int u : path) count[u]++;\n        }\n        int[] res = dfs(0, -1, adj, price, count);\n        return Math.min(res[0], res[1]);\n    }\n\n    private boolean findPath(int u, int p, int end, List<List<Integer>> adj, List<Integer> path) {\n        path.add(u);\n        if (u == end) return true;\n        for (int v : adj.get(u)) {\n            if (v != p && findPath(v, u, end, adj, path)) return true;\n        }\n        path.remove(path.size() - 1);\n        return false;\n    }\n\n    private int[] dfs(int u, int p, List<List<Integer>> adj, int[] price, int[] count) {\n        int noDisc = price[u] * count[u];\n        int disc = (price[u] / 2) * count[u];\n        for (int v : adj.get(u)) {\n            if (v != p) {\n                int[] c = dfs(v, u, adj, price, count);\n                noDisc += Math.min(c[0], c[1]);\n                disc += c[0];\n            }\n        }\n        return new int[]{noDisc, disc};\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function minimumTotalPrice(n, edges, price, trips) {\n    const adj = Array.from({ length: n }, () => []);\n    for (const [u, v] of edges) {\n        adj[u].push(v);\n        adj[v].push(u);\n    }\n    const count = new Array(n).fill(0);\n    for (const [start, end] of trips) {\n        const path = [];\n        function findPath(u, p) {\n            path.push(u);\n            if (u === end) return true;\n            for (const v of adj[u]) {\n                if (v !== p && findPath(v, u)) return true;\n            }\n            path.pop();\n            return false;\n        }\n        findPath(start, -1);\n        for (const u of path) count[u]++;\n    }\n    function dfs(u, p) {\n        let noDisc = price[u] * count[u];\n        let disc = Math.floor(price[u] / 2) * count[u];\n        for (const v of adj[u]) {\n            if (v !== p) {\n                const [cNo, cDisc] = dfs(v, u);\n                noDisc += Math.min(cNo, cDisc);\n                disc += cNo;\n            }\n        }\n        return [noDisc, disc];\n    }\n    const [cNo, cDisc] = dfs(0, -1);\n    return Math.min(cNo, cDisc);\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}

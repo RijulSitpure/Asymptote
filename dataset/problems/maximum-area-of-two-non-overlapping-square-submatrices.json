@@ -1,0 +1,79 @@
+{
+  "slug": "maximum-area-of-two-non-overlapping-square-submatrices",
+  "number": 4016,
+  "category": "Algorithms",
+  "patterns": [
+    "dp-grid-2d"
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "title": "Key Insight and Observation",
+      "text": "Compute the maximum side length of an all-ones square ending at each cell."
+    },
+    {
+      "level": 2,
+      "title": "Algorithmic Strategy and State",
+      "text": "Split the matrix horizontally or vertically to separate the two disjoint squares."
+    },
+    {
+      "level": 3,
+      "title": "Optimal Boundary and Processing",
+      "text": "Compute prefix and suffix maximum square areas across rows and columns to find the optimal partition."
+    },
+    {
+      "level": 4,
+      "title": "Complete Implementation",
+      "text": "```python\ndef maxTwoNonOverlappingSquaresArea(grid: list[list[int]]) -> int:\n    m = len(grid)\n    n = len(grid[0])\n    dp = [[0] * n for _ in range(m)]\n    for r in range(m):\n        for c in range(n):\n            if grid[r][c] == 1:\n                if r == 0 or c == 0:\n                    dp[r][c] = 1\n                else:\n                    dp[r][c] = min(dp[r - 1][c], dp[r][c - 1], dp[r - 1][c - 1]) + 1\n\n    # Max square area ending at or before row r\n    row_pref = [0] * m\n    cur_mx = 0\n    for r in range(m):\n        for c in range(n):\n            cur_mx = max(cur_mx, dp[r][c] ** 2)\n        row_pref[r] = cur_mx\n\n    # Max square area strictly after row r\n    row_suff = [0] * m\n    cur_mx = 0\n    for r in range(m - 1, -1, -1):\n        for c in range(n):\n            # A square completely within [r, m-1] can end up to m-1 with size fitting within [r, m-1]\n            sz = dp[r][c]\n            # Clip size to not extend before r\n            for cand_r in range(r, m):\n                cand_sz = min(dp[cand_r][c], cand_r - r + 1)\n                cur_mx = max(cur_mx, cand_sz ** 2)\n        row_suff[r] = cur_mx\n\n    best = 0\n    for r in range(m - 1):\n        best = max(best, row_pref[r] + row_suff[r + 1])\n    return best\n```"
+    }
+  ],
+  "complexity": {
+    "kind": "big-o",
+    "variables": [
+      "m",
+      "n"
+    ],
+    "time": "O(m * n)",
+    "space": "O(m * n)",
+    "notes": "Prefix and suffix maximal square area envelopes across row and column splits.",
+    "whyNaiveFails": "Examining all pairs of square positions scales as O((m * n)^2).",
+    "spaceTimeTradeoff": "Stores 2D square sizes and 1D partition extrema.",
+    "interviewerExpectation": "Partitions matrix via prefix/suffix row and column cuts."
+  },
+  "solutions": [
+    {
+      "lang": "python3",
+      "approach": "Optimal",
+      "code": "def maxTwoNonOverlappingSquaresArea(grid: list[list[int]]) -> int:\n    m = len(grid)\n    n = len(grid[0])\n    dp = [[0] * n for _ in range(m)]\n    for r in range(m):\n        for c in range(n):\n            if grid[r][c] == 1:\n                if r == 0 or c == 0:\n                    dp[r][c] = 1\n                else:\n                    dp[r][c] = min(dp[r - 1][c], dp[r][c - 1], dp[r - 1][c - 1]) + 1\n\n    # Max square area ending at or before row r\n    row_pref = [0] * m\n    cur_mx = 0\n    for r in range(m):\n        for c in range(n):\n            cur_mx = max(cur_mx, dp[r][c] ** 2)\n        row_pref[r] = cur_mx\n\n    # Max square area strictly after row r\n    row_suff = [0] * m\n    cur_mx = 0\n    for r in range(m - 1, -1, -1):\n        for c in range(n):\n            # A square completely within [r, m-1] can end up to m-1 with size fitting within [r, m-1]\n            sz = dp[r][c]\n            # Clip size to not extend before r\n            for cand_r in range(r, m):\n                cand_sz = min(dp[cand_r][c], cand_r - r + 1)\n                cur_mx = max(cur_mx, cand_sz ** 2)\n        row_suff[r] = cur_mx\n\n    best = 0\n    for r in range(m - 1):\n        best = max(best, row_pref[r] + row_suff[r + 1])\n    return best",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "cpp",
+      "approach": "Optimal",
+      "code": "#include <vector>\n#include <algorithm>\n\nclass Solution {\npublic:\n    int maxTwoNonOverlappingSquaresArea(std::vector<std::vector<int>>& grid) {\n        int m = grid.size(), n = grid[0].size();\n        std::vector<std::vector<int>> dp(m, std::vector<int>(n, 0));\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) {\n                if (grid[r][c] == 1) {\n                    if (r == 0 || c == 0) dp[r][c] = 1;\n                    else dp[r][c] = std::min({dp[r - 1][c], dp[r][c - 1], dp[r - 1][c - 1]}) + 1;\n                }\n            }\n        }\n        std::vector<int> rowPref(m, 0);\n        int curMx = 0;\n        for (int r = 0; r < m; ++r) {\n            for (int c = 0; c < n; ++c) curMx = std::max(curMx, dp[r][c] * dp[r][c]);\n            rowPref[r] = curMx;\n        }\n        std::vector<int> rowSuff(m, 0);\n        curMx = 0;\n        for (int r = m - 1; r >= 0; --r) {\n            for (int c = 0; c < n; ++c) {\n                for (int candR = r; candR < m; ++candR) {\n                    int sz = std::min(dp[candR][c], candR - r + 1);\n                    curMx = std::max(curMx, sz * sz);\n                }\n            }\n            rowSuff[r] = curMx;\n        }\n        int best = 0;\n        for (int r = 0; r < m - 1; ++r) {\n            best = std::max(best, rowPref[r] + rowSuff[r + 1]);\n        }\n        return best;\n    }\n};",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "java",
+      "approach": "Optimal",
+      "code": "class Solution {\n    public int maxTwoNonOverlappingSquaresArea(int[][] grid) {\n        int m = grid.length, n = grid[0].length;\n        int[][] dp = new int[m][n];\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) {\n                if (grid[r][c] == 1) {\n                    if (r == 0 || c == 0) dp[r][c] = 1;\n                    else dp[r][c] = Math.min(dp[r - 1][c], Math.min(dp[r][c - 1], dp[r - 1][c - 1])) + 1;\n                }\n            }\n        }\n        int[] rowPref = new int[m];\n        int curMx = 0;\n        for (int r = 0; r < m; r++) {\n            for (int c = 0; c < n; c++) curMx = Math.max(curMx, dp[r][c] * dp[r][c]);\n            rowPref[r] = curMx;\n        }\n        int[] rowSuff = new int[m];\n        curMx = 0;\n        for (int r = m - 1; r >= 0; r--) {\n            for (int c = 0; c < n; c++) {\n                for (int candR = r; candR < m; candR++) {\n                    int sz = Math.min(dp[candR][c], candR - r + 1);\n                    curMx = Math.max(curMx, sz * sz);\n                }\n            }\n            rowSuff[r] = curMx;\n        }\n        int best = 0;\n        for (int r = 0; r < m - 1; r++) {\n            best = Math.max(best, rowPref[r] + rowSuff[r + 1]);\n        }\n        return best;\n    }\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    },
+    {
+      "lang": "javascript",
+      "approach": "Optimal",
+      "code": "function maxTwoNonOverlappingSquaresArea(grid) {\n    const m = grid.length, n = grid[0].length;\n    const dp = Array.from({ length: m }, () => new Array(n).fill(0));\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) {\n            if (grid[r][c] === 1) {\n                if (r === 0 || c === 0) dp[r][c] = 1;\n                else dp[r][c] = Math.min(dp[r - 1][c], dp[r][c - 1], dp[r - 1][c - 1]) + 1;\n            }\n        }\n    }\n    const rowPref = new Array(m).fill(0);\n    let curMx = 0;\n    for (let r = 0; r < m; r++) {\n        for (let c = 0; c < n; c++) curMx = Math.max(curMx, dp[r][c] * dp[r][c]);\n        rowPref[r] = curMx;\n    }\n    const rowSuff = new Array(m).fill(0);\n    curMx = 0;\n    for (let r = m - 1; r >= 0; r--) {\n        for (let c = 0; c < n; c++) {\n            for (let candR = r; candR < m; candR++) {\n                const sz = Math.min(dp[candR][c], candR - r + 1);\n                curMx = Math.max(curMx, sz * sz);\n            }\n        }\n        rowSuff[r] = curMx;\n    }\n    let best = 0;\n    for (let r = 0; r < m - 1; r++) {\n        best = Math.max(best, rowPref[r] + rowSuff[r + 1]);\n    }\n    return best;\n}",
+      "verifiedBy": "tests",
+      "testedOn": "2026-11-06"
+    }
+  ],
+  "review": {
+    "status": "tested",
+    "acceptedOnLeetCode": null,
+    "reviewer": "Automated Test Harness"
+  },
+  "updated": "2026-11-06"
+}
